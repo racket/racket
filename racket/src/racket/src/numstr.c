@@ -2145,6 +2145,19 @@ int scheme_check_long_double(const char *where, long_double d, const char *dest)
 Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft, int mask)
 {
   switch(slen) {
+  case 1:
+    if (sgned) {
+      char val;
+      memcpy(&val, str, sizeof(char));
+      return scheme_make_integer(val);
+    } else {
+      unsigned char val;
+      memcpy(&val, str, sizeof(unsigned char));
+      val >>= rshft;
+      if (mask < 8) { val &= (((unsigned char)1 << mask) - 1); }
+      return scheme_make_integer(val);
+    }
+    break;
   case 2:
     if (sgned) {
       short val;
@@ -2298,9 +2311,9 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
     slen = strlen;
   }
 
-  if ((slen != 2)  && (slen != 4) && (slen != 8)) {
+  if ((slen != 1) && (slen != 2)  && (slen != 4) && (slen != 8)) {
     scheme_contract_error("integer-bytes->integer",
-                          "length is not 2, 4, or 8 bytes",
+                          "length is not 1, 2, 4, or 8 bytes",
                           "length", 1, scheme_make_integer(slen),
                           NULL);
     return NULL;
@@ -2342,8 +2355,8 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     size = SCHEME_INT_VAL(argv[1]);
   else
     size = 0;
-  if ((size != 2) && (size != 4) && (size != 8))
-    scheme_wrong_contract("integer->integer-bytes", "(or/c 2 4 8)", 1, argc, argv);
+  if ((size != 1) && (size != 2) && (size != 4) && (size != 8))
+    scheme_wrong_contract("integer->integer-bytes", "(or/c 1 2 4 8)", 1, argc, argv);
 
   sgned = SCHEME_TRUEP(argv[2]);
   if (argc > 3)
@@ -2379,7 +2392,18 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   }
 
   /* Check for mismatch: number doesn't fit */
-  if (size == 2) {
+  if (size == 1) {
+    if (SCHEME_BIGNUMP(n))
+      bad = 1;
+    else {
+      val = SCHEME_INT_VAL(n);
+      if (sgned) {
+	bad = ((val < -128) || (val > 127));
+      } else {
+	bad = ((val < 0) || (val > 255));
+      }
+    }
+  } else if (size == 2) {
     if (SCHEME_BIGNUMP(n))
       bad = 1;
     else {
@@ -2390,7 +2414,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
 	bad = ((val < 0) || (val > 65535));
       }
     }
-  } else if (size ==4) {
+  } else if (size == 4) {
     if (sgned)
       bad = !scheme_get_int_val(n, &val);
     else
@@ -2442,24 +2466,35 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   /* Finally, do the work */
   str = (char *)buf;
   switch (size) {
+  case 1:
+    {
+      if (sgned) {
+        char value = val;
+        memcpy(str, &value, sizeof(char));
+      } else {
+        unsigned char value = val;
+        memcpy(str, &value, sizeof(unsigned char));
+      }
+    }
+    break;
   case 2:
     {
       if (sgned) {
-        unsigned short value = val;
-        memcpy(str, &value, sizeof(unsigned short));
-      } else {
         short value = val;
         memcpy(str, &value, sizeof(short));
+      } else {
+        unsigned short value = val;
+        memcpy(str, &value, sizeof(unsigned short));
       }
     }
     break;
   case 4:
     if (sgned) {
-        unsigned int value = val;
-        memcpy(str, &value, sizeof(unsigned int));
+      int value = val;
+      memcpy(str, &value, sizeof(int));
     } else {
-        int value = val;
-        memcpy(str, &value, sizeof(int));
+      unsigned int value = val;
+      memcpy(str, &value, sizeof(unsigned int));
     }
     break;
   default:
