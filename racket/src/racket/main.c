@@ -236,10 +236,6 @@ static void user_break_hit(int ignore)
 {
   scheme_break_main_thread_at(break_handle);
   scheme_signal_received_at(signal_handle);
-
-#  ifdef SIGSET_NEEDS_REINSTALL
-  MZ_SIGSET(SIGINT, user_break_hit);
-#  endif
 }
 
 # ifndef NO_SIGTERM_HANDLER
@@ -248,10 +244,6 @@ static void term_hit(int ignore)
 {
   scheme_break_kind_main_thread_at(break_handle, MZEXN_BREAK_TERMINATE);
   scheme_signal_received_at(signal_handle);
-
-#  ifdef SIGSET_NEEDS_REINSTALL
-  MZ_SIGSET(SIGTERM, term_hit);
-#  endif
 }
 # endif
 
@@ -261,10 +253,6 @@ static void hup_hit(int ignore)
 {
   scheme_break_kind_main_thread_at(break_handle, MZEXN_BREAK_HANG_UP);
   scheme_signal_received_at(signal_handle);
-
-#  ifdef SIGSET_NEEDS_REINSTALL
-  MZ_SIGSET(SIGHUP, hup_hit);
-#  endif
 }
 # endif
 
@@ -438,12 +426,12 @@ static int main_after_stack(void *data)
   break_handle = scheme_get_main_thread_break_handle();
   signal_handle = scheme_get_signal_handle();
 # ifndef NO_USER_BREAK_HANDLER
-  MZ_SIGSET(SIGINT, user_break_hit);
+  scheme_set_signal_handler(SIGINT, user_break_hit);
 #  ifndef NO_SIGTERM_HANDLER
-  MZ_SIGSET(SIGTERM, term_hit);
+  scheme_set_signal_handler(SIGTERM, term_hit);
 #  endif
 #  ifndef NO_SIGHUP_HANDLER
-  MZ_SIGSET(SIGHUP, hup_hit);
+  scheme_set_signal_handler(SIGHUP, hup_hit);
 #  endif
 # endif
 # ifdef DOS_FILE_SYSTEM

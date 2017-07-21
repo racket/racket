@@ -1005,6 +1005,7 @@ Scheme_Object *(*scheme_malloc_key)(void);
 void (*scheme_free_key)(Scheme_Object *k);
 void *(*scheme_jit_find_code_end)(void *p);
 void (*scheme_jit_now)(Scheme_Object *f);
+void (*scheme_set_signal_handler)(int sig_id, Scheme_Signal_Handler_Proc proc);
 #ifndef SCHEME_EX_INLINE
 } Scheme_Extension_Table;
 #endif

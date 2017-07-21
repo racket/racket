@@ -151,12 +151,6 @@ typedef long FILE;
 # define MSCBOR_IZE(x) MSC_IZE(x)
 #endif
 
-#ifdef SIGSET_IS_SIGNAL
-# define MZ_SIGSET(s, f) signal(s, f)
-#else
-# define MZ_SIGSET(s, f) sigset(s, f)
-#endif
-
 /* C99 allows an array in a struct to be declared
    with [] to indicate that its actual size can be
    any number. The old way was to declare the array
@@ -2034,6 +2028,12 @@ MZ_EXTERN Scheme_Object *scheme_param_config2(char *name, Scheme_Object *pos,
 MZ_EXTERN Scheme_Object *scheme_register_parameter(Scheme_Prim *function, char *name, int which);
 
 #endif /* SCHEME_DIRECT_EMBEDDED */
+
+/*========================================================================*/
+/*                             OS signals                                 */
+/*========================================================================*/
+
+typedef void (*Scheme_Signal_Handler_Proc)(int);
 
 /*========================================================================*/
 /*                              addrinfo                                  */

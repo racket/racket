@@ -40,7 +40,6 @@
 # else
 /* SunOS4 */
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc-sunos4"
-# define SIGSET_IS_SIGNAL
 # define NO_STRERROR_AVAILABLE
 # define USE_ON_EXIT_FOR_ATEXIT
 # endif
@@ -141,9 +140,6 @@
 # define USE_IEEE_FP_PREDS
 # define USE_EXPLICT_FP_FORM_CHECK
 
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
-
 # define LINUX_FIND_STACK_BASE
 
 # define FLAGS_ALREADY_SET
@@ -188,8 +184,6 @@
 #endif
 
 # define USE_IEEE_FP_PREDS
-
-# define SIGSET_IS_SIGNAL
 
 #if defined(__alpha__)
 # define USE_DIVIDE_MAKE_INFINITY
@@ -253,8 +247,6 @@
 
 # define USE_IEEE_FP_PREDS
 
-# define SIGSET_IS_SIGNAL
-
 # define USE_MAP_ANON
 
 # if defined(__x86_64__)
@@ -309,8 +301,6 @@
 # define USE_DLOPEN_GLOBAL_BY_DEFAULT
 
 # define USE_IEEE_FP_PREDS
-
-# define SIGSET_IS_SIGNAL
 
 # define USE_MAP_ANON
 
@@ -375,8 +365,6 @@
 # define USE_UNDERSCORE_SETJMP
 
 # define USE_IEEE_FP_PREDS
-
-# define SIGSET_IS_SIGNAL
 
 # define MZ_JIT_USE_MPROTECT
 
@@ -533,8 +521,6 @@
 #  define USE_WIN32_THREAD_TIMER
 # endif
 
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
 # define NO_SIGHUP_HANDLER
 
 #define PRINTF_INTPTR_SIZE_PREFIX "I"
@@ -601,9 +587,6 @@
 
 # undef USE_ITIMER
 
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
-
 # define USE_MZ_CYGWIN_SETJMP
 # define USE_MZ_SETJMP
 
@@ -665,8 +648,6 @@
 # define USE_IEEE_FP_PREDS
 # define TRIG_ZERO_NEEDS_SIGN_CHECK
 
-# define SIGSET_IS_SIGNAL
-
 # define USE_UNDERSCORE_SETJMP
 
 #ifndef XONX
@@ -710,8 +691,6 @@
 
 # define USE_MAP_ANON
 
-# define SIGSET_IS_SIGNAL
-
 # define USE_UNDERSCORE_SETJMP
 
 # define MZ_USE_JIT_I386
@@ -730,8 +709,6 @@
 # define ASSUME_FIXED_STACK_SIZE
 
 # include "uconfig.h"
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
 
 # define FIXED_STACK_SIZE 524288
 
@@ -783,8 +760,6 @@
 #  define POW_HANDLES_INF_CORRECTLY
 # endif
 
-# define SIGSET_IS_SIGNAL
-
 # define MZ_JIT_USE_MPROTECT
 
 # define FLAGS_ALREADY_SET
@@ -800,8 +775,6 @@
 
 /* assume generic Unix: */
 #include "uconfig.h"
-# define SIGSET_IS_SIGNAL
-# define SIGSET_NEEDS_REINSTALL
 
   /*********************/
  /* Operating System  */
@@ -867,15 +840,6 @@
 
  /* USE_PTHREAD_THREAD_TIMER uses a background pthread to implement
     tread pre-emption. */
-
- /* SIGSET_IS_SIGNAL uses signal() in place of sigset() for Unix. This
-    flag is often paired with SIGSET_NEEDS_REINSTALL for traditional
-    Unix systems. */
-
- /* SIGSET_NEEDS_REINSTALL reinstalls a signal handler when it
-    is called to handle a signal. The expected semantics of sigset()
-    (when this flags is not defined) is that a signal handler is NOT
-    reset to SIG_DFL after a handler is called to handle a signal. */
 
  /* DONT_IGNORE_FPE_SIGNAL stops Racket from ignoring floating-point
     exception signals. */

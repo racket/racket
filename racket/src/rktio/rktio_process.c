@@ -36,10 +36,11 @@ struct rktio_process_t {
 };
 
 /*========================================================================*/
-/* Status helper                                                          */
+/* Status and signal helpers                                              */
 /*========================================================================*/
 
 #if defined(RKTIO_SYSTEM_UNIX)
+
 static int extract_child_status(int status)
 {
   if (WIFEXITED(status))
@@ -51,6 +52,16 @@ static int extract_child_status(int status)
 
   return status;
 }
+
+static void set_signal_handler(int sig_id, void (*proc)(int))
+{
+  struct sigaction sa;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sa.sa_handler = proc;
+  sigaction(sig_id, &sa, NULL);
+}
+
 #endif
 
 /*========================================================================*/
@@ -422,7 +433,7 @@ void centralized_starting_child()
        does not block SIGCHLD.
        Solaris, meanwhile, seems to unmask SIGCHLD as a result of
        setting a handler, so do this before masking the signal. */
-    signal(SIGCHLD, got_sigchld);
+    set_signal_handler(SIGCHLD, got_sigchld);
     
     /* Block SIGCLHD (again), because the worker thread will use sigwait(). */
     block_sigchld();
@@ -568,17 +579,13 @@ static void child_done(int ingored)
     rktio_signal_received(rktio);
     rktio = rktio->next;
   }
-
-# ifdef SIGNAL_NEEDS_REINSTALL
-  signal(SIGCHLD, child_done);
-# endif
 }
 
 static void init_sigchld(rktio_t *rktio)
 {
 #if !defined(CENTRALIZED_SIGCHILD)
   if (!sigchld_installed) {
-    signal(SIGCHLD, child_done);
+    set_signal_handler(SIGCHLD, child_done);
     sigchld_installed = 1;
   }
 

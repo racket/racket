@@ -729,3 +729,4 @@
   scheme_extension_table->scheme_free_key = scheme_free_key;
   scheme_extension_table->scheme_jit_find_code_end = scheme_jit_find_code_end;
   scheme_extension_table->scheme_jit_now = scheme_jit_now;
+  scheme_extension_table->scheme_set_signal_handler = scheme_set_signal_handler;

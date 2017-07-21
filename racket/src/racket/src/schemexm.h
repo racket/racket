@@ -729,6 +729,7 @@
 #define scheme_free_key (scheme_extension_table->scheme_free_key)
 #define scheme_jit_find_code_end (scheme_extension_table->scheme_jit_find_code_end)
 #define scheme_jit_now (scheme_extension_table->scheme_jit_now)
+#define scheme_set_signal_handler (scheme_extension_table->scheme_set_signal_handler)
 #ifdef MZ_PRECISE_GC
 #pragma GC_VARIABLE_STACK_THOUGH_TABLE
 #endif

@@ -15,7 +15,6 @@
 #  define USE_TIMEZONE_AND_ALTZONE_VAR
 #  define USE_TZNAME_VAR
 #  define USE_NULL_TO_DISCONNECT_UDP
-#  define SIGNAL_NEEDS_REINSTALL
 # else
 /* SunOS4 */
 #  define USE_TM_GMTOFF_FIELD
@@ -332,11 +331,6 @@
   /***********************/
  /* Signals             */
 /***********************/
-
- /* SIGNAL_NEEDS_REINSTALL reinstalls a signal handler when it
-    is called to handle a signal. The expected semantics of signal()
-    (when this flags is not defined) is that a signal handler is NOT
-    reset to SIG_DFL after a handler is called to handle a signal. */
 
  /* USE_CREATE_PIPE uses CreatePipe() instead of _pipe() for Windows. */
 

@@ -1232,3 +1232,5 @@ MZ_EXTERN void scheme_free_key(Scheme_Object *k);
 
 MZ_EXTERN void *scheme_jit_find_code_end(void *p);
 MZ_EXTERN void scheme_jit_now(Scheme_Object *f);
+
+MZ_EXTERN void scheme_set_signal_handler(int sig_id, Scheme_Signal_Handler_Proc proc);

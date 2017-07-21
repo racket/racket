@@ -301,7 +301,7 @@ void scheme_configure_floating_point(void)
 /* can be called in any thread */
 {    
 #ifndef DONT_IGNORE_FPE_SIGNAL
-  MZ_SIGSET(SIGFPE, SIG_IGN);
+  scheme_set_signal_handler(SIGFPE, NULL);
 #endif
 #ifdef FREEBSD_CONTROL_387
   (void)fpsetmask(0);

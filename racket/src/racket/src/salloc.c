@@ -32,6 +32,9 @@
 #include <string.h>
 #include "schgc.h"
 #include "schrktio.h"
+#ifndef WINDOWS_PROCESSES
+# include <signal.h>
+#endif
 
 #ifdef DOS_FAR_POINTERS
 # include <alloc.h>
@@ -443,6 +446,17 @@ int scheme_is_place_main_os_thread() XFORM_SKIP_PROC
     return 0;
 #endif
   return 1;
+}
+
+void scheme_set_signal_handler(int sig_id, Scheme_Signal_Handler_Proc proc) XFORM_SKIP_PROC
+{
+#ifndef WINDOWS_PROCESSES
+  struct sigaction sa;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  sa.sa_handler = (proc ? proc : SIG_IGN);
+  sigaction(sig_id, &sa, NULL);
+#endif
 }
 
 /************************************************************************/
