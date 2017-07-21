@@ -15,6 +15,7 @@
 #  define USE_TIMEZONE_AND_ALTZONE_VAR
 #  define USE_TZNAME_VAR
 #  define USE_NULL_TO_DISCONNECT_UDP
+#  define SIGNAL_NEEDS_REINSTALL
 # else
 /* SunOS4 */
 #  define USE_TM_GMTOFF_FIELD
@@ -45,8 +46,6 @@
 #if defined(__linux__)
 
 # define DIRENT_NO_NAMLEN
-
-# define SIGSET_NEEDS_REINSTALL
 
 # define USE_TIMEZONE_VAR_W_DLS
 # define USE_TZNAME_VAR
@@ -174,7 +173,6 @@
 # define DIRENT_NO_NAMLEN
 
 # define SIGCHILD_DOESNT_INTERRUPT_SELECT
-# define SIGSET_NEEDS_REINSTALL
 
 # define CANT_SET_SOCKET_BUFSIZE
 # define NO_NEED_FOR_BEGINTHREAD
@@ -201,8 +199,6 @@
   /************ QNX *************/
 
 #if defined(__QNX__)
-
-# define SIGSET_NEEDS_REINSTALL
 
 # define BROKEN_READLINK_NUL_TERMINATOR
 
@@ -337,8 +333,8 @@
  /* Signals             */
 /***********************/
 
- /* SIGSET_NEEDS_REINSTALL reinstalls a signal handler when it
-    is called to handle a signal. The expected semantics of sigset()
+ /* SIGNAL_NEEDS_REINSTALL reinstalls a signal handler when it
+    is called to handle a signal. The expected semantics of signal()
     (when this flags is not defined) is that a signal handler is NOT
     reset to SIG_DFL after a handler is called to handle a signal. */
 
