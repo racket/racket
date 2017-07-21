@@ -594,7 +594,7 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
             (make-immutable-hash '([2 . two]))
             (make-immutable-hash '([3 . three])))
 (hash-union (make-immutable-hash '([1 . (one uno)] [2 . (two dos)]))
-            (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
+            (make-immutable-hash '([1 . (eins un)] [2 . (zwei deux)]))
             #:combine/key (lambda (k v1 v2) (append v1 v2)))
 ]
 
@@ -623,7 +623,7 @@ h
 (hash-union! h (make-immutable-hash '([1 . (one uno)] [2 . (two dos)])))
 h
 (hash-union! h
-             (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
+             (make-immutable-hash '([1 . (eins un)] [2 . (zwei deux)]))
              #:combine/key (lambda (k v1 v2) (append v1 v2)))
 h
 ]
