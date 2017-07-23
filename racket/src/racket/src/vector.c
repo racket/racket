@@ -950,13 +950,16 @@ static Scheme_Object *do_chaperone_vector(const char *name, int is_impersonator,
   }
   else {
     /* allow false for interposition procedures */
-    scheme_check_proc_arity2(name, 3 + (pass_self ? 1 : 0), 1, argc, argv,1);
+    scheme_check_proc_arity2(name, 3 + (pass_self ? 1 : 0), 1, argc, argv, 1);
+    scheme_check_proc_arity2(name, 3 + (pass_self ? 1 : 0), 2, argc, argv, 1);
 
-    if (SCHEME_PROCP(argv[1])) {
-      scheme_check_proc_arity(name, 3 + (pass_self ? 1 : 0), 2, argc, argv);
-    }
-    else if (!SCHEME_FALSEP(argv[2])) {
-      scheme_wrong_contract(name, "#f", 2, argc, argv);
+    /* but only allow `#f` if both are `#f` */
+    if (SCHEME_FALSEP(argv[1]) != SCHEME_FALSEP(argv[2])) {
+      scheme_contract_error(name,
+                            "accessor and mutator wrapper must be both `#f` or neither `#f`",
+                            "accessor wrapper", 1, argv[1],
+                            "mutator wrapper", 1, argv[2],
+                            NULL);
     }
   }
 
