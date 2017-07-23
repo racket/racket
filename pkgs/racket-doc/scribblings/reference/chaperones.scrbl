@@ -131,8 +131,8 @@ chaperones to @racket[v2].
 
 For values that include no chaperones, @racket[v1] and @racket[v2] can
 be considered chaperones of each other if they are @racket[equal?],
-except that the mutability of vectors and boxes with @racket[v1] and
-@racket[v2] must be the same.
+except that mutable vectors, boxes, strings, byte strings, and mutable
+structures within @racket[v1] and @racket[v2] must be @racket[eq?].
 
 Otherwise, chaperones within @racket[v2] must be intact within
 @racket[v1] analogous to way that @racket[impersonator-of?] requires
