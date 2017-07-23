@@ -825,9 +825,10 @@
                        ": contract violation")
                       (exn-message exn))
                 (test #t
-                      (regexp-match?
-                       "(and/c vector? (not/c impersonator?))"
-                       (exn-message exn)))))
+                      regexp-match?
+                      "[(]and/c vector[?] [(]not/c impersonator[?][)][)]"
+                      (exn-message exn))
+                #t))
  (clear)
  (define vc*1 (do-chap (vector 93 77 26) 'vc*1))
  (define cvc*1 (add-prop vc*1 p1 'p1-cvc*1 #:redirect #t))
