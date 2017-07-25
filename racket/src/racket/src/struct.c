@@ -2964,7 +2964,7 @@ static Scheme_Object *apply_chaperones(const char *who, Scheme_Object *procs, in
                        "  received: %d\n"
                        "  %s: %V\n",
                        who,
-                       is_impersonator ? "an impersonator's" : "an chaperone's",
+                       is_impersonator ? "an impersonator's" : "a chaperone's",
                        SCHEME_CAR(procs),
                        argc, cnt,
                        is_impersonator ? "impersonator" : "chaperone");
