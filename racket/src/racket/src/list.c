@@ -3317,17 +3317,28 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         key_wraps = scheme_make_raw_pair((Scheme_Object *)who, key_wraps);
       if (mode == 0) {
         /* hash-ref */
-        if (SCHEME_HASHTP(o))
-          return scheme_hash_get_w_key_wraps((Scheme_Hash_Table *)o, k, key_wraps);
-        else if (SCHEME_HASHTRP(o))
-          return scheme_hash_tree_get_w_key_wraps((Scheme_Hash_Tree *)o, k, key_wraps);
-        else
-          return scheme_lookup_in_table_w_key_wraps((Scheme_Bucket_Table *)o, (const char *)k, key_wraps);
+        if (SCHEME_HASHTP(o)) {
+          Scheme_Hash_Table *t = (Scheme_Hash_Table *)o;
+          if (t->mutex) scheme_wait_sema(t->mutex, 0);
+          v = scheme_hash_get_w_key_wraps(t, k, key_wraps);
+          if (t->mutex) scheme_post_sema(t->mutex);
+        } else if (SCHEME_HASHTRP(o))
+          v = scheme_hash_tree_get_w_key_wraps((Scheme_Hash_Tree *)o, k, key_wraps);
+        else {
+          Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)o;
+          if (t->mutex) scheme_wait_sema(t->mutex, 0);
+          v = scheme_lookup_in_table_w_key_wraps(t, (const char *)k, key_wraps);
+          if (t->mutex) scheme_post_sema(t->mutex);
+        }
+        return v;
       } else if ((mode == 1) || (mode == 2)) {
         /* hash-set! or hash-remove! */
-        if (SCHEME_HASHTP(o))
-          scheme_hash_set_w_key_wraps((Scheme_Hash_Table *)o, k, v, key_wraps);
-        else if (SCHEME_HASHTRP(o)) {
+        if (SCHEME_HASHTP(o)) {
+          Scheme_Hash_Table *t = (Scheme_Hash_Table *)o;
+          if (t->mutex) scheme_wait_sema(t->mutex, 0);
+          scheme_hash_set_w_key_wraps(t, k, v, key_wraps);
+          if (t->mutex) scheme_post_sema(t->mutex);
+        } else if (SCHEME_HASHTRP(o)) {
           o = (Scheme_Object *)scheme_hash_tree_set_w_key_wraps((Scheme_Hash_Tree *)o, k, v, key_wraps);
           while (wraps) {
             o = transfer_chaperone(SCHEME_CAR(wraps), o);
@@ -3335,14 +3346,21 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
           }
           return o;
         } else if (!v) {
+          Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)o;
           Scheme_Bucket *b;
-          b = scheme_bucket_or_null_from_table_w_key_wraps((Scheme_Bucket_Table *)o, (char *)k, 0, key_wraps);
+          if (t->mutex) scheme_wait_sema(t->mutex, 0);
+          b = scheme_bucket_or_null_from_table_w_key_wraps(t, (char *)k, 0, key_wraps);
+          if (t->mutex) scheme_post_sema(t->mutex);
           if (b) {
             HT_EXTRACT_WEAK(b->key) = NULL;
             b->val = NULL;
           }
-        } else
-          scheme_add_to_table_w_key_wraps((Scheme_Bucket_Table *)o, (const char *)k, v, 0, key_wraps);
+        } else {
+          Scheme_Bucket_Table *t = (Scheme_Bucket_Table *)o;
+          if (t->mutex) scheme_wait_sema(t->mutex, 0);
+          scheme_add_to_table_w_key_wraps(t, (const char *)k, v, 0, key_wraps);
+          if (t->mutex) scheme_post_sema(t->mutex);
+        }
         return scheme_void;
       } else if (mode == 3)
         return k;
