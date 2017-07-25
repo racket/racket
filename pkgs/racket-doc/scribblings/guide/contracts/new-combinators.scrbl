@@ -120,7 +120,7 @@ imagine the flow of values in a program between two
 modules. First, one module (the server) defines a function, and then that
 module is required by another (the client). So far, the function itself
 has to go from the original, providing module to the
-requiring module. Now, imagine that the providing module
+requiring module. Now, imagine that the requiring module
 invokes the function, supplying it an argument. At this
 point, the flow of values reverses. The argument is
 traveling back from the requiring module to the providing
