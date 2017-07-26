@@ -162,20 +162,57 @@ application on some platforms, static variables are also automatically
 registered as roots for garbage collection (but see notes below
 specific to Mac OS and Windows).
 
-For example, the following is a simple embedding program which
+For example, the following is a simple embedding program that runs a
+module @filepath{run.rkt}, assuming that @filepath{run.c} is created
+as
+
+@commandline{raco ctool --c-mods run.c "run.rkt"}
+
+to generate @filepath{run.c}, which encapsulates the compiled form of
+@filepath{run.rkt} and all of its transitive imports (so that they
+need not be found separately a run time).
+
+@filebox["main.c"]{
+@verbatim[#:indent 2]{
+#include "scheme.h"
+#include "run.c"
+
+static int run(Scheme_Env *e, int argc, char *argv[])
+{
+  Scheme_Object *a[2];
+
+  /* Declare embedded modules in "run.c": */
+  declare_modules(e);
+
+  a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("run"),
+                                           scheme_make_null()));
+  a[1] = scheme_false;
+
+  scheme_dynamic_require(2, a);
+  
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  return scheme_main_setup(1, run, argc, argv);
+}
+}}
+
+As another example, the following is a simple embedding program that
 evaluates all expressions provided on the command line and displays
 the results, then runs a @racket[read]-@racket[eval]-@racket[print]
-loop. Run
+loop, all using @racketmodname[racket/base]. Run
 
 @commandline{raco ctool --c-mods base.c ++lib racket/base}
 
 to generate @filepath{base.c}, which encapsulates @racket[racket/base]
-and all of its transitive imports (so that they need not be found
-separately a run time).
+and all of its transitive imports.
 
+@filebox["main.c"]{
 @verbatim[#:indent 2]{
 #include "scheme.h"
-
 #include "base.c"
 
 static int run(Scheme_Env *e, int argc, char *argv[])
@@ -220,7 +257,7 @@ int main(int argc, char *argv[])
 {
   return scheme_main_setup(1, run, argc, argv);
 }
-}
+}}
 
 If modules embedded in the executable need to access runtime files
 (via @racketmodname[racket/runtime-path] forms), supply the
@@ -295,15 +332,55 @@ In addition, some library details are different:
 For Racket 3m, an embedding application must call @cpp{scheme_main_setup}
 with a non-zero first argument.
 
-The simple embedding program from the previous section can be
+The simple embedding programs from the previous section can be
 processed by  @seclink["cc" #:doc raco-doc]{@exec{raco ctool --xform}}, then compiled
 and linked with Racket 3m. Alternately, the source code can be
 extended to work with either CGC or 3m depending on whether
 @cpp{MZ_PRECISE_GC} is defined on the compiler's command line:
 
+@filebox["main.c"]{
 @verbatim[#:indent 2]{
 #include "scheme.h"
+#include "run.c"
 
+static int run(Scheme_Env *e, int argc, char *argv[])
+{
+  Scheme_Object *l;
+  Scheme_Object *a[2];
+
+  MZ_GC_DECL_REG(6);
+  MZ_GC_VAR_IN_REG(0, e);
+  MZ_GC_VAR_IN_REG(1, l)
+  MZ_GC_ARRAY_VAR_IN_REG(2, a, 2);
+
+  MZ_GC_REG();
+
+  declare_modules(e);
+
+  l = scheme_make_null();
+  l = scheme_make_pair(scheme_intern_symbol("run"), l);
+  l = scheme_intern_symbol("quote"), l);
+
+  a[0] = l;
+  a[1] = scheme_false;
+
+  scheme_dynamic_require(2, a);
+
+  MZ_GC_UNREG();
+
+  return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  return scheme_main_setup(1, run, argc, argv);
+}
+}
+}
+
+@filebox["main.c"]{
+@verbatim[#:indent 2]{
+#include "scheme.h"
 #include "base.c"
 
 static int run(Scheme_Env *e, int argc, char *argv[])
@@ -363,6 +440,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 int main(int argc, char *argv[])
 {
   return scheme_main_setup(1, run, argc, argv);
+}
 }
 }
 
