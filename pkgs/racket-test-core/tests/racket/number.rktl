@@ -2935,7 +2935,9 @@
   (test #x22 integer-bytes->integer (bytes #x22) #f)
   (test #xFE integer-bytes->integer (bytes #xFE) #f)
   (test (- #x7E) integer-bytes->integer (bytes #x82) #t)
-  
+  (test -1 integer-bytes->integer (bytes #xFF) #t)
+  (test 255 integer-bytes->integer (bytes #xFF) #f)
+
   (test 0 integer-bytes->integer #"\0\0" #t)
   (test -1 integer-bytes->integer #"\377\377" #t)
   (test 65535 integer-bytes->integer #"\377\377" #f)
@@ -3021,6 +3023,9 @@
   (test (bytes #x22) integer->integer-bytes #x22 1 #t)
   (test (bytes #xFE) integer->integer-bytes #xFE 1 #f)
   (test (bytes #x82) integer->integer-bytes (- #x7E) 1 #t)
+  (test #"\377" integer->integer-bytes -1 1 #t)
+  (test #"\200" integer->integer-bytes -128 1 #t)
+  (test #"\377" integer->integer-bytes 255 1 #f)
 
   (test #"\0\0" integer->integer-bytes 0 2 #t)
   (test #"\377\377" integer->integer-bytes -1 2 #t)
@@ -3091,6 +3096,10 @@
 (err/rt-test (integer->integer-bytes 10 20 #t))
 (err/rt-test (integer->integer-bytes 10 2 #t #t 'ack))
 (err/rt-test (integer->integer-bytes 10 2 #t #t #"ack")) ; <-- immutable string
+(err/rt-test (integer->integer-bytes 256 1 #t) exn:application:mismatch?)
+(err/rt-test (integer->integer-bytes -129 1 #t) exn:application:mismatch?)
+(err/rt-test (integer->integer-bytes 257 1 #f) exn:application:mismatch?)
+(err/rt-test (integer->integer-bytes -1 1 #f) exn:application:mismatch?)
 (err/rt-test (integer->integer-bytes 100000 2 #t) exn:application:mismatch?)
 (err/rt-test (integer->integer-bytes 65536 2 #f) exn:application:mismatch?)
 (err/rt-test (integer->integer-bytes 32768 2 #t) exn:application:mismatch?)

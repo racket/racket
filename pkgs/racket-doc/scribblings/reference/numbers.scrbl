@@ -1087,17 +1087,19 @@ padded with trailing zeros if necessary).
 
 Converts the machine-format number encoded in @racket[bstr] to an
 exact integer. The @racket[start] and @racket[end] arguments specify
-the substring to decode, where @racket[(- end start)] must be
+the substring to decode, where @racket[(- end start)] must be @racket[1],
 @racket[2], @racket[4], or @racket[8]. If @racket[signed?] is true,
 then the bytes are decoded as a two's-complement number, otherwise it
 is decoded as an unsigned integer. If @racket[big-endian?] is true,
-then the first character's ASCII value provides the most significant
-eight bits of the number, otherwise the first character provides the
-least-significant eight bits, and so on.}
+then the first byte's value provides the most significant
+eight bits of the number, otherwise the first byte provides the
+least-significant eight bits, and so on.
+
+@history[#:changed "6.10.0.1" @elem{Added support for decoding a 1-byte string.}]}
 
 
 @defproc[(integer->integer-bytes [n exact-integer?]
-                                 [size-n (or/c 2 4 8)]
+                                 [size-n (or/c 1 2 4 8)]
                                  [signed? any/c]
                                  [big-endian? any/c (system-big-endian?)]
                                  [dest-bstr (and/c bytes? (not/c immutable?))
@@ -1106,12 +1108,12 @@ least-significant eight bits, and so on.}
           bytes?]{
 
 Converts the exact integer @racket[n] to a machine-format number
-encoded in a byte string of length @racket[size-n], which must be
+encoded in a byte string of length @racket[size-n], which must be @racket[1],
 @racket[2], @racket[4], or @racket[8]. If @racket[signed?] is true,
 then the number is encoded as two's complement, otherwise it is
 encoded as an unsigned bit stream. If @racket[big-endian?] is true,
 then the most significant eight bits of the number are encoded in the
-first character of the resulting byte string, otherwise the
+first byte of the resulting byte string, otherwise the
 least-significant bits are encoded in the first byte, and so on.
 
 The @racket[dest-bstr] argument must be a mutable byte string of
@@ -1119,9 +1121,11 @@ length @racket[size-n]. The encoding of @racket[n] is written into
 @racket[dest-bstr] starting at offset @racket[start], and
 @racket[dest-bstr] is returned as the result.
 
-If @racket[n] cannot be encoded in a string of the requested size and
+If @racket[n] cannot be encoded in a byte string of the requested size and
 format, the @exnraise[exn:fail:contract]. If @racket[dest-bstr] is not
-of length @racket[size-n], the @exnraise[exn:fail:contract].}
+of length @racket[size-n], the @exnraise[exn:fail:contract].
+
+@history[#:changed "6.10.0.1" @elem{Added support for encoding a 1-byte value.}]}
 
 
 @defproc[(floating-point-bytes->real [bstr bytes?]
