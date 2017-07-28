@@ -195,6 +195,61 @@ X union borl increment_borl(int which, union borl v)
   return v;
 }
 
+union iord {
+  int i;
+  double d;
+};
+
+X union iord increment_iord(int which, union iord v)
+{
+  int i;
+
+  if (which) {
+    v.d++;
+  } else {
+    v.i++;
+  }
+
+  return v;
+}
+
+union dorf {
+  double d;
+  float f;
+};
+
+X union dorf increment_dorf(int which, union dorf v)
+{
+  int i;
+
+  if (which) {
+    v.f++;
+  } else {
+    v.d++;
+  }
+
+  return v;
+}
+
+union dor2f {
+  double d;
+  float f[2];
+};
+
+X union dor2f increment_dor2f(int which, union dor2f v)
+{
+  int i;
+
+  if (which) {
+    v.f[0]++;
+    v.f[1]++;
+  } else {
+    v.d++;
+  }
+
+  return v;
+}
+
 union ic7iorl {
   struct int_char7_int ic7i;
   long l;

@@ -185,6 +185,9 @@
 
 (define _borl (_union _byte _long))
 (define _ic7iorl (_union _ic7i _long))
+(define _iord (_union _int _double))
+(define _dorf (_union _double _float))
+(define _dor2f (_union _double (_array _float 2)))
 
 (define test-lib (ffi-lib (build-path test-tmp-dir "foreign-test")))
 
@@ -415,6 +418,36 @@
         (test 10 ic7i-i1 (union-ref u2 0))
         (test 89 ic7i-i2 (union-ref u2 0))
         (test (map add1 v) ic7i-c7 (union-ref u2 0)))))
+  (let ([u (ptr-ref (malloc _iord) _iord)])
+    (union-set! u 0 (expt 2 18))
+    (test (expt 2 18) union-ref u 0)
+    (let ([u2 ((ffi 'increment_iord (_fun _int _iord -> _iord)) 0 u)])
+      (test (add1 (expt 2 18)) union-ref u2 0))
+    (union-set! u 1 3.145)
+    (test 3.145 union-ref u 1)
+    (let ([u2 ((ffi 'increment_iord (_fun _int _iord -> _iord)) 1 u)])
+      (test 4.145 union-ref u2 1)))
+  (let ([u (ptr-ref (malloc _dorf) _dorf)])
+    (union-set! u 0 1.075)
+    (test 1.075 union-ref u 0)
+    (let ([u2 ((ffi 'increment_dorf (_fun _int _dorf -> _dorf)) 0 u)])
+      (test 2.075 union-ref u2 0))
+    (union-set! u 1 3.5)
+    (test 3.5 union-ref u 1)
+    (let ([u2 ((ffi 'increment_dorf (_fun _int _dorf -> _dorf)) 1 u)])
+      (test 4.5 union-ref u2 1)))
+  (let ([u (ptr-ref (malloc _dor2f) _dor2f)])
+    (union-set! u 0 3.075)
+    (test 3.075 union-ref u 0)
+    (let ([u2 ((ffi 'increment_dor2f (_fun _int _dor2f -> _dor2f)) 0 u)])
+      (test 4.075 union-ref u2 0))
+    (array-set! (union-ref u 1) 0 5.25)
+    (array-set! (union-ref u 1) 1 7.25)
+    (test 5.25 array-ref (union-ref u 1) 0)
+    (test 7.25 array-ref (union-ref u 1) 1)
+    (let ([u2 ((ffi 'increment_dor2f (_fun _int _dor2f -> _dor2f)) 1 u)])
+      (test 6.25 array-ref (union-ref u2 1) 0)
+      (test 8.25 array-ref (union-ref u2 1) 1)))
   ;; ---
   ;; test retries
   (t  78 'add1_int_int
@@ -1203,6 +1236,20 @@
     (test 2 saved-errno)
     (saved-errno 5)
     (test 5 saved-errno)))
+
+;; ----------------------------------------
+;; Make sure `_union` can deal with various things
+;; that create a large structure
+
+(let ()
+  (define-cpointer-type _FcCharSet)
+  (define-cstruct _FcMatrix ([xx _double] [xy _double]
+                             [yx _double] [yy _double]))
+  (define-cstruct _FcValue ([u (_union _bytes _int _bool _double
+                                       _long _long _long _long
+                                       _FcMatrix-pointer
+                                       _FcCharSet)]))
+  (malloc _FcValue))
 
 ;; ----------------------------------------
 

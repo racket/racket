@@ -7,6 +7,7 @@
  ********************************************/
 
 #include "schpriv.h"
+#include "schmach.h"
 
 #ifndef DONT_USE_FOREIGN
 
@@ -1241,7 +1242,7 @@ static void free_libffi_type(void *ignored, void *p)
   free(p);
 }
 
-static void free_libffi_type_with_alignment(void *ignored, void *p)
+static void free_libffi_type_two_layers(void *ignored, void *p)
 {
   int i;
 
@@ -1383,7 +1384,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   type->scheme_to_c = ((Scheme_Object*)libffi_type);
   type->c_to_scheme = ((Scheme_Object*)FOREIGN_struct);
   if (with_alignment)
-    scheme_register_finalizer(type, free_libffi_type_with_alignment, libffi_type, NULL, NULL);
+    scheme_register_finalizer(type, free_libffi_type_two_layers, libffi_type, NULL, NULL);
   else
     scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
   return (Scheme_Object*)type;
@@ -1489,6 +1490,8 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
 /*****************************************************************************/
 /* union types */
 
+static int all_float_types(GC_CAN_IGNORE ffi_type *libffi_type);
+
 /* (make-union-type type ...+) -> ctype */
 /* This creates a new primitive type that is a union. All unions
  * behave like structs. Marshaling to lists or whatever should
@@ -1497,11 +1500,18 @@ static Scheme_Object *foreign_make_array_type(int argc, Scheme_Object *argv[])
 static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *base, *basetype;
-  GC_CAN_IGNORE ffi_type *libffi_type, **elements;
+  GC_CAN_IGNORE ffi_type *libffi_type, **elements = NULL;
   ctype_struct *type;
-  int i, align = 1, a, sz = 0;
+  int i, align = 1, a, sz = 0, count = 0;
+  int some_non_floats = 0;
 
-  elements = malloc((argc + 1) * sizeof(ffi_type*));
+  /* libffi doesn't support union types, so we try to make a
+     reasonable approximation. The calling convention of a union type
+     mostly likely depends on of the maximum size of al alternative
+     and whether it's floating-point or not. Synthesize a struct that
+     is big enough and composed of only floats if the union
+     alternative are only floats or integers otherwise. This is not
+     guaranteed to be right, but it has a chance at working. */
 
   /* find max required alignment and size: */
   for (i = 0; i < argc; i++) {
@@ -1513,20 +1523,73 @@ static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
     if (a > align) align = a;
     a = CTYPE_PRIMTYPE(base)->size;
     if (sz < a) sz = a;
-    elements[i] = CTYPE_PRIMTYPE(base);
+
+    if (!all_float_types(CTYPE_PRIMTYPE(base)))
+      some_non_floats = 1;
   }
 
-  elements[argc] = NULL;
+  if (!sz)
+    scheme_signal_error("empty union");
 
   /* round size up to alignment: */
   if ((sz % align) != 0) {
     sz += (align - (sz % align));
   }
 
-  /* libffi doesn't seem to support union types, but we try to make
-     libffi work anyway by making a structure type. We put all the
-     element types in the `elements' array, because their shapes may
-     affect argument passing. */
+  /* Synthesize element list */
+  while (!elements) {
+    if (count)
+      elements = malloc((count+1) * sizeof(ffi_type*));
+    count = 0;
+
+    if (some_non_floats) {
+      /* build a struct out of integers */
+      int remain_sz = sz;
+      while (remain_sz >= sizeof(intptr_t)) {
+        if (elements)
+          elements[count] = &ffi_type_smzintptr;
+        remain_sz -= sizeof(intptr_t);
+        count++;
+      }
+      while (remain_sz >= sizeof(int)) {
+        if (elements)
+          elements[count] = &ffi_type_sint32;
+        remain_sz -= sizeof(int);
+        count++;
+      }
+      while (remain_sz >= sizeof(short)) {
+        if (elements)
+          elements[count] = &ffi_type_sint16;
+        remain_sz -= sizeof(short);
+        count++;
+      }
+      while (remain_sz) {
+        if (elements)
+          elements[count] = &ffi_type_sint8;
+        remain_sz -= 1;
+        count++;
+      }
+      /* remain_sz should be 0 at this point */
+    } else {
+      /* build a struct out of doubles and floats */
+      int remain_sz = sz;
+      while (remain_sz >= sizeof(double)) {
+        if (elements)
+          elements[count] = &ffi_type_double;
+        remain_sz -= sizeof(double);
+        count++;
+      }
+      while (remain_sz >= sizeof(float)) {
+        if (elements)
+          elements[count] = &ffi_type_float;
+        remain_sz -= sizeof(float);
+        count++;
+      }
+      /* remain_sz should be 0 at this point */
+    }
+  }
+
+  elements[count] = NULL;
 
   /* Allocate the new libffi type object. */
   libffi_type = malloc(sizeof(ffi_type));
@@ -1548,6 +1611,42 @@ static Scheme_Object *foreign_make_union_type(int argc, Scheme_Object *argv[])
   return (Scheme_Object*)type;
 }
 #undef MYNAME
+
+static Scheme_Object *all_float_types_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  return all_float_types((ffi_type *)p->ku.k.i1) ? scheme_true : scheme_false;
+}
+
+static int all_float_types(GC_CAN_IGNORE ffi_type *libffi_type)
+{
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      p->ku.k.i1 = (intptr_t)libffi_type;
+      return SCHEME_TRUEP(scheme_handle_stack_overflow(all_float_types_k));
+    }
+  }
+
+  if (libffi_type == &ffi_type_double)
+    return 1;
+  if (libffi_type == &ffi_type_float)
+    return 1;
+  if (libffi_type == &ffi_type_longdouble)
+    return 1;
+
+  if (libffi_type->type == FFI_TYPE_STRUCT) {
+    int i;
+    for (i = 0; libffi_type->elements[i]; i++) {
+      if (!all_float_types(libffi_type->elements[i]))
+        return 0;
+    }
+    return 1;
+  }
+
+  return 0;
+}
 
 /*****************************************************************************/
 /* Callback type */
