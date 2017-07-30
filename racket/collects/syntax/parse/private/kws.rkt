@@ -6,7 +6,6 @@
          to-procedure-arity
          arguments->arity
          check-arity
-         check-arity/neg
          check-curry
          join-sep
          kw->string
@@ -41,109 +40,69 @@ An Arity is
         [kws (arguments-kws argu)])
     (arity pos pos kws kws)))
 
-(define (check-arity arity pos-count keywords proc)
-  (let ([msg (gen-arity-msg (arity-minpos arity)
-                            (arity-maxpos arity)
-                            (arity-minkws arity)
-                            (arity-maxkws arity)
-                            pos-count (sort keywords keyword<?))])
-    (when msg
-      (proc msg))))
+(define (check-arity arity pos-count keywords0 proc)
+  (define keywords (sort keywords0 keyword<?))
+  (define minpos (arity-minpos arity))
+  (define maxpos (arity-maxpos arity))
+  (define minkws (arity-minkws arity))
+  (define maxkws (arity-maxkws arity))
+  (unless (<= minpos pos-count maxpos)
+    (proc (format "syntax class arity mismatch~a\n  expected: ~a\n  given: ~a"
+                  ";\n the expected number of arguments does not match the given number"
+                  (gen-expected-msg minpos maxpos minkws maxkws)
+                  (gen-given-msg pos-count keywords))))
+  (let ([missing-kws (diff/sorted/eq minkws keywords)])
+    (unless (null? missing-kws)
+      (proc (format "syntax class required keyword argument~a not supplied\n  required: ~a"
+                    (s-if-plural missing-kws)
+                    (join-sep (map kw->string missing-kws) "," "and")))))
+  (let ([extra-kws (diff/sorted/eq keywords maxkws)])
+    (unless (null? extra-kws)
+      (proc (format "syntax class does not expect given keyword argument~a\n  given: ~a"
+                    (s-if-plural extra-kws)
+                    (join-sep (map kw->string extra-kws) "," "and"))))))
 
-(define (check-arity/neg arity pos-count keywords proc)
-  (let ([msg (gen-arity-msg/neg (arity-minpos arity)
-                                (arity-maxpos arity)
-                                (arity-minkws arity)
-                                (arity-maxkws arity)
-                                pos-count (sort keywords keyword<?))])
-    (when msg
-      (proc msg))))
+(define (gen-expected-msg minpos maxpos minkws maxkws)
+  (define pos-part
+    (cond [(= minpos maxpos) (format "~s" minpos)]
+          [(eqv? maxpos +inf.0) (format "at least ~s" minpos)]
+          [else (format "between ~s and ~s" minpos maxpos)]))
+  (define kws-part
+    (cond [(pair? minkws)
+           (format " plus keyword argument~a ~a"
+                   (s-if-plural minkws)
+                   (join-sep (map kw->string minkws) "," "and"))]
+          [else ""]))
+  (define optkws (diff/sorted/eq maxkws minkws))
+  (define optkws-part
+    (cond [(pair? optkws)
+           (format " plus optional keyword argument~a ~a"
+                   (s-if-plural optkws)
+                   (join-sep (map kw->string minkws) "," "and"))]
+          [else ""]))
+  (string-append pos-part kws-part optkws-part))
 
-(define (arity-sat? minpos maxpos minkws maxkws pos-count keywords)
-  (and (<= minpos pos-count maxpos)
-       (null? (diff/sorted/eq minkws keywords))
-       (null? (diff/sorted/eq keywords maxkws))))
+(define (gen-given-msg pos-count kws)
+  (define kws-part
+    (cond [(pair? kws)
+           (format " plus keyword argument~a ~a"
+                   (s-if-plural kws)
+                   (join-sep (map kw->string kws) "," "and"))]
+          [else ""]))
+  (format "~s~a" pos-count kws-part))
 
-(define (gen-arity-msg minpos maxpos minkws maxkws pos-count keywords)
-  (if (arity-sat? minpos maxpos minkws maxkws pos-count keywords)
-      #f
-      (let ([pos-exp (gen-pos-exp-msg minpos maxpos)]
-            [minkws-exp (gen-minkws-exp-msg minkws)]
-            [optkws-exp (gen-optkws-exp-msg minkws maxkws)]
-            [pos-got (gen-pos-got-msg pos-count)]
-            [kws-got (gen-kws-got-msg keywords maxkws)])
-        (string-append
-         "expected "
-         (join-sep (filter string? (list pos-exp minkws-exp optkws-exp))
-                   "," "and")
-         "; got "
-         (join-sep (filter string? (list pos-got kws-got))
-                   "," "and")))))
-
-(define (gen-arity-msg/neg minpos maxpos minkws maxkws pos-count keywords)
-  (if (arity-sat? minpos maxpos minkws maxkws pos-count keywords)
-      #f
-      (let ([pos-exp (gen-pos-exp-msg minpos maxpos)]
-            [minkws-exp (gen-minkws-exp-msg minkws)]
-            [optkws-exp (gen-optkws-exp-msg minkws maxkws)]
-            [pos-got (gen-pos-got-msg pos-count)]
-            [kws-got (gen-kws-got-msg keywords maxkws)])
-        (string-append
-         "expected a syntax class that accepts "
-         (join-sep (filter string? (list pos-got kws-got))
-                   "," "and")
-         "; got one that accepts "
-         (join-sep (filter string? (list pos-exp minkws-exp optkws-exp))
-                   "," "and")))))
+;; ----
 
 (define (check-curry arity pos-count keywords proc)
   (let ([maxpos (arity-maxpos arity)]
         [maxkws (arity-maxkws arity)])
     (when (> pos-count maxpos)
-      (proc (format "too many arguments: expected at most ~s, got ~s"
+      (proc (format "too many arguments\n  expected: at most ~s\n  given: ~s"
                     maxpos pos-count)))
     (let ([extrakws (diff/sorted/eq keywords maxkws)])
       (when (pair? extrakws)
-        (proc (format "syntax class does not accept keyword arguments for ~a"
+        (proc (format "syntax class does not expect given keyword arguments\n  given keywords: ~a"
                       (join-sep (map kw->string extrakws) "," "and")))))))
-
-;; ----
-
-(define (gen-pos-exp-msg minpos maxpos)
-  (format "~a positional argument~a"
-          (cond [(= maxpos minpos) minpos]
-                [(= maxpos +inf.0) (format "at least ~a" minpos)]
-                [else
-                 (format "between ~a and ~a" minpos maxpos)])
-          (if (= minpos maxpos 1) "" "s")))
-
-(define (gen-minkws-exp-msg minkws)
-  (and (pair? minkws)
-       (format "~amandatory keyword argument~a for ~a"
-               (if (= (length minkws) 1) "a " "")
-               (if (= (length minkws) 1) "" "s")
-               (join-sep (map kw->string minkws) "," "and"))))
-
-(define (gen-optkws-exp-msg minkws maxkws)
-  (let ([optkws (diff/sorted/eq maxkws minkws)])
-    (and (pair? optkws)
-         (format "~aoptional keyword argument~a for ~a"
-                 (if (= (length optkws) 1) "an " "")
-                 (if (= (length optkws) 1) "" "s")
-                 (join-sep (map kw->string optkws) "," "and")))))
-
-(define (gen-pos-got-msg pos-count)
-  (format "~a positional argument~a"
-          pos-count (if (= pos-count 1) "" "s")))
-
-(define (gen-kws-got-msg keywords maxkws)
-  (cond [(pair? keywords)
-         (format "~akeyword argument~a for ~a"
-                 (if (= (length keywords) 1) "a " "")
-                 (if (= (length keywords) 1) "" "s")
-                 (join-sep (map kw->string keywords) "," "and"))]
-        [(pair? maxkws) "no keyword arguments"]
-        [else #f]))
 
 ;; ----
 
@@ -173,3 +132,5 @@ An Arity is
     [(2) (format "~a~a ~a~a" prefix (car items) ult (cadr items))]
     [else (let ([strings (list* (car items) (loop (cdr items)))])
             (apply string-append prefix strings))]))
+
+(define (s-if-plural xs) (if (= (length xs) 1) "" "s"))
