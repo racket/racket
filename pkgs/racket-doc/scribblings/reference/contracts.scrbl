@@ -2356,7 +2356,7 @@ contracts.  The error messages assume that the function named by
 @defform*[[(with-contract-continuation-mark blame body ...)
           (with-contract-continuation-mark blame+neg-party body ...)]]{
 Inserts a continuation mark that informs the contract profiler (see
-@other-doc['(lib "contract-profile/scribblings/contract-profile")
+@other-doc['(lib "contract-profile/scribblings/contract-profile.scrbl")
            #:indirect "contract profiling"])
 that contract checking is happening.
 For the costs from checking your new combinator to be included, you should wrap
