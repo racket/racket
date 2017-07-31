@@ -180,7 +180,7 @@
                            infos)])
            (and (not (memq #f infos)) infos))))
   (define ((get-docs main-dirs) i rec)
-    (let* ([pre-s (and i (i 'scribblings))]
+    (let* ([pre-s (and i (i 'scribblings (λ () #f)))]
            [s (validate-scribblings-infos pre-s)]
            [dir (directory-record-path rec)])
       (if s
