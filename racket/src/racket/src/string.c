@@ -2214,7 +2214,7 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
       else {
         scheme_raise_exn(MZEXN_FAIL,
                          "environment-variables-set!: change failed\n"
-                         "  system error: %E");
+                         "  system error: %R");
       }
     }
 
