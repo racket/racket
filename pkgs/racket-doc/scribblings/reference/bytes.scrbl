@@ -344,7 +344,7 @@ For communication among @tech{places}, the new byte string is allocated in the
                              [err-char (or/c #f char?) #f]
                              [start exact-nonnegative-integer? 0]
                              [end exact-nonnegative-integer? (bytes-length bstr)])
-         exact-nonnegative-integer?]{
+         (or/c exact-nonnegative-integer? #f)]{
  Returns the length in characters of the UTF-8 decoding of
  @racket[bstr]'s substring from @racket[start] to @racket[end], but without
  actually generating the decoded characters. If @racket[err-char] is
