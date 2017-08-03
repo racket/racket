@@ -2250,6 +2250,16 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
       closed = 1;
     }
+  else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_unquoted_printing_string_type))
+    {
+      if (compact || !pp->print_unreadable) {
+	cannot_print(pp, notdisplay, obj, ht, compact);
+      } else {
+        obj = SCHEME_PTR_VAL(obj);
+        do_print_string(compact, 0, pp, 
+                        SCHEME_CHAR_STR_VAL(obj), 0, SCHEME_CHAR_STRTAG_VAL(obj));
+      }
+    }
   else if (SCHEME_CHARP(obj))
     {
       if (compact) {

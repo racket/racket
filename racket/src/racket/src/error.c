@@ -126,6 +126,9 @@ static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 static Scheme_Object *default_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv);
+static Scheme_Object *unquoted_printing_string(int argc, Scheme_Object **argv);
+static Scheme_Object *unquoted_printing_string_p(int argc, Scheme_Object **argv);
+static Scheme_Object *unquoted_printing_string_value(int argc, Scheme_Object **argv);
 
 static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
@@ -827,6 +830,10 @@ void scheme_init_error(Scheme_Env *env)
   GLOBAL_PARAMETER("current-logger",    current_logger, MZCONFIG_LOGGER, env);
 
   GLOBAL_NONCM_PRIM("srcloc->string",   srcloc_to_string, 1, 1, env);
+
+  GLOBAL_NONCM_PRIM("unquoted-printing-string",   unquoted_printing_string, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("unquoted-printing-string?",  unquoted_printing_string_p, 1, 1, 1, env);
+  GLOBAL_IMMED_PRIM("unquoted-printing-string-value",  unquoted_printing_string_value, 1, 1, env);
 
   REGISTER_SO(scheme_def_exit_proc);
   REGISTER_SO(default_display_handler);
@@ -2214,6 +2221,36 @@ Scheme_Object *srcloc_to_string(int argc, Scheme_Object **argv)
     return scheme_false;
 }
 
+static Scheme_Object *unquoted_printing_string(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *o;
+  
+  if (!SCHEME_CHAR_STRINGP(argv[0]))
+    scheme_wrong_contract("unquoted-printing-string", "string", 0, argc, argv);
+
+  o = scheme_alloc_small_object();
+  o->type = scheme_unquoted_printing_string_type;
+  SCHEME_PTR_VAL(o) = argv[0];
+
+  return o;
+}
+
+static Scheme_Object *unquoted_printing_string_p(int argc, Scheme_Object **argv)
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_unquoted_printing_string_type)
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *unquoted_printing_string_value(int argc, Scheme_Object **argv)
+{
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_unquoted_printing_string_type))
+    return SCHEME_PTR_VAL(argv[0]);
+
+  scheme_wrong_contract("unquoted-printing-string-value", "unquoted-printing-string?", 0, argc, argv);
+  return NULL;
+}
+
 void scheme_read_err(Scheme_Object *port,
 		     Scheme_Object *stxsrc,
 		     intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
@@ -3045,7 +3082,15 @@ static Scheme_Object *do_raise_mismatch_error(const char *who, int mismatch, int
         if (!mismatch)
           total += 5;
       } else {
-        st = scheme_make_provided_string(argv[i+offset], scount / 2, &slen);
+        s = argv[i+offset];
+        if (SAME_TYPE(SCHEME_TYPE(s), scheme_unquoted_printing_string_type)) {
+          s = SCHEME_PTR_VAL(s);
+          s = scheme_char_string_to_byte_string(s);
+          st = SCHEME_BYTE_STR_VAL(s);
+          slen = SCHEME_BYTE_STRLEN_VAL(s);
+        } else {
+          st = scheme_make_provided_string(s, scount / 2, &slen);
+        }
       }
       total += slen;
       ss[i-1] = st;

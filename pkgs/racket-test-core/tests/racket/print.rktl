@@ -224,6 +224,32 @@
 
 ;; ----------------------------------------
 
+(test #t unquoted-printing-string? (unquoted-printing-string "a b"))
+(test #f unquoted-printing-string? "a b")
+(test #f unquoted-printing-string? 7)
+
+(test "a b" unquoted-printing-string-value (unquoted-printing-string "a b"))
+
+(test "a b" format "~s" (unquoted-printing-string "a b"))
+(test "a b" format "~a" (unquoted-printing-string "a b"))
+(test "a b" format "~v" (unquoted-printing-string "a b"))
+(parameterize ([error-print-width 10])
+  (test "a b1234..." format "~.s" (unquoted-printing-string "a b12345678"))
+  (test "a b1234..." format "~.a" (unquoted-printing-string "a b12345678"))
+  (test "a b1234..." format "~.v" (unquoted-printing-string "a b12345678"))
+  (test "who: oops\n  field: a b12345678\n"
+        'raise-arguments-error
+        (parameterize ([current-error-port (open-output-bytes)]
+                       [error-print-context-length 0])
+          (call-with-continuation-prompt
+           (lambda ()
+             (raise-arguments-error 'who "oops" "field" (unquoted-printing-string "a b12345678")))
+           (default-continuation-prompt-tag)
+           void)
+          (get-output-string (current-error-port)))))
+
+;; ----------------------------------------
+
 (let ([p (build-path (current-directory) "something")])
   ;; path value in compiled code => path appears in .zo format:
   (let ([o (open-output-string)])

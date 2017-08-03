@@ -219,9 +219,11 @@ message; if @racket[message] contains newline characters, each extra line should
 suitably indented (with one extra space at the start of each line), but it should not end with a newline character.
 Each @racket[field] must have a corresponding @racket[v],
 and the two are rendered on their own
-line in the error message, with each @racket[v] formatted 
+line in the error message; each @racket[v] is formatted 
 using the error value conversion handler (see
-@racket[error-value->string-handler]).
+@racket[error-value->string-handler]), unless @racket[v] is a
+@tech{unquoted-printing string}, in which case the string content is
+@racket[display]ed without using the error value conversion handler.
 
 @examples[
  (eval:error
@@ -365,6 +367,28 @@ through a combination of the @racket[name], @racket[expr], and
   is used as the form name in the generated error message.}
 
 ]}
+
+@deftogether[(
+@defproc[(unquoted-printing-string? [v any/c]) boolean?]
+@defproc[(unquoted-printing-string [s string?]) unquoted-printing-string?]
+@defproc[(unquoted-printing-string-value [ups unquoted-printing-string?]) string?]
+)]{
+
+An @deftech{unquoted-printing string} wraps a string and
+@racket[print]s, @racket[write]s, and @racket[display]s the same way
+that the string @racket[display]s. An @tech{unquoted-printing string}
+is especially useful with @racket[raise-arguments-error] to serve as a
+field ``value'' that causes literal text to be printed as the field
+content.
+
+The @racket[unquoted-printing-string?] procedure returns @racket[#t]
+if @racket[v] is a @tech{unquoted-printing string}, @racket[#f]
+otherwise. The @racket[unquoted-printing-string] creates a
+@tech{unquoted-printing string} value that encapsulates the string
+@racket[s], and @racket[unquoted-printing-string-value] returns the
+string within a @tech{unquoted-printing string}.
+
+@history[#:added "6.10.0.2"]}
 
 @;------------------------------------------------------------------------
 @section{Handling Exceptions}
