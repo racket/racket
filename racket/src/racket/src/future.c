@@ -2369,6 +2369,8 @@ void *worker_thread_future_loop(void *arg)
           Scheme_Object *rator, **argv;
           int argc;
 
+          scheme_fill_lwc_start();
+
           if (ft->suspended_lw_stack) {
             Scheme_Lightweight_Continuation *lc;
 
@@ -2387,7 +2389,6 @@ void *worker_thread_future_loop(void *arg)
             argv = NULL;
           }
 
-          scheme_fill_lwc_start();
           jitcode = ((Scheme_Native_Closure *)rator)->code->start_code;
           v = scheme_call_as_lightweight_continuation(jitcode, rator, argc, argv);
           if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING))

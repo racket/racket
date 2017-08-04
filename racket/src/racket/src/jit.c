@@ -132,16 +132,13 @@ THREAD_LOCAL_DECL(Scheme_Current_LWC *scheme_current_lwc);
 static Scheme_Object *do_call_as_lwc(Scheme_Native_Proc *code,
                                      void *data,
                                      int argc,
-                                     Scheme_Object **argv,
-                                     MZ_MARK_STACK_TYPE cont_mark_stack_start)
+                                     Scheme_Object **argv)
 {
 #ifdef JIT_THREAD_LOCAL
 # define THDLOC &BOTTOM_VARIABLE
 #else
 # define THDLOC NULL
 #endif
-  scheme_current_lwc->runstack_start = MZ_RUNSTACK;
-  scheme_current_lwc->cont_mark_stack_start = cont_mark_stack_start;
   return sjc.native_starter_code(data, argc, argv, THDLOC, code, (void **)&scheme_current_lwc->stack_start);
 #undef THDLOC
 }
@@ -151,16 +148,13 @@ Scheme_Object *scheme_call_as_lightweight_continuation(Scheme_Native_Proc *code,
                                                        int argc,
                                                        Scheme_Object **argv)
 {
-  return do_call_as_lwc(code, data, argc, argv, MZ_CONT_MARK_STACK);
+  return do_call_as_lwc(code, data, argc, argv);
 }
 
 #ifdef MZ_USE_FUTURES
 Scheme_Object *scheme_force_value_same_mark_as_lightweight_continuation(Scheme_Object *v)
 {
-  /* Providing 0 as cont_mark_stack_start is the "same_mark" part:
-     it preserves any continuation marks that are in place as part
-     of the continuation. */
-  return do_call_as_lwc(sjc.force_value_same_mark_code, NULL, 0, NULL, 0);
+  return do_call_as_lwc(sjc.force_value_same_mark_code, NULL, 0, NULL);
 }
 #endif
 

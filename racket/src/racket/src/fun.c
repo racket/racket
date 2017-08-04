@@ -9025,7 +9025,7 @@ Scheme_Lightweight_Continuation *scheme_capture_lightweight_continuation(Scheme_
     seg = p->cont_mark_stack_segments[i >> SCHEME_LOG_MARK_SEGMENT_SIZE];
     pos = i & SCHEME_MARK_SEGMENT_MASK;
     
-    memcpy(cont_mark_stack_slice + i, seg + pos, sizeof(Scheme_Cont_Mark));
+    memcpy(cont_mark_stack_slice + j, seg + pos, sizeof(Scheme_Cont_Mark));
   }
 
   return lw;
