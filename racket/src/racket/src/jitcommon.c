@@ -4008,9 +4008,10 @@ static int more_common1(mz_jit_state *jitter, void *_data)
          is still argv, but R1 doesn't have the count any more; 
          we re-compute R1 as we traverse the list again. */
 
-      jit_subi_l(JIT_R0, JIT_V1, 1);
-      jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
-      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R0);
+      jit_subi_l(JIT_R1, JIT_V1, 1);
+      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R1);
+      jit_stxr_p(JIT_R1, JIT_RUNSTACK, JIT_RUNSTACK); /* clear list from runstack */
       CHECK_LIMIT();
     
       jit_subi_l(JIT_R1, JIT_V1, 2); /* drop first and last original arg */

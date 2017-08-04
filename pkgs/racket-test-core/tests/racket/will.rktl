@@ -421,5 +421,35 @@
                    (loop (sub1 attempts)))))))
 
 ;; ----------------------------------------
+;; Check that `apply` doesn't retain its argument
+
+(when (eq? '3m (system-type 'gc))
+  
+  (define retained 0)
+
+  (define (f ignored b k)
+    (collect-garbage)
+    (when (weak-box-value b)
+      (set! retained (add1 retained)))
+    (k))
+  (set! f f)
+
+  (define (mk . args) args)
+  (set! mk mk)
+
+  ;; Tail version:
+  (let loop ([i 5])
+    (unless (zero? i)
+      (define val (gensym))
+      (apply f (mk val (make-weak-box val) (lambda () (loop (sub1 i)))))))
+
+  ;; Non-tail version:
+  (for ([i 5])
+    (define val (gensym))
+    (apply f (mk val (make-weak-box val) void)))
+  
+  (test #t < retained 3))
+
+;; ----------------------------------------
 
 (report-errs)
