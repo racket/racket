@@ -2226,7 +2226,7 @@ static Scheme_Object *unquoted_printing_string(int argc, Scheme_Object **argv)
   Scheme_Object *o;
   
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_contract("unquoted-printing-string", "string", 0, argc, argv);
+    scheme_wrong_contract("unquoted-printing-string", "string?", 0, argc, argv);
 
   o = scheme_alloc_small_object();
   o->type = scheme_unquoted_printing_string_type;
