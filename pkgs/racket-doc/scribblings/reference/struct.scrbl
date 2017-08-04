@@ -640,11 +640,33 @@ See @racket[make-prefab-struct] for a description of valid key shapes.}
 
 The function also cooperates with @racket[pretty-print]:
 
-@examples[#:eval struct-eval
+@examples[#:eval struct-eval #:label #f
 (parameterize ((pretty-print-columns 10))
   (pretty-print (point #e3e6 #e4e6)))
 (parameterize ((pretty-print-columns 10))
   (pretty-write (point #e3e6 #e4e6)))
+]
+
+Keyword arguments can be simulated with @racket[unquoted-printing-string]:
+
+@examples[#:eval struct-eval #:label #f
+(code:comment "Private implementation")
+(struct kwpoint-impl (x y)
+  #:methods gen:custom-write
+  [(define write-proc
+     (make-constructor-style-printer
+      (lambda (obj) 'kwpoint)
+      (lambda (obj)
+        (list (unquoted-printing-string "#:x")
+              (kwpoint-impl-x obj)
+              (unquoted-printing-string "#:y")
+              (kwpoint-impl-y obj)))))])
+(code:comment "Public ``constructor''")
+(define (kwpoint #:x x #:y y)
+  (kwpoint-impl x y))
+(code:comment "Example use")
+(print (kwpoint #:x 1 #:y 2))
+(write (kwpoint #:x 3 #:y 4))
 ]
 
 @history[#:added "6.3"]{}
