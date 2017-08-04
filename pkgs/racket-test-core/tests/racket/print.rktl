@@ -248,6 +248,13 @@
            void)
           (get-output-string (current-error-port)))))
 
+;; Check GC interaction:
+(let ([l (for/list ([i 100])
+           (unquoted-printing-string "1 2 3"))])
+  (collect-garbage)
+  (for ([ups (in-list l)])
+    (test "1 2 3" format "~s" ups)))
+
 ;; ----------------------------------------
 
 (let ([p (build-path (current-directory) "something")])
