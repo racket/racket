@@ -397,12 +397,17 @@ symbolically, in contrast to the @racket[~literal] form, which
 recognizes them by binding.
 
 @examples[#:eval the-eval
-(syntax-parse (let ([define 'something-else]) #'(define x y))
-  [((~datum define) var:id e:expr) 'yes]
-  [_ 'no])
-(syntax-parse (let ([define 'something-else]) #'(define x y))
-  [((~literal define) var:id e:expr) 'yes]
-  [_ 'no])
+(define-syntax (is-define? stx)
+  (syntax-parse stx
+    [(_is-define? id)
+     (syntax-parse #'id
+       [(~literal define) #''yes]
+       [(~datum   define) #''not-really]
+       [_                 #''not-even-close])]))
+(is-define? define)
+(let ([define 42])
+  (is-define? define))
+(is-define? something-else)
 ]
 }
 
