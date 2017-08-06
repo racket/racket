@@ -94,7 +94,13 @@ If a break is queued for the original thread (with
 is redirected to the nested thread. If a break is already queued on
 the original thread when the nested thread is created, the break is
 moved to the nested thread. If a break remains queued on the nested
-thread when it completes, the break is moved to the original thread.}
+thread when it completes, the break is moved to the original thread.
+
+If the thread created by @racket[call-in-nested-thread] dies while
+itself in a call to @racket[call-in-nested-thread], the outer call to
+@racket[call-in-nested-thread] waits for the innermost nested thread
+to complete, and any breaks pending on the inner threads are moved to
+the original thread.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "threadkill"]{Suspending, Resuming, and Killing Threads}
