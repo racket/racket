@@ -29,8 +29,6 @@ A Guide (G) is one of:
   - (vector 'escaped G)
   - (vector 'orelse G G)
   - (vector 'metafun integer G)
-  - (vector 'copy-props G (listof symbol))
-  - (vector 'set-props G (listof (cons symbol any)))
   - (vector 'unsyntax VarRef)
   - (vector 'relocate G)
 
@@ -269,21 +267,6 @@ An VarRef is one of
        (lambda (env lenv)
          (restx stx (box (f1 env lenv)))))]
 
-    [(vector 'copy-props g1 keys)
-     (let ([f1 (loop stx g1)])
-       (lambda (env lenv)
-         (for/fold ([v (f1 env lenv)]) ([key (in-list keys)])
-           (let ([pvalue (syntax-property stx key)])
-             (if pvalue
-                 (syntax-property v key pvalue)
-                 v)))))]
-
-    [(vector 'set-props g1 props-alist)
-     (let ([f1 (loop stx g1)])
-       (lambda (env lenv)
-         (for/fold ([v (f1 env lenv)]) ([entry (in-list props-alist)])
-           (syntax-property v (car entry) (cdr entry)))))]
-
     [(vector 'unsyntax var)
      (let ([f1 (loop stx var)])
        (lambda (env lenv)
@@ -401,7 +384,7 @@ An VarRef is one of
 
 (define (restx basis val)
   (if (syntax? basis)
-      (datum->syntax basis val basis)
+      (datum->syntax basis val basis basis)
       val))
 
 ;; nested-append : (listof^(nesting+1) A) nat (listof A) -> (listof A)

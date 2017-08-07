@@ -41,11 +41,13 @@ A HeadTemplate (H) is one of:
 |#
 
 (begin-for-syntax
+ (define-logger template)
+
  (define (do-template ctx tstx quasi? loc-id)
    (with-disappeared-uses
    (parameterize ((current-syntax-context ctx)
                   (quasi (and quasi? (box null))))
-     (let*-values ([(guide deps props-guide) (parse-template tstx loc-id)]
+     (let*-values ([(guide deps) (parse-template tstx loc-id)]
                    [(vars)
                     (for/list ([dep (in-vector deps)])
                       (cond [(pvar? dep) (pvar-var dep)]
@@ -58,13 +60,12 @@ A HeadTemplate (H) is one of:
        (with-syntax ([t tstx])
          (syntax-arm
           (cond [(equal? guide '1)
-                 ;; was (template pvar), implies props-guide = '_
+                 ;; was (template pvar)
                  (car vars)]
-                [(and (equal? guide '_) (equal? props-guide '_))
+                [(equal? guide '_)
                  #'(quote-syntax t)]
                 [else
                  (with-syntax ([guide guide]
-                               [props-guide props-guide]
                                [vars-vector
                                 (if (pair? vars)
                                     #`(vector . #,vars)
@@ -73,7 +74,6 @@ A HeadTemplate (H) is one of:
                                 (if quasi? (reverse (unbox (quasi))) null)])
                    #'(let ([un-var (handle-unsyntax un-form)] ...)
                        (substitute (quote-syntax t)
-                                   'props-guide
                                    'guide
                                    vars-vector)))]))))))))
 
@@ -81,10 +81,9 @@ A HeadTemplate (H) is one of:
   (syntax-case stx ()
     [(template t)
      (do-template stx #'t #f #f)]
-    [(template t #:properties (prop ...))
-     (andmap identifier? (syntax->list #'(prop ...)))
-     (parameterize ((props-to-serialize (syntax->datum #'(prop ...)))
-                    (props-to-transfer (syntax->datum #'(prop ...))))
+    [(template t #:properties _)
+     (begin
+       (log-template-error "template #:properties argument no longer supported: ~e" stx)
        (do-template stx #'t #f #f))]))
 
 (define-syntax (quasitemplate stx)
@@ -121,21 +120,11 @@ A HeadTemplate (H) is one of:
 ;; template, since eq? templates must have equal? guides.
 (define substitute-table (make-weak-hasheq))
 
-;; props-syntax-table : hash[stx => stx]
-(define props-syntax-table (make-weak-hasheq))
-
-(define (substitute stx props-guide g main-env)
-  (let* ([stx (if (eq? props-guide '_)
-                  stx
-                  (or (hash-ref props-syntax-table stx #f)
-                      (let* ([pf (translate stx props-guide 0)]
-                             [pstx (pf '#() #f)])
-                        (hash-set! props-syntax-table stx pstx)
-                        pstx)))]
-         [f (or (hash-ref substitute-table stx #f)
-                (let ([f (translate stx g (vector-length main-env))])
-                  (hash-set! substitute-table stx f)
-                  f))])
+(define (substitute stx g main-env)
+  (let ([f (or (hash-ref substitute-table stx #f)
+               (let ([f (translate stx g (vector-length main-env))])
+                 (hash-set! substitute-table stx f)
+                 f))])
     (f main-env #f)))
 
 ;; ----
@@ -202,30 +191,14 @@ instead of integers and integer vectors.
 
 (begin-for-syntax
 
- ;; props-to-serialize determines what properties are saved even when
- ;; code is compiled.  (Unwritable values are dropped.)
- ;; props-to-transfer determines what properties are transferred from
- ;; template to stx constructed.
- ;; If a property is in props-to-transfer but not props-to-serialize,
- ;; compiling the module may have caused the property to disappear.
- ;; If a property is in props-to-serialize but not props-to-transfer,
- ;; it will show up only in constant subtrees.
- ;; The behavior of 'syntax' is serialize '(), transfer '(paren-shape).
-
- ;; props-to-serialize : (parameterof (listof symbol))
- (define props-to-serialize (make-parameter '()))
-
- ;; props-to-transfer : (parameterof (listof symbol))
- (define props-to-transfer (make-parameter '(paren-shape)))
-
  ;; quasi : (parameterof (or/c #f (list^n (boxof QuasiPairs))))
  ;; each list wrapper represents nested quasi wrapping
  ;; QuasiPairs = (listof (cons/c identifier syntax))
  (define quasi (make-parameter #f))
 
- ;; parse-template : stx id/#f -> (values guide (vectorof env-entry) guide)
+ ;; parse-template : stx id/#f -> (values guide (vectorof env-entry))
  (define (parse-template t loc-id)
-   (let*-values ([(drivers pre-guide props-guide) (parse-t t 0 #f)]
+   (let*-values ([(drivers pre-guide) (parse-t t 0 #f)]
                  [(drivers pre-guide)
                   (if loc-id
                       (let* ([loc-sm (make-syntax-mapping 0 loc-id)]
@@ -236,8 +209,7 @@ instead of integers and integer vectors.
      (let* ([main-env (dset->env drivers (hash))]
             [guide (guide-resolve-env pre-guide main-env)])
        (values guide
-               (index-hash->vector main-env)
-               props-guide))))
+               (index-hash->vector main-env)))))
 
  ;; dset->env : (dsetof env-entry) -> hash[env-entry => nat]
  (define (dset->env drivers init-env)
@@ -293,10 +265,6 @@ instead of integers and integer vectors.
         (vector 'struct (loop g1 loop-env))]
        [(vector 'box g1)
         (vector 'box (loop (unbox g) loop-env))]
-       [(vector 'copy-props g1 keys)
-        (vector 'copy-props (loop g1 loop-env) keys)]
-       [(vector 'set-props g1 props-alist)
-        (vector 'set-props (loop g1 loop-env) props-alist)]
        [(vector 'app-opt g1)
         (vector 'app-opt (loop g1 loop-env))]
        [(vector 'splice g1)
@@ -341,8 +309,6 @@ instead of integers and integer vectors.
         (relocate g)]
        [(vector 'box g1)
         (relocate g)]
-       [(vector 'copy-props g1 keys)
-        (vector 'copy-props (loop g1) keys)]
        [(vector 'unsyntax var)
         g]
        ;; ----
@@ -368,56 +334,13 @@ instead of integers and integer vectors.
 
  ;; ----------------------------------------
 
- (define (wrap-props stx env-set pre-guide props-guide)
-   (let ([saved-prop-values
-          (if (syntax? stx)
-              (for/fold ([entries null]) ([prop (in-list (props-to-serialize))])
-                (let ([v (syntax-property stx prop)])
-                  (if (and v (quotable? v))
-                      (cons (cons prop v) entries)
-                      entries)))
-              null)]
-         [copy-props
-          (if (syntax? stx)
-              (for/list ([prop (in-list (props-to-transfer))]
-                         #:when (syntax-property stx prop))
-                prop)
-              null)])
-     (values env-set
-             (cond [(eq? pre-guide '_)
-                    ;; No need to copy props; already on constant
-                    '_]
-                   [(pair? copy-props)
-                    (vector 'copy-props pre-guide copy-props)]
-                   [else pre-guide])
-             (if (pair? saved-prop-values)
-                 (vector 'set-props props-guide saved-prop-values)
-                 props-guide))))
-
- (define (quotable? v)
-   (or (null? v)
-       (string? v)
-       (bytes? v)
-       (number? v)
-       (boolean? v)
-       (char? v)
-       (keyword? v)
-       (regexp? v)
-       (byte-regexp? v)
-       (and (box? v) (quotable? (unbox v)))
-       (and (symbol? v) (symbol-interned? v))
-       (and (pair? v) (quotable? (car v)) (quotable? (cdr v)))
-       (and (vector? v) (andmap quotable? (vector->list v)))
-       (and (hash? v) (andmap quotable? (hash->list v)))
-       (and (prefab-struct-key v) (andmap quotable? (cdr (vector->list (struct->vector v)))))))
-
  (define (cons-guide g1 g2)
    (if (and (eq? g1 '_) (eq? g2 '_)) '_ (cons g1 g2)))
 
  (define (list-guide . gs)
    (foldr cons-guide '_ gs))
 
- ;; parse-t : stx nat boolean -> (values (dsetof env-entry) pre-guide props-guide)
+ ;; parse-t : stx nat boolean -> (values (dsetof env-entry) pre-guide)
  (define (parse-t t depth esc?)
    (syntax-case t (?? ?@ unsyntax quasitemplate)
      [id
@@ -433,20 +356,18 @@ instead of integers and integer vectors.
             [else
              (let ([pvar (lookup #'id depth)])
                (cond [(pvar? pvar)
-                      (values (dset pvar) pvar '_)]
+                      (values (dset pvar) pvar)]
                      [(template-metafunction? pvar)
                       (wrong-syntax t "illegal use of syntax metafunction")]
                      [else
-                      (wrap-props #'id (dset) '_ '_)]))])]
+                      (values (dset) '_)]))])]
      [(mf . template)
       (and (not esc?)
            (identifier? #'mf)
            (template-metafunction? (lookup #'mf #f)))
       (let-values ([(mf) (lookup #'mf #f)]
-                   [(drivers guide props-guide) (parse-t #'template depth esc?)])
-        (values (dset-add drivers mf)
-                (vector 'metafun mf guide)
-                (cons-guide '_ props-guide)))]
+                   [(drivers guide) (parse-t #'template depth esc?)])
+        (values (dset-add drivers mf) (vector 'metafun mf guide)))]
      [(unsyntax t1)
       (quasi)
       (let ([qval (quasi)])
@@ -455,36 +376,27 @@ instead of integers and integer vectors.
                  (set-box! qval (cons (cons #'tmp t) (unbox qval)))
                  (let* ([fake-sm (make-syntax-mapping 0 #'tmp)]
                         [fake-pvar (pvar fake-sm #f #f)])
-                   (values (dset fake-pvar) (vector 'unsyntax fake-pvar) '_)))]
+                   (values (dset fake-pvar) (vector 'unsyntax fake-pvar))))]
               [else
                (parameterize ((quasi (car qval)))
-                 (let-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)])
-                   (wrap-props t
-                               drivers
-                               (list-guide '_ guide)
-                               (list-guide '_ props-guide))))]))]
+                 (let-values ([(drivers guide) (parse-t #'t1 depth esc?)])
+                   (values drivers (list-guide '_ guide))))]))]
      [(quasitemplate t1)
       ;; quasitemplate escapes inner unsyntaxes
       (quasi)
       (parameterize ((quasi (list (quasi))))
-        (let-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)])
-          (wrap-props t
-                      drivers
-                      (list-guide '_ guide)
-                      (list-guide '_ props-guide))))]
+        (let-values ([(drivers guide) (parse-t #'t1 depth esc?)])
+          (values drivers (list-guide '_ guide))))]
      [(DOTS template)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
-      (let-values ([(drivers guide props-guide) (parse-t #'template depth #t)])
-        (values drivers (vector 'escaped guide)
-                (list-guide '_ props-guide)))]
+      (let-values ([(drivers guide) (parse-t #'template depth #t)])
+        (values drivers (vector 'escaped guide)))]
      [(?? t1 t2)
       (not esc?)
-      (let-values ([(drivers1 guide1 props-guide1) (parse-t #'t1 depth esc?)]
-                   [(drivers2 guide2 props-guide2) (parse-t #'t2 depth esc?)])
-        (values (dset-union drivers1 drivers2)
-                (vector 'orelse guide1 guide2)
-                (list-guide '_ props-guide1 props-guide2)))]
+      (let-values ([(drivers1 guide1) (parse-t #'t1 depth esc?)]
+                   [(drivers2 guide2) (parse-t #'t2 depth esc?)])
+        (values (dset-union drivers1 drivers2) (vector 'orelse guide1 guide2)))]
      [(head DOTS . tail)
       (and (not esc?)
            (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
@@ -495,9 +407,9 @@ instead of integers and integer vectors.
                          (and (identifier? #'DOTS) (free-identifier=? #'DOTS (quote-syntax ...)))
                          (loop (add1 nesting) #'tail)]
                         [else (values nesting tail)]))])
-        (let-values ([(hdrivers _hsplice? hguide hprops-guide)
+        (let-values ([(hdrivers _hsplice? hguide)
                       (parse-h #'head (+ depth nesting) esc?)]
-                     [(tdrivers tguide tprops-guide)
+                     [(tdrivers tguide)
                       (parse-t tail depth esc?)])
           (when (dset-empty? hdrivers)
             (wrong-syntax #'head "no pattern variables before ellipsis in template"))
@@ -507,78 +419,65 @@ instead of integers and integer vectors.
                    ;; select the nestingth (last) ellipsis as the bad one
                    (stx-car (stx-drop nesting t))])
               (wrong-syntax bad-dots "too many ellipses in template")))
-          (wrap-props t
-                      (dset-union hdrivers tdrivers)
-                      ;; pre-guide hdrivers is (listof (setof pvar))
-                      ;; set of pvars new to each level
-                      (let* ([hdrivers/level
-                              (for/list ([i (in-range nesting)])
-                                (dset-filter hdrivers (pvar/dd<=? (+ depth i))))]
-                             [new-hdrivers/level
-                              (let loop ([raw hdrivers/level] [last (dset)])
-                                (cond [(null? raw) null]
-                                      [else
-                                       (cons (dset-subtract (car raw) last)
-                                             (loop (cdr raw) (car raw)))]))])
-                        (vector 'dots hguide new-hdrivers/level nesting #f tguide))
-                      (cons-guide hprops-guide (cons-guide '_ tprops-guide)))))]
+          (values (dset-union hdrivers tdrivers)
+                  ;; pre-guide hdrivers is (listof (setof pvar))
+                  ;; set of pvars new to each level
+                  (let* ([hdrivers/level
+                          (for/list ([i (in-range nesting)])
+                            (dset-filter hdrivers (pvar/dd<=? (+ depth i))))]
+                         [new-hdrivers/level
+                          (let loop ([raw hdrivers/level] [last (dset)])
+                            (cond [(null? raw) null]
+                                  [else
+                                   (cons (dset-subtract (car raw) last)
+                                         (loop (cdr raw) (car raw)))]))])
+                    (vector 'dots hguide new-hdrivers/level nesting #f tguide)))))]
      [(head . tail)
-      (let-values ([(hdrivers hsplice? hguide hprops-guide)
+      (let-values ([(hdrivers hsplice? hguide)
                     (parse-h #'head depth esc?)]
-                   [(tdrivers tguide tprops-guide)
+                   [(tdrivers tguide)
                     (parse-t #'tail depth esc?)])
-        (wrap-props t
-                    (dset-union hdrivers tdrivers)
-                    (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
-                          [hsplice? (vector 'app hguide tguide)]
-                          [else (cons hguide tguide)])
-                    (cons-guide hprops-guide tprops-guide)))]
+        (values (dset-union hdrivers tdrivers)
+                (cond [(and (eq? hguide '_) (eq? tguide '_)) '_]
+                      [hsplice? (vector 'app hguide tguide)]
+                      [else (cons hguide tguide)])))]
      [vec
       (vector? (syntax-e #'vec))
-      (let-values ([(drivers guide props-guide)
+      (let-values ([(drivers guide)
                     (parse-t (vector->list (syntax-e #'vec)) depth esc?)])
-        (wrap-props t drivers
-                    (if (eq? guide '_) '_ (vector 'vector guide))
-                    (if (eq? props-guide '_) '_ (vector 'vector props-guide))))]
+        (values drivers (if (eq? guide '_) '_ (vector 'vector guide))))]
      [pstruct
       (prefab-struct-key (syntax-e #'pstruct))
-      (let-values ([(drivers guide props-guide)
+      (let-values ([(drivers guide)
                     (parse-t (cdr (vector->list (struct->vector (syntax-e #'pstruct)))) depth esc?)])
-        (wrap-props t drivers
-                    (if (eq? guide '_) '_ (vector 'struct guide))
-                    (if (eq? props-guide '_) '_ (vector 'struct props-guide))))]
+        (values drivers (if (eq? guide '_) '_ (vector 'struct guide))))]
      [#&template
-      (let-values ([(drivers guide props-guide)
+      (let-values ([(drivers guide)
                     (parse-t #'template depth esc?)])
-        (wrap-props t drivers
-                    (if (eq? guide '_) '_ (vector 'box guide))
-                    (if (eq? props-guide '_) '_ (vector 'box props-guide))))]
+        (values drivers (if (eq? guide '_) '_ (vector 'box guide))))]
      [const
-      (wrap-props t (dset) '_ '_)]))
+      (values (dset) '_)]))
 
- ;; parse-h : stx nat boolean -> (values (dsetof env-entry) boolean pre-head-guide props-guide)
+ ;; parse-h : stx nat boolean -> (values (dsetof env-entry) boolean pre-head-guide)
  (define (parse-h h depth esc?)
    (syntax-case h (?? ?@ unsyntax-splicing)
      [(?? t)
       (not esc?)
-      (let-values ([(drivers splice? guide props-guide)
+      (let-values ([(drivers splice? guide)
                     (parse-h #'t depth esc?)])
-        (values drivers #t
-                (vector 'app-opt guide)
-                (list-guide '_ props-guide)))]
+        (values drivers #t (vector 'app-opt guide)))]
      [(?? t1 t2)
       (not esc?)
-      (let-values ([(drivers1 splice?1 guide1 props-guide1) (parse-h #'t1 depth esc?)]
-                   [(drivers2 splice?2 guide2 props-guide2) (parse-h #'t2 depth esc?)])
+      (let-values ([(drivers1 splice?1 guide1) (parse-h #'t1 depth esc?)]
+                   [(drivers2 splice?2 guide2) (parse-h #'t2 depth esc?)])
         (values (dset-union drivers1 drivers2)
                 (or splice?1 splice?2)
                 (vector (if (or splice?1 splice?2) 'orelse-h 'orelse)
-                        guide1 guide2)
-                (list-guide '_ props-guide1 props-guide2)))]
+                        guide1 guide2)))]
      [(?@ . t)
       (not esc?)
-      (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
-        (values drivers #t (vector 'splice guide) (cons-guide '_ props-guide)))]
+      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
+        (values drivers #t (vector 'splice guide)))]
      [(unsyntax-splicing t1)
       (quasi)
       (let ([qval (quasi)])
@@ -587,19 +486,15 @@ instead of integers and integer vectors.
                  (set-box! qval (cons (cons #'tmp h) (unbox qval)))
                  (let* ([fake-sm (make-syntax-mapping 0 #'tmp)]
                         [fake-pvar (pvar fake-sm #f #f)])
-                   (values (dset fake-pvar) #t (vector 'unsyntax-splicing fake-pvar) '_)))]
+                   (values (dset fake-pvar) #t (vector 'unsyntax-splicing fake-pvar))))]
               [else
                (parameterize ((quasi (car qval)))
-                 (let*-values ([(drivers guide props-guide) (parse-t #'t1 depth esc?)]
-                               [(drivers guide props-guide)
-                                (wrap-props h
-                                            drivers
-                                            (list-guide '_ guide)
-                                            (list-guide '_ props-guide))])
-                   (values drivers #f guide props-guide)))]))]
+                 (let*-values ([(drivers guide) (parse-t #'t1 depth esc?)]
+                               [(drivers guide) (values drivers (list-guide '_ guide))])
+                   (values drivers #f guide)))]))]
      [t
-      (let-values ([(drivers guide props-guide) (parse-t #'t depth esc?)])
-        (values drivers #f guide props-guide))]))
+      (let-values ([(drivers guide) (parse-t #'t depth esc?)])
+        (values drivers #f guide))]))
 
  (define (lookup id depth)
    (let ([v (syntax-local-value/record id (lambda (v) (or (syntax-pattern-variable? v)
