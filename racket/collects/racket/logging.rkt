@@ -10,12 +10,13 @@
 
 (provide/contract [with-intercepted-logging
                    (->* ((-> log-event? any)
-                         (-> any))
+                         (-> any)
+                         log-level/c)
                         (#:logger logger?)
                         #:rest log-spec?
                         any)]
                   [with-logging-to-port
-                   (->* (output-port? (-> any))
+                   (->* (output-port? (-> any) log-level/c)
                         (#:logger logger?)
                         #:rest log-spec?
                         any)])
