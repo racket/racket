@@ -56,24 +56,26 @@
      #,(for/list ([i 100]) 'a)
      z))
 
-(define prog
-  '((test f1-stx #'(_ e))
-    (test f1-tmpl #'(_ e))
+(define progss
+  '(((test f1-stx #'(_ e))
+     (test f1-tmpl #'(_ e)))
 
-    (test f2-stx stx2a)
-    (test f2-tmpl stx2a)
+    ((test f2-stx stx2a)
+     (test f2-tmpl stx2a))
 
-    (test f2-stx stx2)
-    (test f2-tmpl stx2)
+    ((test f2-stx stx2)
+     (test f2-tmpl stx2))
 
-    (test f3-stx stx2a)
-    (test f3-tmpl stx2a)
+    ((test f3-stx stx2a)
+     (test f3-tmpl stx2a))
 
-    (test f3-stx stx2)
-    (test f3-tmpl stx2)))
+    ((test f3-stx stx2)
+     (test f3-tmpl stx2))))
 
 (define-namespace-anchor nsa)
 
-(for ([p prog])
-  (printf "> ~s\n" p)
-  (eval p (namespace-anchor->namespace nsa)))
+(for ([progs progss])
+  (for ([p progs])
+    (printf "> ~s\n" p)
+    (eval p (namespace-anchor->namespace nsa)))
+  (newline))
