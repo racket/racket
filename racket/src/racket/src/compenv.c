@@ -1869,10 +1869,12 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env,
 static int binding_matches_env(Scheme_Object *binding, Scheme_Env *env, Scheme_Object *phase)
 {
   return (SCHEME_VECTORP(binding)
-          && SAME_OBJ(SCHEME_VEC_ELS(binding)[0], 
-                      (env->module
-                       ? env->module->self_modidx
-                       : scheme_false))
+          && (SAME_OBJ(SCHEME_VEC_ELS(binding)[0],
+                       (env->module
+                        ? env->module->self_modidx
+                        : scheme_false))
+              || SAME_OBJ(SCHEME_VEC_ELS(binding)[0],
+                          env->link_midx))
           && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase));
 }
 

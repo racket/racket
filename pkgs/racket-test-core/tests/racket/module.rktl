@@ -2049,5 +2049,24 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 1 dynamic-require '(submod 'uses-own-namespace-for-eval-from-submodule main) 'v)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a module that isn't in a file
+;; correctly introduces and references compile-time
+;; top-level definitions
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module m racket
+           
+           (require syntax/parse/define)
+           
+           (define-simple-macro (f m:id)
+             (begin
+               (define-for-syntax x "prop value")
+               (define-syntax (m stx) x #'(void))))))
+  (eval '(dynamic-require ''m #f))
+  (let ([ns (module->namespace ''m)])
+    (eval '(f m) ns)
+    (eval '(m) ns)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
