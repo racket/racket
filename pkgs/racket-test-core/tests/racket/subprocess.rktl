@@ -478,25 +478,47 @@
 ;; Check setting of PWD and initializing `current-directory' from
 ;; PWD, when it involves a soft link:
 (when (member (system-type) '(unix macosx))
-  (let ([dir (make-temporary-file "sub~a" 'directory)])
-    (make-directory (build-path dir "a"))
-    (make-file-or-directory-link "a" (build-path dir "b"))
-    (current-directory (build-path dir "b"))
-    
-    (define o (open-output-bytes))
-    (parameterize ([current-output-port o])
-      (system* self "-e" "(current-directory)"))
-    (test (format "~s\n" (path->directory-path (build-path dir "b"))) get-output-string o)
+  (parameterize ([current-directory (current-directory)])
+    (let ([dir (make-temporary-file "sub~a" 'directory)])
+      (make-directory (build-path dir "a"))
+      (make-file-or-directory-link "a" (build-path dir "b"))
+      (current-directory (build-path dir "b"))
+      
+      (define o (open-output-bytes))
+      (parameterize ([current-output-port o])
+        (system* self "-e" "(current-directory)"))
+      (test (format "~s\n" (path->directory-path (build-path dir "b"))) get-output-string o)
 
-    (define o2 (open-output-bytes))
-    (parameterize ([current-output-port o2])
-      (system* self "-e" "(current-directory)" #:set-pwd? #f))
-    (test (format "~s\n" (path->directory-path (normalize-path (build-path dir "a")))) get-output-string o2)
-    
-    (delete-directory/files dir)))
+      (define o2 (open-output-bytes))
+      (parameterize ([current-output-port o2])
+        (system* self "-e" "(current-directory)" #:set-pwd? #f))
+      (test (format "~s\n" (path->directory-path (normalize-path (build-path dir "a")))) get-output-string o2)
+      
+      (delete-directory/files dir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that the reading from a file descriptor from `subprocess`
+;; doesn't fail to unregister it in the fd-semaphore table, which
+;; could cause this test to block waiting on a semaphore that
+;; won't get posted due to recycling a now-closed fd
+
+(for ([i 25])
+  (let ([p (process* cat)])
+    (define t
+      (thread (lambda ()
+                (read-bytes 100 (car p)))))
+    (sync (system-idle-evt))
+    (when (even? i) (kill-thread t))
+    (close-output-port (cadr p))
+    (thread-wait t)
+    ((list-ref p 4) 'wait)
+    (test 'done-ok (list-ref p 4) 'status)
+    (close-input-port (car p))
+    (close-input-port (cadddr p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
+
 
 (report-errs)

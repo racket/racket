@@ -4821,9 +4821,10 @@ fd_close_input(Scheme_Input_Port *port)
   fip = (Scheme_FD *)port->port_data;
 
   rc = adj_refcount(fip->refcount, -1);
-  if (!rc)
+  if (!rc) {
+    (void)scheme_rktio_fd_to_semaphore(fip->fd, MZFD_REMOVE);
     rktio_close(scheme_rktio, fip->fd);
-  else
+  } else
     rktio_forget(scheme_rktio, fip->fd);
 }
 
@@ -5312,9 +5313,10 @@ fd_close_output(Scheme_Output_Port *port)
 
   rc = adj_refcount(fop->refcount, -1);
   if (fop->fd) {
-    if (!rc)
+    if (!rc) {
+      (void)scheme_rktio_fd_to_semaphore(fop->fd, MZFD_REMOVE);
       rktio_close(scheme_rktio, fop->fd);
-    else
+    } else
       rktio_forget(scheme_rktio, fop->fd);
   }
 }
