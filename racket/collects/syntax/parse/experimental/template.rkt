@@ -7,6 +7,7 @@
                      racket/private/sc)
          syntax/parse/private/residual
          racket/private/stx
+         racket/performance-hint
          racket/private/promise)
 (provide template
          template/loc
@@ -595,6 +596,7 @@ A HeadGuide (HG) is one of:
   - (vector 'unsyntax-splicing Id)
 |#
 
+(begin-encourage-inline
 (define ((t-const) stx) stx)
 (define ((t-var v) stx) v)
 (define ((t-check v in-try?) stx) (check-stx stx v in-try?))
@@ -611,6 +613,16 @@ A HeadGuide (HG) is one of:
 (define ((t-orelse g1 g2) stx)
   (with-handlers ([absent-pvar? (lambda (e) (if g2 (g2 (stx-caddr stx)) null))])
     (g1 (stx-cadr stx))))
+(define ((t-vector g) stx) (restx stx (list->vector (g (vector->list (syntax-e stx))))))
+(define ((t-box g) stx) (restx stx (box (g (unbox (syntax-e stx))))))
+(define ((t-struct g) stx)
+  (define s (syntax-e stx))
+  (define key (prefab-struct-key s))
+  (define elems (cdr (vector->list (struct->vector s))))
+  (restx stx (apply make-prefab-struct key (g elems))))
+(define ((t-h g) stx) (list (g stx)))
+)
+
 (define ((t-metafun mf g) stx)
   (define v (restx stx (cons (stx-car stx) (g (stx-cdr stx)))))
   (define mark (make-syntax-introducer))
@@ -620,14 +632,6 @@ A HeadGuide (HG) is one of:
     (unless (syntax? r)
       (raise-syntax-error #f "result of template metafunction was not syntax" stx))
     (old-mark (mark r))))
-(define ((t-vector g) stx) (restx stx (list->vector (g (vector->list (syntax-e stx))))))
-(define ((t-struct g) stx)
-  (define s (syntax-e stx))
-  (define key (prefab-struct-key s))
-  (define elems (cdr (vector->list (struct->vector s))))
-  (restx stx (apply make-prefab-struct key (g elems))))
-(define ((t-box g) stx) (restx stx (box (g (unbox (syntax-e stx))))))
-(define ((t-h g) stx) (list (g stx)))
 (define ((t-splice g) stx)
   (let ([r (g (stx-cdr stx))])
     (or (stx->list r)
@@ -638,13 +642,14 @@ A HeadGuide (HG) is one of:
   (define new-stx (g stx))
   (datum->syntax new-stx (syntax-e new-stx) loc new-stx))
 
+(begin-encourage-inline
 (define (stx-cadr x) (stx-car (stx-cdr x)))
 (define (stx-cddr x) (stx-cdr (stx-cdr x)))
 (define (stx-caddr x) (stx-car (stx-cdr (stx-cdr x))))
 (define (stx-drop n x) (for/fold ([x x]) ([i (in-range n)]) (stx-cdr x)))
-
 (define (restx basis val)
   (if (syntax? basis) (datum->syntax basis val basis basis) val))
+)
 
 ;; revappend* : (Listof (Listof X)) (Listof X) -> (Listof X)
 (define (revappend* xss ys)
