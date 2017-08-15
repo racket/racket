@@ -12,7 +12,8 @@ default reader is used, as parameterized by the
 @racket[current-readtable] parameter, as well as many other
 parameters.
 
-See @secref["reader"] for information on the default reader.}
+See @secref["reader"] for information on the default reader and
+@secref["parse-reader"] for the protocol of @racket[read].}
 
 @defproc[(read-syntax [source-name any/c (object-name in)]
                       [in input-port? (current-input-port)])
@@ -24,7 +25,8 @@ source field of the syntax object; it can be an arbitrary value, but
 it should generally be a path for the source file.
 
 See @secref["reader"] for information on the default reader in
-@racket[read-syntax] mode.}
+@racket[read-syntax] mode and @secref["parse-reader"] for
+the protocol of @racket[read-syntax].}
 
 @defproc[(read/recursive [in input-port? (current-input-port)]
                          [start (or/c char? #f) #f]

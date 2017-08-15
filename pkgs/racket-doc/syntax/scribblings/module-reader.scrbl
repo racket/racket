@@ -417,6 +417,8 @@ succeeds, then the loaded module's @racketidfont{read},
 @racketidfont{read-syntax}, or @racketidfont{get-info} export is
 passed to @racket[convert-read], @racket[convert-read-syntax], or
 @racket[convert-get-info], respectively.
+See @secref["parse-reader" #:doc ref-doc] for information on
+the protocol of @racketidfont{read} and @racketidfont{read-syntax}.
 
 @margin-note{The @racketmodname[at-exp] language supplies
   @racket[convert-read] and @racket[convert-read-syntax] to add
