@@ -44,6 +44,20 @@
  'make-contract-4
  '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
 
+(test/spec-passed/result
+ 'make-contract-5
+ '(list-contract?
+   (make-contract #:late-neg-projection (λ (b) (λ (v) (λ (neg-party) v)))))
+ #f)
+
+  (test/spec-passed/result
+   'make-contract-6
+   '(list-contract?
+     (make-contract #:late-neg-projection
+                    (λ (b) (λ (v) (λ (neg-party) v)))
+                    #:list-contract? "a true value"))
+   #t)
+
 (ctest #t contract? proj:add1->sub1)
 (ctest #f flat-contract? proj:add1->sub1)
 (ctest #f chaperone-contract? proj:add1->sub1)
@@ -203,6 +217,34 @@
       (((contract-projection (val-first-none))
         (make-blame (srcloc #f #f #f #f #f) 5 (λ () 'the-name) 'pos 'neg #t))
        5)))
+
+  (test/spec-passed/result
+   'build-chaperone-contract-property2
+   '(let ()
+      (struct odd-length-list-of-integers ()
+        #:property prop:chaperone-contract
+        (build-chaperone-contract-property
+         #:val-first-projection (λ (me)
+                                  (λ (blame)
+                                    (λ (val)
+                                      (λ (neg-party)
+                                        (cond
+                                          [(and (list? val)
+                                                (odd? (length val))
+                                                (andmap integer? val))
+                                           val]
+                                          [else
+                                           (raise-blame-error
+                                            blame
+                                            val
+                                            "bad")])))))
+         #:list-contract? (λ (c) #t)
+         #:name (λ (x) 'the-name)
+         ;; make a very aproximate first-order check
+         #:first-order (λ (c) (λ (x) #t))
+         #:stronger (λ (x y) #f)))
+      (list-contract? (odd-length-list-of-integers)))
+   #t)
 
   (contract-eval
    '(define prop:late-neg-proj:bad-prime-box-list/c

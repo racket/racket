@@ -151,7 +151,8 @@
              #:projection [get-projection #f]
              #:stronger [stronger #f]
              #:generate [generate #f]
-             #:exercise [exercise #f])
+             #:exercise [exercise #f]
+             #:list-contract? [is-list-contract? (λ (c) #f)])
       (:build-chaperone-contract-property
        #:name get-name
        #:first-order get-first-order
@@ -163,7 +164,8 @@
        (maybe-add-wrapper add-prop-chaperone-check get-projection)
        #:stronger stronger
        #:generate generate
-       #:exercise exercise))
+       #:exercise exercise
+       #:list-contract? is-list-contract?))
     build-chaperone-contract-property))
 
 (define (add-prop-late-neg-chaperone-check get-late-neg)
@@ -239,7 +241,7 @@
                     #:projection [projection #f]
                     #:stronger [stronger #f]
                     #:generate [generate (λ (ctc) (λ (fuel) #f))]
-                    #:list-contract? [is-list-contract #f])
+                    #:list-contract? [is-list-contract (λ (c) #f)])
            (:build-flat-contract-property
             #:name name
             #:first-order first-order

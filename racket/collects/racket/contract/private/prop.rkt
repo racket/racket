@@ -300,6 +300,16 @@
        proc-name
        (build-context))))
 
+  (unless (and (procedure? list-contract?)
+               (procedure-arity-includes? list-contract? 1))
+    (error proc-name
+           (string-append
+            "contract violation\n"
+            "  expected: (procedure-arity-includes/c 1)\n"
+            "  given: ~e\n"
+            "  in the #:list-contract? argument")
+           list-contract?))
+
   (mk (or get-name (λ (c) default-name))
       (or get-first-order get-any?)
       get-projection
@@ -453,7 +463,7 @@
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
-         #:list-contract? [list-contract? (λ (ctc) #f)])
+         #:list-contract? [list-contract? #f])
 
   (unless (or first-order
               projection
@@ -486,7 +496,7 @@
         [else late-neg-projection])
       (or stronger as-strong?)
       generate exercise
-      list-contract?))
+      (and list-contract? #t)))
 
 (define (late-neg-first-order-projection name p?)
   (λ (b)
