@@ -61,8 +61,8 @@
 ;; - (list 't-vector G)
 ;; - (list 't-struct G)
 ;; - (list 't-box G)
-;; - (list 't-dots HG (listof (listof PVar)) Nat G #f Boolean)
-;; - (list 't-dots  G (listof (listof PVar)) Nat G #t Boolean)
+;; - (list 't-dots HG (listof (listof PVar)) Nat G/#f #f Boolean)
+;; - (list 't-dots  G (listof (listof PVar)) Nat G/#f #t Boolean)
 ;; - (list 't-append/p HG G)  ;; template is non-syntax pair => no restx, use {car,cdr}
 ;; - (list 't-append/x HG G)  ;; template is syntax-pair => restx, use {car,cdr}+syntax-e
 ;; - (list 't-escaped G)
@@ -185,7 +185,10 @@
      (if (zero? nesting)
          (parse-t-pair/normal t depth esc? in-try?)
          (let-values ([(hdrivers hguide) (parse-h head (+ depth nesting) esc? in-try?)]
-                      [(tdrivers tguide) (parse-t tail depth esc? in-try?)])
+                      [(tdrivers tguide)
+                       (if (null? tail)
+                           (values (dset) #f)
+                           (parse-t tail depth esc? in-try?))])
            (when (dset-empty? hdrivers)
              (wrong-syntax head "no pattern variables before ellipsis in template"))
            (when (dset-empty? (dset-filter hdrivers (pvar/dd<=? depth)))
@@ -503,10 +506,18 @@
 
 (define-syntax (t-dots stx)
   (syntax-case stx ()
+    ;; Case 1: (x ...) where x is trusted.
+    [(t-dots (t-var #s(pvar _ lvar #f _) _) _drivers 1 #f #t _)
+     (begin
+       (log-template-debug "dots case 1: (x ...) where x is trusted")
+       #'(lambda (stx) (restx stx lvar)))]
+    ;; General case
     [(t-dots head ((#s(pvar _ lvar check? _) ...) ...) nesting tail cons? in-try?)
      (let ([cons? (syntax-e #'cons?)]
            [lvarss (map syntax->list (syntax->list #'((lvar ...) ...)))]
            [check?ss (syntax->datum #'((check? ...) ...))])
+       (log-template-debug "dots general case: nesting = ~s, cons? = ~s, #vars = ~s"
+                           (syntax-e #'nesting) cons? (apply + (map length lvarss)))
        ;; AccElem = Stx if cons? is true, (Listof Stx) otherwise
        ;; gen-level : (Listof PVar) Syntax[(Listof AccElem) -> (Listof AccElem)]
        ;;          -> Syntax[(Listof AccElem) -> (Listof AccElem)]
@@ -534,8 +545,8 @@
                   (gen-level lvars* check?s*
                              (nestloop (cdr lvarss) (cdr check?ss) lvars* check?s*))])))
        (if cons?
-           #`(t-dots1* (lambda (stx) (#,head-loop-code null)) nesting tail)
-           #`(t-dots*  (lambda (stx) (#,head-loop-code null)) nesting tail)))]))
+           #`(t-dots1* (lambda (stx) (#,head-loop-code null)) nesting (or tail (t-const)))
+           #`(t-dots*  (lambda (stx) (#,head-loop-code null)) nesting (or tail (t-const)))))]))
 
 (begin-encourage-inline
 

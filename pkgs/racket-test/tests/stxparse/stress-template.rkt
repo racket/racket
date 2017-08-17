@@ -40,6 +40,16 @@
     [(_ (x ...) (y ...) z)
      (template ((x 1) ... ((y 2) ... z)))]))
 
+(define (f4-stx stx)  ;; test common ellipsis case
+  (syntax-case stx ()
+    [(_ (x ...) (y ...) z)
+     #'(blah (x ...) (y ...) z)]))
+
+(define (f4-tmpl stx)
+  (syntax-case stx ()
+    [(_ (x ...) (y ...) z)
+     (template (blah (x ...) (y ...) z))]))
+
 (define (test f term)
   (collect-garbage)
   (time (void (for ([i #e1e5]) (f term)))))
@@ -70,7 +80,13 @@
      (test f3-tmpl stx2a))
 
     ((test f3-stx stx2)
-     (test f3-tmpl stx2))))
+     (test f3-tmpl stx2))
+
+    ((test f4-stx stx2a)
+     (test f4-tmpl stx2a))
+
+    ((test f4-stx stx2)
+     (test f4-tmpl stx2))))
 
 (define-namespace-anchor nsa)
 
