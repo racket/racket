@@ -300,7 +300,7 @@ Converts an @tech{X-expression} into a string containing XML.}
 
 Converts XML represented with a string into an @tech{X-expression}.}
 
-@defproc[(xml-encode-attribute [str string?]) string?]{
+@defproc[(xml-attribute-encode [str string?]) string?]{
 
 Escapes a string as required for XML attributes.
 
