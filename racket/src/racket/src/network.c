@@ -1381,7 +1381,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
                      "  system error: %R");
 
   if (socket)
-    peer_names = rktio_socket_address(scheme_rktio, socket);
+    peer_names = rktio_socket_peer_address(scheme_rktio, socket);
   else
     peer_names = NULL;
 
