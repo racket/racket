@@ -1360,6 +1360,8 @@
 
 (define (listen-port x)
   (let-values ([(la lp pa pp) (tcp-addresses x #t)])
+    (test #t exact-integer? lp)
+    (test #t equal? 0 pp)
     lp))
 
 (define (cust-test open)
@@ -1495,6 +1497,10 @@
 			[(r2 w2) (if evt?
 				     (apply values (sync (tcp-accept-evt l)))
 				     (tcp-accept l))])
+             (let-values ([(la1 lp1 pa1 pp1) (tcp-addresses r1 #t)]
+                          [(la2 lp2 pa2 pp2) (tcp-addresses r2 #t)])
+               (test #t equal? lp1 pp2)
+               (test #t equal? pp1 lp2))
 	     (test #t tcp-port? r1)
 	     (test #t tcp-port? r2)
 	     (test #t tcp-port? w1)
