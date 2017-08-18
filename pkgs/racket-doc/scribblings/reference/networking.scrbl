@@ -221,7 +221,7 @@ connections, so @racket[tcp-abandon-port] is equivalent to
 @racket[close-input-port] on input @tech{TCP ports}.}
 
 
-@defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener? udp-socket?)]
+@defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener? udp?)]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
                (values string? port-number?
