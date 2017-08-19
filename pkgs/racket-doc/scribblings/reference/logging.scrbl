@@ -328,7 +328,7 @@ argument list takes precedence.}
 @; ----------------------------------------
 @section{Additional Logging Functions}
 
-@note-lib[racket/logging]
+@note-lib-only[racket/logging]
 @(require (for-label racket/logging))
 @(define log-eval (make-base-eval))
 @examples[#:hidden #:eval log-eval
