@@ -3,17 +3,29 @@
 
 @title{Miscellaneous Support}
 
-@defproc[(list->cblock [lst list?] [type ctype?]) any]{
+@defproc[(list->cblock [lst list?]
+                       [type ctype?]
+                       [expect-length (or/c exact-nonnegative-integer? #f) #f])
+         cpointer?]{
 
-Allocates a memory block of an appropriate size, and initializes it
-using values from @racket[lst] and the given @racket[type].  The
+Allocates a memory block of an appropriate size---using
+@racket[malloc] with @racket[type] and @racket[(length lst)]---and
+initializes it using values from @racket[lst].  The
 @racket[lst] must hold values that can all be converted to C values
-according to the given @racket[type].}
+according to the given @racket[type].
+
+If @racket[expect-length] is not @racket[#f] and not the same as
+@racket[(length lst)], then an exception is raised instead of
+allocating memory.}
 
 
-@defproc[(vector->cblock [vec vector?] [type ctype?]) any]{
+@defproc[(vector->cblock [vec vector?]
+                         [type ctype?]
+                         [expect-length (or/c exact-nonnegative-integer? #f) #f])
+         cpointer?]{
 
-Like @racket[list->cblock], but for Racket vectors.}
+Like @racket[list->cblock], but using values from a vector instead of
+a list.}
 
 
 @defproc[(vector->cpointer [vec vector?]) cpointer?]{
