@@ -1823,6 +1823,12 @@ intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *add
   return do_socket_write(rktio, rfd, buffer, len, addr);
 }
 
+intptr_t rktio_udp_sendto_in(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer,
+                             intptr_t start, intptr_t end)
+{
+  return rktio_udp_sendto(rktio, rfd, addr, buffer + start, end - start);
+}
+
 rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
@@ -1872,6 +1878,12 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
   r->address = get_numeric_strings(rktio, src_addr, asize);
 
   return r;
+}
+
+rktio_length_and_addrinfo_t *rktio_udp_recvfrom_in(rktio_t *rktio, rktio_fd_t *rfd,
+                                                   char *buffer, intptr_t start, intptr_t end)
+{
+  return rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start);
 }
 
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)

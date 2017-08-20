@@ -205,7 +205,7 @@ int rktio_convert_properties(rktio_t *rktio)
 /* Current locale                                             */
 /*============================================================*/
 
-void rktio_set_locale(rktio_t *rktio, char *name)
+void rktio_set_locale(rktio_t *rktio, const char *name)
 {
   /* We only need CTYPE and COLLATE; two calls seem to be much
      faster than one call with ALL */
@@ -463,13 +463,36 @@ intptr_t rktio_convert(rktio_t *rktio,
   return (intptr_t)r;
 }
 
+rktio_convert_result_t *rktio_convert_in(rktio_t *rktio,
+                                         rktio_converter_t *cvt,
+                                         char *in, intptr_t in_start, intptr_t in_end,
+                                         char *out, intptr_t out_start, intptr_t out_end)
+{
+  intptr_t converted;
+  intptr_t in_left = in_end - in_start;
+  intptr_t out_left = out_end - out_start;
+  char *in_p = in + in_start;
+  char *out_p = out + out_start;
+  rktio_convert_result_t *r;
+
+  converted = rktio_convert(rktio, cvt, (in ? &in_p : NULL), &in_left, &out_p, &out_left);
+
+  r = malloc(sizeof(rktio_convert_result_t));
+
+  r->in_consumed = in_p - (in + in_start);
+  r->out_produced = out_p - (out + out_start);
+  r->converted = converted;
+
+  return r;
+}
+
 /*============================================================*/
 /* Case conversion                                            */
 /*============================================================*/
 
 char *rktio_locale_recase(rktio_t *rktio,
                           rktio_bool_t to_up,
-                          char *in)
+                          const char *in)
 {
   char *out;
 
@@ -627,7 +650,7 @@ rktio_char16_t *rktio_recase_utf16(rktio_t *rktio, rktio_bool_t to_up, rktio_cha
 /* Native string comparison                                   */
 /*============================================================*/
 
-int rktio_locale_strcoll(rktio_t *rktio, char *s1, char *s2)
+int rktio_locale_strcoll(rktio_t *rktio, const char *s1, const char *s2)
 {
   return strcoll(s1, s2);
 }

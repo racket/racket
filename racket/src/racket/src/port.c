@@ -6120,7 +6120,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   block_timer_signals(1);
   
   result = rktio_process(scheme_rktio,
-                         command, argc, argv,
+                         command, argc, (rktio_const_string_t *)argv,
                          stdout_fd, stdin_fd, stderr_fd,
                          SCHEME_PATH_VAL(current_dir), envvars,
                          flags);

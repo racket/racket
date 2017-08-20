@@ -53,15 +53,6 @@ static int extract_child_status(int status)
   return status;
 }
 
-static void set_signal_handler(int sig_id, void (*proc)(int))
-{
-  struct sigaction sa;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = 0;
-  sa.sa_handler = proc;
-  sigaction(sig_id, &sa, NULL);
-}
-
 #endif
 
 /*========================================================================*/
@@ -433,7 +424,7 @@ void centralized_starting_child()
        does not block SIGCHLD.
        Solaris, meanwhile, seems to unmask SIGCHLD as a result of
        setting a handler, so do this before masking the signal. */
-    set_signal_handler(SIGCHLD, got_sigchld);
+    rktio_set_signal_handler(SIGCHLD, got_sigchld);
     
     /* Block SIGCLHD (again), because the worker thread will use sigwait(). */
     block_sigchld();
@@ -585,7 +576,7 @@ static void init_sigchld(rktio_t *rktio)
 {
 #if !defined(CENTRALIZED_SIGCHILD)
   if (!sigchld_installed) {
-    set_signal_handler(SIGCHLD, child_done);
+    rktio_set_signal_handler(SIGCHLD, child_done);
     sigchld_installed = 1;
   }
 
@@ -1206,7 +1197,7 @@ int rktio_process_allowed_flags(rktio_t *rktio)
 /*========================================================================*/
 
 rktio_process_result_t *rktio_process(rktio_t *rktio,
-                                      const char *command, int argc, char **argv,
+                                      const char *command, int argc, rktio_const_string_t *argv,
                                       rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
                                       const char *current_directory, rktio_envvars_t *envvars,
                                       int flags)
@@ -1471,7 +1462,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
       {
 	int err, i;
-        char **new_argv;
+        rktio_const_string_t *new_argv;
 
         /* add a NULL terminator */
         new_argv = malloc(sizeof(char *) * (argc + 1));
@@ -1483,7 +1474,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         if (!env)
           env = rktio_get_environ_array();
         
-	err = MSC_IZE(execve)(command, new_argv, (char **)env);
+	err = MSC_IZE(execve)(command, (char **)new_argv, (char **)env);
         if (err)
           err = errno;
 

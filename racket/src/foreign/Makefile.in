@@ -11,6 +11,7 @@ CPPFLAGS = @PREFLAGS@
 ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ \
          -I$(builddir)/../racket \
          -I$(srcdir)/../racket/include -I$(srcdir)/../racket/src \
+         -I$(srcdir)/../rktio -I$(builddir)/../rktio \
          $(LIBFFI_LOCAL_INCLUDE_@OWN_LIBFFI@)
 ARFLAGS = @ARFLAGS@
 NOOP = :

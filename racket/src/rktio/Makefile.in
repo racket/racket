@@ -31,6 +31,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_network.@LTO@ \
        rktio_pipe.@LTO@ \
        rktio_process.@LTO@ \
+       rktio_signal.@LTO@ \
        rktio_envvars.@LTO@ \
        rktio_fs_change.@LTO@ \
        rktio_flock.@LTO@ \
@@ -38,6 +39,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_time.@LTO@ \
        rktio_syslog.@LTO@ \
        rktio_convert.@LTO@ \
+       rktio_dll.@LTO@ \
        rktio_error.@LTO@ \
        rktio_hash.@LTO@ \
        rktio_wide.@LTO@ \
@@ -83,6 +85,9 @@ rktio_pipe.@LTO@: $(srcdir)/rktio_pipe.c $(RKTIO_HEADERS)
 rktio_process.@LTO@: $(srcdir)/rktio_process.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_process.@LTO@ -c $(srcdir)/rktio_process.c
 
+rktio_signal.@LTO@: $(srcdir)/rktio_signal.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_signal.@LTO@ -c $(srcdir)/rktio_signal.c
+
 rktio_envvars.@LTO@: $(srcdir)/rktio_envvars.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_envvars.@LTO@ -c $(srcdir)/rktio_envvars.c
 
@@ -103,6 +108,9 @@ rktio_syslog.@LTO@: $(srcdir)/rktio_syslog.c $(RKTIO_HEADERS)
 
 rktio_convert.@LTO@: $(srcdir)/rktio_convert.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_convert.@LTO@ -c $(srcdir)/rktio_convert.c
+
+rktio_dll.@LTO@: $(srcdir)/rktio_dll.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_dll.@LTO@ -c $(srcdir)/rktio_dll.c
 
 rktio_error.@LTO@: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.@LTO@ -c $(srcdir)/rktio_error.c

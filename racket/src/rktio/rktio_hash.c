@@ -2,14 +2,16 @@
 #include "rktio_private.h"
 #include <stdlib.h>
 
+/* A hash key must be non-negative, and each value must be non-NULL */
+
 struct rktio_hash_t {
   struct bucket_t *buckets;
   intptr_t size, count;
 };
 
 typedef struct bucket_t {
-  /* v is non-NULL => bucket is filled */
-  /* v is NULL and fd is -1 => was removed */
+  /* `v` is non-NULL => bucket is filled */
+  /* `v` is NULL and `key` is -1 => was removed */
   intptr_t key;
   void *v;
 } bucket_t;
@@ -176,4 +178,27 @@ void rktio_hash_set(rktio_hash_t *ht, intptr_t key, void *v)
     if (2 * ht->count >= ht->size)
       do_rehash(ht, ht->size << 1);
   }
+}
+
+intptr_t rktio_hash_string(const char *s)
+{
+  intptr_t key;
+  uintptr_t k = 0;
+  int c;
+
+  while (1) {
+    c = *((unsigned char *)s);
+    if (!c)
+      break;
+    k += c;
+    k += (k << 10);
+    k ^= (k >> 6);
+    s++;
+  }
+
+  key = k;
+  if (key < 0)
+    key = (k >> 1);
+
+  return key;
 }

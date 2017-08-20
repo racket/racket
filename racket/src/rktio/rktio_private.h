@@ -99,6 +99,14 @@ struct rktio_t {
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE hEventLog;
 #endif
+
+  int pending_os_signals[RKTIO_NUM_OS_SIGNALS];
+
+  struct rktio_dll_t *all_dlls;
+  struct rktio_hash_t *dlls_by_name;
+#ifdef RKTIO_SYSTEM_UNIX
+  char *dll_error;
+#endif
 };
 
 /*========================================================================*/
@@ -255,6 +263,8 @@ void rktio_hash_set(rktio_hash_t *ht, intptr_t key, void *v);
 intptr_t rktio_hash_size(rktio_hash_t *ht);
 intptr_t rktio_hash_get_key(rktio_hash_t *ht, intptr_t i);
 
+intptr_t rktio_hash_string(const char *s);
+
 /*========================================================================*/
 /* Misc                                                                   */
 /*========================================================================*/
@@ -273,6 +283,8 @@ void rktio_set_windows_error(rktio_t *rktio, int errid);
 #endif
 
 void rktio_error_clean(rktio_t *rktio);
+
+void rktio_dll_clean(rktio_t *rktio);
 
 #if defined(USE_FNDELAY_O_NONBLOCK)
 # define RKTIO_NONBLOCKING FNDELAY
@@ -324,3 +336,8 @@ void rktio_syslog_clean(rktio_t* rktio);
 #endif
 
 char *rktio_strndup(char *s, intptr_t len);
+
+#ifdef RKTIO_SYSTEM_UNIX
+void rktio_set_signal_handler(int sig_id, void (*proc)(int));
+#endif
+void rktio_forget_os_signal_handler(rktio_t *rktio);

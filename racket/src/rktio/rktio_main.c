@@ -39,6 +39,7 @@ rktio_t *rktio_init(void)
 void rktio_destroy(rktio_t *rktio)
 {
   rktio_syslog_clean(rktio);
+  rktio_dll_clean(rktio);
   rktio_error_clean(rktio);
   rktio_process_deinit(rktio);
   rktio_free_ghbn(rktio);

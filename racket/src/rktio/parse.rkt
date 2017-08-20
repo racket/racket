@@ -45,7 +45,8 @@
   (EOF WHITESPACE
        OPEN CLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
        __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
-       DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT CONST))
+       DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT
+       CONST NULLABLE))
 
 (define lex
   (lexer-src-pos
@@ -73,6 +74,7 @@
    ["RKTIO_EXTERN_NOERR" 'EXTERN/NOERR]
    ["RKTIO_EXTERN_STEP" 'EXTERN/STEP]
    ["RKTIO_EXTERN_ERR" 'EXTERN/ERR]
+   ["RKTIO_NULLABLE" 'NULLABLE]
    [(:seq (:or #\_ (:/ #\A #\Z #\a #\z))
           (:* (:or #\_ (:/ #\A #\Z #\a #\z #\0 #\9))))
     (token-ID (string->symbol lexeme))]
@@ -106,6 +108,7 @@
             [(DEFINE EXTERN/NOERR EXTERN) #f]
             [(DEFINE EXTERN/STEP EXTERN) #f]
             [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]
+            [(DEFINE NULLABLE) #f]
             [(STRUCT ID SEMI) #f]
             [(TYPEDEF <type> <id> SEMI)
              (if (eq? $2 $3)
@@ -147,6 +150,7 @@
             [(OPEN <expr> LSHIFT <expr> CLOSE) `(<< ,$2 ,$4)])
     (<type> [(ID) $1]
             [(CONST <type>) $2]
+            [(NULLABLE <type>) `(nullable ,$2)]
             [(UNSIGNED SHORT) `unsigned-short]
             [(UNSIGNED INT) `unsigned]
             [(UNSIGNED) 'unsigned]
@@ -248,7 +252,8 @@
     [(and (pair? t) (eq? (car t) '*ref))
      (let ([s (update-type (cadr t))])
        (if (and as-argument?
-                (or (pair? s)
+                (or (and (pair? s)
+                         (not (eq? (car s) 'nullable)))
                     (hash-ref defined-types s #f)))
            `(*ref ,s)
            `(ref ,s)))]

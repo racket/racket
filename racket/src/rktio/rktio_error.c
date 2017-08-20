@@ -39,6 +39,7 @@ err_str_t err_strs[]  = {
   { RKTIO_ERROR_CONVERT_BAD_SEQUENCE, "ill-formed input encountered in encoding conversion" },
   { RKTIO_ERROR_CONVERT_PREMATURE_END, "input encoding ended prematurely" },
   { RKTIO_ERROR_CONVERT_OTHER, "encoding conversion encountered an error" },
+  { RKTIO_ERROR_DLL, "error is from dlopen" },
   { 0, NULL }
 };
 

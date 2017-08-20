@@ -8,6 +8,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#include "schrktio.h"
 
 #ifndef DONT_USE_FOREIGN
 
@@ -128,85 +129,14 @@ static intptr_t add_check_overflow(const char *who, intptr_t a, intptr_t b)
 }
 
 /*****************************************************************************/
-/* Defining EnumProcessModules for openning `self' as an ffi-lib */
-
-/* We'd like to use EnumProcessModules to find all loaded DLLs, but it's
-   only available in NT 4.0 and later. The alternative, Module32{First,Next},
-   is available *except* for NT 4.0! So we try EnumProcessModules first. */
-
-#ifdef WINDOWS_DYNAMIC_LOAD
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
-int epm_tried = 0;
-typedef BOOL (WINAPI *EnumProcessModules_t)(HANDLE hProcess,
-                                            HMODULE* lphModule,
-                                            DWORD cb,
-                                            LPDWORD lpcbNeeded);
-EnumProcessModules_t _EnumProcessModules;
-#include <tlhelp32.h>
-
-static BOOL mzEnumProcessModules(HANDLE hProcess, HMODULE* lphModule,
-                                 DWORD cb, LPDWORD lpcbNeeded)
-{
-  if (!epm_tried) {
-    HMODULE hm;
-    hm = LoadLibrary("psapi.dll");
-    if (hm) {
-      _EnumProcessModules =
-        (EnumProcessModules_t)GetProcAddress(hm, "EnumProcessModules");
-    }
-    epm_tried = 1;
-  }
-
-  if (_EnumProcessModules)
-    return _EnumProcessModules(hProcess, lphModule, cb, lpcbNeeded);
-  else {
-    HANDLE snapshot;
-    MODULEENTRY32 mod;
-    int i, ok;
-
-    snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,
-                                        GetCurrentProcessId());
-    if (snapshot == INVALID_HANDLE_VALUE)
-      return FALSE;
-
-    for (i = 0; 1; i++) {
-      mod.dwSize = sizeof(mod);
-      if (!i)
-        ok = Module32First(snapshot, &mod);
-      else
-        ok = Module32Next(snapshot, &mod);
-      if (!ok)
-        break;
-      if (cb >= sizeof(HMODULE)) {
-        lphModule[i] = mod.hModule;
-        cb -= sizeof(HMODULE);
-      }
-    }
-
-    CloseHandle(snapshot);
-    *lpcbNeeded = i * sizeof(HMODULE);
-    return GetLastError() == ERROR_NO_MORE_FILES;
-  }
-}
-
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
-#endif /* WINDOWS_DYNAMIC_LOAD */
-
-/*****************************************************************************/
 /* Library objects */
 
 /* ffi-lib structure definition */
 static Scheme_Type ffi_lib_tag;
 typedef struct ffi_lib_struct {
   Scheme_Object so;
-  NON_GCBALE_PTR(void) handle;
+  NON_GCBALE_PTR(rktio_dll_t) handle;
   Scheme_Object* name;
-  Scheme_Hash_Table* objects;
   int is_global;
 } ffi_lib_struct;
 #define SCHEME_FFILIBP(x) (SCHEME_TYPE(x)==ffi_lib_tag)
@@ -225,13 +155,11 @@ int ffi_lib_SIZE(void *p) {
 int ffi_lib_MARK(void *p) {
   ffi_lib_struct *s = (ffi_lib_struct *)p;
   gcMARK(s->name);
-  gcMARK(s->objects);
   return gcBYTES_TO_WORDS(sizeof(ffi_lib_struct));
 }
 int ffi_lib_FIXUP(void *p) {
   ffi_lib_struct *s = (ffi_lib_struct *)p;
   gcFIXUP(s->name);
-  gcFIXUP(s->objects);
   return gcBYTES_TO_WORDS(sizeof(ffi_lib_struct));
 }
 END_XFORM_SKIP;
@@ -245,8 +173,8 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
 {
   char *name;
   Scheme_Object *path, *hashname;
-  void *handle;
-  int null_ok = 0, as_global = 0;
+  rktio_dll_t *handle;
+  int as_global = 0;
   ffi_lib_struct *lib;
   if (!(SCHEME_PATH_STRINGP(argv[0]) || SCHEME_FALSEP(argv[0])))
     scheme_wrong_contract(MYNAME, "(or/c string? #f)", 0, argc, argv);
@@ -258,46 +186,27 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
   hashname = (Scheme_Object*)((name==NULL) ? "" : name);
   lib = (ffi_lib_struct*)scheme_hash_get(opened_libs, hashname);
   if (!lib) {
-    Scheme_Hash_Table *ht;
-#   ifdef WINDOWS_DYNAMIC_LOAD
-    if (name==NULL) {
-      /* openning the executable is marked by a NULL handle */
-      handle = NULL;
-      null_ok = 1;
-    } else {
-      wchar_t *wp;
-      wp = scheme_path_to_wide_path(MYNAME, name);
-      handle = LoadLibraryW(wp);
-    }
-#   else /* WINDOWS_DYNAMIC_LOAD undefined */
-#   ifdef __ANDROID__
-    if (!name) handle = RTLD_DEFAULT; else
-#   endif /* __ANDROID__ */
-#   ifdef __CYGWIN32__
-    if (!name) { handle = RTLD_DEFAULT; null_ok = 1; } else
-#   endif /* __CYGWIN32__ */
-    handle = dlopen(name, RTLD_NOW | (as_global ? RTLD_GLOBAL : RTLD_LOCAL));
-#   endif /* WINDOWS_DYNAMIC_LOAD */
-    if (handle == NULL && !null_ok) {
-      if (argc > 1 && SCHEME_TRUEP(argv[1])) return scheme_false;
-      else {
-#       ifdef WINDOWS_DYNAMIC_LOAD
-        long err;
-        err = GetLastError();
-        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                         MYNAME": couldn't open %V (%E)", argv[0], err);
-#       else /* WINDOWS_DYNAMIC_LOAD undefined */
-        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                         MYNAME": couldn't open %V (%s)", argv[0], dlerror());
-#       endif /* WINDOWS_DYNAMIC_LOAD */
+    handle = rktio_dll_open(scheme_rktio, name, as_global);
+    if (!handle) {
+      char *msg;
+      msg = rktio_dll_get_error(scheme_rktio);
+      if (argc > 1 && SCHEME_TRUEP(argv[1])) {
+        if (msg) free(msg);
+        return scheme_false;
+      } else {
+        if (msg) {
+          msg = scheme_strdup_and_free(msg);
+          scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                           MYNAME": couldn't open %V (%s)", argv[0], msg);
+        } else
+          scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                           MYNAME": couldn't open %V (%R)", argv[0]);
       }
     }
-    ht = scheme_make_hash_table(SCHEME_hash_string);
     lib = (ffi_lib_struct*)scheme_malloc_tagged(sizeof(ffi_lib_struct));
     lib->so.type = ffi_lib_tag;
     lib->handle = (handle);
     lib->name = (argv[0]);
-    lib->objects = (ht);
     lib->is_global = (!name);
     scheme_hash_set(opened_libs, hashname, (Scheme_Object*)lib);
     /* no dlclose finalizer - since the hash table always keeps a reference */
@@ -354,18 +263,13 @@ int ffi_obj_FIXUP(void *p) {
 END_XFORM_SKIP;
 #endif
 
-#ifdef __ANDROID__
-static int adjustment_set;
-static uintptr_t adjustment;
-#endif /* __ANDROID__ */
-
 /* (ffi-obj objname ffi-lib-or-libname) -> ffi-obj */
 #define MYNAME "ffi-obj"
 static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
 {
   ffi_obj_struct *obj;
   void *dlobj;
-  ffi_lib_struct *lib = NULL, *lib2;
+  ffi_lib_struct *lib = NULL;
   char *dlname;
   if (SCHEME_FFILIBP(argv[1]))
     lib = (ffi_lib_struct*)argv[1];
@@ -376,87 +280,31 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_contract(MYNAME, "bytes?", 0, argc, argv);
   dlname = SCHEME_BYTE_STR_VAL(argv[0]);
-  obj = (ffi_obj_struct*)scheme_hash_get(lib->objects, (Scheme_Object*)dlname);
-  if (!obj) {
-#   ifdef WINDOWS_DYNAMIC_LOAD
-    if (lib->handle) {
-      dlobj = GetProcAddress(lib->handle, dlname);
-    } else {
-      /* this is for the executable-open case, which was marked by a NULL
-       * handle, deal with it by searching all current modules */
-#     define NUM_QUICK_MODS 16
-      HMODULE *mods, me, quick_mods[NUM_QUICK_MODS];
-      DWORD cnt = NUM_QUICK_MODS * sizeof(HMODULE), actual_cnt, i;
-      me = GetCurrentProcess();
-      mods = quick_mods;
-      if (mzEnumProcessModules(me, mods, cnt, &actual_cnt)) {
-        if (actual_cnt > cnt) {
-          cnt = actual_cnt;
-          mods = (HMODULE *)scheme_malloc_atomic(cnt);
-          if (!mzEnumProcessModules(me, mods, cnt, &actual_cnt))
-            mods = NULL;
-        } else
-          cnt = actual_cnt;
-      } else
-        mods = NULL;
-      if (mods) {
-        cnt /= sizeof(HMODULE);
-        for (i = 0; i < cnt; i++) {
-          dlobj = GetProcAddress(mods[i], dlname);
-          if (dlobj) break;
-        }
-      } else
-        dlobj = NULL;
-    }
-    if (!dlobj) {
-      long err;
-      err = GetLastError();
+
+  dlobj = rktio_dll_find_object(scheme_rktio, lib->handle, dlname);
+  if (!dlobj) {
+    char *msg;
+    msg = rktio_dll_get_error(scheme_rktio);
+    if (msg) {
+      msg = scheme_strdup_and_free(msg);
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                       MYNAME": couldn't get \"%s\" from %V (%E)",
-                       dlname, lib->name, err);
-    }
-#   else /* WINDOWS_DYNAMIC_LOAD undefined */
-    dlobj = dlsym(lib->handle, dlname);
-#   ifdef __ANDROID__
-    if (dlobj && (lib->handle == RTLD_DEFAULT)) {
-      /* Compensate for a bug in dlsym() that gets the address wrong by
-         an offset (incorrect use of `link_bias'?): */
-      if (!adjustment_set) {
-        adjustment = ((uintptr_t)scheme_start_atomic_no_break
-                      - (uintptr_t)dlsym(RTLD_DEFAULT, "scheme_start_atomic_no_break"));
-        adjustment_set = 1;
-      }
-      dlobj = (char *)dlobj XFORM_OK_PLUS adjustment;
-    }
-#   endif /* __ANDROID__ */
-    if (!dlobj && lib->is_global) {
-      /* Try every handle in the table of opened libraries. */
-      int i;
-      for (i = opened_libs->size; i--; ) {
-        if (opened_libs->vals[i]) {
-          lib2 = (ffi_lib_struct *)opened_libs->vals[i];
-          dlobj = dlsym(lib2->handle, dlname);
-          if (dlobj) break;
-        }
-      }
-    }
-    if (!dlobj) {
-      const char *err;
-      err = dlerror();
-      if (err != NULL)
-        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-                         MYNAME": couldn't get \"%s\" from %V (%s)",
-                         dlname, lib->name, err);
-    }
-#   endif /* WINDOWS_DYNAMIC_LOAD */
+                       MYNAME": couldn't get \"%s\" from %V (%s)",
+                       dlname, lib->name, msg);
+    } else
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       MYNAME": couldn't get \"%s\" from %V (%R)",
+                       dlname, lib->name);
+  }
+
+  if (dlobj) {
     obj = (ffi_obj_struct*)scheme_malloc_tagged(sizeof(ffi_obj_struct));
     obj->so.type = ffi_obj_tag;
     obj->obj = (dlobj);
     obj->name = (dlname);
     obj->lib = (lib);
-    scheme_hash_set(lib->objects, (Scheme_Object*)dlname, (Scheme_Object*)obj);
-  }
-  return (obj == NULL) ? scheme_false : (Scheme_Object*)obj;
+    return (Scheme_Object *)obj;
+  } else
+    return scheme_false;
 }
 #undef MYNAME
 
