@@ -53,23 +53,23 @@
 ;; support, so compilation is just (datum->syntax #'here guide).
 
 ;; A Guide (G) is one of:
+;; - (list 't-resyntax G)     ;; template is syntax; re-syntax result
 ;; - (list 't-const)          ;; constant
 ;; - (list 't-var PVar Boolean) ;; pattern variable
 ;; - (list 't-cons G G)       ;; template is pair or syntax-pair => restx, use stx-{car,cdr}
 ;; - (list 't-cons/p G G)     ;; template is non-syntax pair => no restx, use {car,cdr}
-;; - (list 't-cons/x G G)     ;; template is syntax-pair => restx, use {car,cdr}+syntax-e
-;; - (list 't-vector G)
-;; - (list 't-struct G)
-;; - (list 't-box G)
+;; - (list 't-vector G)       ;; template is non-syntax vector
+;; - (list 't-struct G)       ;; template is non-syntax prefab struct
+;; - (list 't-box G)          ;; template is non-syntax box
 ;; - (list 't-dots HG (listof (listof PVar)) Nat G/#f #f Boolean)
 ;; - (list 't-dots  G (listof (listof PVar)) Nat G/#f #t Boolean)
 ;; - (list 't-append/p HG G)  ;; template is non-syntax pair => no restx, use {car,cdr}
-;; - (list 't-append/x HG G)  ;; template is syntax-pair => restx, use {car,cdr}+syntax-e
 ;; - (list 't-escaped G)
 ;; - (list 't-orelse G G)
 ;; - (list 't-metafun Id G)
 ;; - (list 't-unsyntax Id)
-;; - (list 't-relocate G Id)
+;; - (list 't-relocate G Id)        ;; relocate syntax
+;; - (list 't-resyntax/loc G Id)    ;; like t-resyntax, but use alt srcloc
 ;; For 't-var and 't-dots, the final boolean indicates whether the template
 ;; fragment is in the left-hand side of an orelse (??).
 
@@ -197,19 +197,19 @@
                ;; FIXME: improve error message?
                (wrong-syntax bad-dots "too many ellipses in template")))
            ;; hdrivers is (listof (dsetof pvar)); compute pvars new to each level
-           (define hdrivers/level
+           (define hdriverss ;; per level
              (for/list ([i (in-range nesting)])
                (dset-filter hdrivers (pvar/dd<=? (+ depth i)))))
-           (define new-hdrivers/level
-             (let loop ([raw hdrivers/level] [last (dset)])
+           (define new-hdriverss ;; per level
+             (let loop ([raw hdriverss] [last (dset)])
                (cond [(null? raw) null]
                      [else
-                      (define level (dset->list (dset-subtract (car raw) last)))
-                      (cons level (loop (cdr raw) (car raw)))])))
+                      (define new-hdrivers (dset->list (dset-subtract (car raw) last)))
+                      (cons new-hdrivers (loop (cdr raw) (car raw)))])))
            (values (dset-union hdrivers tdrivers)
                    (let ([cons? (ht-guide? hguide)]
                          [hguide (if (ht-guide? hguide) (ht-guide-t hguide) hguide)])
-                     `(t-dots ,hguide ,new-hdrivers/level ,nesting ,tguide ,cons? ,in-try?))))))
+                     (resyntax t `(t-dots ,hguide ,new-hdriverss ,nesting ,tguide ,cons? ,in-try?)))))))
 
    ;; parse-t-pair/normal : Stx Nat Boolean Boolean -> ...
    ;; t is a normal stx pair
@@ -217,10 +217,9 @@
      (define-values (hdrivers hguide) (parse-h (stx-car t) depth esc? in-try?))
      (define-values (tdrivers tguide) (parse-t (stx-cdr t) depth esc? in-try?))
      (values (dset-union hdrivers tdrivers)
-             (let ([kind (cond [(ht-guide? hguide) (if (syntax? t) 't-cons/x 't-cons/p)]
-                               [else (if (syntax? t) 't-append/x 't-append/p)])]
+             (let ([kind (if (ht-guide? hguide) 't-cons/p 't-append/p)]
                    [hguide (if (ht-guide? hguide) (ht-guide-t hguide) hguide)])
-               `(,kind ,hguide ,tguide))))
+               (resyntax t `(,kind ,hguide ,tguide)))))
 
    ;; parse-t-nonpair : Stx Nat Boolean Boolean -> ...
    ;; PRE: t is not a stxpair
@@ -245,17 +244,17 @@
         (vector? (syntax-e #'vec))
         (let-values ([(drivers guide)
                       (parse-t (vector->list (syntax-e #'vec)) depth esc? in-try?)])
-          (values drivers (if (const-guide? guide) const-guide `(t-vector ,guide))))]
+          (values drivers (if (const-guide? guide) const-guide (resyntax t `(t-vector ,guide)))))]
        [pstruct
         (prefab-struct-key (syntax-e #'pstruct))
         (let-values ([(drivers guide)
                       (let ([elems (cdr (vector->list (struct->vector (syntax-e #'pstruct))))])
                         (parse-t elems depth esc? in-try?))])
-          (values drivers (if (const-guide? guide) const-guide `(t-struct ,guide))))]
+          (values drivers (if (const-guide? guide) const-guide (resyntax t `(t-struct ,guide)))))]
        [#&template
         (let-values ([(drivers guide)
                       (parse-t #'template depth esc? in-try?)])
-          (values drivers (if (const-guide? guide) const-guide `(t-box ,guide))))]
+          (values drivers (if (const-guide? guide) const-guide (resyntax t `(t-box ,guide)))))]
        [const
         (values (dset) const-guide)]))
 
@@ -323,6 +322,9 @@
                     (wrong-syntax id "undefined nested attribute of attribute `~a'" (syntax-e pfx)))))
               #f])))
 
+   ;; resyntax : Stx Guide -> Guide
+   (define (resyntax t g) (if (syntax? t) `(t-resyntax ,g) g))
+
    (let-values ([(drivers guide) (parse-t t 0 #f #f)])
      (values (dset->list drivers) guide)))
 
@@ -347,12 +349,9 @@
    (if (and (const-guide? g1) (const-guide? g2)) const-guide `(t-cons ,g1 ,g2)))
  (define (cons/p-guide g1 g2)
    (if (and (const-guide? g1) (const-guide? g2)) const-guide `(t-cons/p ,g1 ,g2)))
- (define (cons/x-guide g1 g2)
-   (if (and (const-guide? g1) (const-guide? g2)) const-guide `(t-cons/x ,g1 ,g2)))
 
  (define (list-guide . gs) (foldr cons-guide const-guide gs))
  (define (list/p-guide . gs) (foldr cons/p-guide const-guide gs))
- (define (list/x-guide . gs) (foldr cons/x-guide const-guide gs))
 
  (define ((pvar/dd<=? expected-dd) x)
    (let ([dd (pvar-dd x)]) (and dd (<= dd expected-dd))))
@@ -369,35 +368,28 @@
 
  ;; relocate-guide : Guide Id -> Guide
  (define (relocate-guide g0 loc-id)
-   (define (relocate g) `(t-relocate ,g ,loc-id))
    (define (error/no-relocate)
      (wrong-syntax #f "cannot apply syntax location to template"))
    (define (loop g)
      (match g
+       [(list 't-resyntax g1)
+        (list 't-resyntax/loc g1 loc-id)]
+       [(list 't-const)
+        `(t-relocate ,g ,loc-id)]
+       [(list 't-cons g1 g2)
+        `(t-relocate ,g loc-id)]
+       ;; ----
        [(list 't-escaped g1)
         (list 't-escaped (loop g1))]
-       [(list 't-var pvar in-try?)
-        ;; Ideally, should error. Don't relocate.
-        g]
-       [(list 't-dots head new-hdrivers/level nesting tail cons? in-try?)
-        ;; Ideally, should error. For perfect backwards compatability,
-        ;; should relocate. But if there are zero iterations, that
-        ;; means we'd relocate tail (which might be bad). Making
-        ;; relocation depend on number of iterations would be
-        ;; complicated. So just ignore.
-        g]
-       [(list 't-unsyntax var)
-        g]
+       [(list 't-orelse g1 g2)
+        (list 't-orelse (loop g1) (loop g2))]
        ;; ----
-       [(list 't-append/x ghead gtail)
-        (match ghead
-          [(list 'h-unsyntax-splicing _) g]
-          [_ (error/no-relocate)])]
+       ;; Variables shouldn't be relocated.
+       [(list 't-var pvar in-try?)  g]
+       [(list 't-unsyntax var)      g]
        ;; ----
-       [(cons kind _)
-        (cond [(memq kind '(t-const t-cons t-cons/x t-vector t-struct t-box))
-               (relocate g)]
-              [else (error/no-relocate)])]))
+       ;; Otherwise, cannot relocate: t-metafun, anything else?
+       [_ (error/no-relocate)]))
    (loop g0))
 
  ;; ----------------------------------------
@@ -510,7 +502,7 @@
     [(t-dots (t-var #s(pvar _ lvar #f _) _) _drivers 1 #f #t _)
      (begin
        (log-template-debug "dots case 1: (x ...) where x is trusted")
-       #'(lambda (stx) (restx stx lvar)))]
+       #'(lambda (stx) lvar))]
     ;; General case
     [(t-dots head ((#s(pvar _ lvar check? _) ...) ...) nesting tail cons? in-try?)
      (let ([cons? (syntax-e #'cons?)]
@@ -557,38 +549,43 @@
 (define (restx basis val)
   (if (syntax? basis) (datum->syntax basis val basis basis) val))
 
+(define ((t-resyntax g) stx) (datum->syntax stx (g (syntax-e stx)) stx stx))
+(define ((t-relocate g loc) stx)
+  (define new-stx (g stx))
+  (datum->syntax new-stx (syntax-e new-stx) loc new-stx))
+(define ((t-resyntax/loc g loc) stx)
+  (datum->syntax stx (g (syntax-e stx)) loc stx))
+
 (define ((t-const) stx) stx)
 (define ((t-append/p h t) stx) (append (h (car stx)) (t (cdr stx))))
-(define ((t-append/x h t) stx) (restx stx (append (h (car (syntax-e stx))) (t (cdr (syntax-e stx))))))
 (define ((t-cons h t) stx) (restx stx (cons (h (stx-car stx)) (t (stx-cdr stx)))))
 (define ((t-cons/p h t) stx) (cons (h (car stx)) (t (cdr stx))))
-(define ((t-cons/x h t) stx) (restx stx (cons (h (car (syntax-e stx))) (t (cdr (syntax-e stx))))))
-(define ((t-dots* h n t) stx)
-  (restx stx (revappend* (h (stx-car stx)) (t (stx-drop (add1 n) stx)))))
-(define ((t-dots1* h n t) stx)
-  (restx stx (revappend (h (stx-car stx)) (t (stx-drop (add1 n) stx)))))
+(define ((t-dots*  h n t) stx) (revappend* (h (car stx)) (t (stx-drop (add1 n) stx))))
+(define ((t-dots1* h n t) stx) (revappend  (h (car stx)) (t (stx-drop (add1 n) stx))))
 (define ((t-escaped g) stx) (g (stx-cadr stx)))
 (define ((t-orelse g1 g2) stx)
   (with-handlers ([absent-pvar? (lambda (e) (if g2 (g2 (stx-caddr stx)) null))])
     (g1 (stx-cadr stx))))
-(define ((t-vector g) stx) (restx stx (list->vector (g (vector->list (syntax-e stx))))))
-(define ((t-box g) stx) (restx stx (box (g (unbox (syntax-e stx))))))
+(define ((t-vector g) stx) (list->vector (g (vector->list stx))))
+(define ((t-box g) stx) (box (g (unbox stx))))
 (define ((t-struct g) stx)
-  (define s (syntax-e stx))
-  (define key (prefab-struct-key s))
-  (define elems (cdr (vector->list (struct->vector s))))
-  (restx stx (apply make-prefab-struct key (g elems))))
+  (define key (prefab-struct-key stx))
+  (define elems (cdr (vector->list (struct->vector stx))))
+  (apply make-prefab-struct key (g elems)))
+(define ((t-metafun mf g) stx)
+  (define stx* (if (syntax? stx) stx (datum->syntax #f stx)))
+  (define v (restx stx* (cons (stx-car stx) (g (stx-cdr stx)))))
+  (apply-metafun mf stx* v))
 (define ((h-t g) stx) (list (g stx)))
-(define ((t-relocate g loc) stx)
-  (define new-stx (g stx))
-  (datum->syntax new-stx (syntax-e new-stx) loc new-stx))
 (define ((t-unsyntax v) stx) (restx stx v))
 (define ((h-unsyntax-splicing v) stx) (stx->list v))
 (define (h-orelse g1 g2) (t-orelse g1 g2))
+(define ((h-splice g) stx)
+  (let ([r (g (stx-cdr stx))])
+    (or (stx->list r) (error/splice stx r))))
 #| end begin-encourage-inline |#)
 
-(define ((t-metafun mf g) stx)
-  (define v (restx stx (cons (stx-car stx) (g (stx-cdr stx)))))
+(define (apply-metafun mf stx v)
   (define mark (make-syntax-introducer))
   (define old-mark (current-template-metafunction-introducer))
   (parameterize ((current-template-metafunction-introducer mark))
@@ -596,10 +593,9 @@
     (unless (syntax? r)
       (raise-syntax-error #f "result of template metafunction was not syntax" stx))
     (old-mark (mark r))))
-(define ((h-splice g) stx)
-  (let ([r (g (stx-cdr stx))])
-    (or (stx->list r)
-        (raise-syntax-error 'template "splicing template did not produce a syntax list" stx))))
+
+(define (error/splice stx r)
+  (raise-syntax-error 'template "splicing template did not produce a syntax list" stx))
 
 ;; revappend* : (Listof (Listof X)) (Listof X) -> (Listof X)
 (define (revappend* xss ys)

@@ -221,23 +221,29 @@
 (tloc template/loc uu #f)
 (tloc template/loc lambda #t)
 (tloc template/loc (lambda (x) x) #t)
-(tloc template/loc (aa ... 1) #f)
-(terx (template/loc loc ((?@ aa ...) 2))
-      #rx"cannot apply syntax location to template")
-(terx (template/loc loc (?? 1 2))
-      #rx"cannot apply syntax location to template")
+(tloc template/loc (aa ... 1) #t)
+(tloc template/loc (aa ... . 1) #t)
+(with-syntax ([(z ...) '()])
+  (tloc template/loc (z ... . 2) #f)) ;; zero iters + syntax tail => no relocation
+(tloc template/loc ((?@ aa ...) 2) #t)
+(tloc template/loc ((?@ aa ...) . 2) #t)
+(with-syntax ([lst #'(a b c)] [nil #'()])
+  (tloc template/loc ((?@ . lst) 2) #t)
+  (tloc template/loc ((?@ . lst) . 2) #t)
+  (tloc template/loc ((?@ . nil) 2) #t)
+  (tloc template/loc ((?@ . nil) . 2) #f)) ;; empty + syntax tail => no relocation
+(tloc template/loc (?? 1 2) #t)
 
 (tloc quasitemplate/loc uu #f)
 (tloc quasitemplate/loc lambda #t)
 (tloc quasitemplate/loc (lambda (x) x) #t)
-(tloc quasitemplate/loc (aa ... 1) #f)
+(tloc quasitemplate/loc (aa ... 1) #t)
+(tloc quasitemplate/loc (aa ... . 1) #t)
+(with-syntax ([(z ...) '()])
+  (tloc quasitemplate/loc (z ... . 2) #f)) ;; zero iters + syntax tail => no relocation
 (tloc quasitemplate/loc (#,'a) #t)
 (tloc quasitemplate/loc #,'a #f)
-(tloc quasitemplate/loc (#,@(list 1 2 3)) #f)
-(terx (quasitemplate/loc loc ((?@ aa ...) 2))
-      #rx"cannot apply syntax location to template")
-(terx (quasitemplate/loc loc (?? 1 2))
-      #rx"cannot apply syntax location to template")
+(tloc quasitemplate/loc (#,@(list 1 2 3)) #t)
 
 ;; Lazy attribute tests from test.rkt
 
