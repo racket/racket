@@ -2,7 +2,9 @@
 
 ;; Foreign Racket interface
 (require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
-         (only-in '#%unsafe unsafe-thread-at-root)
+         (only-in '#%unsafe
+                  unsafe-thread-at-root
+                  unsafe-make-security-guard-at-root)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
@@ -163,9 +165,9 @@
        (ormap ffi-lib* names)    ; try good names first
        (ffi-lib* name0)          ; try original
        (ormap (lambda (name)     ; try relative paths
-		(and (file-exists? name) (ffi-lib* (fullpath name))))
+		(and (file-exists?/insecure name) (ffi-lib* (fullpath name))))
 	      names)
-       (and (file-exists? name0) ; relative with original
+       (and (file-exists?/insecure name0) ; relative with original
 	    (ffi-lib* (fullpath name0)))
        ;; give up: by default, call ffi-lib so it will raise an error
        (if fail
@@ -266,6 +268,14 @@
 ;; This table keeps references to values that are set in foreign libraries, to
 ;; avoid them being GCed.  See set-ffi-obj! above.
 (define ffi-objects-ref-table (make-hasheq))
+
+;; Like `file-exists?`, but avoid security-guard checks on the grounds
+;; that it's being called from an already-allowed unsafe operation ---
+;; so a sandbox doesn't have to make additional allowances for the
+;; check.
+(define (file-exists?/insecure path)
+  (parameterize ([current-security-guard (unsafe-make-security-guard-at-root)])
+    (file-exists? path)))
 
 ;; ----------------------------------------------------------------------------
 ;; Compile-time support for fun-expanders

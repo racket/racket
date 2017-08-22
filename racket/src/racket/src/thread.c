@@ -366,6 +366,7 @@ static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_make_security_guard_at_root(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *security_guard_check_file(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_check_file_link(int argc, Scheme_Object *argv[]);
@@ -642,6 +643,8 @@ scheme_init_unsafe_thread (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
 
   GLOBAL_PRIM_W_ARITY("unsafe-set-on-atomic-timeout!", unsafe_set_on_atomic_timeout, 1, 1, env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-make-security-guard-at-root", unsafe_make_security_guard_at_root, 0, 3, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -8211,6 +8214,27 @@ static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[])
   sg->network_proc = argv[2];
   if ((argc > 3) && SCHEME_TRUEP(argv[3]))
     sg->link_proc = argv[3];
+
+  return (Scheme_Object *)sg;
+}
+
+static Scheme_Object *unsafe_make_security_guard_at_root(int argc, Scheme_Object *argv[])
+{
+  Scheme_Security_Guard *sg;
+
+  if (argc > 0)
+    scheme_check_proc_arity("unsafe-make-security-guard-at-root", 3, 0, argc, argv);
+  if (argc > 1)
+    scheme_check_proc_arity("unsafe-make-security-guard-at-root", 4, 1, argc, argv);
+  if (argc > 2)
+    scheme_check_proc_arity2("unsafe-make-security-guard-at-root", 3, 2, argc, argv, 1);
+
+  sg = MALLOC_ONE_TAGGED(Scheme_Security_Guard);
+  sg->so.type = scheme_security_guard_type;
+  sg->parent = NULL;
+  sg->file_proc = ((argc > 0) ? argv[0] : NULL);
+  sg->network_proc = ((argc > 1) ? argv[1] : NULL);
+  sg->link_proc = ((argc > 2) ? argv[2] : NULL);
 
   return (Scheme_Object *)sg;
 }

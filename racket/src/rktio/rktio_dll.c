@@ -303,6 +303,8 @@ static void get_dl_error(rktio_t *rktio)
     rktio->dll_error = strdup(s);
   else
     rktio->dll_error = strdup("unknown error");
+
+  set_racket_error(RKTIO_ERROR_DLL);
 }
 #endif
 
