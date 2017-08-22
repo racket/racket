@@ -42,6 +42,7 @@
   (let ([tx (lambda (stx) (raise-syntax-error #f "not allowed as an expression" stx))])
     (values tx tx)))
 
+(define-syntax ?@! #f) ;; private, escape-ignoring version of ?@, used by unsyntax-splicing
 
 ;; ============================================================
 ;; Compile-time
@@ -56,7 +57,6 @@
 ;; - (list 't-resyntax G)     ;; template is syntax; re-syntax result
 ;; - (list 't-const)          ;; constant
 ;; - (list 't-var PVar Boolean) ;; pattern variable
-;; - (list 't-cons G G)       ;; template is pair or syntax-pair => restx, use stx-{car,cdr}
 ;; - (list 't-cons/p G G)     ;; template is non-syntax pair => no restx, use {car,cdr}
 ;; - (list 't-vector G)       ;; template is non-syntax vector
 ;; - (list 't-struct G)       ;; template is non-syntax prefab struct
@@ -67,7 +67,6 @@
 ;; - (list 't-escaped G)
 ;; - (list 't-orelse G G)
 ;; - (list 't-metafun Id G)
-;; - (list 't-unsyntax Id)
 ;; - (list 't-relocate G Id)        ;; relocate syntax
 ;; - (list 't-resyntax/loc G Id)    ;; like t-resyntax, but use alt srcloc
 ;; For 't-var and 't-dots, the final boolean indicates whether the template
@@ -77,7 +76,6 @@
 ;; - (list 'h-t G)
 ;; - (list 'h-orelse HG HG/#f)
 ;; - (list 'h-splice G)
-;; - (list 'h-unsyntax-splicing Id)
 
 ;; A PVar is (pvar Id Id Boolean Nat/#f)
 ;;
@@ -140,23 +138,7 @@
    ;; parse-t-pair/command : Stx Nat Boolean Boolean -> ...
    ;; t is a stxpair w/ id in car; check if it is a "command" (metafun, escape, etc)
    (define (parse-t-pair/command t depth esc? in-try?)
-     (syntax-case t (quasitemplate unsyntax ??)
-       [(quasitemplate template)
-        (quasi)
-        (parameterize ((quasi (list (quasi))))
-          (let-values ([(drivers guide) (parse-t #'template depth esc? in-try?)])
-            (values drivers (list-guide const-guide guide))))]
-       [(unsyntax e)
-        (quasi)
-        (let ([qval (quasi)])
-          (cond [(box? qval)
-                 (with-syntax ([(tmp) (generate-temporaries #'(unsyntax-expr))])
-                   (set-box! qval (cons (cons #'tmp t) (unbox qval)))
-                   (values (dset) `(t-unsyntax ,#'tmp)))]
-                [else
-                 (parameterize ((quasi (car qval)))
-                   (let-values ([(drivers guide) (parse-t #'e depth esc? in-try?)])
-                     (values drivers (list-guide const-guide guide))))]))]
+     (syntax-case t (??)
        [(DOTS template)
         (and (not esc?) (free-identifier=? #'DOTS (quote-syntax ...)))
         (let-values ([(drivers guide) (parse-t #'template depth #t in-try?)])
@@ -224,16 +206,13 @@
    ;; parse-t-nonpair : Stx Nat Boolean Boolean -> ...
    ;; PRE: t is not a stxpair
    (define (parse-t-nonpair t depth esc? in-try?)
-     (syntax-case t (?? ?@ unsyntax quasitemplate)
+     (syntax-case t (?? ?@)
        [id
         (identifier? #'id)
-        (cond [(or (and (not esc?)
-                        (or (free-identifier=? #'id (quote-syntax ...))
-                            (free-identifier=? #'id (quote-syntax ??))
-                            (free-identifier=? #'id (quote-syntax ?@))))
-                   (and (quasi)
-                        (or (free-identifier=? #'id (quote-syntax unsyntax))
-                            (free-identifier=? #'id (quote-syntax unsyntax-splicing)))))
+        (cond [(and (not esc?)
+                    (or (free-identifier=? #'id (quote-syntax ...))
+                        (free-identifier=? #'id (quote-syntax ??))
+                        (free-identifier=? #'id (quote-syntax ?@))))
                (wrong-syntax #'id "illegal use")]
               [(lookup-metafun #'id)
                (wrong-syntax t "illegal use of syntax metafunction")]
@@ -260,7 +239,7 @@
 
    ;; parse-h : Syntax Nat Boolean Boolean -> (values (dsetof PVar) HeadGuide)
    (define (parse-h h depth esc? in-try?)
-     (syntax-case h (?? ?@ unsyntax-splicing)
+     (syntax-case h (?? ?@ ?@!)
        [(?? t)
         (not esc?)
         (let-values ([(drivers guide) (parse-h #'t depth esc? #t)])
@@ -277,18 +256,9 @@
         (not esc?)
         (let-values ([(drivers guide) (parse-t (stx-cdr h) depth esc? in-try?)])
           (values drivers `(h-splice ,guide)))]
-       [(unsyntax-splicing t1)
-        (quasi)
-        (let ([qval (quasi)])
-          (cond [(box? qval)
-                 (with-syntax ([(tmp) (generate-temporaries #'(unsyntax-splicing-expr))])
-                   (set-box! qval (cons (cons #'tmp h) (unbox qval)))
-                   (values (dset) `(h-unsyntax-splicing ,#'tmp)))]
-                [else
-                 (parameterize ((quasi (car qval)))
-                   (let*-values ([(drivers guide) (parse-t #'t1 depth esc? in-try?)]
-                                 [(drivers guide) (values drivers (list-guide const-guide guide))])
-                     (values drivers guide)))]))]
+       [(?@! . _)
+        (let-values ([(drivers guide) (parse-t (stx-cdr h) depth esc? in-try?)])
+          (values drivers `(h-splice ,guide)))]
        [t
         (let-values ([(drivers guide) (parse-t #'t depth esc? in-try?)])
           (values drivers `(h-t ,guide)))]))
@@ -338,25 +308,17 @@
      (for/list ([loc (in-list dot-locations)])
        (datum->syntax id (string->symbol (substring id-string 0 loc))))))
 
- ;; quasi : (parameterof (or/c #f (list^n (boxof QuasiPairs))))
- ;; each list wrapper represents nested quasi wrapping
- ;; QuasiPairs = (listof (cons/c identifier syntax))
- (define quasi (make-parameter #f))
-
  (define (stx-dots? x) (and (identifier? x) (free-identifier=? x (quote-syntax ...))))
 
- (define (cons-guide g1 g2)
-   (if (and (const-guide? g1) (const-guide? g2)) const-guide `(t-cons ,g1 ,g2)))
  (define (cons/p-guide g1 g2)
    (if (and (const-guide? g1) (const-guide? g2)) const-guide `(t-cons/p ,g1 ,g2)))
-
- (define (list-guide . gs) (foldr cons-guide const-guide gs))
- (define (list/p-guide . gs) (foldr cons/p-guide const-guide gs))
 
  (define ((pvar/dd<=? expected-dd) x)
    (let ([dd (pvar-dd x)]) (and dd (<= dd expected-dd))))
 
  (define (stx-drop n x) (for/fold ([x x]) ([i (in-range n)]) (stx-cdr x)))
+
+ (define (restx ctx v) (if (syntax? ctx) (datum->syntax ctx v ctx ctx) v))
 
  ;; ----------------------------------------
  ;; Relocating (eg, template/loc)
@@ -376,8 +338,6 @@
         (list 't-resyntax/loc g1 loc-id)]
        [(list 't-const)
         `(t-relocate ,g ,loc-id)]
-       [(list 't-cons g1 g2)
-        `(t-relocate ,g loc-id)]
        ;; ----
        [(list 't-escaped g1)
         (list 't-escaped (loop g1))]
@@ -386,7 +346,6 @@
        ;; ----
        ;; Variables shouldn't be relocated.
        [(list 't-var pvar in-try?)  g]
-       [(list 't-unsyntax var)      g]
        ;; ----
        ;; Otherwise, cannot relocate: t-metafun, anything else?
        [_ (error/no-relocate)]))
@@ -400,21 +359,18 @@
 
  ;; ----------------------------------------
 
- ;; do-template : Syntax Syntax Boolean Id/#f -> Syntax
- (define (do-template ctx tstx quasi? loc-id)
+ ;; do-template : Syntax Syntax Id/#f -> Syntax
+ (define (do-template ctx tstx loc-id)
    (with-disappeared-uses
-     (parameterize ((current-syntax-context ctx)
-                    (quasi (and quasi? (box null))))
+     (parameterize ((current-syntax-context ctx))
        (define-values (pvars pre-guide) (parse-template tstx))
        (define guide (if loc-id (relocate-guide pre-guide loc-id) pre-guide))
        (syntax-arm
         (with-syntax ([t tstx]
                       [((var . pvar-val-var) ...)
                        (for/list ([pvar (in-list pvars)] #:when (pvar-dd pvar))
-                         (cons (pvar-lvar pvar) (pvar-var pvar)))]
-                      [((un-var . un-form) ...)
-                       (if quasi? (reverse (unbox (quasi))) null)])
-          #`(let ([un-var (handle-unsyntax un-form)] ... [var pvar-val-var] ...)
+                         (cons (pvar-lvar pvar) (pvar-var pvar)))])
+          #`(let ([var pvar-val-var] ...)
               (let ([tstx0 (quote-syntax t)])
                 (#,(compile-guide guide) tstx0))))))))
  )
@@ -422,39 +378,90 @@
 (define-syntax (template stx)
   (syntax-case stx ()
     [(template t)
-     (do-template stx #'t #f #f)]
+     (do-template stx #'t #f)]
     [(template t #:properties _)
      (begin
        (log-template-error "template #:properties argument no longer supported: ~e" stx)
-       (do-template stx #'t #f #f))]))
+       (do-template stx #'t #f))]))
+
+(define-syntax (template/loc stx)
+  (syntax-case stx ()
+    [(template/loc loc-expr t)
+     (syntax-arm
+      (with-syntax ([main-expr (do-template stx #'t #'loc-var)])
+        #'(let ([loc-var (handle-loc '?/loc loc-expr)])
+            main-expr)))]))
+
+(define (handle-loc who x)
+  (if (syntax? x) x (raise-argument-error who "syntax?" x)))
+
+;; ============================================================
+
+(begin-for-syntax
+  ;; process-quasi : Syntax -> (list Syntax[with-syntax-bindings] Syntax[expr])
+  (define (process-quasi t0)
+    (define bindings null)
+    (define (add! binding) (set! bindings (cons binding bindings)))
+    (define (process t depth)
+      (define (loop t) (process t depth))
+      (define (loop- t) (process t (sub1 depth)))
+      (define (loop+ t) (process t (add1 depth)))
+      (syntax-case t (unsyntax unsyntax-splicing quasitemplate)
+        [(unsyntax expr)
+         (cond [(zero? depth)
+                (with-syntax ([(us) (generate-temporaries #'(us))]
+                              [ctx (datum->syntax #'expr 'ctx #'expr)])
+                  (add! (list #'us #'(check-unsyntax expr (quote-syntax ctx))))
+                  #'us)]
+               [else
+                (restx t (cons (stx-car t) (loop- (stx-cdr t))))])]
+        [((unsyntax-splicing expr) . _)
+         (cond [(zero? depth)
+                (with-syntax ([(us) (generate-temporaries #'(us))]
+                              [ctx (datum->syntax #'expr 'ctx #'expr)])
+                  (add! (list #'us #'(check-unsyntax-splicing expr (quote-syntax ctx))))
+                  (restx t (cons #'(?@! . us) (loop (stx-cdr t)))))]
+               [else
+                (let ([tcar (stx-car t)]
+                      [tcdr (stx-cdr t)])
+                  (restx t (cons (restx tcar (cons (stx-car tcar) (loop- (stx-cdr tcar))))
+                                 (loop tcdr))))])]
+        [(quasitemplate _)
+         (restx t (cons (stx-car t) (loop+ (stx-cdr t))))]
+        [unsyntax
+         (raise-syntax-error #f "misuse within quasitemplate" t0 t)]
+        [unsyntax-splicing
+         (raise-syntax-error #f "misuse within quasitemplate" t0 t)]
+        [_
+         (let ([d (if (syntax? t) (syntax-e t) t)])
+           (cond [(pair? d) (restx t (cons (loop (car d)) (loop (cdr d))))]
+                 [(vector? d) (restx t (list->vector (loop (vector->list d))))]
+                 [(box? d) (restx t (box (loop (unbox d))))]
+                 [(prefab-struct-key d)
+                  => (lambda (key)
+                       (apply make-prefab-struct key (loop (cdr (vector->list (struct->vector d))))))]
+                 [else t]))]))
+    (define t* (process t0 0))
+    (list (reverse bindings) t*)))
 
 (define-syntax (quasitemplate stx)
   (syntax-case stx ()
     [(quasitemplate t)
-     (do-template stx #'t #t #f)]))
+     (with-syntax ([(bindings t*) (process-quasi #'t)])
+       #'(with-syntax bindings (template t*)))]))
 
-(define-syntaxes (template/loc quasitemplate/loc)
-  (let ([make-tx
-         (lambda (quasi?)
-           (lambda (stx)
-             (syntax-case stx ()
-               [(?/loc loc-expr t)
-                (syntax-arm
-                 (with-syntax ([main-expr (do-template stx #'t quasi? #'loc-stx)])
-                   #'(let ([loc-stx (handle-loc '?/loc loc-expr)])
-                       main-expr)))])))])
-    (values (make-tx #f) (make-tx #t))))
+(define-syntax (quasitemplate/loc stx)
+  (syntax-case stx ()
+    [(quasitemplate/loc loc-expr t)
+     (with-syntax ([(bindings t*) (process-quasi #'t)])
+       #'(with-syntax bindings
+           (template/loc (handle-loc 'quasitemplate/loc loc-expr) t*)))]))
 
-(define (handle-loc who x)
-  (if (syntax? x)
-      x
-      (raise-argument-error who "syntax?" x)))
-
-;; FIXME: what lexical context should result of expr get if not syntax?
-(define-syntax handle-unsyntax
-  (syntax-rules (unsyntax unsyntax-splicing)
-    [(handle-unsyntax (unsyntax expr)) expr]
-    [(handle-unsyntax (unsyntax-splicing expr)) expr]))
+(define (check-unsyntax v ctx)
+  (datum->syntax ctx v ctx))
+(define (check-unsyntax-splicing v ctx)
+  (unless (stx-list? v) (raise-argument-error 'unsyntax-splicing "syntax->list" v))
+  (datum->syntax ctx v ctx))
 
 ;; ============================================================
 
@@ -558,7 +565,6 @@
 
 (define ((t-const) stx) stx)
 (define ((t-append/p h t) stx) (append (h (car stx)) (t (cdr stx))))
-(define ((t-cons h t) stx) (restx stx (cons (h (stx-car stx)) (t (stx-cdr stx)))))
 (define ((t-cons/p h t) stx) (cons (h (car stx)) (t (cdr stx))))
 (define ((t-dots*  h n t) stx) (revappend* (h (car stx)) (t (stx-drop (add1 n) stx))))
 (define ((t-dots1* h n t) stx) (revappend  (h (car stx)) (t (stx-drop (add1 n) stx))))
@@ -577,8 +583,6 @@
   (define v (restx stx* (cons (stx-car stx) (g (stx-cdr stx)))))
   (apply-metafun mf stx* v))
 (define ((h-t g) stx) (list (g stx)))
-(define ((t-unsyntax v) stx) (restx stx v))
-(define ((h-unsyntax-splicing v) stx) (stx->list v))
 (define (h-orelse g1 g2) (t-orelse g1 g2))
 (define ((h-splice g) stx)
   (let ([r (g (stx-cdr stx))])

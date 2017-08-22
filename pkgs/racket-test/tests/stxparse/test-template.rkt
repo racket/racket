@@ -175,6 +175,10 @@
 (tc (quasitemplate (#,1 (quasitemplate #,#,(+ 1 2))))
     '(1 (quasitemplate (unsyntax 3))))
 
+;; quasi-inside-escape
+(tc (quasitemplate (... (1 2 #,@(list #'3) 4)))
+    '(1 2 3 4))
+
 ;; ============================================================
 
 ;; Error tests
