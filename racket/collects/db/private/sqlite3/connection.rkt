@@ -23,6 +23,7 @@
 
     (define -db db)
     (define saved-tx-status #f) ;; set by with-lock, only valid while locked
+    (define creg #f) ;; custodian registration
 
     (sqlite3_extended_result_codes db #t)
 
@@ -243,11 +244,17 @@
 
     (define/override (disconnect* _politely?)
       (super disconnect* _politely?)
+      (real-disconnect #f))
+
+    (define/public (real-disconnect from-custodian?)
       (call-as-atomic
        (lambda ()
          (let ([db -db])
            (when db
              (set! -db #f)
+             ;; Unregister custodian shutdown, unless called from custodian.
+             (unless from-custodian? (unregister-custodian-shutdown this creg))
+             (set! creg #f)
              ;; Free all of connection's prepared statements. This will leave
              ;; pst objects with dangling foreign objects, so don't try to free
              ;; them again---check that -db is not-#f.
@@ -388,15 +395,16 @@
 
     ;; ----
     (super-new)
-    (register-finalizer-and-custodian-shutdown
-     this
-     ;; Keep a reference to the class to keep all FFI callout objects
-     ;; (eg, sqlite3_close) used by its methods from being finalized.
-     (let ([dont-gc this%])
-       (lambda (obj)
-         (send obj disconnect* #f)
-         ;; Dummy result to prevent reference from being optimized away
-         dont-gc)))))
+    (let ([shutdown
+           ;; Keep a reference to the class to keep all FFI callout objects
+           ;; (eg, sqlite3_close) used by its methods from being finalized.
+           (let ([dont-gc this%])
+             (lambda (obj)
+               (send obj real-disconnect #t)
+               ;; Dummy result to prevent reference from being optimized away
+               dont-gc))])
+      (register-finalizer this shutdown)
+      (set! creg (register-custodian-shutdown this shutdown)))))
 
 ;; ----------------------------------------
 
