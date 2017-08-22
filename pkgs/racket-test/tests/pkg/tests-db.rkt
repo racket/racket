@@ -59,7 +59,15 @@
                   '("2x" "2y" "2z"))
     (check-equal? (get-pkg-tags "p1" "http://a")
                   '())
-    
+
+    (check-equal? (get-pkg-ring "p2" "http://b")
+                  #f)
+    (set-pkg-ring! "p2" "http://b" 2)
+    (check-equal? (get-pkg-ring "p2" "http://b")
+                  2)
+    (check-equal? (get-pkg-ring "p1" "http://a")
+                  #f)
+
     (set-pkg-modules! "p1" "http://a" "123" (list '(lib "lib1/main.rkt")
                                                   '(lib "lib2/main.rkt")))
     (check-equal? (sort (get-pkg-modules "p1" "http://a" "123")

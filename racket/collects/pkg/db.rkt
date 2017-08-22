@@ -51,6 +51,11 @@
   [set-pkg-tags! (string? string? (listof string?)
                           . -> . void?)]
 
+  [get-pkg-ring (string? string?
+                         . -> . (or/c #f exact-nonnegative-integer?))]
+  [set-pkg-ring! (string? string? (or/c #f exact-nonnegative-integer?)
+                          . -> . void?)]
+
   [get-module-pkgs (module-path? . -> . (listof pkg?))]
 
   [get-pkgs-without-modules (()
@@ -119,6 +124,15 @@
                      " checksum TEXT)")
                  ;; index:
                  "(pkg, catalog, checksum)"))
+
+(define (prepare-ring-table db)
+  (prepare-table db
+                 "ring"
+                 (~a "(pkg TEXT,"
+                     " catalog SMALLINT,"
+                     " ring SMALLINT)")
+                 ;; index:
+                 "(pkg, catalog)"))
 
 (define current-pkg-catalog-file
   (make-parameter (build-path
@@ -445,6 +459,42 @@
                   ""]
                  [else (get-keyed (cdr dep) '#:platform platform->string)])
                 name catalog-id checksum)))))))
+
+(define (get-pkg-ring name catalog)
+  (call-with-catalog-db
+   (lambda (db)
+     (prepare-catalog-table db)
+     (prepare-pkg-table db)
+     (prepare-ring-table db)
+     (define catalog-id (url->catalog db catalog))
+     (query-maybe-value (catalog-db-connection db)
+                        (~a "SELECT ring FROM ring"
+                            " WHERE catalog=$1"
+                            "   AND pkg=$2")
+                        catalog-id
+                        name))))
+
+(define (set-pkg-ring! name catalog ring)
+  (call-with-catalog-db
+   (lambda (db)
+     (prepare-catalog-table db)
+     (prepare-pkg-table db)
+     (prepare-ring-table db)
+     (call-with-catalog-transaction
+      db
+      (lambda ()
+        (define catalog-id (url->catalog db catalog))
+        (query-exec (catalog-db-connection db)
+                    (~a "DELETE FROM ring"
+                        " WHERE catalog=$1"
+                        "   AND pkg=$2")
+                    catalog-id
+                    name)
+        (when ring
+          (query-exec (catalog-db-connection db)
+                      (~a "INSERT INTO ring"
+                          " VALUES ($1, $2, $3)")
+                      name catalog-id ring)))))))
 
 (define (platform->string dep) (~s dep))
 (define (string->platform str) (read (open-input-string str)))

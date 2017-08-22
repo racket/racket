@@ -244,7 +244,9 @@
                                       (db:pkg-checksum pkg))]
             [deps (db:get-pkg-dependencies (db:pkg-name pkg)
                                            (db:pkg-catalog pkg)
-                                           (db:pkg-checksum pkg))])
+                                           (db:pkg-checksum pkg))]
+            [ring (db:get-pkg-ring (db:pkg-name pkg)
+                                   (db:pkg-catalog pkg))])
         (hash 'name (db:pkg-name pkg)
               'author (db:pkg-author pkg)
               'source (db:pkg-source pkg)
@@ -252,7 +254,8 @@
               'description (db:pkg-desc pkg)
               'tags tags
               'modules mods
-              'dependencies deps))
+              'dependencies deps
+              'ring ring))
       (hash 'source (db:pkg-source pkg)
             'checksum (db:pkg-checksum pkg))))
 

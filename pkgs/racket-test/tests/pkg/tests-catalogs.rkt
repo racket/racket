@@ -40,17 +40,20 @@
                                    "Not a whale"))))
     (db:set-pkg-modules! "fish" "local" "123" '((lib "fish/main.rkt") (lib "fish/food.rkt")))
     (db:set-pkg-dependencies! "fish" "local" "123"
-                              '("ocean" ("water" "1.0") ("crash-helmet" #:platform windows))))
+                              '("ocean" ("water" "1.0") ("crash-helmet" #:platform windows)))
+    (db:set-pkg-ring! "fish" "local" 2))
 
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
   $ "raco pkg catalog-show fish" =stdout> #rx"ocean"
   $ "raco pkg catalog-show fish" =stdout> #rx"water version 1.0"
   $ "raco pkg catalog-show fish" =stdout> #rx"crash-helmet on platform 'windows"
+  $ "raco pkg catalog-show fish" =stdout> #rx"Ring: 2"
   $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
 
   $ (~a "raco pkg catalog-copy " (path->string db) " " (path->string dir))
   $ (~a "raco pkg config --set catalogs file://" (path->string dir))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
+  $ "raco pkg catalog-show fish" =stdout> #rx"Ring: 2"
   $ "raco pkg catalog-show --only-names fish" =stdout> #rx"fish"
   $ "raco pkg catalog-show --only-names --all" =stdout> #rx"fish"
   $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
@@ -59,6 +62,7 @@
   (delete-file (build-path dir "pkgs"))
   (delete-file (build-path dir "pkgs-all"))
   $ "raco pkg catalog-show fish" =stdout> #rx"Checksum: 123"
+  $ "raco pkg catalog-show fish" =stdout> #rx"Ring: 2"
   $ "raco pkg catalog-show --only-names fish" =stdout> #rx"^fish"
   $ "raco pkg catalog-show --only-names --all" =stdout> #rx"^fish"
   $ "raco pkg catalog-show --modules fish" =stdout> #rx"fish/food"
@@ -82,21 +86,26 @@
                        'source "http://localhost:9997/whale.plt"
                        'versions (hash "5.3.6"
                                        (hash 'checksum
-                                             123)))
+                                             123))
+                       'ring 1)
                  o))))
      (add-whale! "345")
      $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale")
      =stdout> #rx"Checksum: 345"
+     $ (~a "raco pkg catalog-show --catalog file://" (path->string dir2) " whale")
+     =stdout> #rx"Ring: 1"
      $ (~a "raco pkg catalog-show --version 5.3.6 --catalog file://" (path->string dir2) " whale")
      =stdout> #rx"Checksum: 123"
      $ "raco pkg catalog-show whale" =exit> 1
      
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))
      $ "raco pkg catalog-show whale" =stdout> #rx"Checksum: 345"
+     $ "raco pkg catalog-show whale" =stdout> #rx"Ring: 1"
      
      (add-whale! "567")
      $ (~a "raco pkg catalog-copy --merge " (path->string dir2) " " (path->string dest))
      $ "raco pkg catalog-show whale" =stdout> #rx"Checksum: 345"
+     $ "raco pkg catalog-show whale" =stdout> #rx"Ring: 1"
      $ (~a "raco pkg catalog-copy --merge --override " (path->string dir2) " " (path->string dest))
      $ "raco pkg catalog-show whale" =stdout> #rx"Checksum: 567"))
 

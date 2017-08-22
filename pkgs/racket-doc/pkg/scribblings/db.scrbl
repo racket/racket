@@ -131,6 +131,26 @@ Gets or sets a list of tags for the package
 
 
 @deftogether[(
+@defproc[(get-pkg-ring [name string?] [catalog string?])
+         (or/c #f exact-nonnegative-integer?)]
+@defproc[(set-pkg-ring! [name string?] [catalog string?] [ring (or/c #f exact-nonnegative-integer?)])
+         void?]
+)]{
+
+Gets or sets a ring number for the package @racket[name] as recognized
+by the @tech{package catalog} @racket[catalog].
+
+The PLT-supported package catalog reports a curated ring number to
+reflect advice on package preference and conflicts, where the set of
+ring-0 and ring-1 packages are expected to have no conflicts (that is,
+no multiply defined modules, document names, etc.). The @exec{raco
+pkg} tool does not pay attention to a package's ring number, but other
+uses of a catalog may consult ring numbers.
+
+@history[#:added "6.10.0.3"]}
+
+
+@deftogether[(
 @defproc[(get-pkg-dependencies [name string?] [catalog string?] [checksum string?])
          (listof list?)]
 @defproc[(set-pkg-dependencies! [name string?] [catalog string?] [checksum string?]

@@ -976,9 +976,9 @@ for @nonterm{key}.
 
  @itemlist[
  @item{@DFlag{all} --- Shows information for all available packages. When using this flag,
-                      supply no @nonterm{packaee-name}s.}
+                      supply no @nonterm{package-name}s.}
  @item{@DFlag{only-names} --- Shows only package names. This option is mainly useful with 
-                              @DFlag{all}, but when a @nonterm{packaee-name} is provided,
+                              @DFlag{all}, but when a @nonterm{package-name} is provided,
                               catalogs are consulted to ensure that he package is available.}
  @item{@DFlag{modules} --- Shows the modules that are implemented by a package.}
  @item{@DFlag{catalog} @nonterm{catalog} --- Queries @nonterm{catalog} instead of the currently configured 

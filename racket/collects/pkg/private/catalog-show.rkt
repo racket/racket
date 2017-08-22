@@ -43,7 +43,7 @@
                            (get-pkg-details-from-catalogs name))))
       (unless (zero? position) (newline))
       (printf "Package name: ~a\n" name)
-      (for ([key '(author source checksum tags description)])
+      (for ([key '(author source checksum tags description ring)])
         (define v (hash-ref details key #f))
         (when v
           (printf " ~a: ~a\n"

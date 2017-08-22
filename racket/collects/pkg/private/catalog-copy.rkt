@@ -142,7 +142,11 @@
         (define deps (hash-ref v 'dependencies '()))
         (unless (null? deps)
           (define cs (hash-ref v 'checksum ""))
-          (db:set-pkg-dependencies! k "local" cs deps))))]
+          (db:set-pkg-dependencies! k "local" cs deps)))
+      (for ([(k v) (in-hash vers-details)])
+        (define ring (hash-ref v 'ring #f))
+        (when ring
+          (db:set-pkg-ring! k "local" ring))))]
    [else
     (define pkg-path (build-path dest-path "pkg"))
     (make-directory* pkg-path)
@@ -159,4 +163,3 @@
      #:exists 'truncate/replace
      (build-path dest-path "pkgs-all")
      (lambda (o) (write details o)))]))
-
