@@ -81,10 +81,12 @@ execute through a call to @racket[touch], however.
 @defproc[(current-future) (or/c #f future?)]{
 
   Returns the descriptor of the future whose thunk execution is the
-  current continuation.  If a future thunk itself uses @racket[touch],
+  current continuation; that is, if a future descriptor @racket[f] is returned,
+  @racket[(touch f)] will produce the result of the current continuation. 
+  If a future thunk itself uses @racket[touch],
   future-thunk executions can be nested, in which case the descriptor of
   the most immediately executing future is returned.  If the current
-  continuation is not a future-thunk execution, the result is
+  continuation does not return to the @racket[touch] of any future, the result is
   @racket[#f].
 }
 
