@@ -3,6 +3,7 @@
          racket/class
          racket/promise
          "interfaces.rkt"
+         (only-in "prepared.rkt")
          (only-in "sql-data.rkt" sql-null sql-null?))
 (provide connected?
          disconnect
