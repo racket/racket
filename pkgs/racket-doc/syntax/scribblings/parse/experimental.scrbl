@@ -3,7 +3,8 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          "parse-common.rkt")
+          "parse-common.rkt"
+          (for-label syntax/datum))
 
 @(define the-eval (make-sp-eval))
 
@@ -302,6 +303,12 @@ with optional terms and splicing sequences of terms. Only the
 additional forms are described here; see @racket[syntax] for
 descriptions of pattern variables, etc.
 
+As in @racket[syntax], a template can be ``escaped'' with ellipses,
+like @racket[(... _escaped-tmpl)]. Within the escaped template,
+ellipses (@racket[...]), the @racket[??] and @racket[?@] forms, and
+metafunctions are treated as constants rather than interpreted as
+template forms.
+
 @specsubform[#:literals (??)
              (?? tmpl alt-tmpl)]{
 
@@ -444,6 +451,25 @@ example:
 If @racket[join] were defined as a macro, it would not be usable in
 the context above; instead, @racket[let-values] would report an
 invalid binding list.
+}
+
+@deftogether[[
+@defform[(template/loc loc-expr tmpl)]
+@defform[(quasitemplate tmpl)]
+@defform[(quasitemplate/loc loc-expr tmpl)]
+]]{
+
+Like @racket[syntax/loc], @racket[quasisyntax], and
+@racket[quasisyntax/loc], respectively, but with the additional
+features of @racket[template].
+}
+
+@defform[(datum-template tmpl)]{
+
+Like @racket[datum] but with some of the additional features of
+@racket[template]: @racket[?@] and @racket[??] are supported (although
+@racket[??] is useless, since @racket[datum-case] cannot bind
+``absent'' variables), but template metafunctions are not allowed.
 }
 
 @(close-eval the-eval)
