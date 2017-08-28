@@ -3132,6 +3132,17 @@ value to be checked against the contract is supplied to the contract.
 Without it, the @racket[contract-expr] is evaluated earlier. This option
 is supported only when @racket[type] is @racket[#:flat].
 
+@examples[#:eval (contract-eval)
+  (define even-length-list/c
+    (or/c null?
+          (cons/c any/c
+                  (cons/c any/c
+                          (recursive-contract even-length-list/c #:flat)))))
+
+  (even-length-list/c '(A B))
+  (even-length-list/c '(1 2 3))
+]
+
  @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] option.}
           #:changed "6.7.0.3" @list{Added the @racket[#:extra-delay] option.}]
 }
