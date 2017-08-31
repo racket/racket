@@ -165,9 +165,8 @@ EOS
         (lambda () (expand/display #<<EOS
 #lang info
 (define collection "<<name>>")
-(define deps '("base"
-               "rackunit-lib"))
-(define build-deps '("scribble-lib" "racket-doc"))
+(define deps '("base"))
+(define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/<<name>>.scrbl" ())))
 (define pkg-desc "Description Here")
 (define version "0.0")
