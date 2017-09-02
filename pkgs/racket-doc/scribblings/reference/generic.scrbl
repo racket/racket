@@ -1,5 +1,5 @@
 #lang scribble/manual
-@(require (for-label racket/base racket/generic))
+@(require (for-label racket/base racket/generic racket/contract/base))
 
 @title[#:tag "struct-generics"]{Generic Interfaces}
 
