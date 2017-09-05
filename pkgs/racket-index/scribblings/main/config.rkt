@@ -6,13 +6,6 @@
 
 (define bug-url "http://bugs.racket-lang.org/")
 
-(define rendering-global-manuals? (and (getenv "PLT_PKG_BUILD_SERVICE") #t))
-(define search-manuals-label
-  (format "Search ~a Manuals"
-          (if rendering-global-manuals?
-            "Global"
-            "Local")))
-
 ;; Link definitions: (id-sym title root-sym/#f-for-url subpath/url),
 ;; or a `---' for a spacer; the root-sym can be `plt' for standard
 ;; pages, or `user' for pages that have an installation and a
@@ -21,7 +14,9 @@
 ;; where the corresponding document is generated, this is a hack.)
 (define links
   `((start   "Racket Documentation" user "index.html")
-    (search  ,search-manuals-label  user "search/index.html")
+    ;; XXX I want this to say Global vs Local but I don't think this
+    ;; can be something overrided by css/js with doc-site
+    (search  "Search Manuals"       user "search/index.html")
     ---
     (license "License"          plt  "license/index.html")
     (acks    "Acknowledgements" plt  "acks/index.html")
