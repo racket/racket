@@ -774,6 +774,9 @@ function UpdateResults() {
     (first_search_result+results_num < search_results.length)
     ? "black" : "#e0e0e0";
   saved_status = false;
+
+  document.getElementById("redo_search_global").innerHTML =
+        "<a href=\"http://docs.racket-lang.org/search/index.html?" + page_query_string + "\">Click here to repeat your search globally</a>.";
 }
 
 function HandleKeyEvent(event) {
