@@ -8386,6 +8386,7 @@ static Scheme_IR_Local *clone_variable(Scheme_IR_Local *var)
   MZ_ASSERT(SAME_TYPE(var->so.type, scheme_ir_local_type));
   var2 = MALLOC_ONE_TAGGED(Scheme_IR_Local);
   memcpy(var2, var, sizeof(Scheme_IR_Local));
+  scheme_set_distinct_eq_hash((Scheme_Object *)var2);
   return var2;
 }
 

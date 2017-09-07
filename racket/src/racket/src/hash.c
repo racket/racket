@@ -67,6 +67,10 @@ static void register_traversers(void);
 #define OBJ_HASH_USEFUL_BITS (16 - OBJ_HASH_USELESS_BITS)
 #define OBJ_HASH_USEFUL_MASK ((1 << OBJ_HASH_USEFUL_BITS)-1)
 
+/* A hash code has been installed if any of these bits is
+   non-zero: */
+#define HASH_CODE_PRESENT_BITS 0xFFFC
+
 #ifdef MZ_PRECISE_GC
 /* keygen race conditions below are "ok", because keygen is randomness
    used to create a hashkey. Technically, a race condition allows
@@ -88,7 +92,7 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
 
   v = o->keyex;
 
-  if (!(v & 0xFFFC)) {
+  if (!(v & HASH_CODE_PRESENT_BITS)) {
     uintptr_t local_keygen = keygen;
     v |= (short)local_keygen;
 #ifdef OBJHEAD_HAS_HASH_BITS
@@ -127,6 +131,15 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
 #else
 # define PTR_TO_LONG(p) ((uintptr_t)(p)>>2)
 #endif
+
+void scheme_set_distinct_eq_hash(Scheme_Object *o)
+/* Used after cloning a value to ensure that the
+   hash code is not cloned */
+{
+#ifdef MZ_PRECISE_GC
+  o->keyex = o->keyex & ~HASH_CODE_PRESENT_BITS;
+#endif
+}
 
 void scheme_install_symbol_hash_code(Scheme_Object *sym, uintptr_t h)
 {

@@ -4510,6 +4510,8 @@ Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2);
 
 void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 
+XFORM_NONGCING void scheme_set_distinct_eq_hash(Scheme_Object *var2);
+
 XFORM_NONGCING Scheme_Object *scheme_regexp_source(Scheme_Object *re);
 int scheme_regexp_is_byte(Scheme_Object *re);
 int scheme_regexp_is_pregexp(Scheme_Object *re);
