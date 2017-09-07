@@ -10,35 +10,8 @@
 (require (for-syntax racket/private/sc "residual-ct.rkt"))
 (provide (for-syntax (all-from-out "residual-ct.rkt")))
 
-(begin-for-syntax
-  ;; == from runtime.rkt
-
- (provide make-attribute-mapping
-          attribute-mapping?
-          attribute-mapping-var
-          attribute-mapping-name
-          attribute-mapping-depth
-          attribute-mapping-syntax?)
-
- (define-struct attribute-mapping (var name depth syntax?)
-   #:omit-define-syntaxes
-   #:property prop:procedure
-   (lambda (self stx)
-     (if (attribute-mapping-syntax? self)
-         #`(#%expression #,(attribute-mapping-var self))
-         (let ([source-name
-                (or (let loop ([p (syntax-property stx 'disappeared-use)])
-                      (cond [(identifier? p) p]
-                            [(pair? p) (or (loop (car p)) (loop (cdr p)))]
-                            [else #f]))
-                    (attribute-mapping-name self))])
-           #`(let ([value #,(attribute-mapping-var self)])
-               (if (syntax-list^depth? '#,(attribute-mapping-depth self) value)
-                   value
-                   (check/force-syntax-list^depth '#,(attribute-mapping-depth self)
-                                                  value
-                                                  (quote-syntax #,source-name))))))))
- )
+(require racket/private/template)
+(provide (for-syntax attribute-mapping attribute-mapping?))
 
 ;; ============================================================
 ;; Run-time
@@ -54,10 +27,10 @@
          this-context-syntax
          attribute
          attribute-binding
+         check-attr-value
          stx-list-take
          stx-list-drop/cx
          datum->syntax/with-clause
-         check/force-syntax-list^depth
          check-literal*
          error/null-eh-match
          begin-for-syntax/once
@@ -113,7 +86,7 @@
              (if (attribute-mapping? value)
                  #`(quote #,(make-attr (attribute-mapping-name value)
                                        (attribute-mapping-depth value)
-                                       (attribute-mapping-syntax? value)))
+                                       (if (attribute-mapping-check value) #f #t)))
                  #'(quote #f)))
            #'(quote #f)))]))
 
@@ -136,60 +109,28 @@
               (if (syntax? x) x cx)
               (sub1 n)))))
 
-;; check/force-syntax-list^depth : nat any id -> (listof^depth syntax)
-;; Checks that value is (listof^depth syntax); forces promises.
-;; Slow path for attribute-mapping code, assumes value is not syntax-list^depth? already.
-(define (check/force-syntax-list^depth depth value0 source-id)
-  (define (bad sub-depth sub-value)
-    (attribute-not-syntax-error depth value0 source-id sub-depth sub-value))
-  (define (loop depth value)
-    (cond [(promise? value)
-           (loop depth (force value))]
-          [(zero? depth)
-           (if (syntax? value) value (bad depth value))]
-          [else (loop-list depth value)]))
-  (define (loop-list depth value)
-    (cond [(promise? value)
-           (loop-list depth (force value))]
-          [(pair? value)
-           (let ([new-car (loop (sub1 depth) (car value))]
-                 [new-cdr (loop-list depth (cdr value))])
-             ;; Don't copy unless necessary
-             (if (and (eq? new-car (car value))
-                      (eq? new-cdr (cdr value)))
-                 value
-                 (cons new-car new-cdr)))]
-          [(null? value)
-           null]
-          [else
-           (bad depth value)]))
-  (loop depth value0))
-
-(define (attribute-not-syntax-error depth0 value0 source-id sub-depth sub-value)
-  (raise-syntax-error #f
-    (format (string-append "bad attribute value for syntax template"
-                           "\n  attribute value: ~e"
-                           "\n  expected for attribute: ~a"
-                           "\n  sub-value: ~e"
-                           "\n  expected for sub-value: ~a")
-            value0
-            (describe-depth depth0)
-            sub-value
-            (describe-depth sub-depth))
-    source-id))
-
-(define (describe-depth depth)
-  (cond [(zero? depth) "syntax"]
-        [else (format "list of depth ~s of syntax" depth)]))
-
-;; syntax-list^depth? : nat any -> boolean
-;; Returns true iff value is (listof^depth syntax).
-(define (syntax-list^depth? depth value)
-  (if (zero? depth)
-      (syntax? value)
-      (and (list? value)
-           (for/and ([part (in-list value)])
-             (syntax-list^depth? (sub1 depth) part)))))
+;; check-attr-value : Any d:Nat b:Boolean Syntax/#f -> (Listof^d (if b Syntax Any))
+(define (check-attr-value v0 depth0 base? ctx)
+  (define (bad kind v)
+    (raise-syntax-error #f (format "attribute contains non-~s value\n  value: ~e" kind v) ctx))
+  (define (depthloop depth v)
+    (if (zero? depth)
+        (if base? (baseloop v) v)
+        (let listloop ([v v] [root? #t])
+          (cond [(null? v) null]
+                [(pair? v) (let ([new-car (depthloop (sub1 depth) (car v))]
+                                 [new-cdr (listloop (cdr v) #f)])
+                             (cond [(and (eq? (car v) new-car) (eq? (cdr v) new-cdr)) v]
+                                   [else (cons new-car new-cdr)]))]
+                [(promise? v) (listloop (force v) root?)]
+                [(and root? (eq? v #f)) (begin (signal-absent-pvar) (bad 'list v))]
+                [else (bad 'list v)]))))
+  (define (baseloop v)
+    (cond [(syntax? v) v]
+          [(promise? v) (baseloop (force v))]
+          [(eq? v #f) (begin (signal-absent-pvar) (bad 'syntax v))]
+          [else (bad 'syntax v)]))
+  (depthloop depth0 v0))
 
 ;; datum->syntax/with-clause : any -> syntax
 (define (datum->syntax/with-clause x)

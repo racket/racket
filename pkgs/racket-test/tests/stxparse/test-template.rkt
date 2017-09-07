@@ -246,8 +246,6 @@
 (with-syntax ([(z ...) '()])
   (tloc quasitemplate/loc (z ... . 2) #f)) ;; zero iters + syntax tail => no relocation
 (tloc quasitemplate/loc (#,'a) #t)
-(tloc quasitemplate/loc #,'a #f)
-(tloc quasitemplate/loc (#,@(list 1 2 3)) #t)
 
 ;; Lazy attribute tests from test.rkt
 

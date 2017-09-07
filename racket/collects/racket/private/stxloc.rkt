@@ -35,28 +35,6 @@
 	[(sc stxe kl . clause)
 	 (transform-to-syntax-case** stx #'sc #f #'stxe #'kl #'eq? #t #'clause)])))
 
-  (-define (relocate loc stx)
-    (if (or (syntax-source loc)
-            (syntax-position loc))
-        (datum->syntax stx
-                       (syntax-e stx)
-                       loc
-                       stx)
-	stx))
-
-  ;; Like syntax, but also takes a syntax object
-  ;; that supplies a source location for the
-  ;; resulting syntax object.
-  (-define-syntax syntax/loc
-    (lambda (stx)
-      (syntax-case** #f #t stx () free-identifier=? #f
-	[(_ loc pattern)
-	 (if (if (symbol? (syntax-e #'pattern))
-		 (syntax-pattern-variable? (syntax-local-value #'pattern (lambda () #f)))
-		 #f)
-	     (syntax (syntax pattern))
-	     (syntax (relocate loc (syntax pattern))))])))
-
   (-define-syntax quote-syntax/prune
     (lambda (stx)
       (syntax-case** #f #t stx () free-identifier=? #f
@@ -77,4 +55,5 @@
               stx
               #'id))])))
 
-  (#%provide syntax/loc quote-syntax/prune syntax-case* syntax-case datum-case ... _))
+  (#%provide syntax/loc quote-syntax/prune syntax-case* syntax-case datum-case
+             ... _ ?? ?@))
