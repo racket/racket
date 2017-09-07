@@ -444,6 +444,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
 	}
 
         do {
+          init_procs();
           if (dest) free(dest);
           dest_len = len + 1;
           dest = malloc(dest_len);
