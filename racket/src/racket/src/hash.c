@@ -2494,7 +2494,7 @@ XFORM_NONGCING Scheme_Object *_mzHAMT_VAL(Scheme_Hash_Tree *ht, int pos, int pop
 XFORM_NONGCING uintptr_t mzHAMT_KEY_CODE(Scheme_Object *o)
 {
   while (1) {
-    if (HASHTR_COLLISIONP(o))
+    if (HASHTR_COLLISIONP(o) || HASHTR_SUBTREEP(o))
       o = ((Scheme_Hash_Tree *)o)->els[0];
     else {
       uintptr_t h;
