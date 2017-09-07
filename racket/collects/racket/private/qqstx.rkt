@@ -2,7 +2,7 @@
 ;; #%qqstx : quasisyntax
 
 (module qqstx '#%kernel
-  (#%require "small-scheme.rkt" "stxcase-scheme.rkt" "stx.rkt"
+  (#%require "small-scheme.rkt" "stxcase-scheme.rkt" "stx.rkt" "template.rkt"
              (for-syntax '#%kernel "small-scheme.rkt" "stxcase-scheme.rkt" "stx.rkt"))
 
   (#%provide quasisyntax
@@ -105,13 +105,11 @@
                                                     [ctx (datum->syntax #'x 'ctx #'x)])
                                         (convert-k (datum->syntax
                                                     stx
-                                                    (list* (syntax temp)
-                                                           (quote-syntax ...)
-                                                           rest-v)
+                                                    (cons #'(?@! . temp) rest-v)
                                                     stx
                                                     stx)
                                                    (with-syntax ([check check-splicing-list-id])
-                                                     (cons #'[(temp (... ...)) (check x (quote-syntax ctx))]
+                                                     (cons #'[temp (check x (quote-syntax ctx))]
                                                            bindings)))))])
                                (loop (syntax rest) depth
                                      (lambda ()

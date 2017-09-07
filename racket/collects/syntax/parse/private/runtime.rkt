@@ -106,8 +106,9 @@ residual.rkt.
        (with-syntax ([(vtmp ...) (generate-temporaries #'(name ...))]
                      [(stmp ...) (generate-temporaries #'(name ...))])
          #'(letrec-syntaxes+values
-               ([(stmp) (make-attribute-mapping (quote-syntax vtmp)
-                                                'name 'depth 'syntax?)] ...)
+               ([(stmp) (attribute-mapping (quote-syntax vtmp) 'name 'depth
+                                           (if 'syntax? #f (quote-syntax check-attr-value)))]
+                ...)
                ([(vtmp) value] ...)
              (letrec-syntaxes+values
                  ([(name) (make-syntax-mapping 'depth (quote-syntax stmp))] ...)
@@ -143,8 +144,8 @@ residual.rkt.
                      [(stmp ...) (generate-temporaries #'(name ...))])
          #'(begin (define-values (vtmp ...) (apply values packed))
                   (define-syntax stmp
-                    (make-attribute-mapping (quote-syntax vtmp)
-                                            'name 'depth 'syntax?))
+                    (attribute-mapping (quote-syntax vtmp) 'name 'depth
+                                       (if 'syntax? #f (quote-syntax check-attr-value))))
                   ...
                   (define-syntax name (make-syntax-mapping 'depth (quote-syntax stmp)))
                   ...)))]))
