@@ -16,23 +16,20 @@
 <script>
 
 if (location.search.length > 0) {
-  var paramstrs = location.search.substring(1).split(/[;&]/);
-  var newsearch = null;
-  for (var i=0; i<paramstrs.length; i++) {
-    var param = paramstrs[i].split(/=/);
+  var u = new URL(location);
+  var newsearch = "";
+  for(var key of u.searchParams.keys()) {
+    var val = u.searchParams.get(key);
     // an empty "hq=" can be used to clear the cookie
-    if (param[0] == "hq") {
-      SetCookie("PLT_ContextQuery",
-                ((param.length==2) ? unescape(param[1]) : ""));
-    } else if (param[0] == "label") {
-      SetCookie("PLT_ContextQueryLabel",
-                ((param.length==2) ? unescape(param[1]) : ""));
+    if (key == "hq") {
+      SetCookie("PLT_ContextQuery", val);
+    } else if (key == "label") {
+      SetCookie("PLT_ContextQueryLabel", val);
     } else {
-      newsearch = (newsearch == null)
-                    ? paramstrs[i] : (newsearch + "&" + paramstrs[i]);
+      if (newsearch == "") newsearch = "?";
+      newsearch = newsearch + "&" + key + "=" + encodeURIComponent(val);
     }
   }
-  newsearch = (newsearch == null) ? "" : ("?" + newsearch);
   // localtion.replace => jump without leaving the current page in the history
   // (the new url uses "index.html" and the new search part)
   location.replace(location.href.replace(/\/[^\/?#]*[?][^#]*/,
