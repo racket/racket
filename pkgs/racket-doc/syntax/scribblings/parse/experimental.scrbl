@@ -162,7 +162,8 @@ Like @racket[~reflect] but for reified splicing syntax classes.
 @defmodule[syntax/parse/experimental/splicing]
 
 @defform[(define-primitive-splicing-syntax-class (name-id param-id ...) 
-           maybe-description maybe-attrs
+           #:description description-expr
+           #:attributes (attr-arity-decl ...)
            parser-expr)
           #:contracts ([parser (-> syntax?
                                    (->* () ((or/c string? #f) -> any))
