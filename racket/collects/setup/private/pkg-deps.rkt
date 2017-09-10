@@ -362,7 +362,7 @@
   (define (check-bytecode-deps f dir coll-path pkg)
     (define zo-f (path-replace-extension f #".zo"))
     (when (file-exists? (build-path dir zo-f))
-      (define base (let ([m (regexp-match #rx#"^(.*)_[a-z]+[.]zo$"
+      (define base (let ([m (regexp-match #rx#"^(.*)_[^_]+[.]zo$"
                                           (path-element->bytes zo-f))])
                      (and m (bytes->string/utf-8 (cadr m)))))
       (define in-mod `(lib ,(string-join 
