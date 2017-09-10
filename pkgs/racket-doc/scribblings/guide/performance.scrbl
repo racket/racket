@@ -332,7 +332,7 @@ decompiler (see @secref[#:doc '(lib "scribblings/raco/raco.scrbl")
 @racketidfont{#%flonum}, @racketidfont{#%as-flonum}, and
 @racketidfont{#%from-flonum}.
 
-@margin-note{Unboxing of local bindings and accumualtors is not
+@margin-note{Unboxing of local bindings and accumulators is not
 supported by the JIT for PowerPC.}
 
 The @racketmodname[racket/unsafe/ops] library provides unchecked
@@ -563,7 +563,7 @@ This code is one attempt to follow that pattern, but it has a subtle bug:
              (collect-garbage)
              (printf "still there? ~s\n" (weak-box-value wb)))]
 Specifically, it will show that the weak box is empty, but not
-beacause @racket[_fishes] no longer holds onto the value, but
+because @racket[_fishes] no longer holds onto the value, but
 because @racket[_fishes] itself is not reachable anymore!
 
 Change the program to this one:
