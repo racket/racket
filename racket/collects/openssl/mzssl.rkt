@@ -593,7 +593,7 @@ TO DO:
    (list 'secure TLS_client_method
          'auto TLS_client_method
          'sslv2-or-v3 TLS_client_method
-         'sslv2 SSLv2_client_method
+         ;; 'sslv2 SSLv2_client_method --- always fails in modern OpenSSL
          'sslv3 SSLv3_client_method
          'tls TLSv1_client_method
          'tls11 TLSv1_1_client_method
@@ -603,7 +603,7 @@ TO DO:
    (list 'secure TLS_server_method
          'auto TLS_server_method
          'sslv2-or-v3 TLS_server_method
-         'sslv2 SSLv2_server_method
+         ;; 'sslv2 SSLv2_server_method --- always fails in modern OpenSSL
          'sslv3 SSLv3_server_method
          'tls TLSv1_server_method
          'tls11 TLSv1_1_server_method
