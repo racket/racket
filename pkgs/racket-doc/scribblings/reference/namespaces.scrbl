@@ -295,7 +295,7 @@ undefined.}
  Unlike @racket[namespace-require], 
  @racket[namespace-attach-module] does not
  @tech{instantiate} the module, but copies the module
- instance from the source namesapce to the target namespace.
+ instance from the source namespace to the target namespace.
 
 @examples[
  (module food racket/base
