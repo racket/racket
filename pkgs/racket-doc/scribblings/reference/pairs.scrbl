@@ -1055,8 +1055,8 @@ except that it can be faster.
 
 
 @deftogether[(
-  @defproc[(takef-right [lst any/c] [pred procedure?]) list?]
-  @defproc[(dropf-right [lst any/c] [pred procedure?]) any/c]
+  @defproc[(takef-right [lst any/c] [pred procedure?]) any/c]
+  @defproc[(dropf-right [lst any/c] [pred procedure?]) list?]
   @defproc[(splitf-at-right [lst any/c] [pred procedure?]) (values list? any/c)]
 )]{
 
