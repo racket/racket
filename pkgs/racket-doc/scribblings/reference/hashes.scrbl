@@ -572,7 +572,7 @@ for use in double hashing.}
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/hash))
 
-@defproc[(hash-union [h0 (and/c hash? hash-can-functional-set?)]
+@defproc[(hash-union [h0 (and/c hash? immutable?)]
                      [h hash?] ...
                      [#:combine combine
                                 (-> any/c any/c any/c)
@@ -580,7 +580,7 @@ for use in double hashing.}
                      [#:combine/key combine/key
                                     (-> any/c any/c any/c any/c)
                                     (lambda (k a b) (combine a b))])
-         (and/c hash? hash-can-functional-set?)]{
+         (and/c hash? immutable?)]{
 
 Computes the union of @racket[h0] with each hash table @racket[h] by functional
 update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
@@ -600,7 +600,7 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 
 }
 
-@defproc[(hash-union! [h0 (and/c hash? hash-mutable?)]
+@defproc[(hash-union! [h0 (and/c hash? (not/c immutable?))]
                       [h hash?] ...
                       [#:combine combine
                                  (-> any/c any/c any/c)
