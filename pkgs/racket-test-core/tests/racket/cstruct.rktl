@@ -1,4 +1,4 @@
-
+G
 (load-relative "loadtest.rktl")
 
 (Section 'cstruct)
@@ -160,10 +160,10 @@
 
 (let ()
   (test '(0 4 8) compute-offsets (list _int _bool _string))
-  (test '(0 4 5 8) compute-offsets (list _int _byte _byte _long))
-  (test '(0 4 5 6) compute-offsets (list _int _byte _byte _long) 1)
-  (test '(5 4 3 2) compute-offsets (list _int _byte _byte _long) #f (list 5 4 3 2))
-  (test '(0 5 6 8) compute-offsets (list _int _byte _byte _long) #f (list #f 5 #f #f)))
+  (test '(0 4 5 8) compute-offsets (list _int _byte _byte _int))
+  (test '(0 4 5 6) compute-offsets (list _int _byte _byte _int) 1)
+  (test '(5 4 3 2) compute-offsets (list _int _byte _byte _int) #f (list 5 4 3 2))
+  (test '(0 5 6 8) compute-offsets (list _int _byte _byte _int) #f (list #f 5 #f #f)))
 
 ;; ----------------------------------------
 

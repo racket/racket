@@ -1410,13 +1410,11 @@ expects arguments for both the super fields and the new ones:
  Given a list of types in a C struct type, return the offset
  of those types.
 
- @racket[types] is a list of types of the C struct. The same
- as @racket[types] in @racket[make-cstruct-type].
+ The @racket[types] list describes a C struct type and is
+ identical to the list in @racket[make-cstruct-type].
 
- @racket[alignment] sets the C struct padding. If
- @racket[alignment] is @racket[#f], then the natural
- alignment is used. Otherwise the given value is used. The
- behavior is identical to @racket[make-cstruct-type].
+ The C struct's alignment is set with @racket[alignment]
+ The behavior is identical to @racket[make-cstruct-type].
 
  Explicit positions can be set with @racket[declare]. If
  provided, it is a list with the same length as as

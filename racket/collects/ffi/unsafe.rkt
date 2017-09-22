@@ -1411,10 +1411,13 @@
 ;; Struct wrappers
 
 (define* (compute-offsets types [alignment #f] [declared '()])
-  (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
-                       alignment
-                       #f)]
-        [declared (append declared (build-list (- (length types) (length declared)) (λ (n) #f)))])
+  (unless (and (list? types) (map ctype? types))
+    (raise-argument-error 'compute-offsets "(listof ctype?)" types))
+  (unless (memq alignment '(#f 1 2 4 8 16))
+    (raise-argument-error 'compute-offsets "(or/c #f 1 2 4 8 16)" alignment))
+  (unless (and (list? declared) (map (λ (v) (or (not v) (exact-integer? v))) declared))
+    (raise-argument-error 'compute-offsets "(listof (or/c exact-integer? #f))" declared))
+  (let ([declared (append declared (build-list (- (length types) (length declared)) (λ (n) #f)))])
     (let loop ([ts types] [ds declared] [cur 0] [r '()])
       (if (null? ts)
           (reverse r)
