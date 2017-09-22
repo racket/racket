@@ -1410,10 +1410,11 @@
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
 
-(define (compute-offsets types alignment declared)
+(define* (compute-offsets types [alignment #f] [declared '()])
   (let ([alignment (if (memq alignment '(#f 1 2 4 8 16))
                        alignment
-                       #f)])
+                       #f)]
+        [declared (append declared (build-list (- (length types) (length declared)) (λ (n) #f)))])
     (let loop ([ts types] [ds declared] [cur 0] [r '()])
       (if (null? ts)
           (reverse r)

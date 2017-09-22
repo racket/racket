@@ -1402,6 +1402,34 @@ expects arguments for both the super fields and the new ones:
 #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}
 #:changed "6.3.0.13" @elem{Added @racket[#:define-unsafe].}]}
 
+@defproc[(compute-offsets [types (listof ctype?)]
+                          [alignment (or/c #f 1 2 4 8 16) #f]
+                          [declare (listof (or/c #f exact-integer?)) '()])
+         (listof exact-integer?)]{
+                                  
+ Given a list of types in a C struct type, return the offset
+ of those types.
+
+ @racket[types] is a list of types of the C struct. The same
+ as @racket[types] in @racket[make-cstruct-type].
+
+ @racket[alignment] sets the C struct padding. If
+ @racket[alignment] is @racket[#f], then the natural
+ alignment is used. Otherwise the given value is used. The
+ behavior is identical to @racket[make-cstruct-type].
+
+ Explicit positions can be set with @racket[declare]. If
+ provided, it is a list with the same length as as
+ @racket[types]. At each index, if a number is provided, that
+ type is at that offset. Otherwise, the type is
+ @racket[alignment] bytes after the offset.
+
+ @examples[(compute-offsets (list _int _bool _short))
+           (compute-offsets (list _int _bool _short) 1)
+           (compute-offsets (list _int _int _int) #f (list #f 5 #f))]
+
+ @history[#:added "6.10.1.2"]}
+
 @; ------------------------------------------------------------
 
 @section{C Array Types}
