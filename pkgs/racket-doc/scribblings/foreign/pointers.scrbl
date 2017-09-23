@@ -267,8 +267,7 @@ specification is required at minimum:
   @indexed-racket['nonatomic] (uses @cpp{scheme_malloc} from
   Racket's C API), @indexed-racket['atomic]
   (@cpp{scheme_malloc_atomic}), @indexed-racket['tagged]
-  (@cpp{scheme_malloc_tagged}), @indexed-racket['atomic]
-  (@cpp{scheme_malloc_atomic}), @indexed-racket['stubborn]
+  (@cpp{scheme_malloc_tagged}), @indexed-racket['stubborn]
   (@cpp{scheme_malloc_stubborn}), @indexed-racket['uncollectable]
   (@cpp{scheme_malloc_uncollectable}), @indexed-racket['eternal]
   (@cpp{scheme_malloc_eternal}), @indexed-racket['interior]
