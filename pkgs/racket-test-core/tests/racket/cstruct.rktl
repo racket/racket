@@ -156,5 +156,15 @@
   (test #f equal? b (cast b _B-pointer _B-pointer))) ; cast forces new wrapper
 
 ;; ----------------------------------------
+;; Check to ensure offsets are computed correctly
+
+(let ()
+  (test '(0 4 8) compute-offsets (list _int _bool _string))
+  (test '(0 4 5 8) compute-offsets (list _int _byte _byte _int))
+  (test '(0 4 5 6) compute-offsets (list _int _byte _byte _int) 1)
+  (test '(5 4 3 2) compute-offsets (list _int _byte _byte _int) #f (list 5 4 3 2))
+  (test '(0 5 6 8) compute-offsets (list _int _byte _byte _int) #f (list #f 5 #f #f)))
+
+;; ----------------------------------------
 
 (report-errs)
