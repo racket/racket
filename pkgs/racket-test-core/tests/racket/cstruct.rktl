@@ -1,4 +1,4 @@
-G
+
 (load-relative "loadtest.rktl")
 
 (Section 'cstruct)
