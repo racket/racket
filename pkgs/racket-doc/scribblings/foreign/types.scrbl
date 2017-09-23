@@ -1422,7 +1422,8 @@ expects arguments for both the super fields and the new ones:
  type is at that offset. Otherwise, the type is
  @racket[alignment] bytes after the offset.
 
- @examples[(compute-offsets (list _int _bool _short))
+ @examples[#:eval ffi-eval
+           (compute-offsets (list _int _bool _short))
            (compute-offsets (list _int _bool _short) 1)
            (compute-offsets (list _int _int _int) #f (list #f 5 #f))]
 
