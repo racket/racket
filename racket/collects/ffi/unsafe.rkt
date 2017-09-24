@@ -22,7 +22,8 @@
          _bool _stdbool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
          memcpy memmove memset
          malloc-immobile-cell free-immobile-cell
-         make-late-weak-box make-late-weak-hasheq)
+         make-late-weak-box make-late-weak-hasheq
+         void/reference-sink)
 
 (define-syntax define*
   (syntax-rules ()
@@ -1988,3 +1989,13 @@
                            (let loop () (will-execute killer-executor) (loop))))))
                      (retry-loop)))))))
       (will-register killer-executor obj finalizer))))
+
+;; The same as `void`, but written so that the compiler cannot
+;; optimize away the call or arguments, so that calling
+;; `void/reference-sink` ensures that arguments are retained.
+(define* void/reference-sink
+  (let ([proc void])
+    (case-lambda
+      [(v) (proc v)]
+      [(v1 v2) (proc v1 v2)]
+      [args (set! proc (lambda args (void))) (proc args)])))

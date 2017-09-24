@@ -1225,6 +1225,15 @@
 
 ;; ----------------------------------------
 
+;; Check `void/reference-sink`
+(let* ([sym (gensym)]
+       [wb (make-weak-box sym)])
+  (collect-garbage)
+  (void/reference-sink sym)
+  (test #f not (weak-box-value wb)))
+
+;; ----------------------------------------
+
 (let ()
   (unless (eq? (system-type) 'windows)
     (define-ffi-definer define-test-lib test-lib

@@ -409,6 +409,17 @@ be used with @racket[ptr-add] to create a substring of a Racket byte
 string, because the offset pointer would be to the middle of a
 collectable object (which is not allowed).}
 
+
+@defproc[(void/reference-sink [v any/c] ...) void?]{
+
+Returns @|void-const|, but unlike calling the @racket[void] function
+where the compiler may optimize away the call and replace it with a
+@|void-const| result, calling @racket[void/reference-sink] ensures
+that the arguments are considered reachable by the garbage collector
+until the call returns.
+
+@history[#:added "6.10.1.2"]}
+
 @; ----------------------------------------------------------------------
 
 @section{Pointer Structure Property}
