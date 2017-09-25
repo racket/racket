@@ -583,6 +583,38 @@ This directory path is used as a last resort when
 relative path with respect to the top level. Usually, it should be
 @racket[(or (current-load-relative-directory) (current-directory))].}
 
+@examples[
+ #:eval ser-eval
+ (struct pie (type)
+   #:mutable
+   #:property prop:serializable
+   (make-serialize-info
+    (λ (this)
+      (vector (pie-type this)))
+    'pie-beam
+    #t
+    (or (current-load-relative-directory) (current-directory))))
+ (define pie-beam
+   (make-deserialize-info
+    (λ (type)
+      (pie type))
+    (λ ()
+      (define pie-pattern (pie 'transporter-error))
+      (values pie-pattern
+              (λ (type)
+                (set-pie-type! pie-pattern type))))))
+ (define original-pie
+   (pie 'apple))
+ original-pie
+ (define pie-in-transit
+   (serialize original-pie))
+ pie-in-transit
+ (define beamed-up-pie
+   (deserialize pie-in-transit))
+ beamed-up-pie
+ (pie-type beamed-up-pie)
+ (equal? beamed-up-pie original-pie)]
+
 @; ----------------------------------------------------------------------
 
 @close-eval[ser-eval]
