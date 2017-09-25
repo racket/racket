@@ -254,7 +254,7 @@
 
 (define (count-from-right who list pred)
   (unless (procedure? pred)
-    (raise-argument-error who "procedure?" 0 list pred))
+    (raise-argument-error who "procedure?" 1 list pred))
   (let loop ([list list] [rev '()] [n 0])
     (if (pair? list)
       (loop (cdr list) (cons (car list) rev) (add1 n))
