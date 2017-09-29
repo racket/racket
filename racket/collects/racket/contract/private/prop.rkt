@@ -118,7 +118,10 @@
 (define trail (make-parameter #f))
 (define (contract-struct-stronger? a b)
   (cond
-    [(equal? a b) #t]
+    [(and (equal? a b)
+          (or (flat-contract-struct? a)
+              (chaperone-contract-struct? a)))
+     #t]
     [else
      (define prop (contract-struct-property a))
      (define stronger? (contract-property-stronger prop))
@@ -494,7 +497,7 @@
             (late-neg-first-order-projection name first-order)]
            [else #f])]
         [else late-neg-projection])
-      (or stronger as-strong?)
+      (or stronger weakest)
       generate exercise
       (and list-contract? #t)))
 
@@ -509,12 +512,6 @@
            '(expected: "~s" given: "~e")
            name
            v)))))
-
-(define (as-strong? a b)
-  (define late-neg-a (contract-struct-late-neg-projection a))
-  (define late-neg-b (contract-struct-late-neg-projection b))
-  (and late-neg-a late-neg-b
-       (procedure-closure-contents-eq? late-neg-a late-neg-b)))
 
 (define make-contract
   (procedure-rename 

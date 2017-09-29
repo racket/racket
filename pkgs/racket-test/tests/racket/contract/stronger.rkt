@@ -687,4 +687,24 @@
       (define one (mk 1))
       (define two (mk 2))
       (,test #f contract-stronger? one two)
-      (,test #t contract-stronger? two one))))
+      (,test #t contract-stronger? two one)))
+
+  (contract-eval
+   `(define imp-ctc
+      (make-contract
+       #:late-neg-projection (λ (blame) (λ (val neg) (add1 val))))))
+  (contract-eval
+   `(define imp-struct-ctc
+      (let ()
+        (struct imp-ctc-struct ()
+          #:property prop:contract
+          (build-contract-property
+           #:late-neg-projection
+           (λ (ctc)
+             (λ (blame)
+               (λ (val neg)
+                 (add1 val))))))
+        (imp-ctc-struct))))
+
+  (ctest #f contract-stronger? imp-ctc imp-ctc)
+  (ctest #f contract-stronger? imp-struct-ctc imp-struct-ctc))
