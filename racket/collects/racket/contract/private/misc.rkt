@@ -355,7 +355,8 @@
   (define c/i-procedure (if chap? chaperone-procedure impersonate-procedure))
   (define ctc-proc (get/build-late-neg-projection (promise-base-ctc-ctc ctc)))
   (λ (blame)
-    (define p-app (ctc-proc (blame-add-context blame "the promise from")))
+    (define promise-blame (blame-add-context blame "the promise from"))
+    (define p-app (ctc-proc promise-blame))
     (λ (val neg-party)
       (define blame+neg-party (cons blame neg-party))
       (if (promise? val)
@@ -366,9 +367,27 @@
              (c/i-procedure
               proc
               (λ (promise)
-                (values (λ (val) (with-contract-continuation-mark
-                                  blame+neg-party
-                                  (p-app val neg-party)))
+                (values (case-lambda
+                          [(val) (with-contract-continuation-mark
+                                     blame+neg-party
+                                   (p-app val neg-party))]
+                          [()
+                           (raise-blame-error
+                            promise-blame #:missing-party neg-party val
+                            '("received 0 values" expected: "1 value"))]
+                          [reses
+                           (define length-reses (length reses))
+                           (raise-blame-error
+                            promise-blame #:missing-party neg-party val
+                            '("received ~a values~a~a" expected: "1 value")
+                            length-reses
+                            (if (<= length-reses 10)
+                                ":"
+                                ", the first 10 of which are:")
+                            (apply string-append
+                                   (for/list ([v (in-list reses)]
+                                              [_ (in-range 10)])
+                                     (format "\n   ~e" v))))])
                         promise))))
            impersonator-prop:contracted ctc
            impersonator-prop:blame blame)

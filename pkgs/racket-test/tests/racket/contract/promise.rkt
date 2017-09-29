@@ -78,4 +78,34 @@
                                    'pos
                                    'neg))
          #t)
-   #t))
+   #t)
+
+  (test/pos-blame
+   'promise/c8
+   '(force
+     (contract (promise/c number?)
+               (delay (values 2 3))
+               'pos 'neg)))
+
+  (test/pos-blame
+   'promise/c9
+   '(force
+     (contract (promise/c number?)
+               (delay (values))
+               'pos 'neg)))
+
+  (test/pos-blame
+   'promise/c10
+   '(force
+     (contract (promise/c number?)
+               (delay (values 1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9
+                              1 2 3 4 5 6 7 8 9))
+               'pos 'neg)))
+  )
