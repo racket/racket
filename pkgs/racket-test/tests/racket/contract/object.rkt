@@ -299,5 +299,39 @@
                (class object% (super-new)))
               'pos 'neg))
 
+  (test/spec-passed/result
+   'object/c-multi-wrap-just-check-existence/field
+   '(let ([ctc (object/c (field foo))]
+          [v (new (class object% (super-new) (field (foo 0))))])
+      (get-field
+       foo
+       (contract
+        ctc
+        (contract
+         ctc
+         (contract
+          ctc
+          v
+          'p 'n)
+         'p 'n)
+        'p 'n)))
+   0)
 
+  (test/spec-passed/result
+   'object/c-multi-wrap-just-check-existence/method
+   '(let ([ctc (object/c foo)]
+          [v (new (class object% (super-new) (define/public (foo) 0)))])
+      (send
+       (contract
+        ctc
+        (contract
+         ctc
+         (contract
+          ctc
+          v
+          'p 'n)
+         'p 'n)
+        'p 'n)
+       foo))
+   0)
 )
