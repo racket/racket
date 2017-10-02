@@ -118,9 +118,9 @@
 (define trail (make-parameter #f))
 (define (contract-struct-stronger? a b)
   (cond
-    [(and (equal? a b)
-          (or (flat-contract-struct? a)
-              (chaperone-contract-struct? a)))
+    [(and (or (flat-contract-struct? a)
+              (chaperone-contract-struct? a))
+          (equal? a b))
      #t]
     [else
      (define prop (contract-struct-property a))
