@@ -153,7 +153,8 @@
               ;; expressions:
               (quasisyntax/loc stx (#%expression #,stx)))))))
   
-  (struct provide/contract-transformer provide/contract-info (saved-id-table partially-applied-id blame)
+  (struct provide/contract-transformer provide/contract-info
+    (saved-id-table partially-applied-id blame)
     #:property
     prop:set!-transformer
     (λ (self stx)
