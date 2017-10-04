@@ -43,7 +43,7 @@ called appropriately). Use
 @racket[make-tentative-pretty-print-output-port] to obtain a port for
 tentative recursive prints (e.g., to check the length of the output).
 
-If the @racket[newline?] argument is ommitted or supplied with true,
+If the @racket[newline?] argument is omitted or supplied with true,
 the @racket[pretty-print-print-line] callback is called with false as
 the first argument to print the last newline after the printed value.
 If it is supplied with false, the @racket[pretty-print-print-line]
