@@ -1541,6 +1541,8 @@
 
   (define-syntax for/fold/derived
     (syntax-rules ()
+      [(_ orig-stx ([fold-var finid-init] ...) #:return ret-expr . rest)
+       (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) ret-expr . rest)]
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
        (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
 
