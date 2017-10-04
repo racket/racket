@@ -51,8 +51,10 @@ READ_ONLY Scheme_Object *scheme_liberal_def_ctx_type;;
 READ_ONLY Scheme_Object *scheme_object_name_property;
 READ_ONLY Scheme_Object *scheme_struct_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_authentic_property;
+READ_ONLY Scheme_Object *scheme_unsafe_poller_proc;
 
 READ_ONLY static Scheme_Object *location_struct;
+READ_ONLY static Scheme_Object *poller_struct;
 READ_ONLY static Scheme_Object *write_property;
 READ_ONLY static Scheme_Object *print_attribute_property;
 READ_ONLY static Scheme_Object *evt_property;
@@ -168,6 +170,7 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
 
 
 static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
+static void evt_struct_needs_wakeup(Scheme_Object *o, void *fds);
 static int is_evt_struct(Scheme_Object *);
 
 static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
@@ -220,6 +223,9 @@ static void register_traversers(void);
 
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *prefab_table);
 static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
+
+#define SCHEME_POLLERP(v) (SCHEME_STRUCTP(v) && scheme_is_struct_instance(poller_struct, v))
+#define SCHEME_POLLER_PROC(o) (((Scheme_Structure *)(o))->slots[0])
 
 #define cons scheme_make_pair
 #define icons scheme_make_pair
@@ -336,6 +342,11 @@ scheme_init_struct (Scheme_Env *env)
     scheme_add_global_constant(scheme_symbol_val(loc_names[i]), loc_values[i], 
 			       env);
   }
+
+  /* Add poller structure: */
+  REGISTER_SO(poller_struct);
+  poller_struct = scheme_make_struct_type_from_string("unsafe-poller", NULL, 1, NULL, NULL, 1);
+  scheme_unsafe_poller_proc = make_struct_proc((Scheme_Struct_Type *)poller_struct, "unsafe-poller", SCHEME_CONSTR, 1);
 
   REGISTER_SO(write_property);
   {
@@ -887,7 +898,7 @@ void scheme_init_struct_wait()
 {
   scheme_add_evt(scheme_structure_type,
                  (Scheme_Ready_Fun)evt_struct_is_ready,
-                 NULL,
+                 (Scheme_Needs_Wakeup_Fun)evt_struct_needs_wakeup,
                  is_evt_struct, 1);
   scheme_add_evt(scheme_proc_struct_type,
                  (Scheme_Ready_Fun)evt_struct_is_ready,
@@ -1612,11 +1623,20 @@ static Scheme_Object *check_indirect_property_value_ok(const char *name, Check_V
   return v;
 }
 
+static int is_evt_or_poller(Scheme_Object *v)
+{
+  if (scheme_is_evt(v))
+    return 1;
+  if (SCHEME_POLLERP(v))
+    return 1;
+  return 0;
+}
+
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[])
 /* This is the guard for prop:evt */
 {
   return check_indirect_property_value_ok("guard-for-prop:evt", 
-                                          scheme_is_evt, 1,
+                                          is_evt_or_poller, 1,
                                           "(or/c evt? (any/c . -> . any) exact-nonnegative-integer?)",
                                           argc, argv);
 }
@@ -1682,7 +1702,66 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     }
   }
 
+  if (SCHEME_POLLERP(v)) {
+    Scheme_Thread *p;
+    Scheme_Object *a[2];
+    int done;
+    
+    scheme_start_in_scheduler();
+    a[0] = o;
+    a[1] = scheme_false;
+    v = _scheme_apply_multi(SCHEME_POLLER_PROC(v), 2, a);
+
+    p = scheme_current_thread;
+    if ((v == SCHEME_MULTIPLE_VALUES)
+        && (p->ku.multiple.count == 2)) {
+      if (SCHEME_FALSEP(p->ku.multiple.array[0])) {
+        v = p->ku.multiple.array[1];
+        if (v == o) v = NULL;
+        done = 0;
+      } else {
+        v = p->ku.multiple.array[0];
+        done = 1;
+      }
+    } else {
+      /* wrong number of results => treat as not ready */
+      v = NULL;
+      done = 0;
+    }
+    scheme_end_in_scheduler();
+
+    if (v) {
+      if (done && SCHEME_PROCP(v)) {
+        v = scheme_make_closed_prim_w_arity(return_wrapped, (void *)v, "wrapper", 1, 1);
+      }
+      scheme_set_sync_target(sinfo, v, (done ? v : NULL), NULL, 0, 0, NULL);
+      return 1;
+    }
+  }
+
   return 0;
+}
+
+void evt_struct_needs_wakeup(Scheme_Object *o, void *fds)
+{
+  Scheme_Object *v;
+  
+  /* Check for wakeup only if the struct has an immediate `unsafe-poller` */
+
+  if (SCHEME_CHAPERONEP(o))
+    return;
+  
+  v = scheme_struct_type_property_ref(evt_property, o);
+  if (SCHEME_POLLERP(v)) {
+    Scheme_Object *a[2], *e;
+    
+    scheme_start_in_scheduler();
+    a[0] = o;
+    e = scheme_make_cptr(fds, scheme_false);
+    a[1] = e;
+    _scheme_apply_multi(SCHEME_POLLER_PROC(v), 2, a);
+    scheme_end_in_scheduler();
+  }
 }
 
 static int is_evt_struct(Scheme_Object *o)

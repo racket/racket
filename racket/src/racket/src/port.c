@@ -6610,99 +6610,17 @@ void scheme_kill_green_thread_timer()
 
 #ifdef OS_X
 
-/* Sleep-in-thread support needed for GUIs Mac OS X.
-   To merge waiting on a CoreFoundation event with a select(), an embedding
-   application can attach a single socket to an event callback, and then
-   create a Mac thread to call the usual sleep and write to the socket when
-   data is available. */
-
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
-typedef struct {
-  pthread_mutex_t lock;
-  pthread_cond_t cond;
-  int count;
-} pt_sema_t;
-
-void pt_sema_init(pt_sema_t *sem)
+void scheme_start_sleeper_thread(void (*ignored_sleep)(float seconds, void *fds), float secs, void *fds, int hit_fd)
+  XFORM_SKIP_PROC
 {
-  pthread_mutex_init(&sem->lock, NULL);
-  pthread_cond_init(&sem->cond, NULL);
-  sem->count = 0;
-}
-
-void pt_sema_wait(pt_sema_t *sem)
-{
-  pthread_mutex_lock(&sem->lock);
-  while (sem->count <= 0)
-    pthread_cond_wait(&sem->cond, &sem->lock);
-  sem->count--;
-  pthread_mutex_unlock(&sem->lock);
-}
-
-void pt_sema_post(pt_sema_t *sem)
-{
-  pthread_mutex_lock(&sem->lock);
-  sem->count++;
-  if (sem->count > 0)
-    pthread_cond_signal(&sem->cond);
-  pthread_mutex_unlock(&sem->lock);
-}
-
-static pthread_t watcher;
-static pt_sema_t sleeping_sema, done_sema;
-static float sleep_secs;
-static int slept_fd;
-static void *sleep_fds;
-static void (*sleep_sleep)(float seconds, void *fds);
-
-static void *do_watch(void *other)
-{
-  scheme_init_os_thread_like(other);
-  while (1) {
-    pt_sema_wait(&sleeping_sema);
-
-    sleep_sleep(sleep_secs, sleep_fds);
-    write(slept_fd, "y", 1);
-
-    pt_sema_post(&done_sema);
-  }
-  return NULL;
-}
-
-void scheme_start_sleeper_thread(void (*given_sleep)(float seconds, void *fds), float secs, void *fds, int hit_fd)
-{
-  if (!watcher) {
-    pt_sema_init(&sleeping_sema);
-    pt_sema_init(&done_sema);
-
-    if (pthread_create(&watcher, NULL, do_watch, scheme_get_os_thread_like())) {
-      scheme_log_abort("pthread_create failed");
-      abort();
-    }
-  }
-
-  sleep_sleep = given_sleep;
-  sleep_fds = fds;
-  sleep_secs = secs;
-  slept_fd = hit_fd;
-  pt_sema_post(&sleeping_sema);
+  rktio_start_sleep(scheme_rktio, secs, fds, scheme_semaphore_fd_set, hit_fd);
 }
 
 void scheme_end_sleeper_thread()
+  XFORM_SKIP_PROC
 {
-  scheme_signal_received();
-  pt_sema_wait(&done_sema);
-
-  /* Clear external event flag */
-  rktio_flush_signals_received(scheme_rktio);
+  rktio_end_sleep(scheme_rktio);
 }
-
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
 
 #else
 

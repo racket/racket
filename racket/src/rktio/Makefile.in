@@ -28,6 +28,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_file.@LTO@ \
        rktio_poll_set.@LTO@ \
        rktio_ltps.@LTO@ \
+       rktio_sleep.@LTO@ \
        rktio_network.@LTO@ \
        rktio_pipe.@LTO@ \
        rktio_process.@LTO@ \
@@ -75,6 +76,9 @@ rktio_poll_set.@LTO@: $(srcdir)/rktio_poll_set.c $(RKTIO_HEADERS)
 
 rktio_ltps.@LTO@: $(srcdir)/rktio_ltps.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_ltps.@LTO@ -c $(srcdir)/rktio_ltps.c
+
+rktio_sleep.@LTO@: $(srcdir)/rktio_sleep.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_sleep.@LTO@ -c $(srcdir)/rktio_sleep.c
 
 rktio_network.@LTO@: $(srcdir)/rktio_network.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_network.@LTO@ -c $(srcdir)/rktio_network.c

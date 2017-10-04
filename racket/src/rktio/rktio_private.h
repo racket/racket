@@ -26,6 +26,11 @@
 # define USE_FAR_RKTIO_FDCALLS
 #endif
 
+#if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)
+# define SUPPORT_BACKGROUND_SLEEP_THREAD
+struct background_sleep_t;
+#endif
+
 /*========================================================================*/
 /* Globals, as gathered into `rktio_t`                                    */
 /*========================================================================*/
@@ -106,6 +111,10 @@ struct rktio_t {
   struct rktio_hash_t *dlls_by_name;
 #ifdef RKTIO_SYSTEM_UNIX
   char *dll_error;
+#endif
+
+#ifdef SUPPORT_BACKGROUND_SLEEP_THREAD
+  struct background_sleep_t *background;
 #endif
 };
 
@@ -328,6 +337,8 @@ char **rktio_get_environ_array(void);
 
 void rktio_syslog_init(rktio_t* rktio);
 void rktio_syslog_clean(rktio_t* rktio);
+
+void rktio_stop_background(rktio_t *rktio);
 
 #ifdef USE_TRANSITIONAL_64_FILE_OPS
 # define BIG_OFF_T_IZE(n) n ## 64

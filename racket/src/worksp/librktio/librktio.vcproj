@@ -131,6 +131,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_sleep.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_network.c"
 				>
 			</File>

@@ -363,6 +363,8 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Hash_Table *loaded_extensions_;
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
   Scheme_Sleep_Proc scheme_place_sleep_;
+  struct Scheme_Object *thread_sleep_callback_;
+  int thread_sleep_callback_fd_;
   struct GHBN_Thread_Data *ghbn_thread_data_;
   Scheme_On_Atomic_Timeout_Proc on_atomic_timeout_;
   void *on_atomic_timeout_data_;
@@ -759,6 +761,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define loaded_extensions XOA (scheme_get_thread_local_variables()->loaded_extensions_)
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
+#define thread_sleep_callback XOA (scheme_get_thread_local_variables()->thread_sleep_callback_)
+#define thread_sleep_callback_fd XOA (scheme_get_thread_local_variables()->thread_sleep_callback_fd_)
 #define ghbn_thread_data XOA (scheme_get_thread_local_variables()->ghbn_thread_data_)
 #define on_atomic_timeout XOA (scheme_get_thread_local_variables()->on_atomic_timeout_)
 #define on_atomic_timeout_data XOA (scheme_get_thread_local_variables()->on_atomic_timeout_data_)

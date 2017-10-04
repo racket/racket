@@ -14,6 +14,7 @@
 @include-section["custodian.scrbl"]
 @include-section["atomic.scrbl"]
 @include-section["try-atomic.scrbl"]
+@include-section["schedule.scrbl"]
 @include-section["global.scrbl"]
 @include-section["objc.scrbl"]
 @include-section["ns.scrbl"]

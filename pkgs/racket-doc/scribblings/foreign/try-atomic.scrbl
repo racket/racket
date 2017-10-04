@@ -5,7 +5,7 @@
 @title{Speculatively Atomic Execution}
 
 @defmodule[ffi/unsafe/try-atomic]{The
-@racketmodname[ffi/unsafe/try-atomic] supports atomic execution that
+@racketmodname[ffi/unsafe/try-atomic] library supports atomic execution that
 can be suspended and resumed in non-atomic mode if it takes too long
 or if some external event causes the attempt to be abandoned.}
 

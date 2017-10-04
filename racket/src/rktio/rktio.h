@@ -737,6 +737,20 @@ RKTIO_EXTERN void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds
    some other activity that sometimes causes an early wakeup. */
 
 /*************************************************/
+/* Sleeping in a background thread               */
+
+RKTIO_EXTERN rktio_ok_t rktio_start_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt,
+                                          int woke_fd);
+/* Like `rktio_sleep`, but starts a sleep in a background thread. When the
+   background thread is done sleeping, it writes a byte to `woke_fd`, but the
+   background thread can be woken up with `rktio_end_sleep`. */
+
+RKTIO_EXTERN void rktio_end_sleep(rktio_t *rktio);
+/* Ends a background sleep started with `rktio_sleep`. Call this
+   function exactly once for each successful `rktio_start_sleep`,
+   whether or not the background thread write to `woke_fd` already. */
+
+/*************************************************/
 /* Files, directories, and links                 */
 
 RKTIO_EXTERN rktio_bool_t rktio_file_exists(rktio_t *rktio, rktio_const_string_t filename);
