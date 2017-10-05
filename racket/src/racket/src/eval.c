@@ -4797,7 +4797,8 @@ Scheme_Object *scheme_expand(Scheme_Object *obj, Scheme_Env *env)
 {
   return r_expand(obj, scheme_new_expand_env(env, NULL, scheme_true,
                                              SCHEME_TOPLEVEL_FRAME
-                                             | SCHEME_KEEP_SCOPES_FRAME),
+                                             | SCHEME_KEEP_SCOPES_FRAME
+                                             | SCHEME_TMP_TL_BIND_FRAME),
 		  -1, 1, 0, scheme_false, -1, 0);
 }
 
@@ -5010,7 +5011,8 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
 
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_SCOPES_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME
+                                                 | SCHEME_TMP_TL_BIND_FRAME),
 		  -1, 1, 0, scheme_false, 0, 0);
 }
 
@@ -5025,7 +5027,8 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
-                                                 | SCHEME_KEEP_SCOPES_FRAME),
+                                                 | SCHEME_KEEP_SCOPES_FRAME
+                                                 | SCHEME_TMP_TL_BIND_FRAME),
 		  -1, 0, 0, scheme_false, 0, 0);
 }
 
