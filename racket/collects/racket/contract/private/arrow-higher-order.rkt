@@ -39,7 +39,7 @@
                 [(optional-dom-kwd-proj ...) (nvars (length optional-dom-kwds) 'optional-dom-proj)]
                 [(rng-proj ...) (if rngs (generate-temporaries rngs) '())]
                 [(rest-proj ...) (if rest (generate-temporaries '(rest-proj)) '())])
-    #`(λ (blame f neg-party blame-party-info rng-ctcs
+    #`(λ (blame f neg-party blame-party-info is-impersonator? rng-ctcs
                 mandatory-dom-proj ...  
                 optional-dom-proj ... 
                 rest-proj ...
@@ -48,7 +48,7 @@
                 rng-proj ...)
         (define blame+neg-party (cons blame neg-party))
         #,(create-chaperone
-           #'blame #'neg-party #'blame+neg-party #'blame-party-info #'f #'rng-ctcs
+           #'blame #'neg-party #'blame+neg-party #'blame-party-info #'is-impersonator? #'f #'rng-ctcs
            (for/list ([id (in-list (syntax->list #'(mandatory-dom-proj ...)))]
                       [mandatory-dom-proj (in-list mandatory-dom-projs)])
              (and mandatory-dom-proj id))
@@ -98,7 +98,7 @@
                         #:missing-party neg-party
                         val "~a" msg)]))
 
-(define-for-syntax (create-chaperone blame neg-party blame+neg-party blame-party-info
+(define-for-syntax (create-chaperone blame neg-party blame+neg-party blame-party-info is-impersonator?
                                      val rng-ctcs
                                      doms opt-doms
                                      req-kwds opt-kwds
@@ -109,7 +109,8 @@
                                      method?)
   (with-syntax ([blame blame]
                 [blame+neg-party blame+neg-party]
-                [val val])
+                [val val]
+                [is-impersonator? is-impersonator?])
     (with-syntax ([(pre ...) 
                    (cond
                      [pre
@@ -226,23 +227,27 @@
                                  #'(dom-x ...
                                     [opt-dom-x arrow:unspecified-dom] ...
                                     kwd-param ...))]
-                            [basic-return
-                             (let ([inner-stx-gen
-                                    (if need-apply?
-                                        (λ (s) #`(apply values #,@s 
-                                                        dom-projd-args ... 
-                                                        opt+rest-uses))
-                                        (λ (s) #`(values 
-                                                  #,@s 
-                                                  dom-projd-args ...)))])
-                               (if rngs
-                                   (arrow:check-tail-contract rng-ctcs
-                                                              blame-party-info
-                                                              neg-party
-                                                              (list rng-checker)
-                                                              inner-stx-gen
-                                                              #'(cons blame neg-party))
-                                   (inner-stx-gen #'())))]
+                            [(basic-return basic-return/no-tail)
+                             (let ()
+                               (define inner-stx-gen
+                                 (if need-apply?
+                                     (λ (s) #`(apply values #,@s
+                                                     dom-projd-args ...
+                                                     opt+rest-uses))
+                                     (λ (s) #`(values
+                                               #,@s
+                                               dom-projd-args ...))))
+                               (list (if rngs
+                                         (arrow:check-tail-contract rng-ctcs
+                                                                    blame-party-info
+                                                                    neg-party
+                                                                    (list rng-checker)
+                                                                    inner-stx-gen
+                                                                    #'(cons blame neg-party))
+                                         (inner-stx-gen #'()))
+                                     (if rngs
+                                         (inner-stx-gen (list rng-checker))
+                                         (inner-stx-gen #'()))))]
                             [(basic-unsafe-return
                               basic-unsafe-return/result-values-assumed
                               basic-unsafe-return/result-values-assumed/no-tail)
@@ -297,7 +302,7 @@
                                      (inner-stx-gen #'not-a-null assume-result-values?
                                                     do-tail-check?)))
                                (list (mk-return #f #t) (mk-return #t #t) (mk-return #t #f)))]
-                            [kwd-return
+                            [(kwd-return kwd-return/no-tail)
                              (let* ([inner-stx-gen
                                      (if need-apply?
                                          (λ (s k) #`(apply values 
@@ -314,15 +319,19 @@
                                                  #,(inner-stx-gen s #'(kwd-results))))
                                          (λ (s)
                                            (inner-stx-gen s #'(kwd-results))))])
-                               #`(let ([kwd-results kwd-stx])
-                                   #,(if rngs
-                                         (arrow:check-tail-contract rng-ctcs
-                                                                    blame-party-info
-                                                                    neg-party
-                                                                    (list rng-checker)
-                                                                    outer-stx-gen
-                                                                    #'(cons blame neg-party))
-                                         (outer-stx-gen #'()))))])
+                               (list #`(let ([kwd-results kwd-stx])
+                                         #,(if rngs
+                                               (arrow:check-tail-contract rng-ctcs
+                                                                          blame-party-info
+                                                                          neg-party
+                                                                          (list rng-checker)
+                                                                          outer-stx-gen
+                                                                          #'(cons blame neg-party))
+                                               (outer-stx-gen #'())))
+                                     #`(let ([kwd-results kwd-stx])
+                                         #,(if rngs
+                                               (outer-stx-gen (list rng-checker))
+                                               (outer-stx-gen #'())))))])
 
                 ;; Arrow contract domain checking is instrumented
                 ;; both here, and in `arity-checking-wrapper'.
@@ -338,6 +347,12 @@
                                                  blame+neg-party
                                                  (let ()
                                                    pre ... basic-return)))]
+                              [basic-lambda/no-tail
+                               #'(λ basic-params
+                                   (with-contract-continuation-mark
+                                       blame+neg-party
+                                     (let ()
+                                       pre ... basic-return/no-tail)))]
                               [basic-unsafe-lambda
                                #'(λ basic-params
                                    (let ()
@@ -355,42 +370,50 @@
                                               (with-contract-continuation-mark
                                                blame+neg-party
                                                (let ()
-                                                 pre ... kwd-return)))])
+                                                 pre ... kwd-return)))]
+                              [kwd-lambda/no-tail #`(λ kwd-lam-params
+                                                      (with-contract-continuation-mark
+                                                          blame+neg-party
+                                                        (let ()
+                                                          pre ... kwd-return/no-tail)))])
                   (cond
                    [(and (null? req-keywords) (null? opt-keywords))
                     #`(arity-checking-wrapper val
                                               blame neg-party blame+neg-party
-                                              basic-lambda
+                                              basic-lambda basic-lambda/no-tail
                                               basic-unsafe-lambda
                                               basic-unsafe-lambda/result-values-assumed
                                               basic-unsafe-lambda/result-values-assumed/no-tail
                                               #,(and rngs (length rngs))
-                                              void
+                                              void void
                                               #,min-arity
                                               #,(if dom-rest #f max-arity)
                                               '(req-kwd ...)
                                               '(opt-kwd ...)
-                                              #,method?)]
+                                              #,method?
+                                              is-impersonator?)]
                    [(pair? req-keywords)
                     #`(arity-checking-wrapper val
                                               blame neg-party blame+neg-party
-                                              void #t #f #f #f
-                                              kwd-lambda
+                                              void void #t #f #f #f
+                                              kwd-lambda kwd-lambda/no-tail
                                               #,min-arity
                                               #,(if dom-rest #f max-arity)
                                               '(req-kwd ...)
                                               '(opt-kwd ...)
-                                              #,method?)]
+                                              #,method?
+                                              is-impersonator?)]
                    [else
                     #`(arity-checking-wrapper val
                                               blame neg-party blame+neg-party
-                                              basic-lambda #t #f #f #f
-                                              kwd-lambda
+                                              basic-lambda basic-lambda/no-tail #t #f #f #f
+                                              kwd-lambda kwd-lambda/no-tail
                                               #,min-arity
                                               #,(if dom-rest #f max-arity)
                                               '(req-kwd ...)
                                               '(opt-kwd ...)
-                                              #,method?)])))))))))
+                                              #,method?
+                                              is-impersonator?)])))))))))
 
 ;; should we pass both the basic-lambda and the kwd-lambda?
 ;; if basic-unsafe-lambda is #f, returns only the one value,
@@ -399,20 +422,25 @@
 ;; basic-unsafe-lambda or not; note that basic-unsafe-lambda might
 ;; also be #t, but that happens only when we know that basic-lambda
 ;; can't be chosen (because there are keywords involved)
-(define (arity-checking-wrapper val blame neg-party blame+neg-party basic-lambda
+(define (arity-checking-wrapper val blame neg-party blame+neg-party basic-lambda basic-lambda/no-tail
                                 basic-unsafe-lambda
                                 basic-unsafe-lambda/result-values-assumed
                                 basic-unsafe-lambda/result-values-assumed/no-tail
                                 contract-result-val-count
-                                kwd-lambda
+                                kwd-lambda kwd-lambda/no-tail
                                 min-arity max-arity
                                 req-kwd opt-kwd
-                                method?)
+                                method?
+                                is-impersonator?)
   ;; should not build this unless we are in the 'else' case (and maybe not at all)
   (cond
     [(arrow:matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
      (if (and (null? req-kwd) (null? opt-kwd))
          (cond
+           [is-impersonator?
+            (if basic-unsafe-lambda
+                (values basic-lambda/no-tail #f)
+                basic-lambda/no-tail)]
            [(impersonator? val)
             (if basic-unsafe-lambda
                 (values basic-lambda #f)
@@ -427,9 +455,15 @@
            [basic-unsafe-lambda
             (values basic-unsafe-lambda #t)]
            [else basic-lambda])
-         (if basic-unsafe-lambda
-             (values kwd-lambda #f)
-             kwd-lambda))]
+         (cond
+           [is-impersonator?
+            (if basic-unsafe-lambda
+                (values kwd-lambda/no-tail #f)
+                kwd-lambda/no-tail)]
+           [else
+            (if basic-unsafe-lambda
+                (values kwd-lambda #f)
+                kwd-lambda)]))]
     [else
      (define-values (vr va) (procedure-keywords val))
      (define all-kwds (append req-kwd opt-kwd))
@@ -476,7 +510,9 @@
                (arrow:raise-wrong-number-of-args-error
                 blame #:missing-party neg-party val
                 args-len min-arity max-arity method?))
-             (apply basic-lambda args))))
+             (if is-impersonator?
+                 (apply basic-lambda/no-tail args)
+                 (apply basic-lambda args)))))
            (λ args
              (raise-blame-error (blame-swap blame) #:missing-party neg-party val
                                 "expected required keyword ~a"
@@ -500,7 +536,7 @@
       r
       (cons (c x neg-party) r)))
 
-(define (->-proj chaperone? ctc
+(define (->-proj is-impersonator? ctc
                  ;; fields of the 'ctc' struct
                  min-arity doms kwd-infos rest pre? rngs post?
                  plus-one-arity-function chaperone-constructor method?
@@ -571,11 +607,11 @@
         (apply chaperone-constructor
                orig-blame val
                neg-party blame-party-info
-               rngs the-args))
+               is-impersonator? rngs the-args))
       (define chaperone-or-impersonate-procedure
         (if use-unsafe-chaperone-procedure?
-            (if chaperone? unsafe-chaperone-procedure unsafe-impersonate-procedure)
-            (if chaperone? chaperone-procedure impersonate-procedure)))
+            (if is-impersonator? unsafe-impersonate-procedure unsafe-chaperone-procedure)
+            (if is-impersonator? impersonate-procedure chaperone-procedure)))
       (cond
         [chap/imp-func
          (if (or post? (not rngs))

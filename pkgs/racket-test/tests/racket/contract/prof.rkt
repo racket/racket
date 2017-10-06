@@ -577,15 +577,16 @@
    '(let ()
       (define marked? #f) ; check that we measure the cost of contract-stronger?
       (define (make/c) ; the two have to not be eq?, otherwise contract-stronger? is not called
-        (make-contract #:late-neg-projection
-                       (lambda (b)
-                         (lambda (val neg-party)
-                           (pos-blame? 'dummy)))
-                       #:stronger
-                       (lambda (c1 c2)
-                         (when (pos-blame? 'dummy)
-                           (set! marked? #t)
-                           #t))))
+        (make-chaperone-contract
+         #:late-neg-projection
+         (lambda (b)
+           (lambda (val neg-party)
+             val))
+         #:stronger
+         (lambda (c1 c2)
+           (when (pos-blame? 'dummy)
+             (set! marked? #t)
+             #t))))
       ((contract (-> pos-blame? (make/c))
                  (contract (-> pos-blame? (make/c)) values 'pos 'neg)
                  'pos 'neg)

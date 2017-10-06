@@ -1203,7 +1203,7 @@
                                       optional-keywords
                                       (and rest-contract #t)
                                       rng-len)
-        (λ (blame f neg-party blame-party-info rng-ctc-x . args)
+        (λ (blame f neg-party blame-party-info is-impersonator? rng-ctc-x . args)
           (define-next next args)
           (define mandatory-dom-projs (next min-arity))
           (define optional-dom-projs (next optionals))
@@ -1262,10 +1262,12 @@
                     args-dealt-with)))))
           
           (values (arity-checking-wrapper f blame neg-party blame+neg-party
-                                          interposition-proc #f interposition-proc #f #f #f
+                                          interposition-proc interposition-proc
+                                          #f interposition-proc interposition-proc #f #f #f
                                           min-arity max-arity
                                           mandatory-keywords optional-keywords
-                                          #f) ; not a method contract
+                                          #f ; not a method contract
+                                          is-impersonator?)
                   #f))))
   
   (build--> 'dynamic->*
@@ -1473,13 +1475,13 @@
        (keywords-match man-kwds opt-kwds x)
        #t))
 
-(define (make-property chaperone?)
+(define (make-property is-impersonator?)
   (define build-X-property
-    (if chaperone? build-chaperone-contract-property build-contract-property))
+    (if is-impersonator? build-contract-property build-chaperone-contract-property))
   (define val-first-proj
     (λ (->stct)
       (maybe-warn-about-val-first ->stct)
-      (->-proj chaperone? ->stct
+      (->-proj is-impersonator? ->stct
                (base->-min-arity ->stct)
                (base->-doms ->stct)
                (base->-kwd-infos ->stct)
@@ -1493,7 +1495,7 @@
                #f)))
   (define late-neg-proj
     (λ (->stct)
-      (->-proj chaperone? ->stct
+      (->-proj is-impersonator? ->stct
                (base->-min-arity ->stct)
                (base->-doms ->stct)
                (base->-kwd-infos ->stct)
@@ -1545,13 +1547,13 @@
        (not (base->-post? that))))
      
 (define-struct (-> base->) ()
-  #:property prop:chaperone-contract (make-property #t))
+  #:property prop:chaperone-contract (make-property #f))
 
 (define-struct (predicate/c base->) ()
-  #:property prop:chaperone-contract (make-property #t))
+  #:property prop:chaperone-contract (make-property #f))
 
 (define-struct (impersonator-> base->) ()
-  #:property prop:contract (make-property #f))
+  #:property prop:contract (make-property #t))
 
 (define ->void-contract
   (let-syntax ([get-chaperone-constructor
@@ -1621,6 +1623,7 @@
                   1))
                (λ (blame f neg-party
                          _ignored-blame-party-info
+                         _ignored-is-impersonator?
                          _ignored-rng-ctcs
                          _ignored-dom-contract
                          _ignored-rng-contract)

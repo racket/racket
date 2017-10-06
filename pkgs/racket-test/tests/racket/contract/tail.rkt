@@ -2,7 +2,8 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace
+                 'racket/contract/parametric)])
 
   (contract-eval
    `(define (counter)
@@ -165,4 +166,70 @@
                                      [else (f 0)]))
                                  'pos
                                  'neg))
-                     (f 10))))
+                     (f 10)))
+
+
+  (test/spec-passed/result
+   'double-wrapped-impersonators-dont-collapse.1
+   '(let ([α (new-∀/c 'α)])
+      ((contract
+        (-> α α)
+        (contract
+         (-> α α)
+         (λ args (car args))
+         'p 'n)
+        'p 'n)
+       1))
+   1)
+
+  (test/spec-passed/result
+   'double-wrapped-impersonators-dont-collapse.2
+   '(let ([α (new-∀/c 'α)])
+      ((contract
+        (-> α α)
+        (contract
+         (-> α α)
+         (λ (x) x)
+         'p 'n)
+        'p 'n)
+       1))
+   1)
+
+  (test/spec-passed/result
+   'double-wrapped-impersonators-dont-collapse.3
+   '(let ([α (new-∀/c 'α)])
+      ((contract
+        (-> #:x α α)
+        (contract
+         (-> #:x α α)
+         (λ (#:x x) x)
+         'p 'n)
+        'p 'n)
+       #:x 1))
+   1)
+
+  (test/spec-passed/result
+   'double-wrapped-impersonators-dont-collapse.4
+   '(let ([α (new-∀/c 'α)])
+      ((contract
+        (-> α any)
+        (contract
+         (-> α any)
+         (λ (x) 1234)
+         'p 'n)
+        'p 'n)
+       1))
+   1234)
+
+  (test/spec-passed/result
+   'double-wrapped-impersonators-dont-collapse.5
+   '(let ([α (new-∀/c 'α)])
+      ((contract
+        (-> #:x α any)
+        (contract
+         (-> #:x α any)
+         (λ (#:x x) 1234)
+         'p 'n)
+        'p 'n)
+       #:x 1))
+   1234))
