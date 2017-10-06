@@ -409,7 +409,7 @@
                       (let-values ([(base name dir) (split-path src)])
                         (format "~a" name))
                       (format "~s" src)))
-       #`(test/no-error/proc #,fn #,(syntax-source stx) arg))]))
+       #`(test/no-error/proc #,fn #,(syntax-line stx) arg))]))
 
 (define (test/no-error/proc fn line sexp)
   (contract-eval
