@@ -567,8 +567,24 @@
              exn:fail:contract?
              #rx"starting index less than stopping index, but given a negative step")
 
-;; for/fold syntax checking
-(syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")
+;; for/fold & for*/fold syntax checking
+(syntax-test #'(for/fold () bad 1)
+             #rx".*for/fold:.*bad sequence binding clauses.*")
+(syntax-test #'(for/fold () ([42 '()]) 1)
+             #rx".*for/fold:.*bad sequence binding clause.*")
+(syntax-test #'(for/fold ([0 42] [x 42]) ([z '()]) 1)
+             #rx".*for/fold:.*expected an identifier to bind.*")
+(syntax-test #'(for/fold ([x 42] [x 42]) ([z '()]) 1)
+             #rx".*for/fold:.*duplicate identifier as accumulator binding.*")
+
+(syntax-test #'(for*/fold () bad 1)
+             #rx".*for\\*/fold:.*bad sequence binding clauses.*")
+(syntax-test #'(for*/fold () ([42 '()]) 1)
+             #rx".*for\\*/fold:.*bad sequence binding clause.*")
+(syntax-test #'(for*/fold ([0 42] [x 42]) ([z '()]) 1)
+             #rx".*for\\*/fold:.*expected an identifier to bind.*")
+(syntax-test #'(for*/fold ([x 42] [x 42]) ([z '()]) 1)
+             #rx".*for\\*/fold:.*duplicate identifier as accumulator binding.*")
 
 (syntax-test #'(for/vector ()) #rx".*missing body.*")
 

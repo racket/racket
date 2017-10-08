@@ -204,6 +204,22 @@
     (define sequence-specialization-logger
       (make-logger 'sequence-specialization (current-logger)))
 
+    (define (check-identifier-bindings orig-stx ids-stx kind result)
+      (let ([ids (syntax->list ids-stx)])
+        (for-each (lambda (id)
+                    (unless (identifier? id)
+                      (raise-syntax-error
+                       #f
+                       "expected an identifier to bind"
+                       orig-stx
+                       id)))
+                  ids)
+        (let ([dup (check-duplicate-identifier ids)])
+          (when dup
+            (raise-syntax-error #f
+                                (format "duplicate identifier as ~a binding" kind) orig-stx dup)))
+        result))
+
     (define (expand-clause orig-stx clause)
       (define (unpack stx)
         (syntax-case stx ()
@@ -219,20 +235,7 @@
         (define unpacked-clause (unpack clause))
         (syntax-case unpacked-clause (values in-parallel stop-before stop-after :do-in)
           [[(id ...) rhs]
-           (let ([ids (syntax->list #'(id ...))])
-             (for-each (lambda (id)
-                         (unless (identifier? id)
-                           (raise-syntax-error
-                            #f
-                            "expected an identifier to bind"
-                            orig-stx
-                            id)))
-                       ids)
-             (let ([dup (check-duplicate-identifier (syntax->list #'(id ...)))])
-               (when dup
-                 (raise-syntax-error #f
-                                     "duplicate identifier as sequence binding" orig-stx dup)))
-             #f)
+           (check-identifier-bindings orig-stx #'(id ...) "sequence" #f)
            'just-checking]
           [[(id ...) (form . rest)]
            (and use-transformer?
@@ -1539,15 +1542,27 @@
        ;; Otherwise, allow compilation as nested loops, which can be slightly faster:
        #'(for/foldX/derived [orig-stx #f nested? #f ()] fold-bind done-k done-k #f . rest)]))
 
-  (define-syntax for/fold/derived
-    (syntax-rules ()
+  (define-syntax (for/fold/derived stx)
+    (syntax-case stx ()
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
-       (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
+       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
+       (syntax/loc #'orig-stx
+         (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) (values* fold-var ...) . rest))]
+      [(_ orig-stx (bindings ...) . rst)
+       (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
+      [(_ orig-stx . rst)
+       (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
-  (define-syntax for*/fold/derived
-    (syntax-rules ()
+  (define-syntax (for*/fold/derived stx)
+    (syntax-case stx ()
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
-       (for/foldX/derived/final [orig-stx #t] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
+       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
+       (syntax/loc #'orig-stx
+         (for/foldX/derived/final [orig-stx #t] ([fold-var finid-init] ...) (values* fold-var ...) . rest))]
+      [(_ orig-stx (bindings ...) . rst)
+       (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
+      [(_ orig-stx . rst)
+       (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
