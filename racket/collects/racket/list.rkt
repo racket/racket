@@ -440,41 +440,45 @@
 ;;                -> X or #f
 (define (check-duplicates items
                           [same? equal?]
-                          #:key [key values])
+                          #:key [key values]
+                          #:default [failure-result (λ () #f)])
   (unless (list? items)
     (raise-argument-error 'check-duplicates "list?" 0 items))
   (unless (and (procedure? key)
                (procedure-arity-includes? key 1))
     (raise-argument-error 'check-duplicates "(-> any/c any/c)" key))
-  (cond [(eq? same? equal?)
-         (check-duplicates/t items key (make-hash))]
-        [(eq? same? eq?)
-         (check-duplicates/t items key (make-hasheq))]
-        [(eq? same? eqv?)
-         (check-duplicates/t items key (make-hasheqv))]
-        [else
-         (unless (and (procedure? same?)
-                      (procedure-arity-includes? same? 2))
-           (raise-argument-error 'check-duplicates
-                                 "(any/c any/c . -> . any/c)"
-                                 1 items same?))
-         (check-duplicates/list items key same?)]))
-(define (check-duplicates/t items key table)
+  (let ([fail-k (if (procedure? failure-result) failure-result (λ () failure-result))])
+    (cond [(eq? same? equal?)
+           (check-duplicates/t items key (make-hash) fail-k)]
+          [(eq? same? eq?)
+           (check-duplicates/t items key (make-hasheq) fail-k)]
+          [(eq? same? eqv?)
+           (check-duplicates/t items key (make-hasheqv) fail-k)]
+          [else
+           (unless (and (procedure? same?)
+                        (procedure-arity-includes? same? 2))
+             (raise-argument-error 'check-duplicates
+                                   "(any/c any/c . -> . any/c)"
+                                   1 items same?))
+           (check-duplicates/list items key same? fail-k)])))
+(define (check-duplicates/t items key table fail-k)
   (let loop ([items items])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (hash-ref table key-item #f)
+    (if (pair? items)
+        (let ([key-item (key (car items))])
+          (if (hash-ref table key-item #f)
                (car items)
                (begin (hash-set! table key-item #t)
-                      (loop (cdr items))))))))
-(define (check-duplicates/list items key same?)
+                      (loop (cdr items)))))
+        (fail-k))))
+(define (check-duplicates/list items key same? fail-k)
   (let loop ([items items] [sofar null])
-    (and (pair? items)
-         (let ([key-item (key (car items))])
-           (if (for/or ([prev (in-list sofar)])
+    (if (pair? items)
+        (let ([key-item (key (car items))])
+          (if (for/or ([prev (in-list sofar)])
                  (same? key-item prev))
                (car items)
-               (loop (cdr items) (cons key-item sofar)))))))
+               (loop (cdr items) (cons key-item sofar))))
+        (fail-k))))
 
 ;; Eli: Just to have a record of this: my complaint about having this
 ;; code separately from `remove-duplicates' still stands.  Specifically,

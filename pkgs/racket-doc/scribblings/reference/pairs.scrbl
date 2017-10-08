@@ -1173,12 +1173,25 @@ traversal.
 
 @defproc[(check-duplicates [lst list?]
                            [same? (any/c any/c . -> . any/c) equal?]
-                           [#:key extract-key (-> any/c any/c) (lambda (x) x)])
-         (or/c any/c #f)]{
+                           [#:key extract-key (-> any/c any/c) (lambda (x) x)]
+                           [#:default failure-result (failure-result/c any/c) (lambda () #f)])
+         any]{
 
 Returns the first duplicate item in @racket[lst]. More precisely, it
 returns the first @racket[_x] such that there was a previous
 @racket[_y] where @racket[(same? (extract-key _x) (extract-key _y))].
+
+If no duplicate is found, then @racket[failure-result] determines the 
+result:
+
+@itemize[
+
+ @item{If @racket[failure-result] is a procedure, it is called
+       (through a tail call) with no arguments to produce the result.}
+
+ @item{Otherwise, @racket[failure-result] is returned as the result.}
+
+]
 
 The @racket[same?] argument should be an equivalence predicate such as
 @racket[equal?] or @racket[eqv?] or a dictionary.
@@ -1191,6 +1204,7 @@ use a dictionary for speed.
 (check-duplicates '((a 1) (b 2) (a 3)) #:key car)
 (check-duplicates '(1 2 3 4 5 6)
                   (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
+(check-duplicates '(1 2 3 4) #:default "no duplicates")
 ]
 @history[#:added "6.3"]{}
 }
