@@ -75,9 +75,15 @@
           curried))))
   ;; curry is itself curried -- if we get args then they're the first step
   (define curry
-    (case-lambda [(f) (define (curried . args) (curry* f args '() '()))
-                      curried]
-                 [(f . args) (curry* f args '() '())]))
+    (case-lambda
+      [(f)
+       (unless (procedure? f)
+         (raise-argument-error (if right? 'curryr 'curry) "procedure?" f))
+       (define (curried . args) (curry* f args '() '()))
+       curried]
+      [(f . args)
+       (curry* f args '() '())]))
+
   (make-keyword-procedure (lambda (kws kvs f . args) (curry* f args kws kvs))
                           curry))
 
