@@ -29,4 +29,4 @@
 (check-equal? ((((curry foldl) +) 0) '(1 2 3)) 6)
 
 (check-exn exn:fail:contract? (λ () (curry 1 2)))
-; (check-exn exn:fail:contract? (λ () (curry 1)))
+(check-exn exn:fail:contract? (λ () (curry 1)))
