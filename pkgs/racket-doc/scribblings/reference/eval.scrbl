@@ -107,6 +107,9 @@ expected module name is a list that starts with a symbol, the root
 module and any other submodules can be loaded from the given file,
 which might be from source, and the load handler still should not
 complain if the expected submodule is not found.
+When loading modules from a nonexistent source file, the load handler
+may raise an exception regardless of whether submodules are
+requested or not.
  
 The default load handler reads forms from the file in
 @racket[read-syntax] mode with line-counting enabled for the file
@@ -243,13 +246,27 @@ handler} to load from a file that may have a compiled form. The
 The protocol for a @tech{compiled-load handler} is the same as for the
 @tech{load handler} (see @racket[current-load]), except that a
 @tech{compiled-load handler} is expected to set
-@racket[current-load-relative-directory] itself. The default
-@tech{compiled-load handler}, however, checks for a @filepath{.ss}
-file when the given path ends with @filepath{.rkt}, no @filepath{.rkt}
-file exists, and when the handler's second argument is a symbol. In
-addition, the default @tech{compiled-load handler} checks for
-@filepath{.zo} (bytecode) files and @filepath{.so} (native Unix),
-@filepath{.dll} (native Windows), or @filepath{.dylib} (native Mac OS) files.
+@racket[current-load-relative-directory] itself. Additionally, the default
+@tech{compiled-load handler} does the following:
+
+@itemize[
+
+ @item{When the given path ends with @filepath{.rkt}, no @filepath{.rkt}
+   file exists, and when the handler's second argument is not @racket[#f],
+   the default @tech{compiled-load handler} checks for a @filepath{.ss} file.}
+
+ @item{The default @tech{compiled-load handler} checks for the opportunity
+   to load from @filepath{.zo} (bytecode) files and
+   @filepath{.so} (native Unix), @filepath{.dll} (native Windows),
+   or @filepath{.dylib} (native Mac OS) files.}
+
+ @item{When the default @tech{compiled-load handler} needs to load from
+  the given path, the given path does not exist, and when the handler's
+  second argument is not @racket[#f],
+  the default @tech{compiled-load handler} returns without
+  raising an exception.}
+
+ ]
 
 The check for a compiled file occurs whenever the given path
 @racket[_file] ends with any extension (e.g., @filepath{.rkt} or
@@ -266,7 +283,7 @@ path, in which case @racket[_file]'s directory is combined with
 suffixed onto the directory of @racket[_file]. The roots are tried in
 order, and the subdirectories are checked in order within each root. A
 @filepath{.zo} version of the file (whose name is formed by passing
-@racket[_file] and @racket[#".zo"] to @racket[path-add-suffix]) is
+@racket[_file] and @racket[#".zo"] to @racket[path-add-extension]) is
 loaded if it exists directly in one of the indicated subdirectories,
 or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
 file is loaded if it exists within a @filepath{native} subdirectory of
