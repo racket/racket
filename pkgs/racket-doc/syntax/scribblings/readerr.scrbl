@@ -24,7 +24,7 @@ parameter is set to @racket[#t]). The @racket[source] argument is an
 arbitrary value naming the source location---usually a file path
 string. Each of the @racket[line], @racket[pos] arguments is
 @racket[#f] or a positive exact integer representing the location
-within @racket[source-name] (as much as known), @racket[col] is a
+within @racket[source] (as much as known), @racket[col] is a
 non-negative exact integer for the source column (if known), and
 @racket[span] is @racket[#f] or a non-negative exact integer for an
 item range starting from the indicated position.
