@@ -6,6 +6,7 @@
 @defproc*[([(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
                         [stdin (or/c (and/c input-port? file-stream-port?) #f)]
                         [stderr (or/c (and/c output-port? file-stream-port?) #f 'stdout)]
+                        [group (or/c #f 'new subprocess) (and (subprocess-group-enabled) 'new)]
                         [command path-string?]
                         [arg (or/c path? string-no-nuls? bytes-no-nuls?)] ...)
             (values subprocess?
@@ -15,6 +16,7 @@
            [(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
                         [stdin (or/c (and/c input-port? file-stream-port?) #f)]
                         [stderr (or/c (and/c output-port? file-stream-port?) #f)]
+                        [group (or/c #f 'new subprocess) (and (subprocess-group-enabled) 'new)]
                         [command path-string?]
                         [exact 'exact]
                         [arg string?])
@@ -70,6 +72,20 @@ that is supplied as standard output is also used for standard error.
 For each port or @racket['stdout] that is provided, no
 pipe is created and the corresponding returned value is @racket[#f].
 
+If @racket[group] is @racket['new], then the new process is created as
+a new OS-level process group. In that case, @racket[subprocess-kill]
+attempts to terminate all processes within the group, which may
+include additional processes created by the subprocess.
+@margin-note*{Beware that creating a group may interfere with the job
+control in an interactive shell, since job control is based on process
+groups.} See @racket[subprocess-kill] for details. If @racket[group]
+is a subprocess, then that subprocess must have been created with
+@racket['new], and the new subprocess will be added to the group;
+adding to the group will succeed only on Unix and Mac OS, and only in
+the same cases that @racket[subprocess-kill] would have an effect
+(i.e., the subprocess is not known to have terminated), otherwise it
+will fail silently.
+
 The @racket[subprocess] procedure returns four values:
 
 @itemize[
@@ -107,13 +123,6 @@ the current custodian (see @secref["custodians"]).  The
 process or the creation of operating system pipes for process
 communication.
 
-If the @racket[subprocess-group-enabled] parameter's value is true,
-then the new process is created as a new OS-level process group. In
-that case, @racket[subprocess-kill] attempts to terminate all
-processes within the group, which may include additional processes
-created by the subprocess. See @racket[subprocess-kill] for details,
-and see @racket[subprocess-group-enabled] for additional caveats.
-
 The @racket[current-subprocess-custodian-mode] parameter determines
 whether the subprocess itself is registered with the current
 @tech{custodian} so that a custodian shutdown calls
@@ -121,7 +130,9 @@ whether the subprocess itself is registered with the current
 
 A subprocess can be used as a @tech{synchronizable event} (see @secref["sync"]).
 A subprocess value is @tech{ready for synchronization} when
-@racket[subprocess-wait] would not block; @resultItself{subprocess value}.}
+@racket[subprocess-wait] would not block; @resultItself{subprocess value}.
+
+@history[#:changed "6.11.0.1" @elem{Added the @racket[group] argument.}]}
 
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{
@@ -229,10 +240,8 @@ not all of them.}
 @defboolparam[subprocess-group-enabled on?]{
 
 A @tech{parameter} that determines whether a subprocess is created as
-a new process group. See @racket[subprocess-kill] for more information.
-
-Beware that creating a group may interfere with the job control in an
-interactive shell, since job control is based on process groups.}
+a new process group by default. See @racket[subprocess] and
+@racket[subprocess-kill] for more information.}
 
 
 @defproc[(shell-execute [verb (or/c string? #f)]

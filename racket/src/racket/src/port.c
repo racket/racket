@@ -60,6 +60,7 @@ typedef struct Scheme_Subprocess {
   Scheme_Object so;
   rktio_process_t *proc;
   Scheme_Custodian_Reference *mref;
+  int is_group_rep;
 } Scheme_Subprocess;
 
 /******************** refcounts ********************/
@@ -270,7 +271,7 @@ ROSYM static Scheme_Object *must_truncate_symbol;
 
 ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
-ROSYM static Scheme_Object *exact_symbol;
+ROSYM static Scheme_Object *exact_symbol, *new_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
 THREAD_LOCAL_DECL(static char *read_string_byte_buffer);
@@ -327,8 +328,10 @@ scheme_init_port (Scheme_Env *env)
   scheme_block_symbol = scheme_intern_symbol("block");
 
   REGISTER_SO(exact_symbol);
+  REGISTER_SO(new_symbol);
 
   exact_symbol = scheme_intern_symbol("exact");
+  new_symbol = scheme_intern_symbol("new");
 
   REGISTER_SO(fd_input_port_type);
   REGISTER_SO(fd_output_port_type);
@@ -5778,6 +5781,8 @@ static Scheme_Object *redirect_get_or_peek_bytes_k(void)
 /*                             subprocess                                 */
 /*========================================================================*/
 
+#define SCHEME_SUBPROCESSP(o) SAME_TYPE(SCHEME_TYPE(o), scheme_subprocess_type)
+
 static void close_subprocess_handle(void *so, void *ignored)
 {
   Scheme_Subprocess *sp = (Scheme_Subprocess *)so;
@@ -5877,7 +5882,7 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
   if (!ok) {
     if (can_error)
       scheme_raise_exn(MZEXN_FAIL, 
-                       "subprocess-kill: operation failed\n"
+                       "Subprocess-kill: operation failed\n"
                        "  system error: %R");
   }
 
@@ -5957,7 +5962,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *errport;
   Scheme_Object *a[4];
   Scheme_Subprocess *subproc;
-  Scheme_Object *cust_mode, *current_dir;
+  Scheme_Object *cust_mode, *current_dir, *group;
   int flags = 0;
   rktio_fd_t *stdout_fd = NULL;
   rktio_fd_t *stdin_fd = NULL;
@@ -5966,6 +5971,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   rktio_envvars_t *envvars;
   rktio_process_result_t *result;
   Scheme_Config *config;
+  int command_arg_i;
   int argc;
   char **argv, *command;
 
@@ -6030,18 +6036,34 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       scheme_wrong_contract(name, "(or/c (and/c file-stream-port? output-port?) #f 'stdout)", 2, c, args);
   }
 
-  if (!SCHEME_PATH_STRINGP(args[3]))
-    scheme_wrong_contract(name, "path-string?", 3, c, args);
+  if ((c > 4)
+      && (SCHEME_FALSEP(args[3])
+          || SAME_OBJ(args[3], new_symbol)
+          || SCHEME_SUBPROCESSP(args[3]))) {
+    /* optional group specification provided */
+    command_arg_i = 4;
+    group = args[3];
+  } else {
+    command_arg_i = 3;
+    group = scheme_false;
+  }
+
+  if (!SCHEME_PATH_STRINGP(args[command_arg_i]))
+    scheme_wrong_contract(name,
+                          (((command_arg_i == 3) && (c > 4))
+                           ? "(or/c path-string? #f 'new subprocess?)"
+                           : "path-string?"),
+                          command_arg_i, c, args);
 
   /*--------------------------------------*/
   /*          Sort out arguments          */
   /*--------------------------------------*/
 
-  argc = c - 3;
+  argc = c - command_arg_i;
   argv = MALLOC_N(char *, argc);
   {
     char *ef;
-    ef = scheme_expand_string_filename(args[3],
+    ef = scheme_expand_string_filename(args[command_arg_i],
 				       (char *)name, 
 				       NULL,
 				       SCHEME_GUARD_FILE_EXECUTE);
@@ -6056,13 +6078,13 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     argv[0] = np;
   }
   
-  if ((c == 6) && SAME_OBJ(args[4], exact_symbol)) {
+  if ((c == (command_arg_i + 3)) && SAME_OBJ(args[command_arg_i+1], exact_symbol)) {
     argv[2] = NULL;
-    if (!SCHEME_CHAR_STRINGP(args[5]) || scheme_any_string_has_null(args[5]))
-      scheme_wrong_contract(name, CHAR_STRING_W_NO_NULLS, 5, c, args);
+    if (!SCHEME_CHAR_STRINGP(args[command_arg_i+2]) || scheme_any_string_has_null(args[command_arg_i+2]))
+      scheme_wrong_contract(name, CHAR_STRING_W_NO_NULLS, command_arg_i+2, c, args);
     {
       Scheme_Object *bs;
-      bs = scheme_char_string_to_byte_string(args[5]);
+      bs = scheme_char_string_to_byte_string(args[command_arg_i+2]);
       argv[1] = SCHEME_BYTE_STR_VAL(bs);
     }
 
@@ -6071,11 +6093,11 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     else 
       scheme_contract_error(name,
                             "exact command line not supported on this platform",
-                            "exact command", 1, args[5],
+                            "exact command", 1, args[command_arg_i + 2],
                             NULL);
   } else {
     int i;
-    for (i = 4; i < c; i++) {
+    for (i = command_arg_i + 1; i < c; i++) {
       if (((!SCHEME_CHAR_STRINGP(args[i]) && !SCHEME_BYTE_STRINGP(args[i]))
            || scheme_any_string_has_null(args[i]))
           && !SCHEME_PATHP(args[i]))
@@ -6087,12 +6109,21 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
         bs = args[i];
         if (SCHEME_CHAR_STRINGP(args[i]))
           bs = scheme_char_string_to_byte_string_locale(bs);
-	argv[i - 3] = SCHEME_BYTE_STR_VAL(bs);
+	argv[i - command_arg_i] = SCHEME_BYTE_STR_VAL(bs);
       }
     }
   }
 
   command = argv[0];
+
+  if (SCHEME_SUBPROCESSP(group)) {
+    if (!((Scheme_Subprocess *)group)->is_group_rep) {
+      scheme_contract_error(name, "subprocess does not represent a new group",
+                            "subprocess", 1, group,
+                            NULL);
+      return NULL;
+    }
+  }
 
   if (!stdin_fd || !stdout_fd || !stderr_fd)
     scheme_custodian_check_available(NULL, name, "file-stream");
@@ -6102,9 +6133,13 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   config = scheme_current_config();
-  
-  cust_mode = scheme_get_param(config, MZCONFIG_SUBPROC_GROUP_ENABLED);
-  if (SCHEME_TRUEP(cust_mode))
+
+  if (SCHEME_FALSEP(group)) {
+    group = scheme_get_param(config, MZCONFIG_SUBPROC_GROUP_ENABLED);
+    if (SCHEME_TRUEP(group))
+      group = new_symbol;
+  }
+  if (SAME_OBJ(group, new_symbol))
     flags |= RKTIO_PROCESS_NEW_GROUP;
 
   cust_mode = scheme_get_param(config, MZCONFIG_SUBPROC_CUSTODIAN_MODE);
@@ -6122,6 +6157,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   result = rktio_process(scheme_rktio,
                          command, argc, (rktio_const_string_t *)argv,
                          stdout_fd, stdin_fd, stderr_fd,
+                         (SCHEME_SUBPROCESSP(group) ? ((Scheme_Subprocess *)group)->proc : NULL),
                          SCHEME_PATH_VAL(current_dir), envvars,
                          flags);
 
@@ -6160,6 +6196,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     subproc = MALLOC_ONE_TAGGED(Scheme_Subprocess);
     subproc->so.type = scheme_subprocess_type;
     subproc->proc = result->process;
+    subproc->is_group_rep = SAME_OBJ(group, new_symbol);
     scheme_add_finalizer(subproc, close_subprocess_handle, NULL);
 
     if (SCHEME_TRUEP(cust_mode)) {

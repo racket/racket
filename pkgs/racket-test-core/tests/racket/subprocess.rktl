@@ -451,8 +451,20 @@
                  (parameterize ([current-input-port (open-input-string "")])
                    (system (format "kill ~a" sub-pid)))))))])
     (try #t)
-    (try #f)))
-  
+    (try #f))
+
+  (let ()
+    (define-values (p1 o1 i1 e1) (subprocess (current-output-port) (current-input-port) (current-error-port) 'new "/bin/cat"))
+    (define-values (p2 o2 i2 e2) (subprocess (current-output-port) (current-input-port) (current-error-port) p1 "/bin/cat"))
+    
+    (test 'running subprocess-status p1)
+    (test 'running subprocess-status p2)
+
+    (subprocess-kill p1 #t)
+    (test p1 sync p1)
+    (test p2 sync p2)
+    
+    (test (subprocess-status p1) subprocess-status p2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check status result

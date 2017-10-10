@@ -1199,6 +1199,7 @@ int rktio_process_allowed_flags(rktio_t *rktio)
 rktio_process_result_t *rktio_process(rktio_t *rktio,
                                       const char *command, int argc, rktio_const_string_t *argv,
                                       rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
+                                      rktio_process_t *group_proc,
                                       const char *current_directory, rktio_envvars_t *envvars,
                                       int flags)
 {
@@ -1345,18 +1346,24 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     pid = fork();
 #endif
 
+    
+
     if (pid > 0) {
       /* This is the original process, which needs to manage the 
          newly created child process. */
       
-      if (new_process_group)
+      if (new_process_group || group_proc) {
         /* there's a race condition between this use and the exec(),
            and there's a race condition between the other setpgid() in
            the child processand sending signals from the parent
            process; so, we set in both, and at least one will
            succeed; we could perform better error checking, since
            EACCES is the only expected error */
-        setpgid(pid, pid);
+        int pgid = pid;
+        if (group_proc)
+          pgid = group_proc->pid;
+        setpgid(pid, pgid); /* note: silent failure */
+      }
 
 #if defined(CENTRALIZED_SIGCHILD)
       {
@@ -1374,9 +1381,14 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
     } else if (!pid) {
       /* This is the new child process */
-      if (new_process_group)
+      if (new_process_group || group_proc) {
         /* see also setpgid above */
-        setpgid(getpid(), getpid()); /* setpgid(0, 0) would work on some platforms */
+        int actual_pid = getpid();
+        int pgid = actual_pid;
+        if (group_proc)
+          pgid = group_proc->pid;
+        setpgid(actual_pid, pgid); /* note: silent failure */
+      }
     } else {
       get_posix_error();
     }
@@ -1547,7 +1559,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   subproc->handle = (void *)sc;
 #endif
   subproc->pid = pid;
-  subproc->is_group = new_process_group;
+  subproc->is_group = (new_process_group || group_proc);
 
   result->process = subproc;
 

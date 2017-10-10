@@ -546,8 +546,12 @@ typedef struct rktio_process_result_t {
 
 RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
                                                    rktio_const_string_t command, int argc, rktio_const_string_t *argv,
-                                                   rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
-                                                   rktio_const_string_t current_directory, rktio_envvars_t *envvars,
+                                                   RKTIO_NULLABLE rktio_fd_t *stdout_fd,
+                                                   RKTIO_NULLABLE rktio_fd_t *stdin_fd,
+                                                   RKTIO_NULLABLE rktio_fd_t *stderr_fd,
+                                                   RKTIO_NULLABLE rktio_process_t *group_proc,
+                                                   rktio_const_string_t current_directory,
+                                                   rktio_envvars_t *envvars,
                                                    int flags);
 /* `flags` flags: */
 #define RKTIO_PROCESS_NEW_GROUP                 (1<<0)
@@ -572,7 +576,8 @@ RKTIO_EXTERN void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp);
 /* Deallocates a process record, whether or not the process has
    stopped. */
 
-RKTIO_EXTERN rktio_ok_t rktio_poll_process_done(rktio_t *rktio, rktio_process_t *sp);
+RKTIO_EXTERN_ERR(RKTIO_PROCESS_ERROR)
+rktio_tri_t rktio_poll_process_done(rktio_t *rktio, rktio_process_t *sp);
 /* Check whether a process has completed: */
 #define RKTIO_PROCESS_ERROR    (-2)
 #define RKTIO_PROCESS_DONE     1
