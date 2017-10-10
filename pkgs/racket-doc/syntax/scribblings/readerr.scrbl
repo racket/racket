@@ -7,10 +7,10 @@
 
 @defproc[(raise-read-error [msg-string string?] 
                            [source any/c]
-                           [line (or/c number? false/c)]
-                           [col (or/c number? false/c)]
-                           [pos (or/c number? false/c)]
-                           [span (or/c number? false/c)]
+                           [line (or/c exact-positive-integer? false/c)]
+                           [col (or/c exact-nonnegative-integer? false/c)]
+                           [pos (or/c exact-positive-integer? false/c)]
+                           [span (or/c exact-nonnegative-integer? false/c)]
                            [#:extra-srclocs extra-srclocs (listof srcloc?) '()]) 
          any]{
 
@@ -24,7 +24,7 @@ parameter is set to @racket[#t]). The @racket[source] argument is an
 arbitrary value naming the source location---usually a file path
 string. Each of the @racket[line], @racket[pos] arguments is
 @racket[#f] or a positive exact integer representing the location
-within @racket[source-name] (as much as known), @racket[col] is a
+within @racket[source] (as much as known), @racket[col] is a
 non-negative exact integer for the source column (if known), and
 @racket[span] is @racket[#f] or a non-negative exact integer for an
 item range starting from the indicated position.
@@ -35,10 +35,10 @@ was discovered.}
 
 @defproc[(raise-read-eof-error [msg-string string?] 
                                [source any/c]
-                               [line (or/c number? false/c)]
-                               [col (or/c number? false/c)]
-                               [pos (or/c number? false/c)]
-                               [span (or/c number? false/c)]) 
+                               [line (or/c exact-positive-integer? false/c)]
+                               [col (or/c exact-nonnegative-integer? false/c)]
+                               [pos (or/c exact-positive-integer? false/c)]
+                               [span (or/c exact-nonnegative-integer? false/c)]) 
          any]{
 
 Like @racket[raise-read-error], but raises @racket[exn:fail:read:eof]
