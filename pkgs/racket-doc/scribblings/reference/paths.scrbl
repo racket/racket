@@ -302,7 +302,7 @@ Windows examples.
 Like @racket[build-path], except a path convention type is specified
 explicitly.}
 
-@defproc[(absolute-path? [path (or/c path-string? path-for-some-system?)]) boolean?]{
+@defproc[(absolute-path? [path (or/c path? string? path-for-some-system?)]) boolean?]{
 
 Returns @racket[#t] if @racket[path] is an absolute path, @racket[#f]
 otherwise. The @racket[path] argument can be a path for any
@@ -311,7 +311,7 @@ contains a nul character), @racket[#f] is returned. This procedure
 does not access the filesystem.}
 
 
-@defproc[(relative-path? [path (or/c path-string? path-for-some-system?)]) boolean?]{
+@defproc[(relative-path? [path (or/c path? string? path-for-some-system?)]) boolean?]{
 
 Returns @racket[#t] if @racket[path] is a relative path, @racket[#f]
 otherwise. The @racket[path] argument can be a path for any
@@ -320,7 +320,7 @@ contains a nul character), @racket[#f] is returned. This procedure
 does not access the filesystem.}
 
 
-@defproc[(complete-path? [path (or/c path-string? path-for-some-system?)]) boolean?]{
+@defproc[(complete-path? [path (or/c path? string? path-for-some-system?)]) boolean?]{
 
 Returns @racket[#t] if @racket[path] is a @deftech{complete}ly determined path
 (@italic{not} relative to a directory or drive), @racket[#f]
