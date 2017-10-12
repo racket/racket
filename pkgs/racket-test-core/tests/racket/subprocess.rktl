@@ -453,18 +453,26 @@
     (try #t)
     (try #f))
 
-  (let ()
+  (define (try-add-to-group kill-second?)
     (define-values (p1 o1 i1 e1) (subprocess (current-output-port) (current-input-port) (current-error-port) 'new "/bin/cat"))
     (define-values (p2 o2 i2 e2) (subprocess (current-output-port) (current-input-port) (current-error-port) p1 "/bin/cat"))
     
     (test 'running subprocess-status p1)
     (test 'running subprocess-status p2)
 
+    (when kill-second?
+      (subprocess-kill p2 #t)
+      (test p2 sync p2)
+      (test 'running subprocess-status p1))
+
     (subprocess-kill p1 #t)
     (test p1 sync p1)
     (test p2 sync p2)
     
-    (test (subprocess-status p1) subprocess-status p2)))
+    (test (subprocess-status p1) subprocess-status p2))
+
+  (try-add-to-group #f)
+  (try-add-to-group #t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check status result

@@ -25,7 +25,7 @@
 struct rktio_process_t {
   void *handle;
   int pid;
-  int is_group;
+  int is_group, in_group;
 #ifdef CENTRALIZED_SIGCHILD
   short done;
   int status;
@@ -72,7 +72,7 @@ typedef struct Child_Status {
   int status;
   char done;
   char unneeded; /* not in a group; result not needed */
-  char is_group;
+  char in_group;
   rktio_signal_handle_t *signal_fd;
   struct Child_Status *next;
   struct Child_Status *next_unused; /* see unused_pid_statuses */
@@ -98,7 +98,7 @@ static Child_Status *unused_pid_statuses = NULL;
 static void add_group_signal_fd(rktio_signal_handle_t *signal_fd);
 static void remove_group_signal_fd(rktio_signal_handle_t *signal_fd);
 static void do_group_signal_fds();
-static int centralized_get_child_status(int pid, int is_group, int can_check_group, int *status);
+static int centralized_get_child_status(int pid, int in_group, int can_check_group, int *status);
 
 static void add_child_status(int pid, int status)
 {
@@ -113,7 +113,7 @@ static void add_child_status(int pid, int status)
 
   if (!st) {
     /* must have terminated before it was registered
-       (and since we detected it, it must not be a group) */
+       (and since we detected it, it must not be in a group) */
     st = malloc(sizeof(Child_Status));
     st->pid = pid;
     st->signal_fd = NULL;
@@ -121,12 +121,12 @@ static void add_child_status(int pid, int status)
     child_statuses = st;
     st->next_unused = NULL;
     st->unneeded = 0;
-    st->is_group = 0;
+    st->in_group = 0;
   }
   st->status = status;
   st->done = 1;
 
-  if (st->signal_fd && st->is_group)
+  if (st->signal_fd && st->in_group)
     remove_group_signal_fd(st->signal_fd);
 
   pthread_mutex_unlock(&child_status_lock);
@@ -164,7 +164,7 @@ static int raw_get_child_status(int pid, int *status, int done_only, int do_remo
   return found;
 }
 
-int centralized_get_child_status(int pid, int is_group, int can_check_group, int *status)
+int centralized_get_child_status(int pid, int in_group, int can_check_group, int *status)
 {
   int found = 0;
 
@@ -190,7 +190,7 @@ int centralized_get_child_status(int pid, int is_group, int can_check_group, int
   return found;
 }
 
-static int centralized_register_child(int pid, int is_group, rktio_signal_handle_t *signal_fd, int *status)
+static int centralized_register_child(int pid, int in_group, rktio_signal_handle_t *signal_fd, int *status)
 {
   int found = 0;
 
@@ -208,13 +208,13 @@ static int centralized_register_child(int pid, int is_group, rktio_signal_handle
     st->status = 0;
     st->unneeded = 0;
     st->done = 0;
-    st->is_group = is_group;
+    st->in_group = in_group;
 
     st->next = child_statuses;
     child_statuses = st;
     st->next_unused = NULL;
 
-    if (is_group)
+    if (in_group)
       add_group_signal_fd(signal_fd);
   }
 
@@ -225,7 +225,7 @@ static int centralized_register_child(int pid, int is_group, rktio_signal_handle
 static void *thread_signal_worker(void *data)
 {
   int status;
-  int pid, check_pid, is_group;
+  int pid, check_pid, in_group;
   sigset_t set;
   Child_Status *unused_status, *prev_unused, *next;
 
@@ -258,7 +258,7 @@ static void *thread_signal_worker(void *data)
       if (unused_status) {
         /* See unused_pid_statuses above */
         check_pid = unused_status->pid;
-        is_group = 1;
+        in_group = 1;
       } else {
         /* We wait only on processes in the same group as the current process,
            because detecting the termination of a group's main process
@@ -267,7 +267,7 @@ static void *thread_signal_worker(void *data)
           check_pid = 0; /* => processes in the same group as the current process */
         else
           check_pid = -1; /* don't check */
-        is_group = 0;
+        in_group = 0;
       }
 
       if (check_pid == -1) {
@@ -280,19 +280,19 @@ static void *thread_signal_worker(void *data)
         if (errno == EINTR) {
           /* try again */
           pid = 1;
-        } else if (!is_group && (errno == ECHILD)) {
+        } else if (!in_group && (errno == ECHILD)) {
           /* no more to check */
         } else {
           fprintf(stderr, "unexpected error from waitpid(%d[%d]): %d\n", 
-                  check_pid, is_group, errno);
-          if (is_group) {
+                  check_pid, in_group, errno);
+          if (in_group) {
             prev_unused = unused_status;
             unused_status = unused_status->next;
           } 
         }
       } else if (pid > 0) {
         /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
-        if (is_group) {
+        if (in_group) {
           next = unused_status->next_unused;
           if (prev_unused)
             prev_unused->next_unused = next;
@@ -323,12 +323,12 @@ static void *thread_signal_worker(void *data)
           }
         }
       } else {
-        if (is_group) {
+        if (in_group) {
           prev_unused = unused_status;
           unused_status = unused_status->next_unused;
         }
       }
-    } while ((pid > 0) || is_group);
+    } while ((pid > 0) || in_group);
 
     pthread_mutex_unlock(&child_wait_lock);
   }
@@ -336,7 +336,7 @@ static void *thread_signal_worker(void *data)
   return NULL;
 }
 
-void centralized_done_with_process_id(int pid, int is_group)
+void centralized_done_with_process_id(int pid, int in_group)
 {
   Child_Status *st;
   int keep_unused = 1; /* assume that any process can be in a new group */
@@ -723,7 +723,7 @@ int rktio_poll_process_done(rktio_t *rktio, rktio_process_t *sp)
   {
     int status;
     if (!sp->done) {
-      if (centralized_get_child_status(sp->pid, sp->is_group, 1, &status)) {
+      if (centralized_get_child_status(sp->pid, sp->in_group, 1, &status)) {
         sp->done = 1;
         sp->status = status;
         centralized_ended_child();
@@ -787,7 +787,7 @@ rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp)
   if (sp->done) {
     status = sp->status;
   } else {
-    if (!centralized_get_child_status(sp->pid, sp->is_group, 1, &status)) {
+    if (!centralized_get_child_status(sp->pid, sp->in_group, 1, &status)) {
       going = 1;
     } else {
       sp->done = 1;
@@ -930,7 +930,7 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
 #ifdef RKTIO_SYSTEM_UNIX
 # if defined(CENTRALIZED_SIGCHILD)
   if (!sp->done) {
-    centralized_done_with_process_id(sp->pid, sp->is_group);
+    centralized_done_with_process_id(sp->pid, sp->in_group);
     centralized_ended_child();
   }
 # else
@@ -1370,7 +1370,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         rktio_signal_handle_t *signal_fd;
         int status;
         signal_fd = rktio_get_signal_handle(rktio);
-        centralized_register_child(pid, new_process_group, signal_fd, &status);
+        centralized_register_child(pid, new_process_group || group_proc, signal_fd, &status);
 
         /* printf("SUBPROCESS  %i\n", pid); */
       }
@@ -1559,7 +1559,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   subproc->handle = (void *)sc;
 #endif
   subproc->pid = pid;
-  subproc->is_group = (new_process_group || group_proc);
+  subproc->is_group = new_process_group;
+  subproc->in_group = (new_process_group || group_proc);
 
   result->process = subproc;
 
