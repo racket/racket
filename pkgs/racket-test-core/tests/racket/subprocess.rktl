@@ -454,8 +454,8 @@
     (try #f))
 
   (define (try-add-to-group kill-second?)
-    (define-values (p1 o1 i1 e1) (subprocess (current-output-port) (current-input-port) (current-error-port) 'new "/bin/cat"))
-    (define-values (p2 o2 i2 e2) (subprocess (current-output-port) (current-input-port) (current-error-port) p1 "/bin/cat"))
+    (define-values (p1 o1 i1 e1) (subprocess #f #f #f 'new "/bin/cat"))
+    (define-values (p2 o2 i2 e2) (subprocess #f #f #f p1 "/bin/cat"))
     
     (test 'running subprocess-status p1)
     (test 'running subprocess-status p2)
@@ -469,7 +469,14 @@
     (test p1 sync p1)
     (test p2 sync p2)
     
-    (test (subprocess-status p1) subprocess-status p2))
+    (test (subprocess-status p1) subprocess-status p2)
+
+    (close-input-port o1)
+    (close-input-port o2)
+    (close-input-port e1)
+    (close-input-port e2)
+    (close-output-port i1)
+    (close-output-port i2))
 
   (try-add-to-group #f)
   (try-add-to-group #t))
