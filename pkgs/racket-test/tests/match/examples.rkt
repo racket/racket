@@ -357,6 +357,15 @@
                    [(hash-table (key val) ...) key]
                    [_ 'no])))
 
+   (comp "non-empty"
+         (match #hash((1 . 2))
+           [(hash-table) "empty"]
+           [_ "non-empty"]))
+   (comp "empty"
+         (match #hash()
+           [(hash-table) "empty"]
+           [_ "non-empty"]))
+
    (comp
     (match #(1 (2) (2) (2) 5)
       [(vector 1 (list a) ..3 5) a]
