@@ -343,6 +343,9 @@
                (syntax/loc/props body
                  (begin-for-syntax (wrap-param-et e (orig-id ...) (temp-id ...)) ...))]
               [(module . _) body]
+              [(module* n #f form ...)
+               (syntax/loc/props body
+                 (module* n #f (expand-ssp-body (sp-id ...) (temp-id ...) (orig-id ...) form) ...))]
               [(module* . _) body]
               [(#%require . _) body]
               [(#%provide . _) body]
@@ -408,6 +411,9 @@
                  (syntax/loc/props e
                    (define-values ids (wrap-param-et rhs (orig-id ...) (temp-id ...))))]
                 [(module . _) e]
+                [(module* n #f form ...)
+                 (syntax/loc/props e
+                   (module* n #f (wrap-param-et form (orig-id ...) (temp-id ...)) ...))]
                 [(module* . _) e]
                 [(#%require . _) e]
                 [(#%provide . _) e]

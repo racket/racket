@@ -73,6 +73,11 @@ affected by syntax parameterization.  While all uses of @racket[require] and
 export specifications will expand as if they had not been inside of the
 @racket[splicing-syntax-parameterize].
 
+Additionally, @tech{submodules} defined with @racket[module*] that specify
+@racket[#f] in place of a @tech{module path} @emph{are} affected by syntax
+parameterization, but other submodules (those defined with @racket[module] or
+@racket[module*] with a @tech{module path}) are @emph{not}.
+
 @examples[
 #:eval splice-eval
 (define-syntax-parameter place (lambda (stx) #'"Kansas"))
@@ -81,7 +86,12 @@ export specifications will expand as if they had not been inside of the
 (splicing-syntax-parameterize ([place (lambda (stx) #'"Oz")])
   (define here (where)))
 here
-]}
+]
+
+@history[
+ #:changed "6.11.0.1"
+ @elem{Modified to syntax parameterize @racket[module*] submodules that
+       specify @racket[#f] in place of a @tech{module path}.}]}
 
 @; ----------------------------------------------------------------------
 

@@ -74,6 +74,12 @@
                            (lambda (stx)
                              #`(quote #,v)))))
       (m)))
+
+  ; make sure splicing-syntax-parameterize works with (module* _ #f ....)
+  (splicing-syntax-parameterize ([sp 'sub-submod])
+    (module* sp-submod #f
+      (provide b)
+      (m b)))
    
   (provide x y z w f g))
 
@@ -83,6 +89,7 @@
 (test 'sub2 dynamic-require ''check-splicing-stxparam-1 'w)
 (test 'nested values ((dynamic-require ''check-splicing-stxparam-1 'f)))
 (test 'also-nested values ((dynamic-require ''check-splicing-stxparam-1 'g)))
+(test 'sub-submod dynamic-require '(submod 'check-splicing-stxparam-1 sp-submod) 'b)
 
 (module check-splicing-stxparam-et racket/base
   (require (for-syntax racket/base)
