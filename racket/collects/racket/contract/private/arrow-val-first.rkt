@@ -67,7 +67,9 @@
 (define-for-syntax popular-keys
   ;; of the 6075 contracts that get compiled during
   ;; 'raco setup' of main-distribution and main-distribution-test,
-  ;; these are all the ones that appear at least 60 times
+  ;; these are all the ones that appear at least 60 times, as of
+  ;; January 2016. Plus the ones that appear at least 10 times in
+  ;; contracts that TR generates for plot-gui-lib, as of October 2017
   `((() 0 () () #f 1)
     (() 0 () () #f #f)
     ((#f) 0 () () #f 1)
@@ -79,8 +81,37 @@
     ((#f #f #f) 0 () () #f #f)
     ((#f #f #f #f) 0 () () #f 1)
     ((#f #f #f #f) 0 () () #f #f)
+    ((#f #f #f #f #f) 0 () () #f 1)
     ((#f #f #f #f #f) 0 () () #f #f)
-    ((#f #f #f #f #f #f) 0 () () #f #f)))
+    ((#f #f #f #f #f #f) 0 () () #f 1)
+    ((#f #f #f #f #f #f) 0 () () #f #f)
+    ((#f #f #f #f #f #f #f) 0 () () #f 1)
+    ((#f #f #f #f #f #f #f #f) 0 () () #f 1)
+    ;; 9 argument doesn't seem to show up
+    ((#f #f #f #f #f #f #f #f #f #f) 0 () () #f 1)
+
+    ;; multiple results or optional arguments below
+    ((#f) 2 () () #f 1)
+    ((#f) 3 () () #f 1)
+    ((#f) 4 () () #f 1)
+    ((#f) 0 () () #f 2)
+    ((#f) 0 () () #f 4)
+    ((#f) 0 () () #f 6)
+    ((#f #f) 1 () () #f 1)
+    ((#f #f) 2 () () #f 1)
+    ((#f #f) 3 () () #f 1)
+    ((#f #f) 3 () () #f 4)
+    ((#f #f) 5 () () #f 1)
+    ((#f #f #f) 0 () () #f 2)
+    ((#f #f #f) 0 () () #f 4)
+    ((#f #f #f) 1 () () #f 1)
+    ((#f #f #f) 4 () () #f 1)
+    ((#f #f #f #f) 1 () () #f 1)
+    ((#f #f #f #f) 3 () () #f 1)
+    ((#f #f #f #f #f) 1 () () #f 1)
+    ((#f #f #f #f #f #f) 2 () () #f 1)
+    ((#f #f #f #f #f #f #f) 1 () () #f 1)
+    ((#f #f #f #f #f #f #f #f) 3 () () #f 1)))
 
 (define-syntax (generate-popular-key-ids stx)
   (syntax-case stx ()
