@@ -1555,10 +1555,10 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
       hi->depth += 2;
       k = (k << 3) + k;
       k += equal_hash_key(SCHEME_CAR(o), 0, hi);
-      /* If it's a list, don't count cdr direction as depth: */
-      if (scheme_is_list(o))
-        hi->depth -= 2;
       o = SCHEME_CDR(o);
+      /* If it continues as a list, don't count cdr direction as depth: */
+      if (SCHEME_PAIRP(o) && scheme_is_list(o))
+        hi->depth -= 2;
       break;
     }
   case scheme_mutable_pair_type:

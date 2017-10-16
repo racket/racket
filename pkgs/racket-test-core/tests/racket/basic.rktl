@@ -2204,7 +2204,8 @@
           [v (vector 5 6 7)]
           [a (make-a 1 (make-a 2 3))]
           [b (box (list 1 2 3))]
-          [fl (flvector 1.0 +nan.0 0.0)])
+          [fl (flvector 1.0 +nan.0 0.0)]
+          [cyclic-list (read (open-input-string "#2=(#1=(#2#) #2#)"))])
 
       (test 0 hash-count h1)
 
@@ -2225,11 +2226,12 @@
                      (hash-set! h1 (save v) 'vector)
                      (hash-set! h1 (save a) 'struct)
                      (hash-set! h1 (save an-ax) 'structx)
-                     (hash-set! h1 (save b) 'box))])
+                     (hash-set! h1 (save b) 'box)
+                     (hash-set! h1 cyclic-list 'cyclic-list))])
         (if reorder?
           (begin
             (puts2)
-            (test 6 hash-count h1)
+            (test 7 hash-count h1)
             (puts1))
           (begin
             (puts1)
@@ -2245,7 +2247,7 @@
             (loop (add1 i))
             (hash-remove! h1 i))))
 
-      (test 14 hash-count h1)
+      (test 15 hash-count h1)
       (test 'list hash-ref h1 l)
       (test 'list hash-ref h1 (list 1 2 3))
       (test 'another-list hash-ref h1 (list 5 7))
@@ -2265,6 +2267,7 @@
       (test 'box hash-ref h1 #&(1 2 3))
       (test 'char hash-ref h1 (integer->char 955))
       (test 'flvector hash-ref h1 (flvector 1.0 +nan.0 0.0))
+      (test 'cyclic-list hash-ref h1 cyclic-list)
       (test #t
             andmap
             (lambda (i)
@@ -2283,13 +2286,15 @@
               (,an-ax . structx)
               (#\u3BB . char)
               (#&(1 2 3) . box)
-              (,(flvector 1.0 +nan.0 0.0) . flvector)))
+              (,(flvector 1.0 +nan.0 0.0) . flvector)
+              (,cyclic-list . cyclic-list)))
+
       (hash-remove! h1 (list 1 2 3))
-      (test 13 hash-count h1)
+      (test 14 hash-count h1)
       (test 'not-there hash-ref h1 l (lambda () 'not-there))
       (let ([c 0])
         (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
-        (test 13 'count c))
+        (test 14 'count c))
       ;; return the hash table:
       h1))
 
