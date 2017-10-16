@@ -4156,7 +4156,7 @@ static int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
   return scheme_equal(a, b);
 }
 
-static Scheme_Object *resolved_module_path_to_modidx(Scheme_Object *rmp)
+Scheme_Object *scheme_resolved_module_path_to_modidx(Scheme_Object *rmp)
 {
   Scheme_Object *path;
 
@@ -12828,7 +12828,7 @@ void parse_requires(Scheme_Object *form, int at_phase,
       }
 
       if (SAME_TYPE(SCHEME_TYPE(idx), scheme_resolved_module_path_type))
-        idx = resolved_module_path_to_modidx(idx);
+        idx = scheme_resolved_module_path_to_modidx(idx);
 
       add_single_require(m->me, x_just_mode, x_mode, idx, rename_env,
                          rn_set, (for_m ? for_m->rn_stx : NULL),
