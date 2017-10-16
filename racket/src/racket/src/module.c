@@ -7654,7 +7654,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     /* result should be a module body value: */
     if (!SAME_OBJ(fm, (Scheme_Object *)m)) {
-      scheme_wrong_syntax(NULL, NULL, form, "compiled body was not built with #%%module-begin");
+      scheme_wrong_syntax(NULL, NULL, form, "expansion of #%%module-begin is not a #%%plain-module-begin form");
     }
 
     if (restore_confusing_name)
