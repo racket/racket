@@ -309,8 +309,10 @@ result of the last evaluation of @racket[body]. If the
   (error "doesn't get here"))
 ]}
 
-@defform[(for/fold ([accum-id init-expr] ...) (for-clause ...)
-           body-or-break ... body)]{
+@defform/subs[(for/fold ([accum-id init-expr] ... maybe-result) (for-clause ...)
+                body-or-break ... body)
+              ([maybe-result (code:line)
+                             (code:line #:result result-expr)])]{
 
 Iterates like @racket[for]. Before iteration starts, the
 @racket[init-expr]s are evaluated to produce initial accumulator
@@ -319,8 +321,11 @@ for each @racket[accum-id], and the corresponding current accumulator
 value is placed into the location. The last expression in
 @racket[body] must produce as many values as @racket[accum-id]s, and
 those values become the current accumulator values. When iteration
-terminates, the results of the @racket[for/fold] expression are the
-accumulator values.
+terminates, if a @racket[result-expr] is provided then the result of the
+ @racket[for/fold] is the result of evaluating @racket[result-expr]
+ (with @racket[accum-id]s in scope and bound to their final values),
+ otherwise the results of the @racket[for/fold] expression are the
+ accumulator values.
 
 An @racket[accum-id] and a binding from a @racket[for-clause] can be
 the same identifier. In that case, the @racket[accum-id] binding
@@ -333,7 +338,19 @@ syntactically, a @racket[for-clause] is closer to to the body).
            [rev-roots null])
           ([i '(1 2 3 4)])
   (values (+ sum i) (cons (sqrt i) rev-roots)))
-]}
+
+(for/fold ([acc '()]
+           [seen (hash)]
+           #:result (reverse acc))
+          ([x (in-list '(0 1 1 2 3 4 4 4))])
+  (cond
+    [(hash-ref seen x #f)
+     (values acc seen)]
+    [else (values (cons x acc)
+                  (hash-set seen x #t))]))
+]
+@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]}
+}
 
 @defform[(for* (for-clause ...) body-or-break ... body)]{
 Like @racket[for], but with an implicit @racket[#:when #t] between
@@ -359,7 +376,7 @@ nested.
 @defform[(for*/product (for-clause ...) body-or-break ... body)]
 @defform[(for*/first (for-clause ...) body-or-break ... body)]
 @defform[(for*/last (for-clause ...) body-or-break ... body)]
-@defform[(for*/fold ([accum-id init-expr] ...) (for-clause ...)
+@defform[(for*/fold ([accum-id init-expr] ... maybe-result) (for-clause ...)
            body-or-break ... body)]
 )]{
 
@@ -376,7 +393,7 @@ Like @racket[for/list], etc., but with the implicit nesting of
 @section{Deriving New Iteration Forms}
 
 @defform[(for/fold/derived orig-datum
-           ([accum-id init-expr] ...) (for-clause ...) 
+           ([accum-id init-expr] ... maybe-result) (for-clause ...)
            body-or-break ... body)]{
 
 Like @racket[for/fold], but the extra @racket[orig-datum] is used as the
@@ -427,10 +444,12 @@ source for all syntax errors.
           [s '(-1      1       1)])
   (* n s))
 ]
+
+@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]}
 }
 
 @defform[(for*/fold/derived orig-datum
-           ([accum-id init-expr] ...) (for-clause ...) 
+           ([accum-id init-expr] ... maybe-result) (for-clause ...)
            body-or-break ... body)]{
 Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source for all syntax errors.
 
@@ -459,6 +478,7 @@ Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source
   d)
 ]
 
+@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]}
 }
 
 @defform[(define-sequence-syntax id
