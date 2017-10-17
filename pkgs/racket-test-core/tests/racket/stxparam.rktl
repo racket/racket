@@ -34,6 +34,7 @@
     (syntax-case stx ()
       [(_ id) #`(define id (quote #,v))]))
   (m x)
+
   (splicing-syntax-parameterize ([sp 'sub])
     (begin
      (define other 'other)
@@ -80,6 +81,12 @@
     (module* sp-submod #f
       (provide b)
       (m b)))
+
+  ; make sure it applies to #%module-begin for submodules
+  (splicing-letrec-syntax ([#%module-begin (syntax-rules ()
+                                             [(_) (#%plain-module-begin (begin (provide b) (m b)))])])
+    (splicing-syntax-parameterize ([sp 'begin-defined])
+      (module* sp-submod2 #f)))
    
   (provide x y z w f g))
 
@@ -90,6 +97,7 @@
 (test 'nested values ((dynamic-require ''check-splicing-stxparam-1 'f)))
 (test 'also-nested values ((dynamic-require ''check-splicing-stxparam-1 'g)))
 (test 'sub-submod dynamic-require '(submod 'check-splicing-stxparam-1 sp-submod) 'b)
+(test 'begin-defined dynamic-require '(submod 'check-splicing-stxparam-1 sp-submod2) 'b)
 
 (module check-splicing-stxparam-et racket/base
   (require (for-syntax racket/base)
