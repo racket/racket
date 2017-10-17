@@ -1544,10 +1544,21 @@
 
   (define-syntax (for/fold/derived stx)
     (syntax-case stx ()
+      [(_ orig-stx ([fold-var finid-init] ... #:result result-expr) . rest)
+       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
+       (syntax/loc #'orig-stx
+         (let-values ([(fold-var ...) (for/foldX/derived/final [orig-stx #f]
+                                        ([fold-var finid-init] ...)
+                                        (values* fold-var ...)
+                                        . rest)])
+           result-expr))]
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
        (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
        (syntax/loc #'orig-stx
-         (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) (values* fold-var ...) . rest))]
+         (for/foldX/derived/final [orig-stx #f]
+           ([fold-var finid-init] ...)
+           (values* fold-var ...)
+           . rest))]
       [(_ orig-stx (bindings ...) . rst)
        (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
       [(_ orig-stx . rst)
@@ -1555,10 +1566,21 @@
 
   (define-syntax (for*/fold/derived stx)
     (syntax-case stx ()
+      [(_ orig-stx ([fold-var finid-init] ... #:result result-expr) . rest)
+       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
+       (syntax/loc #'orig-stx
+         (let-values ([(fold-var ...) (for/foldX/derived/final [orig-stx #t]
+                                        ([fold-var finid-init] ...)
+                                        (values* fold-var ...)
+                                        . rest)])
+           result-expr))]
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
        (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
        (syntax/loc #'orig-stx
-         (for/foldX/derived/final [orig-stx #t] ([fold-var finid-init] ...) (values* fold-var ...) . rest))]
+         (for/foldX/derived/final [orig-stx #t]
+           ([fold-var finid-init] ...)
+           (values* fold-var ...)
+           . rest))]
       [(_ orig-stx (bindings ...) . rst)
        (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
       [(_ orig-stx . rst)

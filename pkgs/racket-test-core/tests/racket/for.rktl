@@ -441,6 +441,106 @@
         (define k i) #:final (= k 2)
         (list i j)))
 
+;; extra tests for #:result
+(test '(0 1 2 3 4) 'for/fold-result-clause1
+      (for/fold ([acc '()]
+                 [seen (hash)]
+                 #:result (reverse acc))
+                ([x (in-list '(0 1 1 2 3 4 4 4))])
+        (cond
+          [(hash-ref seen x #f)
+           (values acc seen)]
+          [else (values (cons x acc)
+                        (hash-set seen x #t))])))
+(test '((4 3 2 1 0) (0 1 2 3 4) ())
+      'for/fold-result-clause2
+      (let-values ([(backwards forwards other)
+                    (for/fold ([acc '()]
+                               [seen (hash)]
+                               #:result (values acc (reverse acc) '()))
+                              ([x (in-list '(0 1 1 2 3 4 4 4))])
+                      (cond
+                        [(hash-ref seen x #f)
+                         (values acc seen)]
+                        [else (values (cons x acc)
+                                      (hash-set seen x #t))]))])
+        (list backwards forwards other)))
+(test '(2 4 6) 'for/fold-result-clause3
+      (for/fold ([acc '()]
+                 [seen (hash)]
+                 #:result (reverse acc))
+                ([x (in-list '(0 0 1 1 2 2))]
+                 [y (in-list '(2 2 3 3 4 4))])
+        (define val (+ x y))
+        (cond
+          [(hash-ref seen val #f)
+           (values acc seen)]
+          [else (values (cons val acc)
+                        (hash-set seen val #t))])))
+(test '((6 4 2) (2 4 6) ())
+      'for/fold-result-clause4
+      (let-values ([(backwards forwards other)
+                    (for/fold ([acc '()]
+                               [seen (hash)]
+                               #:result (values acc (reverse acc) '()))
+                              ([x (in-list '(0 0 1 1 2 2))]
+                               [y (in-list '(2 2 3 3 4 4))])
+                      (define val (+ x y))
+                      (cond
+                        [(hash-ref seen val #f)
+                         (values acc seen)]
+                        [else (values (cons val acc)
+                                      (hash-set seen val #t))]))])
+        (list backwards forwards other)))
+(test '(0 1 2 3 4) 'for*/fold-result-clause1
+      (for*/fold ([acc '()]
+                  [seen (hash)]
+                  #:result (reverse acc))
+                 ([x (in-list '(0 1 1 2 3 4 4 4))])
+        (cond
+          [(hash-ref seen x #f)
+           (values acc seen)]
+          [else (values (cons x acc)
+                        (hash-set seen x #t))])))
+(test '((4 3 2 1 0) (0 1 2 3 4) ())
+      'for*/fold-result-clause2
+      (let-values ([(backwards forwards other)
+                    (for*/fold ([acc '()]
+                                [seen (hash)]
+                                #:result (values acc (reverse acc) '()))
+                               ([x (in-list '(0 1 1 2 3 4 4 4))])
+                      (cond
+                        [(hash-ref seen x #f)
+                         (values acc seen)]
+                        [else (values (cons x acc)
+                                      (hash-set seen x #t))]))])
+        (list backwards forwards other)))
+(test '(0 1 3 2 4 5) 'for*/fold-result-clause3
+      (for*/fold ([acc '()]
+                  [seen (hash)]
+                  #:result (reverse acc))
+                 ([xs (in-list '((0 1) (1 0) (3 2) (2 3) (4 5) (5 4)))]
+                  [x (in-list xs)])
+        (cond
+          [(hash-ref seen x #f)
+           (values acc seen)]
+          [else (values (cons x acc)
+                        (hash-set seen x #t))])))
+(test '((5 4 2 3 1 0) (0 1 3 2 4 5) ())
+      'for*/fold-result-clause4
+      (let-values ([(backwards forwards other)
+                    (for*/fold ([acc '()]
+                                [seen (hash)]
+                                #:result (values acc (reverse acc) '()))
+                               ([xs (in-list '((0 1) (1 0) (3 2) (2 3) (4 5) (5 4)))]
+                                [x (in-list xs)])
+                      (cond
+                        [(hash-ref seen x #f)
+                         (values acc seen)]
+                        [else (values (cons x acc)
+                                      (hash-set seen x #t))]))])
+        (list backwards forwards other)))
+
 ;; for should discard any results and return void
 (test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
 (test (void) 'for*-0-values (for* ([x '(1 2 3)] [y '(a b c)]) (values)))
@@ -576,6 +676,16 @@
              #rx".*for/fold:.*expected an identifier to bind.*")
 (syntax-test #'(for/fold ([x 42] [x 42]) ([z '()]) 1)
              #rx".*for/fold:.*duplicate identifier as accumulator binding.*")
+(syntax-test #'(for/fold (#:result 42) bad 1)
+             #rx".*for/fold:.*bad sequence binding clauses.*")
+(syntax-test #'(for/fold (#:result 42) ([42 '()]) 1)
+             #rx".*for/fold:.*bad sequence binding clause.*")
+(syntax-test #'(for/fold ([0 42] [x 42] #:result 42) ([z '()]) 1)
+             #rx".*for/fold:.*expected an identifier to bind.*")
+(syntax-test #'(for/fold ([x 42] [x 42] #:result 42) ([z '()]) 1)
+             #rx".*for/fold:.*duplicate identifier as accumulator binding.*")
+(syntax-test #'(for/fold ([x 42] [x 42] #:wrong-keyword 42) ([z '()]) 1)
+             #rx".*for/fold:.*invalid accumulator binding clause.*")
 
 (syntax-test #'(for*/fold () bad 1)
              #rx".*for\\*/fold:.*bad sequence binding clauses.*")
@@ -585,6 +695,16 @@
              #rx".*for\\*/fold:.*expected an identifier to bind.*")
 (syntax-test #'(for*/fold ([x 42] [x 42]) ([z '()]) 1)
              #rx".*for\\*/fold:.*duplicate identifier as accumulator binding.*")
+(syntax-test #'(for*/fold (#:result 42) bad 1)
+             #rx".*for\\*/fold:.*bad sequence binding clauses.*")
+(syntax-test #'(for*/fold (#:result 42) ([42 '()]) 1)
+             #rx".*for\\*/fold:.*bad sequence binding clause.*")
+(syntax-test #'(for*/fold ([0 42] [x 42] #:result 42) ([z '()]) 1)
+             #rx".*for\\*/fold:.*expected an identifier to bind.*")
+(syntax-test #'(for*/fold ([x 42] [x 42] #:result 42) ([z '()]) 1)
+             #rx".*for\\*/fold:.*duplicate identifier as accumulator binding.*")
+(syntax-test #'(for*/fold ([x 42] [x 42] #:wrong-keyword 42) ([z '()]) 1)
+             #rx".*for\\*/fold:.*invalid accumulator binding clause.*")
 
 (syntax-test #'(for/vector ()) #rx".*missing body.*")
 
