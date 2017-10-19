@@ -1464,7 +1464,7 @@ scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *obj,
 static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *key, *val;
+  Scheme_Object *key, *val, *orig_val;
   intptr_t i;
 
   ht = scheme_make_hash_tree(kind);
@@ -1474,9 +1474,11 @@ static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
   
   while (i -= 2) {
     key = SCHEME_VEC_ELS(vec)[i];
-    val = SCHEME_VEC_ELS(vec)[i+1];
+    orig_val = SCHEME_VEC_ELS(vec)[i+1];
 
-    val = scheme_stx_force_delayed(val);
+    val = scheme_stx_force_delayed(orig_val);
+    if (val != orig_val)
+      SCHEME_VEC_ELS(vec)[i+1] = val;
 
     /* defend against bad bytecode here, too: */
     if (kind) {
