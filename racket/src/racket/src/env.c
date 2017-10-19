@@ -1476,6 +1476,8 @@ static Scheme_Object *vector_to_ht(Scheme_Object *vec, int kind)
     key = SCHEME_VEC_ELS(vec)[i];
     val = SCHEME_VEC_ELS(vec)[i+1];
 
+    val = scheme_stx_force_delayed(val);
+
     /* defend against bad bytecode here, too: */
     if (kind) {
       if (!SCHEME_INTP(key)
