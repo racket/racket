@@ -37,32 +37,40 @@
 ;; proxying-scheme is therefore always "http" (no "s") -- although the meaning thereof depends on the
 ;; proxied-scheme
 (define (env->c-p-s-entries . envarses)
-  (define (inr envars)
-    (if (null? envars)
-      null
-      (let ((proxied-scheme (match (car envars)
-                             [(regexp #rx"plt_(.*)_proxy" (list _ scm)) scm]
-                             [(regexp #rx"(.*)_proxy" (list _ scm)) scm])))
-      (match (getenv (car envars))
-             [#f (env->c-p-s-entries (cdr envars))]
-             ["" null]
-             [(app string->url
-                   (url (and proxying-scheme "http") #f (? string? host) (? integer? port)
-                        _ (list) (list) #f))
-              (list (list proxied-scheme host port))]
-             [(app string->url
-                   (url (and proxying-scheme "http") _ (? string? host) (? integer? port)
-                        _ _ _ _))
-              (log-net/url-warning "~s contains somewhat invalid proxy URL format" (car envars))
-              (list (list proxied-scheme host port))]
-             [inv (log-net/url-error "~s contained invalid proxy URL format: ~s" (car envars) inv)
-                  null]))))
-  (apply append (map inr envarses)))
+  (define (in1 proxied-scheme envvar)
+    (match (getenv envvar)
+      [#f #f]
+      ["" null]
+      [(app string->url
+            (url (and proxying-scheme "http") #f (? string? host) (? integer? port)
+                 _ (list) (list) #f))
+       (list (list proxied-scheme host port))]
+      [(app string->url
+            (url (and proxying-scheme "http") _ (? string? host) (? integer? port)
+                 _ _ _ _))
+       (log-net/url-warning "~s contains somewhat invalid proxy URL format" envvar)
+       (list (list proxied-scheme host port))]
+      [inv
+       (log-net/url-error "~s contained invalid proxy URL format: ~s" envvar inv)
+       null]))
+  (define (inr proxied-scheme envars)
+    (match envars
+      ['() null]
+      [(cons envvar more-envars)
+       (or (in1 proxied-scheme envvar)
+           (in1 proxied-scheme (string-upcase envvar))
+           (inr proxied-scheme more-envars))]))
+  (define (inrs spec)
+    (inr (first spec) (rest spec)))
+  (append-map inrs envarses))
 
 (define current-proxy-servers-promise
-  (make-parameter (delay/sync (env->c-p-s-entries '("plt_http_proxy" "http_proxy")
-                                                  '("plt_https_proxy" "https_proxy")
-                                                  '("plt_git_proxy" "git_proxy")))))
+  (make-parameter
+   (delay/sync
+    (env->c-p-s-entries
+     '("http" "plt_http_proxy" "http_proxy" "all_proxy")
+     '("https" "plt_https_proxy" "https_proxy" "all_proxy")
+     '("git" "plt_git_proxy" "git_proxy" "all_proxy")))))
 
 (define (proxy-servers-guard v)
   (unless (and (list? v)

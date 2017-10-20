@@ -35,6 +35,14 @@
                                 ("http_proxy"      . ,http-proxy)
                                 ("https_proxy"     . ,https-proxy)
                                 ("git_proxy"       . ,git-proxy)
+
+                                ("PLT_HTTP_PROXY"  . ,plt-http-proxy)
+                                ("PLT_HTTPS_PROXY" . ,plt-https-proxy)
+                                ("PLT_GIT_PROXY"   . ,plt-git-proxy)
+                                ("HTTP_PROXY"      . ,http-proxy)
+                                ("HTTPS_PROXY"     . ,https-proxy)
+                                ("GIT_PROXY"       . ,git-proxy)
+
                                 ("plt_no_proxy"    . ,plt-no-proxy)
                                 ("no_proxy"        . ,no-proxy)))))
            (put! (car var.val) (cdr var.val)))
