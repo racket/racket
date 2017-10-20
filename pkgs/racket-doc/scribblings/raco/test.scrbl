@@ -142,6 +142,10 @@ The @exec{raco test} command accepts several flags:
  @item{@Flag{e} or @DFlag{check-stderr}
        --- Count any stderr output as a test failure.}
 
+ @item{@DFlag{deps}
+       --- If considering arguments as packages, also check package
+       dependencies.}
+
  @item{@DPFlag{ignore-stderr} @nonterm{pattern}
        --- Don't count stderr output as a test failure if it matches
        @nonterm{pattern}.  This flag can be used multiple times, and
