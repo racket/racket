@@ -501,21 +501,34 @@ connections. Each mapping is a list of three elements:
 
 ]
 
-The initial value of @racket[current-proxy-servers] is configured on demand from environment
-variables. Proxies for each URL scheme are configured from two variables each:
+The initial value of @racket[current-proxy-servers] is configured on
+demand from environment variables. Proxies for each URL scheme are
+configured from the following variables:
 
 @itemize[
- @item{@indexed-envvar{plt_http_proxy} and @indexed-envvar{http_proxy}, configure the HTTP
-   proxy, where the former takes precedence over the latter. HTTP requests will be proxied using an
-   HTTP proxy server connection}
- @item{@indexed-envvar{plt_https_proxy} and @indexed-envvar{https_proxy}, configure the HTTPS
-   proxy, where the former takes precedence over the latter. HTTPS connections are proxied using an
-  HTTP ``CONNECT'' tunnel}
- @item{@indexed-envvar{plt_git_proxy} and @indexed-envvar{git_proxy}, configure the GIT
-   proxy, where the former takes precedence over the latter. GIT connections are proxied using an
-  HTTP ``CONNECT'' tunnel}
+
+ @item{@indexed-envvar{plt_http_proxy},
+@indexed-envvar{PLT_HTTP_PROXY}, @indexed-envvar{http_proxy},
+@indexed-envvar{HTTP_PROXY}, @indexed-envvar{all_proxy},
+and @indexed-envvar{ALL_PROXY}, configure the HTTP proxy, where the former
+takes precedence over the latter. HTTP requests will be proxied using
+an HTTP proxy server connection}
+
+ @item{@indexed-envvar{plt_https_proxy},
+@indexed-envvar{PLT_HTTPS_PROXY}, @indexed-envvar{https_proxy},
+@indexed-envvar{HTTPS_PROXY}, @indexed-envvar{all_proxy},
+@indexed-envvar{ALL_PROXY}, configure the HTTPS proxy, where the
+former takes precedence over the latter. HTTPS connections are proxied
+using an HTTP ``CONNECT'' tunnel}
+
+ @item{@indexed-envvar{plt_git_proxy}, @indexed-envvar{PLT_GIT_PROXY},
+@indexed-envvar{git_proxy}, @indexed-envvar{GIT_PROXY},
+@indexed-envvar{all_proxy}, @indexed-envvar{ALL_PROXY}, configure the
+GIT proxy, where the former takes precedence over the latter. GIT
+connections are proxied using an HTTP ``CONNECT'' tunnel}
+
 ]
- 
+
 Each environment variable contains a single URL of the form
 @litchar{http://}@nonterm{hostname}@litchar{:}@nonterm{portno}.
 If any other components of the URL are provided, a warning will be logged to a @racket[net/url]
