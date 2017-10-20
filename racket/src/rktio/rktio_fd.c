@@ -797,6 +797,7 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 	}
       } else {
 	/* read after first byte installed into the buffer */
+        rfd->has_pending_byte = 0;
 	offset = 1;
       }
     }

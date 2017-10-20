@@ -372,5 +372,22 @@
   (delete-directory/files dir))
 
 ;; ----------------------------------------
+;; Check 'text mode conversion
+;; The content of "text.rktd" once triggered a bug in 'text
+;; mode conversion on Windows by having line breaks as just
+;; the right place
+
+(let ()
+  (define text (call-with-input-file (build-path (current-load-relative-directory)
+                                                 "text.rktd")
+                                     read))
+  (define tmp (make-temporary-file "tmp-data~a"))
+  (call-with-output-file tmp #:exists 'truncate (lambda (o) (write-string text o)))
+  (define str (file->string tmp #:mode 'text))
+  (test #t values (equal? str (if (eq? (system-type) 'windows)
+                                  (regexp-replace* #rx"\r\n" text "\n")
+                                  text))))
+
+;; ----------------------------------------
 
 (report-errs)
