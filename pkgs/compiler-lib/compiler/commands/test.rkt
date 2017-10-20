@@ -972,6 +972,21 @@
                       s))
   n)
 
+(define check-pkg-deps? #f)
+(define (maybe-expand-package-deps l)
+  (cond
+    [(and packages? check-pkg-deps?)
+     (hash-keys
+      (for/fold ([h (hash)]) ([p (in-list l)])
+        (define-values (sum _ deps)
+          (get-pkg-content (pkg-desc p 'name p #f #f)
+                           #:extract-info extract-pkg-dependencies
+                           #:use-cache? #t))
+        (for/fold ([h h]) ([d (in-list (cons p deps))])
+          (hash-set h d #t))))]
+    [else
+     l]))
+
 (command-line
  #:program (short-program+command-name)
  #:once-any
@@ -1059,6 +1074,9 @@
  [("--check-stderr" "-e")
   "Treat stderr output as a test failure"
   (set! check-stderr? #t)]
+ [("--deps")
+  "If treating arguments as packages, also test dependencies"
+  (set! check-pkg-deps? #t)]
  #:multi
  [("++ignore-stderr") pattern
   "Ignore stderr output that matches #px\"<pattern>\""
@@ -1074,38 +1092,41 @@
  [("--table" "-t")
   "Print a summary table"
   (set! table? #t)]
- #:args file-or-directory
- (begin (unless (= 1 (length file-or-directory))
-          (set! single-file? #f))
-        (when (and (eq? configure-runtime 'default)
-                   (or (and (not single-file?)
-                            (not (memq default-mode '(process place))))
-                       (not (null? submodules))))
-          (set! configure-runtime #f))
-        (define sum
-          ;; The #:sema argument everywhre makes tests start
-          ;; in a deterministic order:
-          (map/parallel (lambda (f #:sema s)
-                          (test-top f
-                                    #:check-suffix? check-top-suffix?
-                                    #:sema s))
-                        file-or-directory
-                        #:sema (make-semaphore)))
-        (when table?
-          (display-summary sum))
-        (unless (or (eq? default-mode 'direct)
-                    (and (not default-mode) single-file?))
-          ;; Re-log failures and successes, and then report using `test-log`.
-          ;; (This is awkward; is it better to not try to use `test-log`?)
-          (for ([s (in-list sum)])
-            (for ([i (in-range (summary-failed s))])
-              (test-log! #f))
-            (for ([i (in-range (- (summary-total s)
-                                  (summary-failed s)))])
-              (test-log! #t))))
-        (test-log #:display? #t #:exit? #f)
-        (define sum1 (call-with-summary #f (lambda () sum)))
-        (exit (cond
-               [(positive? (summary-timeout sum1)) 2]
-               [(positive? (summary-failed sum1)) 1]
-               [else 0]))))
+ #:args file-or-directory-or-collects-or-pkgs
+ (let ()
+   (define file-or-directory
+     (maybe-expand-package-deps file-or-directory-or-collects-or-pkgs))
+   (unless (= 1 (length file-or-directory))
+     (set! single-file? #f))
+   (when (and (eq? configure-runtime 'default)
+              (or (and (not single-file?)
+                       (not (memq default-mode '(process place))))
+                  (not (null? submodules))))
+     (set! configure-runtime #f))
+   (define sum
+     ;; The #:sema argument everywhre makes tests start
+     ;; in a deterministic order:
+     (map/parallel (lambda (f #:sema s)
+                     (test-top f
+                               #:check-suffix? check-top-suffix?
+                               #:sema s))
+                   file-or-directory
+                   #:sema (make-semaphore)))
+   (when table?
+     (display-summary sum))
+   (unless (or (eq? default-mode 'direct)
+               (and (not default-mode) single-file?))
+     ;; Re-log failures and successes, and then report using `test-log`.
+     ;; (This is awkward; is it better to not try to use `test-log`?)
+     (for ([s (in-list sum)])
+       (for ([i (in-range (summary-failed s))])
+         (test-log! #f))
+       (for ([i (in-range (- (summary-total s)
+                             (summary-failed s)))])
+         (test-log! #t))))
+   (test-log #:display? #t #:exit? #f)
+   (define sum1 (call-with-summary #f (lambda () sum)))
+   (exit (cond
+           [(positive? (summary-timeout sum1)) 2]
+           [(positive? (summary-failed sum1)) 1]
+           [else 0]))))
