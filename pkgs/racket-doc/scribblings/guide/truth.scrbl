@@ -165,7 +165,7 @@ a number or string:
 ]
 
 @;------------------------------------------------------------------------
-@section{Abbreviating @racket[quote] with @racketvalfont{'}}
+@section{Abbreviating @racket[quote] with @racketvalfont{@literal{'}}}
 
 As you may have guessed, you can abbreviate a use of
 @racket[quote] by just putting @litchar{'} in front of a form to
