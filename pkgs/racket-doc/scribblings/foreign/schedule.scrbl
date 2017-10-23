@@ -35,9 +35,10 @@ an event to replace @racket[_evt] (often just @racket[_evt] itself) if
 When the thread scheduler has determined that the Racket process
 should sleep until an external event or timeout, then @racket[poll] is
 called with a non-@racket[#f] second argument, @racket[_wakeups]. In
-that case, the result must always be @racket[(values #f _evt)]. In
-addition to returning the requires values, @racket[poll] can call
-@racket[unsafe-poll-ctx-fd-wakeup],
+that case, if the first result value is a list, then the sleep will be
+canceled, but the list is not recorded as the result (and @racket[poll]
+most likely will be called again). In addition to returning a @racket[#f] initial
+value, @racket[poll] can call @racket[unsafe-poll-ctx-fd-wakeup],
 @racket[unsafe-poll-ctx-eventmask-wakeup], and/or
 @racket[unsafe-poll-ctx-milliseconds-wakeup] on @racket[_wakeups] to
 register wakeup triggers.}

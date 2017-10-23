@@ -1753,14 +1753,23 @@ void evt_struct_needs_wakeup(Scheme_Object *o, void *fds)
   
   v = scheme_struct_type_property_ref(evt_property, o);
   if (SCHEME_POLLERP(v)) {
-    Scheme_Object *a[2], *e;
+    Scheme_Object *a[2], *e, *r;
     
     scheme_start_in_scheduler();
     a[0] = o;
     e = scheme_make_cptr(fds, scheme_false);
     a[1] = e;
-    _scheme_apply_multi(SCHEME_POLLER_PROC(v), 2, a);
+    r = _scheme_apply_multi(SCHEME_POLLER_PROC(v), 2, a);
     scheme_end_in_scheduler();
+
+    /* If event claims to be ready, then cancel the sleep: */
+    if (r == SCHEME_MULTIPLE_VALUES) {
+      Scheme_Thread *p = scheme_current_thread;
+      if (p->ku.multiple.count == 2) {
+        if (SCHEME_TRUEP(p->ku.multiple.array[0]))
+          scheme_cancel_sleep();
+      }
+    }
   }
 }
 
