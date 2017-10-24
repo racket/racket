@@ -349,6 +349,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
   char *copy;
   WIN32_FILE_ATTRIBUTE_DATA fad;
   int len, must_be_dir = 0;
+  int same_path = 0; /* to give up on cyclic links */
   const wchar_t *wp;
 
   if (resolved_path)
@@ -420,7 +421,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     free(copy);
     return 0;
   } else {
-    if (GET_FF_ATTRIBS(fad) & FF_A_LINK) {
+    if ((GET_FF_ATTRIBS(fad) & FF_A_LINK) && !same_path) {
       if (islink) {
 	*islink = 1;
 	return 1;
@@ -464,6 +465,8 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
         dirname = NARROW_PATH_copy(dest);
 	if (resolved_path)
 	  *resolved_path = dirname;
+
+	same_path = !strcmp(dirname, copy);
 
         free(dest);
         free(copy);
