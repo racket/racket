@@ -1,4 +1,4 @@
-/* 
+/*
    The "cstartup.inc" file is not, as distributed, compatible with
    omissions from or additions to the set of built-in identifiers.
    The reason is that the "cstartup.inc" file is a ".zo" version of the
@@ -14,8 +14,8 @@
 
 #define USE_COMPILED_STARTUP 1
 
-#define EXPECTED_PRIM_COUNT 1159
-#define EXPECTED_UNSAFE_COUNT 148
+#define EXPECTED_PRIM_COUNT 1160
+#define EXPECTED_UNSAFE_COUNT 149
 #define EXPECTED_FLFXNUM_COUNT 69
 #define EXPECTED_EXTFL_COUNT 45
 #define EXPECTED_FUTURES_COUNT 15

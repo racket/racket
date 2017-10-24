@@ -33,6 +33,7 @@ READ_ONLY Scheme_Object *scheme_make_vector_proc;
 READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
 READ_ONLY Scheme_Object *scheme_vector_ref_proc;
 READ_ONLY Scheme_Object *scheme_vector_set_proc;
+READ_ONLY Scheme_Object *scheme_vector_cas_proc;
 READ_ONLY Scheme_Object *scheme_list_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_string_length_proc;
@@ -64,6 +65,7 @@ static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_star_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_star_cas (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_struct_star_ref (int argc, Scheme_Object *argv[]);
@@ -132,6 +134,13 @@ scheme_init_vector (Scheme_Env *env)
   scheme_vector_set_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("vector-set!", p, env);
+
+  REGISTER_SO(scheme_vector_cas_proc);
+  p = scheme_make_noncm_prim(scheme_checked_vector_cas,
+                             "vector-cas!",
+                             4, 4);
+  scheme_vector_cas_proc = p;
+  scheme_add_global_constant("vector-cas!", p, env);
 
   scheme_add_global_constant("vector->list", 
 			     scheme_make_immed_prim(vector_to_list, 
@@ -231,6 +240,9 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_vector_star_set, "unsafe-vector*-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-vector*-set!", p, env);  
+
+  p = scheme_make_immed_prim(unsafe_vector_star_cas, "unsafe-vector*-cas!", 4, 4);
+  scheme_add_global_constant("unsafe-vector*-cas!", p, env);
 
   REGISTER_SO(scheme_unsafe_struct_ref_proc);
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
@@ -631,6 +643,25 @@ scheme_checked_vector_set(int argc, Scheme_Object *argv[])
     SCHEME_VEC_ELS(vec)[i] = argv[2];
 
   return scheme_void;
+}
+
+Scheme_Object *
+scheme_checked_vector_cas(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec = argv[0];
+  intptr_t i, len;
+
+  if (!SCHEME_MUTABLE_VECTORP(vec))
+    scheme_wrong_contract("vector-cas!", "(and/c vector? (not/c immutable?))", 0, argc, argv);
+
+  len = SCHEME_VEC_SIZE(vec);
+
+  i = scheme_extract_index("vector-cas!", 1, argc, argv, len, 0);
+
+  if (i >= len)
+    return bad_index("vector-cas!", "", argv[1], argv[0], 0);
+
+  return unsafe_vector_star_cas(argc, argv);
 }
 
 # define cons(car, cdr) scheme_make_pair(car, cdr)
@@ -1074,6 +1105,28 @@ static Scheme_Object *unsafe_vector_star_set (int argc, Scheme_Object *argv[])
 {
   SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])] = argv[2];
   return scheme_void;
+}
+
+static Scheme_Object *unsafe_vector_star_cas (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec = argv[0];
+  Scheme_Object *idx = argv[1];
+  Scheme_Object *ov = argv[2];
+  Scheme_Object *nv = argv[3];
+
+#ifdef MZ_USE_FUTURES
+  return mzrt_cas((volatile size_t *)(SCHEME_VEC_ELS(vec) + SCHEME_INT_VAL(idx)),
+                  (size_t)ov, (size_t)nv)
+    ? scheme_true : scheme_false;
+#else
+  /* For cooperative threading, no atomicity required */
+  if (SCHEME_VEC_ELS(vec)[SCHEME_INT_VAL(idx)] == ov) {
+    SCHEME_VEC_ELS(vec)[SCHEME_INT_VAL(idx)] = nv;
+    return scheme_true;
+  } else {
+    return scheme_false;
+  }
+#endif
 }
 
 static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[])

@@ -72,6 +72,17 @@ slot is position @racket[0], and the last slot is one less than
 
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].}
 
+@defproc[(vector-cas! [vec (and/c vector? (not/c immutable?))]
+                      [pos exact-nonnegative-integer?]
+                      [v any/c]
+                      [v any/c])
+         boolean?]{
+
+Compare and set operation for vectors. See @racket[box-cas!].
+
+@history[#:added "6.11.0.2"]
+}
+
 @defproc[(vector->list [vec vector?]) list?]{
 
 Returns a list with the same length and elements as @racket[vec].}
@@ -164,7 +175,7 @@ _i)] is the value produced by @racket[(proc _i)].
 Updates each slot @racket[pos] of @racket[vec] to contain each @racket[v].
 The update takes place from the left so later updates overwrite earlier updates.}
 
-@defproc[(vector-map [proc procedure?] [vec vector?] ...+) 
+@defproc[(vector-map [proc procedure?] [vec vector?] ...+)
          vector?]{
 
 Applies @racket[proc] to the elements of the @racket[vec]s from the
@@ -194,7 +205,7 @@ v
 @defproc[(vector-append [vec vector?] ...) vector?]{
 
 Creates a fresh vector that contains all
-of the elements of the given vectors in order. 
+of the elements of the given vectors in order.
 
 @mz-examples[#:eval vec-eval
 (vector-append #(1 2) #(3 4))]
@@ -262,9 +273,9 @@ except that it can be faster.
 ]}
 
 
-@defproc[(vector-copy [vec vector?] 
+@defproc[(vector-copy [vec vector?]
                       [start exact-nonnegative-integer? 0]
-                      [end exact-nonnegative-integer? (vector-length v)]) 
+                      [end exact-nonnegative-integer? (vector-length v)])
          vector?]{
 
 Creates a fresh vector of size @racket[(- end start)], with all of the
@@ -313,7 +324,7 @@ parallel) on which @racket[proc] does not evaluate to @racket[#f].
 @defproc[(vector-argmin [proc (-> any/c real?)] [vec vector?]) any/c]{
 
 This returns the first element in the non-empty vector @racket[vec] that minimizes
-the result of @racket[proc]. 
+the result of @racket[proc].
 
 @mz-examples[#:eval vec-eval
 (vector-argmin car #((3 pears) (1 banana) (2 apples)))
@@ -324,7 +335,7 @@ the result of @racket[proc].
 @defproc[(vector-argmax [proc (-> any/c real?)] [vec vector?]) any/c]{
 
 This returns the first element in the non-empty vector @racket[vec] that maximizes
-the result of @racket[proc]. 
+the result of @racket[proc].
 
 @mz-examples[#:eval vec-eval
 (vector-argmax car #((3 pears) (1 banana) (2 apples)))
@@ -374,14 +385,14 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
                       [#:cache-keys? cache-keys? boolean? #f])
          vector?]{
 
- Like @racket[sort], but operates on vectors; a 
+ Like @racket[sort], but operates on vectors; a
  @emph{fresh} vector of length @racket[(- end start)] is
- returned containing the elements from indices 
+ returned containing the elements from indices
  @racket[start] (inclusive) through @racket[end] (exclusive)
  of @racket[vec], but in sorted order (i.e., @racket[vec] is
  not modified). This sort is stable (i.e., the order of ``equal''
  elements is preserved).
- 
+
 @mz-examples[#:eval vec-eval
 (define v1 (vector 4 3 2 1))
 (vector-sort v1 <)
