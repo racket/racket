@@ -148,7 +148,7 @@ include @litchar{\}.
         three or more @litchar{\}s. This Racket-specific path form
         supports relative paths with elements that are not normally
         expressible in Windows paths (e.g., a final element that ends
-        in a space). The @litchar{REL} part must be exactly the three
+        in a space). The @as-index{@litchar{REL}} part must be exactly the three
         uppercase letters, and @litchar{/}s cannot be used in place
         of @litchar{\}s. If the path starts
         @litchar{\\?\REL\..}  then for as long as the
@@ -173,7 +173,7 @@ include @litchar{\}.
         no sequence of three or more @litchar{\}s. This
         Racket-specific path form supports drive-relative paths (i.e.,
         absolute given a drive) with elements that are not normally
-        expressible in Windows paths. The @litchar{RED} part must be
+        expressible in Windows paths. The @as-index{@litchar{RED}} part must be
         exactly the three uppercase letters, and @litchar{/}s cannot
         be used in place of @litchar{\}s. Unlike
         @litchar{\\?\REL} paths, a @litchar{..} element is always
