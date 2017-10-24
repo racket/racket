@@ -1388,6 +1388,41 @@
   (err/rt-test (box-cas! (box-immutable 1) 1 2)))
 
 ;; ----------------------------------------
+;; vector-cas! tests
+
+;; successful cas
+(let ()
+  (define v (vector #f #t))
+  (test #t vector-cas! v 0 #f #t)
+  (test #t vector-ref v 0)
+  (test #t vector-cas! v 1 #t #f)
+  (test #f vector-ref v 1))
+
+;; unsuccessful cas
+(let ()
+  (define v (vector #f #t))
+  (test #f vector-cas! v 0 #t #f)
+  (test #f vector-ref v 0)
+  (test #f vector-cas! v 1 #f #t)
+  (test #t vector-ref v 1))
+
+;; cas using allocated data
+(let ()
+  (define v (vector '()))
+  (define x (cons 1 (vector-ref v 0)))
+  (test #t vector-cas! v 0 '() x)
+  (test x vector-ref v 0)
+  (test #t vector-cas! v 0 x '())
+  (test '() vector-ref v 0)
+  (test #f vector-cas! v 0 x '())
+  (test '() vector-ref v 0))
+
+(let ([g (lambda (x y) y)])
+  (err/rt-test (vector-cas! (impersonate-vector (vector 1) g g) 0 1 2))
+  (err/rt-test (vector-cas! (chaperone-vector (vector 1) g g) 0 1 2))
+  (err/rt-test (vector-cas! (vector-immutable 1) 0 1 2)))
+
+;; ----------------------------------------
 
 (err/rt-test (sync/enable-break #f (make-semaphore 1)))
 (test #t semaphore? (sync/enable-break (make-semaphore 1)))

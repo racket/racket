@@ -246,15 +246,17 @@ Unsafe versions of @racket[unbox] and @racket[set-box!], where the
 @defproc[(unsafe-vector*-length [v (and/c vector? (not/c impersonator?))]) fixnum?]
 @defproc[(unsafe-vector*-ref [v (and/c vector? (not/c impersonator?))] [k fixnum?]) any/c]
 @defproc[(unsafe-vector*-set! [v (and/c vector? (not/c impersonator?))] [k fixnum?] [val any/c]) void?]
+@defproc[(unsafe-vector*-cas! [v (and/c vector? (not/c impersonator?))] [k fixnum?] [val any/c] [val any/c]) boolean?]
 )]{
 
-Unsafe versions of @racket[vector-length], @racket[vector-ref], and
-@racket[vector-set!], where the @schemeidfont{vector*} variants can be
+Unsafe versions of @racket[vector-length], @racket[vector-ref],
+@racket[vector-set!], and @racket[vector-cas!], where the @schemeidfont{vector*} variants can be
 faster but do not work on @tech{impersonators}.
 
 A vector's size can never be larger than a @tech{fixnum}, so even
-@racket[vector-length] always returns a fixnum.}
+@racket[vector-length] always returns a fixnum.
 
+@history[#:changed "6.11.0.2" @elem{Added @racket[unsafe-vector*-cas!].}]}
 
 @deftogether[(
 @defproc[(unsafe-string-length [str string?]) fixnum?]
