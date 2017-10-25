@@ -2839,7 +2839,7 @@ static int parse_pos(const char *who, Scheme_Object *prim, Scheme_Object **args,
 
   if (!SCHEME_INTP(args[1]) || (SCHEME_INT_VAL(args[1]) < 0)) {
     if (SCHEME_BIGNUMP(args[1]) && SCHEME_BIGPOS(args[1])) {
-      pos = 32769; /* greater than max field count */
+      pos = (MAX_STRUCT_FIELD_COUNT + 1);
     } else {
       if (!who)
 	who = extract_field_proc_name(prim);
@@ -3481,9 +3481,6 @@ static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[])
 
   return scheme_make_prefab_struct_instance(stype, vec);
 }
-
-#define MAX_STRUCT_FIELD_COUNT 32768
-#define MAX_STRUCT_FIELD_COUNT_STR "32768"
 
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
 {

@@ -150,7 +150,7 @@ static int check_val_struct_prim(Scheme_Object *p, int arity)
       Scheme_Struct_Type *t;
       t = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
       if ((arity == t->num_islots)
-          && (arity < 100)) {
+          && (arity < JIT_MAX_STRUCT_FIELD_INLINE_COUNT)) {
         return INLINE_STRUCT_PROC_CONSTR;
       }
       return 0;
@@ -5288,9 +5288,18 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
     c = 2;
   } else {
     c = app->num_args;
-    if (c > 256) {
+    if (c > JIT_MAX_VECTOR_INLINE_SIZE) {
       /* Too big for inline alloc */
-      return scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 0);
+      i = scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 0);
+      CHECK_LIMIT();
+      if (dest != JIT_R0)
+        jit_movr_p(dest, JIT_R0);
+
+      /* since we're called in inline mode, need to manually pop: */
+      jit_addi_l(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(c));
+      mz_runstack_popped(jitter, c);
+
+      return i;
     } else if (c)
       scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 2);  /* sync'd below */
   }

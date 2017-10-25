@@ -934,12 +934,17 @@
 ;; a vector allocation that is too large
 
 (parameterize ([current-namespace (make-base-namespace)])
-  (let loop ([i 10])
-    ((eval `(lambda (x) (vector x ,@(for/list ([j (in-range i)])
-                                      j))))
-     i)
-    (when (i . < . 100000)
-      (loop (floor (* i #e1.25))))))
+  (for ([tail? '(#t #f)])
+    (let loop ([i 10])
+      ((eval `(lambda (f x)
+                ,(let ([e `(vector x ,@(for/list ([j (in-range i)])
+                                         j))])
+                   (if tail?
+                       e
+                       `(f ,e)))))
+       values i)
+      (when (i . < . 10000)
+        (loop (floor (* i #e1.25)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

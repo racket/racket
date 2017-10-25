@@ -298,6 +298,11 @@ GC2_EXTERN int GC_allocate_phantom_bytes(void *pb, intptr_t);
    Returns 0 if allocation should fail due to a memory limit, 
    1 otherwise. The representative `pb` determines who is charged. */
 
+GC2_EXTERN intptr_t GC_max_nursery_object_size();
+/*
+   Returns a lower bound on the maximum size allowed for allocation
+   in the nursery. */
+
 /***************************************************************************/
 /* Memory tracing                                                          */
 /***************************************************************************/
@@ -581,7 +586,7 @@ GC2_EXTERN intptr_t GC_is_place();
    Otherwise returns 0;
 */
 
-  GC2_EXTERN int GC_message_small_objects_size(void *msg_memory, intptr_t up_to);
+GC2_EXTERN int GC_message_small_objects_size(void *msg_memory, intptr_t up_to);
 /*
  Determines whether the message qualifies as short and whether the
  total size of all objects allocated by the  message allocator is less

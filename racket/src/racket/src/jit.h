@@ -266,6 +266,9 @@ typedef struct Apply_LWC_Args {
 typedef Scheme_Object *(*Continuation_Apply_Indirect)(Apply_LWC_Args *, intptr_t);
 typedef Scheme_Object *(*Continuation_Apply_Finish)(Apply_LWC_Args *args, void *stack, void *frame);
 
+#define JIT_MAX_VECTOR_INLINE_SIZE 256
+#define JIT_MAX_STRUCT_FIELD_INLINE_COUNT 256
+
 #ifdef MZ_LONG_DOUBLE
 # define JIT_NUM_FL_KINDS 2
 #else
