@@ -1874,12 +1874,12 @@ XFORM_SKIP_PROC
    */
 
   if (!SCHEME_MUTABLE_BOXP(box)) {
-    scheme_wrong_contract("box-cas!", "(and/c box? (not immutable?) (not impersonator?))", 0, 1, &box);
+    scheme_wrong_contract("box-cas!", "(and/c box? (not/c immutable?) (not/c impersonator?))", 0, 1, &box);
   }
 
 #ifdef MZ_USE_FUTURES
-  return mzrt_cas((volatile size_t *)(&SCHEME_BOX_VAL(box)), 
-		  (size_t)ov, (size_t)nv)
+  return mzrt_cas((volatile uintptr_t *)(&SCHEME_BOX_VAL(box)),
+                  (uintptr_t)ov, (uintptr_t)nv)
     ? scheme_true : scheme_false;
 #else
   /* For cooperative threading, no atomicity required */

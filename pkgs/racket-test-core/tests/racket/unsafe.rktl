@@ -346,7 +346,21 @@
               #:pre (lambda () (set-box! b2 1))
               #:post (lambda (x) (list x (unbox b2)))
               #:literal-ok? #f))
-  
+
+  (let ([v (vector 0 1)])
+    ;; success
+    (test-tri (list #true 1)
+              '(lambda (v ov nv) (unsafe-vector*-cas! v 0 ov nv)) v 0 1
+              #:pre (lambda () (vector-set! v 0 0))
+              #:post (lambda (x) (list x (vector-ref v 0)))
+              #:literal-ok? #f)
+    ;; failure
+    (test-tri (list #false 1)
+              '(lambda (v ov nv) (unsafe-vector*-cas! v 1 ov nv)) v 0 7
+              #:pre (lambda () (vector-set! v 1 1))
+              #:post (lambda (x) (list x (vector-ref v 1)))
+              #:literal-ok? #f))
+
   (for ([star (list values (add-star "vector"))])
     (test-bin 5 (star 'unsafe-vector-ref) #(1 5 7) 1)
     (test-un 3 (star 'unsafe-vector-length) #(1 5 7))
