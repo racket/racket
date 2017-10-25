@@ -254,8 +254,9 @@ Unsafe versions of @racket[vector-length], @racket[vector-ref],
 faster but do not work on @tech{impersonators}.
 
 A vector's size can never be larger than a @tech{fixnum}, so even
-@racket[vector-length] always returns a fixnum.}
+@racket[vector-length] always returns a fixnum.
 
+@history[#:changed "6.11.0.2" @elem{Added @racket[unsafe-vector*-cas!].}]}
 
 @deftogether[(
 @defproc[(unsafe-string-length [str string?]) fixnum?]
