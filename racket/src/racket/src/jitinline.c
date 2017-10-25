@@ -5250,7 +5250,10 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
     c = 2;
   } else {
     c = app->num_args;
-    if (c)
+    if (c > 256) {
+      /* Too big for inline alloc */
+      return scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 0);
+    } else if (c)
       scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 2);  /* sync'd below */
   }
   CHECK_LIMIT();
