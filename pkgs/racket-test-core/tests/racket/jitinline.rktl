@@ -915,6 +915,18 @@
     ))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that the JIT doesn't try to inline
+;; a vector allocation that is too large
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (let loop ([i 10])
+    ((eval `(lambda (x) (vector x ,@(for/list ([j (in-range i)])
+                                      j))))
+     i)
+    (when (i . < . 100000)
+      (loop (floor (* i #e1.25))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check JIT handling of structure-reference sequences
 (for ([options '(() (#:authentic))])
