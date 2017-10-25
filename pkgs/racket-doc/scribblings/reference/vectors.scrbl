@@ -72,7 +72,7 @@ slot is position @racket[0], and the last slot is one less than
 
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].}
 
-@defproc[(vector-cas! [vec (and/c vector? (not/c immutable?))]
+@defproc[(vector-cas! [vec (and/c vector? (not/c immutable?) (not/c impersonator?))]
                       [pos exact-nonnegative-integer?]
                       [v any/c]
                       [v any/c])

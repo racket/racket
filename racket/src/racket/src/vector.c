@@ -652,7 +652,7 @@ scheme_checked_vector_cas(int argc, Scheme_Object *argv[])
   intptr_t i, len;
 
   if (!SCHEME_MUTABLE_VECTORP(vec))
-    scheme_wrong_contract("vector-cas!", "(and/c vector? (not/c immutable?))", 0, argc, argv);
+    scheme_wrong_contract("vector-cas!", "(and/c vector? (not/c immutable?) (not/c impersonator?))", 0, argc, argv);
 
   len = SCHEME_VEC_SIZE(vec);
 
@@ -1115,8 +1115,8 @@ static Scheme_Object *unsafe_vector_star_cas (int argc, Scheme_Object *argv[])
   Scheme_Object *nv = argv[3];
 
 #ifdef MZ_USE_FUTURES
-  return mzrt_cas((volatile size_t *)(SCHEME_VEC_ELS(vec) + SCHEME_INT_VAL(idx)),
-                  (size_t)ov, (size_t)nv)
+  return mzrt_cas((volatile uintptr_t *)(SCHEME_VEC_ELS(vec) + SCHEME_INT_VAL(idx)),
+                  (uintptr_t)ov, (uintptr_t)nv)
     ? scheme_true : scheme_false;
 #else
   /* For cooperative threading, no atomicity required */
