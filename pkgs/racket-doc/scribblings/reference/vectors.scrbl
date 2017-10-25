@@ -74,8 +74,8 @@ Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].}
 
 @defproc[(vector-cas! [vec (and/c vector? (not/c immutable?) (not/c impersonator?))]
                       [pos exact-nonnegative-integer?]
-                      [v any/c]
-                      [v any/c])
+                      [old-v any/c]
+                      [new-v any/c])
          boolean?]{
 
 Compare and set operation for vectors. See @racket[box-cas!].

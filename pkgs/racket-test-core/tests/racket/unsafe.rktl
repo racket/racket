@@ -468,6 +468,19 @@
         (test-tri 500 'unsafe-struct-set! p 1 500
                   #:pre (lambda () (set-posn-y! p 0)) 
                   #:post (lambda (x) (posn-y p))
+                  #:literal-ok? #f))
+      (let ([p (make-posn 100 200 300)])
+        ;; success
+        (test-tri (list #true 201)
+                  '(lambda (p ov nv) (unsafe-struct*-cas! p 1 ov nv)) p 200 201
+                  #:pre (lambda () (unsafe-struct*-set! p 1 200))
+                  #:post (lambda (x) (list x (unsafe-struct*-ref p 1)))
+                  #:literal-ok? #f)
+        ;; failure
+        (test-tri (list #false 200)
+                  '(lambda (p ov nv) (unsafe-struct*-cas! p 1 ov nv)) p 199 202
+                  #:pre (lambda () (unsafe-struct*-set! p 1 200))
+                  #:post (lambda (x) (list x (unsafe-struct*-ref p 1)))
                   #:literal-ok? #f)))
     (define-values (prop:nothing nothing? nothing-ref) (make-struct-type-property 'nothing))
     (try-struct prop:nothing 5)
