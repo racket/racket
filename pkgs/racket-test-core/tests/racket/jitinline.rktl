@@ -894,6 +894,21 @@
             (lambda () v) 0 "other"
             (lambda () (test 77 unbox v))))
 
+    (let ([v (vector 1 0)])
+      (check-error-message 'vector-cas! (eval `(lambda (x) (vector-cas! x 10 11 12))))
+      (tri0 #t
+            '(lambda (v i nv) (vector-cas! v i (vector-ref v i) nv))
+            (lambda () v) 1 "other"
+            (lambda ()
+              (test 1 vector-ref v 0)
+              (test "other" vector-ref v 1)))
+      (tri0 #f
+            '(lambda (v i nv) (vector-cas! v i (gensym) nv))
+            (lambda () v) 1 "next"
+            (lambda ()
+              (test 1 vector-ref v 0)
+              (test "other" vector-ref v 1))))
+
     (bin-exact #t 'procedure-arity-includes? cons 2 #t)
     (bin-exact #f 'procedure-arity-includes? cons 1)
     (bin-exact #f 'procedure-arity-includes? cons 3)

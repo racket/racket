@@ -4252,20 +4252,33 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     (void)mz_finish(scheme_current_future);
     jit_retval(dest);
     return 1;
-  } else if (IS_NAMED_PRIM(rator, "box-cas!") || (IS_NAMED_PRIM(rator, "unsafe-box*-cas!"))) { 
+  } else if (IS_NAMED_PRIM(rator, "box-cas!")
+             || IS_NAMED_PRIM(rator, "unsafe-box*-cas!")
+             || IS_NAMED_PRIM(rator, "vector-cas!")
+             || IS_NAMED_PRIM(rator, "unsafe-vector*-cas!")
+             || IS_NAMED_PRIM(rator, "unsafe-struct*-cas!")) {
     GC_CAN_IGNORE jit_insn *ref, *reffail, *reffalse, *reftrue;
-    int unsafe = 0;
+    int unsafe = 1, for_type = scheme_vector_type, c = app->num_args;
 
-    if (IS_NAMED_PRIM(rator, "unsafe-box*-cas!")) {
-      unsafe = 1;
-    }
+    if (IS_NAMED_PRIM(rator, "box-cas!")) {
+      unsafe = 0;
+      for_type = scheme_box_type;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-box*-cas!"))
+      for_type = scheme_box_type;
+    else if (IS_NAMED_PRIM(rator, "vector-cas!"))
+      unsafe = 0;
+    else if (IS_NAMED_PRIM(rator, "unsafe-struct*-cas!"))
+      for_type = scheme_structure_type;
 
     /* generate code to evaluate the arguments */
-    scheme_generate_app(app, NULL, 3, 3, jitter, 0, 0, 0, 2);
+    scheme_generate_app(app, NULL, c, c, jitter, 0, 0, 0, 2);
     CHECK_LIMIT();
     mz_rs_sync();
 
     mz_rs_ldr(JIT_R1);
+    if (for_type != scheme_box_type) {
+      mz_rs_ldxi(JIT_R0, 1); /* index */
+    }
 
     if (!unsafe) {
       __START_TINY_JUMPS__(1);
@@ -4274,29 +4287,54 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       reffail = jit_get_ip();
       __END_TINY_JUMPS__(1);
 
-      (void)jit_calli(sjc.box_cas_fail_code);
+      if (for_type == scheme_box_type)
+        (void)jit_calli(sjc.box_cas_fail_code);
+      else
+        (void)jit_calli(sjc.vector_cas_fail_code);
 
       __START_TINY_JUMPS__(1);
       /* jump to here if the type tag tests succeed */
       mz_patch_branch(ref);
 
-      /* Get the type tag, fail if it isn't a box */
-      (void)mz_bnei_t(reffail, JIT_R1, scheme_box_type, JIT_R2);
+      /* Get the type tag, fail if it isn't a box/vector */
+      (void)mz_bnei_t(reffail, JIT_R1, for_type, JIT_R2);
       /* fail if immutable: */
       jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
       (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+      if (for_type != scheme_box_type) {
+        /* fail if index isn't a fixnum */
+        (void)jit_bmci_ul(reffail, JIT_R0, 0x1);
+      }
       __END_TINY_JUMPS__(1);
     }
     CHECK_LIMIT();
 
-    /* box is in JIT_R1 */
-    jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&SCHEME_BOX_VAL(0x0));
-    mz_rs_ldxi(JIT_R0, 1); /* old val */
-    mz_rs_ldxi(JIT_V1, 2); /* new val */
+    /* box/vector/struct is in JIT_R1 */
+    if (for_type == scheme_box_type) {
+      jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&SCHEME_BOX_VAL(0x0));
 
-    /* pop off 3 arguments */
-    mz_rs_inc(3);
-    mz_runstack_popped(jitter, 3);
+      mz_rs_ldxi(JIT_R0, 1); /* old val */
+      mz_rs_ldxi(JIT_V1, 2); /* new val */
+      
+      /* pop off 3 arguments */
+      mz_rs_inc(3);
+      mz_runstack_popped(jitter, 3);
+    } else {
+      if (for_type == scheme_vector_type)
+        jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&SCHEME_VEC_ELS(0x0));
+      else
+        jit_addi_l(JIT_R1, JIT_R1, (intptr_t)&((Scheme_Structure *)0x0)->slots);
+      jit_rshi_ul(JIT_R0, JIT_R0, 1);
+      jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+      jit_addr_p(JIT_R1, JIT_R1, JIT_R0);
+
+      mz_rs_ldxi(JIT_R0, 2); /* old val */
+      mz_rs_ldxi(JIT_V1, 3); /* new val */
+      
+      /* pop off 4 arguments */
+      mz_rs_inc(4);
+      mz_runstack_popped(jitter, 4);
+    }
 
     if (for_branch) {
       __START_SHORT_JUMPS__(branch_short);

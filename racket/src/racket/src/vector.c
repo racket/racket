@@ -33,7 +33,6 @@ READ_ONLY Scheme_Object *scheme_make_vector_proc;
 READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
 READ_ONLY Scheme_Object *scheme_vector_ref_proc;
 READ_ONLY Scheme_Object *scheme_vector_set_proc;
-READ_ONLY Scheme_Object *scheme_vector_cas_proc;
 READ_ONLY Scheme_Object *scheme_list_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_string_length_proc;
@@ -136,11 +135,10 @@ scheme_init_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("vector-set!", p, env);
 
-  REGISTER_SO(scheme_vector_cas_proc);
   p = scheme_make_noncm_prim(scheme_checked_vector_cas,
                              "vector-cas!",
                              4, 4);
-  scheme_vector_cas_proc = p;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("vector-cas!", p, env);
 
   scheme_add_global_constant("vector->list", 
@@ -243,6 +241,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   scheme_add_global_constant("unsafe-vector*-set!", p, env);  
 
   p = scheme_make_immed_prim(unsafe_vector_star_cas, "unsafe-vector*-cas!", 4, 4);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-vector*-cas!", p, env);
 
   REGISTER_SO(scheme_unsafe_struct_ref_proc);
@@ -270,6 +269,7 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   scheme_add_global_constant("unsafe-struct*-set!", p, env);  
 
   p = scheme_make_immed_prim(unsafe_struct_star_cas, "unsafe-struct*-cas!", 4, 4);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-struct*-cas!", p, env);
 
   REGISTER_SO(scheme_unsafe_string_length_proc);

@@ -105,6 +105,7 @@ define_ts_iS_s(scheme_checked_list_tail, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_getter, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_setter, FSRC_MARKS)
 define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_vector_cas, FSRC_MARKS)
 define_ts__v(chaperone_set_mark, FSRC_MARKS)
 define_ts_ss_s(scheme_chaperone_get_immediate_cc_mark, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_char_to_integer, FSRC_MARKS)
@@ -209,6 +210,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_unbox scheme_unbox
 # define ts_scheme_set_box scheme_set_box
 # define ts_scheme_box_cas scheme_box_cas
+# define ts_scheme_checked_vector_cas scheme_checked_vector_cas
 # define ts_chaperone_set_mark chaperone_set_mark
 # define ts_scheme_chaperone_get_immediate_cc_mark scheme_chaperone_get_immediate_cc_mark
 # define ts_scheme_vector_length scheme_vector_length
