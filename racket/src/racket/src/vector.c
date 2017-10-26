@@ -1175,7 +1175,7 @@ static Scheme_Object *unsafe_struct_star_cas (int argc, Scheme_Object *argv[])
 #else
   /* For cooperative threading, no atomicity required */
   if (((Scheme_Structure *)s)->slots[SCHEME_INT_VAL(idx)] == ov) {
-    SCHEME_VEC_ELS(vec)[SCHEME_INT_VAL(idx)] = nv;
+    ((Scheme_Structure *)s)->slots[SCHEME_INT_VAL(idx)] = nv;
     return scheme_true;
   } else {
     return scheme_false;

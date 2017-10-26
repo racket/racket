@@ -553,11 +553,11 @@ static int common1b(mz_jit_state *jitter, void *_data)
      we use mz_finish_lwe because it will capture the stack,
      and the ts_ version because we may be in a future */
   for (i = 0; i < 2; i++) {
-    ref = jit_get_ip();
+    ref2 = jit_get_ip();
     if (!i)
-      sjc.box_cas_fail_code = ref;
+      sjc.box_cas_fail_code = ref2;
     else
-      sjc.vector_cas_fail_code = ref;
+      sjc.vector_cas_fail_code = ref2;
     mz_prolog(JIT_R2);
     JIT_UPDATE_THREAD_RSPTR();
     if (!i)
@@ -572,7 +572,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
       (void)mz_finish_lwe(ts_scheme_box_cas, ref); /* doesn't return */
     else
       (void)mz_finish_lwe(ts_scheme_checked_vector_cas, ref); /* doesn't return */
-    scheme_jit_register_sub_func(jitter, ref, scheme_false);
+    scheme_jit_register_sub_func(jitter, ref2, scheme_false);
   }
 
   /* *** bad_vector_length_code *** */
