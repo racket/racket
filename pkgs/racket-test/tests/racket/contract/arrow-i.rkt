@@ -1550,5 +1550,28 @@
                   'pos 'neg)
         1))
    "(and/c number? (>/c 1))")
+
+  (test/spec-passed/result
+   'two-underscores
+   '((contract (->i ([abc any/c] [_ (abc) any/c]) [_ () any/c])
+               (λ (abc whatevs) whatevs)
+               'pos 'neg)
+     441 144)
+   144)
+
+  (test/spec-passed/result
+   'many-underscores
+   '(call-with-values
+     (λ () ((contract (->i ([abc any/c] [_ (abc) any/c])
+                           (values [_ () any/c]
+                                   [_ () any/c]
+                                   [_ () any/c]
+                                   [_ () any/c]))
+                      (λ (abc whatevs)
+                        (values 1 2 3 4))
+                      'pos 'neg)
+            55 66))
+     list)
+   '(1 2 3 4))
       
   )

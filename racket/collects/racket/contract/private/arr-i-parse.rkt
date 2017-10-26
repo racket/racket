@@ -377,7 +377,8 @@ code does the parsing and validation of the syntax.
     [[_ (id2 ...) ctc] 
      (begin
        (for-each (λ (x) (check-id stx x)) (syntax->list #'(id2 ...)))
-       (list (eres #'_ (syntax->list #'(id2 ...)) #'ctc 
+       (list (eres (car (syntax-e range))
+                   (syntax->list #'(id2 ...)) #'ctc
                    (compute-quoted-src-expression #'ctc)
                    (car (generate-temporaries '(eres))))))]
     [[id (id2 ...) ctc] 
