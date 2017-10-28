@@ -745,15 +745,23 @@
            (git-checkout host #:port port repo
                          #:dest-dir #f
                          #:ref branch
-                         #:status-printf (lambda (fmt . args)
-                                           (define (strip-ending-newline s)
-                                             (regexp-replace #rx"\n$" s ""))
-                                           (log-pkg-debug (strip-ending-newline (apply format fmt args))))
-                         #:initial-error (lambda ()
-                                           (pkg-error (~a "Git checkout initial protocol failed;\n"
-                                                          " the given URL might not refer to a Git repository\n"
-                                                          "  given URL: ~a")
-                                                      pkg-url-str))
+                         #:status-printf
+                         (lambda (fmt . args)
+                           (define (strip-ending-newline s)
+                             (regexp-replace #rx"\n$" s ""))
+                           (log-pkg-debug
+                            (strip-ending-newline (apply format fmt args))))
+                         #:initial-error
+                         (lambda ()
+                           (raise
+                            ;; This is a git error so that 
+                            ;; call-with-git-checkout-credentials will retry 
+                            (exn:fail:git
+                             (~a "pkg: Git checkout initial protocol failed;\n"
+                                 " the given URL might not refer to a Git repository\n"
+                                 "  given URL: "
+                                 pkg-url-str)
+                             (current-continuation-marks))))
                          #:transport transport)))))]
     [(github)
      (match-define (list* user repo branch path)

@@ -8,7 +8,7 @@
 (define (call-with-git-checkout-credentials t)
   (let loop ([credentials-list (cons #f (get-git-checkout-credentials))])
     (define credentials (first credentials-list))
-    (with-handlers ([exn:fail?
+    (with-handlers ([exn:fail:git?
                      (λ (x)
                        (if (empty? (rest credentials-list))
                          (raise x)
