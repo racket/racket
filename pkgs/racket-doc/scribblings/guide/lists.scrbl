@@ -195,7 +195,7 @@ of recursive calls instead of a looping construct, then read on.
 @section[#:tag "tail-recursion"]{Tail Recursion}
 
 Both the @racket[my-length] and @racket[my-map] functions run in
-@math{O(n)} time for a list of length @math{n}. This is easy to see by
+@math{O(n)} space for a list of length @math{n}. This is easy to see by
 imagining how @racket[(my-length (list "a" "b" "c"))] must evaluate:
 
 @racketblock[
