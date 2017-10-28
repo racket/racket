@@ -9787,6 +9787,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     cenv = scheme_new_comp_env(env->genv, env->insp, frame_scopes,
                                SCHEME_TOPLEVEL_FRAME | SCHEME_KEEP_SCOPES_FRAME);
     cenv->observer = env->observer;
+    cenv->intdef_next = xenv;
   }
 
   lift_data = scheme_make_vector(3, NULL);

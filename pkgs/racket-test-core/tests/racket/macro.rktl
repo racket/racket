@@ -1717,5 +1717,23 @@
              (lambda (exn) (regexp-match? #rx"incompatible ellipsis" (exn-message exn))))
 
 ;; ----------------------------------------
+;; Check that expansion to `#%module-begin` is prepared to handle
+;; definition contexts
+
+(module make-definition-context-during-module-begin racket/base
+  (require (for-syntax racket/base))
+  
+  (define-syntax (bind-and-expand stx)
+    (syntax-case stx ()
+      [(_ x form ...)
+       (let ()
+         (define ctx (syntax-local-make-definition-context))
+         (syntax-local-bind-syntaxes (list #'x) #'(λ (stx) (println stx) #'(void)) ctx)
+         (local-expand #'(#%plain-module-begin form ...) 'module-begin '() ctx))]))
+  
+  (module* a #f (bind-and-expand x x))
+  (module* b #f (bind-and-expand x (list x))))
+
+;; ----------------------------------------
 
 (report-errs)

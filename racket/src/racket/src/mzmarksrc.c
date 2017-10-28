@@ -1294,6 +1294,7 @@ mark_comp_env {
   gcMARK2(e->prefix, gc);
   gcMARK2(e->next, gc);
   gcMARK2(e->use_scopes_next, gc);
+  gcMARK2(e->intdef_next, gc);
   gcMARK2(e->scopes, gc);
   gcMARK2(e->value_name, gc);
   gcMARK2(e->observer, gc);

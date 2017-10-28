@@ -2878,6 +2878,7 @@ typedef struct Scheme_Comp_Env
 
   struct Scheme_Comp_Env *next;
   struct Scheme_Comp_Env *use_scopes_next; /* fast-forward for use-site scope revert */
+  struct Scheme_Comp_Env *intdef_next; /* when `next` = NULL, can be non-null to continue binding search */
 } Scheme_Comp_Env;
 
 #define LAMBDA_HAS_REST 1

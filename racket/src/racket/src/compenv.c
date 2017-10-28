@@ -1364,6 +1364,11 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
       if (!frame->vals)
         p += frame->num_bindings;
+
+      if (!frame->next->next && frame->next->intdef_next) {
+        frame = frame->next->intdef_next;
+        continue;
+      }
     }
     
     if (!(flags & SCHEME_OUT_OF_CONTEXT_OK)) {
