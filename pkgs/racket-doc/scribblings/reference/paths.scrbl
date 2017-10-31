@@ -389,8 +389,8 @@ see @secref["windowspaths"] for more information.
 @techlink{Cleanse}s @racket[path] (as described at the beginning of
 this chapter) without consulting the filesystem.
 
-@examples[#:eval (make-base-eval)
-  (let ([p (build-path/convention-type 'unix "foo//bar")])
+@examples[#:eval (make-base-eval '(require racket/path))
+  (let ([p (string->some-system-path "tiny//dancer" 'unix)])
     (cleanse-path p))
 ]}
 
@@ -451,8 +451,8 @@ simplification).
 See @secref["unixpaths"] and @secref["windowspaths"] for more
 information on simplifying paths.
 
-@examples[#:eval (make-base-eval)
-  (let ([p (build-path/convention-type 'unix "foo//bar/baz/..")])
+@examples[#:eval (make-base-eval '(require racket/path))
+  (let ([p (string->some-system-path "tiny//in/my/head/../../../dancer" 'unix)])
     (simplify-path p #f))
 ]}
  
