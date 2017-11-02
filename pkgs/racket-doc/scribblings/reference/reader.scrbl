@@ -431,11 +431,11 @@ being parsed, then the @exnraise[exn:fail:read].
 If the @racket[read-square-bracket-as-paren] and
 @racket[read-square-bracket-with-tag] @tech{parameter}s are set to
 @racket[#f], then when the reader encounters @litchar{[} and
-@litchar{]}, the @exnraise{exn:fail:read}. Similarly, if the
+@litchar{]}, the @exnraise[exn:fail:read]. Similarly, if the
 @racket[read-curly-brace-as-paren] and
 @racket[read-curly-brace-with-tag] @tech{parameter}s are set to
 @racket[#f], then when the reader encounters @litchar["{"] and
-@litchar["}"], the @exnraise{exn:fail:read}.
+@litchar["}"], the @exnraise[exn:fail:read].
 
 If the @racket[read-accept-dot] @tech{parameter} is set to
 @racket[#f], then a delimited @litchar{.} triggers an
