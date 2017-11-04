@@ -9,10 +9,10 @@
 ;; SERVICES
 
 (provide
- ;; Parameter 
- json-null ;; Parameter 
- 
- ;; Any -> Boolean 
+ ;; Parameter
+ json-null ;; Parameter
+
+ ;; Any -> Boolean
  jsexpr?
 
  #;
@@ -20,12 +20,12 @@
  ;; #:null (json-null)
  ;; #:encode 'control
  write-json
- 
+
  #;
  (->* (Input-Port) ([#:null Any]))
  ;; #null: (json-null)
  read-json
- 
+
  jsexpr->string
  jsexpr->bytes
  string->jsexpr
