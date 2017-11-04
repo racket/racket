@@ -82,7 +82,22 @@
         (jsexpr->string (string->jsexpr "{\"\U0010FFFF\":\"\U0010FFFF\"}")
                         #:encode 'all)
           => "{\"\\udbff\\udfff\":\"\\udbff\\udfff\"}"
-        ))
+          ))
+
+(define (struct-json-serialize-tests)
+  (define-struct foo (x y)
+    #:property prop:json-serializable
+    (make-json-serialize-info
+     (lambda (x)
+       (hash 'x (foo-x x)
+             'y (foo-y x)))))
+
+  (define-struct bar (w))
+
+  (test (jsexpr? (foo 1 2))
+        (not (jsexpr? (bar 1))))
+
+  (test (jsexpr->string (foo 1 2))))
 
 (define (parse-tests)
   (test (string->jsexpr @T{  1   }) =>  1
@@ -101,7 +116,7 @@
         (string->jsexpr @T{ {} }) => '#hasheq()
         (string->jsexpr @T{ {"x":1} }) => '#hasheq([x . 1])
         (string->jsexpr @T{ {"x":1,"y":2} }) => '#hasheq([x . 1] [y . 2])
-        (string->jsexpr @T{ [{"x": 1}, {"y": 2}] }) => 
+        (string->jsexpr @T{ [{"x": 1}, {"y": 2}] }) =>
                         '(#hasheq([x . 1]) #hasheq([y . 2]))
 
         ;; string escapes
@@ -148,4 +163,5 @@
 
 (test do (pred-tests)
       do (print-tests)
-      do (parse-tests))
+      do (parse-tests)
+      do (struct-json-serialize-tests))

@@ -29,7 +29,13 @@
  jsexpr->string
  jsexpr->bytes
  string->jsexpr
- bytes->jsexpr)
+ bytes->jsexpr
+
+ json-serializable-struct?
+ json-serializable-info
+ prop:json-serializable
+ make-json-serialize-info
+ )
 
 ;; -----------------------------------------------------------------------------
 ;; DEPENDENCIES
@@ -54,10 +60,20 @@
         (eq? x jsnull)
         (and (list? x) (andmap loop x))
         (and (hash? x) (for/and ([(k v) (in-hash x)])
-                         (and (or (symbol? k) (string? k)) (loop v)))))))
+                         (and (or (symbol? k) (string? k)) (loop v))))
+        (json-serializable-struct? x))))
 
 (define (real-real? x) ; not nan or inf
   (and (inexact-real? x) (not (member x '(+nan.0 +inf.0 -inf.0)))))
+
+;; ----------------------------------------------------------------------------
+;; PROPERTIES (for structs to opt-in to write-json)
+
+(define-struct json-serialize-info (to-json)
+  #:extra-constructor-name make-json-serialize-info)
+
+(define-values (prop:json-serializable json-serializable-struct? json-serializable-info)
+  (make-struct-type-property 'json-serializable #f))
 
 ;; -----------------------------------------------------------------------------
 ;; GENERATION  (from Racket to JSON)
@@ -124,6 +140,9 @@
              (write-bytes #":" o)
              (loop v))
            (write-bytes #"}" o)]
+          [(json-serializable-struct? x)
+           (define info (json-serializable-info x))
+           (loop ((json-serialize-info-to-json info) x))]
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 
