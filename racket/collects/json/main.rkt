@@ -54,7 +54,7 @@
         (eq? x jsnull)
         (and (list? x) (andmap loop x))
         (and (hash? x) (for/and ([(k v) (in-hash x)])
-                         (and (symbol? k) (loop v)))))))
+                         (and (or (symbol? k) (string? k)) (loop v)))))))
 
 (define (real-real? x) ; not nan or inf
   (and (inexact-real? x) (not (member x '(+nan.0 +inf.0 -inf.0)))))
@@ -116,12 +116,11 @@
            (write-bytes #"{" o)
            (define first? #t)
            (for ([(k v) (in-hash x)])
-             (unless (symbol? k)
-               (raise-type-error who "legal JSON key value" k))
              (if first? (set! first? #f) (write-bytes #"," o))
-             ;; use a string encoding so we get the same deal with
-             ;; `rx-to-encode'
-             (write-json-string (symbol->string k))
+             (cond
+              [(symbol? k) (write-json-string (symbol->string k))]
+              [(string? k) (write-json-string k)]
+              [else (raise-type-error who "legal JSON key value" k)])
              (write-bytes #":" o)
              (loop v))
            (write-bytes #"}" o)]

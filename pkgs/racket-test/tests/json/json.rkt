@@ -32,8 +32,8 @@
         (jsexpr? '#hasheq([x . 1] [y . 2]))
         (jsexpr? '#hash([x . 1] [y . 2])) ; fine as a jsexpr too
         (jsexpr? '#hasheq([|x\y| . 1] [y . 2]))
+        (jsexpr? '#hasheq(["x" . 1]))
         (not (jsexpr? '#hasheq([1 . 1])))
-        (not (jsexpr? '#hasheq(["x" . 1])))
         (not (jsexpr? '#hasheq(['() . 1])))
         (not (jsexpr? (/ 1.0 0.0)))
         (not (jsexpr? (/ -1.0 0.0)))
