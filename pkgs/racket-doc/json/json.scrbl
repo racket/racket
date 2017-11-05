@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require (for-label racket/base racket/contract json))
+@(require (for-label racket/base racket/contract json racket/port))
 
 @(define website @link["http://json.org"]{JSON web site})
 @(define rfc @link["http://www.ietf.org/rfc/rfc4627.txt"]{JSON RFC})
@@ -21,7 +21,7 @@ the @rfc for more information about JSON.
 
 @section{JS-Expressions}
 
-@defproc[(jsexpr? [x any] [#:null jsnull any? (json-null)])
+@defproc[(jsexpr? [x any/c] [#:null jsnull any/c (json-null)])
          boolean?]{
   Performs a deep check to determine whether @racket[x] is a @tech{jsexpr}.
 
@@ -49,7 +49,7 @@ the @rfc for more information about JSON.
 ]
 }
 
-@defparam[json-null jsnull any?]{
+@defparam[json-null jsnull any/c]{
   This parameter determines the default Racket value that corresponds to
   a JSON ``@tt{null}''.  By default, it is the @racket['null] symbol.
   In some cases a different value may better fit your needs, therefore
@@ -60,7 +60,7 @@ the @rfc for more information about JSON.
 @section{Generating JSON Text from JS-Expressions}
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
-                     [#:null jsnull any? (json-null)]
+                     [#:null jsnull any/c (json-null)]
                      [#:encode encode (or/c 'control 'all) 'control])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
@@ -84,7 +84,7 @@ the @rfc for more information about JSON.
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
-                         [#:null jsnull any? (json-null)]
+                         [#:null jsnull any/c (json-null)]
                          [#:encode encode (or/c 'control 'all) 'control])
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].
@@ -95,7 +95,7 @@ the @rfc for more information about JSON.
 }
 
 @defproc[(jsexpr->bytes [x jsexpr?]
-                        [#:null jsnull any? (json-null)]
+                        [#:null jsnull any/c (json-null)]
                         [#:encode encode (or/c 'control 'all) 'control])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
@@ -109,7 +109,7 @@ the @rfc for more information about JSON.
 @section{Parsing JSON Text into JS-Expressions}
 
 @defproc[(read-json [in input-port? (current-input-port)]
-                    [#:null jsnull any? (json-null)])
+                    [#:null jsnull any/c (json-null)])
          (or/c jsexpr? eof-object?)]{
   Reads a @tech{jsexpr} from a JSON-encoded input port @racket[in] as a
   Racket (immutable) value, or produces @racket[eof] if only whitespace
@@ -126,7 +126,7 @@ the @rfc for more information about JSON.
 ]
 }
 
-@defproc[(string->jsexpr [str string?] [#:null jsnull any? (json-null)])
+@defproc[(string->jsexpr [str string?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses the JSON string @racket[str] as an immutable @tech{jsexpr}.
 
@@ -135,7 +135,7 @@ the @rfc for more information about JSON.
 ]
 }
 
-@defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any? (json-null)])
+@defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any/c (json-null)])
          jsexpr?]{
   Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.
 
