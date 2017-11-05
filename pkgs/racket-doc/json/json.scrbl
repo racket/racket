@@ -35,7 +35,7 @@ the @rfc for more information about JSON.
     @item{@racket[string?]}
     @item{@racket[(or/c exact-integer? inexact-real?)]}
     @item{@racket[(listof jsexpr?)]}
-    @item{@racket[(and/c hash-eq? (hash/c symbol? jsexpr?))]}]
+    @item{@racket[(and/c hash-eq? (hash/c (or/c symbol? string?) jsexpr?))]}]
 
 @examples[#:eval ev
   (jsexpr? 'null)
