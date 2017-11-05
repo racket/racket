@@ -183,7 +183,7 @@ collection, the introduction states:
 In practice, JSON libraries discard the order of object literals in
 parsed JSON text and make no guarantees about the order of generated
 object literals, usually using a hash table of some flavor as a natural
-choice.  We therefore use do so as well.
+choice.  We therefore do so as well.
 
 @subsection{Naming Conventions}
 
