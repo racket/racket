@@ -575,7 +575,7 @@ change events}.
 
 @defproc[(filesystem-change-evt? [v any/c]) boolean?]{
 
-Returns @racket[#f] if @racket[v] is a @tech{filesystem change
+Returns @racket[#t] if @racket[v] is a @tech{filesystem change
 event}, @racket[#f] otherwise.}
 
 
