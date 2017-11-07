@@ -601,6 +601,7 @@
 
 ;; Fisher-Yates Shuffle
 (define (shuffle l)
+  (unless (list? l) (raise-argument-error 'shuffle "list?" 0 l))
   (define a (make-vector (length l)))
   (for ([x (in-list l)] [i (in-naturals)])
     (define j (random (add1 i)))
