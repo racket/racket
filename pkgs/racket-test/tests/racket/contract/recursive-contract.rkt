@@ -2,7 +2,8 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace
+                 'racket/contract)])
   
   (test/spec-passed
    'recursive-contract1
@@ -83,6 +84,34 @@
    'recursive-contract13
    '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat #:extra-delay)))])
       (contract ctc (cons 1 (cons 2 'not-a-number)) 'pos 'neg)))
+
+  (test/spec-passed/result
+   'memoize-applied-blame
+   '(let ()
+      (define counter 0)
+      (define my-ctc
+        (make-contract
+         #:first-order integer?
+         #:late-neg-projection
+         (lambda (blame)
+           (set! counter (add1 counter))
+           (lambda (val neg)
+             (if (integer? val)
+                 val
+                 (raise-blame-error
+                  blame
+                  val
+                  '(expected: "~a" given: "~e")
+                  "my-ctc" val))))))
+      (define ctc
+        (or/c my-ctc (vectorof (recursive-contract ctc))))
+      (define/contract v
+        ctc
+        (vector (vector (vector 5))))
+      (for ([i (in-range 100)])
+        (void (vector-ref v 0)))
+      counter)
+   2)
 
   (test/spec-passed/result
    'recursive-contract-not-too-slow

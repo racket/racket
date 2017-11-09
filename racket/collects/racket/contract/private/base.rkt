@@ -222,8 +222,11 @@
        (define r-ctc (force-recursive-contract ctc))
        (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
+       (define f-blame-known (make-thread-cell #f))
        (λ (val neg-party)
-         ((f blame-known) val neg-party)))]))
+         (unless (thread-cell-ref f-blame-known)
+           (thread-cell-set! f-blame-known (f blame-known)))
+         ((thread-cell-ref f-blame-known) val neg-party)))]))
 
 (define (flat-recursive-contract-late-neg-projection ctc)
   (cond
