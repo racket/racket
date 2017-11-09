@@ -10,14 +10,14 @@ on those packages. The "x86_64-linux-natipkg" variant of Racket
 is like Windows and Mac OS, expecting packages to supply native
 libraries for 64-bit Linux.
 
-This directory contains scripts and patches to build Windows, Mac OS, and Linux libraries in a consistent and portable way. Naturally,
-the script and patches are fragile, so we upgrade libraries
-infrequently. Currently, we use the following external packages and
-versions:
+This directory contains scripts and patches to build Windows, Mac OS,
+and Linux libraries in a consistent and portable way. Naturally, the
+script and patches are fragile, so we upgrade libraries infrequently.
+Currently, we use the following external packages and versions:
 
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed')
- sqlite[-autoconf]-3080600 (Windows and Linux only)
+ sqlite[-autoconf]-3210000 (Windows and Linux only)
  openssl-1.0.2k (current PPC binaries are 1.0.1g)
  libiconv-1.14 (Windows only)
  zlib-1.2.8 (Windows and Linux only)
@@ -65,12 +65,12 @@ Preliminiaries
 For Windows (cross-compile from Mac OS or Linux):
 
 The build scripts assume a MinGW cross compiler installed in
-"/usr/mw32" (for 32-bit builds) and "/usr/mw64" (for 64-bit builds).
-In addition, building "glib" requires "gettext" executables that run
-on the build machine in your PATH.
+"/usr[/local]/mw32" (for 32-bit builds) and "/usr[/local]/mw64" (for
+64-bit builds). In addition, building "glib" requires "gettext"
+executables that run on the build machine in your PATH.
 
 Beware that the "libdir" configuration in
-  /usr/mw{32,64}/{i686,x86_64}-w64-mingw32/lib/libstdc++.la
+  /usr[/local]/mw{32,64}/{i686,x86_64}-w64-mingw32/lib/libstdc++.la
 may be wrong, in which case you'll need to fix it by hand.
 
 For Mac OS (i386 and x86_64 on Intel, ppc on PowerPC):

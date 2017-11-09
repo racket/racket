@@ -500,8 +500,8 @@
                      ":"
                      (if win?
                          (if m32?
-                             "/usr/mw32/bin:"
-                             "/usr/mw64/bin:")
+                             "/usr/local/mw32/bin:/usr/mw32/bin:"
+                             "/usr/local/mw64/bin:/usr/mw64/bin:")
                          "")
                      (getenv "PATH")))
   (for ([e (in-list (merge all-env extra-env))])
