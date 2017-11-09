@@ -1206,8 +1206,9 @@ use a dictionary for speed.
                   (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
 (check-duplicates '(1 2 3 4) #:default "no duplicates")
 ]
-@history[#:added "6.3"]{}
-}
+
+@history[#:added "6.3"
+         #:changed "6.11.0.2" @elem{Addede the @racket[#:default] optional argument.}]}
 
 @defproc[(remove-duplicates [lst list?]
                             [same? (any/c any/c . -> . any/c) equal?]
