@@ -1490,8 +1490,8 @@
 ;; TCP
 
 (let ([do-once
-       (lambda (evt? localhost)
-	 (let* ([l (tcp-listen 0 5 #t)]
+       (lambda (evt? localhost [serve-localhost #f])
+	 (let* ([l (tcp-listen 0 5 #t serve-localhost)]
                 [pn (listen-port l)])
 	   (let-values ([(r1 w1) (tcp-connect localhost pn)]
 			[(r2 w2) (if evt?
@@ -1518,13 +1518,20 @@
   (do-once #f "localhost")
   (do-once #t "localhost")
   (with-handlers ([exn:fail:network:errno? (lambda (e)
-                                             ;; catch forms of non-suport for IPv6:
+                                             ;; Catch forms of non-suport for IPv6:
                                              ;;       EAFNOSUPPORT "Address family not supported by protocol"
                                              ;;    or getaddrinfo failure "no address associated with name"
+                                             ;; In case IPv6 is supported by the OS but not for the loopback
+                                             ;; devce, we also catch "Cannot assign requested address"
                                              (unless (regexp-match?
-                                                      #rx"family not supported by protocol|no address associated with name"
+                                                      #rx"family not supported by protocol|no address associated with name|Cannot assign requested address"
                                                       (exn-message e))
                                                (raise e)))])
+    ;; Supply listener hostname, so we can check whether `listen` receives IPv6 connections
+    (do-once #f "::1" "::1")
+    (do-once #t "::1" "::1")
+    ;; If we get this far, then "::1" apparently works, so try listening
+    ;; at all interfaces and connecting to "::1":
     (do-once #f "::1")
     (do-once #t "::1")))
 
