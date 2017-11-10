@@ -1064,11 +1064,11 @@ static void listen_failed(Connect_Progress_Data *pd, const char *why, const char
                    "  port number: %d\n"
                    "  system error: %R",
                    why ? ";\n " : "",
-                   why ? why : "",
+                   why ? why : "\n",
                    address ? "  address: " : "",
                    address ? address : "",
-                   address? "%s\n" : "",
-                   address, id);
+                   address? "\n" : "",
+                   id);
 }
 
 static Scheme_Object *
