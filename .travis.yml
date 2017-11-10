@@ -16,7 +16,7 @@ before_script:
 - git config --global user.name "Travis Tester"
 script:
 - make CPUS="2" PKGS="racket-test-core" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
-- racket -e "(tcp-listen 0 5 #f \"::1\")"
+- racket -e "(tcp-listen 0 5 false \"::1\")"
 - racket -f pkgs/racket-test-core/tests/racket/file.rktl 
 notifications:
   irc: chat.freenode.net#racket-dev
