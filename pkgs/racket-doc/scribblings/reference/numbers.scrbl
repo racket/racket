@@ -882,7 +882,7 @@ uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
 @history[#:changed "6.4"]{Added support for ranges.}}
 
 
-@defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
+@defproc[(random-seed [k (integer-in 0 (sub1 (expt 2 31)))])
           void?]{
 
 Seeds the current pseudo-random number generator with
