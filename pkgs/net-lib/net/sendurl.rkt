@@ -247,7 +247,7 @@
     [(not browser)
      (error 'send-url "Couldn't find a browser to open URL: ~e" url)]
     [(custom-browser? browser)
-     (browser-run #:shell #t (string-append (car browser) "\"" url "\"" (cdr browser)))]
+     (browser-run #:shell #t (format "~a~s~a" (car browser) url (cdr browser)))]
     ;; if it's a known browser, then it must be an existing one at this point
     [(not exe) (error 'send-url "internal error")]
     ;; if it's gone throw an error (refiltering will break assumptions of
