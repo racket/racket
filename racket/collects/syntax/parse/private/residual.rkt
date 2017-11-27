@@ -300,3 +300,8 @@
                        ;; that *should* have been cancelled out by ineffable pair failures.
                        |#)
                    (values 'fail (failure pr es)))])))))
+
+(provide illegal-cut-error)
+
+(define (illegal-cut-error . _)
+  (error 'syntax-parse "illegal use of cut"))

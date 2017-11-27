@@ -73,6 +73,7 @@ A ActionPattern is one of
   (action:and (listof ActionPattern))
   (action:parse SinglePattern stx)
   (action:do (listof stx))
+  (action:undo (listof stx))
   (action:ord ActionPattern UninternedSymbol Nat)
   (action:post ActionPattern)
 
@@ -86,6 +87,7 @@ A SideClause is just an ActionPattern
 (define-struct action:and (patterns) #:prefab)
 (define-struct action:parse (pattern expr) #:prefab)
 (define-struct action:do (stmts) #:prefab)
+(define-struct action:undo (stmts) #:prefab)
 (define-struct action:ord (pattern group index) #:prefab)
 (define-struct action:post (pattern) #:prefab)
 
@@ -167,6 +169,7 @@ A RepConstraint is one of
       (action:and? x)
       (action:parse? x)
       (action:do? x)
+      (action:undo? x)
       (action:ord? x)
       (action:post? x)))
 
@@ -268,6 +271,8 @@ A RepConstraint is one of
      (pattern-attrs sp)]
     [(action:do _)
      null]
+    [(action:undo _)
+     null]
     [(action:ord sp _ _)
      (pattern-attrs sp)]
     [(action:post sp)
@@ -343,6 +348,7 @@ A RepConstraint is one of
     [(action:and ps) (ormap pattern-has-cut? ps)]
     [(action:parse sp _) (pattern-has-cut? sp)]
     [(action:do _) #f]
+    [(action:undo _) #f]
     [(action:ord sp _ _) (pattern-has-cut? sp)]
     [(action:post sp) (pattern-has-cut? sp)]
 
@@ -484,6 +490,7 @@ A RepConstraint is one of
         [(action:and? p) (patterns-AF (action:and-patterns p))]
         [(action:parse? p) (if (AF-nz? (pattern-AF (action:parse-pattern p))) AF-SUB AF-NONE)]
         [(action:do? p) AF-NONE]
+        [(action:undo? p) AF-SUB]
         [(action:ord? p) (pattern-AF (action:ord-pattern p))]
         [(action:post? p) (if (AF-nz? (pattern-AF (action:post-pattern p))) AF-POST AF-NONE)]
         ;; Head patterns, eh patterns, etc

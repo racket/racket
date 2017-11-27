@@ -771,6 +771,10 @@ Conventions:
             (parse:S y cy pattern pr* es k))]
        [#s(action:do (stmt ...))
         #'(let () (no-shadow stmt) ... (#%expression k))]
+       [#s(action:undo (stmt ...))
+        #'(try (with ([cut-prompt illegal-cut-error])
+                 (#%expression k))
+               (begin (#%expression stmt) ... (fail (failure* pr es))))]
        [#s(action:ord pattern group index)
         #'(let ([pr* (ps-add pr '#s(ord group index))])
             (parse:A x cx pattern pr* es k))]

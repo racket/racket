@@ -121,6 +121,7 @@
         (quote-syntax ~fail)
         (quote-syntax ~parse)
         (quote-syntax ~do)
+        (quote-syntax ~undo)
         (quote-syntax ...+)
         (quote-syntax ~delimit-cut)
         (quote-syntax ~commit)
@@ -459,7 +460,7 @@
   (define not-shadowed? (make-not-shadowed? decls))
   (check-pattern
   (syntax-case* stx (~var ~literal ~datum ~and ~or ~or* ~alt ~not ~rest ~describe
-                     ~seq ~optional ~! ~bind ~fail ~parse ~do
+                     ~seq ~optional ~! ~bind ~fail ~parse ~do ~undo
                      ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
                      ~splicing-reflect)
                 (make-not-shadowed-id=? decls)
@@ -578,6 +579,10 @@
      (disappeared! stx)
      (check-action!
       (parse-pat:do stx decls))]
+    [(~undo . rest)
+     (disappeared! stx)
+     (check-action!
+      (parse-pat:undo stx decls))]
     [(head dots . tail)
      (and (dots? #'dots) (not-shadowed? #'dots))
      (begin (disappeared! #'dots)
@@ -1087,6 +1092,13 @@
     [_
      (wrong-syntax stx "bad ~~do pattern")]))
 
+(define (parse-pat:undo stx decls)
+  (syntax-case stx ()
+    [(_ stmt ...)
+     (action:undo (syntax->list #'(stmt ...)))]
+    [_
+     (wrong-syntax stx "bad ~~undo pattern")]))
+
 (define (parse-pat:rest stx decls)
   (syntax-case stx ()
     [(_ pattern)
@@ -1251,6 +1263,9 @@
            (parse-pattern-sides rest decls))]
     [(cons (list '#:do do-stx stmts) rest)
      (cons (action:do stmts)
+           (parse-pattern-sides rest decls))]
+    [(cons (list '#:undo undo-stx stmts) rest)
+     (cons (action:undo stmts)
            (parse-pattern-sides rest decls))]
     ['()
      '()]))
@@ -1616,7 +1631,8 @@
         (list '#:attr check-attr-arity check-expression)
         (list '#:and check-expression)
         (list '#:post check-expression)
-        (list '#:do check-stmt-list)))
+        (list '#:do check-stmt-list)
+        (list '#:undo check-stmt-list)))
 
 ;; fail-directive-table
 (define fail-directive-table
