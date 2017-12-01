@@ -11,17 +11,14 @@ represented by fixnums and bignums.
 
 Rationals are implemented by the type @cppi{scheme_rational_type},
 composed of a numerator and a denominator.
-The numerator and denominator fixnums or bignums (possibly mixed).
+The numerator and denominator will be fixnums or bignums (possibly mixed).
 
-Complex numbers are implemented by the types
-@cppi{scheme_complex_type} and @cppi{scheme_complex_izi_type},
+Complex numbers are implemented by the type @cppi{scheme_complex_type},
 composed of a real and imaginary part. The real and imaginary parts
 will either be both flonums, both exact numbers (fixnums, bignums, and
-rationals can be mixed in any way), or one part will be exact 0 and
-the other part will be a flonum. If the inexact part is inexact 0, the
-type is @cpp{scheme_complex_izi_type}, otherwise the type is
-@cppi{scheme_complex_type}; this distinction make it easy to test
-whether a complex number should be treated as a real number.
+rationals can be mixed in any way), or the real part will be exact 0 and
+the imaginary part will be a single-precision (when enabled) or
+double-pecision flonum.
 
 
 @function[(int scheme_is_exact
@@ -89,7 +86,7 @@ Writes a bignum into a newly allocated byte string.}
 Reads a bignum from a @cpp{mzchar} string, starting from position
  @var{offset} in @var{str}. If the string does not represent an
  integer, then @cpp{NULL} will be returned. If the string represents a
- number that fits in 31 bits, then a @cpp{scheme_integer_type}
+ number that fits in a fixnum, then a @cpp{scheme_integer_type}
  object will be returned.}
 
 @function[(Scheme_Object* scheme_read_bignum_bytes
@@ -102,7 +99,7 @@ Like @cpp{scheme_read_bignum}, but from a UTF-8-encoding byte string.}
 @function[(Scheme_Object* scheme_bignum_normalize
            [Scheme_Object* n])]{
 
-If @var{n} fits in 31 bits, then a @cpp{scheme_integer_type} object
+If @var{n} fits in a fixnum, then a @cpp{scheme_integer_type} object
  will be returned. Otherwise, @var{n} is returned.}
 
 @function[(Scheme_Object* scheme_make_rational

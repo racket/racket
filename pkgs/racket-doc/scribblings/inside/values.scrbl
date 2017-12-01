@@ -99,12 +99,8 @@ types:
  @item{@cppdef{scheme_rational_type} --- test for this type with
  @cppdef{SCHEME_RATIONALP}}
 
- @item{@cppdef{scheme_complex_type} --- test for this type or
- @cpp{scheme_complex_izi_type} with @cppdef{SCHEME_COMPLEXP}}
-
- @item{@cppdef{scheme_complex_izi_type} --- complex number with an inexact
- zero imaginary part (so it counts as a real number); test for this
- type specifically with @cppdef{SCHEME_COMPLEX_IZIP}}
+ @item{@cppdef{scheme_complex_type} --- test for this type
+ with @cppdef{SCHEME_COMPLEXP}}
 
  @item{@cppdef{scheme_char_string_type} --- @index['("strings"
  "conversion to C")]{@cppdef{SCHEME_CHAR_STR_VAL}} extracts the string
@@ -262,8 +258,7 @@ The following are additional number predicates:
 
  @item{@cppdef{SCHEME_NUMBERP} --- all numerical types}
 
- @item{@cppdef{SCHEME_REALP} --- all non-complex numerical types, plus
- @cpp{scheme_complex_izi_type}}
+ @item{@cppdef{SCHEME_REALP} --- all non-complex numerical types}
 
  @item{@cppdef{SCHEME_EXACT_INTEGERP} --- fixnums and bignums}
 
