@@ -94,13 +94,15 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
     int r;
 #ifdef SETENV_DROPS_LEADING_EQUAL_SIGN
     char *tmp = NULL;
-    
-    if (val[0] == '=') {
-      intptr_t len = strlen(val);
-      tmp = malloc(len + 2);
-      memcpy(tmp + 1, val, len + 1);
-      tmp[0] = '=';
-      val = tmp;
+
+    if (rktio->macos_kernel_version < 16) {
+      if (val[0] == '=') {
+        intptr_t len = strlen(val);
+        tmp = malloc(len + 2);
+        memcpy(tmp + 1, val, len + 1);
+        tmp[0] = '=';
+        val = tmp;
+      }
     }
 #endif
 

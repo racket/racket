@@ -262,38 +262,22 @@ static int is_day_before(SYSTEMTIME *a, SYSTEMTIME *b)
 
 #if defined(OS_X) && defined(__x86_64__)
 /* work around a bug in localtime() in 10.6.8 */
-# include <sys/param.h>
-# include <sys/sysctl.h>
-static int VALID_TIME_RANGE(intptr_t lnow)
+static int valid_time_range(rktio_t *rktio, intptr_t lnow)
 {
   /* Fits in 32 bits? */
   int ilnow = (int)lnow;
   if (lnow == (intptr_t)ilnow)
     return 1;
 
-  /* 10.7 or later? */
-  {
-    int a[2];
-    size_t len;
-    char *vers;
-
-    a[0] = CTL_KERN;
-    a[1] = KERN_OSRELEASE;
-    sysctl(a, 2, NULL, &len, NULL, 0);
-    vers = malloc(len * sizeof(char));
-    sysctl(a, 2, vers, &len, NULL, 0);
-
-    if ((vers[0] == '1') && (vers[1] == '0') && (vers[2] == '.')) {
-      /* localtime() in 10.6.x (= 10.x at the kernel layer) doesn't seem
-         to work right with negative numbers that don't fit into 32 bits */
-      free(vers);
-      return 0;
-    }
-    free(vers);
+  if (rktio->macos_kernel_version == 10) {
+    /* localtime() in 10.6.x (= 10.x at the kernel layer) doesn't seem
+       to work right with negative numbers that don't fit into 32 bits */
+    return 0;
   }
 
   return 1;
 }
+# define VALID_TIME_RANGE(lnow) valid_time_range(rktio, lnow)
 #else
 
 # ifdef MIN_VALID_DATE_SECONDS

@@ -116,6 +116,10 @@ struct rktio_t {
 #ifdef SUPPORT_BACKGROUND_SLEEP_THREAD
   struct background_sleep_t *background;
 #endif
+
+#ifdef OS_X
+  int macos_kernel_version; /* e.g., 10 => 10.6, 15 => 10.11 */
+#endif
 };
 
 /*========================================================================*/
