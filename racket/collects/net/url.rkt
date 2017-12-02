@@ -338,11 +338,12 @@
        (redirection-loop (- redirections 1) new-url #f)]
       [else
        (values response-port
-               (apply string-append
-                      (map (λ (x) (format "~a\r\n" x))
-                           (if status?
-                             (cons status headers)
-                             headers))))])))
+               (string-append (apply string-append
+                                     (map (λ (x) (format "~a\r\n" x))
+                                          (if status?
+                                              (cons status headers)
+                                              headers)))
+                              "\r\n"))])))
 
 ;; get-pure-port : url [x list (str)] -> in-port
 (define (get-pure-port url [strings '()] #:redirections [redirections 0])
