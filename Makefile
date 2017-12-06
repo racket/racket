@@ -64,7 +64,7 @@ INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
 ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 plain-in-place:
-	$(MAKE) base
+	$(MAKE) plain-base
 	$(MAKE) pkgs-catalog
 	$(RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
@@ -151,6 +151,14 @@ CONFIGURE_ARGS_qq =
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
 
 base:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-base ; \
+         else $(MAKE) cpus-base CPUS="$(CPUS)" ; fi
+
+cpus-base:
+	$(MAKE) -j $(CPUS) plain-base JOB_OPTIONS="-j $(CPUS)"
+
+plain-base:
 	mkdir -p build/config
 	echo '#hash((links-search-files . ()))' > build/config/config.rktd
 	mkdir -p racket/src/build
