@@ -84,7 +84,7 @@
                           [opc-id opc] ...
                           [okwc-id okwc] ...)
                       (rename-contract
-                       (->* (any/c any/c any/c any/c any/c any/c any/c any/c
+                       (->* (any/c any/c any/c any/c any/c any/c any/c any/c any/c
                              mpc-id ... mkw-c-part ... ...)
                             (okw-c-part ... ...)
                             any)

@@ -270,8 +270,9 @@
  ["runtime-report.rkt"
   (call-current-failure-handler ctx fs)])
 
-;; syntax-patterns-fail : (list Symbol/#f Syntax) -> FailureSet -> (escapes)
-(define ((syntax-patterns-fail ctx) fs)
+;; syntax-patterns-fail : (list Symbol/#f Syntax) -> (Listof (-> Any)) FailureSet -> escapes
+(define ((syntax-patterns-fail ctx) undos fs)
+  (unwind-to undos null)
   (call-current-failure-handler ctx fs))
 
 ;; == specialized ellipsis parser
@@ -305,3 +306,11 @@
 
 (define (illegal-cut-error . _)
   (error 'syntax-parse "illegal use of cut"))
+
+(provide unwind-to)
+
+(define (unwind-to undos base)
+  ;; PRE: undos = (list* proc ... base)
+  (unless (eq? undos base)
+    ((car undos))
+    (unwind-to (cdr undos) base)))

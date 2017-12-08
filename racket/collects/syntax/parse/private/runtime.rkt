@@ -12,6 +12,7 @@
 (provide with
          fail-handler
          cut-prompt
+         undo-stack
          wrap-user-code
 
          fail
@@ -57,29 +58,38 @@ residual.rkt.
 (define-syntax-parameter cut-prompt
   (lambda (stx)
     (wrong-syntax stx "internal error: cut-prompt used out of context")))
+(define-syntax-parameter undo-stack
+  (lambda (stx)
+    (wrong-syntax stx "internal error: undo-stack used out of context")))
 
 (define-syntax-rule (wrap-user-code e)
   (with ([fail-handler #f]
-         [cut-prompt #t])
+         [cut-prompt #t]
+         [undo-stack null])
     e))
 
 (define-syntax-rule (fail fs)
-  (fail-handler fs))
+  (fail-handler undo-stack fs))
 
 (define-syntax (try stx)
   (syntax-case stx ()
     [(try e0 e ...)
      (with-syntax ([(re ...) (reverse (syntax->list #'(e ...)))])
        (with-syntax ([(fh ...) (generate-temporaries #'(re ...))])
-         (with-syntax ([(next-fh ...) (drop-right (syntax->list #'(fail-handler fh ...)) 1)]
-                       [(last-fh) (take-right (syntax->list #'(fail-handler fh ...)) 1)])
-           #'(let* ([fh (lambda (fs1)
+         (with-syntax ([(next-fh ... last-fh) #'(fail-handler fh ...)])
+           #'(let* ([fh (lambda (undos1 fs1)
                           (with ([fail-handler
-                                  (lambda (fs2)
-                                    (next-fh (cons fs1 fs2)))])
+                                  (lambda (undos2 fs2)
+                                    (unwind-to undos2 undos1)
+                                    (next-fh undos1 (cons fs1 fs2)))]
+                                 [undo-stack undos1])
                             re))]
                     ...)
-               (with ([fail-handler last-fh])
+               (with ([fail-handler
+                       (lambda (undos2 fs2)
+                         (unwind-to undos2 undo-stack)
+                         (last-fh undo-stack fs2))]
+                      [undo-stack undo-stack])
                  e0)))))]))
 
 ;; == Attributes
@@ -204,8 +214,8 @@ residual.rkt.
                                            (length (syntax->list #'(parg ...)))
                                            (syntax->datum #'(kw ...)))])
          (with-syntax ([parser (stxclass-parser sc)])
-           #'(lambda (x cx pr es fh cp rl success)
-               (app-argu parser x cx pr es fh cp rl success argu)))))]))
+           #'(lambda (x cx pr es undos fh cp rl success)
+               (app-argu parser x cx pr es undos fh cp rl success argu)))))]))
 
 (define-syntax (app-argu stx)
   (syntax-case stx ()

@@ -503,6 +503,38 @@
                   #:post (~fail #:unless (> (syntax-e #'a) (syntax-e #'b)) "non-decreasing")
                   (void)]))))
 
+;; #:undo
+
+(let ()
+  (define lits (make-parameter null))
+  (define-syntax-class L
+    (pattern x:id
+             #:do [(lits (cons (syntax-e #'x) (lits)))]
+             #:undo [(lits (remq (syntax-e #'x) (lits)))]))
+
+  (test-case "#:undo 1"
+    (parameterize ((lits null))
+      (syntax-parse #'(a b c)
+        [(x:L y:L) (error "wrong")]
+        [(_   y:L z:L) 'ok])
+      (check-equal? (reverse (lits)) '(b c))))
+
+  (test-case "#:undo and #:commit"
+    (define-syntax-class LC (pattern (~commit :L)))
+    (parameterize ((lits null))
+      (syntax-parse #'(a b c)
+        [(x:LC y:LC) (error "wrong")]
+        [(_    y:LC z:LC) 'ok])
+      (check-equal? (reverse (lits)) '(b c))))
+
+  (test-case "#:undo and ~!"
+    (parameterize ((lits null))
+      (syntax-parse #'(a 2 c)
+        [(x:L 1 _) (error "wrong")]
+        [(x:L 2 ~! y:L) 'ok])
+      (check-equal? (reverse (lits)) '(a c))))
+  )
+
 ;; == Lib tests
 
 ;; test string, bytes act as stxclasses

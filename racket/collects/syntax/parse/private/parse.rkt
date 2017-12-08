@@ -89,11 +89,11 @@
                             #f
                             (scopts 0 #t #t 'description)
                             (quote-syntax predicate)))
-                (define (parser x cx pr es fh0 cp0 rl success)
+                (define (parser x cx pr es undos fh0 cp0 rl success)
                   (if (predicate x)
-                      (success fh0)
+                      (success fh0 undos)
                       (let ([es (es-add-thing pr 'description #t rl es)])
-                        (fh0 (failure* pr es)))))))]))
+                        (fh0 undos (failure* pr es)))))))]))
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
@@ -155,7 +155,7 @@
                  [transparent? transparent?]
                  [delimit-cut? delimit-cut?]
                  [body body])
-     #`(lambda (x cx pr es fh0 cp0 rl success . formals*)
+     #`(lambda (x cx pr es undos fh0 cp0 rl success . formals*)
          (with ([this-syntax x]
                 [this-role rl])
                def ...
@@ -168,7 +168,8 @@
                                           #,(if no-fail? #'#f #'es))]
                         [pr (if 'transparent? pr (ps-add-opaque pr))])
                     (with ([fail-handler fh0]
-                           [cut-prompt cp0])
+                           [cut-prompt cp0]
+                           [undo-stack undos])
                       ;; Update the prompt, if required
                       ;; FIXME: can be optimized away if no cut exposed within variants
                       (with-maybe-delimit-cut delimit-cut?
@@ -230,7 +231,8 @@
                     def ...
                     (#%expression
                      (with ([fail-handler fh0]
-                            [cut-prompt fh0])
+                            [cut-prompt fh0]
+                            [undo-stack null])
                            (parse:S x cx pattern pr es
                                     (list (attribute name) ...)))))))))))]))
 
@@ -251,17 +253,23 @@ Parsing protocols:
   pr, es are progress and expectstack, respectively
   rest-x, rest-cx, rest-pr are variable names to bind in context of success-expr
 
-(stxclass-parser x cx pr es fail-handler cut-prompt role success-proc arg ...) : Ans
+(stxclass-parser x cx pr es undos fail-handler cut-prompt role success-proc arg ...) : Ans
 
   success-proc:
-    for stxclass, is (fail-handler attr-value ... -> Ans)
-    for splicing-stxclass, is (fail-handler rest-x rest-cx rest-pr attr-value -> Ans)
-  fail-handler, cut-prompt : failure -> Ans
+    for stxclass, is (fail-handler undos attr-value ... -> Ans)
+    for splicing-stxclass, is (undos fail-handler rest-x rest-cx rest-pr attr-value -> Ans)
+  fail-handler, cut-prompt : undos failure -> Ans
 
 Fail-handler is normally represented with stxparam 'fail-handler', but must be
 threaded through stxclass calls (in through stxclass-parser, out through
 success-proc) to support backtracking. Cut-prompt is never changed within
 stxclass or within alternative, so no threading needed.
+
+The undo stack is normally represented with stxparam 'undo-stack', but must be
+threaded through stxclass calls (like fail-handler). A failure handler closes
+over a base undo stack and receives an extended current undo stack; the failure
+handler unwinds effects by performing every action in the difference between
+them and then restores the saved undo stack.
 
 Usually sub-patterns processed in tail position, but *can* do non-tail calls for:
   - ~commit
@@ -368,7 +376,7 @@ Conventions:
             (reorder-iattrs (wash-sattrs #'relsattrs)
                             (wash-iattrs #'iattrs))])
        (with-syntax ([(#s(attr name _ _) ...) reliattrs])
-         #'(success fail-handler also ... (attribute name) ...)))]))
+         #'(success fail-handler undo-stack also ... (attribute name) ...)))]))
 
 ;; ----
 
@@ -437,7 +445,8 @@ Conventions:
               def ...
               (parameterize ((current-syntax-context (cadr ctx0)))
                 (with ([fail-handler fh0]
-                       [cut-prompt fh0])
+                       [cut-prompt fh0]
+                       [undo-stack null])
                   #,(cond [(pair? patterns)
                            (with-syntax ([matrix
                                           (optimize-matrix
@@ -531,26 +540,31 @@ Conventions:
                            #'())])
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
-              #'(app-argu parser x cx pr es fail-handler cut-prompt role
-                          (lambda (fh av ...)
+              #'(app-argu parser x cx pr es undo-stack fail-handler cut-prompt role
+                          (lambda (fh undos av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
-                                (with ([fail-handler fh])
+                                (with ([fail-handler fh] [undo-stack undos])
                                   k))))
                           argu)
               ;; The commit protocol
               ;; (Avoids putting k in procedure)
-              #'(let-values ([(fs av ...)
-                              (with ([fail-handler (lambda (fs) (values fs (let ([av #f]) av) ...))])
+              #'(let-values ([(fs undos av ...)
+                              (with ([fail-handler
+                                      (lambda (undos fs)
+                                        (unwind-to undos undo-stack)
+                                        (values fs undo-stack (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
-                                  (app-argu parser x cx pr es fail-handler cut-prompt role
-                                            (lambda (fh av ...) (values #f av ...))
+                                  (app-argu parser x cx pr es undo-stack
+                                            fail-handler cut-prompt role
+                                            (lambda (fh undos av ...) (values #f undos av ...))
                                             argu)))])
                   (if fs
                       (fail fs)
                       (let-attributes (name-attr ...)
                         (let-attributes* ((nested-a ...) (av ...))
-                          k))))))]
+                          (with ([undo-stack undos])
+                            k)))))))]
        [#s(pat:reflect obj argu attr-decls name (nested-a ...))
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
@@ -558,11 +572,11 @@ Conventions:
                            #'())])
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #f)])
-                (app-argu parser x cx pr es fail-handler cut-prompt #f
-                          (lambda (fh . result)
+                (app-argu parser x cx pr es undo-stack fail-handler cut-prompt #f
+                          (lambda (fh undos . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
-                                (with ([fail-handler fh])
+                                (with ([fail-handler fh] [undo-stack undos])
                                   k))))
                           argu))))]
        [#s(pat:datum datum)
@@ -592,9 +606,9 @@ Conventions:
        [#s(pat:or (a ...) (subpattern ...) (subattrs ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (fh id ...)
+                   (lambda (fh undos id ...)
                      (let-attributes ([a id] ...)
-                       (with ([fail-handler fh])
+                       (with ([fail-handler fh] [undo-stack undos])
                          k)))])
               (try (parse:S x cx subpattern pr es
                             (disjunct subattrs success () (id ...)))
@@ -604,14 +618,14 @@ Conventions:
                  [pr0 pr]
                  [es0 es]
                  [fail-to-succeed
-                  (lambda (fs) k)])
+                  (lambda (undos fs) (unwind-to undos undo-stack) k)])
             ;; ~not implicitly prompts to be safe,
             ;; but ~! not allowed within ~not (unless within ~delimit-cut, etc)
             ;; (statically checked!)
             (with ([fail-handler fail-to-succeed]
                    [cut-prompt fail-to-succeed]) ;; to be safe
               (parse:S x cx subpattern pr es
-                       (fh0 (failure* pr0 es0)))))]
+                       (fh0 undo-stack (failure* pr0 es0)))))]
        [#s(pat:pair head tail)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)]
                 [cx (if (syntax? x) x cx)])  ;; FIXME: shadowing cx?!
@@ -742,7 +756,7 @@ Conventions:
        #`(let ([alt-sub-id (attribute sub-id)] ...)
            (let ([id #f] ...)
              (let ([sub-id alt-sub-id] ...)
-               (success fail-handler pre ... id ...)))))]))
+               (success fail-handler undo-stack pre ... id ...)))))]))
 
 ;; (parse:A x cx A-pattern pr es k) : expr[Ans]
 ;; In k: attrs(A-pattern) are bound.
@@ -772,9 +786,9 @@ Conventions:
        [#s(action:do (stmt ...))
         #'(let () (no-shadow stmt) ... (#%expression k))]
        [#s(action:undo (stmt ...))
-        #'(try (with ([cut-prompt illegal-cut-error])
-                 (#%expression k))
-               (begin (#%expression stmt) ... (fail (failure* pr es))))]
+        #'(with ([undo-stack (cons (lambda () stmt ... (void)) undo-stack)]
+                 [cut-prompt illegal-cut-error])
+            k)]
        [#s(action:ord pattern group index)
         #'(let ([pr* (ps-add pr '#s(ord group index))])
             (parse:A x cx pattern pr* es k))]
@@ -825,27 +839,32 @@ Conventions:
                            #'())])
           (if (not (syntax-e #'commit?))
               ;; The normal protocol
-              #`(app-argu parser x cx pr es fail-handler cut-prompt role
-                          (lambda (fh rest-x rest-cx rest-pr av ...)
+              #`(app-argu parser x cx pr es undo-stack fail-handler cut-prompt role
+                          (lambda (fh undos rest-x rest-cx rest-pr av ...)
                             (let-attributes (name-attr ...)
                               (let-attributes* ((nested-a ...) (av ...))
-                                (with ([fail-handler fh])
+                                (with ([fail-handler fh] [undo-stack undos])
                                   k))))
                           argu)
               ;; The commit protocol
               ;; (Avoids putting k in procedure)
-              #'(let-values ([(fs rest-x rest-cx rest-pr av ...)
-                              (with ([fail-handler (lambda (fs) (values fs #f #f #f (let ([av #f]) av) ...))])
+              #'(let-values ([(fs undos rest-x rest-cx rest-pr av ...)
+                              (with ([fail-handler
+                                      (lambda (undos fs)
+                                        (unwind-to undos undo-stack)
+                                        (values fs undo-stack #f #f #f (let ([av #f]) av) ...))])
                                 (with ([cut-prompt fail-handler])
-                                  (app-argu parser x cx pr es fail-handler cut-prompt role
-                                            (lambda (fh rest-x rest-cx rest-pr av ...)
-                                              (values #f rest-x rest-cx rest-pr av ...))
+                                  (app-argu parser x cx pr es undo-stack
+                                            fail-handler cut-prompt role
+                                            (lambda (fh undos rest-x rest-cx rest-pr av ...)
+                                              (values #f undos rest-x rest-cx rest-pr av ...))
                                             argu)))])
                   (if fs
                       (fail fs)
                       (let-attributes (name-attr ...)
                         (let-attributes* ((nested-a ...) (av ...))
-                          k))))))]
+                          (with ([undo-stack undos])
+                            k)))))))]
        [#s(hpat:reflect obj argu attr-decls name (nested-a ...))
         (with-syntax ([(name-attr ...)
                        (if (identifier? #'name)
@@ -854,11 +873,11 @@ Conventions:
                            #'())])
           (with-syntax ([arity (arguments->arity (syntax->datum #'argu))])
             #'(let ([parser (reflect-parser obj 'arity 'attr-decls #t)])
-                (app-argu parser x cx pr es fail-handler cut-prompt #f
-                          (lambda (fh rest-x rest-cx rest-pr . result)
+                (app-argu parser x cx pr es undo-stack fail-handler cut-prompt #f
+                          (lambda (fh undos rest-x rest-cx rest-pr . result)
                             (let-attributes (name-attr ...)
                               (let/unpack ((nested-a ...) result)
-                                 (with ([fail-handler fh])
+                                 (with ([fail-handler fh] [undo-stack undos])
                                    k))))
                           argu))))]
        [#s(hpat:and head single)
@@ -869,9 +888,9 @@ Conventions:
        [#s(hpat:or (a ...) (subpattern ...) (subattrs ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (fh rest-x rest-cx rest-pr id ...)
+                   (lambda (fh undos rest-x rest-cx rest-pr id ...)
                      (let-attributes ([a id] ...)
-                       (with ([fail-handler fh])
+                       (with ([fail-handler fh] [undo-stack undos])
                          k)))])
               (try (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
                             (disjunct subattrs success (rest-x rest-cx rest-pr) (id ...)))
@@ -915,7 +934,8 @@ Conventions:
                  [pr0 pr]
                  [es0 es]
                  [fail-to-succeed
-                  (lambda (fs)
+                  (lambda (undos fs)
+                    (unwind-to undos undo-stack)
                     (let ([rest-x x]
                           [rest-cx cx]
                           [rest-pr pr])
@@ -926,7 +946,7 @@ Conventions:
             (with ([fail-handler fail-to-succeed]
                    [cut-prompt fail-to-succeed]) ;; to be safe
               (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
-                       (fh0 (failure* pr0 es0)))))]
+                       (fh0 undo-stack (failure* pr0 es0)))))]
        [_
         #'(parse:S x cx
                    ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
@@ -993,11 +1013,11 @@ Conventions:
                       tail-pattern-is-null?])
          (define/with-syntax alt-map #'((id . alt-id) ...))
          (define/with-syntax loop-k
-           #'(dots-loop dx* dcx* loop-pr* fail-handler rel-rep ... alt-id ...))
+           #'(dots-loop dx* dcx* loop-pr* undo-stack fail-handler rel-rep ... alt-id ...))
          #`(let ()
              ;; dots-loop : stx progress rel-rep ... alt-id ... -> Ans
-             (define (dots-loop dx dcx loop-pr fh rel-rep ... alt-id ...)
-               (with ([fail-handler fh])
+             (define (dots-loop dx dcx loop-pr undos fh rel-rep ... alt-id ...)
+               (with ([fail-handler fh] [undo-stack undos])
                  (try-or-pair/null-check do-pair/null? dx dcx loop-pr es
                    (try (parse:EH dx dcx loop-pr head-attrs check-null? head-repc dx* dcx* loop-pr* 
                                   alt-map head-rep head es loop-k)
@@ -1011,7 +1031,7 @@ Conventions:
                             (parse:S dx dcx tail loop-pr es k))]))))
              (let ([rel-rep 0] ...
                    [alt-id (rep:initial-value attr-repc)] ...)
-               (dots-loop x cx pr fail-handler rel-rep ... alt-id ...)))))]))
+               (dots-loop x cx pr undo-stack fail-handler rel-rep ... alt-id ...)))))]))
 
 ;; (try-or-pair/null-check bool x cx es pr pair-alt maybe-null-alt)
 (define-syntax try-or-pair/null-check
