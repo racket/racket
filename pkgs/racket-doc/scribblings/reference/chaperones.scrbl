@@ -288,7 +288,7 @@ of impersonators with respect to wrapping impersonators to be detected within
 Like @racket[impersonate-procedure], except that @racket[wrapper-proc]
 receives an additional argument before all other arguments. The
 additional argument is the procedure @racket[_orig-proc] that was
-original applied.
+originally applied.
 
 If the result of @racket[impersonate-procedure*] is applied directly,
 then @racket[_orig-proc] is that result. If the result is further
