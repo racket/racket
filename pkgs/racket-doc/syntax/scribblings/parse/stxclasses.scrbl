@@ -200,7 +200,8 @@ follows:
                (code:line #:fail-when condition-expr message-expr)
                (code:line #:fail-unless condition-expr message-expr)
                (code:line #:when condition-expr)
-               (code:line #:do [def-or-expr ...])]
+               (code:line #:do [def-or-expr ...])
+               (code:line #:undo [def-or-expr ...])]
 
 @specsubform[(code:line #:declare pvar-id stxclass maybe-role)
              #:grammar
@@ -325,7 +326,7 @@ backtracks. In other words, @racket[#:when] is like
 Equivalent to @racket[#:post (~fail #:unless condition-expr #f)].
 }
 
-@specsubform[(code:line #:do [def-or-expr ...])]{
+@specsubform[(code:line #:do [defn-or-expr ...])]{
 
 Takes a sequence of definitions and expressions, which may be
 intermixed, and evaluates them in the scope of all previous attribute
@@ -336,7 +337,17 @@ There is currently no way to bind attributes using a @racket[#:do]
 block. It is an error to shadow an attribute binding with a definition
 in a @racket[#:do] block.
 
-Equivalent to @racket[#:and (~do def-or-expr ...)].
+Equivalent to @racket[#:and (~do defn-or-expr ...)].
+}
+
+@specsubform[(code:line #:undo [defn-or-expr ...])]{
+
+Has no effect when initially matched, but if backtracking returns to a
+point @emph{before} the @racket[#:undo] directive, the
+@racket[defn-or-expr]s are executed. See @racket[~undo] for an
+example.
+
+Equivalent to @racket[#:and (~undo defn-or-expr ...)].
 }
 
 

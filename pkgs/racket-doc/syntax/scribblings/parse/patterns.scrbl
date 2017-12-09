@@ -34,7 +34,7 @@ means specifically @tech{@Spattern}.
 
 @racketgrammar*[#:literals (_ ~var ~literal ~or ~alt ~or* ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
-                            ~! ~bind ~fail ~parse ~peek ~peek-not ~do ~post)
+                            ~! ~bind ~fail ~parse ~peek ~peek-not ~do ~undo ~post)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -98,7 +98,8 @@ means specifically @tech{@Spattern}.
                  (~parse S-pattern stx-expr)
                  (@#,ref[~and a] A-pattern ...+)
                  (@#,ref[~post a] A-pattern)
-                 (~do defn-or-expr ...)]
+                 (~do defn-or-expr ...)
+                 (~undo defn-or-expr ...)]
                 [proper-S-pattern
                  #, @elem{a @svar{S-pattern} that is not a @svar{A-pattern}}]
                 [proper-H-pattern
@@ -1092,6 +1093,36 @@ definition in a @racket[~do] block.
 @examples[#:eval the-eval
 (syntax-parse #'(1 2 3)
   [(a b (~do (printf "a was ~s\n" #'a)) c:id) 'ok])
+]
+}
+
+@specsubform[(@#,defhere[~undo] defn-or-expr ...)]{
+
+Has no effect when initially matched, but if backtracking returns to a
+point @emph{before} the @racket[~undo] pattern, the
+@racket[defn-or-expr]s are executed. They are evaluated in the scope
+of all previous attribute bindings.
+
+Use @racket[~do] paired with @racket[~undo] to perform side effects
+and then unwind them if the enclosing pattern is later discarded.
+
+@examples[#:eval the-eval
+(define total 0)
+(define-syntax-class nat/add
+  (pattern (~and n:nat
+                 (~do (printf "adding ~s\n" (syntax-e #'n))
+                      (set! total (+ total (syntax-e #'n))))
+                 (~undo (printf "subtracting ~s\n" (syntax-e #'n))
+                        (set! total (- total (syntax-e #'n)))))))
+
+(syntax-parse #'(1 2 3)
+  [(x:nat/add ...) 'ok])
+total
+(set! total 0)
+(syntax-parse #'(1 2 3 bad)
+  [(x:nat/add ...) 'ok]
+  [_ 'something-else])
+total
 ]
 }
 
