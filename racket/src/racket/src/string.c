@@ -677,11 +677,13 @@ scheme_init_string (Scheme_Env *env)
 			     env);
 
   p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 4);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  /* Incorrect, since the result can be #f:
+     SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
   scheme_add_global_constant("bytes-utf-8-index", p, env);
 
   p = scheme_make_immed_prim(byte_string_utf8_length, "bytes-utf-8-length", 1, 4);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  /* Incorrect, since the result can be #f:
+     SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
   scheme_add_global_constant("bytes-utf-8-length", p, env);
 
   scheme_add_global_constant("bytes-utf-8-ref",

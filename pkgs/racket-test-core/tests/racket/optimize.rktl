@@ -6044,6 +6044,15 @@
             (loop (sub1 tries)))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the optimizer doesn't assume that `bytes-utf-8-{length,index}`
+;; returns a fixnum:
+
+(test #f 'not-utf-8 (bytes-utf-8-length (bytes 255)))
+(test #t 'not-not-utf-8 (not (bytes-utf-8-length (bytes 255))))
+(test #f 'not-utf-8 (bytes-utf-8-index (bytes 255) 1))
+(test #t 'not-not-utf-8 (not (bytes-utf-8-index (bytes 255) 1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Try a program that triggers lots of inlining, which at one point
 ;; exposed a bug related to the closing of `lambda` forms within
 ;; an inlined function. Thanks to Tom Gilray for the test.
