@@ -1129,6 +1129,55 @@
                (test #t continuation-mark-set-first #f 'n)
                (loop (sub1 n)))))))))
 
+(let ()
+  (define (check call-with-ignored-composable-continuation)
+    ;; Caputured replacing installed with nested metacontinuations
+    (let ([k (call-with-continuation-prompt
+              (lambda ()
+                (with-continuation-mark
+                 'x
+                 71
+                 (call-with-ignored-composable-continuation
+                  (lambda (k2)
+                    (non-tail
+                     (with-continuation-mark
+                      'x
+                      72
+                      ((call-with-composable-continuation
+                        (lambda (k)
+                          (lambda () k)))))))))))])
+      (test '(72 71)
+            'nested-mc
+            (with-continuation-mark
+             'x 81
+             (k (lambda ()
+                  (continuation-mark-set->list (current-continuation-marks) 'x))))))
+
+    ;; Captured not replacing
+    (let ([k (call-with-continuation-prompt
+              (lambda ()
+                (non-tail
+                 (with-continuation-mark
+                  'x
+                  71
+                  (call-with-ignored-composable-continuation
+                   (lambda (k2)
+                     (non-tail
+                      (with-continuation-mark
+                       'x
+                       72
+                       ((call-with-composable-continuation
+                         (lambda (k)
+                           (lambda () k))))))))))))])
+      (test '(72 71 81)
+            'nested-mc
+            (with-continuation-mark
+             'x 81
+             (k (lambda ()
+                  (continuation-mark-set->list (current-continuation-marks) 'x)))))))
+  (check call-with-composable-continuation)
+  (check (lambda (proc) (proc #f))))
+
 ;; ----------------------------------------
 ;; Olivier Danvy's traversal
 

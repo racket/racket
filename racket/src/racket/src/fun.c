@@ -5368,9 +5368,9 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
     return;
   }
 
-  for (pos = cont->cont_mark_total, num_coverlap = 0;
-       pos--;
-       num_coverlap++) {
+  for (pos = 0, num_coverlap = 0;
+       pos < cont->cont_mark_total;
+       num_coverlap++, pos++) {
     if (cont->cont_mark_stack_copied[pos].pos != (cont->cont_mark_pos_bottom + 2))
       break;
   }
@@ -5399,7 +5399,7 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
       scheme_hash_set(ht, SCHEME_VEC_ELS(extra_marks)[i], val);
     }
   }
-  for (pos = cont->cont_mark_total - 1, i = 0; i < num_coverlap; i++, pos--) {
+  for (pos = 0, i = 0; i < num_coverlap; i++, pos++) {
     scheme_hash_set(ht, 
                     cont->cont_mark_stack_copied[pos].key,
                     NULL);
@@ -8456,10 +8456,6 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
     while (chain) {
       if (chain->key == key)
         if (key_arg != key)
-          /*
-           * TODO: is this the only name that this procedure is called as
-           * publicly?
-           */
           return scheme_chaperone_do_continuation_mark("continuation-mark-set-first",
                                                        1, key_arg, chain->val);
         else
