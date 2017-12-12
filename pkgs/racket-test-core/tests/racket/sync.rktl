@@ -1,6 +1,7 @@
 
-
 (load-relative "loadtest.rktl")
+
+(require ffi/unsafe/schedule)
 
 (Section 'synchronization)
 
@@ -972,6 +973,37 @@
 
 ;; make sure it's ok for rewind to be the first action:
 (test (void) thread-wait (thread (lambda () (thread-rewind-receive '(1 2 3)))))
+
+;; ----------------------------------------
+;; Unsafe poller
+
+(let ()
+  (struct p (results)
+    #:property prop:evt (unsafe-poller
+                         (lambda (self wakeups)
+                           (values (p-results self) #f))))
+
+  (test 17 sync (p '(17)))
+  (test add1 sync (p (list add1)))
+  (test-values '(16 17) (lambda () (sync (p '(16 17)))))
+  (test-values '() (lambda () (sync (p '())))))
+
+(let ()
+  ;; Let the scheduler poll up to `counter` times:
+  (define counter 20)
+  (struct p ()
+    #:property prop:evt (unsafe-poller
+                         (lambda (self wakeups)
+                           (cond
+                             [(zero? counter)
+                              (values '(#t) #f)]
+                             [else
+                              (set! counter (sub1 counter))
+                              (when wakeups
+                                ;; Cancel any sleep:
+                                (unsafe-poll-ctx-milliseconds-wakeup wakeups (current-inexact-milliseconds)))
+                              (values #f self)]))))
+  (test #t sync (p)))
 
 ;; ----------------------------------------
 ;;  Garbage collection

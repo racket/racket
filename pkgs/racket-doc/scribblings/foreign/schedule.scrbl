@@ -6,7 +6,9 @@
 
 @defmodule[ffi/unsafe/schedule]{The
 @racketmodname[ffi/unsafe/schedule] library provides functions for
-cooperating with the thread scheduler and manipulating it.}
+cooperating with the thread scheduler and manipulating it. These
+operations are unsafe because callbacks run in @tech{atomic mode}
+and in an unspecified thread.}
 
 @history[#:added "6.11.0.1"]
 
@@ -16,8 +18,8 @@ cooperating with the thread scheduler and manipulating it.}
 Produces a @deftech{poller} value that is allowed as a
 @racket[prop:evt] value, even though it is not a procedure or itself
 an @racket[evt?]. The @racket[poll] callback is called in @tech{atomic
-mode} to check whether the event is ready or to allow it to register a
-wakeup trigger.
+mode} in an unspecified thread to check whether the event is ready or
+to allow it to register a wakeup trigger.
 
 The first argument to @racket[poll] is always the object that is used
 as a @tech[#:doc reference.scrbl]{synchronizable event} with the
@@ -74,14 +76,6 @@ Causes the Racket process will wake up and resume polling at the point
 when @racket[(current-inexact-milliseconds)] starts returning a value
 that is @racket[msecs] or greater.}
 
-
-Registers a file descriptor (Unix and Mac OS) or socket (all
-platforms) to cause the Racket process to wake up if the file
-descriptor or socket becomes ready for reading, writing, or error
-reporting, as selected by @racket[mode]. The @racket[wakeups] argument
-must be a non-@racket[#f] value that is passed by the scheduler to a
-@racket[unsafe-poller]-wrapped procedure.}
-
 @defproc[(unsafe-set-sleep-in-thread! [foreground-sleep (-> any/c)]
                                       [fd fixnum?])
          void?]{
@@ -101,6 +95,6 @@ Racket implementation. It always works for Mac OS.}
 @defproc[(unsafe-signal-received) void?]{
 
 For use with @racket[unsafe-set-sleep-in-thread!] by
-@racket[foreground-sleep] or something that it triggers, causes the
-default sleeping function to request @racket[foreground-sleep] to
+@racket[_foreground-sleep] or something that it triggers, causes the
+default sleeping function to request @racket[_foreground-sleep] to
 return.}

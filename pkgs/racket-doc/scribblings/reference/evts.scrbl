@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/struct
           "mz.rkt"
-          (for-label racket/async-channel))
+          (for-label racket/async-channel
+                     (only-in ffi/unsafe/schedule unsafe-poller)))
 
 @(define evt-eval (make-base-eval))
 
@@ -354,6 +355,11 @@ A @tech{structure type property} that identifies structure types whose
  ready.}
 
 ]
+
+@margin-note{For working with foreign libraries, a @racket[prop:evt]
+             value can also be a result of @racket[unsafe-poller],
+             although that possibility is omitted from the safe
+             contract of @racket[prop:evt].}
 
 Instances of a structure type with the @racket[prop:input-port] or
 @racket[prop:output-port] property are also @tech{synchronizable events} by virtue

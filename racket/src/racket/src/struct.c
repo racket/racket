@@ -1646,6 +1646,21 @@ static Scheme_Object *return_wrapped(void *data, int argc, Scheme_Object *argv[]
   return (Scheme_Object *)data;
 }
 
+static Scheme_Object *return_wrapped_multi(void *data, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object **a, *l = (Scheme_Object *)data;
+  int i, n;
+
+  n = scheme_list_length(l);
+  a = MALLOC_N(Scheme_Object *, n);
+  for (i = 0; i < n; i++) {
+    a[i] = SCHEME_CAR(l);
+    l = SCHEME_CDR(l);
+  }
+
+  return scheme_values(n, a);
+}
+
 static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Object *v;
@@ -1731,8 +1746,19 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     scheme_end_in_scheduler();
 
     if (v) {
-      if (done && SCHEME_PROCP(v)) {
-        v = scheme_make_closed_prim_w_arity(return_wrapped, (void *)v, "wrapper", 1, 1);
+      if (done) {
+        int check_proc = 1;
+        if (SCHEME_PAIRP(v) && SCHEME_NULLP(SCHEME_CDR(v)) && !SCHEME_PROCP(SCHEME_CAR(v)))
+          v = SCHEME_CAR(v); /* single result */
+        else if (!SCHEME_NULLP(v) && !SCHEME_PAIRP(v)) {
+          /* wrong result, be we allow it for backward compatibility */
+        } else {
+          v = scheme_make_closed_prim_w_arity(return_wrapped_multi, (void *)v, "multi-wrapper", 1, 1);
+          check_proc = 0;
+        }
+
+        if (check_proc && SCHEME_PROCP(v))
+          v = scheme_make_closed_prim_w_arity(return_wrapped, (void *)v, "wrapper", 1, 1);
       }
       scheme_set_sync_target(sinfo, v, (done ? v : NULL), NULL, 0, 0, NULL);
       return 1;
