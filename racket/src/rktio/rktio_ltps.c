@@ -343,7 +343,17 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
 	  kr = epoll_ctl(lt->fd, 
 			 (already ? EPOLL_CTL_MOD : EPOLL_CTL_ADD), fd, &ev);
-	  log_kqueue_error("read", kr);
+          if ((kr < 0) && (errno == EPERM)) {
+            /* not supported on this fd */
+            v->read_handle = NULL;
+            if (!v->write_handle) {
+              ltps_hash_remove(lt, fd);
+              free(v);
+            }
+            free(s);
+            s = NULL;
+          } else
+            log_kqueue_error("read", kr);
 	}
 # else
         RKTIO_FD_SET(fd, r);
@@ -380,7 +390,17 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);
 	  kr = epoll_ctl(lt->fd, 
 			 (already ? EPOLL_CTL_MOD : EPOLL_CTL_ADD), fd, &ev);
-	  log_kqueue_error("write", kr);
+          if ((kr < 0) && (errno == EPERM)) {
+            /* not supported on this fd */
+            v->write_handle = NULL;
+            if (!v->read_handle) {
+              ltps_hash_remove(lt, fd);
+              free(v);
+            }
+            free(s);
+            s = NULL;
+          } else
+            log_kqueue_error("write", kr);
 	}
 # else
         RKTIO_FD_SET(fd, w);
