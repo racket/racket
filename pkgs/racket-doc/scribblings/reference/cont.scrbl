@@ -120,7 +120,7 @@ Captures the current continuation up to the nearest prompt tagged by
 includes only continuation marks and @racket[dynamic-wind] frames
 installed since the prompt. 
 
-The capture continuation is delivered to @racket[proc], which is
+The captured continuation is delivered to @racket[proc], which is
 called in tail position with respect to the
 @racket[call-with-current-continuation] call.
 
