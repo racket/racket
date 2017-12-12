@@ -5,7 +5,9 @@
 
 (define SLEEP-TIME 0.1)
 
-(require racket/port)
+(require racket/port
+         ffi/unsafe
+         ffi/unsafe/port)
 
 ;; ----------------------------------------
 
@@ -1237,6 +1239,42 @@
   (write-special 'hello o)
   (write-special 'again o)
   (test #"abczz" peek-bytes 5 0 pi))
+
+;; --------------------------------------------------
+
+(when (memq (system-type) '(unix macosx))
+  (define open (get-ffi-obj 'open #f (_fun _path _int -> _int)))
+  (define O_RDWR #x0002) ; probably
+  (for ([mode (in-list '((read) (write) (read write)))])
+    (define /dev/null-fd (open "/dev/null" O_RDWR))
+    (unless (= -1 /dev/null-fd)
+      (call-with-values (lambda () (unsafe-file-descriptor->port /dev/null-fd 'dev-null mode))
+        (case-lambda
+          [(p)
+           (test (equal? mode '(read)) input-port? p)
+           (test (equal? mode '(write)) output-port? p)
+           (test /dev/null-fd unsafe-port->file-descriptor p)
+           (define s (unsafe-file-descriptor->semaphore /dev/null-fd (car mode)))
+           (test #t 'sema (or (semaphore? s) (not s)))
+           (test s unsafe-file-descriptor->semaphore /dev/null-fd (case (car mode)
+                                                                    [(read) 'check-read]
+                                                                    [(write) 'check-write]))
+           (when s
+             (semaphore-wait s)
+             (unsafe-file-descriptor->semaphore /dev/null-fd 'remove))
+           (test #f unsafe-port->socket p)
+           (if (input-port? p)
+               (close-input-port p)
+               (close-output-port p))]
+          [(i o)
+           (test #t input-port? i)
+           (test #t output-port? o)
+           (test /dev/null-fd unsafe-port->file-descriptor i)
+           (test /dev/null-fd unsafe-port->file-descriptor o)
+           (test #f unsafe-port->socket i)
+           (test #f unsafe-port->socket o)
+           (close-input-port i)
+           (close-output-port o)])))))
 
 ;; --------------------------------------------------
 

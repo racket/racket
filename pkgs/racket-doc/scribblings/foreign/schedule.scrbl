@@ -6,9 +6,9 @@
 
 @defmodule[ffi/unsafe/schedule]{The
 @racketmodname[ffi/unsafe/schedule] library provides functions for
-cooperating with the thread scheduler and manipulating it. These
-operations are unsafe because callbacks run in @tech{atomic mode}
-and in an unspecified thread.}
+cooperating with the thread scheduler and manipulating it. The
+library's operations are unsafe because callbacks run in @tech{atomic
+mode} and in an unspecified thread.}
 
 @history[#:added "6.11.0.1"]
 

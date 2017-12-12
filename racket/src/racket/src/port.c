@@ -234,6 +234,13 @@ static void register_subprocess_wait();
 
 static void block_timer_signals(int block);
 
+static Scheme_Object *unsafe_fd_to_port(int, Scheme_Object *[]);
+static Scheme_Object *unsafe_port_to_fd(int, Scheme_Object *[]);
+static Scheme_Object *unsafe_fd_to_semaphore(int, Scheme_Object *[]);
+static Scheme_Object *unsafe_socket_to_port(int, Scheme_Object *[]);
+static Scheme_Object *unsafe_port_to_socket(int, Scheme_Object *[]);
+static Scheme_Object *unsafe_socket_to_semaphore(int, Scheme_Object *[]);
+
 typedef struct Scheme_Read_Write_Evt {
   Scheme_Object so;
   Scheme_Object *port;
@@ -401,6 +408,17 @@ void scheme_init_port_wait()
   scheme_add_evt(scheme_port_closed_evt_type, (Scheme_Ready_Fun)closed_evt_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_filesystem_change_evt_type, (Scheme_Ready_Fun)filesystem_change_evt_ready, 
                  filesystem_change_evt_need_wakeup, NULL, 1);
+}
+
+void scheme_init_unsafe_port (Scheme_Env *env)
+{
+  GLOBAL_PRIM_W_ARITY("unsafe-file-descriptor->port", unsafe_fd_to_port, 3, 3, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-port->file-descriptor", unsafe_port_to_fd, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-file-descriptor->semaphore", unsafe_fd_to_semaphore, 2, 2, env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-socket->port", unsafe_socket_to_port, 3, 3, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-port->socket", unsafe_port_to_socket, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-socket->semaphore", unsafe_socket_to_semaphore, 2, 2, env);
 }
 
 void scheme_init_port_places(void)
@@ -3406,6 +3424,142 @@ intptr_t scheme_get_port_fd(Scheme_Object *p)
     return fd;
   else
     return -1;
+}
+
+static Scheme_Object *unsafe_handle_to_port(const char *who, int argc, Scheme_Object *argv[], int socket)
+{
+  Scheme_Object *name = argv[1], *l, *a;
+  intptr_t s;
+  int closemode = 1;
+  int regfile = 0;
+  int textmode = 0;
+  int readmode = 0, writemode = 0;
+
+  if (!scheme_get_int_val(argv[0], &s))
+    scheme_wrong_contract(who, "handle-integer?", 0, argc, argv);
+
+  if (socket) {
+    if (!SCHEME_BYTE_STRINGP(name))
+      scheme_wrong_contract(who, "bytes?", 1, argc, argv);
+  }
+  
+  l = argv[2];
+  while (SCHEME_PAIRP(l)) {
+    a = SCHEME_CAR(l);
+    if (!SCHEME_SYMBOLP(a) || SCHEME_SYM_WEIRDP(a))
+      break;
+    if (socket) {
+      if (!strcmp(SCHEME_SYM_VAL(a), "no-close"))
+        closemode = 0;
+    } else {
+      if (!strcmp(SCHEME_SYM_VAL(a), "read"))
+        readmode = 1;
+      else if (!strcmp(SCHEME_SYM_VAL(a), "write"))
+        writemode = 1;
+      else if (!strcmp(SCHEME_SYM_VAL(a), "text"))
+        textmode = 1;
+      else if (!strcmp(SCHEME_SYM_VAL(a), "regular-file"))
+        regfile = 1;
+      else
+        break;
+    }
+    l = SCHEME_CDR(l);
+  }
+  if (!SCHEME_NULLP(l))
+    scheme_wrong_contract(who, "mode-symbol-list?", 2, argc, argv);
+
+  if (socket) {
+    Scheme_Object *p[2];
+    scheme_socket_to_ports(s, SCHEME_BYTE_STR_VAL(name), closemode, &p[0], &p[1]);
+    return scheme_values(2, p);
+  } else if (writemode)
+    return scheme_make_fd_output_port(s, name, regfile, textmode, readmode);
+  else if (readmode)
+    return scheme_make_fd_input_port(s, name, regfile, textmode);
+  else {
+    scheme_contract_error(who,
+                          "mode list must include at least one of 'read or 'write"
+                          "mode list", 1, argv[2],
+                          NULL);
+    return NULL;
+  }
+}
+
+static Scheme_Object *unsafe_fd_to_port(int argc, Scheme_Object *argv[])
+{
+  return unsafe_handle_to_port("unsafe-file-descriptor->port", argc, argv, 0);
+}
+  
+static Scheme_Object *unsafe_socket_to_port(int argc, Scheme_Object *argv[])
+{
+  return unsafe_handle_to_port("unsafe-socket->port", argc, argv, 1);
+}
+  
+static Scheme_Object *unsafe_port_to_fd(int argc, Scheme_Object *argv[])
+{
+  intptr_t s;
+  
+  if (scheme_get_port_file_descriptor(argv[0], &s))
+    return scheme_make_integer_value(s);
+  else {
+    if (!SCHEME_INPUT_PORTP(argv[0]) && !SCHEME_OUTPUT_PORTP(argv[0]))
+      scheme_wrong_contract("unsafe-port->file-descriptor", "port?", 0, argc, argv);
+    return scheme_false;
+  }
+}
+
+static Scheme_Object *unsafe_port_to_socket(int argc, Scheme_Object *argv[])
+{
+  intptr_t s;
+  
+  if (scheme_get_port_socket(argv[0], &s))
+    return scheme_make_integer_value(s);
+  else {
+    if (!SCHEME_INPUT_PORTP(argv[0]) && !SCHEME_OUTPUT_PORTP(argv[0]))
+      scheme_wrong_contract("unsafe-port->socket", "port?", 0, argc, argv);
+    return scheme_false;
+  }
+}
+
+static Scheme_Object *unsafe_handle_to_semaphore(const char *who, int argc, Scheme_Object *argv[], int is_socket)
+{
+  Scheme_Object *a = argv[1];
+  intptr_t s;
+  int mode;
+
+  if (!scheme_get_int_val(argv[0], &s))
+    scheme_wrong_contract(who, "handle-integer?", 0, argc, argv);
+
+  if (!SCHEME_SYMBOLP(a) || SCHEME_SYM_WEIRDP(a))
+    mode = -1;
+  else if (!strcmp(SCHEME_SYM_VAL(a), "read"))
+    mode = MZFD_CREATE_READ;
+  else if (!strcmp(SCHEME_SYM_VAL(a), "write"))
+    mode = MZFD_CREATE_WRITE;
+  else if (!strcmp(SCHEME_SYM_VAL(a), "check-read"))
+    mode = MZFD_CHECK_READ;
+  else if (!strcmp(SCHEME_SYM_VAL(a), "check-write"))
+    mode = MZFD_CHECK_WRITE;
+  else if (!strcmp(SCHEME_SYM_VAL(a), "remove"))
+    mode = MZFD_REMOVE;
+  else 
+    mode = -1;
+
+  if (mode == -1)
+    scheme_wrong_contract(who, "semaphore-mode-symbol?", 1, argc, argv);
+
+  a = scheme_fd_to_semaphore(s, mode, is_socket);
+  return (a ? a : scheme_false);
+}
+
+static Scheme_Object *unsafe_fd_to_semaphore(int argc, Scheme_Object *argv[])
+{
+  return unsafe_handle_to_semaphore("unsafe-file-descriptor->semaphore", argc, argv, 0);
+}
+
+static Scheme_Object *unsafe_socket_to_semaphore(int argc, Scheme_Object *argv[])
+{
+  return unsafe_handle_to_semaphore("unsafe-socket->semaphore", argc, argv, 1);
 }
 
 Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])

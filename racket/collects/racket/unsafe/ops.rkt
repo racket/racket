@@ -20,6 +20,12 @@
                      unsafe-poll-ctx-eventmask-wakeup
                      unsafe-poll-ctx-milliseconds-wakeup
                      unsafe-signal-received unsafe-set-sleep-in-thread!
+                     unsafe-file-descriptor->port
+                     unsafe-port->file-descriptor
+                     unsafe-file-descriptor->semaphore
+                     unsafe-socket->port
+                     unsafe-port->socket
+                     unsafe-socket->semaphore
                      unsafe-thread-at-root
                      unsafe-make-custodian-at-root
                      unsafe-custodian-register
