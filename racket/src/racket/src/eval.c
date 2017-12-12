@@ -1544,7 +1544,7 @@ static Scheme_Prompt *check_barrier(Scheme_Prompt *prompt,
                                     Scheme_Meta_Continuation *prompt_cont, MZ_MARK_POS_TYPE prompt_pos,
                                     Scheme_Cont *c)
 /* A continuation barrier is analogous to a dynamic-wind. A jump is
-   allowed if no dynamic-wind-like barriers would be executed for
+   allowed if no dynamic-wind-like pre-thunks would be executed for
    the jump. */
 {
   Scheme_Prompt *barrier_prompt, *b1, *b2;
@@ -1566,8 +1566,8 @@ static Scheme_Prompt *check_barrier(Scheme_Prompt *prompt,
     if (!b2->is_barrier)
       b2 = NULL;
   }
-  
-  if (b1 != b2) {
+
+  if (b2 && (b1 != b2)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
                      "continuation application: attempt to cross a continuation barrier");
   }
