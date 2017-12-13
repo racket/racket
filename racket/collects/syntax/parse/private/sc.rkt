@@ -6,10 +6,7 @@
 ;; keep and keep as abs. path -- lazy-loaded macros produce references to this
 ;; must be required via *absolute module path* from any disappearing module
 ;; (so for consistency etc, require absolutely from all modules)
-(require syntax/parse/private/residual
-         racket/syntax
-         racket/stxparam
-         syntax/stx)
+(require syntax/parse/private/residual)
 
 (begin-for-syntax
  (lazy-require
@@ -60,9 +57,7 @@
                   define-eh-alternative-set)
   (let ([tx (lambda (get-id)
               (lambda (stx)
-                (syntax-case stx ()
-                  [(_ . args)
-                   (datum->syntax stx (cons (get-id) #'args) stx)])))])
+                ((syntax-local-value (get-id)) stx)))])
     (values 
      (tx id:define-syntax-class)
      (tx id:define-splicing-syntax-class)

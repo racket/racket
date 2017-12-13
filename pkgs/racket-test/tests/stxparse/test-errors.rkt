@@ -1,5 +1,6 @@
 #lang scheme
 (require syntax/parse
+         (only-in syntax/parse [syntax-parse renamed-syntax-parse])
          syntax/parse/debug
          rackunit
          "setup.rkt")
@@ -205,4 +206,8 @@
        #rx"^define-syntax-class: "
        #rx"expected attribute name")
 ;; two more
+
+(tcerr "renamed syntax-parse bad syntax"
+       (renamed-syntax-parse)
+       #rx"^renamed-syntax-parse: ")
 
