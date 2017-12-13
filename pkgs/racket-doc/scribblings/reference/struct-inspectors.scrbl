@@ -129,11 +129,14 @@ Returns eight values that provide information about the structure type
 If the type for @racket[struct-type] is not controlled by the current inspector,
 the @exnraise[exn:fail:contract].}
 
-@defproc[(struct-type-make-constructor [struct-type struct-type?])
+@defproc[(struct-type-make-constructor [struct-type struct-type?]
+                                       [constructor-name (or/c symbol? #f) #f])
          struct-constructor-procedure?]{
 
 Returns a @tech{constructor} procedure to create instances of the type
-for @racket[struct-type].  If the type for @racket[struct-type] is not
+for @racket[struct-type].  If @racket[constructor-name] is not @racket[#f],
+it is used as the name of the generated @tech{constructor} procedure.
+If the type for @racket[struct-type] is not
 controlled by the current inspector, the
 @exnraise[exn:fail:contract].}
 
