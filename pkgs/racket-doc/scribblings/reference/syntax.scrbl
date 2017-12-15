@@ -3049,7 +3049,7 @@ If the enclosing relative phase level is not 0, then
 @racket[module-path] is also placed in a submodule (with a use of
 @racket[define-runtime-module-path-index] at phase level 0 within the
 submodule). Introduced submodules have the names
-@racket[lazy-require-]@racket[_n]@racketidfont{-}@racket[_m], where
+@racket[lazy-require-aux]@racket[_n]@racketidfont{-}@racket[_m], where
 @racket[_n] is a phase-level number and @racket[_m] is a number.
 
 When the use of a lazily-required function triggers module loading, it
@@ -3069,6 +3069,92 @@ process of compiling a module).
   ['hello ([hello greet])])
 (greet)
 ]
+}
+
+@defform[(lazy-require-syntax [module-path (macro-import ...)] ...)
+         #:grammar
+         ([macro-import macro-id
+                        (orig-macro-id macro-id)])]{
+
+Like @racket[lazy-require] but for macros. That is, it defines each
+@racket[macro-id] as a macro that, when used, dynamically loads the
+macro's implementation from the given @racket[module-path]. If
+@racket[orig-macro-id] is not given, it defaults to @racket[macro-id].
+
+Use @racket[lazy-require-syntax] in the @emph{implementation} of a library
+with large, complicated macros to avoid a dependence from clients of
+the library on the macro ``compilers.'' Note that only macros with
+exceptionally large compile-time components (such as Typed Racket,
+which includes a type checker and optimizer) benefit from
+@racket[lazy-require-syntax]; typical macros do not.
+
+@bold{Warning:} @racket[lazy-require-syntax] breaks the invariants
+that Racket's module loader and linker rely on; these invariants
+normally ensure that the references in code produced by a macro are
+loaded before the code runs. Safe use of @racket[lazy-require-syntax]
+requires a particular structure in the macro implementation. (In
+particular, @racket[lazy-require-syntax] cannot simply be introduced
+in the client code.) The macro implementation must follow these rules:
+@itemlist[#:style 'ordered
+@item{the interface module must @racket[require] the runtime-support module}
+@item{the compiler module must @racket[require] the runtime-support module via
+an @emph{absolute} module path rather than a @emph{relative} path}
+]
+
+To explain the concepts of ``interface, compiler, and runtime-support
+modules'', here is an example module that exports a macro:
+@racketblock[  ;; @examples[#:eval lazy-require-eval #:label #f
+(module original racket/base
+  (define (ntimes-proc n thunk)
+    (for ([i (in-range n)]) (thunk)))
+  (define-syntax-rule (ntimes n expr)
+    (ntimes-proc n (lambda () expr)))
+  (provide ntimes))
+]
+Suppose we want to use @racket[lazy-require-syntax] to lazily load the
+implementation of the @racket[ntimes] macro transformer. The original
+module must be split into three parts:
+@racketblock[  ;; @examples[#:eval lazy-require-eval #:label #f
+(module runtime-support racket/base
+  (define (ntimes-proc n thunk)
+    (for ([i (in-range n)]) (thunk)))
+  (provide ntimes-proc))
+(module compiler racket/base
+  (require 'runtime-support)
+  (define-syntax-rule (ntimes n expr)
+    (ntimes-proc n (lambda () expr)))
+  (provide ntimes))
+(module interface racket/base
+  (require racket/lazy-require)
+  (require 'runtime-support)
+  (lazy-require-syntax ['compiler (ntimes)])
+  (provide ntimes))
+]
+The runtime support module contains the function and value definitions
+that the macro refers to. The compiler module contains the macro
+definition(s) themselves---the part of the code that ``disappears''
+after compile time. The interface module lazily loads the macro
+transformer, but it makes sure the runtime support module is defined at
+run time by requiring it normally. In a larger example, of course, the
+runtime support and compiler may both consist of multiple modules.
+
+Here what happens when we don't separate the runtime support into a
+separate module:
+@examples[#:eval lazy-require-eval #:label #f
+(module bad-no-runtime racket/base
+  (define (ntimes-proc n thunk)
+    (for ([i (in-range n)]) (thunk)))
+  (define-syntax-rule (ntimes n expr)
+    (ntimes-proc n (lambda () expr)))
+  (provide ntimes))
+(module bad-client racket/base
+  (require racket/lazy-require)
+  (lazy-require-syntax ['bad-no-runtime (ntimes)])
+  (ntimes 3 (printf "hello?\n")))
+(eval:error (require 'bad-client))
+]
+A similar error occurs when the interface module doesn't introduce a
+dependency on the runtime support module.
 }
 
 @(close-eval lazy-require-eval)
