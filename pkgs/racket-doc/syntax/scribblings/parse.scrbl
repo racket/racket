@@ -23,6 +23,7 @@ messages embedded in the macro's syntax patterns.
 @include-section["parse/define.scrbl"]
 @include-section["parse/litconv.scrbl"]
 @include-section["parse/lib.scrbl"]
+@include-section["parse/state.scrbl"]
 
 @;{Description of how error reporting works}
 @;{and designing for good errors}

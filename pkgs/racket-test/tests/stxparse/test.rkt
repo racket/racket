@@ -535,6 +535,31 @@
       (check-equal? (reverse (lits)) '(a c))))
   )
 
+;; state unwinding
+
+(let ()
+  (define total
+    (case-lambda [() (syntax-parse-state-ref 'total 0)]
+                 [(n) (syntax-parse-state-set! 'total n)]))
+  (define-syntax-class nat/add
+    (pattern n:nat #:do [(total (+ (total) (syntax-e #'n)))]))
+  (test-case "state 1"
+    (syntax-parse #'(1 2 3)
+      [(n:nat/add ...) (check-equal? (total) (+ 1 2 3))]))
+  (test-case "state 2"
+    (syntax-parse #'(1 2 3 reset 5 6)
+      [((~or (~seq) (~seq _ ... (~not _:nat))) n:nat/add ...)
+       (check-equal? (total) (+ 5 6))])))
+
+(test-case "state and literals"
+  (check-equal?
+   (map syntax-e
+        (syntax-parse #'(define lambda)
+          #:literals (define lambda)
+          [(define define) (syntax-parse-state-ref 'literals null)]
+          [(_      lambda) (syntax-parse-state-ref 'literals null)]))
+   '(lambda)))
+
 ;; == Lib tests
 
 ;; test string, bytes act as stxclasses

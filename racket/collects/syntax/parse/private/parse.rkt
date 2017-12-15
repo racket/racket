@@ -443,7 +443,9 @@ Conventions:
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
               def ...
-              (parameterize ((current-syntax-context (cadr ctx0)))
+              (parameterize ((current-syntax-context (cadr ctx0))
+                             (current-state '#hasheq())
+                             (current-state-writable? #f))
                 (with ([fail-handler fh0]
                        [cut-prompt fh0]
                        [undo-stack null])
@@ -591,7 +593,9 @@ Conventions:
        [#s(pat:literal literal input-phase lit-phase)
         #`(if (and (identifier? x)
                    (free-identifier=? x (quote-syntax literal) input-phase lit-phase))
-              k
+              (with ([undo-stack (cons (current-state) undo-stack)])
+                (state-cons! 'literals x)
+                k)
               (fail (failure* pr (es-add-literal (quote-syntax literal) es))))]
        [#s(pat:action action subpattern)
         #'(parse:A x cx action pr es (parse:S x cx subpattern pr es k))]
@@ -784,7 +788,12 @@ Conventions:
                  [pr* (ps-add-stx pr y)])
             (parse:S y cy pattern pr* es k))]
        [#s(action:do (stmt ...))
-        #'(let () (no-shadow stmt) ... (#%expression k))]
+        #'(parameterize ((current-state-writable? #t))
+            (let ([init-state (current-state)])
+              (no-shadow stmt) ...
+              (parameterize ((current-state-writable? #f))
+                (with ([undo-stack (maybe-add-state-undo init-state (current-state) undo-stack)])
+                  (#%expression k)))))]
        [#s(action:undo (stmt ...))
         #'(with ([undo-stack (cons (lambda () stmt ... (void)) undo-stack)]
                  [cut-prompt illegal-cut-error])

@@ -306,10 +306,35 @@
 (define (illegal-cut-error . _)
   (error 'syntax-parse "illegal use of cut"))
 
-(provide unwind-to)
+;; ----
+
+(provide unwind-to
+         maybe-add-state-undo
+         current-state
+         current-state-writable?
+         state-cons!)
 
 (define (unwind-to undos base)
-  ;; PRE: undos = (list* proc ... base)
+  ;; PRE: undos = (list* proc/hash ... base)
   (unless (eq? undos base)
-    ((car undos))
+    (let ([top-undo (car undos)])
+      (cond [(procedure? top-undo) (top-undo)]
+            [(hash? top-undo) (current-state top-undo)]))
     (unwind-to (cdr undos) base)))
+
+(define (maybe-add-state-undo init-state new-state undos)
+  (if (eq? init-state new-state)
+      undos
+      (cons init-state undos)))
+
+;; To make adding undos to rewind current-state simpler, only allow updates
+;; in a few contexts:
+;; - literals (handled automatically)
+;; - in ~do/#:do blocks (sets current-state-writable? = #t)
+
+(define current-state (make-parameter (hasheq)))
+(define current-state-writable? (make-parameter #f))
+
+(define (state-cons! key value)
+  (define state (current-state))
+  (current-state (hash-set state key (cons value (hash-ref state key null)))))
