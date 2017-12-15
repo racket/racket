@@ -1,7 +1,6 @@
 #lang racket/base
-(require syntax/parse/private/residual ;; keep abs. path
-         (only-in syntax/parse/private/residual-ct ;; keep abs. path
-                  attr-name attr-depth)
+(require "residual.rkt"
+         (only-in "residual-ct.rkt" attr-name attr-depth)
          "kws.rkt")
 (provide reflect-parser
          (struct-out reified)

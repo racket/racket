@@ -7,9 +7,8 @@
 ;; ============================================================
 ;; Compile-time
 
-(require (for-syntax racket/private/sc
-                     syntax/parse/private/residual-ct))
-(provide (for-syntax (all-from-out syntax/parse/private/residual-ct)))
+(require (for-syntax racket/private/sc "residual-ct.rkt"))
+(provide (for-syntax (all-from-out "residual-ct.rkt")))
 
 (begin-for-syntax
   ;; == from runtime.rkt
