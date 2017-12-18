@@ -430,7 +430,7 @@ each element in the sequence.
 )]{
    Sequence constructors for specific kinds of hash tables.
    
-   These may be more performant than the analogous @racket[in-hash] 
+   These may perform better than the analogous @racket[in-hash] 
    forms. However, they may consume more space to help with iteration.
    
    @history[#:added "6.4.0.6"]
