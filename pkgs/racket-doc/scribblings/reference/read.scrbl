@@ -154,7 +154,7 @@ The function produced by @racketidfont{get-info} reflects information
 about the expected syntax of the input stream. The first argument to the
 function serves as a key on such information; acceptable keys and the
 interpretation of results is up to external tools, such as DrRacket (see
-@seclink["_lang-based_Languages_in_DrRacket"
+@seclink["lang-languages-customization"
          #:doc '(lib "scribblings/tools/tools.scrbl")
          #:indirect? #t]{the DrRacket documentation}).
 If no information is available for a given key, the result should be
