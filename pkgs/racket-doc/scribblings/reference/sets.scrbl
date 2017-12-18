@@ -163,7 +163,7 @@ Explicitly converts a specific kind of @tech{hash set} to a sequence for
 use with @racket[for] forms.
 
 As with @racket[in-list] and some other sequence constructors,
-@racket[in-immutable-set] is more performant when it appears directly in a
+@racket[in-immutable-set] performs better when it appears directly in a
 @racket[for] clause.
 
 These sequence constructors are compatible with
