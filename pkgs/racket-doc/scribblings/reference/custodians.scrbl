@@ -14,7 +14,9 @@ Returns @racket[#t] if @racket[v] is a @tech{custodian} value,
 @racket[#f] otherwise.}
 
 
-@defproc[(make-custodian [cust custodian? (current-custodian)]) custodian?]{
+@defproc[(make-custodian [cust (and/c custodian? (not/c custodian-shut-down?))
+                               (current-custodian)])
+         custodian?]{
 
 Creates a new custodian that is subordinate to @racket[cust]. When
 @racket[cust] is directed (via @racket[custodian-shutdown-all]) to
@@ -36,7 +38,21 @@ associated with @racket[cust] (and its subordinates). It also removes
 a thread has no managers, it is killed (or suspended; see
 @racket[thread/suspend-to-kill]) If the current thread is to be
 killed, all other shut-down actions take place before killing the
-thread.}
+thread.
+
+If @racket[cust] is already shut down, then
+@racket[custodian-shutdown-all] has no effect. When a custodian is
+shut down and it has subordinate custodians, the subordinates are not
+only shut down, they no longer count as subordinates.}
+
+
+@defproc[(custodian-shut-down? [cust custodian?]) boolean?]{
+
+Returns @racket[#t] if @racket[cust] has been shut down with
+@racket[custodian-shutdown-all] or if it was a subordinate of a
+custodian that is shut down, @racket[#f] otherwise.
+
+@history[#:added "6.11.0.5"]}
 
 
 @defparam[current-custodian cust custodian?]{
@@ -55,7 +71,12 @@ Returns a list of immediately managed objects (not including
 @tech{custodian box}es) and subordinate custodians for @racket[cust],
 where @racket[cust] is itself subordinate to @racket[super] (directly
 or indirectly). If @racket[cust] is not strictly subordinate to
-@racket[super], the @exnraise[exn:fail:contract].}
+@racket[super], the @exnraise[exn:fail:contract].
+
+If @racket[cust] has been shut down, the result is @racket['()]. If
+@racket[cust] was a subordinate of a custodian that was shut
+down, then it cannot be a subordinate of @racket[super].}
+
 
 @defproc[(custodian-memory-accounting-available?) boolean?]{
 
@@ -65,6 +86,7 @@ Racket CGC.}
 
 Returns @racket[#t] if Racket is compiled with support for
 per-custodian memory accounting, @racket[#f] otherwise.}
+
 
 @defproc[(custodian-require-memory [limit-cust custodian?]
                                    [need-amt exact-nonnegative-integer?]
@@ -77,7 +99,11 @@ support for per-custodian memory accounting, otherwise the
 If a check is registered, and if Racket later reaches a state after
 garbage collection (see @secref["gc-model"]) where allocating
 @racket[need-amt] bytes charged to @racket[limit-cust] would fail or
-trigger some shutdown, then @racket[stop-cust] is shut down.}
+trigger some shutdown, then @racket[stop-cust] is shut down.
+
+The @racket[stop-cust] must be a subordinate custodian of
+@racket[limit-cust].}
+
 
 @defproc[(custodian-limit-memory [limit-cust custodian?]
                                  [limit-amt exact-nonnegative-integer?]
@@ -114,17 +140,21 @@ immediate allocations can be rejected with an
 @defproc[(make-custodian-box [cust custodian?] [v any/c]) custodian-box?]{
 
 Returns a @tech{custodian box} that contains @racket[v] as long as
-@racket[cust] has not been shut down.
+@racket[cust] has not been shut down. If @racket[cust] is already
+shut down, the custodian box's value is immediately removed.
 
 A @tech{custodian box} is a @tech{synchronizable event} (see @secref["sync"]).
 The @tech{custodian box} becomes ready when its custodian is shut down;
 @resultItself{@tech{custodian box}}.}
 
 
-@defproc[(custodian-box? [v any/c]) boolean?]{Returns @racket[#t] if
- @racket[v] is a @tech{custodian box} produced by
- @racket[make-custodian-box], @racket[#f] otherwise.}
+@defproc[(custodian-box? [v any/c]) boolean?]{
 
-@defproc[(custodian-box-value [cb custodian-box?]) any]{Returns the
- value in the given @tech{custodian box}, or @racket[#f] if the value
- has been removed.}
+Returns @racket[#t] if @racket[v] is a @tech{custodian box} produced
+by @racket[make-custodian-box], @racket[#f] otherwise.}
+
+
+@defproc[(custodian-box-value [cb custodian-box?]) any]{
+
+Returns the value in the given @tech{custodian box}, or @racket[#f] if
+the value has been removed.}

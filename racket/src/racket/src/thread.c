@@ -324,6 +324,7 @@ static Scheme_Object *evts_to_evt(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
+static Scheme_Object *custodian_shut_down_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_custodian(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
@@ -544,6 +545,7 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("make-custodian"        , make_custodian       , 0, 1, env);
   GLOBAL_FOLDING_PRIM("custodian?"            , custodian_p          , 1, 1, 1  , env);
   GLOBAL_PRIM_W_ARITY("custodian-shutdown-all", custodian_close_all  , 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("custodian-shut-down?"  , custodian_shut_down_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("custodian-managed-list", custodian_to_list    , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("make-custodian-box"    , make_custodian_box   , 2, 2, env);
   GLOBAL_PRIM_W_ARITY("custodian-box-value"   , custodian_box_value  , 1, 1, env);
@@ -927,7 +929,7 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
 
   if (argc > 2) {
     if (NOT_SAME_TYPE(SCHEME_TYPE(args[2]), scheme_custodian_type)) {
-      scheme_wrong_contract("custodian-require-memory", "custodian?", 2, argc, args);
+      scheme_wrong_contract("custodian-limit-memory", "custodian?", 2, argc, args);
       return NULL;
     }
   }
@@ -1625,6 +1627,16 @@ static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[])
   scheme_close_managed((Scheme_Custodian *)argv[0]);
 
   return scheme_void;
+}
+
+static Scheme_Object *custodian_shut_down_p(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_CUSTODIANP(argv[0]))
+    scheme_wrong_contract("custodian-shut-down?", "custodian?", 0, argc, argv);
+
+  return (((Scheme_Custodian *)argv[0])->shut_down
+          ? scheme_true
+          : scheme_false);
 }
 
 Scheme_Custodian* scheme_custodian_extract_reference(Scheme_Custodian_Reference *mr)
