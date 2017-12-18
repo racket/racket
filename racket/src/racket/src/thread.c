@@ -3731,7 +3731,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
       v = NULL;
     failure = 1;
   } else {
-    v = scheme_apply(argv[0], 0, NULL);
+    v = scheme_apply_with_prompt(argv[0], 0, NULL);
     failure = 0;
   }
 
