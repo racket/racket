@@ -1222,18 +1222,36 @@
 
 (let ()
   (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+  (define (mk-prop)
+    (define-values (prop:b b? b-ref) (make-struct-type-property 'b))
+    prop:b)
 
   (struct posn (x y)
     #:property prop:a 'yes)
+  (struct posn2 posn ()
+    #:property (mk-prop) 0
+    #:property (mk-prop) 1
+    #:property (mk-prop) 2
+    #:property (mk-prop) 3
+    #:property (mk-prop) 4
+    #:property (mk-prop) 5)
 
   (define (f p)
     (and (a? p)
          (a-ref p 'no)))
+  (define (g p get-no)
+    (a-ref p get-no))
   (set! f f)
+  (set! g g)
   
   (test 'yes f (posn 1 2))
+  (test 'yes f (posn2 1 2))
+  (test 'yes f (chaperone-struct (posn 1 2) posn-x (lambda (p x) x)))
   (test 'yes f struct:posn)
-  (test #f f 5))
+  (test #f f struct:arity-at-least)
+  (test #f f 5)
+  (test 'nope g 5 (lambda () 'nope))
+  (test 'nope g struct:arity-at-least (lambda () 'nope)))
 
 ;; ----------------------------------------
 

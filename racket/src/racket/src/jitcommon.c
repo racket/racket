@@ -2072,7 +2072,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
   for (i = 0; i < 3; i++) {
     for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
       void *code;
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refno, *refslow, *refloop;
       int prim_other_type;
 
       code = jit_get_ip();
@@ -2153,6 +2153,23 @@ static int common4b(mz_jit_state *jitter, void *_data)
         (void)jit_movi_p(JIT_R0, scheme_false);
         mz_epilog(JIT_V1);
         CHECK_LIMIT();
+      } else if (i == 1) {
+        refno = jit_get_ip();
+        jit_ldr_p(JIT_V1, JIT_RUNSTACK);
+        /* If the failure argument is not a procedure, we can
+           return it directly, otherwise take slow path. */
+        jit_ldxi_s(JIT_R2, JIT_V1, &((Scheme_Object *)0x0)->type);
+        __START_INNER_TINY__(1);
+        ref4 = jit_blti_i(jit_forward(), JIT_R2, scheme_prim_type);
+        __END_INNER_TINY__(1);
+        (void)jit_blei_i(refslow, JIT_R2, scheme_proc_chaperone_type);
+        __START_INNER_TINY__(1);
+        mz_patch_branch(ref4);
+        __END_INNER_TINY__(1);
+        jit_movr_p(JIT_R0, JIT_V1);
+        jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+        mz_epilog(JIT_V1);
+        CHECK_LIMIT();
       } else
         refno = refslow;
 
@@ -2170,7 +2187,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
       __START_INNER_TINY__(1);
       ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
       __END_INNER_TINY__(1);
-      if (i == 2) {
+      if (i != 0) { /* for i == 0 mode, `refno` is already `refslow` */
         (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
         (void)jit_beqi_i(refslow, JIT_R2, scheme_chaperone_type);
         (void)jit_beqi_i(refslow, JIT_R2, scheme_struct_type_type);
@@ -2188,7 +2205,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
 
       /* negative count means use the hash table (in the slow path);
          zero count means we've run out */
-      if (i == 2) {
+      if (i != 0) {
         (void)jit_blei_i(refslow, JIT_V1, 0);
       }
       refloop = jit_get_ip();
