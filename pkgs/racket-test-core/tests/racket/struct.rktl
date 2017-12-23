@@ -1217,5 +1217,24 @@
   (test 'ok -ref v 3))
 
 ;; ----------------------------------------
+;; Make sure that a JIT-inlined predicate doesn't
+;; fail improperly on chaperones and struct types
+
+(let ()
+  (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+
+  (struct posn (x y)
+    #:property prop:a 'yes)
+
+  (define (f p)
+    (and (a? p)
+         (a-ref p 'no)))
+  (set! f f)
+  
+  (test 'yes f (posn 1 2))
+  (test 'yes f struct:posn)
+  (test #f f 5))
+
+;; ----------------------------------------
 
 (report-errs)

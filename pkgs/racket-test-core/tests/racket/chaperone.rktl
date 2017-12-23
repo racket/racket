@@ -3310,6 +3310,29 @@
                             s-y (lambda (s v) (collect-garbage 'minor) v)
                             s-z (lambda (s v) (collect-garbage 'minor) v))))
 
+
+;; ----------------------------------------
+;; Make sure that a JIT-inlined predicate is sensitive to `prop:impersonator-of`
+
+(let ()
+  (define-values (p:a a? a-ref) (make-impersonator-property 'a))
+
+  (struct posn (x y)
+    #:property prop:impersonator-of
+    (lambda (p) (posn-y p)))
+
+  (define p
+    (impersonate-struct (posn 1 #f) struct:posn
+                        p:a 17))
+
+  (define (f p)
+    (a? p))
+  (set! f f)
+
+  (test #t f p)
+  (test #t f (posn 0 p))
+  (test #f f (posn 0 #f)))
+
 ;; ----------------------------------------
 
 (report-errs)

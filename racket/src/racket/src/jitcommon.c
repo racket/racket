@@ -2164,8 +2164,6 @@ static int common4b(mz_jit_state *jitter, void *_data)
       (void)jit_bnei_i(refslow, JIT_R2, prim_other_type);
       CHECK_LIMIT();
 
-      (void)jit_jmpi(refslow);
-
       /* Check argument: */
       (void)jit_bmsi_ul(refno, JIT_R1, 0x1);
       jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
@@ -2208,9 +2206,16 @@ static int common4b(mz_jit_state *jitter, void *_data)
 
       /* target struct-type property in V1 */
       jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
-    
+
       ref3 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
-    
+
+      /* If we're looking for an impersonator property, then we're
+         looking in the wrong place. But it's not ok to fail, because
+         we may need to go through a `prop:impersonator-of` mapping to
+         succeed. So, bail out for an impersonator-property operation,
+         since there was at least one property here. */
+      (void)mz_beqi_t(refslow, JIT_V1, scheme_chaperone_property_type, JIT_R2);
+
       mz_get_local_p(JIT_V1, JIT_LOCAL3);
       (void)jit_jmpi(refloop);
 
