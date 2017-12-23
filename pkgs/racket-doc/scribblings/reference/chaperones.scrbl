@@ -1076,7 +1076,7 @@ given.
 @defproc[(make-impersonator-property [name symbol?])
          (values impersonator-property?
                  (-> any/c boolean?)
-                 (-> impersonator? any))]{
+                 (->* (impersonator?) (any/c) any))]{
 
 Creates a new @tech{impersonator property} and returns three values:
 
@@ -1095,7 +1095,11 @@ Creates a new @tech{impersonator property} and returns three values:
        returns the value associated with an impersonator for the property;
        if a value given to the accessor is not an impersonator or does not
        have a value for the property (i.e. if the corresponding impersonator
-       property predicate returns @racket[#f]), the @exnraise[exn:fail:contract].}
+       property predicate returns @racket[#f]), then a second optional argument
+       to the selector determines its response: the @exnraise[exn:fail:contract]
+       is if a second argument is not provided, the second argument is tail-called
+       with zero arguments if it is a procedure, and the second argument is returned
+       otherwise.}
 
 ]}
 

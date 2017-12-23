@@ -271,6 +271,8 @@
              (exn-message exn))))
 
    (err/rt-test (get1 v1) handler)
+   (test 'no get1 v1 'no)
+   (test 'no get1 v1 (lambda () 'no))
    (err/rt-test (get1 v2) handler)
    (err/rt-test (get1 v3) handler)
    (err/rt-test (get1 v4) handler)
