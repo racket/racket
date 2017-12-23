@@ -2072,7 +2072,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
   for (i = 0; i < 3; i++) {
     for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
       void *code;
-      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refno, *refslow, *refloop;
+      GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *ref5, *refno, *refslow, *refloop, *refchap;
       int prim_other_type;
 
       code = jit_get_ip();
@@ -2158,13 +2158,15 @@ static int common4b(mz_jit_state *jitter, void *_data)
         jit_ldr_p(JIT_V1, JIT_RUNSTACK);
         /* If the failure argument is not a procedure, we can
            return it directly, otherwise take slow path. */
-        jit_ldxi_s(JIT_R2, JIT_V1, &((Scheme_Object *)0x0)->type);
         __START_INNER_TINY__(1);
+        ref5 = jit_bmsi_ul(jit_forward(), JIT_V1, 0x1);
+        jit_ldxi_s(JIT_R2, JIT_V1, &((Scheme_Object *)0x0)->type);
         ref4 = jit_blti_i(jit_forward(), JIT_R2, scheme_prim_type);
         __END_INNER_TINY__(1);
         (void)jit_blei_i(refslow, JIT_R2, scheme_proc_chaperone_type);
         __START_INNER_TINY__(1);
         mz_patch_branch(ref4);
+        mz_patch_branch(ref5);
         __END_INNER_TINY__(1);
         jit_movr_p(JIT_R0, JIT_V1);
         jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
@@ -2172,6 +2174,58 @@ static int common4b(mz_jit_state *jitter, void *_data)
         CHECK_LIMIT();
       } else
         refno = refslow;
+
+      {
+        /* Chaperone case: if we're looking for an impersonator property,
+           maybe we can find it here; otherwise, take the slow path. */
+        refchap = jit_get_ip();
+
+        jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+        (void)mz_bnei_t(refslow, JIT_V1, scheme_chaperone_property_type, JIT_R2); /* slow path if not impersonator property */
+        jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Chaperone *)0x0)->props); /* check chaperone's props */
+        (void)jit_beqi_p(refslow, JIT_R2, NULL);
+        (void)mz_bnei_t(refslow, JIT_R2, scheme_vector_type, JIT_V1); /* slow path if not represented a vector */
+        CHECK_LIMIT();
+
+        /* Search a vector for the property: */
+        (void)jit_ldxi_l(JIT_V1, JIT_R2, &SCHEME_VEC_SIZE(0x0)); /* get vector size */
+        jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE); /* convert to bytes */
+        jit_addi_l(JIT_V1, JIT_V1, (int)&SCHEME_VEC_ELS(0x0)); /* bytes at offset */
+
+        refloop = jit_get_ip();
+        (void)jit_beqi_l(refslow, JIT_V1, (int)&SCHEME_VEC_ELS(0x0)); /* index at 0 => not found, so slow path */
+
+        jit_subi_l(JIT_V1, JIT_V1, (2 * JIT_WORD_SIZE)); /* step back by two words for key & value */
+        mz_set_local_p(JIT_V1, JIT_LOCAL3); /* save current index, because we need the register */
+        jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Chaperone *)0x0)->props); /* get vector again */
+        jit_ldxr_p(JIT_R2, JIT_R2, JIT_V1); /* load a key from the vector */
+        jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val); /* get the property again */
+        CHECK_LIMIT();
+        __START_INNER_TINY__(1);
+        ref5 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1); /* key matches property? */
+        __END_INNER_TINY__(1);
+        CHECK_LIMIT();
+
+        mz_get_local_p(JIT_V1, JIT_LOCAL3); /* no match, so reload index and recur */
+        (void)jit_jmpi(refloop);
+
+        __START_INNER_TINY__(1);
+        mz_patch_branch(ref5);
+        __END_INNER_TINY__(1);
+        /* found match, so return #t or extract and return the value */
+        if (i == 2) {
+          (void)jit_movi_p(JIT_R0, scheme_true);
+        } else {
+          mz_get_local_p(JIT_V1, JIT_LOCAL3); /* reload matching index */
+          jit_addi_l(JIT_V1, JIT_V1, JIT_WORD_SIZE); /* up by one word, to get value insteda of key */
+          jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Chaperone *)0x0)->props); /* get vector again */
+          jit_ldxr_p(JIT_R0, JIT_R2, JIT_V1); /* extract value */
+        }
+        if (i == 1)
+          jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+        mz_epilog(JIT_V1); /* return */
+        CHECK_LIMIT();
+      }
 
       /* Continue trying fast path: check proc */
       mz_patch_branch(ref);
@@ -2187,9 +2241,9 @@ static int common4b(mz_jit_state *jitter, void *_data)
       __START_INNER_TINY__(1);
       ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
       __END_INNER_TINY__(1);
+      (void)jit_beqi_i(refchap, JIT_R2, scheme_proc_chaperone_type);
+      (void)jit_beqi_i(refchap, JIT_R2, scheme_chaperone_type);
       if (i != 0) { /* for i == 0 mode, `refno` is already `refslow` */
-        (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
-        (void)jit_beqi_i(refslow, JIT_R2, scheme_chaperone_type);
         (void)jit_beqi_i(refslow, JIT_R2, scheme_struct_type_type);
       }
       (void)jit_bnei_i(refno, JIT_R2, scheme_proc_struct_type);

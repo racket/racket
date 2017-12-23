@@ -3535,7 +3535,7 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 {
   Scheme_Chaperone *px, *px2;
   Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
 
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
@@ -3569,13 +3569,10 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   props = scheme_parse_chaperone_props(name, 2, argc, argv);
   if (props) {
-    app_mark = scheme_hash_tree_get(props, scheme_app_mark_impersonator_property);
+    app_mark = scheme_chaperone_props_get(props, scheme_app_mark_impersonator_property);
     if (app_mark) {
       /* don't need to keep the property */
-      if (props->count == 1)
-        props = NULL; 
-      else
-        props = scheme_hash_tree_set(props, scheme_app_mark_impersonator_property, NULL);
+      props = scheme_chaperone_props_remove(props, scheme_app_mark_impersonator_property);
     } else
       app_mark = scheme_false;
   } else
@@ -4555,7 +4552,7 @@ Scheme_Object *do_chaperone_continuation_mark_key (const char *name, int is_impe
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
 
   if (SCHEME_CHAPERONEP(val))
     val = SCHEME_CHAPERONE_VAL(val);
@@ -6495,7 +6492,7 @@ Scheme_Object *do_chaperone_prompt_tag (const char *name, int is_impersonator, i
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
   int ppos;
 
   if (SCHEME_CHAPERONEP(val))

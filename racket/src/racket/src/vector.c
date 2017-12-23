@@ -964,7 +964,7 @@ static Scheme_Object *do_chaperone_vector(const char *name, int is_impersonator,
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
 
   if (SCHEME_CHAPERONEP(val)) {
     val = SCHEME_CHAPERONE_VAL(val);

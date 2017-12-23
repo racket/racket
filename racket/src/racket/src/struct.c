@@ -1059,6 +1059,43 @@ static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[])
 /*                             properties                                 */
 /*========================================================================*/
 
+Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *prop)
+{
+  if (!props)
+    return NULL;
+  else if (SCHEME_VECTORP(props)) {
+    int i;
+    for (i = SCHEME_VEC_SIZE(props); i > 0; ) {
+      i -= 2;
+      if (SAME_OBJ(SCHEME_VEC_ELS(props)[i], prop))
+        return SCHEME_VEC_ELS(props)[i+1];
+    }
+    return NULL;
+  } else
+    return (Scheme_Object *)scheme_hash_tree_get((Scheme_Hash_Tree *)props, prop);
+}
+
+Scheme_Object *scheme_chaperone_props_remove(Scheme_Object *props, Scheme_Object *prop)
+/* assumes that `prop` is currently set in `props` */
+{
+  if (SCHEME_VECTORP(props)) {
+    Scheme_Object *vec;
+    int i, j;
+    j = SCHEME_VEC_SIZE(props);
+    if (j == 2) return NULL;
+    vec = scheme_make_vector(j - 2, NULL);
+    for (i = SCHEME_VEC_SIZE(props), j = 0; i > 0; ) {
+      i -= 2;
+      if (!SAME_OBJ(SCHEME_VEC_ELS(props)[i], prop)) {
+        SCHEME_VEC_ELS(vec)[j++] = SCHEME_VEC_ELS(props)[i];
+        SCHEME_VEC_ELS(vec)[j++] = SCHEME_VEC_ELS(props)[i+1];
+      }
+    }
+    return vec;
+  } else
+    return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)props, prop, NULL);
+}
+
 static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *prim)
 {
   Scheme_Struct_Type *stype;
@@ -1071,10 +1108,7 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
     if (SCHEME_CHAPERONEP(v)) {
       /* Check for property at chaperone level: */
       px = (Scheme_Chaperone *)v;
-      if (px->props)
-        v = scheme_hash_tree_get(px->props, prop);
-      else
-        v = NULL;
+      v = scheme_chaperone_props_get(px->props, prop);
       if (v)
         return scheme_true;
       v = px->val;
@@ -1187,11 +1221,9 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
       Scheme_Object *v;
       Scheme_Hash_Tree *ht;
 
-      if (px->props) {
-        v = scheme_hash_tree_get(px->props, prop);
-        if (v)
-          return v;
-      }
+      v = scheme_chaperone_props_get(px->props, prop);
+      if (v)
+        return v;
 
       if (!SCHEME_REDIRECTS_STRUCTP(px->redirects)
 	  || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
@@ -4056,7 +4088,7 @@ Scheme_Object *scheme_do_chaperone_evt(const char *name, int is_impersonator, in
 {
   Scheme_Chaperone *px;
   Scheme_Object *o, *val, *a[1];
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
 
   val = argv[0];
   if (SCHEME_CHAPERONEP(val))
@@ -6212,12 +6244,12 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
 {
   Scheme_Chaperone *px;
   Scheme_Struct_Type *stype, *st;
-  Scheme_Object *val = argv[0], *proc;
+  Scheme_Object *val = argv[0], *proc, *props = NULL;
   Scheme_Object *redirects, *prop, *si_chaperone = scheme_false;
   Scheme_Object *a[1], *inspector, *getter_positions = scheme_null;
   int i, offset, arity, non_applicable_op, repeat_op;
   const char *kind;
-  Scheme_Hash_Tree *props = NULL, *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
+  Scheme_Hash_Tree *red_props = NULL, *empty_red_props = NULL, *setter_positions = NULL;
   intptr_t field_pos;
   int empty_si_chaperone = 0, *empty_redirects = NULL, has_redirect = 0, witnessed = 0;
 
@@ -6555,7 +6587,7 @@ Scheme_Object *scheme_chaperone_not_undefined (Scheme_Object *orig_val)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val, *redirects;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
 
   val = orig_val;
 
@@ -6589,7 +6621,7 @@ static Scheme_Object *do_chaperone_struct_type(const char *name, int is_imperson
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props;
   int arity;
 
   if (SCHEME_CHAPERONEP(val))
@@ -6635,35 +6667,99 @@ static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv)
   return do_chaperone_struct_type("chaperone-struct-type", 0, argc, argv);
 }
 
-Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv)
+#define PROPS_MAX_VECTOR_SIZE 5
+
+Scheme_Object *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv)
 {
-  Scheme_Hash_Tree *ht;
-  Scheme_Object *v;
+  Scheme_Object *v, *props;
+  int pos;
 
   if (SCHEME_CHAPERONEP(argv[0]))
-    ht = ((Scheme_Chaperone *)argv[0])->props;
+    props = ((Scheme_Chaperone *)argv[0])->props;
   else
-    ht = NULL;
+    props = NULL;
 
-  while (start_at < argc) {
-    v = argv[start_at];
-    if (!SAME_TYPE(SCHEME_TYPE(v), scheme_chaperone_property_type))
-      scheme_wrong_contract(who, "impersonator-property?", start_at, argc, argv);
+  if (start_at < argc) {
+    /* Check */
+    for (pos = start_at; pos < argc; pos += 2) {
+      v = argv[pos];
+      if (!SAME_TYPE(SCHEME_TYPE(v), scheme_chaperone_property_type))
+        scheme_wrong_contract(who, "impersonator-property?", pos, argc, argv);
 
-    if (start_at + 1 >= argc)
-      scheme_contract_error(who,
-                            "missing value after chaperone property",
-                            "chaperone property", 1, v,
-                            NULL);
+      if (pos + 1 >= argc)
+        scheme_contract_error(who,
+                              "missing value after chaperone property",
+                              "chaperone property", 1, v,
+                              NULL);
+    }
 
-    if (!ht)
+    /* Prepare to add */
+    if (props && SCHEME_VECTORP(props)
+        && (((argc - start_at) + SCHEME_VEC_SIZE(props)) > (2 * PROPS_MAX_VECTOR_SIZE))) {
+      /* Convert vector to a hash tree */
+      Scheme_Hash_Tree *ht;
+      int i;
       ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
-    ht = scheme_hash_tree_set(ht, v, argv[start_at + 1]);
+      for (i = SCHEME_VEC_SIZE(props); i > 0; ) {
+        i -= 2;
+        ht = scheme_hash_tree_set(ht, SCHEME_VEC_ELS(props)[i], SCHEME_VEC_ELS(props)[i+1]);
+      }
+      props = (Scheme_Object *)ht;
+    }
 
-    start_at += 2;
+    if (!props || SCHEME_VECTORP(props)) {
+      /* Keep as vector, and start by counting new distinct entries */
+      int count = 0, i, len = (props ? SCHEME_VEC_SIZE(props) : 0);
+      
+      for (pos = start_at; pos < argc; pos += 2) {
+        v = argv[pos];
+        if (props) {
+          for (i = 0; i < len; i += 2) {
+            if (SAME_OBJ(v, SCHEME_VEC_ELS(props)[i]))
+              break;
+          }
+        } else
+          i = 0;
+        if (i >= len) {
+          for (i = start_at; i < pos; i += 2) {
+            if (SAME_OBJ(v, argv[i]))
+              break;
+          }
+          if (i >= pos)
+            count++;
+        }
+      }
+
+      if (props) {
+        /* Copy vector, possibly making it larger */
+        Scheme_Object *old_props = props;
+        props = scheme_make_vector(SCHEME_VEC_SIZE(old_props) + 2 * count, NULL);
+        memcpy(SCHEME_VEC_ELS(props), SCHEME_VEC_ELS(old_props), sizeof(Scheme_Object *)*SCHEME_VEC_SIZE(old_props));
+      } else {
+        props = scheme_make_vector(2 * count, NULL);
+      }
+      len = SCHEME_VEC_SIZE(props);
+
+      /* Fill in vector */
+      for (pos = start_at; pos < argc; pos += 2) {
+        v = argv[pos];
+        for (i = 0; i < len; i += 2) {
+          if (!SCHEME_VEC_ELS(props)[i] || SAME_OBJ(v, SCHEME_VEC_ELS(props)[i])) {
+            SCHEME_VEC_ELS(props)[i] = v;
+            SCHEME_VEC_ELS(props)[i+1] = argv[pos+1];
+            break;
+          }
+        }
+      }
+    } else {
+      /* Add to hash tree */
+      for (pos = start_at; pos < argc; pos += 2) {
+        props = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)props, argv[pos], argv[pos+1]);
+      }
+    }
   }
 
-  return ht;
+  return props;
 }
 
 /**********************************************************************/

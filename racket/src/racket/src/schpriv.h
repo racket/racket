@@ -1159,7 +1159,7 @@ typedef struct Scheme_Chaperone {
   Scheme_Inclhash_Object iso; /* 0x1 => impersonator, rather than a checking chaperone */
   Scheme_Object *val;  /* root object */
   Scheme_Object *prev; /* immediately chaperoned object */
-  Scheme_Hash_Tree *props;
+  Scheme_Object *props; /* NULL, a vector, or a hash tree */
   Scheme_Object *redirects; /* specific to the type of chaperone and root object */
 } Scheme_Chaperone;
 
@@ -1218,7 +1218,9 @@ void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v);
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, 
                                       Scheme_Object *auto_val, int checks);
 
-Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
+Scheme_Object *scheme_parse_chaperone_props(const char *who, int start_at, int argc, Scheme_Object **argv);
+Scheme_Object *scheme_chaperone_props_get(Scheme_Object *props, Scheme_Object *prop);
+Scheme_Object *scheme_chaperone_props_remove(Scheme_Object *props, Scheme_Object *prop);
 
 Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key);
 Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key, Scheme_Object **alt_key);

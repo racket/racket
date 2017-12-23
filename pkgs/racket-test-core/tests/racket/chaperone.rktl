@@ -281,7 +281,23 @@
    (err/rt-test (get1 v7) handler)
    (err/rt-test (get1 v8) handler)
    (err/rt-test (get1 v9) handler)
-   (err/rt-test (get1 v10) handler)))
+   (err/rt-test (get1 v10) handler)
+
+   ;; Make sure it works to have lots of impersontaors:
+   (let loop ([v v1] [i 100] [preds null] [sels null] [vals null])
+     (unless (zero? i)
+       (for ([pred (in-list preds)]
+             [sel (in-list sels)]
+             [val (in-list vals)])
+         (test #t pred v)
+         (test val sel v)
+         (test val sel v 'no))
+       (define-values (p has get) (make-impersonator-property 'p))
+       (loop (chaperone-vector v #f #f p i)
+             (sub1 i)
+             (cons has preds)
+             (cons get sels)
+             (cons i vals))))))
 
 
 ;; check property-only chaperones
