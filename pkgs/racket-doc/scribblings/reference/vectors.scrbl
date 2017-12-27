@@ -240,12 +240,13 @@ Returns a fresh vector whose elements are the elements of @racket[vec]
 ]}
 
 @defproc[(vector-drop-right [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
-Returns a fresh vector whose elements are the elements of @racket[vec]
- before the first @racket[pos] elements.  If @racket[vec] has fewer
- than @racket[pos] elements, then the @exnraise[exn:fail:contract].
+Returns a fresh vector whose elements are the prefix of @racket[vec],
+dropping its @racket[pos]-length tail.  If @racket[vec] has fewer
+than @racket[pos] elements, then the @exnraise[exn:fail:contract].
 
 @mz-examples[#:eval vec-eval
- (vector-drop-right #(1 2 3 4) 2)
+ (vector-drop-right #(1 2 3 4) 1)
+ (vector-drop-right #(1 2 3 4) 3)
 ]}
 
 @defproc[(vector-split-at [vec vector?] [pos exact-nonnegative-integer?])
