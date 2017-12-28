@@ -2190,10 +2190,10 @@ static int common4b(mz_jit_state *jitter, void *_data)
         /* Search a vector for the property: */
         (void)jit_ldxi_l(JIT_V1, JIT_R2, &SCHEME_VEC_SIZE(0x0)); /* get vector size */
         jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE); /* convert to bytes */
-        jit_addi_l(JIT_V1, JIT_V1, (int)&SCHEME_VEC_ELS(0x0)); /* bytes at offset */
+        jit_addi_l(JIT_V1, JIT_V1, (intptr_t)&SCHEME_VEC_ELS(0x0)); /* bytes at offset */
 
         refloop = jit_get_ip();
-        (void)jit_beqi_l(refslow, JIT_V1, (int)&SCHEME_VEC_ELS(0x0)); /* index at 0 => not found, so slow path */
+        (void)jit_beqi_l(refslow, JIT_V1, (intptr_t)&SCHEME_VEC_ELS(0x0)); /* index at 0 => not found, so slow path */
 
         jit_subi_l(JIT_V1, JIT_V1, (2 * JIT_WORD_SIZE)); /* step back by two words for key & value */
         mz_set_local_p(JIT_V1, JIT_LOCAL3); /* save current index, because we need the register */
