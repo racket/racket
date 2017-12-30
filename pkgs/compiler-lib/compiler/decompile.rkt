@@ -9,6 +9,9 @@
 
 (provide decompile)
 
+(define omit-syntax? (make-parameter #f))
+(define omit-submodules? (make-parameter #f))
+
 ;; ----------------------------------------
 
 (define primitive-table
@@ -50,16 +53,20 @@
 (define-struct glob-desc (vars num-tls num-stxs num-lifts))
 
 ;; Main entry:
-(define (decompile top)
-  (let ([stx-ht (make-hasheq)])
-    (match top
-      [(struct compilation-top (max-let-depth binding-namess prefix form))
-       (let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-         (expose-module-path-indexes
-          `(begin
-            ,@defns
-            ,(decompile-form form globs '(#%globals) (make-hasheq) stx-ht))))]
-      [else (error 'decompile "unrecognized: ~e" top)])))
+(define (decompile top
+                   #:omit-submodules? [omit-sub? #f]
+                   #:omit-syntax? [omit-stx? #f])
+  (parameterize ([omit-syntax? omit-stx?]
+                 [omit-submodules? omit-sub?])
+    (let ([stx-ht (make-hasheq)])
+      (match top
+        [(struct compilation-top (max-let-depth binding-namess prefix form))
+         (let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
+           (expose-module-path-indexes
+            `(begin
+               ,@defns
+               ,(decompile-form form globs '(#%globals) (make-hasheq) stx-ht))))]
+        [else (error 'decompile "unrecognized: ~e" top)]))))
 
 (define (expose-module-path-indexes e)
   ;; This is a nearly general replace-in-graph function. (It seems like a lot
@@ -190,7 +197,9 @@
                 (map (lambda (stx id)
                        `(define ,id ,(if stx
                                          `(#%decode-syntax 
-                                           ,(decompile-stx (stx-content stx) stx-ht))
+                                           ,(if (not (omit-syntax?))
+                                               (decompile-stx (stx-content stx) stx-ht)
+                                               '....))
                                          #f)))
                      stxs stx-ids))))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
@@ -239,7 +248,7 @@
    [else 
     (collapse-module-path-index modidx)]))
 
-(define (decompile-module mod-form orig-stack stx-ht mod-name)
+(define (decompile-module mod-form orig-stack stx-ht mod-name omit?)
   (match mod-form
     [(struct mod (name srcname self-modidx
                        prefix provides requires body syntax-bodies unexported 
@@ -249,12 +258,19 @@
      (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
                   [(stack) (append '(#%modvars) orig-stack)]
                   [(closed) (make-hasheq)])
+       (if
+        omit?
+        ;; explicit list avoids structure sharing that prints confusingly
+        `(,mod-name ,(if (symbol? name) name (last name))  . ,(list '...))
+        
        `(,mod-name ,(if (symbol? name) name (last name)) ....
            (quote self ,self-modidx)
            (quote internal-context 
                   ,(if (stx? internal-context)
                        `(#%decode-syntax 
-                         ,(decompile-stx (stx-content internal-context) stx-ht))
+                         ,(if (omit-syntax?)
+                              '....
+                             (decompile-stx (stx-content internal-context) stx-ht)))
                        internal-context))
            (quote bindings ,(for/hash ([(phase ht) (in-hash binding-names)])
                               (values phase
@@ -263,7 +279,9 @@
                                                 (if (eq? id #t)
                                                     #t
                                                     `(#%decode-syntax 
-                                                      ,(decompile-stx (stx-content id) stx-ht))))))))
+                                                      ,(if (omit-syntax?)
+                                                           '....
+                                                           (decompile-stx (stx-content id) stx-ht)))))))))
            (quote language-info ,lang-info)
            ,@(if (null? flags) '() (list `(quote ,flags)))
            ,@(let ([l (apply
@@ -313,7 +331,7 @@
                                 ,@l))))))
           ,@defns
           ,@(for/list ([submod (in-list pre-submodules)])
-              (decompile-module submod orig-stack stx-ht 'module))
+              (decompile-module submod orig-stack stx-ht 'module (omit-submodules?)))
           ,@(for/list ([b (in-list syntax-bodies)])
               (let loop ([n (sub1 (car b))])
                 (if (zero? n)
@@ -325,13 +343,13 @@
                    (decompile-form form globs stack closed stx-ht))
                  body)
           ,@(for/list ([submod (in-list post-submodules)])
-              (decompile-module submod orig-stack stx-ht 'module*))))]
+              (decompile-module submod orig-stack stx-ht 'module* (omit-submodules?))))))]
     [else (error 'decompile-module "huh?: ~e" mod-form)]))
 
 (define (decompile-form form globs stack closed stx-ht)
   (match form
     [(? mod?)
-     (decompile-module form stack stx-ht 'module)]
+     (decompile-module form stack stx-ht 'module #f)]
     [(struct def-values (ids rhs))
      `(define-values ,(map (lambda (tl)
                              (match tl
