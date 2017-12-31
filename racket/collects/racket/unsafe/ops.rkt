@@ -31,6 +31,7 @@
                      unsafe-custodian-register
                      unsafe-custodian-unregister
                      unsafe-register-process-global
+                     unsafe-get-place-table
                      unsafe-make-security-guard-at-root
                      unsafe-set-on-atomic-timeout!
                      unsafe-abort-current-continuation/no-wind

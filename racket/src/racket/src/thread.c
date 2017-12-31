@@ -339,6 +339,7 @@ static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_custodian_unregister(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[]);
@@ -651,6 +652,7 @@ scheme_init_unsafe_thread (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
 
   GLOBAL_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-get-place-table", unsafe_get_place_table, 0, 0, env);
 
   GLOBAL_PRIM_W_ARITY("unsafe-set-on-atomic-timeout!", unsafe_set_on_atomic_timeout, 1, 1, env);
 
@@ -2787,6 +2789,11 @@ static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *ar
     return scheme_make_cptr(val, NULL);
   else
     return scheme_false;
+}
+
+static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[])
+{
+  return scheme_get_place_table();
 }
 
 void scheme_init_process_globals(void)

@@ -2,12 +2,12 @@
 @(require "utils.rkt"
           (for-label ffi/unsafe/global))
 
-@title{Process-Wide Registration}
+@title[#:tag "unsafe-global"]{Process-Wide and Place-Wide Registration}
 
 @defmodule[ffi/unsafe/global]{The
 @racketmodname[ffi/unsafe/global] library provides a utility
-registering information that spans all places in the Racket
-process.}
+registering information that is local to a place or
+spans all places in the Racket process.}
 
 @history[#:added "6.9.0.5"]
 
@@ -29,3 +29,10 @@ not refer to garbage-collected memory.
 
 This function is intended for infrequent use with a small number of
 keys.}
+
+@defproc[(get-place-table-global) hash?]{
+
+Returns a place-specific, mutable, @racket[eq?]-based hash table.
+The result is always the same for a particular place.
+
+@history[#:added "6.11.0.6"]}
