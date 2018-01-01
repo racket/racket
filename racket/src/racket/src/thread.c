@@ -2793,7 +2793,7 @@ static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *ar
 
 static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[])
 {
-  return scheme_get_place_table();
+  return (Scheme_Object *)scheme_get_place_table();
 }
 
 void scheme_init_process_globals(void)
