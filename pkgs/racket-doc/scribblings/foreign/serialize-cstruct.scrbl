@@ -129,21 +129,21 @@ after garbage collection.
 (define f0/s (serialize (make-fish 1)))
 (fish-color (deserialize f0/s))
 
-(define-serializable-cstruct _aq ([a _fish-pointer]
-                                  [d _aq-pointer/null])
+(define-serializable-cstruct _aq ([a (_gcable _fish-pointer)]
+                                  [d (_gcable _aq-pointer/null)])
   #:malloc-mode 'nonatomic)
 (define aq1 (make-aq/mode (make-fish 6) #f))
 (code:line (set-aq-d! aq1 aq1) (code:comment "create a cycle"))
 (define aq0/s (serialize aq1))
 (aq-a (aq-d (aq-d (deserialize aq0/s))))
 (code:comment @#,elem{Same shape as original @racket[aq]:})
-(define-serializable-cstruct _old-aq ([a _fish-pointer]
-                                      [d _pointer])
+(define-serializable-cstruct _old-aq ([a (_gcable _fish-pointer)]
+                                      [d (_gcable _pointer)])
         #:malloc-mode 'nonatomic)
 (code:comment @#,elem{Replace the original @racket[aq]:})
-(define-serializable-cstruct _aq ([a _fish-pointer]
-                                  [b _fish-pointer]
-                                  [d _aq-pointer/null])
+(define-serializable-cstruct _aq ([a (_gcable _fish-pointer)]
+                                  [b (_gcable _fish-pointer)]
+                                  [d (_gcable _aq-pointer/null)])
   #:malloc-mode 'nonatomic
   #:version 1
   #:other-versions ([0 deserialize-chain:cstruct:old-aq
@@ -165,7 +165,7 @@ after garbage collection.
 (code:comment "Deserialize old instance to new cstruct:")
 (fish-color (aq-a (aq-d (aq-d (deserialize aq0/s)))))
 
-(define aq1/s (serialize (make-aq (make-fish 1) (make-fish 2) #f)))
+(define aq1/s (serialize (make-aq/mode (make-fish 1) (make-fish 2) #f)))
 (code:comment @#,elem{New version of @racket[fish]:})
 (define-serializable-cstruct _old-fish ([color _int]))
 (define-serializable-cstruct _fish ([weight _float]
