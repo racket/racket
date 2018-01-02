@@ -2779,7 +2779,7 @@ static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *ar
   
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_contract("unsafe-register-process-global", "bytes?", 0, argc, argv);
-  if (!scheme_is_cpointer(argv[0]))
+  if (!scheme_is_cpointer(argv[1]))
     scheme_wrong_contract("unsafe-register-process-global", "cpointer?", 1, argc, argv);
   
   val = scheme_register_process_global(SCHEME_BYTE_STR_VAL(argv[0]),
