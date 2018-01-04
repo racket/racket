@@ -1707,7 +1707,7 @@ static Scheme_Object *foreign_cpointer_gcable_p(int argc, Scheme_Object *argv[])
 #undef MYNAME
 
 void *scheme_extract_pointer(Scheme_Object *v) {
-  return SCHEME_FFIANYPTR_VAL(v);
+  return SCHEME_FFIANYPTR_OFFSETVAL(v);
 }
 
 /*****************************************************************************/
