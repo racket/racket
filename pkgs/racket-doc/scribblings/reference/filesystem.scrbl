@@ -638,7 +638,7 @@ event.}
          void?]{
 
 Causes @racket[evt] to become immediately @tech{ready for
-synchronization}, whether it was ready or before not, and releases and
+synchronization}, whether it was ready or not before, and releases the
 resources (at the operating-system level) for tracking filesystem
 changes.}
 
