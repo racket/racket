@@ -622,7 +622,7 @@ operating-system error when creating the event (such as a non-existent
 file), then the @exnraise[exn:fail:filesystem] or @racket[failure-thunk]
 is called.
 
-Creation of a @tech{filesystem change event} alloates resources at the
+Creation of a @tech{filesystem change event} allocates resources at the
 operating-system level. The resources are released at latest when the
 event is sychronized and @tech{ready for synchronization} or when the
 event is canceled with @racket[filesystem-change-evt-cancel].
