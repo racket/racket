@@ -2110,7 +2110,7 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
         || !env->module) {
       scheme_contract_error(who, 
                             "variable reference does not refer to an anonymous module variable",
-                            "variable reference", 1, v,
+                            "variable reference", 1, argv[0],
                             NULL);
     }
     return env->access_insp;
