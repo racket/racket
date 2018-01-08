@@ -16,7 +16,7 @@ surrogate.
 @defform/subs[#:literals (augment override override-final)
               (surrogate use-wrapper-proc method-spec ...)
               ([use-wrapper-proc #:use-wrapper-proc (code:line)]
-               [method-spec (augment method-id arg-spec ...)
+               [method-spec (augment default-expr method-id arg-spec ...)
                             (override method-id arg-spec ...)               
                             (override-final method-id (lambda () default-expr) 
                                             arg-spec ...)]
@@ -52,7 +52,7 @@ The first one is a fallback that invokes the original object's method,
 skipping the surrogate. The other one invokes the surrogate.
  @racketblock[(λ (fallback-thunk surrogate-thunk)
                 (surrogate-thunk))]
-which means that it simply defers to the method being invoked on the surrogate.
+This means that it simply defers to the method being invoked on the surrogate.
 The @racket[_surrogate-wrapper-proc] capability is part of the surrogate
 so that the dynamic extent of the calls to the surrogate can be adjusted
 (by, for example, changing the values of parameters). The
@@ -62,7 +62,7 @@ of the surrogate.
 
 The host mixin has a single overriding method for each
 @racket[method-id] in the @racket[surrogate] form (even the ones
-specified with @racket[augment]. Each of these
+specified with @racket[augment]). Each of these
 methods is defined with a @racket[case-lambda] with one arm for each
 @racket[arg-spec]. Each arm has the variables as arguments in the
 @racket[arg-spec]. The body of each method tests the
