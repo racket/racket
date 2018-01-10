@@ -264,7 +264,7 @@
    #:exists 'truncate
    (lambda (o)
      (displayln pkg-name o)
-     (displayln "Copyright (c) 2010-2017 PLT Design Inc." o)
+     (displayln "Copyright (c) 2010-2018 PLT Design Inc." o)
      (newline o)
      (displayln "This package is distributed under the GNU Lesser General Public" o)
      (displayln "License (LGPL).  This means that you can link this package into" o)
