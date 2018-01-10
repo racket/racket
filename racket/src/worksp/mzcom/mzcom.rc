@@ -86,10 +86,10 @@ FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,76,69,50,14,BS_CENTER
     CTEXT           "MzCOM v"MZSCHEME_VERSION,mzIDC_STATIC,71,8,61,8
-    CTEXT           "Copyright (c) 2000-2017 PLT Design Inc.",mzIDC_STATIC,
+    CTEXT           "Copyright (c) 2000-2018 PLT Design Inc.",mzIDC_STATIC,
                     41,20,146,9
     CTEXT           "Racket v"MZSCHEME_VERSION,mzIDC_STATIC,64,35,75,8
-    CTEXT           "Copyright (c) 1995-2017 PLT Design Inc.",mzIDC_STATIC,
+    CTEXT           "Copyright (c) 1995-2018 PLT Design Inc.",mzIDC_STATIC,
                     30,47,143,8
     ICON            MZICON,mzIDC_STATIC,11,16,20,20
 END
