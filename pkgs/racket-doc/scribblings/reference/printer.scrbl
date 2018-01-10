@@ -40,7 +40,7 @@ When the @racket[print-graph] parameter is set to @racket[#t], then
 the printer first scans an object to detect cycles. The scan traverses
 the components of pairs, mutable pairs, vectors, boxes (when
 @racket[print-box] is @racket[#t]), hash tables (when
-@racket[print-hash-table] is @racket[#t]), fields of structures
+@racket[print-hash-table] is @racket[#t] and when key are held strongly), fields of structures
 exposed by @racket[struct->vector] (when @racket[print-struct] is
 @racket[#t]), and fields of structures exposed by printing when the
 structure's type has the @racket[prop:custom-write] property. If
@@ -424,7 +424,8 @@ When the @racket[print-hash-table] parameter is set to @racket[#t], in
 @racket[write] and @racket[display] modes, a @tech{hash table} prints
 starting with @litchar{#hash(}, @litchar{#hasheqv(}, or
 @litchar{#hasheq(} for a table using @racket[equal?], @racket[eqv?],
-or @racket[eq?] key comparisons, respectively. After the prefix, each
+or @racket[eq?] key comparisons, respectively, as long as the hash table
+retains keys strongly. After the prefix, each
 key--value mapping is shown as @litchar{(}, the printed form of a key,
 a space, @litchar{.}, a space, the printed form the corresponding
 value, and @litchar{)}, with an additional space if the key--value
@@ -444,7 +445,8 @@ separated by spaces, and finally a closing @litchar{)}. A hash table
 is @tech{quotable} when all of its keys and values are
 @tech{quotable}.
 
-When the @racket[print-hash-table] parameter is set to @racket[#f], a
+When the @racket[print-hash-table] parameter is set to @racket[#f]
+or when a hash table retains its keys weakly, a
 hash table prints as @litchar{#<hash>} and counts as @tech{quotable}.
 
 
