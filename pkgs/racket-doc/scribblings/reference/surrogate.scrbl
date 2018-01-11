@@ -31,10 +31,9 @@ procedure that accepts and returns a class), a host interface, a
 surrogate class, and a surrogate interface.
 
 If @racket[#:use-wrapper-proc] does not appear,
-the host mixin adds one field @racket[surrogate].
-to its argument. It also adds getter and setter methods, @racket[get-surrogate],
-@racket[set-surrogate], @racket[get-surrogate-wrapper-proc], and
-@racket[set-surrogate-wrapper-proc] for changing the fields. The
+the host mixin adds one field @racket[surrogate]
+to its argument. It also adds getter and setter methods
+ @racket[get-surrogate] and @racket[set-surrogate]. The
 @racket[set-surrogate] method accepts instances of the class returned by
 the @racket[surrogate] form or @racket[#f], and it updates the field with its
 argument; then, @racket[set-surrogate] calls the @racket[on-disable-surrogate] on the
