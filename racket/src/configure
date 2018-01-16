@@ -3215,6 +3215,7 @@ STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
+strip_needs_dash_s=no
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -4834,6 +4835,8 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
+      LIBS="$LIBS -framework CoreFoundation"
+      strip_needs_dash_s=yes
     fi
     ;;
   nto-qnx*)
@@ -4988,6 +4991,12 @@ fi
   # Used to add -S flag, but not all `strip' variants support it:
   STRIP_DEBUG="${STRIP}"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${strip_needs_dash_s}" = "yes" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${check_strip_dash_s}" = "yes" ; then
     # Can only support library stripping if something like "-S" is available:
      msg="for strip -S"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
@@ -5011,6 +5020,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
 $as_echo "$set_strip_lib" >&6; }
+    if test "${strip_needs_dash_s}" = "yes" ; then
+      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
+    fi
   fi
 fi
 

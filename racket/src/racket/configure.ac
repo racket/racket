@@ -470,6 +470,7 @@ STRIP_DEBUG=":"
 STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
+strip_needs_dash_s=no
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -940,6 +941,8 @@ case "$host_os" in
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
+      LIBS="$LIBS -framework CoreFoundation"
+      strip_needs_dash_s=yes
     fi
     ;;
   nto-qnx*)
@@ -1003,6 +1006,12 @@ if test "${enable_strip}" = "yes" ; then
   # Used to add -S flag, but not all `strip' variants support it:
   STRIP_DEBUG="${STRIP}"
   if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${strip_needs_dash_s}" = "yes" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${check_strip_dash_s}" = "yes" ; then
     # Can only support library stripping if something like "-S" is available:
     [ msg="for strip -S" ]
     AC_MSG_CHECKING($msg)
@@ -1015,6 +1024,9 @@ if test "${enable_strip}" = "yes" ; then
       fi
     fi
     AC_MSG_RESULT($set_strip_lib)
+    if test "${strip_needs_dash_s}" = "yes" ; then
+      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
+    fi
   fi
 fi
 
