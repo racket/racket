@@ -20,6 +20,8 @@ if test "${enable_iconv}" = "" ; then
 fi
 
 skip_iconv_check=no
+use_flag_pthread=yes
+use_flag_posix_pthread=no
 
 # For standalone builds:
 rktio_version=1.0
@@ -388,7 +390,10 @@ fi
 
 ############## final output ################
 
+CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 AC_SUBST(CC)
+AC_SUBST(CPPFLAGS)
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
