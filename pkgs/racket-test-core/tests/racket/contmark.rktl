@@ -1010,5 +1010,43 @@
   (err/rt-test (do-test bad-mark-2 5) exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that caching works right for marks in continuations that
+;; capture metacontinuations
+
+(let ()
+  (define tag (make-continuation-prompt-tag 'tag))
+
+  (define comp-k
+    (call-with-continuation-prompt
+     (lambda ()
+       (with-continuation-mark
+        'key
+        'val
+        ((call-with-composable-continuation
+          (lambda (k)
+            (lambda () k))
+          tag))))
+     tag))
+
+  (define k
+    (call-with-continuation-prompt
+     (lambda ()
+       (with-continuation-mark
+        'other-key
+        'other-val
+        (comp-k (lambda ()
+                  (call/cc
+                   (lambda (k)
+                     (abort-current-continuation
+                      tag
+                      (lambda () k)))
+                   tag)))))
+     tag))
+
+  (list
+   (continuation-mark-set->list (continuation-marks k) 'key)
+   (continuation-mark-set->list (continuation-marks k) 'key)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

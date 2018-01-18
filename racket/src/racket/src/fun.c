@@ -7846,6 +7846,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
         p = NULL;
         econt = NULL;
         cont = NULL;
+        top_cont = NULL;
         break;
       }
 
@@ -7887,6 +7888,7 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
         p = NULL;
         econt = NULL;
         cont = NULL;
+        top_cont = NULL;
 
         break;
       } else {
