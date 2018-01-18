@@ -6098,12 +6098,13 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
   prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), &prompt_cont, &prompt_pos);
   if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, pt)) {
-    scheme_contract_error((composable
-                           ? "call-with-composable-continuation"
-                           : "call-with-current-continuation"), 
-                          "continuation includes no prompt with the given tag",
-                          "tag", 1, prompt_tag,
-                          NULL);
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                     "%s: continuation includes no prompt with the given tag\n"
+                     "  tag: %V",
+                     (composable
+                      ? "call-with-composable-continuation"
+                      : "call-with-current-continuation"),
+                     prompt_tag);
     return NULL;
   }
 
@@ -7608,10 +7609,10 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
     prompt = original_default_prompt;
 
   if (!prompt) {
-    scheme_contract_error("abort-current-continuation", 
-                          "continuation includes no prompt with the given tag",
-                          "tag", 1, prompt_tag,
-                          NULL);
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                     "abort-current-continuation: continuation includes no prompt with the given tag\n"
+                     "  tag: %V",
+                     prompt_tag);
     return NULL;
   }
 
@@ -7994,10 +7995,10 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
       }
       if (!who)
         return NULL;
-      scheme_contract_error(who,
-                            "no corresponding prompt in the continuation",
-                            "tag", 1, prompt_tag,
-                            NULL);
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                       "%s: no corresponding prompt in the continuation\n"
+                       "  tag: %V",
+                       who, prompt_tag);
     }
   }
 
@@ -8078,11 +8079,12 @@ cc_marks(int argc, Scheme_Object *argv[])
     }
 
     if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
-      if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag)))
-        scheme_contract_error("current-continuation-marks",
-                              "no corresponding prompt in the continuation",
-                              "prompt tag", 1, prompt_tag,
-                              NULL);
+      if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag))) {
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                         "current-continuation-marks: no corresponding prompt in the continuation\n"
+                         "  prompt tag: %V",
+                         prompt_tag);
+      }
   }
 
   return scheme_current_continuation_marks(argc ? prompt_tag : NULL);
@@ -8116,10 +8118,9 @@ cont_marks(int argc, Scheme_Object *argv[])
     return make_empty_marks();
   } else if (SCHEME_ECONTP(argv[0])) {
     if (!scheme_escape_continuation_ok(argv[0])) {
-      scheme_contract_error("continuation-marks",
-                            "escape continuation not in the current thread's continuation",
-                            "escape continuation", 1, argv[0],
-                            NULL);
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                       "continuation-marks: escape continuation not in the current thread's continuation\n"
+                       "  escape continuation: %V", argv[0]);
       return NULL;
     } else {
       Scheme_Meta_Continuation *mc;
@@ -8805,11 +8806,12 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
 
     if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
       if (SCHEME_FALSEP(argv[0])) {
-        if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag)))
-          scheme_contract_error("continuation-mark-set-first",
-                                "no corresponding prompt in the current continuation",
-                                "tag", 1, prompt_tag,
-                                NULL);
+        if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag))) {
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                           "continuation-mark-set-first: no corresponding prompt in the current continuation\n"
+                           "  tag: %V",
+                           prompt_tag);
+        }
       }
     }
   } 
@@ -8856,10 +8858,10 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
   if (argc > 1) {
     if (SCHEME_ECONTP(argv[1])) {
       if (!scheme_escape_continuation_ok(argv[1])) {
-        scheme_contract_error("continuation-prompt-available?",
-                              "escape continuation not in the current thread's continuation",
-                              "escape continuation", 1, argv[1],
-                              NULL);
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                         "continuation-prompt-available?: escape continuation not in the current thread's continuation\n"
+                         "  escape continuation: %V",
+                         argv[1]);
         return NULL;
       } else {
         Scheme_Meta_Continuation *mc;
@@ -9501,12 +9503,13 @@ Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
           prompt = original_default_prompt;
         }
         if (!prompt) {
-          scheme_contract_error("abort-current-continuation", 
-                                "abort in progress, but current continuation includes"
-                                " no prompt with the given tag"
-                                " after a `dynamic-wind' post-thunk return",
-                                "tag", 1, tag,
-                                NULL);
+          scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
+                           "abort-current-continuation:"
+                           " abort in progress, but current continuation includes"
+                           " no prompt with the given tag"
+                           " after a `dynamic-wind' post-thunk return\n"
+                           "  tag: %V",
+                           tag);
           return NULL;
         }
         p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;

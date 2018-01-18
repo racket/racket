@@ -165,6 +165,10 @@
               p1))
            p2))))
 
+(err/rt-test (abort-current-continuation
+              (make-continuation-prompt-tag 'px))
+             exn:fail:contract:continuation?)
+
 ;; ----------------------------------------
 ;; Continuations
 
@@ -462,7 +466,7 @@
 (err/rt-test (call-with-composable-continuation
               (lambda (x) x)
               (make-continuation-prompt-tag 'px))
-             exn:fail:contract?)
+             exn:fail:contract:continuation?)
 
 (let ([k (call-with-continuation-prompt
           (lambda ()
@@ -1466,7 +1470,7 @@
          (lambda ()
            (exit-k (lambda () 'hi)))
          p1)))))
- exn:fail:contract?)
+ exn:fail:contract:continuation?)
 
 ;; Arrange for a barrier to interfere with a continuation
 ;; jump after dynamic-winds are already being processed:

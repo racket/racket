@@ -458,6 +458,13 @@
 (err/rt-test (call-with-parameterization 10 (lambda () 12)))
 (err/rt-test (call-with-parameterization (current-parameterization) (lambda (x) 12)))
 
+(err/rt-test (current-continuation-marks (make-continuation-prompt-tag 'px))
+             exn:fail:contract:continuation?)
+(err/rt-test (continuation-marks (let/cc k k) (make-continuation-prompt-tag 'px))
+             exn:fail:contract:continuation?)
+(err/rt-test (continuation-mark-set-first #f 'key #f (make-continuation-prompt-tag 'px))
+             exn:fail:contract:continuation?)
+
 ;; Create a deep stack with a deep mark stack
 
 (define (p-equal? a b)
@@ -1043,9 +1050,10 @@
                    tag)))))
      tag))
 
-  (list
-   (continuation-mark-set->list (continuation-marks k) 'key)
-   (continuation-mark-set->list (continuation-marks k) 'key)))
+  (test '((val) (val))
+        list
+        (continuation-mark-set->list (continuation-marks k) 'key)
+        (continuation-mark-set->list (continuation-marks k) 'key)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
