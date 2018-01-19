@@ -532,6 +532,17 @@
   (ptr-set! v _pointer (ptr-add #f 107))
   (test 107 ptr-ref v _intptr))
 
+;; Test _bytes and _bytes/nul-terminated
+(let ([p (malloc 8)])
+  (memcpy p #"hi, all!" 8)
+  (test #"hi, all!" cast p _pointer _bytes)
+  (test #"hi, all!" cast p _pointer _bytes/nul-terminated))
+(let* ([strdup (get-ffi-obj 'strdup #f (_fun _bytes/nul-terminated -> _pointer))]
+       [p (strdup #"howdy...")])
+  (test #"howdy..." cast p _pointer _bytes)
+  (test #"howdy..." cast p _pointer _bytes/nul-terminated)
+  (free p))
+
 ;; Test equality and hashing of c pointers:
 (let ([seventeen1 (cast 17 _intptr _pointer)]
       [seventeen2 (cast 17 _intptr _pointer)]

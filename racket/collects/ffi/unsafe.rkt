@@ -1069,6 +1069,24 @@
     [(_ . xs) (_bytes . xs)]
     [_ _bytes]))
 
+;; _bytes/nul-terminated copies and includes a nul terminator in a
+;; way that will be more consistent across Racket implementations
+(define _bytes/nul-terminated
+  (make-ctype _bytes
+              (lambda (bstr) (and bstr (bytes-append bstr #"\0")))
+              (lambda (bstr) (bytes-copy bstr))))
+(provide (rename-out [_bytes/nul-terminated* _bytes/nul-terminated]))
+(define-fun-syntax _bytes/nul-terminated*
+  (syntax-id-rules (o)
+    [(_ o n) (type: _pointer
+              pre:  (make-bytes n)
+              ;; post is needed when this is used as a function output type
+              post: (x => (let ([s (make-bytes n)])
+                            (memcpy s x n)
+                            s)))]
+    [(_ . xs) (_bytes/nul-teriminated . xs)]
+    [_ _bytes/nul-terminated]))
+
 ;; (_array <type> <len> ...+)
 (provide _array
          array? array-length array-ptr array-type

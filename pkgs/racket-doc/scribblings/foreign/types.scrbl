@@ -264,21 +264,16 @@ inputs.}
 
 @subsection{Primitive String Types}
 
-The five primitive string types correspond to cases where a C
-representation matches Racket's representation without encodings.
-
-The form @racket[_bytes] form can be used type for Racket byte
-strings, which corresponds to C's @cpp{char*} type.  In addition to
-translating byte strings, @racket[#f] corresponds to the @cpp{NULL}
-pointer.
+See also @racket[_bytes/nul-terminator] and @racket[_bytes] for
+converting between byte strings and C's @cpp{char*} type.
 
 @deftogether[(
 @defthing[_string/ucs-4 ctype?]
 )]{
 
 A type for Racket's native Unicode strings, which are in UCS-4 format.
-These correspond to the C @cpp{mzchar*} type used by Racket. As usual, the types
-treat @racket[#f] as @cpp{NULL} and vice versa.}
+These correspond to the C @cpp{mzchar*} type used by Racket's C API.
+As usual, the type treats @racket[#f] as @cpp{NULL} and vice versa.}
 
 
 @deftogether[(
@@ -291,8 +286,9 @@ Unicode strings in UTF-16 format. As usual, the types treat
 
 @defthing[_path ctype?]{
 
-Simple @cpp{char*} strings, corresponding to Racket's paths. As usual,
-the types treat @racket[#f] as @cpp{NULL} and vice versa.
+Simple @cpp{char*} strings, corresponding to Racket's @tech[#:doc
+reference.scrbl]{path or string}. As usual, the type treats
+@racket[#f] as @cpp{NULL} and vice versa.
 
 Beware that changing the current directory via
 @racket[current-directory] does not change the OS-level current
@@ -331,7 +327,7 @@ Racket paths are converted using @racket[path->bytes].}
 @subsection{Variable Auto-Converting String Type}
 
 The @racket[_string/ucs-4] type is rarely useful when interacting with
-foreign code, while using @racket[_bytes] is somewhat unnatural, since
+foreign code, while using @racket[_bytes/nul-terminator] is somewhat unnatural, since
 it forces Racket programmers to use byte strings. Using
 @racket[_string/utf-8], etc., meanwhile, may prematurely commit to a
 particular encoding of strings as bytes. The @racket[_string] type
@@ -1083,13 +1079,55 @@ See @racket[_list] for more explanation about the examples.}
           [_bytes
            (_bytes o len-expr)]]{
 
-A @tech{custom function type} that can be used by itself as a simple
-type for a byte string as a C pointer. Coercion of a C pointer to
-simply @racket[_bytes] (without a specified length) requires that the pointer
-refers to a nul-terminated byte string. When the length-specifying form is used
-for a function argument, a byte string is allocated with the given
-length, including an extra byte for the nul terminator.}
+The @racket[_bytes] form by itself corresponds to C's @cpp{char*}
+type; a byte string is passed as @racket[_bytes] without any
+copying. In the current Racket implementation, a Racket byte string is
+normally nul terminated implicitly, but a future implementation of
+Racket may not include an implicit nul terminator for byte strings.
+See also @racket[_bytes/nul-terminated].
 
+In the current Racket implementation, as @racket[_bytes] result, a C
+non-NULL @cpp{char*} is wrapped as a Racket byte string without
+copying; future Racket implementations may require copying to
+represent a C @cpp{char*} result as a Racket byte string. The C result
+must have a nul terminator to determine the Racket byte string's
+length.
+
+A @racket[(_bytes o len-expr)] form is a @tech{custom function type}.
+As an argument, a byte string is allocated with the given length; in
+the current Racket implementation, that byte string includes an extra
+byte for the nul terminator (but, again, a future Racket
+implementation may not behave that way). As a result, @racket[(_bytes
+o len-expr)] wraps a C non-NULL @cpp{char*} pointer as a byte string of
+the given length (but, again, a future Racket implementation may copy
+the indicated number of bytes to a fresh byte string).
+
+As usual, @racket[_bytes] treats @racket[#f] as @cpp{NULL} and vice
+versa. As a result type, @racket[(_bytes o len-expr)] works only for
+non-NULL results.}
+
+
+@defform*[#:id _bytes/nul-terminated
+          #:literals (o)
+          [_bytes/nul-terminated
+           (_bytes/nul-terminated o len-expr)]]{
+
+The @racket[_bytes/nul-terminated] type is like @racket[_bytes], but
+an explicit nul-terminator byte is added to a byte-string argument,
+which implies copying. As a result type, a @cpp{char*} is copied to a
+fresh byte string (without an explicit nul terminator).
+
+When @racket[(_bytes o len-expr)] is used as an argument type, a byte
+string of length @racket[len-expr] is allocated. Similarly, when
+@racket[(_bytes o len-expr)] is used as a result type, a @cpp{char*}
+result is copied to a fresh byte string of length @racket[len-expr].
+
+As usual, @racket[_bytes/nul-terminated] treats @racket[#f] as
+@cpp{NULL} and vice versa. As a result type,
+@racket[(_bytes/nul-terminated o len-expr)] works only for non-NULL
+results.
+
+@history[#:added "6.12.0.2"]}
 
 @; ------------------------------------------------------------
 

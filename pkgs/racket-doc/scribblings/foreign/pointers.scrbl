@@ -394,12 +394,13 @@ procedure would then not close over @racket[b].)}
          bytes?]{
 
 Returns a byte string made of the given pointer and the given length.
-No copying is done.  This can be used as an alternative to make
-pointer values accessible in Racket when the size is known.
+No copying is performed. Beware that future implementations of Racket
+may not support this function (in case of a byte string representation
+that combines a size and byte-string content without an indirection).
 
-Beware that the representation of a Racket byte string normally
+Beware also that the representation of a Racket byte string normally
 requires a nul terminator at the end of the byte string (after
-@racket[length] bytes), but some function work with a byte-string
+@racket[length] bytes), but some functions work with a byte-string
 representation that has no such terminator---notably
 @racket[bytes-copy].
 
