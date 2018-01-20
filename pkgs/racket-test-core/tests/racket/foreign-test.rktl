@@ -534,9 +534,13 @@
 
 ;; Test _bytes and _bytes/nul-terminated
 (let ([p (malloc 8)])
+  (memcpy p #"hi, all\0" 8)
+  (test #"hi, all" cast p _pointer _bytes)
+  (test #"hi, all" cast p _pointer _bytes/nul-terminated))
+(let ([p (malloc 8)])
   (memcpy p #"hi, all!" 8)
-  (test #"hi, all!" cast p _pointer _bytes)
-  (test #"hi, all!" cast p _pointer _bytes/nul-terminated))
+  (test #"hi, all!" cast p _pointer (_bytes o 8))
+  (test #"hi, all!" cast p _pointer (_bytes/nul-terminated o 8)))
 (let* ([strdup (get-ffi-obj 'strdup #f (_fun _bytes/nul-terminated -> _pointer))]
        [p (strdup #"howdy...")])
   (test #"howdy..." cast p _pointer _bytes)

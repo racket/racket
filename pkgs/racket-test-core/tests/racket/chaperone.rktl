@@ -2270,15 +2270,18 @@
     (for/list ([j 4])
       (thread
        (lambda ()
+         (define save-keys '())
          (for ([i 1000])
            (define v (random 100000))
            (define k (a v))
+           (set! save-keys (cons k save-keys))
            (hash-set! cht k v)
            ;; Make sure the addition didn't get lost, which
            ;; can happen when a lock is missing:
            (unless (equal? (hash-ref cht k #f) v)
              (error "oops")))
-         (semaphore-post done)))))
+         (semaphore-post done)
+         save-keys))))
 
   (for-each sync ths)
 
