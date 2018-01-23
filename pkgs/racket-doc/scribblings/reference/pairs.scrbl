@@ -1352,9 +1352,10 @@ Builds combinations one-by-one instead of all at once.
 @defproc[(permutations [lst list?])
          list?]{
 
-Returns a list of all permutations of the input list.  Note that this
+@index["rearrangements"]{Returns} a list of all permutations of the input list.  Note that this
 function works without inspecting the elements, and therefore it ignores
 repeated elements (which will result in repeated permutations).
+Raises an error if the input list contains more than 256 elements.
 
 @mz-examples[#:eval list-eval
   (permutations '(1 2 3))
@@ -1364,9 +1365,10 @@ repeated elements (which will result in repeated permutations).
 @defproc[(in-permutations [lst list?])
          sequence?]{
 
-Returns a sequence of all permutations of the input list.  It is
+@index["in-rearrangements"]{Returns} a sequence of all permutations of the input list.  It is
 equivalent to @racket[(in-list (permutations l))] but much faster since
-it builds the permutations one-by-one on each iteration}
+it builds the permutations one-by-one on each iteration
+Raises an error if the input list contains more than 256 elements.}
 
 
 @defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)])
