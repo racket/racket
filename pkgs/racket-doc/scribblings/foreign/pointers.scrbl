@@ -138,20 +138,9 @@ easily lead to a segmentation fault or memory corruption.}
 
 
 @defproc*[([(memmove [cptr cpointer?]
+                     [offset exact-integer? 0]
                      [src-cptr cpointer?]
-                     [count exact-nonnegative-integer?]
-                     [type ctype? _byte])
-            void?]
-           [(memmove [cptr cpointer?]
-                     [offset exact-integer?]
-                     [src-cptr cpointer?]
-                     [count exact-nonnegative-integer?]
-                     [type ctype? _byte])
-            void?]
-           [(memmove [cptr cpointer?]
-                     [offset exact-integer?]
-                     [src-cptr cpointer?]
-                     [src-offset exact-integer?]
+                     [src-offset exact-integer? 0]
                      [count exact-nonnegative-integer?]
                      [type ctype? _byte])
             void?])]{
@@ -164,20 +153,9 @@ destination is determined by @racket[count], which is in @racket[type]
 instances when supplied.}
 
 @defproc*[([(memcpy [cptr cpointer?]
+                    [offset exact-integer? 0]
                     [src-cptr cpointer?]
-                    [count exact-nonnegative-integer?]
-                    [type ctype? _byte])
-            void?]
-           [(memcpy [cptr cpointer?]
-                    [offset exact-integer?]
-                    [src-cptr cpointer?]
-                    [count exact-nonnegative-integer?]
-                    [type ctype? _byte])
-            void?]
-           [(memcpy [cptr cpointer?]
-                    [offset exact-integer?]
-                    [src-cptr cpointer?]
-                    [src-offset exact-integer?]
+                    [src-offset exact-integer? 0]
                     [count exact-nonnegative-integer?]
                     [type ctype? _byte])
             void?])]{
@@ -186,12 +164,7 @@ Like @racket[memmove], but the result is undefined if the destination
 and source overlap.}
 
 @defproc*[([(memset [cptr cpointer?]
-                    [byte byte?]
-                    [count exact-nonnegative-integer?]
-                    [type ctype? _byte])
-            void?]
-           [(memset [cptr cpointer?]
-                    [offset exact-integer?]
+                    [offset exact-integer? 0]
                     [byte byte?]
                     [count exact-nonnegative-integer?]
                     [type ctype? _byte])
