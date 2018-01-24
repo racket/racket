@@ -223,6 +223,20 @@
     (define-values (a b c) (vector->values b2))
     (test '(1 2 3) list a b c)))
 
+;; vector-copy! and chaperones
+(let ([b (vector 1 2 3)])
+  (let ([b2 (impersonate-vector b
+                                (lambda (b i v) v)
+                                (lambda (b i v) v))])
+    (vector-copy! b 0 b2 1)
+    (test '#(2 3 3) values b)))
+(let ([b (vector 2 3 4)])
+  (let ([b2 (impersonate-vector b
+                                (lambda (b i v) v)
+                                (lambda (b i v) v))])
+    (vector-copy! b 1 b2 0 2)
+    (test '#(2 2 3) values b)))
+
 (define unsafe-chaperone-vector-name "unsafe-chaperone-vector")
 (define unsafe-impersonate-vector-name "unsafe-impersonate-vector")
 (define chaperone-vector*-name "chaperone-vector*")

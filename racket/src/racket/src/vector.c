@@ -825,8 +825,19 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[])
 
   if (slow) {
     int i, o;
-    for (i = istart, o = ostart; i < ifinish; i++, o++) {
-      scheme_chaperone_vector_set(argv[0], o, scheme_chaperone_vector_ref(argv[2], i));
+    if ((s2 == s1)
+        && (((istart <= ostart) && (ifinish > ostart))
+            || ((ostart <= istart) && (ofinish > istart)))
+        && (istart < ostart)) {
+      /* ranges overlap and shifting up: copy from end */
+      for (i = ifinish, o = ofinish; i-- > istart; ) {
+        o--;
+        scheme_chaperone_vector_set(argv[0], o, scheme_chaperone_vector_ref(argv[2], i));
+      }
+    } else {
+      for (i = istart, o = ostart; i < ifinish; i++, o++) {
+        scheme_chaperone_vector_set(argv[0], o, scheme_chaperone_vector_ref(argv[2], i));
+      }
     }
   } else {
     memmove(SCHEME_VEC_ELS(s1) + ostart,

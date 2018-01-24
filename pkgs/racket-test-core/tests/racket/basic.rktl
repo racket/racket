@@ -732,6 +732,13 @@
   (err/rt-test (read (open-input-string "#1234567890(0)")) exn:fail:out-of-memory?))
 (test #t vector? (make-vector 0))
 
+(let ([b (vector 1 2 3)])
+  (vector-copy! b 0 b 1)
+  (test '#(2 3 3) values b))
+(let ([b (vector 2 3 4)])
+  (vector-copy! b 1 b 0 2)
+  (test '#(2 2 3) values b))
+
 (define f (make-string 3 #\*))
 (test "?**" 'string-set! (begin (string-set! f 0 #\?) f))
 (arity-test string-set! 3 3)
