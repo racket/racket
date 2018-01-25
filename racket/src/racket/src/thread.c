@@ -342,6 +342,12 @@ static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *ar
 static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_os_thread_enabled_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_call_in_os_thread(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_make_os_semaphore(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_os_semaphore_wait(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_os_semaphore_post(int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[]);
 static Scheme_Object *plumber_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *plumber_flush_all(int argc, Scheme_Object *argv[]);
@@ -664,6 +670,12 @@ scheme_init_unsafe_thread (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("unsafe-poll-ctx-milliseconds-wakeup", unsafe_poll_ctx_time_wakeup, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("unsafe-signal-received", unsafe_signal_received, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("unsafe-set-sleep-in-thread!", unsafe_set_sleep_in_thread, 2, 2, env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-os-thread-enabled?", unsafe_os_thread_enabled_p, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-call-in-os-thread", unsafe_call_in_os_thread, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-make-os-semaphore", unsafe_make_os_semaphore, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-os-semaphore-wait", unsafe_os_semaphore_wait, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-os-semaphore-post", unsafe_os_semaphore_post, 1, 1, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -2824,6 +2836,40 @@ Scheme_Hash_Table *scheme_get_place_table(void)
   if (!place_local_misc_table)
     place_local_misc_table = scheme_make_hash_table(SCHEME_hash_ptr);
   return place_local_misc_table;
+}
+
+/*========================================================================*/
+/*                    OS threads - not supported                          */
+/*========================================================================*/
+
+static Scheme_Object *unsafe_os_thread_enabled_p(int argc, Scheme_Object *argv[])
+{
+  return scheme_false;
+}
+
+static Scheme_Object *unsafe_call_in_os_thread(int argc, Scheme_Object *argv[])
+{
+  scheme_check_proc_arity("unsafe-call-in-os-thread", 0, 0, argc, argv);
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-call-in-os-thread: " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
+}
+
+static Scheme_Object *unsafe_make_os_semaphore(int argc, Scheme_Object *argv[])
+{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-make-os-semaphore: " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
+}
+
+static Scheme_Object *unsafe_os_semaphore_wait(int argc, Scheme_Object *argv[])
+{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-os-semaphore-wait: " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
+}
+
+static Scheme_Object *unsafe_os_semaphore_post(int argc, Scheme_Object *argv[])
+{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-os-semaphore-post: " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
 }
 
 /*========================================================================*/
