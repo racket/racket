@@ -702,7 +702,6 @@
 
   (err/rt-test (in-array '(1 2 3)) exn:fail:contract?))
 
-
 ;; check cstruct serialization (define-serialize-cstruct must be at module level, can't use (let () ...))
 (module mod-cstruct-serialize racket/base
   (require (for-syntax racket/base)
@@ -1059,6 +1058,12 @@
     (check-equal? 123 (INSD-a ds))))
 
 (require (only-in 'mod-cstruct-serialize))
+
+;; Check that `define-serializable-cstruct' works in a top-level context
+(require racket/serialize
+         ffi/serialize-cstruct)
+(define-serializable-cstruct _serializable-example-1 ([a _int]))
+(test 17 serializable-example-1-a (deserialize (serialize (make-serializable-example-1 17))))
 
 ;; ----------------------------------------
 
