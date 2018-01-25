@@ -472,6 +472,7 @@ the later case, the result is the @racket[ctype]).}
                       [#:async-apply async-apply (or/c #f ((-> any/c) . -> . any/c) box?) #f]
                       [#:lock-name lock-name (or/c string? #f) #f]
                       [#:in-original-place? in-original-place? any/c #f]
+                      [#:blocking? blocking? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
@@ -549,6 +550,17 @@ For @tech{callouts} to foreign functions with the generated type:
        at a non-original place typically will not work, since the
        place of the Racket code may have a different allocator than
        the original place.}
+
+ @item{If @racket[blocking?] is true, then a foreign @tech{callout}
+       deactivates tracking of the calling OS thread---to the degree
+       supported by the Racket variant---during the foreign call.
+       Currently the value of @racket[blocking?] has no effect, but it
+       may enable activity such as concurrent garbage collection in
+       future variants of Racket. If the blocking @tech{callout} can
+       invoke any @tech{callbacks} back to Racket, those
+       @tech{callbacks} must be constructed with a non-@racket[#f]
+       value of @racket[async-apply], even if they are always applied
+       in the OS thread used to run Racket.}
 
  @item{Values that are provided to a @tech{callout} (i.e., the
        underlying callout, and not the replacement produced by a
@@ -696,7 +708,8 @@ For @tech{callbacks} to Racket functions with the generated type:
 
 ]
 
-@history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}
+         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -708,6 +721,7 @@ For @tech{callbacks} to Racket functions with the generated type:
                            (code:line #:async-apply async-apply-expr)
                            (code:line #:lock-name lock-name-expr)
                            (code:line #:in-original-place? in-original-place?-expr)
+                           (code:line #:blocking? blocking?-expr)
                            (code:line #:retry (retry-id [arg-id init-expr]))]
                [maybe-args code:blank
                            (code:line formals ::)]
@@ -735,7 +749,8 @@ and returns an integer.
 
 See @racket[_cprocedure] for information about the @racket[#:abi],
 @racket[#:save-errno], @racket[#:keep], @racket[#:atomic?],
-@racket[#:async-apply], and @racket[#:in-original-place?] options.
+@racket[#:async-apply], @racket[#:in-original-place?], and
+@racket[#:blocking] options.
 
 In its full form, the @racket[_fun] syntax provides an IDL-like
 language that creates a wrapper function around the
@@ -827,7 +842,8 @@ specifications:
 ]
 
 @history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
-         #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}]}
+         #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}
+         #:changed "6.12.0.2" @elem{Added the @racket[#:blocking?] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])

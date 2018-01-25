@@ -468,6 +468,7 @@
                       #:keep        [keep    #t]
                       #:atomic?     [atomic? #f]
                       #:in-original-place? [orig-place? #f]
+                      #:blocking?   [blocking? #f]
                       #:lock-name   [lock-name #f]
                       #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
@@ -512,7 +513,7 @@
 (provide _fun)
 (define-for-syntax _fun-keywords
   `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f]
-    [#:in-original-place? ,#'#f] [#:lock-name ,#'#f]
+    [#:in-original-place? ,#'#f] [#:blocking? ,#'#f] [#:lock-name ,#'#f]
     [#:async-apply ,#'#f] [#:save-errno ,#'#f]
     [#:retry #f]))
 (define-syntax (_fun stx)
