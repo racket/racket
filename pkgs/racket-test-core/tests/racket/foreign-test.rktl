@@ -719,61 +719,51 @@
       (begin . body)))
 
   (define (malloc/register size/type)
-    (define m (malloc (if (ctype? size/type)
-                          (ctype-sizeof size/type)
-                          size/type)
-                      'raw))
+    (define sz (if (ctype? size/type)
+                   (ctype-sizeof size/type)
+                   size/type))
+    (define m (malloc sz 'raw))
+    (memset m 0 sz)
     (hash-set! (current-raw) m #t)
     m)
 
   ;; run multiple times to better catching gc related errors
   (define num-runs 5)
 
+  (define-syntax-rule (err/rt-test e p?)
+    (with-handlers ([p? void]
+                    [exn:fail? (lambda (exn) (error 'test "exn test ~a failed, expected ~a but got ~a" 'e p? exn))])
+      e))
+
   (define-syntax-rule (check-exn exn thunk)
     (if (regexp? exn)
         (err/rt-test (thunk) (lambda (e) (regexp-match? exn (exn-message e))))
         (err/rt-test (thunk) exn)))
-   (define-syntax-rule (err/rt-test e p?)
-     (with-handlers ([p? void]
-                     [exn:fail? (lambda (exn) (eprintf "exn test ~a failed, expected ~a but got ~a\n" 'e p? exn))])
-       e))
 
   ;; --- syntax errors
-  (define-syntax-rule (check-not-exn e)
-    (with-handlers ([exn:fail? (lambda (exn) (eprintf "no-exn test ~a failed, got exn ~a\n" 'e exn))])
-      e))
+  (define-syntax-rule (check-not-exn thunk)
+    (with-handlers ([exn:fail? (lambda (exn) (error 'test "no-exn test ~a failed, got exn ~a" 'e exn))])
+      (thunk)))
 
   (define-syntax-rule (check-equal? e v)
     (let ([r e]
           [v* v])
       (unless (equal? e v*)
-        (eprintf "check-equal? ~a: expected ~a but got ~a" 'e v* r))))
-  (begin-for-syntax
-   (define-syntax-rule (err/rt-test e p?)
-     (with-handlers ([p? void]
-                     [exn:fail? (lambda (exn) (eprintf "exn test ~a failed, expected ~a but got ~a\n" 'e p? exn))])
-       e))
-   (define-syntax-rule (check-not-exn e)
-     (with-handlers ([exn:fail? (lambda (exn) (eprintf "no-exn test ~a failed, got exn ~a\n" 'e exn))])
-       e))
-   (define-syntax-rule (check-exn+rx exn rx thunk)
-     (begin
-       (err/rt-test (thunk) exn)
-       (err/rt-test (thunk) (lambda (e) (regexp-match? rx (exn-message e))))))
+        (error 'test "check-equal? ~a: expected ~s but got ~s" 'e v* r))))
 
-
-
-
-
-   (check-exn+rx exn:fail:syntax? #rx"id must start with"
-                 (lambda () (local-expand #'(define-serializable-cstruct F1a ([a _int])) 'module #f)))
-   (check-exn+rx exn:fail:syntax? #rx"only allowed in module context"
-                 (lambda () (local-expand #'(define-serializable-cstruct _F1b ([a _int])) 'expression #f)))
-   (check-exn+rx exn:fail:syntax? #rx"#:property prop:serializable not allowed"
-                 (lambda () (local-expand #'(define-serializable-cstruct _F1c ([a _int]) #:property prop:serializable #f)
-                                          'module #f)))
-   (check-exn+rx exn:fail:syntax? #rx"expected \\[field-id ctype\\]"
-                 (lambda () (local-expand #'(define-serializable-cstruct _F1d ()) 'module #f))))
+  (define-syntax-rule (check-exn+rx exn rx thunk)
+    (begin
+      (err/rt-test (thunk) exn)
+      (err/rt-test (thunk) (lambda (e) (regexp-match? rx (exn-message e))))))
+  
+  (check-exn+rx exn:fail:syntax? #rx"id must start with"
+                (lambda () (expand #'(define-serializable-cstruct F1a ([a _int])))))
+  (check-exn+rx exn:fail:syntax? #rx"only allowed in module or top-level context"
+                (lambda () (expand #'(+ 1 (define-serializable-cstruct _F1b ([a _int]))))))
+  (check-exn+rx exn:fail:syntax? #rx"#:property prop:serializable not allowed"
+                (lambda () (expand #'(define-serializable-cstruct _F1c ([a _int]) #:property prop:serializable #f))))
+  (check-exn+rx exn:fail:syntax? #rx"expected \\[field-id ctype\\]"
+                (lambda () (expand #'(define-serializable-cstruct _F1d ()))))
 
 
   ;; --- misc creation tests
@@ -887,7 +877,7 @@
 
      (define s1 (serialize a))
      (define ds1 (deserialize s1))
-     (check-equal? #t (ptr-equal? (C-b (A-c ds1)) (D-b (A-d ds1))))
+     (check-equal? (ptr-equal? (C-b (A-c ds1)) (D-b (A-d ds1))) #t)
 
      (collect-garbage)
      (check-equal? (C-b (A-c a)) (D-b (A-d a)))
@@ -962,9 +952,10 @@
      (define ds (deserialize (serialize par)))
      (collect-garbage)
 
-     (check-equal? #t
+     (check-equal?
       (for*/and ([i 2] [j 5])
-        (= (SINT-a (array-ref (PTRAR-a ds) i j)) (+ 10 j (* i 5)))))
+        (= (SINT-a (array-ref (PTRAR-a ds) i j)) (+ 10 j (* i 5))))
+      #t)
 
      ;; --
      (define ear (ptr-ref (malloc/register _EMBAR) _EMBAR))
@@ -974,9 +965,10 @@
      (define ds2 (deserialize (serialize ear)))
      (collect-garbage)
 
-     (check-equal? #t
+     (check-equal?
       (for*/and ([i 2] [j 5])
-        (= (SINT-a (array-ref (EMBAR-a ds2) i j)) (+ 10 j (* i 5)))))))
+        (= (SINT-a (array-ref (EMBAR-a ds2) i j)) (+ 10 j (* i 5))))
+      #t)))
 
   ;; --- array with embedded struct with pointer
   (define-serializable-cstruct _TP ([a _int]) #:malloc-mode malloc/register)
@@ -1007,7 +999,9 @@
 
   (define-serializable-cstruct _INSD ([a _int])
     #:serialize-inplace #:deserialize-inplace
-    #:malloc-mode (lambda (_) (error "should not get here")))
+    #:malloc-mode (if (eq? 'racket (system-type 'vm))
+                      (lambda (_) (error "should not get here"))
+                      malloc/register))
 
   ;; non-inplace + modification
   (let ()
