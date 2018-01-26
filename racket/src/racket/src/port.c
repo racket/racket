@@ -1306,11 +1306,13 @@ intptr_t scheme_get_byte_string_unless(const char *who,
       } else if (v == SCHEME_SPECIAL) {
 	ip->special = NULL;
 	scheme_bad_time_for_special(who, port);
-      } else if (v == skip) {
+      } else if (v > 0) {
 	peek_skip = scheme_bin_minus(peek_skip, scheme_make_integer(skip));
 	/* Ok... ready to continue (if skip == peek_skip) */
-      } else
+      } else {
+        /* This shouldn't happen, but just in case */
 	return 0;
+      }
     }
 
     if (size) {

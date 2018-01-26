@@ -1104,6 +1104,28 @@
     (let ([x (+ 9 (expt 10 100))])
       (test (list (cons x (add1 x))) regexp-match-peek-positions #"0" p (expt 10 100)))))
 
+;; Make sure that peeking past the end of a
+;; file as a first action gives EOF right away
+(let ([tempfilename (make-temporary-file)])
+  (call-with-output-file*
+   tempfilename
+   #:exists 'truncate
+   (lambda (o) (write-bytes (make-bytes 50 65) o)))
+  (for ([end '(60 50)])
+    (test (list eof eof)
+          call-with-input-file
+          tempfilename
+          (lambda (i)
+            (list (peek-byte i end)
+                  (peek-byte i end))))
+    (test (list eof eof)
+          call-with-input-file
+          tempfilename
+          (lambda (i)
+            (list (peek-bytes 1 end i)
+                  (peek-bytes 1 end i)))))
+  (delete-file tempfilename))
+
 ;;------------------------------------------------------------
 
 ;; Test custom output port
