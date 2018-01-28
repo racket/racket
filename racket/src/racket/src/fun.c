@@ -2572,6 +2572,9 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_inline_variant_type))
     e = SCHEME_VEC_ELS(e)[1];
 
+  if (!SCHEME_PROCP(e) && (SCHEME_TYPE(e) >= _scheme_ir_values_types_))
+    return NULL;
+
   p = scheme_get_or_check_arity(e, -3);
 
   if (SCHEME_PAIRP(p)) {
