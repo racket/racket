@@ -30,11 +30,7 @@
            reverse
 
            compose
-           compose1
-
-           empty?)
-
-  (define (empty? l) (null? l))
+           compose1)
 
   (#%require (rename "sort.rkt" raw-sort sort)
              (for-syntax "stxcase-scheme.rkt")
