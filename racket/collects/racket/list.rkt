@@ -62,7 +62,7 @@
          remf*)
 
 (require (for-syntax racket/base)
-         "private/list-predicates.rkt")
+         racket/private/list-predicates)
 
 (define (first x)
   (if (and (pair? x) (list? x))
