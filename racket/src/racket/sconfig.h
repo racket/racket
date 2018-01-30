@@ -224,9 +224,10 @@
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-openbsd"
 # elif defined(__sparc64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-openbsd"
-/* ARMv7 is a WIP platform on OpenBSD, probably broken here and there */
 # elif defined(__arm__) || defined(__thumb__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-openbsd"
+# elif defined(__aarch64__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "aarch64-openbsd"
 # elif defined(__hppa__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "hppa-openbsd"
 # else
