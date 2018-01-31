@@ -349,7 +349,7 @@ syntactically, a @racket[for-clause] is closer to to the body).
     [else (values (cons x acc)
                   (hash-set seen x #t))]))
 ]
-@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]}
+@history[#:changed "6.11.0.1" @elem{Added the @racket[#:result] form.}]
 }
 
 @defform[(for* (for-clause ...) body-or-break ... body)]{
