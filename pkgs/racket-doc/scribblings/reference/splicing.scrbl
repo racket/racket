@@ -21,14 +21,16 @@
 @defidform[splicing-letrec-syntaxes]
 @defidform[splicing-letrec-syntaxes+values]
 @defidform[splicing-local]
+@defidform[splicing-parameterize]
 )]{
 
 Like @racket[let], @racket[letrec], @racket[let-values],
 @racket[letrec-values], @racket[let-syntax], @racket[letrec-syntax],
 @racket[let-syntaxes], @racket[letrec-syntaxes],
-@racket[letrec-syntaxes+values], and @racket[local], except that in a
-definition context, the body forms are spliced into the enclosing
-definition context (in the same way as for @racket[begin]).
+@racket[letrec-syntaxes+values], @racket[local], and
+@racket[parameterize], except that in a definition context, the body
+forms are spliced into the enclosing definition context (in the same
+way as for @racket[begin]).
 
 @examples[
 #:eval splice-eval
@@ -57,7 +59,10 @@ splicing body, then the identifier should have a true value for the
 example, @racket[splicing-let] itself adds the property to
 locally-bound identifiers as it expands to a sequence of definitions,
 so that nesting @racket[splicing-let] within a splicing form works as
-expected (without any ambiguous bindings).}
+expected (without any ambiguous bindings).
+
+@history[
+ #:changed "6.12.0.2" @elem{Added @racket[splicing-parameterize].}]}
 
 
 @defidform[splicing-syntax-parameterize]{

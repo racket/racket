@@ -19,7 +19,8 @@
          splicing-letrec-values
          splicing-letrec-syntaxes+values
          splicing-local
-         splicing-syntax-parameterize)
+         splicing-syntax-parameterize
+         splicing-parameterize)
 
 (module syntax/loc/props racket/base
   (require (for-syntax racket/base))
@@ -456,3 +457,65 @@
                 [(#%declare . _) e]
                 [(quote-syntax . _) e]
                 [else (as-expression)]))))])))
+
+;; ----------------------------------------
+
+(define-syntax (splicing-parameterize stx)
+  (syntax-case stx ()
+    [(_ ([param value] ...) body ...)
+     (with-syntax ([(param/checked ...)
+                    (for/list ([param-stx (in-list (syntax->list #'(param ...)))])
+                      #`(let ([param-val #,param-stx])
+                          (unless (parameter? param-val)
+                            (raise-argument-error 'splicing-parameterize "parameter?" param-val))
+                          param-val))])
+       (if (eq? (syntax-local-context) 'expression)
+           #'(parameterize ([param/checked value] ...)
+               body ...)
+           (let ([introduce (make-syntax-introducer #t)])
+             (with-syntax ([scopeless-id (datum->syntax #f 'scopeless-id)]
+                           [scoped-id (introduce (datum->syntax #f 'scoped-id))]
+                           [(scoped-body ...) (map introduce (syntax->list #'(body ...)))]
+                           ; make sure the parameterization can be GC’d at the top/module level
+                           [(free-parameterization-expr ...)
+                            (case (syntax-local-context)
+                              [(top-level module) #'((set! new-parameterization #f))]
+                              [else #'()])])
+               #'(begin
+                   (define new-parameterization
+                     (parameterize ([param/checked value] ...)
+                       (current-parameterization)))
+                   (splicing-parameterize-body
+                    scopeless-id scoped-id new-parameterization scoped-body) ...
+                   free-parameterization-expr ...)))))]))
+
+(define-syntax (splicing-parameterize-body stx)
+  (syntax-case stx ()
+    [(_ scopeless-id scoped-id parameterization body)
+     (let* ([introducer (make-syntax-delta-introducer #'scoped-id #'scopeless-id)]
+            [unintro (λ (stx) (introducer stx 'remove))]
+            [expanded-body (local-expand #'body (syntax-local-context)
+                                         (kernel-form-identifier-list))])
+       (kernel-syntax-case expanded-body #f
+         [(begin new-body ...)
+          (syntax/loc/props expanded-body
+            (begin
+              (splicing-parameterize-body parameterization new-body)
+              ...))]
+         [(define-values ids rhs)
+          (quasisyntax/loc/props expanded-body
+            (define-values #,(map (maybe unintro) (syntax->list #'ids))
+              (call-with-parameterization parameterization (λ () rhs))))]
+         [(define-syntaxes ids rhs)
+          (quasisyntax/loc/props expanded-body
+            (define-syntaxes #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
+         [(begin-for-syntax . _) expanded-body]
+         [(module . _) (unintro expanded-body)]
+         [(module* . _) expanded-body]
+         [(#%require . _) (unintro expanded-body)]
+         [(#%provide . _) expanded-body]
+         [(#%declare . _) expanded-body]
+         [expr
+          (syntax/loc/props expanded-body
+            (call-with-parameterization parameterization (λ () expr)))]))]))
+

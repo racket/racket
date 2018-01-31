@@ -1660,6 +1660,54 @@
           (inspect-prop (splicing-let ()
                           (define-syntaxes/prop [] (values)))))))
 
+(test 42 'splicing-parameterize
+      (let ([param (make-parameter #f)])
+        (splicing-parameterize ([param 42])
+          (param))))
+
+(test 42 'splicing-parameterize
+      (let ([param (make-parameter #f)])
+        (splicing-parameterize ([param 42])
+          (define x (param)))
+        x))
+
+(test #f 'splicing-parameterize
+      (let ([param (make-parameter #f)])
+        (splicing-parameterize ([param 42])
+          (define (f) (param)))
+        (f)))
+
+(test #t 'splicing-parameterize
+      (let ([param (make-parameter #f)])
+        (splicing-parameterize ([param 42])
+          (param #t)
+          (define x (param)))
+        x))
+
+(test #f 'splicing-parameterize
+      (let-syntax ([deflocal (lambda (stx)
+                               (syntax-case stx ()
+                                 [(_ id rhs)
+                                  #`(define #,(syntax-property #'id 'definition-intended-as-local #t)
+                                      rhs)]))])
+        (let ([param (make-parameter #f)])
+          (define x (param))
+          (splicing-parameterize ([param 42])
+            (deflocal x (param)))
+          x)))
+
+(test 42 'splicing-parameterize
+      (let-syntax ([deflocal (lambda (stx)
+                               (syntax-case stx ()
+                                 [(_ id rhs)
+                                  #`(define #,(syntax-property #'id 'definition-intended-as-local #t)
+                                      rhs)]))])
+        (let ([param (make-parameter #f)])
+          (define x (param))
+          (splicing-parameterize ([param 42])
+            (deflocal x (param))
+            x))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 
 ;; and define-syntax-for-values:
