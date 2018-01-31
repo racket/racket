@@ -9,7 +9,7 @@
 
 @title{Redirections}
 
-This page that is intended to redirect to the result of a search
+This page is intended to redirect to the result of a search
 request. Since you're reading this, it seems that the redirection
 did not work.
 
