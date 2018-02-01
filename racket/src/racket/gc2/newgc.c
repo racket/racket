@@ -66,7 +66,7 @@ static int never_collect_incremental_on_minor = 0;
 
 /* Conservatively force a major GC after a certain number minor GCs
    (except in incremental mode). It should be ok to set this value
-   arbitraily high, while experience suggests that 100 would be
+   arbitrarily high, while experience suggests that 100 would be
    excessively conservative. */
 #define FORCE_MAJOR_AFTER_COUNT 1000
 
