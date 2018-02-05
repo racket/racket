@@ -64,7 +64,7 @@ the @rfc for more information about JSON.
                      [#:encode encode (or/c 'control 'all) 'control])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
-  @racket[outp] output port.
+  @racket[out] output port.
 
   By default, only ASCII control characters are encoded as
   ``@tt{\uHHHH}''.  If @racket[encode] is given as @racket['all], then
