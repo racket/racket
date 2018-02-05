@@ -162,8 +162,8 @@ ends with a newline.}
 
 
 @defparam*[current-command-line-arguments argv
-                                          (vectorof (and/c string? immutable?))
-                                          (vectorof string?)]{
+                                          (vectorof string?)
+                                          (vectorof (and/c string? immutable?))]{
 
 A @tech{parameter} that is initialized with command-line arguments when
 Racket starts (not including any command-line arguments that were
