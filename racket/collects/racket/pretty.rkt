@@ -734,10 +734,12 @@
      [else (list (make-unquoted 'cons) (car obj) (cdr obj))]))
 
   (define (convert-hash obj expr?)
-    (let ([l (hash-map obj (lambda (k v)
-                             (if expr?
-                                 (list k v)
-                                 (cons k (make-hide v)))))])
+    (let ([l (hash-map obj
+                       (lambda (k v)
+                         (if expr?
+                             (list k v)
+                             (cons k (make-hide v))))
+                       #t)])
       (if expr?
           (cons (make-unquoted
                  (if (hash-eq? obj)
