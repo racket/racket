@@ -186,7 +186,8 @@
                                         (path-of
                                          #,(datum->syntax
                                             #'orig-stx
-                                            `(,#'this-expression-source-file))))
+                                            `(,#'this-expression-source-file)
+                                            #'orig-stx)))
                                     #'void)])
                  (apply to-values (resolve-paths (#%variable-reference)
                                                  get-dir
