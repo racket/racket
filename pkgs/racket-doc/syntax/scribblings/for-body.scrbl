@@ -1,6 +1,7 @@
 #lang scribble/manual
 @(require (for-label racket/base
-                     syntax/quote))
+                     syntax/quote
+                     syntax/for-body))
 
 @title{Parsing @racket[for] Bodies}
 
