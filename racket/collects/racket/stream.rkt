@@ -317,10 +317,12 @@
              (raise-syntax-error (syntax-e #'derived-stx)
                                  "missing body expression after sequence bindings"
                                  stx #'body))
-           #`(sequence->stream
-              (in-generator
-               (#,derived-stx #,stx () clauses
-                (yield (let () . body))
-                (values)))))]))
+           (with-syntax ([((pre-body ...) body*) (split-for-body stx #'body)])
+             #`(sequence->stream
+                (in-generator
+                 (#,derived-stx #,stx () clauses
+                  pre-body ...
+                  (yield (let () . body*))
+                  (values))))))]))
     (values (make-for/stream #'for/fold/derived)
             (make-for/stream #'for*/fold/derived))))

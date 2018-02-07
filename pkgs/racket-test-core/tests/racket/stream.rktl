@@ -62,4 +62,9 @@
 (test 1 'for/stream (stream-first (for*/stream ([x '(1 0)]) (/ x))))
 (test 625 'for/stream (stream-ref (for/stream ([x (in-naturals)]) (* x x)) 25))
 
+(test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)] #:break (> i 5)) i))
+(test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)]) #:break (> i 5) i))
+(test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)])
+                                    (define ii (sqr i)) #:break (> ii 30) i))
+
 (report-errs)
