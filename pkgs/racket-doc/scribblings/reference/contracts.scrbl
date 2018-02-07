@@ -2206,7 +2206,7 @@ The @racket[val-first-proj] is like @racket[late-neg-proj], except with
 an extra layer of currying.
 
 At least one of the @racket[late-neg-proj], @racket[proj],
- @racket[val-first-proj], or @racket[first-order] must be non-@racket[#f].
+ @racket[val-first-proj], or @racket[test] must be non-@racket[#f].
 
 The projection arguments (@racket[late-neg-proj], @racket[proj], and
  @racket[val-first-proj]) must be in sync with the @racket[test] argument.
@@ -2793,9 +2793,9 @@ a contract.  It is specified in terms of seven properties:
    of a contract violation;}
   @item{@racket[get-first-order], which produces a first-order predicate to be
    used by @racket[contract-first-order-passes?];}
-  @item{@racket[get-late-neg-projection], which produces a blame-tracking projection
+  @item{@racket[late-neg-proj], which produces a blame-tracking projection
    defining the behavior of the contract (The @racket[get-projection]
-   and @racket[get-val-first-projection] arguments also specify the projection,
+   and @racket[val-first-proj] arguments also specify the projection,
    but using a different signature. They are here for backwards compatibility.);}
   @item{@racket[stronger], a predicate that determines whether this
    contract (passed in the first argument) is stronger than some other
@@ -2813,8 +2813,8 @@ a contract.  It is specified in terms of seven properties:
    to determine if this contract accepts only @racket[list?]s.}
 ]
 
-At least one of the @racket[late-neg-proj], @racket[proj],
-@racket[val-first-proj], or @racket[first-order] must be non-@racket[#f].
+At least one of the @racket[late-neg-proj], @racket[get-projection],
+@racket[val-first-proj], or @racket[test] must be non-@racket[#f].
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the
