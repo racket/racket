@@ -12,7 +12,7 @@
      #`(define-syntax macro
          (syntax-parser/template
           #,((make-syntax-introducer) stx)
-          [(_ . pattern) . body]))]))
+          [((~var macro id) . pattern) . body]))]))
 
 (define-simple-macro (define-syntax-parser macro:id option-or-clause ...)
   (define-syntax macro

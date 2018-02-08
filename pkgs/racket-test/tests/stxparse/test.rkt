@@ -810,7 +810,7 @@
     (define-simple-macro (~or . _)
       #:with stx (syntax/loc this-syntax (void))
       stx)
-    (check-eq? (~or) void)
+    (check-eq? (~or) (void))
     ))
 
 ;; from Jay McCarthy (4/2016)
