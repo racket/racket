@@ -38,8 +38,10 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 (fn2 a #:b 'c)
 ]
 
-@history[#:changed "6.12.0.3" "Change generated pattern head to (~var macro-name id) from macro-name"]
-
+@history[#:changed "6.12.0.3" @elem{Changed pattern head to @racket[(~var macro-id id)] from
+                                    @racket[macro-id], allowing tilde-prefixed identifiers or
+                                    identifiers containing colons to be used as @racket[macro-id]
+                                    without producing a syntax error.}]
 }
 
 @defform[(define-syntax-parser macro-id parse-option ... clause ...+)]{
