@@ -2814,7 +2814,7 @@ a contract.  It is specified in terms of seven properties:
 ]
 
 At least one of the @racket[late-neg-proj], @racket[get-projection],
-@racket[val-first-proj], or @racket[test] must be non-@racket[#f].
+@racket[val-first-proj], or @racket[get-first-order] must be non-@racket[#f].
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the
