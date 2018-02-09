@@ -8,11 +8,11 @@
 
 (define-syntax (define-simple-macro stx)
   (syntax-parse stx
-    [(define-simple-macro (~and (macro:id . _) pattern) . body)
+    [(define-simple-macro (macro:id . pattern) . body)
      #`(define-syntax macro
          (syntax-parser/template
           #,((make-syntax-introducer) stx)
-          [pattern . body]))]))
+          [((~var macro id) . pattern) . body]))]))
 
 (define-simple-macro (define-syntax-parser macro:id option-or-clause ...)
   (define-syntax macro
