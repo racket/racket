@@ -80,6 +80,9 @@
        (syntax-property
         (quasisyntax/loc stx
           (let ([xs exprs*] ...)
-            (define (outer-fail) raise-error)
-            body))
+            (let ([outer-fail
+                   #,(syntax-property
+                      #'(λ () raise-error)
+                      'typechecker:called-in-tail-position #t)])
+              body)))
         'feature-profile:pattern-matching #t)])))
