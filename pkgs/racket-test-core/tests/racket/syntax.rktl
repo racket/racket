@@ -2037,4 +2037,19 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module provide-transformer-set!-and-broken-module-begin racket
+  (provide
+   (for-syntax set!)
+   (rename-out (defined-begin #%module-begin)))
+
+  (define-syntax (defined-begin stx)
+    (syntax-case stx ()
+      [(_ e ...)
+       #`(#%plain-module-begin #,@(map expand (syntax->list #'(e ...))))])))
+
+(err/rt-test (eval '(module m 'provide-transformer-set!-and-broken-module-begin (set! x 1)))
+             exn:fail:syntax?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

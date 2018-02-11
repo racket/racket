@@ -692,10 +692,12 @@ void scheme_register_unbound_toplevel(Scheme_Comp_Env *env, Scheme_Object *id)
 {
   Comp_Prefix *cp = env->prefix;
 
-  if (!cp->unbound) cp->unbound = scheme_null;
-
-  id = scheme_make_pair(id, cp->unbound);
-  cp->unbound = id;
+  if (cp) {
+    if (!cp->unbound) cp->unbound = scheme_null;
+    
+    id = scheme_make_pair(id, cp->unbound);
+    cp->unbound = id;
+  }
 }
 
 void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env)
