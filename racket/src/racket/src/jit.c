@@ -2570,7 +2570,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           (void)jit_calli(code);
           /* non-tail code pops args off runstack for us */
           jitter->need_set_rs = 1;
+          __START_SHORT_JUMPS__(1);
           mz_patch_ucbranch(ref5);
+          __END_SHORT_JUMPS__(1);
           if (target != JIT_R0)
             jit_movr_p(target, JIT_R0);
         }
