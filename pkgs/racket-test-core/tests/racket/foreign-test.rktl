@@ -541,7 +541,9 @@
   (memcpy p #"hi, all!" 8)
   (test #"hi, all!" cast p _pointer (_bytes o 8))
   (test #"hi, all!" cast p _pointer (_bytes/nul-terminated o 8)))
-(let* ([strdup (get-ffi-obj 'strdup #f (_fun _bytes/nul-terminated -> _pointer))]
+(let* ([strdup (get-ffi-obj 'strdup #f (_fun _bytes/nul-terminated -> _pointer)
+                            (lambda ()
+                              (get-ffi-obj '_strdup #f (_fun _bytes/nul-terminated -> _pointer))))]
        [p (strdup #"howdy...")])
   (test #"howdy..." cast p _pointer _bytes)
   (test #"howdy..." cast p _pointer _bytes/nul-terminated)
