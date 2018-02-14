@@ -139,8 +139,8 @@ works as a remote URL, as long as the @filepath{pkgs} and
 local but required for HTTP).
 
 The source for the PLT-hosted @tech{package catalog} is in the
-@racket[(collection-file-path "pkg-catalog" "meta")]
-directory of the full Racket distribution.
+@hyperlink["https://pkgs.racket-lang.org/package/pkg-index"]{pkg-index}
+package.
 
 @; ----------------------------------------
 
