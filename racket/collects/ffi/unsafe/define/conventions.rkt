@@ -4,8 +4,7 @@
          convention:hyphen->camelcase)
 (require (for-syntax racket/base
                      racket/syntax
-                     racket/string
-                     syntax/parse))
+                     racket/string))
 
 (define-syntax (convention:hyphen->underscore id)
   (format-id id (string-replace (symbol->string (syntax-e id)) "-" "_")))
