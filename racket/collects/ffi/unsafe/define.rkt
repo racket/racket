@@ -27,6 +27,50 @@
 (define-syntax-rule (provide-protected p ...)
   (provide (protect-out p ...)))
 
+(begin-for-syntax
+  (define (make-ffi-definer-transformer the-ffi-lib  ;; Identifier
+                                        provide-form ;; Identifier/#'#f
+                                        define-form  ;; Identifier
+                                        default-make-fail ;; Identifier
+                                        make-c-id)  ;; Identifier/#'#f
+    ;; do-make-c-id : Identifier -> Identifier
+    (define (do-make-c-id id)
+      (cond [(identifier? make-c-id)
+             (define result ((syntax-local-value make-c-id) id))
+             (unless (identifier? result)
+               (raise-syntax-error #f "invalid make-c-id result" make-c-id))
+             result]
+            [else id]))
+    (with-syntax ([the-ffi-lib  the-ffi-lib]
+                  [provide      provide-form]
+                  [define-form  define-form]
+                  [default-make-fail default-make-fail])
+      (lambda (stx)
+        (syntax-parse stx
+          [(_ s-id:id type:expr
+              (~seq (~or (~optional (~seq #:c-id c-id:id)
+                                    #:defaults ([c-id (do-make-c-id #'s-id)])
+                                    #:name "#:c-id keyword")
+                         (~optional (~seq #:wrap wrapper:expr)
+                                    #:defaults ([wrapper #'values])
+                                    #:name "#:wrap keyword")
+                         (~optional (~or (~seq #:make-fail make-fail:expr)
+                                         (~seq #:fail fail:expr))
+                                    #:defaults ([make-fail #'default-make-fail])))
+                    ...))
+           (with-syntax ([fail (if (attribute fail)
+                                   #'fail
+                                   #'(make-fail 's-id))])
+             (with-syntax ([def (syntax/loc stx
+                                  (define-form s-id
+                                    (wrapper (get-ffi-obj 'c-id the-ffi-lib type fail))))])
+               (if (syntax-e #'provide)
+                   (syntax/loc stx
+                     (begin
+                       (provide s-id)
+                       def))
+                   #'def)))])))))
+
 (define-syntax (define-ffi-definer stx)
   (syntax-parse stx
     [(_ define-:id ffi-lib:expr
@@ -51,35 +95,11 @@
                  (raise-type-error 'define-ffi-definer
                                    "ffi-lib or #f"
                                    v))))
-         (define-syntax define- 
-           (with-syntax ([provide #'provide-form])
-             (lambda (stx)
-               (syntax-parse stx
-                 [(_ s-id:id type:expr (~seq (~or (~optional (~seq #:c-id c-id:id)
-                                                             #:defaults ([c-id #,(if (identifier? (attribute make-c-id))
-                                                                                     #'((syntax-local-value #'make-c-id) #'s-id)
-                                                                                     #'#'s-id)])
-                                                             #:name "#:c-id keyword")
-                                                  (~optional (~seq #:wrap wrapper:expr)
-                                                             #:defaults ([wrapper #'values])
-                                                             #:name "#:wrap keyword")
-                                                  (~optional (~or (~seq #:make-fail make-fail:expr)
-                                                                  (~seq #:fail fail:expr))
-                                                             #:defaults ([make-fail #'default-make-fail])))
-                                             (... ...)))
-                  (unless (identifier? #'c-id)
-                    (raise-syntax-error #f
-                                        "invalid make-c-id expression"
-                                        #'make-c-id))
-                  (with-syntax ([fail (if (attribute fail)
-                                          #'fail
-                                          #'(make-fail 's-id))])
-                    (with-syntax ([def (syntax/loc stx
-                                         (define-form s-id (wrapper (get-ffi-obj 'c-id the-ffi-lib type fail))))])
-                      (if (syntax-e #'provide)
-                          (syntax/loc stx
-                            (begin
-                              (provide s-id)
-                              def))
-                          #'def)))])))))]))
-
+         (define the-default-make-fail default-make-fail)
+         (define-syntax define-
+           (make-ffi-definer-transformer
+            (quote-syntax the-ffi-lib)
+            (quote-syntax provide-form)
+            (quote-syntax define-form)
+            (quote-syntax the-default-make-fail)
+            (quote-syntax make-c-id))))]))
