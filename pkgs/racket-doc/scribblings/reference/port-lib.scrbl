@@ -824,7 +824,7 @@ that becomes available on @racket[in] is immediately transferred to
 This function is often called from a ``background'' thread to
 continuously pump data from one stream to another.
 
-If multiple @racket[out]s are provided, case data from @racket[in] is
+If multiple @racket[out]s are provided, data from @racket[in] is
 written to every @racket[out]. The different @racket[out]s block
 output to each other, because each block of data read from @racket[in]
 is written completely to one @racket[out] before moving to the next
