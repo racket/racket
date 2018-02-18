@@ -27,10 +27,6 @@
  
  make-contract
  
- prop:opt-chaperone-contract
- prop:opt-chaperone-contract?
- prop:opt-chaperone-contract-get-test
- 
  prop:orc-contract
  prop:orc-contract?
  prop:orc-contract-get-subcontracts

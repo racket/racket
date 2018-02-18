@@ -123,9 +123,7 @@
   (or (simple-flat-contract? x)
       (let ([c (coerce-contract/f x)])
         (and c
-             (or (chaperone-contract-struct? c)
-                 (and (prop:opt-chaperone-contract? c)
-                      ((prop:opt-chaperone-contract-get-test c) c)))))))
+             (chaperone-contract-struct? c)))))
   
 (define (simple-flat-contract? x)
   (or (and (procedure? x) (procedure-arity-includes? x 1))

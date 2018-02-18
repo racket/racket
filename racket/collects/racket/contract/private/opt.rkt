@@ -236,7 +236,7 @@
          (optres-superlifts an-optres)
          (bind-lifts
           (optres-lifts an-optres)
-          #`(make-opt-contract
+          #`(make-an-opt-contract
              (λ (ctc)
                (λ (blame)
                  #,(bind-superlifts
@@ -246,7 +246,11 @@
              (λ (this that) #f)
              (vector)
              (begin-lifted (box #f))
-             #,(optres-chaperone an-optres))))
+             #,(optres-chaperone an-optres)
+             #,(let ([f (optres-flat an-optres)])
+                 (if f
+                     #`(λ (val) #,f)
+                     #'#f)))))
         #`(coerce-contract '#,error-name-sym #,exp))))
 
 ;; this macro optimizes 'e' as a contract,
@@ -324,7 +328,7 @@
                 (optres-superlifts an-optres)
                 (bind-lifts
                  (optres-lifts an-optres)
-                 #`(make-opt-contract
+                 #`(make-an-opt-contract
                     (λ (ctc)
                       (λ (blame)
                         (λ (val) 
@@ -333,7 +337,11 @@
                     (λ (this that) #f)
                     (vector)
                     (begin-lifted (box #f))
-                    #,(optres-chaperone an-optres)))))
+                    #,(optres-chaperone an-optres)
+                    #,(let ([f (optres-flat an-optres)])
+                        (if f
+                            #`(λ (val) #,f)
+                            #'#f))))))
            (values f1 f2)))]))
 
 ;; optimized contracts
@@ -346,18 +354,48 @@
 (define-values (orig-ctc-prop orig-ctc-pred? orig-ctc-get)
   (make-struct-type-property 'original-contract))
 
+(define (make-an-opt-contract proj name stronger stronger-vars stamp
+                              chaperone? flat)
+  (cond
+    [flat
+     (make-flat-opt-contract proj name stronger stronger-vars stamp flat)]
+    [chaperone?
+     (make-chaperone-opt-contract proj name stronger stronger-vars stamp)]
+    [else
+     (make-impersonator-opt-contract proj name stronger stronger-vars stamp)]))
+
 ;; the stronger-vars don't seem to be used anymore for stronger; probably
 ;; they should be folded into the lifts and then there should be a separate
 ;; setup for consolidating stronger checks
-(define-struct opt-contract (proj name stronger stronger-vars stamp chaperone?)
-  #:property prop:opt-chaperone-contract (λ (ctc) (opt-contract-chaperone? ctc))
-  #:property prop:custom-write (λ (val port mode) (fprintf port "#<opt-contract: ~.s>" (opt-contract-name val)))
+(define-struct opt-contract (proj name stronger stronger-vars stamp))
+
+(define (opt-contract-stronger-proc this that)
+  (and (opt-contract? that)
+       (eq? (opt-contract-stamp this) (opt-contract-stamp that))
+       ((opt-contract-stronger this) this that)))
+
+(define-struct (flat-opt-contract opt-contract) (predicate)
+  #:property prop:custom-write
+  (λ (val port mode) (fprintf port "#<opt-flat-contract: ~.s>" (opt-contract-name val)))
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
+   #:first-order (λ (ctc) (flat-opt-contract-predicate ctc))
+   #:name (λ (ctc) (opt-contract-name ctc))
+   #:stronger opt-contract-stronger-proc))
+(define-struct (chaperone-opt-contract opt-contract) ()
+  #:property prop:custom-write
+  (λ (val port mode) (fprintf port "#<opt-chaperone-contract: ~.s>" (opt-contract-name val)))
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
+   #:name (λ (ctc) (opt-contract-name ctc))
+   #:stronger opt-contract-stronger-proc))
+(define-struct (impersonator-opt-contract opt-contract) ()
+  #:property prop:custom-write
+  (λ (val port mode) (fprintf port "#<opt-contract: ~.s>" (opt-contract-name val)))
   #:property prop:contract
   (build-contract-property
    #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
    #:name (λ (ctc) (opt-contract-name ctc))
-   #:stronger
-   (λ (this that)
-      (and (opt-contract? that)
-           (eq? (opt-contract-stamp this) (opt-contract-stamp that))
-           ((opt-contract-stronger this) this that)))))
+   #:stronger opt-contract-stronger-proc))

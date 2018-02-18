@@ -17,6 +17,7 @@
   (define (test-flat-contract/proc contract pass fail line
                                    #:skip-predicate-checks? [skip-predicate-checks? #f])
     (contract-eval `(,test #t flat-contract? ,contract))
+    (contract-eval `(,test #t flat-contract? (opt/c ,contract)))
     (define (run-two-tests maybe-rewrite)
       (define name (if (pair? contract) (car contract) contract))
       (let/ec k

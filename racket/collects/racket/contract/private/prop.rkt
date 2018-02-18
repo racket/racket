@@ -34,11 +34,7 @@
          make-contract
          make-chaperone-contract
          make-flat-contract
-         
-         prop:opt-chaperone-contract
-         prop:opt-chaperone-contract?
-         prop:opt-chaperone-contract-get-test
-         
+
          prop:orc-contract
          prop:orc-contract?
          prop:orc-contract-get-subcontracts
@@ -220,15 +216,6 @@
    'prop:chaperone-contract
    chaperone-contract-property-guard
    (list (cons prop:contract chaperone-contract-property->contract-property))))
-
-;; this property is so the opt'd contracts can
-;; declare that they are chaperone'd; the property
-;; is a function that extracts a boolean from the 
-;; original struct
-(define-values (prop:opt-chaperone-contract
-                prop:opt-chaperone-contract? 
-                prop:opt-chaperone-contract-get-test)
-  (make-struct-type-property 'prop:opt-chaperone-contract))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
