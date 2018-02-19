@@ -4490,6 +4490,10 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       }
     }
 
+    if (SAME_OBJ(scheme_varref_from_unsafe_p_proc, rator)
+        && SAME_TYPE(SCHEME_TYPE(rand), scheme_varref_form_type)) {
+      return replace_tail_inside(scheme_false, inside, app->rand);
+    }
 
     if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "zero?")) {
       Scheme_Object* pred;

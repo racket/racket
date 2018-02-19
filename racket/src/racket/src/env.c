@@ -48,6 +48,7 @@ THREAD_LOCAL_DECL(int scheme_starting_up);
 
 /* globals READ-ONLY SHARED */
 Scheme_Object *scheme_varref_const_p_proc;
+Scheme_Object *scheme_varref_from_unsafe_p_proc;
 READ_ONLY static Scheme_Env    *kernel_env;
 READ_ONLY static Scheme_Env    *unsafe_env;
 READ_ONLY static Scheme_Env    *flfxnum_env;
@@ -92,6 +93,7 @@ static Scheme_Object *variable_phase(int, Scheme_Object *[]);
 static Scheme_Object *variable_base_phase(int, Scheme_Object *[]);
 static Scheme_Object *variable_inspector(int, Scheme_Object *[]);
 static Scheme_Object *variable_const_p(int, Scheme_Object *[]);
+static Scheme_Object *variable_unsafe_p(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
 static Scheme_Object *now_transforming_with_lifts(int argc, Scheme_Object *argv[]);
 static Scheme_Object *now_transforming_module(int argc, Scheme_Object *argv[]);
@@ -766,6 +768,12 @@ static void make_kernel_env(void)
                                                         "variable-reference-constant?", 
                                                         1, 1);
   scheme_add_global_constant("variable-reference-constant?", scheme_varref_const_p_proc, env);
+
+  REGISTER_SO(scheme_varref_from_unsafe_p_proc);
+  scheme_varref_from_unsafe_p_proc = scheme_make_prim_w_arity(variable_unsafe_p, 
+                                                              "variable-reference-from-unsafe?", 
+                                                              1, 1);
+  scheme_add_global_constant("variable-reference-from-unsafe?", scheme_varref_from_unsafe_p_proc, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-transforming?", now_transforming, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-transforming-with-lifts?", now_transforming_with_lifts, 0, 0, env);
@@ -2170,6 +2178,18 @@ static Scheme_Object *variable_const_p(int argc, Scheme_Object *argv[])
   v = SCHEME_PTR1_VAL(v);
   if (((Scheme_Bucket_With_Flags *)v)->flags & GLOB_IS_IMMUTATED)
     return scheme_true;
+
+  return scheme_false;
+}
+
+static Scheme_Object *variable_unsafe_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  v = argv[0];
+
+  if (!SAME_TYPE(SCHEME_TYPE(v), scheme_global_ref_type))
+    scheme_wrong_contract("variable-reference-from-unsafe?", "variable-reference?", 0, argc, argv);
 
   return scheme_false;
 }

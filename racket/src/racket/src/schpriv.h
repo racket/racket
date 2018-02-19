@@ -555,6 +555,7 @@ extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
 extern Scheme_Object *scheme_make_inspector_proc;
 extern Scheme_Object *scheme_varref_const_p_proc;
+extern Scheme_Object *scheme_varref_from_unsafe_p_proc;
 extern Scheme_Object *scheme_unsafe_fxnot_proc;
 extern Scheme_Object *scheme_unsafe_fxand_proc;
 extern Scheme_Object *scheme_unsafe_fxior_proc;

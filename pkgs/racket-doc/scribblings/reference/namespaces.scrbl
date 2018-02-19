@@ -496,3 +496,22 @@ Returns the declaration @tech{inspector} (see @secref["modprotect"])
 for the module of @racket[varref], where @racket[varref] must refer to
 an anonymous module variable as produced by
 @racket[(#%variable-reference)].}
+
+
+@defproc[(variable-reference-from-unsafe? [varref variable-reference?]) boolean?]{
+
+Returns @racket[#t] if the module of the variable reference itself
+(not necessarily a referenced variable) is compiled in unsafe mode,
+@racket[#f] otherwise. Since unsafe-mode compilation is not currently
+supported, the result is always @racket[#f].
+
+The @racket[variable-reference-from-unsafe?] procedure is intended for
+use as
+
+@racketblock[
+(variable-reference-from-unsafe? (#%variable-reference))
+]
+
+which the compiler can currently optimize to a literal @racket[#f].
+
+@history[#:added "6.12.0.4"]}
