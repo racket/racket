@@ -10,24 +10,49 @@
            (all-from-out "modresolve.rkt")
            show-import-tree)
 
-  (define (show-import-tree module-path)
-    (let loop ([path (resolve-module-path module-path #f)][indent ""][fs ""])
-      (printf "~a~a~a\n" indent path fs)
-      (let ([code (get-module-code path)])
-        (let ([imports (module-compiled-imports code)])
-          (define ((mk-loop fs) i)
-            (let ([p (resolve-module-path-index i path)])
-              (unless (symbol? p)
-                (loop p
-                      (format " ~a" indent)
-                      fs))))
-          (for-each (lambda (i)
-                      (for-each
-                       (mk-loop (case (car i)
-                                  [(0) ""]
-                                  [(1) " [for-syntax]"]
-                                  [(-1) " [for-syntax]"]
-                                  [(#f) " [for-label]"]
-                                  [else (format " [for-meta ~a]" (car i))]))
-                       (cdr i)))
-                    imports))))))
+  (define (show-import-tree module-path
+                            #:dag? [dag? #f]
+                            #:path-to [given-path-to #f])
+    (define path-to (and given-path-to (simplify-path (resolve-module-path given-path-to #f))))
+    (define seen (and dag? (make-hash)))
+    (let loop ([path (resolve-module-path module-path #f)] [indent ""] [fs ""] [phase 0] [accum '()])
+      (unless path-to
+        (printf "~a~a~a ~a\n" indent path fs phase))
+      (when (equal? path-to path)
+        (let ([accum (let loop ([accum (cons (list indent path fs phase) accum)])
+                       (cond
+                         [(null? accum) null]
+                         [(hash-ref seen accum #f) null]
+                         [else
+                          (hash-set! seen accum #t)
+                          (cons (car accum) (loop (cdr accum)))]))])
+          (for ([i (in-list (reverse accum))])
+            (apply printf "~a~a~a ~a\n" i))))
+      (unless (and seen (hash-ref seen (cons path phase) #f))
+        (when seen (hash-set! seen (cons path phase) #t))
+        (define plain-path (if (pair? path) (cadr path) path))
+        (let ([code (get-module-code plain-path
+                                     #:submodule-path (if (pair? path) (cddr path) '()))])
+          (let ([imports (module-compiled-imports code)]
+                [accum (cons (list indent path fs phase) accum)])
+            (define ((mk-loop phase-shift fs) i)
+              (let ([p (resolve-module-path-index i plain-path)])
+                (unless (symbol? p)
+                  (loop (if (path? p)
+                            (simplify-path p)
+                            (list* 'submod (simplify-path (cadr p)) (cddr p)))
+                        (format " ~a" indent)
+                        fs
+                        (and phase phase-shift (+ phase phase-shift))
+                        accum))))
+            (for-each (lambda (i)
+                        (for-each
+                         (mk-loop (car i)
+                                  (case (car i)
+                                    [(0) ""]
+                                    [(1) " [for-syntax]"]
+                                    [(-1) " [for-template]"]
+                                    [(#f) " [for-label]"]
+                                    [else (format " [for-meta ~a]" (car i))]))
+                         (cdr i)))
+                      imports)))))))
