@@ -37,4 +37,34 @@ op
 @history[#:added "6.3"]{}
 }
 
+@defproc[(id-transformer [id-trans (-> identifier? syntax?)])
+         (-> syntax? syntax?)]{
+
+Creates a transformer for an identifier macro that calls
+@racket[id-trans] on the identifier, whether the macro is
+used as a bare identifier or within parentheses.
+
+@examples[#:eval the-eval
+(code:comment
+ "simple example, could be done with make-variable-like-transformer")
+(define-syntax my-add1
+  (id-transformer
+   (lambda (stx) #'add1)))
+my-add1
+(my-add1 5)
+(code:comment
+ "more complex example, taking advantage of being a transformer")
+(define-syntax whereami
+  (id-transformer
+   (lambda (stx)
+     (unless (even? (syntax-line stx))
+       (raise-syntax-error #f "must be used on an even-numbered line" stx))
+     (syntax-property #'add1 'line (syntax-line stx)))))
+(eval:error whereami)     ; line 11
+whereami                  ; line 12
+(eval:error (whereami 6)) ; line 13
+(whereami 6)              ; line 14
+]
+}
+
 @close-eval[the-eval]

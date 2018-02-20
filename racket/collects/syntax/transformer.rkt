@@ -1,8 +1,9 @@
 #lang racket/base
 
-(require (for-template racket/base))
+(require syntax/stx
+         (for-template racket/base))
 
-(provide make-variable-like-transformer)
+(provide make-variable-like-transformer id-transformer)
 
 (define (make-variable-like-transformer ref-stx [set!-handler #f])
   (unless (syntax? ref-stx)
@@ -26,3 +27,17 @@
        [(id . args)
         (let ([stx* (cons #'(#%expression id) (cdr (syntax-e stx)))])
           (datum->syntax stx stx* stx))]))))
+
+;; id-transformer : [Identifier -> Syntax] -> [Syntax -> Syntax]
+(define ((id-transformer trans) stx)
+  (cond
+    [(identifier? stx) (trans stx)]
+    [(and (stx-pair? stx) (identifier? (stx-car stx)))
+     (datum->syntax stx
+                    (cons (trans (stx-car stx))
+                          (stx-cdr stx))
+                    stx
+                    stx)]
+    [else
+     (raise-syntax-error #f "bad use of identifier macro" stx)]))
+
