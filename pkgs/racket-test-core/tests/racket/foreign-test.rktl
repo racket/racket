@@ -541,11 +541,21 @@
   (memcpy p #"hi, all!" 8)
   (test #"hi, all!" cast p _pointer (_bytes o 8))
   (test #"hi, all!" cast p _pointer (_bytes/nul-terminated o 8)))
-(let* ([strdup (get-ffi-obj 'strdup #f (_fun _bytes/nul-terminated -> _pointer))]
+(let* ([strdup (get-ffi-obj (if (eq? 'windows (system-type))
+				'_strdup
+				'strdup)
+			    (if (eq? 'windows (system-type))
+				(ffi-lib "msvcrt.dll")
+				#f)
+			    (_fun _bytes/nul-terminated -> _pointer))]
        [p (strdup #"howdy...")])
   (test #"howdy..." cast p _pointer _bytes)
   (test #"howdy..." cast p _pointer _bytes/nul-terminated)
-  (free p))
+  (let ([free (if (eq? 'windows (system-type))
+		  ;; get `free` consistent with `_strdup`:
+		  (get-ffi-obj 'free (ffi-lib "msvcrt.dll") (_fun _pointer -> _void))
+		  free)])
+    (free p)))
 
 ;; Test equality and hashing of c pointers:
 (let ([seventeen1 (cast 17 _intptr _pointer)]
