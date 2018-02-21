@@ -41,7 +41,7 @@ The @racket[spawn-remote-racket-node] primitive connects to
 assigned to the @racket[remote-node] variable. Localhost is used so that
 the example can be run using only a single machine.  However localhost
 can be replaced by any host with ssh publickey access and racket.  The
-@racket[supervise-named-dynamic-place-at] creates a new place on the
+@racket[supervise-place-at] creates a new place on the
 @racket[remote-node].  The new place will be identified in the future by
 its name symbol @racket['tuple-server].  A place descriptor is
 expected to be returned by invoking @racket[dynamic-place] with the
@@ -51,7 +51,7 @@ symbol.
 The code for the tuple-server place exists in the file
 @filepath{tuple.rkt}.  The @filepath{tuple.rkt} file contains the use of
 @racket[define-named-remote-server] form, which defines a RPC server
-suitiable for invocation by @racket[supervise-named-dynamic-place-at].
+suitiable for invocation by @racket[supervise-place-at].
 
 
 
