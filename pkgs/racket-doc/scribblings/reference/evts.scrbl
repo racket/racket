@@ -31,10 +31,18 @@ events, however (such as a port), synchronizing does not modify the
 event's state.
 
 Racket values that act as @tech{synchronizable events} include
-@tech{semaphores}, @tech{channels}, @tech{asynchronous channels},
-@tech{ports}, @tech{TCP listeners}, @tech{log receiver}s, @tech{threads},
-@tech{subprocess}es, @tech{will executors}, and @tech{custodian
-box}es. Libraries can define new synchronizable events, especially
+@tech{asynchronous channels},
+@tech{channels},
+@tech{custodian box}es,
+@tech{log receivers},
+@tech{place channels},
+@tech{ports},
+@tech{semaphores},
+@tech{subprocess}es,
+@tech{TCP listeners},
+@tech{threads}, and
+@tech{will executors}.
+Libraries can define new synchronizable events, especially
 though @racket[prop:evt].
 
 @;------------------------------------------------------------------------
