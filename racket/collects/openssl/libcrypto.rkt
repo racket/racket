@@ -12,6 +12,12 @@
 ;; Notes on shared library versions when provided by OS
 ;; ie, VERSION s.t. OS provides "lib{crypto,ssl}.{so,dylib}.$VERSION"
 ;;
+;; As of 1.0.0, OpenSSL has adopted a friendlier version policy (see
+;; https://www.openssl.org/policies/releasestrat.html), and recent
+;; Linux distros (eg Fedora 27, Debian 9.3 ("stretch")) seem to be
+;; using (more) compatible .so versions.
+;;
+;; Notes on older versions:
 ;; - Debian and Ubuntu use a few fixed library versions even though
 ;;   actual OpenSSL version changes:
 ;;   - Debian squeeze: lib{crypto,ssl}.so.0.9.8
@@ -29,6 +35,9 @@
 (define openssl-lib-versions
   '(;; Versionless (eg from devel pkg)
     ""
+
+    "1.1"
+    "1.0.2"
 
     ;; Compatibility-based version / SONAME
     "10"     ;; Fedora
