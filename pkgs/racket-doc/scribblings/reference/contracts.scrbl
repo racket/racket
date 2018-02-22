@@ -259,7 +259,7 @@ returns a @racket[list-contract?].
  (first-or/c (-> number? number?)
         (-> string? string? string?))]
  accepts the function @racket[(λ args 0)],
- applying the @racket[(->number? number?)] contract to the function
+ applying the @racket[(-> number? number?)] contract to the function
  because it comes first, even though
  @racket[(-> string? string? string?)] also applies.
 
