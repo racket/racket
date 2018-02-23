@@ -535,6 +535,17 @@
       (check-equal? (reverse (lits)) '(a c))))
   )
 
+;; #:cut
+
+(test-case "#:cut after pattern"
+  (check-exn #rx"correct exn"
+             (lambda ()
+               (syntax-parse #'#t
+                 [b #:cut
+                    #:fail-when (syntax-e #'b) "correct exn"
+                    (values)]
+                 [_ (error "wrong exn")]))))
+
 ;; state unwinding
 
 (let ()
