@@ -350,6 +350,14 @@ example.
 Equivalent to @racket[#:and (~undo defn-or-expr ...)].
 }
 
+@specsubform[(code:line #:cut)]{
+
+Eliminates backtracking choice points and commits parsing to the
+current branch at the current point.
+
+Equivalent to @racket[#:and ~!].
+}
+
 
 @;{----------}
 

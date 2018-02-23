@@ -1267,6 +1267,9 @@
     [(cons (list '#:undo undo-stx stmts) rest)
      (cons (action:undo stmts)
            (parse-pattern-sides rest decls))]
+    [(cons (list '#:cut cut-stx) rest)
+     (cons (action:cut)
+           (parse-pattern-sides rest decls))]
     ['()
      '()]))
 
@@ -1632,7 +1635,8 @@
         (list '#:and check-expression)
         (list '#:post check-expression)
         (list '#:do check-stmt-list)
-        (list '#:undo check-stmt-list)))
+        (list '#:undo check-stmt-list)
+        (list '#:cut)))
 
 ;; fail-directive-table
 (define fail-directive-table
