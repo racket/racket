@@ -437,7 +437,7 @@
   (cond
     [had-stxes?
      (...log-expand obs
-                    ['prim-letrec-syntaxes+values #f]
+                    ['prim-letrec-syntaxes+values]
                     ['letrec-syntaxes-renames stx-clauses clauses (datum->syntax #f done-bodys s)]
                     ['prepare-env]
                     ['next-group])
@@ -447,5 +447,5 @@
                       ['let-renames clauses (datum->syntax #f done-bodys s)]))]
     [else
      (...log-expand obs
-                    ['prim-letrec-values #f]
+                    ['prim-letrec-values]
                     ['let-renames clauses (datum->syntax #f done-bodys s)])]))

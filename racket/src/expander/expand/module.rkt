@@ -1073,16 +1073,18 @@
                                                             [namespace (namespace->namespace-at-phase m-ns phase)]
                                                             [requires+provides requires+provides]
                                                             [declared-submodule-names declared-submodule-names])))
-          (log-expand ctx 'exit-prim)
           (cond
            [(expand-context-to-parsed? ctx)
             (loop (cdr bodys) phase)]
            [else
-            (cons (syntax-track-origin*
-                   track-stxes
-                   (rebuild
-                    (car bodys)
-                    `(,(m '#%provide) ,@specs)))
+            (define new-s
+              (syntax-track-origin*
+               track-stxes
+               (rebuild
+                (car bodys)
+                `(,(m '#%provide) ,@specs))))
+            (log-expand ctx 'exit-prim new-s)
+            (cons new-s
                   (loop (cdr bodys) phase))])]
          [else
           (cons (car bodys)
