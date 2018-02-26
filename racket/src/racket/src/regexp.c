@@ -198,7 +198,7 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
   regbackdepends = NULL;
   regerrorproc = handler;
   regerrorval = NULL;
-  regc(MAGIC);
+  regc((char)MAGIC);
   if (reg(0, &flags, 0, 0, PARSE_CASE_SENS | PARSE_SINGLE_LINE | (pcre ? PARSE_PCRE : 0)) == 0) {
     if (regerrorval)
       return NULL;
