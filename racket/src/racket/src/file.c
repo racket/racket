@@ -5310,7 +5310,7 @@ find_system_path(int argc, Scheme_Object **argv)
                           "       'init-dir 'init-file 'addon-dir\n"
                           "       'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
                           "       'collects-dir 'config-dir 'orig-dir\n"
-                          "       'host-collects-dir 'host-config-fir)",
+                          "       'host-collects-dir 'host-config-dir)",
                           0, argc, argv);
     return NULL;
   }
