@@ -302,7 +302,10 @@
     (define-values (path base) (module-path-index-split from-mpi))
     (and (not path)
          (module-path-index-resolved from-mpi)
-         (apply-syntax-shifts from-mpi (syntax-mpi-shifts s)))))
+         (let ([mpi (apply-syntax-shifts from-mpi (syntax-mpi-shifts s))])
+           (if source?
+               (resolved-module-path-name (module-path-index-resolve mpi #f))
+               mpi)))))
 
 (define (identifier-prune-to-source-module id)
   (unless (identifier? id)
