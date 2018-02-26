@@ -1977,10 +1977,12 @@ static int u_strcmp(mzchar *s, const char *_t)
   return 0;
 }
 
-static Scheme_Object *make_interned_char(int ch)
+static Scheme_Object *make_interned_char(int ch, int intern)
 {
   if (ch < 256)
     return scheme_make_character(ch);
+  else if (intern)
+    return scheme_intern_literal_number(scheme_make_char(ch));
   else
     return scheme_make_char(ch);
 }
@@ -2014,7 +2016,7 @@ read_character(Scheme_Object *port,
 
     ch = ((ch - '0') << 6) + ((next - '0') << 3) + (last - '0');
 
-    return make_interned_char(ch);
+    return make_interned_char(ch, 0);
   }
 
   if (((ch == 'u') || (ch == 'U')) && NOT_EOF_OR_SPECIAL(next) && scheme_isxdigit(next)) {
@@ -2110,7 +2112,7 @@ read_character(Scheme_Object *port,
   if (ch == EOF)
     scheme_read_err(port, "read: expected a character after #\\");
 
-  return make_interned_char(ch);
+  return make_interned_char(ch, 0);
 }
 
 /*========================================================================*/
@@ -2706,7 +2708,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_CHAR:
       l = read_compact_number(port);
-      return make_interned_char(l);
+      return make_interned_char(l, 1);
       break;
     case CPT_INT:
       return scheme_make_integer(read_compact_number(port));
