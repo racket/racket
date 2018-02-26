@@ -18,16 +18,28 @@ if not exist ..\..\share  mkdir ..\..\share
 
 if not defined BUILD_CONFIG set BUILD_CONFIG=..\..\etc
 
+cl cstartup.c
+cstartup.exe ..\racket\src\startup.inc libracket\startup.inc
+if errorlevel 1 exit /B 1
+if not exist libracket\cstartup.inc echo #include "startup.inc" > libracket\cstartup.inc
+
 cd racket
 msbuild racket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1
+..\..\..\racketcgc -cu ..\..\racket\src\compile-startup.rkt ..\libracket\cstartup.inc ..\libracket\cstartup.zo ..\..\racket\src\startup.inc ..\..\racket\src\schvers.h
+if errorlevel 1 exit /B 1
+msbuild racket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
+
 cd ..\gracket
 msbuild gracket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1
 cd ..
 
+REM  Assumes that Racket is started in a subdirectory of here:
+set BOOT_SETUP=-W "info@compiler/cm error" -l- setup --boot ../../setup-go.rkt ../compiled
+
 cd gc2
-..\..\..\racketcgc -G ..\%BUILD_CONFIG% -cu make.rkt
+..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt
 if errorlevel 1 exit /B 1
 cd ..
 
@@ -45,7 +57,7 @@ if errorlevel 1 exit /B 1
 cd ..
 
 cd mzcom
-..\..\..\racket -G ..\%BUILD_CONFIG% -cu xform.rkt
+..\..\..\racket -G ..\%BUILD_CONFIG% %BOOT_SETUP% mzcom.none ../compiled/mzcom.dep xform.rkt
 if errorlevel 1 exit /B 1
 cd ..
 

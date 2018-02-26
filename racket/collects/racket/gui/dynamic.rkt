@@ -1,18 +1,16 @@
 #lang racket/base
-(require ffi/unsafe)
+(require ffi/unsafe
+         ffi/unsafe/global)
 
 (provide gui-available?
          gui-dynamic-require)
-
-(define scheme_register_process_global
-  (get-ffi-obj 'scheme_register_process_global #f (_fun _string _pointer -> _pointer)))
 
 (define (gui-available?)
   (and 
    ;; Never available in non-0 phases:
    (zero? (variable-reference->phase (#%variable-reference)))
    ;; Must be instantiated:
-   (scheme_register_process_global "GRacket-support-initialized" #f)
+   (register-process-global #"GRacket-support-initialized" #f)
    (with-handlers ([exn:fail? (lambda (exn) #f)])
      ;; Fails if `mred/private/dynamic' is not declared
      ;;  (without loading it if not):

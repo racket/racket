@@ -86,7 +86,7 @@ static Scheme_Object *sema_for_repost(Scheme_Object *s, int *repost)
   return SCHEME_PTR_VAL(s);
 }
 
-void scheme_init_sema(Scheme_Env *env)
+void scheme_init_sema(Scheme_Startup_Env *env)
 {
   Scheme_Object *o;
 
@@ -94,112 +94,112 @@ void scheme_init_sema(Scheme_Env *env)
   register_traversers();
 #endif
 
-  scheme_add_global_constant("make-semaphore", 
+  scheme_addto_prim_instance("make-semaphore", 
 			     scheme_make_prim_w_arity(make_sema,
 						      "make-semaphore", 
 						      0, 1), 
 			     env);
-  scheme_add_global_constant("semaphore?", 
+  scheme_addto_prim_instance("semaphore?", 
 			     scheme_make_folding_prim(semap,
 						      "semaphore?", 
 						      1, 1, 1), 
 			     env);
-  scheme_add_global_constant("semaphore-post", 
+  scheme_addto_prim_instance("semaphore-post", 
 			     scheme_make_prim_w_arity(hit_sema, 
 						      "semaphore-post", 
 						      1, 1), 
 			     env);
-  scheme_add_global_constant("semaphore-try-wait?", 
+  scheme_addto_prim_instance("semaphore-try-wait?", 
 			     scheme_make_prim_w_arity(block_sema_p, 
 						      "semaphore-try-wait?", 
 						      1, 1), 
 			     env);
-  scheme_add_global_constant("semaphore-wait", 
+  scheme_addto_prim_instance("semaphore-wait", 
 			     scheme_make_prim_w_arity(block_sema, 
 						      "semaphore-wait", 
 						      1, 1), 
 			     env);
-  scheme_add_global_constant("semaphore-wait/enable-break", 
+  scheme_addto_prim_instance("semaphore-wait/enable-break", 
 			     scheme_make_prim_w_arity(block_sema_breakable, 
 						      "semaphore-wait/enable-break", 
 						      1, 1), 
 			     env);
 
-  scheme_add_global_constant("semaphore-peek-evt", 
+  scheme_addto_prim_instance("semaphore-peek-evt", 
 			     scheme_make_prim_w_arity(make_sema_repost,
 						      "semaphore-peek-evt", 
 						      1, 1), 
 			     env);
-  scheme_add_global_constant("semaphore-peek-evt?", 
+  scheme_addto_prim_instance("semaphore-peek-evt?", 
 			     scheme_make_folding_prim(is_sema_repost,
 						      "semaphore-peek-evt?", 
 						      1, 1, 1), 
 			     env);
 
-  scheme_add_global_constant("make-channel", 
+  scheme_addto_prim_instance("make-channel", 
 			     scheme_make_prim_w_arity(make_channel,
 						      "make-channel",
 						      0, 0), 
 			     env);
-  scheme_add_global_constant("channel-put-evt", 
+  scheme_addto_prim_instance("channel-put-evt", 
 			     scheme_make_prim_w_arity(make_channel_put,
 						      "channel-put-evt",
 						      2, 2), 
 			     env);
-  scheme_add_global_constant("channel?", 
+  scheme_addto_prim_instance("channel?", 
 			     scheme_make_folding_prim(channel_p,
 						      "channel?",
 						      1, 1, 1), 
 			     env);  
-  scheme_add_global_constant("channel-put-evt?", 
+  scheme_addto_prim_instance("channel-put-evt?", 
 			     scheme_make_folding_prim(channel_put_p,
                                                       "channel-put-evt?",
                                                       1, 1, 1), 
 			     env);
-  scheme_add_global_constant("chaperone-channel",
+  scheme_addto_prim_instance("chaperone-channel",
 			     scheme_make_prim_w_arity(chaperone_channel,
                                                       "chaperone-channel",
                                                       3, -1),
 			     env);
-  scheme_add_global_constant("impersonate-channel",
+  scheme_addto_prim_instance("impersonate-channel",
 			     scheme_make_prim_w_arity(impersonate_channel,
                                                       "impersonate-channel",
                                                       3, -1),
 			     env);
 
-  scheme_add_global_constant("thread-send", 
+  scheme_addto_prim_instance("thread-send", 
 			     scheme_make_prim_w_arity(thread_send,
 						      "thread-send", 
 						      2, 3), 
 			     env);
-  scheme_add_global_constant("thread-receive", 
+  scheme_addto_prim_instance("thread-receive", 
 			     scheme_make_prim_w_arity(thread_receive,
 						      "thread-receive", 
 						      0, 0), 
 			     env);
-  scheme_add_global_constant("thread-try-receive", 
+  scheme_addto_prim_instance("thread-try-receive", 
 			     scheme_make_prim_w_arity(thread_try_receive,
 						      "thread-try-receive", 
 						      0, 0), 
 			     env);
-  scheme_add_global_constant("thread-receive-evt", 
+  scheme_addto_prim_instance("thread-receive-evt", 
 			     scheme_make_prim_w_arity(thread_receive_evt,
 						      "thread-receive-evt", 
 						      0, 0), 
 			     env);
-  scheme_add_global_constant("thread-rewind-receive", 
+  scheme_addto_prim_instance("thread-rewind-receive", 
 			     scheme_make_prim_w_arity(thread_rewind_receive,
 						      "thread-rewind-receive", 
 						      1, 1), 
 			     env);
 
-  scheme_add_global_constant("alarm-evt", 
+  scheme_addto_prim_instance("alarm-evt", 
 			     scheme_make_prim_w_arity(make_alarm,
 						      "alarm-evt",
 						      1, 1), 
 			     env);
 
-  scheme_add_global_constant("system-idle-evt", 
+  scheme_addto_prim_instance("system-idle-evt", 
 			     scheme_make_prim_w_arity(make_sys_idle,
 						      "system-idle-evt",
 						      0, 0), 
@@ -208,11 +208,11 @@ void scheme_init_sema(Scheme_Env *env)
   REGISTER_SO(scheme_always_ready_evt);
   scheme_always_ready_evt = scheme_alloc_small_object();
   scheme_always_ready_evt->type = scheme_always_evt_type;
-  scheme_add_global_constant("always-evt", scheme_always_ready_evt, env);
+  scheme_addto_prim_instance("always-evt", scheme_always_ready_evt, env);
 
   o = scheme_alloc_small_object();
   o->type = scheme_never_evt_type;
-  scheme_add_global_constant("never-evt", o, env);
+  scheme_addto_prim_instance("never-evt", o, env);
 
   REGISTER_SO(thread_recv_evt);
   o = scheme_alloc_small_object();

@@ -227,7 +227,7 @@
 (box-tests make-weak-box weak-box-value weak-box? #f #f 'weak-box-value #t)
 
 ;; test clearing weak boxes
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (let* ([s (gensym)]
          [b (make-weak-box s)])
     (test s weak-box-value b)
@@ -2898,17 +2898,21 @@
                                                    (cons 1 (loop (sub1 i))))))
                                     exn:fail:contract?)))
                    not-inc)))
-          (list proc (procedure-reduce-arity proc ar))))])
+          (list proc (procedure-reduce-arity proc ar))))]
+      [representable-arity? (lambda (a)
+                          (or (not (eq? 'chez-scheme (system-type 'vm)))
+                              (a . < . 4096)))])
   (let ([check-all-but-one
          (lambda (+)
            (check-ok + 0 '(0) '(1))
            (check-ok + 2 '(2) '(0 1 3 4))
-           (check-ok + 10 '(10) (list 0 11 (expt 2 70)))
-           (check-ok + (expt 2 70) (list (expt 2 70)) (list 0 10  (add1 (expt 2 70))))
-           (check-ok + (make-arity-at-least 2) (list 2 5 (expt 2 70)) (list 0 1))
+           (check-ok + 10 '(10) (filter representable-arity? (list 0 11 (expt 2 70))))
+           (when (representable-arity? (expt 2 70))
+             (check-ok + (expt 2 70) (list (expt 2 70)) (filter representable-arity? (list 0 10 (add1 (expt 2 70))))))
+           (check-ok + (make-arity-at-least 2) (filter representable-arity? (list 2 5 (expt 2 70))) (list 0 1))
            (check-ok + (list 2 4) '(2 4) '(0 3))
            (check-ok + (list 2 4) '(4 2) '(0 3))
-           (check-ok + (list 0 (make-arity-at-least 2)) (list 0 2 5 (expt 2 70)) (list 1))
+           (check-ok + (list 0 (make-arity-at-least 2)) (filter representable-arity? (list 0 2 5 (expt 2 70))) (list 1))
            (check-ok + (list 4 (make-arity-at-least 2)) '(2 3 4 10) '(0 1))
            (check-ok + (list 2 (make-arity-at-least 4)) '(2 4 10) '(0 1 3)))])
     (check-all-but-one +)

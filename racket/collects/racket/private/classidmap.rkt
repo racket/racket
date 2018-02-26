@@ -2,7 +2,8 @@
 
 (require syntax/stx
          (for-syntax racket/base)
-         (for-template racket/base
+         (for-template racket/stxparam
+                       racket/base
                        racket/unsafe/undefined
                        "class-wrapped.rkt"
                        "class-undef.rkt"))
@@ -29,7 +30,7 @@
        (list* 'apply id this (reverse (cons args accum)))])))
 
 (define (find the-finder name src)
-  (let ([this-id (syntax-local-value (syntax-local-get-shadower the-finder))])
+  (let ([this-id (syntax-parameter-value the-finder)])
     (datum->syntax this-id name src)))
 
 ;; Check Syntax binding info:

@@ -1787,10 +1787,12 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test failure handlers
 
-(test "`+' follows nothing in pattern" regexp "+" (λ (s) s))
-(test "`+' follows nothing in pattern" pregexp "+" (λ (s) s))
-(test "`+' follows nothing in pattern" byte-regexp #"+" (λ (s) s))
-(test "`+' follows nothing in pattern" byte-pregexp #"+" (λ (s) s))
+(define (requote s) (regexp-replace* #rx"'" s "`"))
+
+(test "`+` follows nothing in pattern" regexp "+" requote)
+(test "`+` follows nothing in pattern" pregexp "+" requote)
+(test "`+` follows nothing in pattern" byte-regexp #"+" requote)
+(test "`+` follows nothing in pattern" byte-pregexp #"+" requote)
 (test 3 regexp "+" (λ (s) (+ 1 2)))
 (test 3 pregexp "+" (λ (s) (+ 1 2)))
 (test 3 byte-regexp #"+" (λ (s) (+ 1 2)))
@@ -1798,7 +1800,7 @@
 
 (test-values '(1 2 3) (lambda () (byte-pregexp #"+" (λ (s) (values 1 2 3)))))
 
-(err/rt-test (regexp "+" #f) (lambda (exn) (regexp-match? "`[+]' follows nothing in pattern" (exn-message exn))))
+(err/rt-test (regexp "+" #f) (lambda (exn) (regexp-match? "`[+]. follows nothing in pattern" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that negated patterns as literal strings are not recorded

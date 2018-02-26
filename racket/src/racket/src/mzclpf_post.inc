@@ -17,7 +17,6 @@
     if (pf) {
       int *use_bits;
       uintptr_t map;
-      int mark_stxes;
 
       /* pf might have been marked via fields: */
       pf = (Scheme_Prefix *)GC_resolve2(pf, gc);
@@ -39,7 +38,6 @@
         pf->backpointer = (Scheme_Object *)c;
 #endif
       }
-      mark_stxes = 0;
 
       /* Add this closure to the chain to be repaired when the
          prefix is marked and potentially moved; if we're here
@@ -60,12 +58,7 @@
           for (i = 0; i < 31; i++) {
             if (map & ((unsigned int)1 << i)) {
               if (!(use_bits[0] & ((unsigned int)1 << i))) {
-                if ((i < pf->num_toplevels) || !pf->num_stxes)
-                  gcMARK2(pf->a[i], gc); /* top level */
-                else if (i == pf->num_toplevels)
-                  mark_stxes = 1; /* any syntax object */
-                else
-                  gcMARK2(pf->a[i + pf->num_stxes], gc); /* lifted */
+                gcMARK2(pf->a[i], gc); /* top level */
               }
             }
           }
@@ -81,23 +74,12 @@
               if (map & ((unsigned int)1 << j)) {
                 if (!(use_bits[i] & ((unsigned int)1 << j))) {
                   pos = (i * 32) + j;
-                  if ((pos < pf->num_toplevels) || !pf->num_stxes)
-                    gcMARK2(pf->a[pos], gc);  /* top level */
-                  else if (pos == pf->num_toplevels)
-                    mark_stxes = 1;  /* any syntax object */
-                  else
-                    gcMARK2(pf->a[pos + pf->num_stxes], gc); /* lifted */
+                  gcMARK2(pf->a[pos], gc);  /* top level */
                 }
               }
             }
             use_bits[i] |= map;
           }
-        }
-      }
-      if (mark_stxes) {
-        /* Mark all syntax-object references */
-        for (i = pf->num_stxes+1; i--;) {
-          gcMARK2(pf->a[i+pf->num_toplevels], gc);
         }
       }
     }

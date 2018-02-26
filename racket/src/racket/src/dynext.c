@@ -85,7 +85,6 @@ static char *dlerror(void) {
 # include "schemex.h"
 #endif
 
-static Scheme_Object *load_extension(int argc, Scheme_Object **argv);
 static Scheme_Object *current_load_extension(int argc, Scheme_Object *argv[]);
 
 #ifdef LINK_EXTENSIONS_BY_TABLE
@@ -122,7 +121,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *fullpath_loaded_extensions;) /* hash
 
 #define BAD_VERSION_STR "found version does not match the expected version"
 
-void scheme_init_dynamic_extension(Scheme_Env *env)
+void scheme_init_dynamic_extension(Scheme_Startup_Env *env)
 {
   if (scheme_starting_up) {
 #ifdef LINK_EXTENSIONS_BY_TABLE
@@ -134,8 +133,7 @@ void scheme_init_dynamic_extension(Scheme_Env *env)
 #endif
   }
 
-  GLOBAL_PRIM_W_ARITY2("load-extension", load_extension, 1, 1, 0, -1, env);
-  GLOBAL_PARAMETER("current-load-extension", current_load_extension, MZCONFIG_LOAD_EXTENSION_HANDLER, env);
+  ADD_PARAMETER("current-load-extension", current_load_extension, MZCONFIG_LOAD_EXTENSION_HANDLER, env);
 }
 
 static Scheme_Object *
@@ -496,9 +494,28 @@ void scheme_register_extension_global(void *ptr, intptr_t size)
   GC_add_roots((char *)ptr, (char *)(((char *)ptr) + size + 1));
 }
 
-static Scheme_Object *load_extension(int argc, Scheme_Object **argv)
+static int submodule_spec_p(Scheme_Object *expected_module)
 {
-  return scheme_load_with_clrd(argc, argv, "load-extension", MZCONFIG_LOAD_EXTENSION_HANDLER);
+  Scheme_Object *a;
+
+  if (SCHEME_PAIRP(expected_module)) {
+    a = SCHEME_CAR(expected_module);
+    if (!SCHEME_FALSEP(a) && !SCHEME_SYMBOLP(a))
+      return 0;
+    expected_module = SCHEME_CDR(expected_module);
+    if (!SCHEME_PAIRP(expected_module))
+      return 0;
+    while (SCHEME_PAIRP(expected_module)) {
+      a = SCHEME_CAR(expected_module);
+      if (!SCHEME_SYMBOLP(a))
+        return 0;
+      expected_module = SCHEME_CDR(expected_module);
+    }
+    if (SCHEME_NULLP(expected_module))
+      return 1;
+  }
+
+  return 0;
 }
 
 Scheme_Object *scheme_default_load_extension(int argc, Scheme_Object **argv)
@@ -509,8 +526,17 @@ Scheme_Object *scheme_default_load_extension(int argc, Scheme_Object **argv)
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("default-load-extension-handler", "path-string?", 0, argc, argv);
   expected_module = argv[1];
-  if (!SCHEME_FALSEP(expected_module) && !SCHEME_SYMBOLP(expected_module))
-    scheme_wrong_contract("default-load-extension-handler", "(or/c symbol? #f)", 1, argc, argv);
+  if (!SCHEME_FALSEP(expected_module)
+      && !SCHEME_SYMBOLP(expected_module)
+      && !submodule_spec_p(expected_module))
+    scheme_wrong_contract("default-load-extension-handler",
+                          "(or/c symbol? #f (cons/c (or/c #f symbol?) (non-empty-listof symbol?)))",
+                          1, argc, argv);
+
+  if (SCHEME_PAIRP(expected_module) && SCHEME_FALSEP(SCHEME_CAR(expected_module))) {
+    /* caller requests quiet failure for separate loading of submodule */
+    return scheme_void;
+  }
 
   filename = scheme_expand_string_filename(argv[0],
 					   "default-load-extension-handler",
@@ -522,10 +548,10 @@ Scheme_Object *scheme_default_load_extension(int argc, Scheme_Object **argv)
 
 Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env)
 {
-  Scheme_Object *a[1];
-
+  Scheme_Object *load_ext_proc, *a[1];
+  load_ext_proc = scheme_get_startup_export("load-extension");
   a[0] = scheme_make_byte_string(filename);
-  return load_extension(1, a);
+  return scheme_apply_multi(load_ext_proc, 1, a);
 }
 
 void scheme_free_dynamic_extensions()

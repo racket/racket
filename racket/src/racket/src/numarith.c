@@ -87,7 +87,7 @@ static Scheme_Object *unsafe_extfl_sqrt (int argc, Scheme_Object *argv[]);
 # define SQRT_MACHINE_CODE_AVAILABLE 1
 #endif
 
-void scheme_init_numarith(Scheme_Env *env)
+void scheme_init_numarith(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
 
@@ -97,7 +97,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("add1", p, env);
+  scheme_addto_prim_instance("add1", p, env);
 
   p = scheme_make_folding_prim(scheme_sub1, "sub1", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -105,7 +105,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("sub1", p, env);
+  scheme_addto_prim_instance("sub1", p, env);
 
   p = scheme_make_folding_prim(plus, "+", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -114,7 +114,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("+", p, env);
+  scheme_addto_prim_instance("+", p, env);
 
   p = scheme_make_folding_prim(minus, "-", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -124,7 +124,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("-", p, env);
+  scheme_addto_prim_instance("-", p, env);
 
   p = scheme_make_folding_prim(mult, "*", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -133,7 +133,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("*", p, env);
+  scheme_addto_prim_instance("*", p, env);
 
   p = scheme_make_folding_prim(div_prim, "/", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -141,7 +141,7 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_WANTS_NUMBER
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("/", p, env);
+  scheme_addto_prim_instance("/", p, env);
 
   p = scheme_make_folding_prim(scheme_abs, "abs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -149,21 +149,21 @@ void scheme_init_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
                                                             | SCHEME_PRIM_PRODUCES_NUMBER
                                                             | SCHEME_PRIM_CLOSED_ON_REALS);
-  scheme_add_global_constant("abs", p, env);
+  scheme_addto_prim_instance("abs", p, env);
   
   p = scheme_make_folding_prim(quotient, "quotient", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_WANTS_REAL
                                                             | SCHEME_PRIM_PRODUCES_REAL);
-  scheme_add_global_constant("quotient", p, env);
+  scheme_addto_prim_instance("quotient", p, env);
 
   p = scheme_make_folding_prim(rem_prim, "remainder", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_WANTS_REAL
                                                             | SCHEME_PRIM_PRODUCES_REAL);
-  scheme_add_global_constant("remainder", p, env);
+  scheme_addto_prim_instance("remainder", p, env);
 
-  scheme_add_global_constant("quotient/remainder", 
+  scheme_addto_prim_instance("quotient/remainder", 
 			     scheme_make_prim_w_arity2(quotient_remainder,
 						       "quotient/remainder", 
 						       2, 2,
@@ -174,10 +174,10 @@ void scheme_init_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_WANTS_REAL
                                                             | SCHEME_PRIM_PRODUCES_REAL);
-  scheme_add_global_constant("modulo", p, env);
+  scheme_addto_prim_instance("modulo", p, env);
 }
 
-void scheme_init_flfxnum_numarith(Scheme_Env *env)
+void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -185,37 +185,37 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   p = scheme_make_folding_prim(fx_plus, "fx+", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fx+", p, env);
+  scheme_addto_prim_instance("fx+", p, env);
 
   p = scheme_make_folding_prim(fx_minus, "fx-", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fx-", p, env);
+  scheme_addto_prim_instance("fx-", p, env);
 
   p = scheme_make_folding_prim(fx_mult, "fx*", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fx*", p, env);
+  scheme_addto_prim_instance("fx*", p, env);
 
   p = scheme_make_folding_prim(fx_div, "fxquotient", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxquotient", p, env);
+  scheme_addto_prim_instance("fxquotient", p, env);
 
   p = scheme_make_folding_prim(fx_rem, "fxremainder", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxremainder", p, env);
+  scheme_addto_prim_instance("fxremainder", p, env);
 
   p = scheme_make_folding_prim(fx_mod, "fxmodulo", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxmodulo", p, env);
+  scheme_addto_prim_instance("fxmodulo", p, env);
 
   p = scheme_make_folding_prim(fx_abs, "fxabs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM;
-  scheme_add_global_constant("fxabs", p, env);
+  scheme_addto_prim_instance("fxabs", p, env);
 
   p = scheme_make_folding_prim(fl_plus, "fl+", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -225,7 +225,7 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("fl+", p, env);
+  scheme_addto_prim_instance("fl+", p, env);
 
   p = scheme_make_folding_prim(fl_minus, "fl-", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -235,7 +235,7 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("fl-", p, env);
+  scheme_addto_prim_instance("fl-", p, env);
 
   p = scheme_make_folding_prim(fl_mult, "fl*", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -245,7 +245,7 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("fl*", p, env);
+  scheme_addto_prim_instance("fl*", p, env);
 
   p = scheme_make_folding_prim(fl_div, "fl/", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -255,7 +255,7 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("fl/", p, env);
+  scheme_addto_prim_instance("fl/", p, env);
 
   p = scheme_make_folding_prim(fl_abs, "flabs", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -265,7 +265,7 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
-  scheme_add_global_constant("flabs", p, env);
+  scheme_addto_prim_instance("flabs", p, env);
 
   p = scheme_make_folding_prim(fl_sqrt, "flsqrt", 1, 1, 1);
   if (scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE)
@@ -275,11 +275,11 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
-  scheme_add_global_constant("flsqrt", p, env);
+  scheme_addto_prim_instance("flsqrt", p, env);
 
 }
 
-void scheme_init_extfl_numarith(Scheme_Env *env)
+void scheme_init_extfl_numarith(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -292,7 +292,7 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("extfl+", p, env);
+  scheme_addto_prim_instance("extfl+", p, env);
 
   p = scheme_make_folding_prim(extfl_minus, "extfl-", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -302,7 +302,7 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("extfl-", p, env);
+  scheme_addto_prim_instance("extfl-", p, env);
 
   p = scheme_make_folding_prim(extfl_mult, "extfl*", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -312,7 +312,7 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("extfl*", p, env);
+  scheme_addto_prim_instance("extfl*", p, env);
 
   p = scheme_make_folding_prim(extfl_div, "extfl/", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -322,7 +322,7 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("extfl/", p, env);
+  scheme_addto_prim_instance("extfl/", p, env);
 
   p = scheme_make_folding_prim(extfl_abs, "extflabs", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -332,7 +332,7 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST);
-  scheme_add_global_constant("extflabs", p, env);
+  scheme_addto_prim_instance("extflabs", p, env);
 
   p = scheme_make_folding_prim(extfl_sqrt, "extflsqrt", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE))
@@ -342,10 +342,10 @@ void scheme_init_extfl_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST);
-  scheme_add_global_constant("extflsqrt", p, env);
+  scheme_addto_prim_instance("extflsqrt", p, env);
 }
 
-void scheme_init_unsafe_numarith(Scheme_Env *env)
+void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -354,43 +354,43 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fx+", p, env);
+  scheme_addto_prim_instance("unsafe-fx+", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_minus, "unsafe-fx-", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fx-", p, env);
+  scheme_addto_prim_instance("unsafe-fx-", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_mult, "unsafe-fx*", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fx*", p, env);
+  scheme_addto_prim_instance("unsafe-fx*", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_div, "unsafe-fxquotient", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxquotient", p, env);
+  scheme_addto_prim_instance("unsafe-fxquotient", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_rem, "unsafe-fxremainder", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxremainder", p, env);
+  scheme_addto_prim_instance("unsafe-fxremainder", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_mod, "unsafe-fxmodulo", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxmodulo", p, env);
+  scheme_addto_prim_instance("unsafe-fxmodulo", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_abs, "unsafe-fxabs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxabs", p, env);
+  scheme_addto_prim_instance("unsafe-fxabs", p, env);
 
 
   p = scheme_make_folding_prim(unsafe_fl_plus, "unsafe-fl+", 2, 2, 1);
@@ -402,7 +402,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("unsafe-fl+", p, env);
+  scheme_addto_prim_instance("unsafe-fl+", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_minus, "unsafe-fl-", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -413,7 +413,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("unsafe-fl-", p, env);
+  scheme_addto_prim_instance("unsafe-fl-", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_mult, "unsafe-fl*", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -424,7 +424,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("unsafe-fl*", p, env);
+  scheme_addto_prim_instance("unsafe-fl*", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_div, "unsafe-fl/", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -435,7 +435,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
-  scheme_add_global_constant("unsafe-fl/", p, env);
+  scheme_addto_prim_instance("unsafe-fl/", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_abs, "unsafe-flabs", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -446,7 +446,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
-  scheme_add_global_constant("unsafe-flabs", p, env);
+  scheme_addto_prim_instance("unsafe-flabs", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_sqrt, "unsafe-flsqrt", 1, 1, 1);
   if (scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE)
@@ -457,10 +457,10 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST);
-  scheme_add_global_constant("unsafe-flsqrt", p, env);
+  scheme_addto_prim_instance("unsafe-flsqrt", p, env);
 }
 
-void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
+void scheme_init_extfl_unsafe_numarith(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -474,7 +474,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("unsafe-extfl+", p, env);
+  scheme_addto_prim_instance("unsafe-extfl+", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_minus, "unsafe-extfl-", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -485,7 +485,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("unsafe-extfl-", p, env);
+  scheme_addto_prim_instance("unsafe-extfl-", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_mult, "unsafe-extfl*", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -496,7 +496,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("unsafe-extfl*", p, env);
+  scheme_addto_prim_instance("unsafe-extfl*", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_div, "unsafe-extfl/", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -507,7 +507,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH);
-  scheme_add_global_constant("unsafe-extfl/", p, env);
+  scheme_addto_prim_instance("unsafe-extfl/", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_abs, "unsafe-extflabs", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -518,7 +518,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST);
-  scheme_add_global_constant("unsafe-extflabs", p, env);
+  scheme_addto_prim_instance("unsafe-extflabs", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_sqrt, "unsafe-extflsqrt", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE))
@@ -529,7 +529,7 @@ void scheme_init_extfl_unsafe_numarith(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST);
-  scheme_add_global_constant("unsafe-extflsqrt", p, env);
+  scheme_addto_prim_instance("unsafe-extflsqrt", p, env);
 }
 
 Scheme_Object *

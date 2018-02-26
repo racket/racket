@@ -8,6 +8,7 @@ typedef char *(*GC_get_type_name_proc)(short t);
 typedef void (*GC_for_each_found_proc)(void *p);
 typedef void (*GC_for_each_struct_proc)(void *p, int sz);
 
+typedef int (*GC_record_traced_filter_proc)(void *p);
 typedef void (*GC_print_tagged_value_proc)(const char *prefix, 
 					   void *v, uintptr_t diff, int max_w,
 					   const char *suffix);
@@ -17,6 +18,7 @@ GC2_EXTERN void GC_dump_with_traces(int flags,
 				    GC_get_type_name_proc get_type_name,
 				    GC_for_each_found_proc for_each_found,
 				    short min_trace_for_tag, short max_trace_for_tag,
+                                    GC_record_traced_filter_proc record_traced_filter,
                                     GC_print_traced_filter_proc print_traced_filter,
 				    GC_print_tagged_value_proc print_tagged_value,
 				    int path_length_limit,

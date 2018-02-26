@@ -147,8 +147,8 @@
       (write also-c s)
       (parameterize ([read-accept-compiled #t])
         (read (open-input-bytes (get-output-bytes s))))))
-  ;; Marshaling flips the order, which is ok:
-  (test '(subm-example-0 b) values (module-compiled-name (car (module-compiled-submodules re-c #f)))))
+  ;; Marshaling preserves the order:
+  (test '(subm-example-0 a) values (module-compiled-name (car (module-compiled-submodules re-c #f)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

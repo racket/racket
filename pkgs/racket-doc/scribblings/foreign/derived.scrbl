@@ -17,6 +17,7 @@
 @include-section["schedule.scrbl"]
 @include-section["port.scrbl"]
 @include-section["global.scrbl"]
+@include-section["os-thread.scrbl"]
 @include-section["objc.scrbl"]
 @include-section["ns.scrbl"]
 @include-section["com.scrbl"]

@@ -702,13 +702,19 @@ typedef struct Scheme_Offset_Cptr
 #define scheme_make_character(ch) ((((mzchar)ch) < 256) ? scheme_char_constants[(unsigned char)(ch)] : scheme_make_char(ch))
 #define scheme_make_ascii_character(ch) scheme_char_constants[(unsigned char)(ch)]
 
-#define scheme_uchar_find(table, x) (table[(x >> 8) & 0x1FFF][x & 0xFF])
+#define SCHEME_UCHAR_FIND_SHIFT    8
+#define SCHEME_UCHAR_FIND_HI_MASK  0x1FFF
+#define SCHEME_UCHAR_FIND_LO_MASK  0xFF
+
+#define scheme_uchar_find(table, x) (table[(x >> SCHEME_UCHAR_FIND_SHIFT) & SCHEME_UCHAR_FIND_HI_MASK][x & SCHEME_UCHAR_FIND_LO_MASK])
+
+#define SCHEME_ISSPACE_BIT         0x10
 
 #define scheme_isblank(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x1)
 #define scheme_issymbol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x2)
 #define scheme_ispunc(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x4)
 #define scheme_iscontrol(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x8)
-#define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x10)
+#define scheme_isspace(x) ((scheme_uchar_find(scheme_uchar_table, x)) & SCHEME_ISSPACE_BIT)
 /* #define scheme_isSOMETHING(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x20) - not yet used */
 #define scheme_isdigit(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x40)
 #define scheme_isalpha(x) ((scheme_uchar_find(scheme_uchar_table, x)) & 0x80)
@@ -1168,15 +1174,6 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Overflow *overflow;
 
-  struct Scheme_Comp_Env *current_local_env;
-  Scheme_Object *current_local_scope;
-  Scheme_Object *current_local_use_scope;
-  Scheme_Object *current_local_name;
-  Scheme_Object *current_local_modidx;
-  Scheme_Env *current_local_menv;
-  Scheme_Object *current_local_bindings;
-  intptr_t current_phase_shift;
-
   struct Scheme_Marshal_Tables *current_mt;
 
   struct Optimize_Info *constant_folding; /* compiler hack */
@@ -1328,31 +1325,14 @@ enum {
 
   MZCONFIG_INIT_EXN_HANDLER,
 
-  MZCONFIG_EVAL_HANDLER,
-  MZCONFIG_COMPILE_HANDLER,
-  MZCONFIG_LOAD_HANDLER,
-  MZCONFIG_LOAD_COMPILED_HANDLER,
-
   MZCONFIG_PRINT_HANDLER,
   MZCONFIG_PROMPT_READ_HANDLER,
   MZCONFIG_READ_HANDLER,
   MZCONFIG_READ_INPUT_PORT_HANDLER,
 
-  MZCONFIG_READTABLE,
-  MZCONFIG_READER_GUARD,
-
-  MZCONFIG_CAN_READ_GRAPH,
-  MZCONFIG_CAN_READ_COMPILED,
-  MZCONFIG_CAN_READ_BOX,
+  MZCONFIG_CASE_SENS,
   MZCONFIG_CAN_READ_PIPE_QUOTE,
-  MZCONFIG_CAN_READ_DOT,
-  MZCONFIG_CAN_READ_INFIX_DOT,
-  MZCONFIG_CAN_READ_QUASI,
-  MZCONFIG_CAN_READ_READER,
-  MZCONFIG_CAN_READ_LANG,
-  MZCONFIG_READ_DECIMAL_INEXACT,
-  MZCONFIG_READ_CDOT,
-  
+
   MZCONFIG_PRINT_GRAPH,
   MZCONFIG_PRINT_STRUCT,
   MZCONFIG_PRINT_BOX,
@@ -1365,12 +1345,6 @@ enum {
   MZCONFIG_PRINT_READER,
   MZCONFIG_PRINT_LONG_BOOLEAN,
   MZCONFIG_PRINT_AS_QQ,
-
-  MZCONFIG_CASE_SENS,
-  MZCONFIG_SQUARE_BRACKETS_ARE_PARENS,
-  MZCONFIG_CURLY_BRACES_ARE_PARENS,
-  MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED,
-  MZCONFIG_CURLY_BRACES_ARE_TAGGED,
 
   MZCONFIG_ERROR_PRINT_WIDTH,
   MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,
@@ -1389,17 +1363,8 @@ enum {
   MZCONFIG_CODE_INSPECTOR,
   MZCONFIG_PLUMBER,
 
-  MZCONFIG_USE_COMPILED_KIND,
-  MZCONFIG_USE_COMPILED_ROOTS,
-  MZCONFIG_USE_USER_PATHS,
-  MZCONFIG_USE_LINK_PATHS,
-  MZCONFIG_USE_COMPILED_FILE_CHECK,
-
   MZCONFIG_LOAD_DIRECTORY,
   MZCONFIG_WRITE_DIRECTORY,
-
-  MZCONFIG_COLLECTION_PATHS,
-  MZCONFIG_COLLECTION_LINKS,
 
   MZCONFIG_PORT_PRINT_HANDLER,
 
@@ -1413,10 +1378,7 @@ enum {
 
   MZCONFIG_RANDOM_STATE,
 
-  MZCONFIG_CURRENT_MODULE_RESOLVER,
-  MZCONFIG_CURRENT_MODULE_NAME,
   MZCONFIG_CURRENT_MODULE_SRC,
-  MZCONFIG_CURRENT_MODULE_LOAD_PATH,
 
   MZCONFIG_ERROR_PRINT_SRCLOC,
 
@@ -1438,8 +1400,6 @@ enum {
 
   MZCONFIG_LOAD_DELAY_ENABLED,
   MZCONFIG_DELAY_LOAD_INFO,
-
-  MZCONFIG_EXPAND_OBSERVE,
 
   MZCONFIG_LOGGER,
 
@@ -1587,13 +1547,6 @@ typedef struct Scheme_Logger Scheme_Logger;
 #define SCHEME_GUARD_FILE_EXECUTE 0x4
 #define SCHEME_GUARD_FILE_DELETE  0x8
 #define SCHEME_GUARD_FILE_EXISTS  0x10
-
-/*========================================================================*/
-/*                               modules                                  */
-/*========================================================================*/
-
-typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, intptr_t phase_shift,
-				   Scheme_Object *self_modidx, void *data);
 
 /*========================================================================*/
 /*                               evaluation                               */
@@ -1932,7 +1885,6 @@ MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
 MZ_EXTERN void (*scheme_notify_multithread)(int on);
 MZ_EXTERN void (*scheme_wakeup_on_input)(void *fds);
 MZ_EXTERN int (*scheme_check_for_break)(void);
-MZ_EXTERN Scheme_Object *(*scheme_module_demand_hook)(int c, Scheme_Object **a);
 #ifdef MZ_PRECISE_GC
 MZ_EXTERN void *(*scheme_get_external_stack_val)(void);
 MZ_EXTERN void (*scheme_set_external_stack_val)(void *);

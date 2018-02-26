@@ -294,7 +294,6 @@ struct scheme_jit_common_record {
 
   void *bad_result_arity_code;
   void *unbound_global_code;
-  void *quote_syntax_code;
   void *call_original_unary_arith_code;
   void *call_original_binary_arith_code;
   void *call_original_binary_rev_arith_code;
@@ -307,24 +306,25 @@ struct scheme_jit_common_record {
   void *bad_cXr_code;
   void *bad_mcar_code, *bad_mcdr_code;
   void *bad_set_mcar_code, *bad_set_mcdr_code;
+  void *bad_syntax_e_code;
   void *imag_part_code, *real_part_code, *make_rectangular_code;
   void *bad_flimag_part_code, *bad_flreal_part_code, *bad_make_flrectangular_code;
-  void *unbox_code, *set_box_code, *box_cas_fail_code;
+  void *unbox_code, *set_box_code, *unbox_star_fail_code, *set_box_star_fail_code, *box_cas_fail_code, *weak_box_value_code;
   void *vector_cas_fail_code;
-  void *bad_vector_length_code;
+  void *bad_vector_length_code, *bad_vector_star_length_code;
   void *bad_flvector_length_code;
   void *bad_fxvector_length_code;
   void *bad_string_length_code;
   void *bad_bytes_length_code;
   void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
   void *chap_vector_ref_code, *chap_vector_ref_check_index_code, *chap_vector_set_code, *chap_vector_set_check_index_code;
+  void *vector_star_ref_code, *vector_star_ref_check_index_code, *vector_star_set_code, *vector_star_set_check_index_code;
   void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
   void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
   void *flvector_ref_check_index_code[JIT_NUM_FL_KINDS];
   void *flvector_set_check_index_code[JIT_NUM_FL_KINDS], *flvector_set_flonum_check_index_code[JIT_NUM_FL_KINDS];
   void *fxvector_ref_code, *fxvector_ref_check_index_code, *fxvector_set_code, *fxvector_set_check_index_code;
   void *struct_raw_ref_code, *struct_raw_set_code, *struct_raw_refs_code;
-  void *syntax_e_code;
   void *on_demand_jit_arity_code, *in_progress_on_demand_jit_arity_code;
   void *get_stack_pointer_code;
   void *stack_cache_pop_code;
@@ -347,8 +347,9 @@ struct scheme_jit_common_record {
   void *list_p_code, *list_p_branch_code;
   void *list_length_code;
   void *list_ref_code, *list_tail_code;
+  void *hash_ref_code;
   void *finish_tail_call_code, *finish_tail_call_fixup_code;
-  void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
+  void *linklet_run_start_code;
   void *thread_start_child_code;
   void *box_flonum_from_stack_code, *box_flonum_from_reg_code;
   void *fl1_fail_code[JIT_NUM_FL_KINDS], *fl2rr_fail_code[2][JIT_NUM_FL_KINDS];
@@ -1420,7 +1421,7 @@ int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int b
                                  Branch_Info *for_branch);
 int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
-                                 int inline_slow, int pop_and_jump,
+                                 int inline_slow, int pop_and_jump, int check_proc, 
                                  int is_tail, int multi_ok, int dest);
 int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_state *jitter, 
                              int order_matters, int skipped);

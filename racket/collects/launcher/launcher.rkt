@@ -72,7 +72,7 @@
 (define current-launcher-variant
   (make-parameter (cross-system-type 'gc)
                   (lambda (v)
-                    (unless (memq v '(3m script-3m cgc script-cgc))
+                    (unless (memq v '(3m script-3m cgc script-cgc cs script-cs))
                       (raise-type-error
                        'current-launcher-variant
                        "variant symbol"
@@ -116,26 +116,38 @@
          [alt-kind (if (eq? '3m normal-kind)
                        'cgc
                        '3m)]
+         [alt2-kind (if (or (eq? '3m normal-kind)
+                            (eq? 'cgc normal-kind))
+                        'cs
+                        'cgc)]
          [normal (if (variant-available? kind cased-kind-name normal-kind)
                      (list normal-kind)
                      null)]
          [alt (if (variant-available? kind cased-kind-name alt-kind)
                   (list alt-kind)
                   null)]
+         [alt2 (if (variant-available? kind cased-kind-name alt2-kind)
+                   (list alt2-kind)
+                   null)]
+         [kind->script-kind (lambda (kind)
+                              (cond
+                                [(eq? kind '3m) '(script-3m)]
+                                [(eq? kind 'cgc) '(script-cgc)]
+                                [else '(script-cs)]))]
          [script (if (and (eq? 'macosx (cross-system-type))
                           (eq? kind 'mred)
                           (pair? normal))
-                     (if (eq? normal-kind '3m)
-                         '(script-3m)
-                         '(script-cgc))
+                     (kind->script-kind normal-kind)
                      null)]
          [script-alt (if (and (memq alt-kind alt)
                               (pair? script))
-                         (if (eq? alt-kind '3m)
-                             '(script-3m)
-                             '(script-cgc))
-                         null)])
-    (append normal alt script script-alt)))
+                         (kind->script-kind alt-kind)
+                         null)]
+         [script-alt2 (if (and (memq alt2-kind alt2)
+                               (pair? script))
+                          (kind->script-kind alt2-kind)
+                          null)])
+    (append normal alt alt2 script script-alt script-alt2)))
 
 (define (available-gracket-variants)
   (available-variants 'mred))
@@ -163,7 +175,7 @@
       (file-or-directory-permissions dest perms2))))
 
 (define (script-variant? v)
-  (memq v '(script-3m script-cgc)))
+  (memq v '(script-3m script-cgc script-cs)))
 
 (define (add-file-suffix path variant mred?)
   (let ([s (variant-suffix

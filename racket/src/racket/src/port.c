@@ -296,7 +296,7 @@ typedef struct Scheme_Filesystem_Change_Evt {
 /*========================================================================*/
 
 void
-scheme_init_port (Scheme_Env *env)
+scheme_init_port (Scheme_Startup_Env *env)
 {
 #ifdef MZ_PRECISE_GC
   register_traversers();
@@ -385,17 +385,17 @@ scheme_init_port (Scheme_Env *env)
   scheme_null_output_port_type = scheme_make_port_type("<null-output-port>");
   scheme_redirect_output_port_type = scheme_make_port_type("<redirect-output-port>");
 
-  scheme_add_global_constant("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
-  scheme_add_global_constant("subprocess-status", scheme_make_prim_w_arity(subprocess_status, "subprocess-status", 1, 1), env);
-  scheme_add_global_constant("subprocess-kill", scheme_make_prim_w_arity(subprocess_kill, "subprocess-kill", 2, 2), env);
-  scheme_add_global_constant("subprocess-pid", scheme_make_prim_w_arity(subprocess_pid, "subprocess-pid", 1, 1), env);
-  scheme_add_global_constant("subprocess?", scheme_make_prim_w_arity(subprocess_p, "subprocess?", 1, 1), env);
-  scheme_add_global_constant("subprocess-wait", scheme_make_prim_w_arity(subprocess_wait, "subprocess-wait", 1, 1), env);
+  scheme_addto_prim_instance("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
+  scheme_addto_prim_instance("subprocess-status", scheme_make_prim_w_arity(subprocess_status, "subprocess-status", 1, 1), env);
+  scheme_addto_prim_instance("subprocess-kill", scheme_make_prim_w_arity(subprocess_kill, "subprocess-kill", 2, 2), env);
+  scheme_addto_prim_instance("subprocess-pid", scheme_make_prim_w_arity(subprocess_pid, "subprocess-pid", 1, 1), env);
+  scheme_addto_prim_instance("subprocess?", scheme_make_prim_w_arity(subprocess_p, "subprocess?", 1, 1), env);
+  scheme_addto_prim_instance("subprocess-wait", scheme_make_prim_w_arity(subprocess_wait, "subprocess-wait", 1, 1), env);
 
-  GLOBAL_PARAMETER("subprocess-group-enabled", subproc_group_on, MZCONFIG_SUBPROC_GROUP_ENABLED, env);
-  GLOBAL_PARAMETER("current-subprocess-custodian-mode", current_subproc_cust_mode, MZCONFIG_SUBPROC_CUSTODIAN_MODE, env);
+  ADD_PARAMETER("subprocess-group-enabled", subproc_group_on, MZCONFIG_SUBPROC_GROUP_ENABLED, env);
+  ADD_PARAMETER("current-subprocess-custodian-mode", current_subproc_cust_mode, MZCONFIG_SUBPROC_CUSTODIAN_MODE, env);
 
-  scheme_add_global_constant("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
+  scheme_addto_prim_instance("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
 }
 
 void scheme_init_port_wait()
@@ -410,15 +410,15 @@ void scheme_init_port_wait()
                  filesystem_change_evt_need_wakeup, NULL, 1);
 }
 
-void scheme_init_unsafe_port (Scheme_Env *env)
+void scheme_init_unsafe_port (Scheme_Startup_Env *env)
 {
-  GLOBAL_PRIM_W_ARITY("unsafe-file-descriptor->port", unsafe_fd_to_port, 3, 3, env);
-  GLOBAL_PRIM_W_ARITY("unsafe-port->file-descriptor", unsafe_port_to_fd, 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("unsafe-file-descriptor->semaphore", unsafe_fd_to_semaphore, 2, 2, env);
+  ADD_PRIM_W_ARITY("unsafe-file-descriptor->port", unsafe_fd_to_port, 3, 3, env);
+  ADD_PRIM_W_ARITY("unsafe-port->file-descriptor", unsafe_port_to_fd, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-file-descriptor->semaphore", unsafe_fd_to_semaphore, 2, 2, env);
 
-  GLOBAL_PRIM_W_ARITY("unsafe-socket->port", unsafe_socket_to_port, 3, 3, env);
-  GLOBAL_PRIM_W_ARITY("unsafe-port->socket", unsafe_port_to_socket, 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("unsafe-socket->semaphore", unsafe_socket_to_semaphore, 2, 2, env);
+  ADD_PRIM_W_ARITY("unsafe-socket->port", unsafe_socket_to_port, 3, 3, env);
+  ADD_PRIM_W_ARITY("unsafe-port->socket", unsafe_port_to_socket, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-socket->semaphore", unsafe_socket_to_semaphore, 2, 2, env);
 }
 
 void scheme_init_port_places(void)
@@ -2672,7 +2672,6 @@ Scheme_Object *scheme_get_special(Scheme_Object *port,
   int cnt;
   Scheme_Object *a[4], *special;
   Scheme_Input_Port *ip;
-  Scheme_Cont_Frame_Data cframe;
 
   SCHEME_USE_FUEL(1);
 
@@ -2698,8 +2697,6 @@ Scheme_Object *scheme_get_special(Scheme_Object *port,
 
   if (peek) {
     /* do location increment, since read didn't */
-    if (line > 0)
-      line++;
     if (col >= 0)
       col++;
     if (pos > 0)
@@ -2717,12 +2714,7 @@ Scheme_Object *scheme_get_special(Scheme_Object *port,
     a[3] = (pos > 0) ? scheme_make_integer(pos) : scheme_false;
   }
 
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_in_read_mark(src, for_read);
-
   special = scheme_apply(special, cnt, a);
-
-  scheme_pop_continuation_frame(&cframe);
 
   return special;
 }
@@ -2740,11 +2732,7 @@ static Scheme_Object *do_get_ready_special(Scheme_Object *port,
     stxsrc = ip->name;
   }
 
-  /* Don't use scheme_tell_all(), because we always want the
-     Racket-computed values here. */
-  line = scheme_tell_line(port);
-  col = scheme_tell_column(port);
-  pos = scheme_tell(port);
+  scheme_tell_all(port, &line, &col, &pos);
 
   return scheme_get_special(port, stxsrc, line, col, pos, peek, ht);
 }
@@ -2771,7 +2759,6 @@ void scheme_bad_time_for_special(const char *who, Scheme_Object *port)
 static Scheme_Object *check_special_args(void *sbox, int argc, Scheme_Object **argv)
 {
   Scheme_Object *special;
-  Scheme_Cont_Frame_Data cframe;
 
   if (SCHEME_TRUEP(argv[1]))
     if (!scheme_nonneg_exact_p(argv[1]) || (SAME_OBJ(argv[1], scheme_make_integer(0))))
@@ -2789,12 +2776,7 @@ static Scheme_Object *check_special_args(void *sbox, int argc, Scheme_Object **a
 		     "read-special: cannot be called a second time");
   *(Scheme_Object **)sbox = NULL;
 
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_in_read_mark(NULL, NULL);
-
   special = _scheme_apply(special, 4, argv);
-
-  scheme_pop_continuation_frame(&cframe);
 
   return special;
 }
@@ -3658,12 +3640,27 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
   return is_fd_terminal(fd) ? scheme_true : scheme_false;
 }
 
+static void maybe_raise_missing_module(char *name, char *filename, char *pre, char *rel, char *post, char *errstr)
+{
+  Scheme_Object *proc, *a[6];
+
+  proc = scheme_get_startup_export("maybe-raise-missing-module");
+
+  a[0] = scheme_make_utf8_string(name);
+  a[1] = scheme_make_utf8_string(filename);
+  a[2] = scheme_make_utf8_string(pre);
+  a[3] = scheme_make_utf8_string(rel);
+  a[4] = scheme_make_utf8_string(post);
+  a[5] = scheme_make_utf8_string(errstr);
+
+  scheme_apply_multi(proc, 6, a);
+}
+
 static void filename_exn(char *name, char *msg, char *filename, int maybe_module_errno)
 {
   char *dir, *drive;
   int len;
   char *pre, *rel, *post;
-  Scheme_Object *mod_path, *mp;
 
   len = strlen(filename);
 
@@ -3683,38 +3680,10 @@ static void filename_exn(char *name, char *msg, char *filename, int maybe_module
   post = dir ? "" : "";
 
   if (maybe_module_errno && scheme_last_error_is_racket(maybe_module_errno)) {
-    mod_path = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_LOAD_PATH);
-    if (SCHEME_TRUEP(mod_path)) {
-      if (SCHEME_STXP(mod_path)) {
-        char *srcloc;
-        intptr_t srcloc_len;
-        mp = scheme_syntax_to_datum(mod_path, 0, NULL);
-        srcloc = scheme_make_srcloc_string(mod_path, &srcloc_len);
-        scheme_raise_exn(MZEXN_FAIL_SYNTAX_MISSING_MODULE,
-                         scheme_make_pair(mod_path, scheme_null),
-                         mp,
-                         "%t%s: %s\n"
-                         "  module path: %W\n"
-                         "  path: %q%s%q%s\n"
-                         "  system error: %R",
-                         srcloc, srcloc_len,
-                         srcloc_len ? "" : name,
-                         "cannot open module file", 
-                         mp, filename,
-                         pre, rel, post);
-      } else {
-        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_MISSING_MODULE,
-                         mod_path,
-                         "%s: %s\n"
-                         "  module path: %W\n"
-                         "  path: %q%s%q%s\n"
-                         "  system error: %R",
-                         name, "cannot open module file", 
-                         mod_path, filename,
-                         pre, rel, post);
-      }
-      return;
-    }
+    char buffer[256];
+    scheme_sprintf(buffer, sizeof(buffer)-1, "%R");
+    buffer[sizeof(buffer)-1] = 0;
+    maybe_raise_missing_module(name, filename, pre, rel, post, buffer);
   }
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,

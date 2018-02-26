@@ -450,7 +450,7 @@
 ;; Check that a continuation doesn't retain the arguments
 ;; to the call to `call/cc` that created the continuation.
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (let ([ht (make-weak-hasheq)])
     (define l
       (for/list ([i 100])

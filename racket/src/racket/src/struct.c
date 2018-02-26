@@ -29,7 +29,6 @@ READ_ONLY Scheme_Object *scheme_arity_at_least;
 READ_ONLY Scheme_Object *scheme_date;
 READ_ONLY Scheme_Object *scheme_make_arity_at_least;
 READ_ONLY Scheme_Object *scheme_source_property;
-READ_ONLY Scheme_Object *scheme_module_path_property;
 READ_ONLY Scheme_Object *scheme_input_port_property;
 READ_ONLY Scheme_Object *scheme_output_port_property;
 READ_ONLY Scheme_Object *scheme_cpointer_property;
@@ -47,7 +46,6 @@ READ_ONLY Scheme_Object *scheme_recur_symbol;
 READ_ONLY Scheme_Object *scheme_display_symbol;
 READ_ONLY Scheme_Object *scheme_write_special_symbol;
 READ_ONLY Scheme_Object *scheme_app_mark_impersonator_property;
-READ_ONLY Scheme_Object *scheme_liberal_def_ctx_type;;
 READ_ONLY Scheme_Object *scheme_object_name_property;
 READ_ONLY Scheme_Object *scheme_struct_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_authentic_property;
@@ -60,10 +58,6 @@ READ_ONLY static Scheme_Object *print_attribute_property;
 READ_ONLY static Scheme_Object *evt_property;
 READ_ONLY static Scheme_Object *proc_property;
 READ_ONLY static Scheme_Object *method_property;
-READ_ONLY static Scheme_Object *rename_transformer_property;
-READ_ONLY static Scheme_Object *set_transformer_property;
-READ_ONLY static Scheme_Object *expansion_contexts_property;
-READ_ONLY static Scheme_Object *not_free_id_symbol;
 READ_ONLY static Scheme_Object *scheme_checked_proc_property;
 READ_ONLY static Scheme_Object *struct_info_proc;
 ROSYM static Scheme_Object *ellipses_symbol;
@@ -121,9 +115,6 @@ static Scheme_Object *check_print_attribute_property_value_ok(int argc, Scheme_O
 static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
-static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
-static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
-static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
@@ -184,10 +175,6 @@ static void active_replace_evt_needs_wakeup(Scheme_Object *s, void *fds);
 static int chaperone_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int is_chaperone_evt(Scheme_Object *o);
 
-Scheme_Object *make_special_comment(int argc, Scheme_Object **argv);
-Scheme_Object *special_comment_value(int argc, Scheme_Object **argv);
-Scheme_Object *special_comment_p(int argc, Scheme_Object **argv);
-
 static Scheme_Object *check_arity_at_least_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_date_star_fields(int argc, Scheme_Object **argv);
@@ -196,10 +183,6 @@ static Scheme_Object *check_location_fields(int argc, Scheme_Object **argv);
 static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *exn_source_p(int argc, Scheme_Object **argv);
 static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv);
-
-static Scheme_Object *check_exn_module_path_property_value_ok(int argc, Scheme_Object *argv[]);
-static Scheme_Object *exn_module_path_p(int argc, Scheme_Object **argv);
-static Scheme_Object *exn_module_path_get(int argc, Scheme_Object **argv);
 
 static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
 static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type);
@@ -210,8 +193,6 @@ static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
 static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_chaperone_property_from_c(Scheme_Object *name);
-
-static Scheme_Object *is_liberal_def_ctx(int argc, Scheme_Object **argv, Scheme_Object *self);
 
 /* This needs to be even, so that structure chaperones are
    distingiushed from procedure chaperones: */
@@ -253,7 +234,7 @@ static char *pred_name_string(Scheme_Object *sym)
 }
 
 void
-scheme_init_struct (Scheme_Env *env)
+scheme_init_struct (Scheme_Startup_Env *env)
 {
   Scheme_Object **as_names;
   Scheme_Object **as_values;
@@ -265,7 +246,7 @@ scheme_init_struct (Scheme_Env *env)
   Scheme_Object **loc_values;
   int loc_count;
   int i;
-  Scheme_Object *guard;
+  Scheme_Object *guard, *p;
 
   READ_ONLY static const char *arity_fields[1] = { "value" };
   READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
@@ -282,7 +263,7 @@ scheme_init_struct (Scheme_Env *env)
   REGISTER_SO(scheme_arity_at_least);
   REGISTER_SO(scheme_make_arity_at_least);
   scheme_arity_at_least = scheme_make_struct_type_from_string("arity-at-least", NULL, 1, NULL, 
-                                                              scheme_make_prim(check_arity_at_least_fields), 1);
+                                                              scheme_make_prim_w_arity(check_arity_at_least_fields, "check_arity_at_least_fields", 0, -1), 1);
   as_names = scheme_make_struct_names_from_array("arity-at-least",
 						 1, arity_fields,
 						 BUILTIN_STRUCT_FLAGS, 
@@ -291,14 +272,14 @@ scheme_init_struct (Scheme_Env *env)
 					BUILTIN_STRUCT_FLAGS);
   scheme_make_arity_at_least = as_values[1];
   for (i = 0; i < as_count - 1; i++) {
-    scheme_add_global_constant(scheme_symbol_val(as_names[i]), as_values[i],
+    scheme_addto_prim_instance(scheme_symbol_val(as_names[i]), as_values[i],
 			       env);
   }
 
   /* Add date structure: */
   REGISTER_SO(scheme_date);
   scheme_date = scheme_make_struct_type_from_string("date", NULL, 10, NULL,
-                                                    scheme_make_prim(check_date_fields), 1);
+                                                    scheme_make_prim_w_arity(check_date_fields, "check-date-fields", 0, -1), 1);
   
   ts_names = scheme_make_struct_names_from_array("date",
 						 10, date_fields,
@@ -307,12 +288,12 @@ scheme_init_struct (Scheme_Env *env)
   ts_values = scheme_make_struct_values(scheme_date, ts_names, ts_count, 
 					BUILTIN_STRUCT_FLAGS);
   for (i = 0; i < ts_count - 1; i++) {
-    scheme_add_global_constant(scheme_symbol_val(ts_names[i]), ts_values[i], 
+    scheme_addto_prim_instance(scheme_symbol_val(ts_names[i]), ts_values[i], 
 			       env);
   }
 
   scheme_date = scheme_make_struct_type_from_string("date*", scheme_date, 2, NULL,
-                                                    scheme_make_prim(check_date_star_fields), 1);
+                                                    scheme_make_prim_w_arity(check_date_star_fields, "check_date_star_fields", 0, -1), 1);
   
   ts_names = scheme_make_struct_names_from_array("date*",
 						 2, date_star_fields,
@@ -322,7 +303,7 @@ scheme_init_struct (Scheme_Env *env)
 					BUILTIN_STRUCT_FLAGS);
   
   for (i = 0; i < ts_count - 1; i++) {
-    scheme_add_global_constant(scheme_symbol_val(ts_names[i]), ts_values[i], 
+    scheme_addto_prim_instance(scheme_symbol_val(ts_names[i]), ts_values[i], 
 			       env);
   }
   
@@ -330,7 +311,7 @@ scheme_init_struct (Scheme_Env *env)
   /* Add location structure: */
   REGISTER_SO(location_struct);
   location_struct = scheme_make_struct_type_from_string("srcloc", NULL, 5, NULL, 
-                                                        scheme_make_prim(check_location_fields), 1);
+                                                        scheme_make_prim_w_arity(check_location_fields, "check_location_fields", 0, -1), 1);
   
   loc_names = scheme_make_struct_names_from_array("srcloc",
 						  5, location_fields,
@@ -339,7 +320,7 @@ scheme_init_struct (Scheme_Env *env)
   loc_values = scheme_make_struct_values(location_struct, loc_names, loc_count, 
 					 BUILTIN_STRUCT_FLAGS);
   for (i = 0; i < loc_count - 1; i++) {
-    scheme_add_global_constant(scheme_symbol_val(loc_names[i]), loc_values[i], 
+    scheme_addto_prim_instance(scheme_symbol_val(loc_names[i]), loc_values[i], 
 			       env);
   }
 
@@ -359,11 +340,11 @@ scheme_init_struct (Scheme_Env *env)
     a[1] = guard;
     write_property = make_struct_type_property_from_c(2, a, &pred, &access,
                                                       scheme_struct_property_type);
-    scheme_add_global_constant("prop:custom-write", write_property, env);
-    scheme_add_global_constant("custom-write?", pred, env);
+    scheme_addto_prim_instance("prop:custom-write", write_property, env);
+    scheme_addto_prim_instance("custom-write?", pred, env);
 
     a[0] = access;
-    scheme_add_global_constant("custom-write-accessor", 
+    scheme_addto_prim_instance("custom-write-accessor", 
                                scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
                                                                 "custom-write-accessor",
                                                                 1, 1),
@@ -381,11 +362,11 @@ scheme_init_struct (Scheme_Env *env)
     a[1] = guard;
     print_attribute_property = make_struct_type_property_from_c(2, a, &pred, &access,
                                                                 scheme_struct_property_type);
-    scheme_add_global_constant("prop:custom-print-quotable", print_attribute_property, env);
-    scheme_add_global_constant("custom-print-quotable?", pred, env);
+    scheme_addto_prim_instance("prop:custom-print-quotable", print_attribute_property, env);
+    scheme_addto_prim_instance("custom-print-quotable?", pred, env);
 
     a[0] = access;
-    scheme_add_global_constant("custom-print-quotable-accessor", 
+    scheme_addto_prim_instance("custom-print-quotable-accessor", 
                                scheme_make_prim_closure_w_arity(unary_acc, 1, a, 
                                                                 "custom-print-quotable-accessor",
                                                                 1, 1),
@@ -399,13 +380,13 @@ scheme_init_struct (Scheme_Env *env)
 				     2, 2);
     evt_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("evt"),
                                                             guard);
-    scheme_add_global_constant("prop:evt", evt_property, env);
+    scheme_addto_prim_instance("prop:evt", evt_property, env);
   }
 
   {
     REGISTER_SO(proc_property);
     proc_property = scheme_make_struct_type_property(scheme_intern_symbol("procedure"));
-    scheme_add_global_constant("prop:procedure", proc_property, env);
+    scheme_addto_prim_instance("prop:procedure", proc_property, env);
   }
 
   {
@@ -415,13 +396,13 @@ scheme_init_struct (Scheme_Env *env)
 				     2, 2);
     scheme_object_name_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("object-name"),
                                                                            guard);
-    scheme_add_global_constant("prop:object-name", scheme_object_name_property, env);
+    scheme_addto_prim_instance("prop:object-name", scheme_object_name_property, env);
   }
 
   {
     REGISTER_SO(scheme_no_arity_property);
     scheme_no_arity_property = scheme_make_struct_type_property(scheme_intern_symbol("incomplete-arity"));
-    scheme_add_global_constant("prop:incomplete-arity", scheme_no_arity_property, env);
+    scheme_addto_prim_instance("prop:incomplete-arity", scheme_no_arity_property, env);
   }
 
   {
@@ -431,7 +412,7 @@ scheme_init_struct (Scheme_Env *env)
     REGISTER_SO(scheme_equal_property);
     scheme_equal_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("equal+hash"),
                                                                      guard);
-    scheme_add_global_constant("prop:equal+hash", scheme_equal_property, env);
+    scheme_addto_prim_instance("prop:equal+hash", scheme_equal_property, env);
   }
 
   {
@@ -441,7 +422,7 @@ scheme_init_struct (Scheme_Env *env)
     REGISTER_SO(scheme_impersonator_of_property);
     scheme_impersonator_of_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("impersonator-of"),
                                                                                guard);
-    scheme_add_global_constant("prop:impersonator-of", scheme_impersonator_of_property, env);
+    scheme_addto_prim_instance("prop:impersonator-of", scheme_impersonator_of_property, env);
   }
 
   {
@@ -460,8 +441,8 @@ scheme_init_struct (Scheme_Env *env)
     scheme_output_port_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("output-port"),
                                                                            guard);
     
-    scheme_add_global_constant("prop:input-port", scheme_input_port_property, env);
-    scheme_add_global_constant("prop:output-port", scheme_output_port_property, env);
+    scheme_addto_prim_instance("prop:input-port", scheme_input_port_property, env);
+    scheme_addto_prim_instance("prop:output-port", scheme_output_port_property, env);
   }
 
   {
@@ -475,87 +456,26 @@ scheme_init_struct (Scheme_Env *env)
   }
 
   {
-    REGISTER_SO(rename_transformer_property);
-
-    guard = scheme_make_prim_w_arity(check_rename_transformer_property_value_ok,
-				     "guard-for-prop:rename-transformer",
-				     2, 2);
-    rename_transformer_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("rename-transformer"),
-                                                                           guard);
-    
-    scheme_add_global_constant("prop:rename-transformer", rename_transformer_property, env);
-  }
-
-  {
-    REGISTER_SO(set_transformer_property);
-
-    guard = scheme_make_prim_w_arity(check_set_transformer_property_value_ok,
-				     "guard-for-prop:set!-transformer",
-				     2, 2);
-    set_transformer_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("set!-transformer"),
-                                                                        guard);
-    
-    scheme_add_global_constant("prop:set!-transformer", set_transformer_property, env);
-  }
-
-  {
-    REGISTER_SO(expansion_contexts_property);
-
-    guard = scheme_make_prim_w_arity(check_expansion_contexts_property_value_ok,
-				     "guard-for-prop:expansion-contexts",
-				     2, 2);
-    expansion_contexts_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("expansion-contexts"),
-                                                                           guard);
-    
-    scheme_add_global_constant("prop:expansion-contexts", expansion_contexts_property, env);
-  }
-
-
-  {
     guard = scheme_make_prim_w_arity(check_checked_proc_property_value_ok,
 				     "guard-for-prop:checked-procedure",
 				     2, 2);
     REGISTER_SO(scheme_checked_proc_property);
     scheme_checked_proc_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("checked-procedure"),
                                                                             guard);
-    scheme_add_global_constant("prop:checked-procedure", scheme_checked_proc_property, env);
-  }
-
-  REGISTER_SO(scheme_liberal_def_ctx_type);
-  {
-    Scheme_Object *a[1], *prop, *pred, *access;
-    
-    a[0] = scheme_intern_symbol("liberal-define-context");
-    prop = make_struct_type_property_from_c(1, a, &pred, &access,
-                                            scheme_struct_property_type);
-    scheme_add_global_constant("prop:liberal-define-context", prop, env);
-
-    a[0] = prop;
-    scheme_add_global_constant("liberal-define-context?", 
-                               scheme_make_prim_closure_w_arity(is_liberal_def_ctx, 1, a, 
-                                                                "liberal-define-context?",
-                                                                1, 1),
-                               env);
-
-    scheme_liberal_def_ctx_type = scheme_make_struct_type_from_string("liberal-define-context", NULL, 0, 
-                                                                      cons(cons(prop, scheme_true), scheme_null),
-                                                                      NULL, 1);
+    scheme_addto_prim_instance("prop:checked-procedure", scheme_checked_proc_property, env);
   }
 
   {
     REGISTER_SO(method_property);
     method_property = scheme_make_struct_type_property(scheme_intern_symbol("method-arity-error"));
-    scheme_add_global_constant("prop:method-arity-error", method_property, env);
+    scheme_addto_prim_instance("prop:method-arity-error", method_property, env);
   }
 
   {
     REGISTER_SO(scheme_authentic_property);
     scheme_authentic_property = scheme_make_struct_type_property(scheme_intern_symbol("authentic"));
-    scheme_add_global_constant("prop:authentic", scheme_authentic_property, env);
+    scheme_addto_prim_instance("prop:authentic", scheme_authentic_property, env);
   }
-
-  REGISTER_SO(not_free_id_symbol);
-  not_free_id_symbol = scheme_intern_symbol("not-free-identifier=?");
 
   REGISTER_SO(scheme_recur_symbol);
   REGISTER_SO(scheme_display_symbol);
@@ -572,7 +492,7 @@ scheme_init_struct (Scheme_Env *env)
                                                            4, 11,
                                                            5, 5);
 
-  scheme_add_global_constant("make-struct-type", 
+  scheme_addto_prim_instance("make-struct-type", 
                              scheme_make_struct_type_proc,
                              env);
 
@@ -581,7 +501,7 @@ scheme_init_struct (Scheme_Env *env)
                                                                     "make-struct-type-property",
                                                                     1, 4,
                                                                     3, 3);
-  scheme_add_global_constant("make-struct-type-property",
+  scheme_addto_prim_instance("make-struct-type-property",
                              scheme_make_struct_type_property_proc,
                              env);
 
@@ -589,7 +509,7 @@ scheme_init_struct (Scheme_Env *env)
   scheme_make_struct_field_accessor_proc = scheme_make_prim_w_arity(make_struct_field_accessor,
                                                                     "make-struct-field-accessor",
                                                                     2, 3);
-  scheme_add_global_constant("make-struct-field-accessor",
+  scheme_addto_prim_instance("make-struct-field-accessor",
                              scheme_make_struct_field_accessor_proc,
 			     env);
 
@@ -597,47 +517,47 @@ scheme_init_struct (Scheme_Env *env)
   scheme_make_struct_field_mutator_proc = scheme_make_prim_w_arity(make_struct_field_mutator,
                                                                    "make-struct-field-mutator",
                                                                    2, 3);
-  scheme_add_global_constant("make-struct-field-mutator",
+  scheme_addto_prim_instance("make-struct-field-mutator",
 			     scheme_make_struct_field_mutator_proc,
 			     env);
 
-  scheme_add_global_constant("wrap-evt",
+  scheme_addto_prim_instance("wrap-evt",
 			     scheme_make_prim_w_arity(scheme_wrap_evt,
 						      "wrap-evt",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("handle-evt",
+  scheme_addto_prim_instance("handle-evt",
 			     scheme_make_prim_w_arity(handle_evt,
 						      "handle-evt",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("replace-evt",
+  scheme_addto_prim_instance("replace-evt",
 			     scheme_make_prim_w_arity(replace_evt,
 						      "replace-evt",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("chaperone-evt",
+  scheme_addto_prim_instance("chaperone-evt",
 			     scheme_make_prim_w_arity(chaperone_evt,
 						      "chaperone-evt",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("nack-guard-evt",
+  scheme_addto_prim_instance("nack-guard-evt",
 			     scheme_make_prim_w_arity(nack_evt,
 						      "nack-guard-evt",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("poll-guard-evt",
+  scheme_addto_prim_instance("poll-guard-evt",
 			     scheme_make_prim_w_arity(scheme_poll_evt,
 						      "poll-guard-evt",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("handle-evt?",
+  scheme_addto_prim_instance("handle-evt?",
 			     scheme_make_folding_prim(handle_evt_p,
 						      "handle-evt?",
 						      1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("struct?",
+  scheme_addto_prim_instance("struct?",
 			     scheme_make_folding_prim(struct_p,
 						      "struct?",
 						      1, 1, 1),
@@ -647,19 +567,19 @@ scheme_init_struct (Scheme_Env *env)
   scheme_struct_type_p_proc = scheme_make_folding_prim(struct_type_p,
                                                        "struct-type?",
                                                        1, 1, 1);
-  scheme_add_global_constant("struct-type?", scheme_struct_type_p_proc, env);
+  scheme_addto_prim_instance("struct-type?", scheme_struct_type_p_proc, env);
 
-  scheme_add_global_constant("struct-type-property?",
+  scheme_addto_prim_instance("struct-type-property?",
 			     scheme_make_folding_prim(struct_type_property_p,
                                                       "struct-type-property?",
                                                       1, 1, 1),
                              env);
-  scheme_add_global_constant("procedure-struct-type?",
+  scheme_addto_prim_instance("procedure-struct-type?",
 			     scheme_make_folding_prim(proc_struct_type_p,
                                                       "procedure-struct-type?",
                                                       1, 1, 1),
                              env);
-  scheme_add_global_constant("procedure-extract-target",
+  scheme_addto_prim_instance("procedure-extract-target",
                              scheme_make_prim_w_arity(procedure_extract_target,
                                                       "procedure-extract-target",
                                                       1, 1),
@@ -672,19 +592,19 @@ scheme_init_struct (Scheme_Env *env)
                                                "struct-info",
                                                1, 1,
                                                2, 2);
-  scheme_add_global_constant("struct-info", struct_info_proc, env);
-  scheme_add_global_constant("struct-type-info",
+  scheme_addto_prim_instance("struct-info", struct_info_proc, env);
+  scheme_addto_prim_instance("struct-type-info",
 			     scheme_make_prim_w_arity2(struct_type_info,
 						       "struct-type-info",
 						       1, 1,
 						       mzNUM_ST_INFO, mzNUM_ST_INFO),
 			     env);
-  scheme_add_global_constant("struct-type-make-predicate",
+  scheme_addto_prim_instance("struct-type-make-predicate",
 			     scheme_make_prim_w_arity(struct_type_pred,
 						      "struct-type-make-predicate",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("struct-type-make-constructor",
+  scheme_addto_prim_instance("struct-type-make-constructor",
 			     scheme_make_prim_w_arity(struct_type_constr,
 						      "struct-type-make-constructor",
 						      1, 2),
@@ -694,56 +614,57 @@ scheme_init_struct (Scheme_Env *env)
   scheme_struct_to_vector_proc = scheme_make_noncm_prim(struct_to_vector,
                                                         "struct->vector",
                                                         1, 2);
-  scheme_add_global_constant("struct->vector", scheme_struct_to_vector_proc, env);
+  scheme_addto_prim_instance("struct->vector", scheme_struct_to_vector_proc, env);
 
-  scheme_add_global_constant("prefab-struct-key",
-			     scheme_make_immed_prim(prefab_struct_key,
-                                                    "prefab-struct-key",
-                                                    1, 1),
-			     env);
-  scheme_add_global_constant("make-prefab-struct",
+  p = scheme_make_immed_prim(prefab_struct_key,
+                             "prefab-struct-key",
+                             1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_addto_prim_instance("prefab-struct-key", p, env);
+  
+  scheme_addto_prim_instance("make-prefab-struct",
 			     scheme_make_prim_w_arity(make_prefab_struct,
 						      "make-prefab-struct",
 						      1, -1),
 			     env);
-  scheme_add_global_constant("prefab-key->struct-type",
+  scheme_addto_prim_instance("prefab-key->struct-type",
 			     scheme_make_prim_w_arity(prefab_key_struct_type,
 						      "prefab-key->struct-type",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("prefab-key?",
+  scheme_addto_prim_instance("prefab-key?",
 			     scheme_make_folding_prim(is_prefab_key, "prefab-key?", 
                                                       1, 1, 1),
 			     env);
 
   /*** Predicates ****/
 
-  scheme_add_global_constant("struct-mutator-procedure?",
+  scheme_addto_prim_instance("struct-mutator-procedure?",
 			     scheme_make_immed_prim(struct_setter_p,
                                                     "struct-mutator-procedure?",
                                                     1, 1),
                              env);
-  scheme_add_global_constant("struct-accessor-procedure?",
+  scheme_addto_prim_instance("struct-accessor-procedure?",
 			     scheme_make_immed_prim(struct_getter_p,
                                                     "struct-accessor-procedure?",
                                                     1, 1),
                              env);
-  scheme_add_global_constant("struct-predicate-procedure?",
+  scheme_addto_prim_instance("struct-predicate-procedure?",
 			     scheme_make_immed_prim(struct_pred_p,
                                                     "struct-predicate-procedure?",
                                                     1, 1),
 			     env);
-  scheme_add_global_constant("struct-constructor-procedure?",
+  scheme_addto_prim_instance("struct-constructor-procedure?",
 			     scheme_make_immed_prim(struct_constr_p,
                                                     "struct-constructor-procedure?",
                                                     1, 1),
 			     env);
-  scheme_add_global_constant("struct-type-property-accessor-procedure?",
+  scheme_addto_prim_instance("struct-type-property-accessor-procedure?",
 			     scheme_make_immed_prim(struct_prop_getter_p,
                                                     "struct-type-property-accessor-procedure?",
                                                     1, 1),
 			     env);
-  scheme_add_global_constant("impersonator-property-accessor-procedure?",
+  scheme_addto_prim_instance("impersonator-property-accessor-procedure?",
 			     scheme_make_immed_prim(chaperone_prop_getter_p,
                                                     "impersonator-property-accessor-procedure?",
                                                     1, 1),
@@ -755,18 +676,18 @@ scheme_init_struct (Scheme_Env *env)
   scheme_make_inspector_proc = scheme_make_immed_prim(make_inspector,
                                                       "make-inspector",
                                                       0, 1);
-  scheme_add_global_constant("make-inspector", scheme_make_inspector_proc, env);
-  scheme_add_global_constant("make-sibling-inspector",
+  scheme_addto_prim_instance("make-inspector", scheme_make_inspector_proc, env);
+  scheme_addto_prim_instance("make-sibling-inspector",
 			     scheme_make_immed_prim(make_sibling_inspector,
                                                     "make-sibling-inspector",
                                                     0, 1),
 			     env);
-  scheme_add_global_constant("inspector?",
+  scheme_addto_prim_instance("inspector?",
 			     scheme_make_folding_prim(inspector_p,
 						      "inspector?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("inspector-superior?",
+  scheme_addto_prim_instance("inspector-superior?",
 			     scheme_make_folding_prim(inspector_superior_p,
 						      "inspector-superior?",
 						      2, 2, 1),
@@ -776,30 +697,13 @@ scheme_init_struct (Scheme_Env *env)
   scheme_current_inspector_proc = scheme_register_parameter(current_inspector,
                                                             "current-inspector",
                                                             MZCONFIG_INSPECTOR);
-  scheme_add_global_constant("current-inspector", 
+  scheme_addto_prim_instance("current-inspector", 
 			     scheme_current_inspector_proc,
 			     env);
-  scheme_add_global_constant("current-code-inspector", 
+  scheme_addto_prim_instance("current-code-inspector", 
 			     scheme_register_parameter(current_code_inspector,
 						       "current-code-inspector",
 						       MZCONFIG_CODE_INSPECTOR),
-			     env);
-
-
-  scheme_add_global_constant("make-special-comment", 
-			     scheme_make_immed_prim(make_special_comment,
-                                                    "make-special-comment",
-                                                    1, 1),
-			     env);
-  scheme_add_global_constant("special-comment-value", 
-			     scheme_make_immed_prim(special_comment_value,
-                                                    "special-comment-value",
-                                                    1, 1),
-			     env);
-  scheme_add_global_constant("special-comment?", 
-			     scheme_make_folding_prim(special_comment_p,
-						      "special-comment?",
-						      1, 1, 1),
 			     env);
 
   REGISTER_SO(ellipses_symbol);
@@ -817,69 +721,46 @@ scheme_init_struct (Scheme_Env *env)
     scheme_source_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("prop:exn:srclocs"),
 								      guard);
   }
-  scheme_add_global_constant("prop:exn:srclocs", scheme_source_property, env);
-  scheme_add_global_constant("exn:srclocs?", 
+  scheme_addto_prim_instance("prop:exn:srclocs", scheme_source_property, env);
+  scheme_addto_prim_instance("exn:srclocs?", 
 			     scheme_make_folding_prim(exn_source_p,
 						      "exn:srclocs?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("exn:srclocs-accessor", 
+  scheme_addto_prim_instance("exn:srclocs-accessor", 
 			     scheme_make_folding_prim(exn_source_get,
 						      "exn:srclocs-accessor",
 						      1, 1, 1),
 			     env);
 
-  REGISTER_SO(scheme_module_path_property);
-  {
-    guard = scheme_make_prim_w_arity(check_exn_module_path_property_value_ok,
-				     "guard-for-prop:exn:srclocs",
-				     2, 2);
-    scheme_module_path_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("prop:exn:missing-module"),
-                                                                           guard);
-  }
-  scheme_add_global_constant("prop:exn:missing-module", scheme_module_path_property, env);
-  scheme_add_global_constant("exn:missing-module?",
-			     scheme_make_folding_prim(exn_module_path_p,
-						      "exn:missing-module?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("exn:missing-module-accessor", 
-			     scheme_make_folding_prim(exn_module_path_get,
-						      "exn:missing-module-accessor",
-						      1, 1, 1),
-			     env);
+  p = scheme_make_prim_w_arity(scheme_extract_checked_procedure,
+                               "checked-procedure-check-and-extract",
+                               5, 5);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
+  scheme_addto_prim_instance("checked-procedure-check-and-extract", p, env);
 
-  {
-    Scheme_Object *p;
-    p = scheme_make_prim_w_arity(scheme_extract_checked_procedure,
-                                 "checked-procedure-check-and-extract",
-                                 5, 5);
-    SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-    scheme_add_global_constant("checked-procedure-check-and-extract", p, env);
-  }
-
-  scheme_add_global_constant("chaperone-struct",
+  scheme_addto_prim_instance("chaperone-struct",
                              scheme_make_prim_w_arity(chaperone_struct,
                                                       "chaperone-struct",
                                                       1, -1),
                              env);
-  scheme_add_global_constant("impersonate-struct",
+  scheme_addto_prim_instance("impersonate-struct",
                              scheme_make_prim_w_arity(impersonate_struct,
                                                       "impersonate-struct",
                                                       1, -1),
                              env);
-  scheme_add_global_constant("chaperone-struct-type",
+  scheme_addto_prim_instance("chaperone-struct-type",
                              scheme_make_prim_w_arity(chaperone_struct_type,
                                                       "chaperone-struct-type",
                                                       4, -1),
                              env);
-  scheme_add_global_constant("make-impersonator-property", 
+  scheme_addto_prim_instance("make-impersonator-property", 
 			    scheme_make_prim_w_arity2(make_chaperone_property,
 						      "make-impersonator-property",
 						      1, 1,
 						      3, 3),
 			    env);
-  scheme_add_global_constant("impersonator-property?",
+  scheme_addto_prim_instance("impersonator-property?",
 			     scheme_make_folding_prim(chaperone_property_p,
 						     "impersonator-property?",
 						     1, 1, 1),
@@ -888,7 +769,7 @@ scheme_init_struct (Scheme_Env *env)
   {
     REGISTER_SO(scheme_app_mark_impersonator_property);
     scheme_app_mark_impersonator_property = make_chaperone_property_from_c(scheme_intern_symbol("application-mark"));
-    scheme_add_global_constant("impersonator-prop:application-mark",
+    scheme_addto_prim_instance("impersonator-prop:application-mark",
                                scheme_app_mark_impersonator_property,
                                env);
   }
@@ -936,6 +817,13 @@ void scheme_init_struct_wait()
 		 (Scheme_Ready_Fun)poll_evt_is_ready,
 		 NULL, NULL, 1);
 }
+
+#if defined(MZ_GC_BACKTRACE) && defined(MZ_PRECISE_GC)
+Scheme_Object *scheme_add_builtin_struct_types(Scheme_Object *accum) {
+  accum = scheme_make_pair(location_struct, accum);
+  return accum;
+}
+#endif
 
 /*========================================================================*/
 /*                             inspectors                                 */
@@ -1849,10 +1737,6 @@ static int is_evt_struct(Scheme_Object *o)
 /* This is here so it can use check_indirect_property_value_ok */
 
 static int is_proc_1(Scheme_Object *o) { return (SCHEME_PROCP(o) && scheme_check_proc_arity(NULL, 1, -1, 0, &o)); }
-static int is_proc_1_or_2(Scheme_Object *o) { return (SCHEME_PROCP(o) && (scheme_check_proc_arity(NULL, 1, -1, 0, &o)
-                                                                          || scheme_check_proc_arity(NULL, 2, -1, 0, &o))); }
-
-
 
 static Scheme_Object *check_object_name_property_value_ok(int argc, Scheme_Object *argv[])
 /* This is the guard for prop:object-name */
@@ -2021,189 +1905,6 @@ static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *s
 }
 
 /*========================================================================*/
-/*                  rename and set! transformer properties                */
-/*========================================================================*/
-
-int scheme_is_rename_transformer(Scheme_Object *o)
-{
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_id_macro_type))
-    return 1;
-  if (SCHEME_CHAPERONE_STRUCTP(o)
-      && scheme_struct_type_property_ref(rename_transformer_property, o))
-    return 1;
-  return 0;
-}
-
-int scheme_is_binding_rename_transformer(Scheme_Object *o)
-{
-  if (scheme_is_rename_transformer(o)) {
-    o = scheme_rename_transformer_id(o, NULL);
-    o = scheme_stx_property(o, not_free_id_symbol, NULL);
-    if (o && SCHEME_TRUEP(o))
-      return 0;
-    return 1;
-  }
-  return 0;
-}
-
-static int is_stx_id(Scheme_Object *o) { return (SCHEME_STXP(o) && SCHEME_SYMBOLP(SCHEME_STX_VAL(o))); }
-
-static int is_stx_id_or_proc_1(Scheme_Object *o) { return (is_stx_id(o) || is_proc_1(o)); }
-
-Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o, Scheme_Comp_Env *comp_env)
-{
-  Scheme_Object *a[1];
-
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_id_macro_type))
-    return SCHEME_PTR1_VAL(o);
-  if (SCHEME_CHAPERONE_STRUCTP(o)) {
-    Scheme_Object *v;
-    v = scheme_struct_type_property_ref(rename_transformer_property, o);
-    if (SCHEME_PROCP(v)) {
-      a[0] = o;
-      /* apply a continuation barrier here to prevent a capture in
-       * the property access */
-      if (comp_env && (scheme_current_thread->current_local_env != comp_env)) {
-        /* Getting identifier during an expansion context */
-        Scheme_Dynamic_State dyn_state;
-        Scheme_Env *genv = comp_env->genv;
-        scheme_set_dynamic_state(&dyn_state, comp_env, NULL, NULL, scheme_false,
-                                 genv, (genv->module
-                                        ? (genv->link_midx ? genv->link_midx : genv->module->me->src_modidx)
-                                        : NULL));
-        v = scheme_apply_with_dynamic_state(v, 1, a, &dyn_state);
-      } else {
-        v = scheme_apply(v, 1, a);
-      }
-      if (!is_stx_id(v)) {
-        scheme_contract_error("prop:rename-transformer",
-                              "contract violation for given value",
-                              "expected", 0, "identifier?",
-                              "given", 1, v,
-                              NULL);
-      }
-    } else if (SCHEME_INTP(v)) {
-      v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
-      if (!is_stx_id(v)) {
-        v = scheme_datum_to_syntax(scheme_intern_symbol("?"), scheme_false, scheme_false, 0, 0);
-      }
-    }
-    return v;
-  }
-  return NULL;
-}
-
-static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[])
-{
-  return check_indirect_property_value_ok("guard-for-prop:rename-transformer", 
-                                          is_stx_id_or_proc_1, 0,
-                                          "(or/c exact-nonnegative-integer? identifier? (-> any/c identifier?))",
-                                          argc, argv);
-}
-
-int scheme_is_set_transformer(Scheme_Object *o)
-{
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_set_macro_type))
-    return 1;
-  if (SCHEME_CHAPERONE_STRUCTP(o)
-      && scheme_struct_type_property_ref(set_transformer_property, o))
-    return 1;
-  return 0;
-}
-
-Scheme_Object *signal_bad_syntax(int argc, Scheme_Object **argv)
-{
-  scheme_wrong_syntax(NULL, NULL, argv[0], "bad syntax");
-  return NULL;
-}
-
-static Scheme_Object *chain_transformer(void *data, int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *a[2], *v = (Scheme_Object *)data;
-  a[0] = SCHEME_CAR(v);
-  a[1] = argv[0];
-  return _scheme_tail_apply(SCHEME_CDR(v), 2, a);
-}
-
-Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o)
-{
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_set_macro_type))
-    return SCHEME_PTR_VAL(o);
-  if (SCHEME_CHAPERONE_STRUCTP(o)) {
-    Scheme_Object *v;
-    v = scheme_struct_type_property_ref(set_transformer_property, o);
-    if (SCHEME_INTP(v)) {
-      v = ((Scheme_Structure *)o)->slots[SCHEME_INT_VAL(v)];
-      if (!is_proc_1(v)) {
-        v = scheme_make_prim_w_arity(signal_bad_syntax,
-                                     "bad-syntax-set!-transformer",
-                                     1, 1);
-      }
-    } else if (!scheme_check_proc_arity(NULL, 1, -1, 0, &v)) {
-      /* Must be a procedure of 2 arguments. Reduce to a procedure of 1. */
-      o = scheme_make_pair(o, v);
-      v = scheme_make_closed_prim_w_arity(chain_transformer, (void *)o,
-                                          "set!-transformer", 1, 1);
-    }
-    return v;
-  }
-  return NULL;
-}
-
-static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[])
-{
-  return check_indirect_property_value_ok("guard-for-prop:set!-transformer", 
-                                          is_proc_1_or_2, 0,
-                                          "(or/c  (any/c . -> . any) (any/c any/c . -> . any) exact-nonnegative-integer?)",
-                                          argc, argv);
-}
-
-/*========================================================================*/
-/*                        expansion-contexts property                     */
-/*========================================================================*/
-
-static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *v;
-  
-  v = argv[0];
-
-  while (SCHEME_PAIRP(v)) {
-    if (!scheme_is_expansion_context_symbol(SCHEME_CAR(v)))
-      break;
-    v = SCHEME_CDR(v);
-  }
-
-  if (SCHEME_NULLP(v))
-    return argv[0];
-
-  wrong_property_contract("guard-for-prop:expression-contexts",
-                          "(lisrof (or/c 'expression 'top-level 'module 'module-begin 'definition-context)",
-                          v);
-
-  return NULL;
-}
-
-int scheme_expansion_contexts_include(Scheme_Object *o, Scheme_Object *ctx)
-{
-  Scheme_Object *v;
-
-  if (SCHEME_CHAPERONE_STRUCTP(o)) {
-    v = scheme_chaperone_struct_type_property_ref(expansion_contexts_property, o);
-    if (v) {
-      while (!SCHEME_NULLP(v)) {
-        if (SAME_OBJ(SCHEME_CAR(v), ctx))
-          return 1;
-        v = SCHEME_CDR(v);
-      }
-      return 0;
-    }
-  }
-  
-  return 1;
-}
-
-/*========================================================================*/
 /*                           checked-proc property                        */
 /*========================================================================*/
 
@@ -2273,22 +1974,6 @@ Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv)
   a[1] = argv[3];
   a[2] = argv[4];
   return _scheme_apply(argv[2], 3, a);
-}
-
-/*========================================================================*/
-/*                             liberal-define                             */
-/*========================================================================*/
-
-static Scheme_Object *is_liberal_def_ctx(int argc, Scheme_Object **argv, Scheme_Object *self)
-{
-  Scheme_Object *prop = SCHEME_PRIM_CLOSURE_ELS(self)[0], *val;
-  
-  val = scheme_struct_type_property_ref(prop, argv[0]);
-
-  if (!val || SCHEME_FALSEP(val))
-    return scheme_false;
-  else
-    return scheme_true;
 }
 
 /*========================================================================*/
@@ -3732,53 +3417,72 @@ int scheme_decode_struct_shape(Scheme_Object *expected, intptr_t *_v)
   return 1;
 }
 
-int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected)
+intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *expected)
 {
-  intptr_t _v, v;
+  intptr_t _v, v, want_v;
   int i;
   Scheme_Struct_Type *st;
 
-  if (!scheme_decode_struct_shape(expected, &_v))
-    return 0;
-  v = _v;
+  if (expected) {
+    if (!scheme_decode_struct_shape(expected, &_v))
+      return 0;
+    v = _v;
+  } else
+    v = 0;
 
   if (SCHEME_STRUCT_TYPEP(e)) {
     st = (Scheme_Struct_Type *)e;
     if (st->num_slots != st->num_islots)
-      return (v == STRUCT_PROC_SHAPE_OTHER);
-    return (v == ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT)
-                  | STRUCT_PROC_SHAPE_STRUCT
-                  | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)));
-  } else if (!SCHEME_PRIMP(e))
-    return 0;
+      want_v = STRUCT_PROC_SHAPE_OTHER;
+    else
+      want_v = ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT)
+                | STRUCT_PROC_SHAPE_STRUCT
+                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+  } else if (!SCHEME_PRIMP(e)) {
+    want_v = -1;
+  } else {
+    i = (((Scheme_Primitive_Proc *)e)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+    if ((i == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
+        || (i == SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR)) {
+      st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
+      want_v = ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT) 
+                | STRUCT_PROC_SHAPE_CONSTR);
+    } else if (i == SCHEME_PRIM_STRUCT_TYPE_PRED) {
+      st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
+      want_v = (STRUCT_PROC_SHAPE_PRED
+                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+    } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER) {
+      int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
+      int parent_slots;
+      st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
+      parent_slots = ((st->name_pos > 0)
+                      ? st->parent_types[st->name_pos - 1]->num_slots
+                      : 0);
+      if ((pos - parent_slots) < (31 - STRUCT_PROC_SHAPE_SHIFT))
+        pos++;
+      else
+        pos = 0; /* => unknown, since simple struct info can't track it */
+      want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT)
+                | STRUCT_PROC_SHAPE_SETTER
+                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+    } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER) {
+      int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
+      st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
+      want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT) 
+                | STRUCT_PROC_SHAPE_GETTER
+                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+    } else if ((i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
+               || (i == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
+               || (i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER)) {
+      want_v = STRUCT_PROC_SHAPE_OTHER;
+    } else
+      want_v = -1;
+  }
 
-  i = (((Scheme_Primitive_Proc *)e)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-  if ((i == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
-      || (i == SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR)) {
-    st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT)
-                  | STRUCT_PROC_SHAPE_CONSTR));
-  } else if (i == SCHEME_PRIM_STRUCT_TYPE_PRED) {
-    st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == (STRUCT_PROC_SHAPE_PRED
-                  | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)));
-  } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER) {
-    st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT)
-                  | STRUCT_PROC_SHAPE_SETTER
-                  | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)));
-  } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER) {
-    int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
-    st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == ((pos << STRUCT_PROC_SHAPE_SHIFT) 
-                  | STRUCT_PROC_SHAPE_GETTER
-                  | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)));
-  } else if ((i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
-             || (i == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
-             || (i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
-    return (v == STRUCT_PROC_SHAPE_OTHER);
-
-  return 0;
+  if (expected)
+    return (v == want_v);
+  else
+    return want_v;
 }
 
 int scheme_decode_struct_prop_shape(Scheme_Object *expected, intptr_t *_v)
@@ -3790,7 +3494,7 @@ int scheme_decode_struct_prop_shape(Scheme_Object *expected, intptr_t *_v)
     return 0;
 
   if ((SCHEME_SYM_VAL(expected)[0] != 'p')
-      || (SCHEME_SYM_LEN(expected)  < 4))
+      || (SCHEME_SYM_LEN(expected) < 4))
     return 0;
   
   for (i = 4, v = 0; SCHEME_SYM_VAL(expected)[i]; i++) {
@@ -3802,30 +3506,43 @@ int scheme_decode_struct_prop_shape(Scheme_Object *expected, intptr_t *_v)
   return 1;
 }
 
-int scheme_check_structure_property_shape(Scheme_Object *e, Scheme_Object *expected)
+intptr_t scheme_get_or_check_structure_property_shape(Scheme_Object *e, Scheme_Object *expected)
 {
-  intptr_t _v, v;
+  intptr_t _v, v, want_v;
   int i;
 
-  if (!scheme_decode_struct_prop_shape(expected, &_v))
-    return 0;
-  v = _v;
+  if (expected) {
+    if (!scheme_decode_struct_prop_shape(expected, &_v))
+      return 0;
+    v = _v;
+  } else
+    v = 0;
 
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_struct_property_type)) {
     if (((Scheme_Struct_Property *)e)->guard)
-      return (v == STRUCT_PROP_PROC_SHAPE_GUARDED_PROP);
-    return ((v == STRUCT_PROP_PROC_SHAPE_PROP)
-            || (v == STRUCT_PROP_PROC_SHAPE_GUARDED_PROP));
-  } else if (!SCHEME_PRIMP(e))
-    return 0;
+      want_v = STRUCT_PROP_PROC_SHAPE_GUARDED_PROP;
+    else {
+      want_v = STRUCT_PROP_PROC_SHAPE_PROP;
+      if (expected)
+        return ((v == STRUCT_PROP_PROC_SHAPE_PROP)
+                || (v == STRUCT_PROP_PROC_SHAPE_GUARDED_PROP));
+    }
+  } else if (!SCHEME_PRIMP(e)) {
+    want_v = -1;
+  } else {
+    i = (((Scheme_Primitive_Proc *)e)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+    if (i == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
+      want_v = STRUCT_PROP_PROC_SHAPE_PRED;
+    else if (i == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+      want_v = STRUCT_PROP_PROC_SHAPE_GETTER;
+    else
+      want_v = -1;
+  }
 
-  i = (((Scheme_Primitive_Proc *)e)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
-  if (i == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
-    return (v == STRUCT_PROP_PROC_SHAPE_PRED);
-  else if (i == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
-    return (v == STRUCT_PROP_PROC_SHAPE_GETTER);
-
-  return 0;
+  if (expected)
+    return v == want_v;
+  else
+    return want_v;
 }
 
 static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
@@ -6141,46 +5858,6 @@ static Scheme_Object *check_date_star_fields(int argc, Scheme_Object **argv)
   return scheme_values(12, args);
 }
 
-/*========================================================================*/
-/*                        special-comment struct                          */
-/*========================================================================*/
-
-Scheme_Object *scheme_special_comment_value(Scheme_Object *o)
-{
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_special_comment_type))
-    return ((Scheme_Small_Object *)o)->u.ptr_val;
-  else
-    return NULL;
-}
-
-Scheme_Object *make_special_comment(int argc, Scheme_Object **argv)
-{
-  Scheme_Object *o;
-
-  o = scheme_alloc_small_object();
-  o->type = scheme_special_comment_type;
-  SCHEME_PTR_VAL(o) = argv[0];
-
-  return o;
-}
-
-Scheme_Object *special_comment_value(int argc, Scheme_Object **argv)
-{
-  Scheme_Object *v;
-
-  v = scheme_special_comment_value(argv[0]);
-  if (!v)
-    scheme_wrong_contract("special-comment-value", "special-comment?", 0, argc, argv);
-  return v;
-}
-
-Scheme_Object *special_comment_p(int argc, Scheme_Object **argv)
-{
-  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_special_comment_type)
-	  ? scheme_true
-	  : scheme_false);
-}
-
 /**********************************************************************/
 
 static Scheme_Object *exn_source_p(int argc, Scheme_Object **argv)
@@ -6205,34 +5882,6 @@ static Scheme_Object *check_exn_source_property_value_ok(int argc, Scheme_Object
      /* This is the guard for prop:exn:srclocs */
 {
   scheme_check_proc_arity("guard-for-prop:exn:srclocs", 1, 0, argc, argv);
-
-  return argv[0];
-}
-
-/**********************************************************************/
-
-static Scheme_Object *exn_module_path_p(int argc, Scheme_Object **argv)
-{
-  return (scheme_struct_type_property_ref(scheme_module_path_property, argv[0])
-	  ? scheme_true
-	  : scheme_false);
-}
-
-static Scheme_Object *exn_module_path_get(int argc, Scheme_Object **argv)
-{
-  Scheme_Object *v;
-
-  v = scheme_struct_type_property_ref(scheme_module_path_property, argv[0]);
-  if (!v)
-    scheme_wrong_contract("exn:missing-module-accessor", "exn:missing-module?", 0, argc, argv);
-  
-  return v;
-}
-
-static Scheme_Object *check_exn_module_path_property_value_ok(int argc, Scheme_Object *argv[])
-     /* This is the guard for prop:exn:srclocs */
-{
-  scheme_check_proc_arity("guard-for-prop:exn:missing-module", 1, 0, argc, argv);
 
   return argv[0];
 }

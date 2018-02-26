@@ -24,7 +24,7 @@
 #define NEWGC_BTC_ACCOUNT
 
 /* Configuration of the nursery (a.k.a. generation 0) */
-#define GEN0_INITIAL_SIZE (1 * 1024 * 1024)
+#define GEN0_INITIAL_SIZE (4 * 1024 * 1024)
 #define GEN0_SIZE_FACTOR 0.5
 #define GEN0_SIZE_ADDITION (512 * 1024)
 #define GEN0_MAX_SIZE (32 * 1024 * 1024)
@@ -1508,6 +1508,10 @@ static int stress_counter = 0;
 int scheme_gc_slow_path_started = 1;
 static int TAKE_SLOW_PATH()
 {
+#ifdef MZ_USE_PLACES
+  if (!MASTERGC) return 0;
+#endif
+
   if (!scheme_gc_slow_path_started) return 0;
   stress_counter++;
   if (stress_counter > GC_TRIGGER_COUNT)
@@ -6067,6 +6071,7 @@ void GC_dump_with_traces(int flags,
                          GC_get_type_name_proc get_type_name,
                          GC_for_each_found_proc for_each_found,
                          short min_trace_for_tag, short max_trace_for_tag,
+                         GC_record_traced_filter_proc record_traced_filter,
                          GC_print_traced_filter_proc print_traced_filter,
                          GC_print_tagged_value_proc print_tagged_value,
                          int path_length_limit,
@@ -6106,7 +6111,8 @@ void GC_dump_with_traces(int flags,
               for_each_struct(obj_start, gcWORDS_TO_BYTES(info->size));
           }
           if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
-            register_traced_object(obj_start);
+            if (record_traced_filter(obj_start))
+              register_traced_object(obj_start);
             if (for_each_found)
               for_each_found(obj_start);
           }
@@ -6131,7 +6137,8 @@ void GC_dump_with_traces(int flags,
       }
       if (((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag))
           || ((-tag >= min_trace_for_tag) && (-tag <= max_trace_for_tag))) {
-        register_traced_object(obj_start);
+        if (record_traced_filter(obj_start))
+          register_traced_object(obj_start);
         if (for_each_found)
           for_each_found(obj_start);
       }
@@ -6159,7 +6166,8 @@ void GC_dump_with_traces(int flags,
                   for_each_struct(obj_start, gcWORDS_TO_BYTES(info->size));
               }
               if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
-                register_traced_object(obj_start);
+                if (record_traced_filter(obj_start))
+                  register_traced_object(obj_start);
                 if (for_each_found)
                   for_each_found(obj_start);
               }
@@ -6313,7 +6321,7 @@ void GC_dump_with_traces(int flags,
 
 void GC_dump(void)
 {
-  GC_dump_with_traces(0, NULL, NULL, 0, -1, NULL, NULL, 0, NULL);
+  GC_dump_with_traces(0, NULL, NULL, 0, -1, NULL, NULL, NULL, 0, NULL);
 }
 
 #ifdef MZ_GC_BACKTRACE
@@ -6330,7 +6338,11 @@ int GC_is_tagged(void *p)
   }
 #endif
   return page && ((page->page_type == PAGE_TAGGED)
-                  || (page->page_type == PAGE_PAIR));
+                  || (page->page_type == PAGE_PAIR)
+                  || ((page->page_type == PAGE_BIG)
+                      && (BIG_PAGE_TO_OBJHEAD(page)->type == PAGE_TAGGED))
+                  || ((page->page_type == PAGE_MED_NONATOMIC)
+                      && (MED_OBJHEAD(p, page->obj_size)->type == PAGE_TAGGED)));
 }
 
 int GC_is_tagged_start(void *p)

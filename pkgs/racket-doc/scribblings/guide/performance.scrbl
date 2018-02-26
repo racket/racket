@@ -419,13 +419,13 @@ string or byte string, write a constant @tech{regexp} using an
 
 @section[#:tag "gc-perf"]{Memory Management}
 
-The Racket implementation is available in two variants: @deftech{3m} and
-@deftech{CGC}. The @tech{3m} variant uses a modern,
+The Racket implementation is available in three variants: @deftech{3m},
+@deftech{CGC}, and @deftech{CS}. The @tech{3m} and @tech{CS} variants use a modern,
 @deftech{generational garbage collector} that makes allocation
 relatively cheap for short-lived objects. The @tech{CGC} variant uses
 a @deftech{conservative garbage collector} which facilitates
 interaction with C code at the expense of both precision and speed for
-Racket memory management. The 3m variant is the standard one.
+Racket memory management. The @tech{3m} variant is currently the standard one.
 
 Although memory allocation is reasonably cheap, avoiding allocation
 altogether is normally faster. One particular place where allocation

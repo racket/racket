@@ -288,7 +288,7 @@
                                                  (list allowed)))
                                       (begin
                                         (when (procedure-arity-includes? p 1 #t)
-                                          (err/rt-test (procedure-reduce-arity p 1) #rx"has required keyword arguments"))
+                                          (err/rt-test (procedure-reduce-arity p 1) exn:fail? #rx"has required keyword arguments"))
                                         (list (procedure-reduce-arity p '()) '() '() '() method? p))))))
                             procs)
                        ;; reduce to arity 0 or nothing --- no keywords:

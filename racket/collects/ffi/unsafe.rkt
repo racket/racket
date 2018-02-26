@@ -251,13 +251,12 @@
   (syntax-case stx ()
     [(_ var-name lib-name type-expr)
      (with-syntax ([(p) (generate-temporaries (list #'var-name))])
-       (namespace-syntax-introduce
-        #'(begin (define p (make-c-parameter 'var-name lib-name type-expr))
-                 (define-syntax var-name
-                   (syntax-id-rules (set!)
-                     [(set! var val) (p val)]
-                     [(var . xs) ((p) . xs)]
-                     [var (p)])))))]))
+       #'(begin (define p (make-c-parameter 'var-name lib-name type-expr))
+                (define-syntax var-name
+                  (syntax-id-rules (set!)
+                    [(set! var val) (p val)]
+                    [(var . xs) ((p) . xs)]
+                    [var (p)]))))]))
 
 ;; Used to convert strings and symbols to a byte-string that names an object
 (define (get-ffi-obj-name who objname)
@@ -472,16 +471,31 @@
                       #:lock-name   [lock-name #f]
                       #:async-apply [async-apply #f]
                       #:save-errno  [errno   #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno lock-name))
+  (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? blocking? async-apply errno lock-name))
+
+;; A lightwegith delay meachnism for a single-argument function when
+;; it's ok (but unlikely) to evaluate `expr` more than once and keep
+;; the first result:
+(define-syntax-rule (delay/cas expr)
+  (let ([b (box #f)])
+    (lambda (arg)
+      (define f (unbox b))
+      (cond
+        [f (f arg)]
+        [else
+         (box-cas! b #f expr)
+         ((unbox b) arg)]))))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? async-apply errno lock-name)
+(define (_cprocedure* itypes otype abi wrapper keep atomic? orig-place? blocking? async-apply errno lock-name)
+  (define make-ffi-callback (delay/cas (ffi-callback-maker itypes otype abi atomic? async-apply)))
+  (define make-ffi-call (delay/cas (ffi-call-maker itypes otype abi errno orig-place? lock-name blocking?)))
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
         (and x
-             (let ([cb (ffi-callback (wrap x) itypes otype abi atomic? async-apply)])
+             (let ([cb (make-ffi-callback (wrap x))])
                (cond [(eq? keep #t) (hash-set! held-callbacks x (make-ephemeron x cb))]
                      [(box? keep)
                       (let ([x (unbox keep)])
@@ -489,7 +503,7 @@
                                   (if (or (null? x) (pair? x)) (cons cb x) cb)))]
                      [(procedure? keep) (keep cb)])
                cb)))
-      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno orig-place? lock-name))))))
+      (lambda (x) (and x (wrap (make-ffi-call x))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
@@ -676,6 +690,7 @@
                              #,(kwd-ref '#:keep)
                              #,(kwd-ref '#:atomic?)
                              #,(kwd-ref '#:in-original-place?)
+                             #,(kwd-ref '#:blocking?)
                              #,(kwd-ref '#:async-apply)
                              #,(kwd-ref '#:save-errno)
                              #,(kwd-ref '#:lock-name)))])
@@ -764,16 +779,25 @@
 ;; utf-16 type
 (provide _string/ucs-4 _string/utf-16)
 
+(define _bytes+nul
+  (make-ctype _bytes
+              (lambda (x)
+                (and x (let* ([len (bytes-length x)]
+                              [s (make-bytes (add1 len))])
+                         (bytes-copy! s 0 x 0 len)
+                         s)))
+              (lambda (x) x)))
+
 ;; 8-bit string encodings, #f is NULL
 (define ((false-or-op op) x) (and x (op x)))
 (define* _string/utf-8
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (false-or-op string->bytes/utf-8) (false-or-op bytes->string/utf-8)))
 (define* _string/locale
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (false-or-op string->bytes/locale) (false-or-op bytes->string/locale)))
 (define* _string/latin-1
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (false-or-op string->bytes/latin-1) (false-or-op bytes->string/latin-1)))
 
 ;; 8-bit string encodings, #f is NULL, can also use bytes and paths
@@ -783,13 +807,13 @@
         [(path?  x) (path->bytes x)]
         [else (op x)]))
 (define* _string*/utf-8
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (any-string-op string->bytes/utf-8) (false-or-op bytes->string/utf-8)))
 (define* _string*/locale
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (any-string-op string->bytes/locale) (false-or-op bytes->string/locale)))
 (define* _string*/latin-1
-  (make-ctype _bytes
+  (make-ctype _bytes+nul
     (any-string-op string->bytes/latin-1) (false-or-op bytes->string/latin-1)))
 
 ;; A generic _string type that usually does the right thing via a parameter
@@ -1060,15 +1084,30 @@
 (define-fun-syntax _bytes*
   (syntax-id-rules (o)
     [(_ o n) (type: _gcpointer
-              pre:  (let ([bstr (make-sized-byte-string (malloc (add1 n)) n)])
-                      ;; Ensure a null terminator, so that the result is
-                      ;; compatible with `_bytes`:
-                      (ptr-set! bstr _byte n 0)
-                      bstr)
+              pre:  (make-bytes-argument n)
               ;; post is needed when this is used as a function output type
-              post: (x => (make-sized-byte-string x n)))]
+              post: (x => (receive-bytes-result x n)))]
     [(_ . xs) (_bytes . xs)]
     [_ _bytes]))
+
+(define (make-bytes-argument n)
+  (cond
+    [(eq? 'racket (system-type 'vm))
+     (define bstr (make-sized-byte-string (malloc (add1 n)) n))
+     ;; Ensure a null terminator, so that the result is
+     ;; compatible with `_bytes`:
+     (ptr-set! bstr _byte n 0)
+     bstr]
+    [else (make-bytes n)]))
+
+(define (receive-bytes-result x n)
+  (cond
+    [(eq? 'racket (system-type 'vm))
+     (make-sized-byte-string x n)]
+    [else
+     (define bstr (make-bytes n))
+     (memcpy bstr x n)
+     bstr]))
 
 ;; _bytes/nul-terminated copies and includes a nul terminator in a
 ;; way that will be more consistent across Racket implementations
@@ -1151,7 +1190,7 @@
 ;; in-vector like sequence over array
 (define-:vector-like-gen :array-gen array-ref)
 
-(define-in-vector-like in-array
+(define-in-vector-like (in-array check-array)
   "array" array? array-length :array-gen)
 
 (define-sequence-syntax *in-array
@@ -1161,6 +1200,7 @@
                        #'array?
                        #'array-length
                        #'in-array
+                       #'check-array
                        #'array-ref))
 
 ;; (_array/list <type> <len> ...+)
@@ -1355,14 +1395,15 @@
    [(eq? t 'gcpointer) ctype]
    [(eq? t 'pointer)
     (let loop ([ctype ctype])
-      (if (eq? ctype 'pointer)
+      (if (or (eq? ctype _pointer)
+              (eq? ctype 'pointer))
           _gcpointer
           (make-ctype
            (loop (ctype-basetype ctype))
            (ctype-scheme->c ctype)
            (ctype-c->scheme ctype))))]
    [else
-    (raise-argument-error '_or-null "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))"
+    (raise-argument-error '_gcable "(and/c ctype? (lambda (ct) (memq (ctype-coretype ct) '(pointer gcpointer))))"
                           ctype)]))
 
 (define (ctype-coretype c)

@@ -25,14 +25,16 @@ hold packages:
 
 @commandline{racket -l- pkg/dirs-catalog @nonterm{dest-catalog} @nonterm{dir} ...}
 
-The @DFlag{link}, @DFlag{merge}, @DFlag{check-metadata}, and
+The @DFlag{immediate}, @DFlag{link}, @DFlag{merge}, @DFlag{check-metadata}, and
 @DFlag{quiet} flags correspond to optional keyword arguments of
 @racket[create-dirs-catalog].
 
-@history[#:added "6.1.1.6"]
+@history[#:added "6.1.1.6"
+         #:changed "6.90.0.4" @elem{Added @DFlag{immediate}.}]
 
 @defproc[(create-dirs-catalog [catalog-path path-string?]
                               [dirs (listof path-string?)]
+                              [#:immediate? immediate? any/c #f]
                               [#:link? link? any/c #f]
                               [#:merge? merge? any/c #f]
                               [#:check-metadata? check-metadata? any/c #f]
@@ -43,7 +45,9 @@ Creates or modifies @racket[catalog-path] as a directory that works as
 a catalog (see @secref["catalog-protocol"]) to list the packages that
 are contained in each directory specified by @racket[dirs]. Packages
 are discovered in @racket[dirs] as subdirectories that have an
-@filepath{info.rkt} file.
+@filepath{info.rkt} file; if @racket[immediate?] is true, then each
+directory is @racket[dirs] is checked for an immediate @filepath{info.rkt}
+file before checking subdirectories.
 
 If @racket[link?] is true, then the catalog specifies that the package
 should be installed as a directory link, as opposed to copies.
@@ -56,4 +60,6 @@ To create author and description information for each package in the
 catalog, @racket[create-dirs-catalog] looks for a @racket[pkg-authors]
 and @racket[pkg-desc] definition in each package's @filepath{info.rkt}
 file. If either definition is missing and @racket[check-metadata?] is
-true, an error is reported.}
+true, an error is reported.
+
+@history[#:changed "6.90.0.4" @elem{Added the @racket[#:immediate] argument.}]}

@@ -1,42 +1,37 @@
 #lang racket/base
-(require compiler/zo-parse
+(require racket/linklet
+         compiler/zo-parse
+         compiler/zo-marshal
          syntax/modcollapse
          racket/port
          racket/match
          racket/list
          racket/set
-         racket/path)
+         racket/path
+         (only-in '#%linklet compiled-position->primitive)
+         "private/deserialize.rkt")
 
 (provide decompile)
 
 ;; ----------------------------------------
 
 (define primitive-table
-  ;; Figure out number-to-id mapping for kernel functions in `primitive'
-  (let ([bindings
-         (let ([ns (make-base-empty-namespace)])
-           (parameterize ([current-namespace ns])
-             (namespace-require ''#%kernel)
-             (namespace-require ''#%unsafe)
-             (namespace-require ''#%flfxnum)
-             (namespace-require ''#%extfl)
-             (namespace-require ''#%futures)
-             (namespace-require ''#%foreign)
-             (for/list ([l (namespace-mapped-symbols)])
-               (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
-                         (compile l))))))]
-        [table (make-hash)])
-    (for ([b (in-list bindings)])
-      (let ([v (and (cdr b)
-                    (zo-parse 
-                     (open-input-bytes
-                      (with-output-to-bytes
-                          (λ () (write (cdr b)))))))])
-        (let ([n (match v
-                   [(struct compilation-top (_ _ prefix (struct primval (n)))) n]
-                   [else #f])])
-          (hash-set! table n (car b)))))
-    table))
+  (let ([value-names (let ([ns (make-base-empty-namespace)])
+                       (parameterize ([current-namespace ns])
+                         (namespace-require ''#%kernel)
+                         (namespace-require ''#%unsafe)
+                         (namespace-require ''#%flfxnum)
+                         (namespace-require ''#%extfl)
+                         (namespace-require ''#%futures)
+                         (namespace-require ''#%foreign)
+                         (namespace-require ''#%paramz)
+                         (for/hasheq ([name (in-list (namespace-mapped-symbols))])
+                           (values (namespace-variable-value name #t (lambda () #f))
+                                   name))))])
+    (for/hash ([i (in-naturals)]
+               #:break (not (compiled-position->primitive i)))
+      (define v (compiled-position->primitive i))
+      (values i (or (hash-ref value-names v #f) `',v)))))
 
 (define (list-ref/protect l pos who)
   (list-ref l pos)
@@ -47,291 +42,194 @@
 
 ;; ----------------------------------------
 
-(define-struct glob-desc (vars num-tls num-stxs num-lifts))
+(define-struct glob-desc (vars))
 
 ;; Main entry:
-(define (decompile top)
-  (let ([stx-ht (make-hasheq)])
-    (match top
-      [(struct compilation-top (max-let-depth binding-namess prefix form))
-       (let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-         (expose-module-path-indexes
-          `(begin
-            ,@defns
-            ,(decompile-form form globs '(#%globals) (make-hasheq) stx-ht))))]
-      [else (error 'decompile "unrecognized: ~e" top)])))
-
-(define (expose-module-path-indexes e)
-  ;; This is a nearly general replace-in-graph function. (It seems like a lot
-  ;; of work to expose module path index content and sharing, though.)
-  (define ht (make-hasheq))
-  (define mconses null)
-  (define (x-mcons a b)
-    (define m (mcons a b))
-    (set! mconses (cons (cons m (cons a b)) mconses))
-    m)
-  (define main
-    (let loop ([e e])
-      (cond
-       [(hash-ref ht e #f)]
-       [(module-path-index? e)
-        (define ph (make-placeholder #f))
-        (hash-set! ht e ph)
-        (define-values (name base) (module-path-index-split e))
-        (placeholder-set! ph (x-mcons '#%modidx
-                                      (x-mcons (loop name)
-                                               (x-mcons (loop base)
-                                                        null))))
-        ph]
-       [(pair? e)
-        (define ph (make-placeholder #f))
-        (hash-set! ht e ph)
-        (placeholder-set! ph (cons (loop (car e))
-                                   (loop (cdr e))))
-        ph]
-       [(mpair? e)
-        (define m (mcons #f #f))
-        (hash-set! ht e m)
-        (set! mconses (cons (cons m (cons (loop (mcar e))
-                                          (loop (mcdr e))))
-                            mconses))
-        m]
-       [(box? e)
-        (define ph (make-placeholder #f))
-        (hash-set! ht e ph)
-        (placeholder-set! ph (box (loop (unbox e))))
-        ph]
-       [(vector? e)
-        (define ph (make-placeholder #f))
-        (hash-set! ht e ph)
-        (placeholder-set! ph
-                          (for/vector #:length (vector-length e) ([i (in-vector e)])
-                                      (loop i)))
-        ph]
-       [(hash? e)
-        (define ph (make-placeholder #f))
-        (hash-set! ht e ph)
-        (placeholder-set! ph
-                          ((cond
-                            [(hash-eq? ht)
-                             make-hasheq-placeholder]
-                            [(hash-eqv? ht)
-                             make-hasheqv-placeholder]
-                            [else make-hash-placeholder])
-                           (for/list ([(k v) (in-hash e)])
-                             (cons (loop k) (loop v)))))
-        ph]
-       [(prefab-struct-key e)
-        => (lambda (k)
-             (define ph (make-placeholder #f))
-             (hash-set! ht e ph)
-             (placeholder-set! ph
-                               (apply make-prefab-struct
-                                      k
-                                      (map loop
-                                           (cdr (vector->list (struct->vector e))))))
-             ph)]
-       [else
-        e])))
-  (define l (make-reader-graph (cons main mconses)))
-  (for ([i (in-list (cdr l))])
-    (set-mcar! (car i) (cadr i))
-    (set-mcdr! (car i) (cddr i)))
-  (car l))
-
-(define (decompile-prefix a-prefix stx-ht)
-  (match a-prefix
-    [(struct prefix (num-lifts toplevels stxs src-insp-desc))
-     (let ([lift-ids (for/list ([i (in-range num-lifts)])
-                       (gensym 'lift))]
-           [stx-ids (map (lambda (i) (gensym 'stx)) 
-                         stxs)])
-       (values (glob-desc 
-                (append 
-                 (map (lambda (tl)
-                        (match tl
-                          [#f '#%linkage]
-                          [(? symbol?) (string->symbol (format "_~a" tl))]
-                          [(struct global-bucket (name)) 
-                           (string->symbol (format "_~a" name))]
-                          [(struct module-variable (modidx sym pos phase constantness))
-                           (if (and (module-path-index? modidx)
-                                    (let-values ([(n b) (module-path-index-split modidx)])
-                                      (and (not n) (not b))))
-                               (string->symbol (format "_~a" sym))
-                               (string->symbol (format "_~s~a@~s~a" 
-                                                       sym 
-                                                       (match constantness
-                                                         ['constant ":c"]
-                                                         ['fixed ":f"]
-                                                         [(function-shape a pm?) 
-                                                          (if pm? ":P" ":p")]
-                                                         [(struct-type-shape c) ":t"]
-                                                         [(constructor-shape a) ":mk"]
-                                                         [(predicate-shape) ":?"]
-                                                         [(accessor-shape c) ":ref"]
-                                                         [(mutator-shape c) ":set!"]
-                                                         [else ""])
-                                                       (mpi->string modidx) 
-                                                       (if (zero? phase)
-                                                           ""
-                                                           (format "/~a" phase)))))]
-                          [else (error 'decompile-prefix "bad toplevel: ~e" tl)]))
-                      toplevels)
-                 stx-ids
-                 (if (null? stx-ids) null '(#%stx-array))
-                 lift-ids)
-                (length toplevels)
-                (length stxs)
-                num-lifts)
-               (list*
-                `(quote inspector ,src-insp-desc)
-                ;; `(quote tls ,toplevels)
-                (map (lambda (stx id)
-                       `(define ,id ,(if stx
-                                         `(#%decode-syntax 
-                                           ,(decompile-stx (stx-content stx) stx-ht))
-                                         #f)))
-                     stxs stx-ids))))]
-    [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
-
-(define (decompile-stx stx stx-ht)
-  (or (hash-ref stx-ht stx #f)
-      (let ([p (mcons #f #f)])
-        (hash-set! stx-ht stx p)
-        (match stx
-          [(stx-obj datum wrap srcloc props tamper-status)
-           (set-mcar! p (case tamper-status
-                          [(clean) 'wrap]
-                          [(tainted) 'wrap-tainted]
-                          [(armed) 'wrap-armed]))
-           (set-mcdr! p (mcons
-                         (cond
-                          [(pair? datum) 
-                           (cons (decompile-stx (car datum) stx-ht)
-                                 (let loop ([l (cdr datum)])
-                                   (cond
-                                    [(null? l) null]
-                                    [(pair? l)
-                                     (cons (decompile-stx (car l) stx-ht)
-                                           (loop (cdr l)))]
-                                    [else
-                                     (decompile-stx l stx-ht)])))]
-                          [(vector? datum)
-                           (for/vector ([e (in-vector datum)])
-                             (decompile-stx e stx-ht))]
-                          [(box? datum)
-                           (box (decompile-stx (unbox datum) stx-ht))]
-                          [else datum])
-                         (let* ([l (mcons wrap null)]
-                                [l (if (hash-count props)
-                                       (mcons props l)
-                                       l)]
-                                [l (if srcloc
-                                       (mcons srcloc l)
-                                       l)])
-                           l)))
-           p]))))
-
-(define (mpi->string modidx)
+(define (decompile top #:to-linklets? [to-linklets? #f])
   (cond
-   [(symbol? modidx) modidx]
-   [else 
-    (collapse-module-path-index modidx)]))
+    [(linkl-directory? top)
+     (cond
+       [to-linklets?
+        (cons
+         'linklet-directory
+         (apply
+          append
+          (for/list ([(k v) (in-hash (linkl-directory-table top))])
+            (list '#:name k '#:bundle (decompile v #:to-linklets? to-linklets?)))))]
+       [else
+        (define main (hash-ref (linkl-directory-table top) '() #f))
+        (unless main (error 'decompile "cannot find main module"))
+        (decompile-module-with-submodules top '() main)])]
+    [(linkl-bundle? top)
+     (cond
+       [to-linklets?
+        (cons
+         'linklet-bundle
+         (apply
+          append
+          (for/list ([(k v) (in-hash (linkl-bundle-table top))])
+            (case (and (not to-linklets?) k)
+              [(stx-data)
+               (list '#:stx-data (decompile-data-linklet v))]
+              [else
+               (list '#:key k '#:value (decompile v #:to-linklets? to-linklets?))]))))]
+       [else
+        (decompile-module top)])]
+    [(linkl? top)
+     (decompile-linklet top)]
+    [else `(quote ,top)]))
 
-(define (decompile-module mod-form orig-stack stx-ht mod-name)
-  (match mod-form
-    [(struct mod (name srcname self-modidx
-                       prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info 
-                       internal-context binding-names
-                       flags pre-submodules post-submodules))
-     (let-values ([(globs defns) (decompile-prefix prefix stx-ht)]
-                  [(stack) (append '(#%modvars) orig-stack)]
-                  [(closed) (make-hasheq)])
-       `(,mod-name ,(if (symbol? name) name (last name)) ....
-           (quote self ,self-modidx)
-           (quote internal-context 
-                  ,(if (stx? internal-context)
-                       `(#%decode-syntax 
-                         ,(decompile-stx (stx-content internal-context) stx-ht))
-                       internal-context))
-           (quote bindings ,(for/hash ([(phase ht) (in-hash binding-names)])
-                              (values phase
-                                      (for/hash ([(sym id) (in-hash ht)])
-                                        (values sym
-                                                (if (eq? id #t)
-                                                    #t
-                                                    `(#%decode-syntax 
-                                                      ,(decompile-stx (stx-content id) stx-ht))))))))
-           (quote language-info ,lang-info)
-           ,@(if (null? flags) '() (list `(quote ,flags)))
-           ,@(let ([l (apply
-                       append
-                       (for/list ([req (in-list requires)]
-                                  #:when (pair? (cdr req)))
-                         (define l (for/list ([mpi (in-list (cdr req))])
-                                     (define p (mpi->string mpi))
-                                     (if (path? p)
-                                         (let ([d (current-load-relative-directory)])
-                                           (path->string (if d
-                                                             (find-relative-path (simplify-path d #t)
-                                                                                 (simplify-path p #f) 
-                                                                                 #:more-than-root? #t)
-                                                             p)))
-                                         p)))
-                         (if (eq? 0 (car req))
-                             l
-                             `((,@(case (car req)
-                                    [(#f) `(for-label)]
-                                    [(1) `(for-syntax)]
-                                    [else `(for-meta ,(car req))])
-                                ,@l)))))])
-               (if (null? l)
-                   null
-                   `((require ,@l))))
-           (provide ,@(apply
-                       append
-                       (for/list ([p (in-list provides)])
-                         (define phase (car p))
-                         (define l
-                           (for/list ([pv (in-list (append (cadr p) (caddr p)))])
-                             (match pv
-                               [(struct provided (name src src-name nom-src src-phase protected?))
-                                (define n (if (eq? name src-name)
-                                              name
-                                              `(rename-out [,src-name ,name])))
-                                (if protected?
-                                    `(protect-out ,n)
-                                    n)])))
-                         (if (or (null? l) (eq? phase 0))
-                             l
-                             `((,@(case phase
-                                    [(#f) `(for-label)]
-                                    [(1) `(for-syntax)]
-                                    [else `(for-meta ,phase)])
-                                ,@l))))))
-          ,@defns
-          ,@(for/list ([submod (in-list pre-submodules)])
-              (decompile-module submod orig-stack stx-ht 'module))
-          ,@(for/list ([b (in-list syntax-bodies)])
-              (let loop ([n (sub1 (car b))])
-                (if (zero? n)
-                    (cons 'begin
-                          (for/list ([form (in-list (cdr b))])
-                            (decompile-form form globs stack closed stx-ht)))
-                    (list 'begin-for-syntax (loop (sub1 n))))))
-          ,@(map (lambda (form)
-                   (decompile-form form globs stack closed stx-ht))
-                 body)
-          ,@(for/list ([submod (in-list post-submodules)])
-              (decompile-module submod orig-stack stx-ht 'module*))))]
-    [else (error 'decompile-module "huh?: ~e" mod-form)]))
+(define (decompile-module-with-submodules l-dir name-list main-l)
+  (decompile-module main-l
+                    (lambda ()
+                      (for/list ([(k l) (in-hash (linkl-directory-table l-dir))]
+                                 #:when  (and (list? k)
+                                              (= (length k) (add1 (length name-list)))
+                                              (for/and ([s1 (in-list name-list)]
+                                                        [s2 (in-list k)])
+                                                (eq? s1 s2))))
+                        (decompile-module-with-submodules l-dir k l)))))
 
-(define (decompile-form form globs stack closed stx-ht)
+(define (decompile-module l [get-nested (lambda () '())])
+  (define ht (linkl-bundle-table l))
+  (define phases (sort (for/list ([k (in-hash-keys ht)]
+                                  #:when (exact-integer? k))
+                         k)
+                       <))
+  (define-values (mpi-vector requires provides)
+    (let ([data-l (hash-ref ht 'data #f)]
+          [decl-l (hash-ref ht 'decl #f)])
+      (define (zo->linklet l)
+        (let ([o (open-output-bytes)])
+          (zo-marshal-to (linkl-bundle (hasheq 'data l)) o)
+          (parameterize ([read-accept-compiled #t])
+            (define b (read (open-input-bytes (get-output-bytes o))))
+            (hash-ref (linklet-bundle->hash b) 'data))))
+      (cond
+        [(and data-l
+              decl-l)
+         (define data-i (instantiate-linklet (zo->linklet data-l)
+                                             (list deserialize-instance)))
+         (define decl-i (instantiate-linklet (zo->linklet decl-l)
+                                             (list deserialize-instance
+                                                   data-i)))
+         (values (instance-variable-value data-i '.mpi-vector)
+                 (instance-variable-value decl-i 'requires)
+                 (instance-variable-value decl-i 'provides))]
+        [else (values '#() '() '())])))
+  (define (phase-wrap phase l)
+    (case phase
+      [(0) l]
+      [(1) `((for-syntax ,@l))]
+      [(-1) `((for-template ,@l))]
+      [(#f) `((for-label ,@l))]
+      [else `((for-meta ,phase ,@l))]))
+  `(module ,(hash-ref ht 'name 'unknown) ....
+     (require ,@(apply
+                 append
+                 (for/list ([phase+mpis (in-list requires)])
+                   (phase-wrap (car phase+mpis)
+                               (map collapse-module-path-index (cdr phase+mpis))))))
+     (provide ,@(apply
+                 append
+                 (for/list ([(phase ht) (in-hash provides)])
+                   (phase-wrap phase (hash-keys ht)))))
+     ,@(let loop ([phases phases] [depth 0])
+         (cond
+           [(null? phases) '()]
+           [(= depth (car phases))
+            (append
+             (decompile-linklet (hash-ref ht (car phases)) #:just-body? #t)
+             (loop (cdr phases) depth))]
+           [else
+            (define l (loop phases (add1 depth)))
+            (define (convert-syntax-definition s wrap)
+              (match s
+                [`(let ,bindings ,body)
+                 (convert-syntax-definition body
+                                            (lambda (rhs)
+                                              `(let ,bindings
+                                                 ,rhs)))]
+                [`(begin (.set-transformer! ',id ,rhs) ',(? void?))
+                 `(define-syntaxes ,id ,(wrap rhs))]
+                [`(begin (.set-transformer! ',ids ,rhss) ... ',(? void?))
+                 `(define-syntaxes ,ids ,(wrap `(values . ,rhss)))]
+                [_ #f]))
+            (let loop ([l l] [accum '()])
+              (cond
+                [(null? l) (if (null? accum)
+                               '()
+                               `((begin-for-syntax ,@(reverse accum))))]
+                [(convert-syntax-definition (car l) values)
+                 => (lambda (s)
+                      (append (loop null accum)
+                              (cons s (loop (cdr l) null))))]
+                [else
+                 (loop (cdr l) (cons (car l) accum))]))]))
+     ,@(get-nested)
+     ,@(let ([l (hash-ref ht 'stx-data #f)])
+         (if l
+             `((begin-for-all
+                 (define (.get-syntax-literal! pos)
+                   ....
+                   ,(decompile-data-linklet l)
+                   ....)))
+             null))))
+
+
+(define (decompile-linklet l #:just-body? [just-body? #f])
+  (match l
+    [(struct linkl (name importss import-shapess exports internals lifts source-names body max-let-depth needs-instance?))
+     (define closed (make-hasheq))
+     (define globs (glob-desc
+                    (append
+                     (list 'root)
+                     (apply append importss)
+                     exports
+                     internals
+                     lifts)))
+     (define body-l
+       (for/list ([form (in-list body)])
+         (decompile-form form globs '(#%globals) closed)))
+     (if just-body?
+         body-l
+         `(linklet
+           ,importss
+           ,exports
+           '(import-shapes: ,@(for/list ([imports (in-list importss)]
+                                         [import-shapes (in-list import-shapess)]
+                                         #:when #t
+                                         [import (in-list imports)]
+                                         [import-shape (in-list import-shapes)]
+                                         #:when import-shape)
+                                `[,import ,import-shape]))
+           ,@body-l))]))
+
+(define (decompile-data-linklet l)
+  (match l
+    [(struct linkl (_ _ _ _ _ _ _ (list vec-def (struct def-values (_ deser-lam))) _ _))
+     (match deser-lam
+       [(struct lam (_ _ _ _ _ _ _ _ _ (struct seq ((list vec-copy! _)))))
+        (match vec-copy!
+          [(struct application (_ (list _ _ (struct application (_ (list mpi-vector inspector bulk-binding-registry
+                                                                         num-mutables mutable-vec
+                                                                         num-shares share-vec
+                                                                         mutable-fill-vec
+                                                                         result-vec))))))
+           (decompile-deserialize '.mpi-vector '.inspector '.bulk-binding-registry
+                                  num-mutables mutable-vec
+                                  num-shares share-vec
+                                  mutable-fill-vec
+                                  result-vec)]
+           [else
+            (decompile-linklet l)])]
+       [else
+        (decompile-linklet l)])]
+    [else
+     (decompile-linklet l)]))
+     
+(define (decompile-form form globs stack closed)
   (match form
-    [(? mod?)
-     (decompile-module form stack stx-ht 'module)]
     [(struct def-values (ids rhs))
      `(define-values ,(map (lambda (tl)
                              (match tl
@@ -344,29 +242,10 @@
                 ,(decompile-expr (inline-variant-inline rhs) globs stack closed)
                 ,(decompile-expr (inline-variant-direct rhs) globs stack closed))
              (decompile-expr rhs globs stack closed)))]
-    [(struct def-syntaxes (ids rhs prefix max-let-depth dummy))
-     `(define-syntaxes ,ids
-        ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-           `(let ()
-              ,@defns
-              ,(decompile-form rhs globs '(#%globals) closed stx-ht))))]
-    [(struct seq-for-syntax (exprs prefix max-let-depth dummy))
-     `(begin-for-syntax
-       ,(let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
-          `(let ()
-             ,@defns
-             ,@(for/list ([rhs (in-list exprs)])
-                 (decompile-form rhs globs '(#%globals) closed stx-ht)))))]
     [(struct seq (forms))
      `(begin ,@(map (lambda (form)
-                      (decompile-form form globs stack closed stx-ht))
+                      (decompile-form form globs stack closed))
                     forms))]
-    [(struct splice (forms))
-     `(begin ,@(map (lambda (form)
-                      (decompile-form form globs stack closed stx-ht))
-                    forms))]
-    [(struct req (reqs dummy))
-     `(#%require . (#%decode-syntax ,reqs))]
     [else
      (decompile-expr form globs stack closed)]))
 
@@ -417,12 +296,12 @@
   (match expr
     [(struct toplevel (depth pos const? ready?))
      (decompile-tl expr globs stack closed #f)]
-    [(struct varref (tl dummy))
-     `(#%variable-reference ,(if (eq? tl #t)
-                                 '<constant-local>
-                                 (decompile-tl tl globs stack closed #t)))]
-    [(struct topsyntax (depth pos midpt))
-     (list-ref/protect (glob-desc-vars globs) (+ midpt pos) 'topsyntax)]
+    [(struct varref (tl dummy constant? from-unsafe?))
+     `(#%variable-reference . ,(cond
+                                 [(not tl) '()]
+                                 [(eq? tl #t) '(<constant-local>)]
+                                 [(symbol? tl) (list tl)] ; primitive
+                                 [else (list (decompile-tl tl globs stack closed #t))]))]
     [(struct primval (id))
      (hash-ref primitive-table id (lambda () (error "unknown primitive: " id)))]
     [(struct assign (id rhs undef-ok?))
@@ -558,20 +437,9 @@
                                    '()
                                    (list
                                     (for/list ([pos (in-list (sort (set->list tl-map) <))])
-                                      (define tl-pos
-                                        (cond
-                                         [(or (pos . < . (glob-desc-num-tls globs))
-                                              (zero? (glob-desc-num-stxs globs)))
-                                          pos]
-                                         [(= pos (glob-desc-num-tls globs))
-                                          'stx]
-                                         [else
-                                          (+ pos (glob-desc-num-stxs globs))]))
-                                      (if (eq? tl-pos 'stx)
-                                          '#%syntax
-                                          (list-ref/protect (glob-desc-vars globs)
-                                                            tl-pos
-                                                            'lam))))))))
+                                      (list-ref/protect (glob-desc-vars globs)
+                                                        pos
+                                                        'lam)))))))
          ,(decompile-expr body globs
                           (append captures
                                   (append vars rest-vars))
@@ -583,6 +451,249 @@
 (define (annotate-unboxed args a)
   a)
 
+;; ----------------------------------------
+
+(define (decompile-deserialize mpis inspector bulk-binding-registry
+                               num-mutables mutable-vec
+                               num-shares share-vec
+                               mutable-fill-vec
+                               result-vec)
+  ;; Names for shared values:
+  (define shared (for/vector ([i (in-range (+ num-mutables num-shares))])
+                   (string->symbol (format "~a:~a"
+                                           (if (i . < . num-mutables)
+                                               'mutable
+                                               'shared)
+                                           i))))
+  (define (infer-name! d i)
+    (when (pair? d)
+      (define new-name
+        (case (car d)
+          [(deserialize-scope) 'scope]
+          [(srcloc) 'srcloc]
+          [else #f]))
+      (when new-name
+        (vector-set! shared i (string->symbol (format "~a:~a" new-name i))))))
+
+  (define mutables (make-vector num-mutables #f))
+  ;; Make mutable shells
+  (for/fold ([pos 0]) ([i (in-range num-mutables)])
+    (define-values (d next-pos)
+      (decode-shell mutable-vec pos mpis inspector bulk-binding-registry shared))
+    (vector-set! mutables i d)
+    (infer-name! d i)
+    next-pos)
+  
+  ;; Construct shared values
+  (define shareds (make-vector num-shares #f))
+  (for/fold ([pos 0]) ([i (in-range num-shares)])
+    (define-values (d next-pos)
+      (decode share-vec pos mpis inspector bulk-binding-registry shared))
+    (vector-set! shareds i d)
+    (infer-name! d (+ i num-mutables))
+    next-pos)
+  
+  ;; Fill in mutable shells
+  (define-values (fill-pos rev-fills)
+    (for/fold ([pos 0] [rev-fills null]) ([i (in-range num-mutables)]
+                                          [v (in-vector shared)])
+      (define-values (fill next-pos)
+        (decode-fill! v mutable-fill-vec pos mpis inspector bulk-binding-registry shared))
+      (values next-pos (if fill
+                           (cons fill rev-fills)
+                           rev-fills))))
+  
+  ;; Construct the final result
+  (define-values (result done-pos)
+    (decode result-vec 0 mpis inspector bulk-binding-registry shared))
+
+  `(let (,(for/list ([i (in-range num-mutables)])
+            `(,(vector-ref shared i) ,(vector-ref mutables i))))
+    (let* (,(for/list ([i (in-range num-shares)])
+              `(,(vector-ref shared (+ i num-mutables)) ,(vector-ref shareds i))))
+      ,@(reverse rev-fills)
+      ,result)))
+
+;; Decode the construction of a mutable variable
+(define (decode-shell vec pos mpis inspector bulk-binding-registry shared)
+  (case (vector-ref vec pos)
+    [(#:box) (values (list 'box #f) (add1 pos))]
+    [(#:vector) (values `(make-vector ,(vector-ref vec (add1 pos))) (+ pos 2))]
+    [(#:hash) (values (list 'make-hasheq) (add1 pos))]
+    [(#:hasheq) (values (list 'make-hasheq) (add1 pos))]
+    [(#:hasheqv) (values (list 'make-hasheqv) (add1 pos))]
+    [else (decode vec pos mpis inspector bulk-binding-registry shared)]))
+
+;; The decoder that is used for most purposes
+(define (decode vec pos mpis inspector bulk-binding-registry shared)
+  (define-syntax decodes
+    (syntax-rules ()
+      [(_ (id ...) rhs) (decodes #:pos (add1 pos) (id ...) rhs)]
+      [(_ #:pos pos () rhs) (values rhs pos)]
+      [(_ #:pos pos ([#:ref id0] id ...) rhs)
+       (let-values ([(id0 next-pos) (let ([i (vector-ref vec pos)])
+                                      (if (exact-integer? i)
+                                          (values (vector-ref shared i) (add1 pos))
+                                          (decode vec pos mpis inspector bulk-binding-registry shared)))])
+         (decodes #:pos next-pos (id ...) rhs))]
+      [(_ #:pos pos (id0 id ...) rhs)
+       (let-values ([(id0 next-pos) (decode vec pos mpis inspector bulk-binding-registry shared)])
+         (decodes #:pos next-pos (id ...) rhs))]))
+  (define-syntax-rule (decode* (deser id ...))
+    (decodes (id ...) `(deser ,id ...)))
+  (case (vector-ref vec pos)
+    [(#:ref)
+     (values (vector-ref shared (vector-ref vec (add1 pos)))
+             (+ pos 2))]
+    [(#:inspector) (values inspector (add1 pos))]
+    [(#:bulk-binding-registry) (values bulk-binding-registry (add1 pos))]
+    [(#:syntax #:datum->syntax)
+     (decodes
+      (content [#:ref context] [#:ref srcloc])
+      `(deserialize-syntax
+        ,content
+        ,context
+        ,srcloc
+        #f
+        #f
+        ,inspector))]
+    [(#:syntax+props)
+     (decodes
+      (content [#:ref context] [#:ref srcloc] props tamper)
+      `(deserialize-syntax
+        ,content
+        ,context
+        ,srcloc
+        ,props
+        ,tamper
+        ,inspector))]
+    [(#:srcloc)
+     (decode* (srcloc source line column position span))]
+    [(#:quote)
+     (values (vector-ref vec (add1 pos)) (+ pos 2))]
+    [(#:mpi)
+     (values `(vector-ref ,mpis ,(vector-ref vec (add1 pos)))
+             (+ pos 2))]
+    [(#:box)
+     (decode* (box-immutable v))]
+    [(#:cons)
+     (decode* (cons a d))]
+    [(#:list #:vector #:set #:seteq #:seteqv)
+     (define len (vector-ref vec (add1 pos)))
+     (define r (make-vector len))
+     (define next-pos
+       (for/fold ([pos (+ pos 2)]) ([i (in-range len)])
+         (define-values (v next-pos) (decodes #:pos pos (v) v))
+         (vector-set! r i v)
+         next-pos))
+     (values `(,(case (vector-ref vec pos)
+                  [(#:list) 'list]
+                  [(#:vector) 'vector]
+                  [(#:set) 'set]
+                  [(#:seteq) 'seteq]
+                  [(#:seteqv) 'seteqv])
+               ,@(vector->list r))
+             next-pos)]
+    [(#:hash #:hasheq #:hasheqv)
+     (define len (vector-ref vec (add1 pos)))
+     (define-values (l next-pos)
+       (for/fold ([l null] [pos (+ pos 2)]) ([i (in-range len)])
+         (decodes #:pos pos (k v) (list* v k l))))
+     (values `(,(case (vector-ref vec pos)
+                  [(#:hash) 'hash]
+                  [(#:hasheq) 'hasheq]
+                  [(#:hasheqv) 'hasheqv])
+               ,@(reverse l))
+             next-pos)]
+    [(#:prefab)
+     (define-values (key next-pos) (decodes #:pos (add1 pos) (k) k))
+     (define len (vector-ref vec next-pos))
+     (define-values (r done-pos)
+       (for/fold ([r null] [pos (add1 next-pos)]) ([i (in-range len)])
+         (decodes #:pos pos (v) (cons v r))))
+     (values `(make-prefab-struct ',key ,@(reverse r))
+             done-pos)]
+    [(#:scope)
+     (decode* (deserialize-scope))]
+    [(#:scope+kind)
+     (decode* (deserialize-scope kind))]
+    [(#:multi-scope)
+     (decode* (deserialize-multi-scope name scopes))]
+    [(#:shifted-multi-scope)
+     (decode* (deserialize-shifted-multi-scope phase multi-scope))]
+    [(#:table-with-bulk-bindings)
+     (decode* (deserialize-table-with-bulk-bindings syms bulk-bindings))]
+    [(#:bulk-binding-at)
+     (decode* (deserialize-bulk-binding-at scopes bulk))]
+    [(#:representative-scope)
+     (decode* (deserialize-representative-scope kind phase))]
+    [(#:module-binding)
+     (decode* (deserialize-full-module-binding
+               module sym phase
+               nominal-module
+               nominal-phase
+               nominal-sym
+               nominal-require-phase
+               free=id
+               extra-inspector
+               extra-nominal-bindings))]
+    [(#:simple-module-binding)
+     (decode* (deserialize-simple-module-binding module sym phase nominal-module))]
+    [(#:local-binding)
+     (decode* (deserialize-full-local-binding key free=id))]
+    [(#:bulk-binding)
+     (decode* (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry))]
+    [(#:provided)
+     (decode* (deserialize-provided binding protected? syntax?))]
+    [else
+     (values `(quote ,(vector-ref vec pos)) (add1 pos))]))
+
+;; Decode the filling of mutable values, which has its own encoding
+;; variant
+(define (decode-fill! v vec pos mpis inspector bulk-binding-registry shared)
+  (case (vector-ref vec pos)
+    [(#f) (values #f (add1 pos))]
+    [(#:set-box!)
+     (define-values (c next-pos)
+       (decode vec (add1 pos) mpis inspector bulk-binding-registry shared))
+     (values `(set-box! ,v ,c)
+             next-pos)]
+    [(#:set-vector!)
+     (define len (vector-ref vec (add1 pos)))
+     (define-values (l next-pos)
+       (for/fold ([l null] [pos (+ pos 2)]) ([i (in-range len)])
+         (define-values (c next-pos)
+           (decode vec pos mpis inspector bulk-binding-registry shared))
+         (values (cons `(vector-set! ,v ,i ,c) l)
+                 next-pos)))
+     (values `(begin ,@(reverse l)) next-pos)]
+    [(#:set-hash!)
+     (define len (vector-ref vec (add1 pos)))
+     (define-values (l next-pos)
+       (for/fold ([l null] [pos (+ pos 2)]) ([i (in-range len)])
+         (define-values (key next-pos)
+           (decode vec pos mpis inspector bulk-binding-registry shared))
+         (define-values (val done-pos)
+           (decode vec next-pos mpis inspector bulk-binding-registry shared))
+         (values (cons `(hash-set! ,v ,key ,val) l)
+                 done-pos)))
+     (values `(begin ,@(reverse l)) next-pos)]
+    [(#:scope-fill!)
+     (define-values (c next-pos)
+       (decode vec (add1 pos) mpis inspector bulk-binding-registry shared))
+     (values `(deserialize-scope-fill! ,v ,c)
+             next-pos)]
+    [(#:representative-scope-fill!)
+     (define-values (a next-pos)
+       (decode vec (add1 pos) mpis inspector bulk-binding-registry shared))
+     (define-values (d done-pos)
+       (decode vec next-pos mpis inspector bulk-binding-registry shared))
+     (values `(deserialize-representative-scope-fill! ,v ,a ,d)
+             done-pos)]
+    [else
+     (error 'deserialize "bad fill encoding: ~v" (vector-ref vec pos))]))
+  
+  
 ;; ----------------------------------------
 
 #;

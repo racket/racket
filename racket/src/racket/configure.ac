@@ -73,6 +73,8 @@ AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
+AC_ARG_ENABLE(backtrace, [  --enable-cify          compile startup code to C insteda of bytecode])
+
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
 AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
@@ -323,6 +325,8 @@ show_explicitly_disabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
+show_explicitly_enabled "${enable_cify}" "Startup compiled to C"
+show_explicitly_disabled "${enable_cify}" "Startup compiled to C"
 
 show_explicitly_disabled "${enable_float}" "Single-precision floats"
 show_explicitly_enabled "${enable_floatinstead}" "Single-precision default floats" "Note that this mode is NOT RECOMMENDED"
@@ -478,6 +482,22 @@ mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
+
+if test "${enable_cify}" = "yes" ; then
+  STARTUP_AS_BYTECODE=_bytecode
+  STARTUP_AS_C=
+  STARTUP_AS_AUTO=_auto
+else
+  if test "${enable_cify}" = "yes" ; then
+    STARTUP_AS_BYTECODE=
+    STARTUP_AS_C=_c
+    STARTUP_AS_AUTO=_auto
+  else
+    STARTUP_AS_BYTECODE=_bytecode
+    STARTUP_AS_C=_c
+    STARTUP_AS_AUTO=
+  fi
+fi
 
 MAKE_LOCAL_RACKET=no-local-racket
 
@@ -1572,11 +1592,13 @@ if test "${enable_racket}" = "" ; then
   RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
   RUN_RACKET_MAIN_VARIANT='$(RUN_THIS_RACKET_MAIN_VARIANT)'
   CGC_IF_NEEDED_FOR_MMM="cgc"
+  BOOT_MODE="--boot"
 else
   RUN_RACKET_CGC="${enable_racket}"
   RUN_RACKET_MMM="${enable_racket}"
   RUN_RACKET_MAIN_VARIANT="${enable_racket}"
   CGC_IF_NEEDED_FOR_MMM="no-cgc-needed"
+  BOOT_MODE="--chain"
 fi
 
 ############## libtool ################
@@ -1783,6 +1805,11 @@ AC_SUBST(RUN_RACKET_CGC)
 AC_SUBST(RUN_RACKET_MMM)
 AC_SUBST(RUN_RACKET_MAIN_VARIANT)
 AC_SUBST(CGC_IF_NEEDED_FOR_MMM)
+AC_SUBST(BOOT_MODE)
+
+AC_SUBST(STARTUP_AS_BYTECODE)
+AC_SUBST(STARTUP_AS_C)
+AC_SUBST(STARTUP_AS_AUTO)
 
 AC_SUBST(MAKE_LOCAL_RACKET)
 

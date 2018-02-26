@@ -37,7 +37,7 @@
 static int validate_expr(Mz_CPort *port, Scheme_Object *expr, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta,
-                         int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                         int num_toplevels, int num_lifts, void *tl_use_map,
                          mzshort *tl_state, mzshort tl_timestamp,
                          Scheme_Object *app_rator, int proc_with_refs_ok, 
                          int result_ignored, struct Validate_Clearing *vc, 
@@ -47,7 +47,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 static int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                                     int hope,
                                     Validate_TLS tls,
-                                    int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map);
+                                    int num_toplevels, int num_lifts, void *tl_use_map);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -143,117 +143,76 @@ static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int shape, i
                   scheme_make_integer(shape));
 }
 
-static int phaseless_expr(Scheme_Object *expr)
-{
-  /* A precise check is a little tricky, since compiler optimizations
-     might change the original program beyond easily recognition of
-     the syntactic pattern that defines "phaseless". For now, let
-     anything through; the result can be weird if state somehow leakes
-     through a "phaseless" module, but I don't think it can be unsafe
-     from the run-time system's perspective. */
-  return 1;
-}
-
-void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
-                          int depth, 
-                          int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
-                          Scheme_Object **toplevels,
-                          int code_vec)
-/* code_vec == 2 => check that phasesless is ok */
+void scheme_validate_linklet(Mz_CPort *port, Scheme_Linklet *linklet)
 {
   char *stack;
-  int delta;
+  int depth, delta, num_toplevels, i, j, pos;
+  int cnt, tl_timestamp = 1;
   struct Validate_Clearing *vc;
   Validate_TLS tls;
   mzshort *tl_state;
   Scheme_Hash_Table **_st_ht = NULL;
-  Scheme_Object *form;
+  Scheme_Object *form, *shape;
 
-  depth += ((num_toplevels || num_stxes || num_lifts) ? 1 : 0);
+  depth = linklet->max_let_depth + 1; /* +1 is for prefix */
 
   stack = scheme_malloc_atomic(depth);
   memset(stack, VALID_NOT, depth);
   
-  if (num_toplevels || num_stxes || num_lifts) {
-    stack[depth - 1] = VALID_TOPLEVELS;
-  }
-  delta = depth - ((num_toplevels || num_stxes || num_lifts) ? 1 : 0);
+  stack[depth - 1] = VALID_TOPLEVELS;
+  delta = depth - 1;
     
-  tls = MALLOC_N(mzshort*, num_lifts);
+  tls = MALLOC_N(mzshort*, linklet->num_lifts);
   _st_ht = MALLOC_N(Scheme_Hash_Table*, 1);
-  
-  if (code_vec) {
-    int i;
-    tl_state = MALLOC_N_ATOMIC(mzshort, num_toplevels);
-    memset(tl_state, 0, sizeof(mzshort) * num_toplevels);
-    for (i = 0; i < num_toplevels; i++) {
-      if (SAME_TYPE(SCHEME_TYPE(toplevels[i]), scheme_module_variable_type)) {
-        int mv_flags = SCHEME_MODVAR_FLAGS(toplevels[i]);
-        if (mv_flags & SCHEME_MODVAR_CONST) {
+
+  num_toplevels = SCHEME_LINKLET_PREFIX_PREFIX + linklet->num_total_imports + SCHEME_VEC_SIZE(linklet->defns);
+      
+  tl_state = MALLOC_N_ATOMIC(mzshort, num_toplevels);
+  memset(tl_state, 0, sizeof(mzshort) * num_toplevels);
+
+  if (linklet->need_instance_access)
+    tl_state[0] = 1;
+
+  pos = SCHEME_LINKLET_PREFIX_PREFIX;
+  for (i = 0; i < SCHEME_VEC_SIZE(linklet->importss); i++) {
+    for (j = 0; j < SCHEME_VEC_SIZE(SCHEME_VEC_ELS(linklet->importss)[i]); j++, pos++) {
+      shape = (linklet->import_shapes ? SCHEME_VEC_ELS(linklet->import_shapes)[pos-SCHEME_LINKLET_PREFIX_PREFIX] : scheme_false);
+      if (SCHEME_TRUEP(shape)) {
+        if (SAME_OBJ(shape, scheme_void))
+          tl_state[pos] = SCHEME_TOPLEVEL_FIXED;
+        else {
           intptr_t k;
-          tl_state[i] = SCHEME_TOPLEVEL_CONST;
-          if (scheme_decode_struct_shape(((Module_Variable *)toplevels[i])->shape, &k))
-            add_struct_mapping(_st_ht, i, k, 0);
-          else if (scheme_decode_struct_prop_shape(((Module_Variable *)toplevels[i])->shape, &k))
-            add_struct_mapping(_st_ht, i, k, 1);
-        } else if (mv_flags & SCHEME_MODVAR_FIXED)
-          tl_state[i] = SCHEME_TOPLEVEL_FIXED;
-        else
-          tl_state[i] = SCHEME_TOPLEVEL_READY;
-      }
-      if (0) {
-        if (i < num_toplevels) {
-          if (SCHEME_SYMBOLP(toplevels[i]))
-            printf("%d is %s\n", i, SCHEME_SYM_VAL(toplevels[i]));
-          if (SAME_TYPE(SCHEME_TYPE(toplevels[i]), scheme_module_variable_type))
-            printf("%d is imported %s (%d)\n", i, 
-                   SCHEME_SYM_VAL(((Module_Variable *)toplevels[i])->sym),
-                   SCHEME_MODVAR_FLAGS(toplevels[i]) & 0x3);
+          tl_state[pos] = SCHEME_TOPLEVEL_CONST;
+          if (scheme_decode_struct_shape(shape, &k))
+            add_struct_mapping(_st_ht, pos, k, 0);
+          else if (scheme_decode_struct_prop_shape(shape, &k))
+            add_struct_mapping(_st_ht, pos, k, 1);
         }
-      }
+      } else
+        tl_state[pos] = SCHEME_TOPLEVEL_READY;
     }
-  } else {
-    tl_state = NULL;
   }
 
   vc = make_clearing_stack();
 
-  if (code_vec) {
-    int i, cnt, tl_timestamp = 1;
-    cnt = SCHEME_VEC_SIZE(code);
-    for (i = 0; i < cnt; i++) {
-      form = SCHEME_VEC_ELS(code)[i];
-      if (code_vec == 2) {
-        if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
-          if (!phaseless_expr(SCHEME_VEC_ELS(form)[0]))
-            scheme_ill_formed_code(port);
-        } else
-          scheme_ill_formed_code(port);
-      }
-      reset_clearing(vc);
-      if (!validate_expr(port, form, 
-                         stack, tls,
-                         depth, delta, delta, 
-                         num_toplevels, num_stxes, num_lifts, tl_use_map,
-                         tl_state, tl_timestamp,
-                         NULL, 0, 0,
-                         vc, 1, 0, NULL, -1, _st_ht)) {
-        tl_timestamp++;
-        if (0) {
-          printf("increment to %d for %d %p\n", tl_timestamp, 
-                 SCHEME_TYPE(SCHEME_VEC_ELS(code)[i]), 
-                 SCHEME_VEC_ELS(code)[i]);
-        }
+  cnt = SCHEME_VEC_SIZE(linklet->bodies);
+  for (i = 0; i < cnt; i++) {
+    form = SCHEME_VEC_ELS(linklet->bodies)[i];
+    reset_clearing(vc);
+    if (!validate_expr(port, form, 
+                       stack, tls,
+                       depth, delta, delta, 
+                       num_toplevels, linklet->num_lifts, NULL,
+                       tl_state, tl_timestamp,
+                       NULL, 0, 0,
+                       vc, 1, 0, NULL, -1, _st_ht)) {
+      tl_timestamp++;
+      if (0) {
+        printf("increment to %d for %d %p\n", tl_timestamp, 
+               SCHEME_TYPE(SCHEME_VEC_ELS(linklet->bodies)[i]), 
+               SCHEME_VEC_ELS(linklet->bodies)[i]);
       }
     }
-  } else {
-    validate_expr(port, code, 
-                  stack, tls,
-                  depth, delta, delta, 
-                  num_toplevels, num_stxes, num_lifts, tl_use_map,
-                  tl_state, 0,
-                  NULL, 0, 0,
-                  vc, 1, 0, NULL, -1, NULL);
   }
 }
 
@@ -279,7 +238,7 @@ static int validate_join_seq(int r1, int r2)
 static int validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
                              char *stack, Validate_TLS tls,
                              int depth, int delta, 
-                             int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                             int num_toplevels, int num_lifts, void *tl_use_map,
                              mzshort *tl_state, mzshort tl_timestamp,
                              int skip_refs_check)
 {
@@ -288,7 +247,7 @@ static int validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 
   return validate_expr(port, expr, stack, tls, 
                        depth, delta, delta, 
-                       num_toplevels, num_stxes, num_lifts, tl_use_map,
+                       num_toplevels, num_lifts, tl_use_map,
                        tl_state, tl_timestamp,
                        NULL, skip_refs_check ? 1 : 0, 0,
                        make_clearing_stack(), 0, 0, NULL, 1, NULL);
@@ -297,7 +256,7 @@ static int validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 static int define_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                   char *stack,  Validate_TLS tls,
                                   int depth, int letlimit, int delta, 
-                                  int num_toplevels, int num_stxes, int num_lifts,
+                                  int num_toplevels, int num_lifts,
                                   void *tl_use_map, 
                                   mzshort *tl_state, mzshort tl_timestamp,
                                   int result_ignored,
@@ -319,7 +278,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   
   for (i = 1; i < size; i++) {
     validate_toplevel(SCHEME_VEC_ELS(data)[i], port, stack, tls, depth, delta, 
-                      num_toplevels, num_stxes, num_lifts, tl_use_map,
+                      num_toplevels, num_lifts, tl_use_map,
                       NULL, tl_timestamp,
                       1);
   }
@@ -327,12 +286,12 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   if (only_var) {
     int pos;
     pos = SCHEME_TOPLEVEL_POS(only_var);
-    if (pos >= (num_toplevels + num_stxes + (num_stxes ? 1 : 0))) {
+    if (pos >= (num_toplevels - num_lifts)) {
       /* It's a lift. Check whether it needs to take reference arguments
          and/or install reference info. */
       Scheme_Object *app_rator;
       Scheme_Lambda *data = NULL;
-      int tp = pos - (num_toplevels + num_stxes + (num_stxes ? 1 : 0));
+      int tp = pos - (num_toplevels - num_lifts);
       mzshort *a, *new_a = NULL;
 
       /* Make sure that no one has tried to register information. */
@@ -398,7 +357,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
             int is;
             is = validate_rator_wants_box(val, i, 
                                           a[i + 1] == 2,
-                                          tls, num_toplevels, num_stxes, num_lifts, tl_use_map);
+                                          tls, num_toplevels, num_lifts, tl_use_map);
             if ((is && (a[i + 1] == 1))
                 || (!is && (a[i + 1] == 2)))
               scheme_ill_formed_code(port);
@@ -412,8 +371,8 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   if (scheme_is_simple_make_struct_type(val, size-1, CHECK_STRUCT_TYPE_RESOLVED,
                                         NULL,
                                         &stinfo, NULL,
-                                        NULL, NULL, (_st_ht ? *_st_ht : NULL), 
-                                        NULL, 0, NULL, NULL, NULL, 5)) {
+                                        NULL, (_st_ht ? *_st_ht : NULL), 
+                                        NULL, 0, NULL, NULL, 5)) {
     /* This set of bindings is constant across invocations, but
        if `uses_super', we need to increment tl_timestamp for
        subtype-defining `struct' sequences. */
@@ -425,8 +384,8 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
   has_guard = 0;
   if (scheme_is_simple_make_struct_type_property(val, size-1, CHECK_STRUCT_TYPE_RESOLVED,
                                                  &has_guard,
-                                                 NULL, NULL, (_st_ht ? *_st_ht : NULL), 
-                                                 NULL, 0, NULL, NULL, 5)) {
+                                                 NULL, (_st_ht ? *_st_ht : NULL), 
+                                                 NULL, 0, NULL, 5)) {
     is_struct_prop = 1;
   } else {
     is_struct_prop = 0;
@@ -434,7 +393,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
 
   result = validate_expr(port, val, stack, tls, 
                          depth, letlimit, delta, 
-                         num_toplevels, num_stxes, num_lifts, tl_use_map,
+                         num_toplevels, num_lifts, tl_use_map,
                          tl_state, tl_timestamp + ((is_struct && stinfo.uses_super) ? 1 : 0),
                          NULL, !!only_var, 0, vc, 0, 0, NULL,
                          size-1, _st_ht);
@@ -485,7 +444,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
     int ts = (tl_timestamp + (result ? 0 : 1));
     if (tl_state) {
       int p = SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[i]);
-      if (p < num_toplevels) {
+      if (p < (num_toplevels - num_lifts)) {
         int s = -tl_state[p];
         int expected_flags = s & SCHEME_TOPLEVEL_FLAGS_MASK;
         int this_flags = flags;
@@ -503,8 +462,9 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                    `(define x x)' with `x' claimed as constant. The
                    `tl_timestamp++' before checking a closure body
                    allows things like `(define x (lambda () x))'. */
-                && ((s >> 2) <= ts)))
+                && ((s >> 2) <= ts))) {
           scheme_ill_formed_code(port);
+        }
         tl_state[p] = (ts << 2) | this_flags;
       }
     }
@@ -516,7 +476,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
 static int set_validate(Scheme_Object *data, Mz_CPort *port, 
                         char *stack, Validate_TLS tls,
                         int depth, int letlimit, int delta, 
-                        int num_toplevels, int num_stxes, int num_lifts, 
+                        int num_toplevels, int num_lifts, 
                         void *tl_use_map, 
                         mzshort *tl_state, mzshort tl_timestamp,
                         int result_ignored,
@@ -528,11 +488,11 @@ static int set_validate(Scheme_Object *data, Mz_CPort *port,
   int r1, r2;
   
   r1 = validate_expr(port, sb->val, stack, tls, depth, letlimit, delta, 
-                     num_toplevels, num_stxes, num_lifts, tl_use_map,
+                     num_toplevels, num_lifts, tl_use_map,
                      tl_state, tl_timestamp,
                      NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
   r2 = validate_toplevel(sb->var, port, stack, tls, depth, delta, 
-                         num_toplevels, num_stxes, num_lifts, tl_use_map,
+                         num_toplevels, num_lifts, tl_use_map,
                          tl_state, tl_timestamp,
                          0);
 
@@ -542,28 +502,42 @@ static int set_validate(Scheme_Object *data, Mz_CPort *port,
 static void ref_validate(Scheme_Object *data, Mz_CPort *port, 
 			 char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts, 
+                         int num_toplevels, int num_lifts, 
                          void *tl_use_map, 
                          mzshort *tl_state, mzshort tl_timestamp,
                          int result_ignored,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs)
 {
-  validate_toplevel(SCHEME_PTR1_VAL(data), port, stack, tls, depth, delta, 
-                    num_toplevels, num_stxes, num_lifts, tl_use_map,
-                    tl_state, tl_timestamp,
-                    0);
-  if (!SCHEME_FALSEP(SCHEME_PTR2_VAL(data)))
-    validate_toplevel(SCHEME_PTR2_VAL(data), port, stack, tls, depth, delta, 
-                      num_toplevels, num_stxes, num_lifts, tl_use_map,
+  tl_timestamp++; /* allows (define x (#%variable-reference x)) */
+  
+  if (!SCHEME_FALSEP(SCHEME_PTR1_VAL(data)))
+    validate_toplevel(SCHEME_PTR1_VAL(data), port, stack, tls, depth, delta, 
+                      num_toplevels, num_lifts, tl_use_map,
                       tl_state, tl_timestamp,
                       0);
+  
+  if (!SCHEME_FALSEP(SCHEME_PTR2_VAL(data))) {
+    /* must reference  */
+    int p;
+    data = SCHEME_PTR2_VAL(data);
+    if (!SAME_TYPE(scheme_toplevel_type, SCHEME_TYPE(data)))
+      scheme_ill_formed_code(port);
+    p = SCHEME_TOPLEVEL_POS(data);
+    if (p != 0)
+      scheme_ill_formed_code(port);
+
+    validate_toplevel(data, port, stack, tls, depth, delta, 
+                      num_toplevels, num_lifts, tl_use_map,
+                      tl_state, tl_timestamp,
+                      0);
+  }
 }
 
 static int apply_values_validate(Scheme_Object *data, Mz_CPort *port, 
                                  char *stack, Validate_TLS tls,
                                  int depth, int letlimit, int delta, 
-                                 int num_toplevels, int num_stxes, int num_lifts,
+                                 int num_toplevels, int num_lifts,
                                  void *tl_use_map, 
                                  mzshort *tl_state, mzshort tl_timestamp,
                                  int result_ignored,
@@ -579,12 +553,12 @@ static int apply_values_validate(Scheme_Object *data, Mz_CPort *port,
 
   r1 = validate_expr(port, f, stack, tls,
                      depth, letlimit, delta, 
-                     num_toplevels, num_stxes, num_lifts, tl_use_map,
+                     num_toplevels, num_lifts, tl_use_map,
                      tl_state, tl_timestamp,
                      NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
   r2 = validate_expr(port, e, stack, tls,
                      depth, letlimit, delta, 
-                     num_toplevels, num_stxes, num_lifts, tl_use_map,
+                     num_toplevels, num_lifts, tl_use_map,
                      tl_state, tl_timestamp,
                      NULL, 0, 0, vc, 0, 0, procs, -1, _st_ht);
 
@@ -594,7 +568,7 @@ static int apply_values_validate(Scheme_Object *data, Mz_CPort *port,
 static void inline_variant_validate(Scheme_Object *data, Mz_CPort *port, 
                                     char *stack, Validate_TLS tls,
                                     int depth, int letlimit, int delta, 
-                                    int num_toplevels, int num_stxes, int num_lifts,
+                                    int num_toplevels, int num_lifts,
                                     void *tl_use_map, 
                                     mzshort *tl_state, mzshort tl_timestamp,
                                     int result_ignored,
@@ -609,19 +583,19 @@ static void inline_variant_validate(Scheme_Object *data, Mz_CPort *port,
   
   validate_expr(port, f1, stack, tls,
                 depth, letlimit, delta, 
-                num_toplevels, num_stxes, num_lifts, tl_use_map,
+                num_toplevels, num_lifts, tl_use_map,
                 tl_state, tl_timestamp,
                 NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
   validate_expr(port, f2, stack, tls,
                 depth, letlimit, delta, 
-                num_toplevels, num_stxes, num_lifts, tl_use_map,
+                num_toplevels, num_lifts, tl_use_map,
                 tl_state, tl_timestamp,
                 NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
 }
 
 static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stack, Validate_TLS tls,
 				 int depth, int letlimit, int delta, 
-                                 int num_toplevels, int num_stxes, int num_lifts, 
+                                 int num_toplevels, int num_lifts, 
                                  void *tl_use_map, 
                                  mzshort *tl_state, mzshort tl_timestamp,
                                  int result_ignored,
@@ -642,7 +616,7 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
         && !SAME_TYPE(SCHEME_TYPE(e), scheme_closure_type))
       scheme_ill_formed_code(port);
     validate_expr(port, e, stack, tls, depth, letlimit, delta, 
-                  num_toplevels, num_stxes, num_lifts, tl_use_map,
+                  num_toplevels, num_lifts, tl_use_map,
                   tl_state, tl_timestamp,
                   NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
   }
@@ -662,7 +636,7 @@ static void validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int d
 static int bangboxenv_validate(Scheme_Object *data, Mz_CPort *port, 
                                char *stack, Validate_TLS tls,
                                int depth, int letlimit, int delta, 
-                               int num_toplevels, int num_stxes, int num_lifts, 
+                               int num_toplevels, int num_lifts, 
                                void *tl_use_map, 
                                mzshort *tl_state, mzshort tl_timestamp,
                                int result_ignored,
@@ -674,7 +648,7 @@ static int bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
   validate_boxenv(SCHEME_INT_VAL(SCHEME_PTR1_VAL(data)), port, stack, depth, delta, letlimit);
 
   return validate_expr(port, SCHEME_PTR2_VAL(data), stack, tls, depth, letlimit, delta, 
-                       num_toplevels, num_stxes, num_lifts, tl_use_map,
+                       num_toplevels, num_lifts, tl_use_map,
                        tl_state, tl_timestamp,
                        NULL, 0, result_ignored, vc, tailpos, 0, procs, expected_results, _st_ht);
 }
@@ -682,7 +656,7 @@ static int bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
 static int begin0_validate(Scheme_Object *data, Mz_CPort *port, 
                            char *stack, Validate_TLS tls,
                            int depth, int letlimit, int delta, 
-                           int num_toplevels, int num_stxes, int num_lifts,
+                           int num_toplevels, int num_lifts,
                            void *tl_use_map, 
                            mzshort *tl_state, mzshort tl_timestamp,
                            int result_ignored,
@@ -701,7 +675,7 @@ static int begin0_validate(Scheme_Object *data, Mz_CPort *port,
   for (i = 0; i < seq->count; i++) { 
     r = validate_expr(port, seq->array[i], stack, tls,
                       depth, letlimit, delta, 
-                      num_toplevels, num_stxes, num_lifts, tl_use_map,
+                      num_toplevels, num_lifts, tl_use_map,
                       tl_state, tl_timestamp,
                       NULL, 0, i > 0, vc, 0, 0, procs, 
                       (i > 0) ? -1 : expected_results, _st_ht);
@@ -709,92 +683,6 @@ static int begin0_validate(Scheme_Object *data, Mz_CPort *port,
   }
 
   return result;
-}
-
-static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-					char *stack, Validate_TLS tls,
-                                        int depth, int letlimit, int delta, 
-					int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
-                                        mzshort *tl_state, mzshort tl_timestamp,
-					int for_stx)
-{
-  Resolve_Prefix *rp;
-  Scheme_Object *name, *val, *base_stack_depth, *dummy;
-  int sdepth;
-
-  if (!SAME_TYPE(SCHEME_TYPE(data), (for_stx ? scheme_begin_for_syntax_type : scheme_define_syntaxes_type))
-      || (SCHEME_VEC_SIZE(data) < 4))
-    scheme_ill_formed_code(port);
-
-  rp = (Resolve_Prefix *)SCHEME_VEC_ELS(data)[1];
-  base_stack_depth = SCHEME_VEC_ELS(data)[2];
-  sdepth = SCHEME_INT_VAL(base_stack_depth);
-
-  if (!SAME_TYPE(rp->so.type, scheme_resolve_prefix_type)
-      || (sdepth < 0))
-    scheme_ill_formed_code(port);
-
-  dummy = SCHEME_VEC_ELS(data)[3];
-
-  if (!for_stx) {
-    int i, size;
-    size = SCHEME_VEC_SIZE(data);
-    for (i = 4; i < size; i++) {
-      name = SCHEME_VEC_ELS(data)[i];
-      if (!SCHEME_SYMBOLP(name)) {
-	scheme_ill_formed_code(port);
-      }
-    }
-  }
-
-  validate_toplevel(dummy, port, stack, tls, depth, delta, 
-                    num_toplevels, num_stxes, num_lifts, tl_use_map,
-                    tl_state, tl_timestamp,
-                    0);
-  
-  if (!for_stx) {
-    scheme_validate_code(port, SCHEME_VEC_ELS(data)[0], sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, 
-                         NULL, NULL, 0);
-  } else {
-    val = SCHEME_VEC_ELS(data)[0];
-    while (SCHEME_PAIRP(val)) {
-      scheme_validate_code(port, SCHEME_CAR(val), sdepth, rp->num_toplevels, rp->num_stxes, rp->num_lifts, 
-                           NULL, NULL, 0);
-      val = SCHEME_CDR(val);
-    }
-    if (!SCHEME_NULLP(val))
-      scheme_ill_formed_code(port);
-  }
-}
-
-static void define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-				     char *stack, Validate_TLS tls,
-                                     int depth, int letlimit, int delta, 
-				     int num_toplevels, int num_stxes, int num_lifts, 
-                                     void *tl_use_map, 
-                                     mzshort *tl_state, mzshort tl_timestamp,
-                                     int result_ignored,
-                                     struct Validate_Clearing *vc, int tailpos,
-                                     Scheme_Hash_Tree *procs)
-{
-  do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
-                              num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                              tl_state, tl_timestamp, 0);
-}
-
-static void begin_for_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
-                                        char *stack, Validate_TLS tls,
-                                        int depth, int letlimit, int delta, 
-                                        int num_toplevels, int num_stxes, int num_lifts, 
-                                        void *tl_use_map, 
-                                        mzshort *tl_state, mzshort tl_timestamp,
-                                        int result_ignored,
-                                        struct Validate_Clearing *vc, int tailpos,
-                                        Scheme_Hash_Tree *procs)
-{
-  do_define_syntaxes_validate(data, port, stack, tls, depth, letlimit, delta, 
-                              num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                              tl_state, tl_timestamp,1);
 }
 
 /*========================================================================*/
@@ -825,7 +713,7 @@ static Scheme_Object *validate_k(void)
 
   r = validate_expr(port, expr, stack, tls,
                     args[0], args[1], args[2],
-                    args[3], args[4], args[5], tl_use_map,
+                    args[3], args[5], tl_use_map,
                     tl_state, args[10],
                     app_rator, args[6], args[7], vc, args[8],
                     args[9], procs, args[11],
@@ -840,7 +728,7 @@ static Scheme_Object *validate_k(void)
 int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                              int hope,
                              Validate_TLS tls,
-                             int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map)
+                             int num_toplevels, int num_lifts, void *tl_use_map)
 {
   Scheme_Lambda *data = NULL;
   Scheme_Type ty;
@@ -857,7 +745,7 @@ int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
       int p;
       p = SCHEME_TOPLEVEL_POS(app_rator);
       while (1) {
-        if (p >= (num_toplevels + num_stxes + (num_stxes ? 1 : 0))) {
+        if (p >= (num_toplevels - num_lifts)) {
           /* It's a lift. Check that the lift is defined, and that it
              doesn't want reference arguments. */
           mzshort *a; /* 0x1 => no ref args, 
@@ -866,7 +754,7 @@ int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                          ptr with 0 => another top-level */
           int tp;
 
-          tp = (p - (num_toplevels + num_stxes + (num_stxes ? 1 : 0)));
+          tp = (p - (num_toplevels - num_lifts));
           if (tp >= num_lifts)
             return 0;
             
@@ -942,7 +830,7 @@ static int argument_to_arity_error(Scheme_Object *app_rator, int proc_with_refs_
 
 void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr, 
                              char *closure_stack, Validate_TLS tls,
-                             int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                             int num_toplevels, int num_lifts, void *tl_use_map,
                              mzshort *tl_state, mzshort tl_timestamp,
                              int self_pos_in_closure, Scheme_Hash_Tree *procs,
                              Scheme_Hash_Table **_st_ht)
@@ -1018,7 +906,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
   }
 
   validate_expr(port, data->body, new_stack, tls, sz, sz, base, 
-                num_toplevels, num_stxes, num_lifts, tl_use_map,
+                num_toplevels, num_lifts, tl_use_map,
                 tl_state, tl_timestamp,
                 NULL, 0, 0, vc, 1, 0, procs, -1, _st_ht);
 }
@@ -1033,7 +921,7 @@ static Scheme_Hash_Tree *as_nonempty_procs(Scheme_Hash_Tree *procs)
 static void validate_lambda(Mz_CPort *port, Scheme_Object *expr, 
                             char *stack, Validate_TLS tls,
                             int depth, int delta, 
-                            int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                            int num_toplevels, int num_lifts, void *tl_use_map,
                             mzshort *tl_state, mzshort tl_timestamp,
                             Scheme_Object *app_rator, int proc_with_refs_ok,
                             int self_pos, Scheme_Hash_Tree *procs,
@@ -1138,7 +1026,7 @@ static void validate_lambda(Mz_CPort *port, Scheme_Object *expr,
     SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)closure_stack;
     SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)tls;
     SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(num_toplevels);
-    SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(num_stxes);
+    SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(0); /* not used anymore */
     SCHEME_VEC_ELS(vec)[5] = scheme_make_integer(num_lifts);
     SCHEME_VEC_ELS(vec)[6] = scheme_make_integer(self_pos_in_closure);
     SCHEME_VEC_ELS(vec)[7] = new_procs ? (Scheme_Object *)new_procs : scheme_false;
@@ -1149,7 +1037,7 @@ static void validate_lambda(Mz_CPort *port, Scheme_Object *expr,
     SCHEME_CAR(data->body) = vec;
   } else
     scheme_validate_closure(port, expr, closure_stack, tls, 
-                            num_toplevels, num_stxes, num_lifts, tl_use_map,
+                            num_toplevels, num_lifts, tl_use_map,
                             tl_state, tl_timestamp,
                             self_pos_in_closure, new_procs, _st_ht);
 }
@@ -1169,73 +1057,6 @@ static void check_self_call_valid(Scheme_Object *rator, Mz_CPort *port, struct V
         scheme_ill_formed_code(port);
     }
   }
-}
-
-static void module_validate(Scheme_Object *data, Mz_CPort *port, 
-                            char *stack, Validate_TLS tls,
-			    int depth, int letlimit, int delta, 
-			    int num_toplevels, int num_stxes, int num_lifts, 
-                            void *tl_use_map, 
-                            mzshort *tl_state, mzshort tl_timestamp,
-                            int result_ignored,
-                            struct Validate_Clearing *vc, int tailpos,
-                            Scheme_Hash_Tree *procs)
-{
-  Scheme_Module *m;
-  int i, j, cnt, let_depth;
-  Resolve_Prefix *rp;
-  Scheme_Object *e;
-
-  m = (Scheme_Module *)data;
-
-  if (!SCHEME_MODNAMEP(m->modname))
-    scheme_ill_formed_code(port);
-
-  if (m->phaseless && m->prefix->num_stxes)
-    scheme_ill_formed_code(port);
-
-  if (m->max_let_depth < 0)
-    scheme_ill_formed_code(port);
-
-  validate_toplevel(m->dummy, port, stack, tls, depth, delta, 
-                    num_toplevels, num_stxes, num_lifts, tl_use_map,
-                    tl_state, tl_timestamp,
-                    0);
-
-  scheme_validate_code(port, m->bodies[0], m->max_let_depth,
-                       m->prefix->num_toplevels, m->prefix->num_stxes, m->prefix->num_lifts,
-                       NULL, m->prefix->toplevels,
-                       (m->phaseless ? 2 : 1));
-
-  /* validate exp-time code */
-  for (j = m->num_phases; j-- > 1; ) {
-    cnt = SCHEME_VEC_SIZE(m->bodies[j]);
-    for (i = 0; i < cnt; i++) {
-      if (m->phaseless) scheme_ill_formed_code(port);
-
-      e = SCHEME_VEC_ELS(m->bodies[j])[i];
-      
-      let_depth = SCHEME_INT_VAL(SCHEME_VEC_ELS(e)[2]);
-      rp = (Resolve_Prefix *)SCHEME_VEC_ELS(e)[3];
-      e = SCHEME_VEC_ELS(e)[1];
-      
-      scheme_validate_code(port, e, let_depth,
-                           rp->num_toplevels, rp->num_stxes, rp->num_lifts, NULL, NULL,
-                           0);
-    }
-  }
-}
-
-static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port, 
-                                       char *stack, Validate_TLS tls,
-				       int depth, int letlimit, int delta, 
-				       int num_toplevels, int num_stxes, int num_lifts, 
-                                       void *tl_use_map, 
-                                       mzshort *tl_state, mzshort tl_timestamp,
-                                       int result_ignored,
-                                       struct Validate_Clearing *vc, int tailpos,
-                                       Scheme_Hash_Tree *procs)
-{
 }
 
 static void no_typed(int need_local_type, Mz_CPort *port)
@@ -1295,7 +1116,7 @@ static int is_functional_nonfailing_rator(Scheme_Object *rator, int num_args, in
 static int validate_expr(Mz_CPort *port, Scheme_Object *expr, 
                          char *stack, Validate_TLS tls,
                          int depth, int letlimit, int delta, 
-                         int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                         int num_toplevels, int num_lifts, void *tl_use_map,
                          mzshort *tl_state, mzshort tl_timestamp,
                          Scheme_Object *app_rator, int proc_with_refs_ok,
                          int result_ignored,
@@ -1330,7 +1151,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     args[1] = letlimit;
     args[2] = delta;
     args[3] = num_toplevels;
-    args[4] = num_stxes;
+    args[4] = 0; /* not used anymore */
     args[5] = num_lifts;
     args[6] = proc_with_refs_ok;
     args[7] = result_ignored;
@@ -1360,7 +1181,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   if (did_one) {
     if (app_rator) {
       if (validate_rator_wants_box(app_rator, proc_with_refs_ok - 2, 0,
-                                   tls, num_toplevels, num_stxes, num_lifts,
+                                   tls, num_toplevels, num_lifts,
                                    tl_use_map))
         scheme_ill_formed_code(port);
       app_rator = NULL;
@@ -1383,31 +1204,29 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
-	  || (p >= (num_toplevels + num_lifts + num_stxes + (num_stxes ? 1 : 0)))
-	  || ((p >= num_toplevels) && (p < num_toplevels + num_stxes + (num_stxes ? 1 : 0))))
+	  || (p >= num_toplevels))
 	scheme_ill_formed_code(port);
       
       if (tl_use_map) {
-        int p2 = ((p < num_toplevels) 
-                  ? p
-                  : (p - num_stxes));
-        if (num_stxes && (p >= num_toplevels) && (p < (num_toplevels + num_stxes + 1)))
-          scheme_ill_formed_code(port);
         if ((uintptr_t)tl_use_map & 0x1) {
-          if (p2 > 31)
+          if (p > 31)
             scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p2 + 1))))
+          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p + 1))))
             scheme_ill_formed_code(port);
         } else {
-          if (p2 >= (*(int *)tl_use_map * 32))
+          if (p >= (*(int *)tl_use_map * 32))
             scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p2 / 32)] & ((unsigned int)1 << (p2 & 31))))
+          if (!(((int *)tl_use_map)[1 + (p / 32)] & ((unsigned int)1 << (p & 31))))
             scheme_ill_formed_code(port);
         }
       }
 
       if ((flags > SCHEME_TOPLEVEL_UNKNOWN) && tl_state && (p < num_toplevels)) {
-        if (tl_state[p] <= 0) {
+        if (p < SCHEME_LINKLET_PREFIX_PREFIX) {
+          /* instance-access toplevel available? */
+          if (!tl_state[p])
+            scheme_ill_formed_code(port);
+        } else if (tl_state[p] <= 0) {
           /* record expectation */
           int s = -tl_state[p];
           int new_flags;
@@ -1429,12 +1248,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       if ((proc_with_refs_ok != 1) 
           && !argument_to_arity_error(app_rator, proc_with_refs_ok)) {
-        if (p >= (num_toplevels + num_stxes + (num_stxes ? 1 : 0))) {
+        if (p >= (num_toplevels - num_lifts)) {
           /* It's a lift. Check that the lift is defined, and that it
              doesn't want reference arguments. */
           int tp;
           mzshort *a;
-          tp = p - (num_toplevels + num_stxes + (num_stxes ? 1 : 0));
+          tp = p - (num_toplevels - num_lifts);
           a = tls[tp];
           if (a) {
             if (a == (mzshort *)0x1) {
@@ -1490,7 +1309,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         } else if ((proc_with_refs_ok >= 2) 
                    && ((stack[p] == VALID_BOX) || (stack[p] == VALID_BOX_NOCLEAR))
                    && validate_rator_wants_box(app_rator, proc_with_refs_ok - 2, 1,
-                                               tls, num_toplevels, num_stxes, num_lifts,
+                                               tls, num_toplevels, num_lifts,
                                                tl_use_map)) {
           /* It's ok - the function wants us to pass it a box, and
              we did. */
@@ -1572,7 +1391,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       for (i = 0; i < n; i++) {
 	r = validate_expr(port, app->args[i], stack, tls, depth, letlimit, delta, 
-                          num_toplevels, num_stxes, num_lifts, tl_use_map,
+                          num_toplevels, num_lifts, tl_use_map,
                           tl_state, tl_timestamp,
                           i ? app->args[0] : NULL, i + 1, 0, vc, 0, 0, procs, 1, _st_ht);
         result = validate_join(result, r);
@@ -1600,12 +1419,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta] = VALID_NOT;
 
       r = validate_expr(port, app->rator, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 1, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
       r = validate_expr(port, app->rand, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         app->rator, 2, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
@@ -1641,17 +1460,17 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta+1] = VALID_NOT;
 
       r = validate_expr(port, app->rator, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 1, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
       r = validate_expr(port, app->rand1, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         app->rator, 2, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
       r = validate_expr(port, app->rand2, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         app->rator, 3, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
@@ -1674,7 +1493,6 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     }
     break;
   case scheme_sequence_type:
-  case scheme_splice_sequence_type:
     {
       Scheme_Sequence *seq = (Scheme_Sequence *)expr;
       int cnt;
@@ -1687,7 +1505,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	  
       for (i = 0; i < cnt - 1; i++) {
 	r = validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, 
-                          num_toplevels, num_stxes, num_lifts, tl_use_map,
+                          num_toplevels, num_lifts, tl_use_map,
                           tl_state, tl_timestamp,
                           NULL, 0, 1, vc, 0, 0, procs, -1, _st_ht);
         result = validate_join_seq(result, r);
@@ -1704,7 +1522,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       b = (Scheme_Branch_Rec *)expr;
       r = validate_expr(port, b->test, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join(r, result);
@@ -1716,7 +1534,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       vc_pos = vc->stackpos;
       vc_ncpos = vc->ncstackpos;
       r = validate_expr(port, b->tbranch, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, result_ignored, vc, tailpos, need_local_type, procs,
                         expected_results, _st_ht);
@@ -1759,12 +1577,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int r;
 
       r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join_seq(result, r);
       r = validate_expr(port, wcm->val, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
       result = validate_join_seq(result, r);
@@ -1773,44 +1591,11 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       goto top;
     }
     break;
-  case scheme_quote_syntax_type:
-    {
-      Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)expr;
-      int c = qs->depth;
-      int i = qs->position;
-      int p = qs->midpoint;
-      int d = c + delta;
-
-      no_typed(need_local_type, port);
-
-      if ((c < 0) || (p < 0) || (d < 0) || (d >= depth)
-	  || (stack[d] != VALID_TOPLEVELS) 
-	  || (p != num_toplevels)
-	  || (i >= num_stxes))
-	scheme_ill_formed_code(port);
-
-      if (tl_use_map) {
-        if ((uintptr_t)tl_use_map & 0x1) {
-          if (p > 31)
-            scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p + 1))))
-            scheme_ill_formed_code(port);
-        } else {
-          if (p >= (*(int *)tl_use_map * 32))
-            scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p / 32)] & ((unsigned int)1 << (p & 31))))
-            scheme_ill_formed_code(port);
-        }
-      }
-
-      result = validate_join_const(result, expected_results);
-    }
-    break;
   case scheme_lambda_type:
     {
       no_typed(need_local_type, port);
       validate_lambda(port, expr, stack, tls, depth, delta, 
-                                  num_toplevels, num_stxes, num_lifts, tl_use_map,
+                                  num_toplevels, num_lifts, tl_use_map,
                                   tl_state, tl_timestamp,
                       app_rator, proc_with_refs_ok, -1, procs, _st_ht);
 
@@ -1823,7 +1608,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int q, p, c, i, r;
       
       r = validate_expr(port, lv->value, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs, lv->count, _st_ht);
       result = validate_join_seq(r, result);
@@ -1920,7 +1705,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       for (i = 0; i < c; i++) {
 	validate_lambda(port, l->procs[i], stack, tls, depth, delta, 
-                                    num_toplevels, num_stxes, num_lifts, tl_use_map,
+                                    num_toplevels, num_lifts, tl_use_map,
                                     tl_state, tl_timestamp,
                                     NULL, 1, i, procs, _st_ht);
       }
@@ -1940,7 +1725,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta] = VALID_UNINIT;
       
       r = validate_expr(port, lo->value, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, SCHEME_LET_ONE_TYPE(lo), procs,
                         1, _st_ht);
@@ -1968,30 +1753,16 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                define_values_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                                      num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                                                      num_toplevels, num_lifts, tl_use_map, 
                                                       tl_state, tl_timestamp,
                                                       result_ignored, vc, tailpos, procs,
                                                       _st_ht));
-    break;
-  case scheme_define_syntaxes_type:
-    no_typed(need_local_type, port);
-    define_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                             num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                             tl_state, tl_timestamp,
-                             result_ignored, vc, tailpos, procs);
-    break;
-  case scheme_begin_for_syntax_type:
-    no_typed(need_local_type, port);
-    begin_for_syntaxes_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                                tl_state, tl_timestamp,
-                                result_ignored, vc, tailpos, procs);
     break;
   case scheme_set_bang_type:
     no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                set_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                            num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                                            num_toplevels, num_lifts, tl_use_map, 
                                             tl_state, tl_timestamp,
                                             result_ignored, vc, tailpos, procs, _st_ht));
     break;
@@ -1999,7 +1770,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                bangboxenv_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                                   num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                                                   num_toplevels, num_lifts, tl_use_map, 
                                                    tl_state, tl_timestamp,
                                                    result_ignored, vc, tailpos, procs, _st_ht, expected_results));
     break;
@@ -2007,21 +1778,14 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
     no_typed(need_local_type, port);
     result = validate_join_seq(result,
                                begin0_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                                               num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                                               num_toplevels, num_lifts, tl_use_map, 
                                                tl_state, tl_timestamp,
                                                result_ignored, vc, tailpos, procs, _st_ht, expected_results));
-    break;
-  case scheme_require_form_type:
-    no_typed(need_local_type, port);
-    top_level_require_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                               num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                               tl_state, tl_timestamp,
-                               result_ignored, vc, tailpos, procs);
     break;
   case scheme_varref_form_type:
     no_typed(need_local_type, port);
     ref_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                 num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                 num_toplevels, num_lifts, tl_use_map, 
                  tl_state, tl_timestamp,
                  result_ignored, vc, tailpos, procs);
     result = validate_join_const(result, expected_results);
@@ -2029,7 +1793,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_apply_values_type:
     no_typed(need_local_type, port);
     apply_values_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                          num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                          num_toplevels, num_lifts, tl_use_map, 
                           tl_state, tl_timestamp,
                           result_ignored, vc, tailpos, procs, _st_ht);
     result = validate_join(0, result);
@@ -2042,14 +1806,14 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       no_typed(need_local_type, port);
       
       r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs,
                         1, _st_ht);
       result = validate_join_seq(r, result);
       
       r = validate_expr(port, wcm->val, stack, tls, depth, letlimit, delta, 
-                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        num_toplevels, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
                         NULL, 0, 0, vc, 0, 0, procs,
                         1, _st_ht);
@@ -2067,23 +1831,15 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_case_lambda_sequence_type:
     no_typed(need_local_type, port);
     case_lambda_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                         num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                         num_toplevels, num_lifts, tl_use_map, 
                          tl_state, tl_timestamp,
                          result_ignored, vc, tailpos, procs, _st_ht);
     result = validate_join_const(result, expected_results);
     break;
-  case scheme_module_type:
-    no_typed(need_local_type, port);
-    module_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                    num_toplevels, num_stxes, num_lifts, tl_use_map, 
-                    tl_state, tl_timestamp,
-                    result_ignored, vc, tailpos, procs);
-    result = validate_join(0, result);
-    break;
   case scheme_inline_variant_type:
     no_typed(need_local_type, port);
     inline_variant_validate(expr, port, stack, tls, depth, letlimit, delta, 
-                            num_toplevels, num_stxes, num_lifts, tl_use_map, 
+                            num_toplevels, num_lifts, tl_use_map, 
                             tl_state, tl_timestamp,
                             result_ignored, vc, tailpos, procs, _st_ht);
     result = validate_join_const(result, expected_results);
@@ -2119,7 +1875,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       seq = (Scheme_Case_Lambda *)expr;
       for (i = 0; i < seq->count; i++) {
         validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, 
-                      num_toplevels, num_stxes, num_lifts, tl_use_map,
+                      num_toplevels, num_lifts, tl_use_map,
                       tl_state, tl_timestamp,
                       NULL, 0, 0, vc, 0, 0, procs, 1, _st_ht);
       }
@@ -2139,7 +1895,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
   if (app_rator)
     if (validate_rator_wants_box(app_rator, proc_with_refs_ok - 2, 0,
-                                 tls, num_toplevels, num_stxes, num_lifts, tl_use_map))
+                                 tls, num_toplevels, num_lifts, tl_use_map))
       scheme_ill_formed_code(port);
 
   if (vc_merge) {

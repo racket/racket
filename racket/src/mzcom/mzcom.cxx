@@ -119,7 +119,7 @@ int IsFlag(LPCTSTR cmd, LPCTSTR flag)
 }
 
 #define DLL_RELATIVE_PATH L"."
-#include "../racket/delayed.inc"
+#include "../start/delayed.inc"
 
 #define ASSUME_ASCII_COMMAND_LINE
 #define GC_CAN_IGNORE

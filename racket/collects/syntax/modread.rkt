@@ -1,9 +1,6 @@
 (module modread racket/base
-  (require racket/contract/base)
-  
-  (provide with-module-reading-parameterization)
-  (provide/contract
-   [check-module-form ((or/c syntax? eof-object?) (or/c symbol? list?) (or/c string? path? false/c) . -> . any)])
+  (provide with-module-reading-parameterization
+           check-module-form)
 
   (define (with-module-reading-parameterization thunk)
     (call-with-default-reading-parameterization
@@ -19,6 +16,13 @@
            expected-name filename name))
 
   (define (check-module-form exp expected-module filename)
+    (unless (or (syntax? exp) (eof-object? exp))
+      (raise-argument-error 'check-module-form "(or/c syntax? eof-object?)" exp))
+    (unless (or (symbol? expected-module) (list? expected-module))
+      (raise-argument-error 'check-module-form "(or/c symbol? list?)" list))
+    (unless (or (not filename) (path-string? filename))
+      (raise-argument-error 'check-module-form "(or/c path-string? false/c)" list))
+
     (cond [(or (eof-object? exp) (eof-object? (syntax-e exp)))
            (and filename
                 (error 'load-handler

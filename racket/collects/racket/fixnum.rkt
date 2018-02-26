@@ -28,4 +28,5 @@
   for/fxvector
   for*/fxvector
   fxvector-copy
-  0)
+  0
+  check-fxvector)

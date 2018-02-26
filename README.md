@@ -1,17 +1,11 @@
-[![Linux/Mac Build
-Status](https://travis-ci.org/racket/racket.svg?branch=master)](https://travis-ci.org/racket/racket)
-[![Windows build status](https://ci.appveyor.com/api/projects/status/hqir4eib0okk6xar?svg=true)](https://ci.appveyor.com/project/plt/racket)
-
-
-This is the source code for the core of Racket.  See
-"INSTALL.txt" for full information on building Racket.
+This is the source code for the core of Racket. See "INSTALL.txt" for
+full information on building Racket.
 
 To build the full Racket distribution from this repository, run `make`
-in the top-level directory. To build the Minimal Racket, run `make
-base`.
+in the top-level directory. To build minimal Racket, run `make base`.
 
 The rest of the Racket distribution source code is in other
-repositories under [the Racket GitHub
+repositories, mostly under [the Racket GitHub
 organization](https://github.com/racket).
 
 Contribute to Racket by submitting a pull request, joining the

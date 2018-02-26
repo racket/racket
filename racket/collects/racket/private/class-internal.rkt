@@ -529,7 +529,7 @@
                                                  ;; optional argument; need to wrap arg expression
                                                  (cons
                                                   (with-syntax ([expr (syntax/loc #'expr
-                                                                        (let-syntax ([the-finder (quote-syntax the-obj)])
+                                                                        (syntax-parameterize ([the-finder (quote-syntax the-obj)])
                                                                           (#%expression expr)))])
                                                     (syntax/loc (car vars)
                                                       (id expr)))
@@ -539,7 +539,7 @@
                                          #'vars)])
                    (let ([l (syntax/loc stx 
                               (lambda (the-obj . vars) 
-                                (let-syntax ([the-finder (quote-syntax the-obj)])
+                                (syntax-parameterize ([the-finder (quote-syntax the-obj)])
                                   body1 body ...)))])
                      (syntax-track-origin
                       (with-syntax ([l (rearm (add-method-property l) stx)])
@@ -563,7 +563,7 @@
                              [name (mk-name name)])
                  (let ([cl (syntax/loc stx
                              (case-lambda [(the-obj . vars) 
-                                           (let-syntax ([the-finder (quote-syntax the-obj)])
+                                           (syntax-parameterize ([the-finder (quote-syntax the-obj)])
                                              body1 body ...)] ...))])
                    (syntax-track-origin 
                     (with-syntax ([cl (rearm (add-method-property cl) stx)])
@@ -1571,6 +1571,7 @@
                                               rename-super-temp ... rename-super-extra-temp ...
                                               rename-inner-temp ... rename-inner-extra-temp ...
                                               method-accessor ...) ; for a local call that needs a dynamic lookup
+                                       (define-syntax-parameter the-finder #f)
                                        (let ([local-field-accessor
                                               (make-struct-field-accessor local-accessor local-field-pos #f)]
                                              ...
@@ -1659,7 +1660,7 @@
                                                #, ;; Attach srcloc (useful for profiling)
                                                (quasisyntax/loc stx
                                                  (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
-                                                   (let-syntax ([the-finder (quote-syntax the-obj)])
+                                                   (syntax-parameterize ([the-finder (quote-syntax the-obj)])
                                                      (syntax-parameterize
                                                       ([super-instantiate-param
                                                         (lambda (stx)

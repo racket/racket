@@ -49,6 +49,8 @@ RACKET = racket
 RUN_THIS_RACKET_CGC = ./racket@CGC@
 RUN_THIS_RACKET_MMM = ./racket@MMM@
 
+SETUP_BOOT = -W "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+
 MZSRC = $(srcdir)/src
 
 FOREIGN_DIR = ../foreign
@@ -97,10 +99,14 @@ cgc-core:
 	$(MAKE) dynlib
 	$(MAKE) mzlibrary
 	$(MAKE) racket@CGC@
+	$(MAKE) cstartup
+	$(MAKE) mzlibrary
+	$(MAKE) racket@CGC@
 	$(MAKE) mzcom@CGC@
 
 3m:
 	$(MAKE) @CGC_IF_NEEDED_FOR_MMM@
+	$(MAKE) cstartup
 	cd gc2; $(MAKE) all
 	cd dynsrc; $(MAKE) dynlib3m
 	cd gc2; $(MAKE) ../racket@MMM@
@@ -137,7 +143,7 @@ sproc-extra-lib:
 	cd @GCDIR@; $(MAKE) sproc.@LTO@
 	$(MAKE) sproc.@LTO@
 
-gc.@LIBSFX@: 
+gc.@LIBSFX@:
 	$(NICEAR) $(AR) $(ARFLAGS) @GCDIR@/gc.@LIBSFX@ @GCDIR@/*.@LTO@
 
 # Compilation of the foreign libraries (this compiles all of them)
@@ -264,7 +270,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
                    $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc \
-	           $(srcdir)/delayed.inc $(srcdir)/parse_cmdl.inc
+	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc $(srcdir)/parse_cmdl.inc
 
 main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)
 	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
@@ -290,26 +296,10 @@ com_glue.@LTO@: $(srcdir)/../mzcom/com_glue.c $(MZCOM_DEPS)
 	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/com_glue.c -o com_glue.@LTO@
 
 exn:
-	$(MAKE) $(srcdir)/src/schexn.h
-	$(MAKE) $(collectsdir)/racket/private/kernstruct.rkt
+	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
+	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/racket/private/kernstruct.rkt
 
-STARTUPDEST = startup.inc
 CSTARTUPDEST = cstartup.inc
-
-startup:
-	$(MAKE) $(srcdir)/src/$(STARTUPDEST)
-cstartup:
-	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
-
-total_startup:
-	awk '{ if (match($$0, "#define USE_COMPILED_STARTUP 1")) print "#define USE_COMPILED_STARTUP 0"; else print }' src/schminc.h > src/schminc.newh
-	mv src/schminc.newh src/schminc.h
-	$(MAKE) cgc
-	rm -rf $(srcdir)/src/$(CSTARTUPDEST)
-	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
-	awk '{ if (match($$0, "#define USE_COMPILED_STARTUP 0")) print "#define USE_COMPILED_STARTUP 1"; else print }' src/schminc.h > src/schminc.newh
-	mv src/schminc.newh src/schminc.h
-	$(MAKE) cgc
 
 MZCONFIGDIR@NOT_MINGW@ = .
 MZCONFIGDIR@MINGW@ = "$(srcdir)/../worksp"
@@ -318,21 +308,36 @@ headers:
 	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" $(MZCONFIGDIR)
 	cd ..; cp racket/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
 
-$(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
-	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
-$(collectsdir)/racket/private/kernstruct.rkt: $(srcdir)/src/makeexn
-	$(RACKET) -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/racket/private/kernstruct.rkt
+# The `cstartup` target may update "cstartup.inc", either replacing a
+# stub "cstartup.inc" that redirects to "startup.inc" or rebuilding
+# because "startup.inc" or "schvers.h" changed; so, during a CGC
+# build, we try again after building this target to potentially update
+# the CGC build to a compiled-startup build. A particular `cstartup`
+# target variant is selected by the `configure` script based on whether
+# `--{en,dis}able-cify` is specified; for example `STARTUP_AS_AUTO`
+# with be the empty string is neither is specified, in which case
+# of the the other targets is selected by a recursive `$(MAKE)`.
 
-$(srcdir)/src/$(STARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/sstoinct.rkt
-	$(RACKET) -cu $(srcdir)/src/sstoinct.rkt < $(srcdir)/src/startup.rktl > $(srcdir)/src/$(STARTUPDEST) 
-$(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.rktl $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
-	$(RUN_THIS_RACKET_CGC) -cu $(srcdir)/src/sstoinc.rkt $(CSTARTUPEXTRA) $(srcdir)/src/$(CSTARTUPDEST) < $(srcdir)/src/startup.rktl 
+cstartup@STARTUP_AS_AUTO@:
+	$(MAKE) `@RUN_RACKET_CGC@ -cu $(srcdir)/src/startup-select.rkt`
+
+# For compiling the startup code to bytecode
+cstartup@STARTUP_AS_BYTECODE@:
+	@RUN_RACKET_CGC@ -cu $(srcdir)/src/compile-startup.rkt $(CSTARTUPDEST) cstartup.zo $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
+
+# For compiling the startup code to C
+cstartup@STARTUP_AS_C@:
+	@RUN_RACKET_CGC@ -cu $(srcdir)/src/cify-check.rkt $(CSTARTUPDEST)
+	$(MAKE) cstartup.inc
+
+# Running "cify-startup.rkt" through "$(SETUP_BOOT)" generates more
+# dependencies in "cstartup.d" for `$(CSTARTUPDEST)`
+$(CSTARTUPDEST): $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) cstartup.inc cstartup.d $(srcdir)/src/cify-startup.rkt $(srcdir)/src/startup.inc $(srcdir)/src/schvers.h
+@INCLUDEDEP@ cstartup.d
 
 mark:
 	racket -cu $(srcdir)/src/mkmark.rkt $(srcdir)/src < $(srcdir)/src/mzmarksrc.c
-
-cstartup.zo:
-	$(MAKE) startup CSTARTUPEXTRA='zo' CSTARTUPDEST="../cstartup.zo"
 
 clean@NOT_OSX@:
 	/bin/rm -rf tmp[123456789] tests/tmp[123456789] tests/sub[123]
@@ -341,6 +346,7 @@ clean@NOT_OSX@:
 	/bin/rm -f mzdyn.o libmzgc.@LIBSFX@ libracket.@LIBSFX@ libracket3m.@LIBSFX@ libdl.a racket racket.multiboot
 	/bin/rm -f include/macosxpre
 	/bin/rm -f include/macosxpre.p
+	/bin/rm -f $(CSTARTUPDEST)
 	cd gc; $(MAKE) clean
 	cd gc2; $(MAKE) clean
 	cd sgc; $(MAKE) clean
@@ -387,7 +393,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
 	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
-	cp $(srcdir)/dynsrc/starter-sh .
+	cp $(srcdir)/../start/starter-sh .
 	cd ..; cp racket/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@

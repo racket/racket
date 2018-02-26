@@ -459,7 +459,9 @@
         (copy-file ,test-zo ,list-zo) =err> "access denied"
         ;; timestamp .zo file (needed under Windows):
         (file-or-directory-modify-seconds ,test-zo (current-seconds))
-        ;; loading test gets 'list module declaration via ".zo":
+        ;; loading test gets 'list module declaration via ".zo", thanks
+        ;; to delayed parsing of the bytecode (so this test doesn't work
+        ;; if delay-loading is disabled):
         (load/use-compiled ,test-lib) => (void)
         ;; but the module declaration can't execute due to the inspector:
         (require 'list) =err> "access disallowed by code inspector"
@@ -671,7 +673,7 @@
   (define r1 (try 'racket/base))
   (define r2 (try '(begin)))
   (test #t regexp-match?
-        #rx"access disallowed by code inspector to protected variable"
+        #rx"access disallowed by code inspector to protected"
         r1)
   (test #t equal? r1 r2))
 

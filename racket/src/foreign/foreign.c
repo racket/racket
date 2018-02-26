@@ -1107,7 +1107,7 @@ static Scheme_Object *default_sym;
 static Scheme_Object *stdcall_sym;
 static Scheme_Object *sysv_sym;
 
-static ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
+static ffi_abi sym_to_abi(const char *who, Scheme_Object *sym)
 {
   if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
     return FFI_DEFAULT_ABI;
@@ -1539,7 +1539,7 @@ int ffi_callback_FIXUP(void *p) {
   return gcBYTES_TO_WORDS(sizeof(ffi_callback_struct));
 }
 END_XFORM_SKIP;
-#endif
+#endif   /* pointer to another ffi-callback for a curried callback */
 
 /* The sync field:
  *   NULL => non-atomic mode
@@ -3481,13 +3481,18 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
 /* data := {name, c-function, itypes, otype, cif} */
 {
   Scheme_Object *data = SCHEME_PRIM_CLOSURE_ELS(self)[0];
+  int curried = !SCHEME_VEC_ELS(data)[1] && !SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]);
   const char    *name = SCHEME_BYTE_STR_VAL(SCHEME_VEC_ELS(data)[0]);
-  void          *c_func = (void*)(SCHEME_VEC_ELS(data)[1]);
+  void          *c_func = (curried
+                           ? (void*)SCHEME_PRIM_CLOSURE_ELS(self)[1]
+                           : (void*)(SCHEME_VEC_ELS(data)[1]));
   Scheme_Object *itypes = SCHEME_VEC_ELS(data)[2];
   Scheme_Object *otype  = SCHEME_VEC_ELS(data)[3];
   Scheme_Object *base;
   ffi_cif       *cif    = (ffi_cif*)(SCHEME_VEC_ELS(data)[4]);
-  intptr_t      cfoff   = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]);
+  intptr_t      cfoff   = (curried
+                           ? SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(self)[2])
+                           : SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]));
   int           save_errno = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[6]);
   Scheme_Object *lock = SCHEME_VEC_ELS(data)[7];
 #ifdef MZ_USE_PLACES
@@ -3644,13 +3649,44 @@ void free_fficall_data(void *data, void *p)
 
 static Scheme_Object *ffi_name = NULL;
 
-/* (ffi-call ffi-obj in-types out-type [abi save-errno? orig-place?]) -> (in-types -> out-value) */
-/* the real work is done by ffi_do_call above */
-#define MYNAME "ffi-call"
-static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
+static Scheme_Object *make_ffi_call_from_curried(int argc, Scheme_Object *argv[], Scheme_Object *self)
 {
-  Scheme_Object *itypes = argv[1];
-  Scheme_Object *otype  = argv[2];
+  Scheme_Object *data = SCHEME_PRIM_CLOSURE_ELS(self)[0];
+  Scheme_Object *a[3], *name, *itypes, *obj, *cp;
+  intptr_t ooff;
+  int nargs;
+
+  cp = unwrap_cpointer_property(argv[0]);
+  if (!SCHEME_FFIANYPTRP(cp))
+    scheme_wrong_contract("make-ffi-call", "(or/c ffi-obj? cpointer?)", 0, argc, argv);
+  obj = SCHEME_FFIANYPTR_VAL(cp);
+  ooff = SCHEME_FFIANYPTR_OFFSET(cp);
+  if ((obj == NULL) && (ooff == 0))
+    scheme_wrong_contract("make-ffi-call", NON_NULL_CPOINTER, 0, argc, argv);
+
+  name = SCHEME_VEC_ELS(data)[0];
+  if (SCHEME_FFIOBJP(cp))
+    name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
+
+  itypes = SCHEME_VEC_ELS(data)[2];
+
+  nargs = scheme_proper_list_length(itypes);
+
+  a[0] = data;
+  a[1] = obj;
+  a[2] = scheme_make_integer_value(ooff);
+
+  return scheme_make_prim_closure_w_arity(ffi_do_call_after_stack_check,
+                                          3, a,
+                                          SCHEME_BYTE_STR_VAL(name),
+                                          nargs, nargs);
+
+}
+
+static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Scheme_Object **argv) {
+# define ARGPOS(n) ((n) - (curry ? 1 : 0))
+  Scheme_Object *itypes = argv[ARGPOS(1)];
+  Scheme_Object *otype  = argv[ARGPOS(2)];
   Scheme_Object *obj, *data, *p, *base, *cp, *name, *a[1];
   ffi_abi abi;
   intptr_t ooff;
@@ -3664,57 +3700,63 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 # else /* MZ_USE_PLACES undefined */
 # define FFI_CALL_VEC_SIZE 8
 # endif /* MZ_USE_PLACES */
-  cp = unwrap_cpointer_property(argv[0]);
-  if (!SCHEME_FFIANYPTRP(cp))
-    scheme_wrong_contract(MYNAME, "(or/c ffi-obj? cpointer?)", 0, argc, argv);
-  obj = SCHEME_FFIANYPTR_VAL(cp);
-  ooff = SCHEME_FFIANYPTR_OFFSET(cp);
-  if ((obj == NULL) && (ooff == 0))
-    scheme_wrong_contract(MYNAME, NON_NULL_CPOINTER, 0, argc, argv);
+  if (!curry) {
+    cp = unwrap_cpointer_property(argv[ARGPOS(0)]);
+    if (!SCHEME_FFIANYPTRP(cp))
+      scheme_wrong_contract(who, "(or/c ffi-obj? cpointer?)", ARGPOS(0), argc, argv);
+    obj = SCHEME_FFIANYPTR_VAL(cp);
+    ooff = SCHEME_FFIANYPTR_OFFSET(cp);
+    if ((obj == NULL) && (ooff == 0))
+      scheme_wrong_contract(who, NON_NULL_CPOINTER, 0, argc, argv);
+  } else {
+    cp = NULL;
+    obj = NULL;
+    ooff = 0;
+  }
   nargs = scheme_proper_list_length(itypes);
   if (nargs < 0)
-    scheme_wrong_contract(MYNAME, "list?", 1, argc, argv);
+    scheme_wrong_contract(who, "list?", ARGPOS(1), argc, argv);
   if (NULL == (base = get_ctype_base(otype)))
-    scheme_wrong_contract(MYNAME, "ctype?", 2, argc, argv);
+    scheme_wrong_contract(who, "ctype?", ARGPOS(2), argc, argv);
   rtype = CTYPE_ARG_PRIMTYPE(base);
-  abi = GET_ABI(MYNAME,3);
-  if (argc > 4) {
+  abi = GET_ABI(who, ARGPOS(3));
+  if (argc > ARGPOS(4)) {
     save_errno = -1;
-    if (SCHEME_FALSEP(argv[4]))
+    if (SCHEME_FALSEP(argv[ARGPOS(4)]))
       save_errno = 0;
-    else if (SCHEME_SYMBOLP(argv[4])
-             && !SCHEME_SYM_WEIRDP(argv[4])) {
-      if (!strcmp(SCHEME_SYM_VAL(argv[4]), "posix"))
+    else if (SCHEME_SYMBOLP(argv[ARGPOS(4)])
+             && !SCHEME_SYM_WEIRDP(argv[ARGPOS(4)])) {
+      if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(4)]), "posix"))
         save_errno = 1;
-      else if (!strcmp(SCHEME_SYM_VAL(argv[4]), "windows"))
+      else if (!strcmp(SCHEME_SYM_VAL(argv[ARGPOS(4)]), "windows"))
         save_errno = 2;
     }
     if (save_errno == -1) {
-      scheme_wrong_contract(MYNAME, "(or/c 'posix 'windows #f)", 4, argc, argv);
+      scheme_wrong_contract(who, "(or/c 'posix 'windows #f)", ARGPOS(4), argc, argv);
     }
   } else
     save_errno = 0;
 # if defined(MZ_USE_PLACES) && !defined(MZ_USE_FFIPOLL)
-  if (argc > 5) orig_place = SCHEME_TRUEP(argv[5]);
+  if (argc > ARGPOS(5)) orig_place = SCHEME_TRUEP(argv[ARGPOS(5)]);
   else orig_place = 0;
 # endif /* defined(MZ_USE_PLACES) && !defined(MZ_USE_FFIPOLL) */
-  if (argc > 6) {
-    if (!SCHEME_FALSEP(argv[6])) {
-      if (!SCHEME_CHAR_STRINGP(argv[6]))
-        scheme_wrong_contract(MYNAME, "(or/c string? #f)", 4, argc, argv);
-      lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[6]));
+  if (argc > ARGPOS(6)) {
+    if (!SCHEME_FALSEP(argv[ARGPOS(6)])) {
+      if (!SCHEME_CHAR_STRINGP(argv[ARGPOS(6)]))
+        scheme_wrong_contract(who, "(or/c string? #f)", ARGPOS(6), argc, argv);
+      lock = name_to_ffi_lock(scheme_char_string_to_byte_string(argv[ARGPOS(6)]));
     }
   }
-  if (SCHEME_FFIOBJP(cp))
+  if (cp && SCHEME_FFIOBJP(cp))
     name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
   else
     name = ffi_name;
   atypes = malloc(nargs * sizeof(ffi_type*));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
-      scheme_wrong_contract(MYNAME, "(listof ctype?)", 1, argc, argv);
+      scheme_wrong_contract(who, "(listof ctype?)", ARGPOS(1), argc, argv);
     if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
-      wrong_void(MYNAME, SCHEME_CAR(p), 1, 1, argc, argv);
+      wrong_void(who, SCHEME_CAR(p), 1, ARGPOS(1), argc, argv);
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
   cif = malloc(sizeof(ffi_cif));
@@ -3734,10 +3776,36 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
 # endif /* MZ_USE_PLACES */
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   a[0] = data;
-  return scheme_make_prim_closure_w_arity(ffi_do_call_after_stack_check,
-                                          1, a,
-                                          SCHEME_BYTE_STR_VAL(name),
-                                          nargs, nargs);
+
+  if (curry) {
+    return scheme_make_prim_closure_w_arity(make_ffi_call_from_curried,
+                                            1, a,
+                                            "make-ffi-call",
+                                            1, 1);
+  } else {
+    return scheme_make_prim_closure_w_arity(ffi_do_call_after_stack_check,
+                                            1, a,
+                                            SCHEME_BYTE_STR_VAL(name),
+                                            nargs, nargs);
+  }
+#undef ARGPOS
+}
+
+/* (ffi-call ffi-obj in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (in-types -> out-value) */
+/* the real work is done by ffi_do_call above */
+#define MYNAME "ffi-call"
+static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
+{
+  return ffi_call_or_curry(MYNAME, 0, argc, argv);
+}
+#undef MYNAME
+
+/* (ffi-call-maker in-types out-type [abi save-errno? orig-place? lock-name blocking?]) -> (ffi->obj -> (in-types -> out-value)) */
+/* Curried version of `ffi-call` */
+#define MYNAME "ffi-call-maker"
+static Scheme_Object *foreign_ffi_call_maker(int argc, Scheme_Object *argv[])
+{
+  return ffi_call_or_curry(MYNAME, 1, argc, argv);
 }
 #undef MYNAME
 
@@ -3755,11 +3823,11 @@ static ffi_callback_struct *extract_ffi_callback(void *userdata)
   {
     void *tmp;
     tmp  = *((void**)userdata);
-    data = (ffi_callback_struct*)(SCHEME_WEAK_BOX_VAL(tmp));
+    data = (ffi_callback_struct *)SCHEME_WEAK_BOX_VAL(tmp);
     if (data == NULL) scheme_signal_error("callback lost");
   }
 #else
-  data = (ffi_callback_struct*)userdata;
+  data = (ffi_callback_struct *)userdata;
 #endif
 
   return data;
@@ -4016,15 +4084,12 @@ static void free_cl_cif_queue_args(void *ignored, void *p)
 }
 #endif
 
-/* (ffi-callback scheme-proc in-types out-type [abi atomic? sync]) -> ffi-callback */
-/* the treatment of in-types and out-types is similar to that in ffi-call */
-/* the real work is done by ffi_do_callback above */
-#define MYNAME "ffi-callback"
-static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
-{
+/* In `curry` mode, just check arguments */
+static Scheme_Object *ffi_callback_or_curry(const char *who, int curry, int argc, Scheme_Object **argv) {
+# define ARGPOS(n) ((n) - (curry ? 1 : 0))
   ffi_callback_struct *data;
-  Scheme_Object *itypes = argv[1];
-  Scheme_Object *otype = argv[2];
+  Scheme_Object *itypes = argv[ARGPOS(1)];
+  Scheme_Object *otype = argv[ARGPOS(2)];
   Scheme_Object *sync;
   Scheme_Object *p, *base;
   ffi_abi abi;
@@ -4071,22 +4136,28 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   int constant_reply_size = 0;
 # endif /* MZ_USE_MZRT */
 
-  if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_contract(MYNAME, "procedure?", 0, argc, argv);
+  if (!curry && !SCHEME_PROCP(argv[ARGPOS(0)]))
+    scheme_wrong_contract(who, "procedure?", ARGPOS(0), argc, argv);
   nargs = scheme_proper_list_length(itypes);
   if (nargs < 0)
-    scheme_wrong_contract(MYNAME, "list?", 1, argc, argv);
+    scheme_wrong_contract(who, "list?", ARGPOS(1), argc, argv);
   if (NULL == (base = get_ctype_base(otype)))
-    scheme_wrong_contract(MYNAME, "ctype?", 2, argc, argv);
+    scheme_wrong_contract(who, "ctype?", ARGPOS(2), argc, argv);
   rtype = CTYPE_ARG_PRIMTYPE(base);
-  abi = GET_ABI(MYNAME,3);
-  is_atomic = ((argc > 4) && SCHEME_TRUEP(argv[4]));
+  abi = GET_ABI(who, ARGPOS(3));
+  is_atomic = ((argc > ARGPOS(4)) && SCHEME_TRUEP(argv[ARGPOS(4)]));
   sync = (is_atomic ? scheme_true : NULL);
-  if ((argc > 5)
-      && !SCHEME_BOXP(argv[5])
-      && !scheme_check_proc_arity2(NULL, 1, 5, argc, argv, 1))
-    scheme_wrong_contract(MYNAME, "(or/c #f (procedure-arity-includes/c 0) box?)", 5, argc, argv);
-  if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
+  if ((argc > ARGPOS(5))
+      && !SCHEME_BOXP(argv[ARGPOS(5)])
+      && !scheme_check_proc_arity2(NULL, 1, ARGPOS(5), argc, argv, 1))
+    scheme_wrong_contract(who, "(or/c #f (procedure-arity-includes/c 0) box?)", ARGPOS(5), argc, argv);
+
+  if (curry) {
+    /* all checks are done */
+    return NULL;
+  }
+
+  if (((argc > ARGPOS(5)) && SCHEME_TRUEP(argv[ARGPOS(5)]))) {
 #   ifdef MZ_USE_MZRT
     if (!ffi_sync_queue) {
       mzrt_os_thread_id tid;
@@ -4100,20 +4171,20 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
       ffi_sync_queue->sig_hand = sig_hand;
       ffi_sync_queue->callbacks = NULL;
     }
-    if (SCHEME_BOXP(argv[5])) {
+    if (SCHEME_BOXP(argv[ARGPOS(5)])) {
       /* when called in a foreign thread, return a constant */
       constant_reply_size = ctype_sizeof(otype);
-      if (!constant_reply_size && SCHEME_VOIDP(SCHEME_BOX_VAL(argv[5]))) {
+      if (!constant_reply_size && SCHEME_VOIDP(SCHEME_BOX_VAL(argv[ARGPOS(5)]))) {
         /* void result */
         constant_reply = scheme_malloc_atomic(1);
       } else {
         /* non-void result */
         constant_reply = scheme_malloc_atomic(constant_reply_size);
-        SCHEME2C(MYNAME, otype, constant_reply, 0, SCHEME_BOX_VAL(argv[5]), NULL, NULL, 0);
+        SCHEME2C(who, otype, constant_reply, 0, SCHEME_BOX_VAL(argv[ARGPOS(5)]), NULL, NULL, 0);
       }
     } else {
       /* when called in a foreign thread, queue a reply back here */
-      sync = argv[5];
+      sync = argv[ARGPOS(5)];
       if (is_atomic) sync = scheme_box(sync);
       constant_reply = NULL;
       constant_reply_size = 0;
@@ -4131,9 +4202,9 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
-      scheme_wrong_contract(MYNAME, "(listof ctype?)", 1, argc, argv);
+      scheme_wrong_contract(who, "(listof ctype?)", ARGPOS(1), argc, argv);
     if (CTYPE_PRIMLABEL(base) == FOREIGN_void)
-      wrong_void(MYNAME, SCHEME_CAR(p), 1, 1, argc, argv);
+      wrong_void(who, SCHEME_CAR(p), 1, ARGPOS(1), argc, argv);
     atypes[i] = CTYPE_ARG_PRIMTYPE(base);
   }
   if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
@@ -4141,9 +4212,9 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
   data->so.type = ffi_callback_tag;
   data->callback = (cl_cif_args);
-  data->proc = (argv[0]);
-  data->itypes = (argv[1]);
-  data->otype = (argv[2]);
+  data->proc = ((curry ? NULL : argv[ARGPOS(0)]));
+  data->itypes = (argv[ARGPOS(1)]);
+  data->otype = (argv[ARGPOS(2)]);
   data->sync = (sync);
 # ifdef MZ_PRECISE_GC
   {
@@ -4186,7 +4257,56 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   else
 # endif /* MZ_USE_MZRT */
   scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
+
   return (Scheme_Object*)data;
+#undef ARGPOS
+}
+
+/* (ffi-callback scheme-proc in-types out-type [abi atomic? sync]) -> ffi-callback */
+/* the treatment of in-types and out-types is similar to that in ffi-call */
+/* the real work is done by ffi_do_callback above */
+#define MYNAME "ffi-callback"
+static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
+{
+  return ffi_callback_or_curry(MYNAME, 0, argc, argv);
+}
+#undef MYNAME
+
+static Scheme_Object *make_ffi_callback_from_curried(int argc, Scheme_Object *argv[], Scheme_Object *self)
+{
+  Scheme_Object *vec = SCHEME_PRIM_CLOSURE_ELS(self)[0];
+  Scheme_Object *a[6];
+  int c = SCHEME_VEC_SIZE(vec), i;
+
+  for (i = 0; i < c; i++) {
+    a[i+1] = SCHEME_VEC_ELS(vec)[i];
+  }
+  a[0] = argv[0];
+
+  return ffi_callback_or_curry("make-ffi-callback", 0, c+1, a);
+}
+
+/* (ffi-callback-maker in-types out-type [abi atomic? sync]) -> (proc -> ffi-callback) */
+/* Curried version of `ffi-callback`. Check arguments eagerly, but we don't do anything
+   otherwise until a function is available. */
+#define MYNAME "ffi-callback-maker"
+static Scheme_Object *foreign_ffi_callback_maker(int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Object *vec, *a[1];
+
+  (void)ffi_callback_or_curry(MYNAME, 1, argc, argv);
+
+  vec = scheme_make_vector(argc, NULL);
+  for (i = 0; i < argc; i++) {
+    SCHEME_VEC_ELS(vec)[i] = argv[i];
+  }
+  a[0] = vec;
+
+  return scheme_make_prim_closure_w_arity(make_ffi_callback_from_curried,
+                                          1, a,
+                                          "make-ffi-callback",
+                                          1, 1);
 }
 #undef MYNAME
 
@@ -4638,8 +4758,6 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 /*****************************************************************************/
 /* Initialization */
 
-static Scheme_Env *ffi_env = NULL;
-
 /* types need to be initialized before places can spawn
  * types become entries in the GC mark and fixup tables
  * this function should initialize read-only globals that can be
@@ -4734,120 +4852,123 @@ Scheme_Object *scheme_uint32_ctype;
 Scheme_Object *scheme_int64_ctype;
 Scheme_Object *scheme_uint64_ctype;
 
-void scheme_init_foreign(Scheme_Env *env)
+void scheme_init_foreign(Scheme_Startup_Env *env)
 {
-  Scheme_Env *menv;
   ctype_struct *t;
   Scheme_Object *s;
   memcpy(&ffi_type_gcpointer, &ffi_type_pointer, sizeof(ffi_type_pointer));
-  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
-  scheme_add_global_constant("ffi-lib?",
-    scheme_make_immed_prim(foreign_ffi_lib_p, "ffi-lib?", 1, 1), menv);
-  scheme_add_global_constant("ffi-lib",
-    scheme_make_noncm_prim(foreign_ffi_lib, "ffi-lib", 1, 3), menv);
-  scheme_add_global_constant("ffi-lib-name",
-    scheme_make_noncm_prim(foreign_ffi_lib_name, "ffi-lib-name", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj?",
-    scheme_make_immed_prim(foreign_ffi_obj_p, "ffi-obj?", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj",
-    scheme_make_noncm_prim(foreign_ffi_obj, "ffi-obj", 2, 2), menv);
-  scheme_add_global_constant("ffi-obj-lib",
-    scheme_make_immed_prim(foreign_ffi_obj_lib, "ffi-obj-lib", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj-name",
-    scheme_make_immed_prim(foreign_ffi_obj_name, "ffi-obj-name", 1, 1), menv);
-  scheme_add_global_constant("ctype?",
-    scheme_make_immed_prim(foreign_ctype_p, "ctype?", 1, 1), menv);
-  scheme_add_global_constant("ctype-basetype",
-    scheme_make_immed_prim(foreign_ctype_basetype, "ctype-basetype", 1, 1), menv);
-  scheme_add_global_constant("ctype-scheme->c",
-    scheme_make_immed_prim(foreign_ctype_scheme_to_c, "ctype-scheme->c", 1, 1), menv);
-  scheme_add_global_constant("ctype-c->scheme",
-    scheme_make_immed_prim(foreign_ctype_c_to_scheme, "ctype-c->scheme", 1, 1), menv);
-  scheme_add_global_constant("make-ctype",
-    scheme_make_noncm_prim(foreign_make_ctype, "make-ctype", 3, 3), menv);
-  scheme_add_global_constant("make-cstruct-type",
-    scheme_make_noncm_prim(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), menv);
-  scheme_add_global_constant("make-array-type",
-    scheme_make_noncm_prim(foreign_make_array_type, "make-array-type", 2, 2), menv);
-  scheme_add_global_constant("make-union-type",
-    scheme_make_noncm_prim(foreign_make_union_type, "make-union-type", 1, -1), menv);
-  scheme_add_global_constant("ffi-callback?",
-    scheme_make_immed_prim(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
-  scheme_add_global_constant("cpointer?",
-    scheme_make_immed_prim(foreign_cpointer_p, "cpointer?", 1, 1), menv);
-  scheme_add_global_constant("cpointer-tag",
-    scheme_make_inline_noncm_prim(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
-  scheme_add_global_constant("set-cpointer-tag!",
-    scheme_make_inline_noncm_prim(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
-  scheme_add_global_constant("cpointer-gcable?",
-    scheme_make_noncm_prim(foreign_cpointer_gcable_p, "cpointer-gcable?", 1, 1), menv);
-  scheme_add_global_constant("ctype-sizeof",
-    scheme_make_immed_prim(foreign_ctype_sizeof, "ctype-sizeof", 1, 1), menv);
-  scheme_add_global_constant("ctype-alignof",
-    scheme_make_immed_prim(foreign_ctype_alignof, "ctype-alignof", 1, 1), menv);
-  scheme_add_global_constant("compiler-sizeof",
-    scheme_make_immed_prim(foreign_compiler_sizeof, "compiler-sizeof", 1, 1), menv);
-  scheme_add_global_constant("malloc",
-    scheme_make_noncm_prim(foreign_malloc, "malloc", 1, 5), menv);
-  scheme_add_global_constant("end-stubborn-change",
-    scheme_make_noncm_prim(foreign_end_stubborn_change, "end-stubborn-change", 1, 1), menv);
-  scheme_add_global_constant("free",
-    scheme_make_noncm_prim(foreign_free, "free", 1, 1), menv);
-  scheme_add_global_constant("malloc-immobile-cell",
-    scheme_make_immed_prim(foreign_malloc_immobile_cell, "malloc-immobile-cell", 1, 1), menv);
-  scheme_add_global_constant("free-immobile-cell",
-    scheme_make_noncm_prim(foreign_free_immobile_cell, "free-immobile-cell", 1, 1), menv);
-  scheme_add_global_constant("ptr-add",
-    scheme_make_noncm_prim(foreign_ptr_add, "ptr-add", 2, 3), menv);
-  scheme_add_global_constant("ptr-add!",
-    scheme_make_noncm_prim(foreign_ptr_add_bang, "ptr-add!", 2, 3), menv);
-  scheme_add_global_constant("offset-ptr?",
-    scheme_make_noncm_prim(foreign_offset_ptr_p, "offset-ptr?", 1, 1), menv);
-  scheme_add_global_constant("ptr-offset",
-    scheme_make_noncm_prim(foreign_ptr_offset, "ptr-offset", 1, 1), menv);
-  scheme_add_global_constant("set-ptr-offset!",
-    scheme_make_noncm_prim(foreign_set_ptr_offset_bang, "set-ptr-offset!", 2, 3), menv);
-  scheme_add_global_constant("vector->cpointer",
-    scheme_make_immed_prim(foreign_vector_to_cpointer, "vector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("flvector->cpointer",
-    scheme_make_immed_prim(foreign_flvector_to_cpointer, "flvector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("extflvector->cpointer",
-    scheme_make_immed_prim(foreign_extflvector_to_cpointer, "extflvector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("memset",
-    scheme_make_noncm_prim(foreign_memset, "memset", 3, 5), menv);
-  scheme_add_global_constant("memmove",
-    scheme_make_noncm_prim(foreign_memmove, "memmove", 3, 6), menv);
-  scheme_add_global_constant("memcpy",
-    scheme_make_noncm_prim(foreign_memcpy, "memcpy", 3, 6), menv);
-  scheme_add_global_constant("ptr-ref",
-    scheme_make_inline_noncm_prim(foreign_ptr_ref, "ptr-ref", 2, 4), menv);
-  scheme_add_global_constant("ptr-set!",
-    scheme_make_inline_noncm_prim(foreign_ptr_set_bang, "ptr-set!", 3, 5), menv);
-  scheme_add_global_constant("ptr-equal?",
-    scheme_make_noncm_prim(foreign_ptr_equal_p, "ptr-equal?", 2, 2), menv);
-  scheme_add_global_constant("make-sized-byte-string",
-    scheme_make_noncm_prim(foreign_make_sized_byte_string, "make-sized-byte-string", 2, 2), menv);
-  scheme_add_global_constant("ffi-call",
-    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 7), menv);
-  scheme_add_global_constant("ffi-callback",
-    scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), menv);
-  scheme_add_global_constant("saved-errno",
-    scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), menv);
-  scheme_add_global_constant("lookup-errno",
-    scheme_make_immed_prim(foreign_lookup_errno, "lookup-errno", 1, 1), menv);
-  scheme_add_global_constant("make-stubborn-will-executor",
-    scheme_make_immed_prim(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
-  scheme_add_global_constant("make-late-weak-box",
-    scheme_make_immed_prim(foreign_make_late_weak_box, "make-late-weak-box", 1, 1), menv);
-  scheme_add_global_constant("make-late-weak-hasheq",
-    scheme_make_immed_prim(foreign_make_late_weak_hasheq, "make-late-weak-hasheq", 0, 0), menv);
+  scheme_switch_prim_instance(env, "#%foreign");
+  scheme_addto_prim_instance("ffi-lib?",
+    scheme_make_immed_prim(foreign_ffi_lib_p, "ffi-lib?", 1, 1), env);
+  scheme_addto_prim_instance("ffi-lib",
+    scheme_make_noncm_prim(foreign_ffi_lib, "ffi-lib", 1, 3), env);
+  scheme_addto_prim_instance("ffi-lib-name",
+    scheme_make_noncm_prim(foreign_ffi_lib_name, "ffi-lib-name", 1, 1), env);
+  scheme_addto_prim_instance("ffi-obj?",
+    scheme_make_immed_prim(foreign_ffi_obj_p, "ffi-obj?", 1, 1), env);
+  scheme_addto_prim_instance("ffi-obj",
+    scheme_make_noncm_prim(foreign_ffi_obj, "ffi-obj", 2, 2), env);
+  scheme_addto_prim_instance("ffi-obj-lib",
+    scheme_make_immed_prim(foreign_ffi_obj_lib, "ffi-obj-lib", 1, 1), env);
+  scheme_addto_prim_instance("ffi-obj-name",
+    scheme_make_immed_prim(foreign_ffi_obj_name, "ffi-obj-name", 1, 1), env);
+  scheme_addto_prim_instance("ctype?",
+    scheme_make_immed_prim(foreign_ctype_p, "ctype?", 1, 1), env);
+  scheme_addto_prim_instance("ctype-basetype",
+    scheme_make_immed_prim(foreign_ctype_basetype, "ctype-basetype", 1, 1), env);
+  scheme_addto_prim_instance("ctype-scheme->c",
+    scheme_make_immed_prim(foreign_ctype_scheme_to_c, "ctype-scheme->c", 1, 1), env);
+  scheme_addto_prim_instance("ctype-c->scheme",
+    scheme_make_immed_prim(foreign_ctype_c_to_scheme, "ctype-c->scheme", 1, 1), env);
+  scheme_addto_prim_instance("make-ctype",
+    scheme_make_noncm_prim(foreign_make_ctype, "make-ctype", 3, 3), env);
+  scheme_addto_prim_instance("make-cstruct-type",
+    scheme_make_noncm_prim(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), env);
+  scheme_addto_prim_instance("make-array-type",
+    scheme_make_noncm_prim(foreign_make_array_type, "make-array-type", 2, 2), env);
+  scheme_addto_prim_instance("make-union-type",
+    scheme_make_noncm_prim(foreign_make_union_type, "make-union-type", 1, -1), env);
+  scheme_addto_prim_instance("ffi-callback?",
+    scheme_make_immed_prim(foreign_ffi_callback_p, "ffi-callback?", 1, 1), env);
+  scheme_addto_prim_instance("cpointer?",
+    scheme_make_immed_prim(foreign_cpointer_p, "cpointer?", 1, 1), env);
+  scheme_addto_prim_instance("cpointer-tag",
+    scheme_make_inline_noncm_prim(foreign_cpointer_tag, "cpointer-tag", 1, 1), env);
+  scheme_addto_prim_instance("set-cpointer-tag!",
+    scheme_make_inline_noncm_prim(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), env);
+  scheme_addto_prim_instance("cpointer-gcable?",
+    scheme_make_noncm_prim(foreign_cpointer_gcable_p, "cpointer-gcable?", 1, 1), env);
+  scheme_addto_prim_instance("ctype-sizeof",
+    scheme_make_immed_prim(foreign_ctype_sizeof, "ctype-sizeof", 1, 1), env);
+  scheme_addto_prim_instance("ctype-alignof",
+    scheme_make_immed_prim(foreign_ctype_alignof, "ctype-alignof", 1, 1), env);
+  scheme_addto_prim_instance("compiler-sizeof",
+    scheme_make_immed_prim(foreign_compiler_sizeof, "compiler-sizeof", 1, 1), env);
+  scheme_addto_prim_instance("malloc",
+    scheme_make_noncm_prim(foreign_malloc, "malloc", 1, 5), env);
+  scheme_addto_prim_instance("end-stubborn-change",
+    scheme_make_noncm_prim(foreign_end_stubborn_change, "end-stubborn-change", 1, 1), env);
+  scheme_addto_prim_instance("free",
+    scheme_make_noncm_prim(foreign_free, "free", 1, 1), env);
+  scheme_addto_prim_instance("malloc-immobile-cell",
+    scheme_make_immed_prim(foreign_malloc_immobile_cell, "malloc-immobile-cell", 1, 1), env);
+  scheme_addto_prim_instance("free-immobile-cell",
+    scheme_make_noncm_prim(foreign_free_immobile_cell, "free-immobile-cell", 1, 1), env);
+  scheme_addto_prim_instance("ptr-add",
+    scheme_make_noncm_prim(foreign_ptr_add, "ptr-add", 2, 3), env);
+  scheme_addto_prim_instance("ptr-add!",
+    scheme_make_noncm_prim(foreign_ptr_add_bang, "ptr-add!", 2, 3), env);
+  scheme_addto_prim_instance("offset-ptr?",
+    scheme_make_noncm_prim(foreign_offset_ptr_p, "offset-ptr?", 1, 1), env);
+  scheme_addto_prim_instance("ptr-offset",
+    scheme_make_noncm_prim(foreign_ptr_offset, "ptr-offset", 1, 1), env);
+  scheme_addto_prim_instance("set-ptr-offset!",
+    scheme_make_noncm_prim(foreign_set_ptr_offset_bang, "set-ptr-offset!", 2, 3), env);
+  scheme_addto_prim_instance("vector->cpointer",
+    scheme_make_immed_prim(foreign_vector_to_cpointer, "vector->cpointer", 1, 1), env);
+  scheme_addto_prim_instance("flvector->cpointer",
+    scheme_make_immed_prim(foreign_flvector_to_cpointer, "flvector->cpointer", 1, 1), env);
+  scheme_addto_prim_instance("extflvector->cpointer",
+    scheme_make_immed_prim(foreign_extflvector_to_cpointer, "extflvector->cpointer", 1, 1), env);
+  scheme_addto_prim_instance("memset",
+    scheme_make_noncm_prim(foreign_memset, "memset", 3, 5), env);
+  scheme_addto_prim_instance("memmove",
+    scheme_make_noncm_prim(foreign_memmove, "memmove", 3, 6), env);
+  scheme_addto_prim_instance("memcpy",
+    scheme_make_noncm_prim(foreign_memcpy, "memcpy", 3, 6), env);
+  scheme_addto_prim_instance("ptr-ref",
+    scheme_make_inline_noncm_prim(foreign_ptr_ref, "ptr-ref", 2, 4), env);
+  scheme_addto_prim_instance("ptr-set!",
+    scheme_make_inline_noncm_prim(foreign_ptr_set_bang, "ptr-set!", 3, 5), env);
+  scheme_addto_prim_instance("ptr-equal?",
+    scheme_make_noncm_prim(foreign_ptr_equal_p, "ptr-equal?", 2, 2), env);
+  scheme_addto_prim_instance("make-sized-byte-string",
+    scheme_make_noncm_prim(foreign_make_sized_byte_string, "make-sized-byte-string", 2, 2), env);
+  scheme_addto_prim_instance("ffi-call",
+    scheme_make_noncm_prim(foreign_ffi_call, "ffi-call", 3, 8), env);
+  scheme_addto_prim_instance("ffi-call-maker",
+    scheme_make_noncm_prim(foreign_ffi_call_maker, "ffi-call-maker", 2, 7), env);
+  scheme_addto_prim_instance("ffi-callback",
+    scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), env);
+  scheme_addto_prim_instance("ffi-callback-maker",
+    scheme_make_noncm_prim(foreign_ffi_callback_maker, "ffi-callback-maker", 2, 5), env);
+  scheme_addto_prim_instance("saved-errno",
+    scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), env);
+  scheme_addto_prim_instance("lookup-errno",
+    scheme_make_immed_prim(foreign_lookup_errno, "lookup-errno", 1, 1), env);
+  scheme_addto_prim_instance("make-stubborn-will-executor",
+    scheme_make_immed_prim(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), env);
+  scheme_addto_prim_instance("make-late-weak-box",
+    scheme_make_immed_prim(foreign_make_late_weak_box, "make-late-weak-box", 1, 1), env);
+  scheme_addto_prim_instance("make-late-weak-hasheq",
+    scheme_make_immed_prim(foreign_make_late_weak_hasheq, "make-late-weak-hasheq", 0, 0), env);
   s = scheme_intern_symbol("void");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_void));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_void);
-  scheme_add_global_constant("_void", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_void", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("int8");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4856,7 +4977,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int8);
   REGISTER_SO(scheme_int8_ctype);
   scheme_int8_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_int8", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_int8", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("uint8");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4865,7 +4986,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint8);
   REGISTER_SO(scheme_uint8_ctype);
   scheme_uint8_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_uint8", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_uint8", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("int16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4874,7 +4995,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int16);
   REGISTER_SO(scheme_int16_ctype);
   scheme_int16_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_int16", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_int16", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("uint16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4883,7 +5004,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint16);
   REGISTER_SO(scheme_uint16_ctype);
   scheme_uint16_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_uint16", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_uint16", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("int32");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4892,7 +5013,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int32);
   REGISTER_SO(scheme_int32_ctype);
   scheme_int32_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_int32", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_int32", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("uint32");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4901,7 +5022,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint32);
   REGISTER_SO(scheme_uint32_ctype);
   scheme_uint32_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_uint32", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_uint32", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("int64");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4910,7 +5031,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int64);
   REGISTER_SO(scheme_int64_ctype);
   scheme_int64_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_int64", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_int64", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("uint64");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4919,35 +5040,35 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint64);
   REGISTER_SO(scheme_uint64_ctype);
   scheme_uint64_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_uint64", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_uint64", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("fixint");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_fixint);
-  scheme_add_global_constant("_fixint", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_fixint", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("ufixint");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_ufixint);
-  scheme_add_global_constant("_ufixint", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_ufixint", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("fixnum");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_smzintptr));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_fixnum);
-  scheme_add_global_constant("_fixnum", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_fixnum", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("ufixnum");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_umzintptr));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_ufixnum);
-  scheme_add_global_constant("_ufixnum", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_ufixnum", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("float");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4956,7 +5077,7 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_float);
   REGISTER_SO(scheme_float_ctype);
   scheme_float_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_float", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_float", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("double");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -4965,70 +5086,70 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_double);
   REGISTER_SO(scheme_double_ctype);
   scheme_double_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_double", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_double", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("longdouble");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_slongdouble));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_longdouble);
-  scheme_add_global_constant("_longdouble", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_longdouble", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("double*");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_double));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_doubleS);
-  scheme_add_global_constant("_double*", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_double*", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("bool");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_bool);
-  scheme_add_global_constant("_bool", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_bool", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("stdbool");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_stdbool));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_stdbool);
-  scheme_add_global_constant("_stdbool", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_stdbool", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("string/ucs-4");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_ucs_4);
-  scheme_add_global_constant("_string/ucs-4", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_string/ucs-4", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("string/utf-16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_utf_16);
-  scheme_add_global_constant("_string/utf-16", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_string/utf-16", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("bytes");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_bytes);
-  scheme_add_global_constant("_bytes", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_bytes", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("path");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_path);
-  scheme_add_global_constant("_path", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_path", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("symbol");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_symbol);
-  scheme_add_global_constant("_symbol", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_symbol", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("pointer");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -5037,44 +5158,35 @@ void scheme_init_foreign(Scheme_Env *env)
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_pointer);
   REGISTER_SO(scheme_pointer_ctype);
   scheme_pointer_ctype = (Scheme_Object *)t;
-  scheme_add_global_constant("_pointer", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_pointer", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("gcpointer");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_gcpointer);
-  scheme_add_global_constant("_gcpointer", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_gcpointer", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("scheme");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_gcpointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_scheme);
-  scheme_add_global_constant("_scheme", (Scheme_Object*)t, menv);
+  scheme_addto_prim_instance("_scheme", (Scheme_Object*)t, env);
   s = scheme_intern_symbol("fpointer");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_fpointer);
-  scheme_add_global_constant("_fpointer", (Scheme_Object*)t, menv);
-  scheme_add_global_constant("prop:cpointer", scheme_cpointer_property, menv);
-  scheme_finish_primitive_module(menv);
-  scheme_protect_primitive_provide(menv, NULL);
-  MZ_REGISTER_STATIC(ffi_env);
-  ffi_env = menv;
-}
-
-Scheme_Env *scheme_get_foreign_env() {
-  return ffi_env;
+  scheme_addto_prim_instance("_fpointer", (Scheme_Object*)t, env);
+  scheme_addto_prim_instance("prop:cpointer", scheme_cpointer_property, env);
+  scheme_restore_prim_instance(env);
 }
 
 /*****************************************************************************/
 
 #else /* DONT_USE_FOREIGN */
-
-static Scheme_Env *ffi_env = NULL;
 
 int scheme_is_cpointer(Scheme_Object *cp)
 {
@@ -5110,145 +5222,141 @@ static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Objec
 void scheme_init_foreign(Scheme_Env *env)
 {
   /* Create a dummy module. */
-  Scheme_Env *menv;
-  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
-  scheme_add_global_constant("ffi-lib?",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-lib?", 1, 1), menv);
-  scheme_add_global_constant("ffi-lib",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib", 1, 3), menv);
-  scheme_add_global_constant("ffi-lib-name",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib-name", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj?",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj?", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-obj", 2, 2), menv);
-  scheme_add_global_constant("ffi-obj-lib",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj-lib", 1, 1), menv);
-  scheme_add_global_constant("ffi-obj-name",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj-name", 1, 1), menv);
-  scheme_add_global_constant("ctype?",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype?", 1, 1), menv);
-  scheme_add_global_constant("ctype-basetype",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-basetype", 1, 1), menv);
-  scheme_add_global_constant("ctype-scheme->c",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-scheme->c", 1, 1), menv);
-  scheme_add_global_constant("ctype-c->scheme",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-c->scheme", 1, 1), menv);
-  scheme_add_global_constant("make-ctype",
-   scheme_make_noncm_prim((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), menv);
-  scheme_add_global_constant("make-cstruct-type",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), menv);
-  scheme_add_global_constant("make-array-type",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-array-type", 2, 2), menv);
-  scheme_add_global_constant("make-union-type",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-union-type", 1, -1), menv);
-  scheme_add_global_constant("ffi-callback?",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), menv);
-  scheme_add_global_constant("cpointer?",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "cpointer?", 1, 1), menv);
-  scheme_add_global_constant("cpointer-tag",
-   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
-  scheme_add_global_constant("set-cpointer-tag!",
-   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
-  scheme_add_global_constant("cpointer-gcable?",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-gcable?", 1, 1), menv);
-  scheme_add_global_constant("ctype-sizeof",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-sizeof", 1, 1), menv);
-  scheme_add_global_constant("ctype-alignof",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-alignof", 1, 1), menv);
-  scheme_add_global_constant("compiler-sizeof",
-   scheme_make_immed_prim((Scheme_Prim *)foreign_compiler_sizeof, "compiler-sizeof", 1, 1), menv);
-  scheme_add_global_constant("malloc",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "malloc", 1, 5), menv);
-  scheme_add_global_constant("end-stubborn-change",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "end-stubborn-change", 1, 1), menv);
-  scheme_add_global_constant("free",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "free", 1, 1), menv);
-  scheme_add_global_constant("malloc-immobile-cell",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "malloc-immobile-cell", 1, 1), menv);
-  scheme_add_global_constant("free-immobile-cell",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "free-immobile-cell", 1, 1), menv);
-  scheme_add_global_constant("ptr-add",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-add", 2, 3), menv);
-  scheme_add_global_constant("ptr-add!",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-add!", 2, 3), menv);
-  scheme_add_global_constant("offset-ptr?",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "offset-ptr?", 1, 1), menv);
-  scheme_add_global_constant("ptr-offset",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-offset", 1, 1), menv);
-  scheme_add_global_constant("set-ptr-offset!",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "set-ptr-offset!", 2, 3), menv);
-  scheme_add_global_constant("vector->cpointer",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "vector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("flvector->cpointer",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "flvector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("extflvector->cpointer",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "extflvector->cpointer", 1, 1), menv);
-  scheme_add_global_constant("memset",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memset", 3, 5), menv);
-  scheme_add_global_constant("memmove",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memmove", 3, 6), menv);
-  scheme_add_global_constant("memcpy",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memcpy", 3, 6), menv);
-  scheme_add_global_constant("ptr-ref",
-   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-ref", 2, 4), menv);
-  scheme_add_global_constant("ptr-set!",
-   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-set!", 3, 5), menv);
-  scheme_add_global_constant("ptr-equal?",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-equal?", 2, 2), menv);
-  scheme_add_global_constant("make-sized-byte-string",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-sized-byte-string", 2, 2), menv);
-  scheme_add_global_constant("ffi-call",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 7), menv);
-  scheme_add_global_constant("ffi-callback",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), menv);
-  scheme_add_global_constant("saved-errno",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), menv);
-  scheme_add_global_constant("lookup-errno",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
-  scheme_add_global_constant("make-stubborn-will-executor",
-   scheme_make_immed_prim((Scheme_Prim *)foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), menv);
-  scheme_add_global_constant("make-late-weak-box",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), menv);
-  scheme_add_global_constant("make-late-weak-hasheq",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "make-late-weak-hasheq", 0, 0), menv);
-  scheme_add_global_constant("_void", scheme_false, menv);
-  scheme_add_global_constant("_int8", scheme_false, menv);
-  scheme_add_global_constant("_uint8", scheme_false, menv);
-  scheme_add_global_constant("_int16", scheme_false, menv);
-  scheme_add_global_constant("_uint16", scheme_false, menv);
-  scheme_add_global_constant("_int32", scheme_false, menv);
-  scheme_add_global_constant("_uint32", scheme_false, menv);
-  scheme_add_global_constant("_int64", scheme_false, menv);
-  scheme_add_global_constant("_uint64", scheme_false, menv);
-  scheme_add_global_constant("_fixint", scheme_false, menv);
-  scheme_add_global_constant("_ufixint", scheme_false, menv);
-  scheme_add_global_constant("_fixnum", scheme_false, menv);
-  scheme_add_global_constant("_ufixnum", scheme_false, menv);
-  scheme_add_global_constant("_float", scheme_false, menv);
-  scheme_add_global_constant("_double", scheme_false, menv);
-  scheme_add_global_constant("_longdouble", scheme_false, menv);
-  scheme_add_global_constant("_double*", scheme_false, menv);
-  scheme_add_global_constant("_bool", scheme_false, menv);
-  scheme_add_global_constant("_stdbool", scheme_false, menv);
-  scheme_add_global_constant("_string/ucs-4", scheme_false, menv);
-  scheme_add_global_constant("_string/utf-16", scheme_false, menv);
-  scheme_add_global_constant("_bytes", scheme_false, menv);
-  scheme_add_global_constant("_path", scheme_false, menv);
-  scheme_add_global_constant("_symbol", scheme_false, menv);
-  scheme_add_global_constant("_pointer", scheme_false, menv);
-  scheme_add_global_constant("_gcpointer", scheme_false, menv);
-  scheme_add_global_constant("_scheme", scheme_false, menv);
-  scheme_add_global_constant("_fpointer", scheme_false, menv);
-  scheme_add_global_constant("prop:cpointer", scheme_cpointer_property, menv);
-  scheme_finish_primitive_module(menv);
-  scheme_protect_primitive_provide(menv, NULL);
-  MZ_REGISTER_STATIC(ffi_env);
-  ffi_env = menv;
-}
-
-Scheme_Env *scheme_get_foreign_env() {
-  return ffi_env;
+  scheme_switch_prim_instance(env, "#%foreign");
+  scheme_addto_primitive_instance("ffi-lib?",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-lib?", 1, 1), env);
+  scheme_addto_primitive_instance("ffi-lib",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib", 1, 3), env);
+  scheme_addto_primitive_instance("ffi-lib-name",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib-name", 1, 1), env);
+  scheme_addto_primitive_instance("ffi-obj?",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj?", 1, 1), env);
+  scheme_addto_primitive_instance("ffi-obj",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-obj", 2, 2), env);
+  scheme_addto_primitive_instance("ffi-obj-lib",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj-lib", 1, 1), env);
+  scheme_addto_primitive_instance("ffi-obj-name",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj-name", 1, 1), env);
+  scheme_addto_primitive_instance("ctype?",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype?", 1, 1), env);
+  scheme_addto_primitive_instance("ctype-basetype",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-basetype", 1, 1), env);
+  scheme_addto_primitive_instance("ctype-scheme->c",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-scheme->c", 1, 1), env);
+  scheme_addto_primitive_instance("ctype-c->scheme",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-c->scheme", 1, 1), env);
+  scheme_addto_primitive_instance("make-ctype",
+   scheme_make_noncm_prim((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), env);
+  scheme_addto_primitive_instance("make-cstruct-type",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), env);
+  scheme_addto_primitive_instance("make-array-type",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-array-type", 2, 2), env);
+  scheme_addto_primitive_instance("make-union-type",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-union-type", 1, -1), env);
+  scheme_addto_primitive_instance("ffi-callback?",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-callback?", 1, 1), env);
+  scheme_addto_primitive_instance("cpointer?",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "cpointer?", 1, 1), env);
+  scheme_addto_primitive_instance("cpointer-tag",
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), env);
+  scheme_addto_primitive_instance("set-cpointer-tag!",
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), env);
+  scheme_addto_primitive_instance("cpointer-gcable?",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-gcable?", 1, 1), env);
+  scheme_addto_primitive_instance("ctype-sizeof",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-sizeof", 1, 1), env);
+  scheme_addto_primitive_instance("ctype-alignof",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ctype-alignof", 1, 1), env);
+  scheme_addto_primitive_instance("compiler-sizeof",
+   scheme_make_immed_prim((Scheme_Prim *)foreign_compiler_sizeof, "compiler-sizeof", 1, 1), env);
+  scheme_addto_primitive_instance("malloc",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "malloc", 1, 5), env);
+  scheme_addto_primitive_instance("end-stubborn-change",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "end-stubborn-change", 1, 1), env);
+  scheme_addto_primitive_instance("free",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "free", 1, 1), env);
+  scheme_addto_primitive_instance("malloc-immobile-cell",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "malloc-immobile-cell", 1, 1), env);
+  scheme_addto_primitive_instance("free-immobile-cell",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "free-immobile-cell", 1, 1), env);
+  scheme_addto_primitive_instance("ptr-add",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-add", 2, 3), env);
+  scheme_addto_primitive_instance("ptr-add!",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-add!", 2, 3), env);
+  scheme_addto_primitive_instance("offset-ptr?",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "offset-ptr?", 1, 1), env);
+  scheme_addto_primitive_instance("ptr-offset",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-offset", 1, 1), env);
+  scheme_addto_primitive_instance("set-ptr-offset!",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "set-ptr-offset!", 2, 3), env);
+  scheme_addto_primitive_instance("vector->cpointer",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "vector->cpointer", 1, 1), env);
+  scheme_addto_primitive_instance("flvector->cpointer",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "flvector->cpointer", 1, 1), env);
+  scheme_addto_primitive_instance("extflvector->cpointer",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "extflvector->cpointer", 1, 1), env);
+  scheme_addto_primitive_instance("memset",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memset", 3, 5), env);
+  scheme_addto_primitive_instance("memmove",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memmove", 3, 6), env);
+  scheme_addto_primitive_instance("memcpy",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memcpy", 3, 6), env);
+  scheme_addto_primitive_instance("ptr-ref",
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-ref", 2, 4), env);
+  scheme_addto_primitive_instance("ptr-set!",
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-set!", 3, 5), env);
+  scheme_addto_primitive_instance("ptr-equal?",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-equal?", 2, 2), env);
+  scheme_addto_primitive_instance("make-sized-byte-string",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-sized-byte-string", 2, 2), env);
+  scheme_addto_primitive_instance("ffi-call",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call", 3, 8), env);
+  scheme_addto_primitive_instance("ffi-call-maker",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-call-maker", 2, 7), env);
+  scheme_addto_primitive_instance("ffi-callback",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), env);
+  scheme_addto_primitive_instance("ffi-callback-maker",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback-maker", 2, 5), env);
+  scheme_addto_primitive_instance("saved-errno",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), env);
+  scheme_addto_primitive_instance("lookup-errno",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), env);
+  scheme_addto_primitive_instance("make-stubborn-will-executor",
+   scheme_make_immed_prim((Scheme_Prim *)foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), env);
+  scheme_addto_primitive_instance("make-late-weak-box",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), env);
+  scheme_addto_primitive_instance("make-late-weak-hasheq",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "make-late-weak-hasheq", 0, 0), env);
+  scheme_add_global_constant("_void", scheme_false, env);
+  scheme_add_global_constant("_int8", scheme_false, env);
+  scheme_add_global_constant("_uint8", scheme_false, env);
+  scheme_add_global_constant("_int16", scheme_false, env);
+  scheme_add_global_constant("_uint16", scheme_false, env);
+  scheme_add_global_constant("_int32", scheme_false, env);
+  scheme_add_global_constant("_uint32", scheme_false, env);
+  scheme_add_global_constant("_int64", scheme_false, env);
+  scheme_add_global_constant("_uint64", scheme_false, env);
+  scheme_add_global_constant("_fixint", scheme_false, env);
+  scheme_add_global_constant("_ufixint", scheme_false, env);
+  scheme_add_global_constant("_fixnum", scheme_false, env);
+  scheme_add_global_constant("_ufixnum", scheme_false, env);
+  scheme_add_global_constant("_float", scheme_false, env);
+  scheme_add_global_constant("_double", scheme_false, env);
+  scheme_add_global_constant("_longdouble", scheme_false, env);
+  scheme_add_global_constant("_double*", scheme_false, env);
+  scheme_add_global_constant("_bool", scheme_false, env);
+  scheme_add_global_constant("_stdbool", scheme_false, env);
+  scheme_add_global_constant("_string/ucs-4", scheme_false, env);
+  scheme_add_global_constant("_string/utf-16", scheme_false, env);
+  scheme_add_global_constant("_bytes", scheme_false, env);
+  scheme_add_global_constant("_path", scheme_false, env);
+  scheme_add_global_constant("_symbol", scheme_false, env);
+  scheme_add_global_constant("_pointer", scheme_false, env);
+  scheme_add_global_constant("_gcpointer", scheme_false, env);
+  scheme_add_global_constant("_scheme", scheme_false, env);
+  scheme_add_global_constant("_fpointer", scheme_false, env);
+  scheme_addto_primitive_instance("prop:cpointer", scheme_cpointer_property, env);
+  scheme_restore_prim_instance(env);
 }
 
 #endif

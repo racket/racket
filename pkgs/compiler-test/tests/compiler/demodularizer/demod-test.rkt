@@ -12,7 +12,7 @@
     (apply system* command args))
   (values (get-output-string o) (get-output-string e)))
 
-(define (test-on-program filename)
+(define (test-on-program filename [exceptions null])
   ;; run modular program, capture output
   (define-values (modular-output modular-error)
     (capture-output (find-exe) filename))
@@ -26,7 +26,9 @@
   
   ;; demodularize
   (parameterize ([current-input-port (open-input-string "")])
-    (system* (find-exe) "-l-" "raco" "demod" "-o" demod-filename filename))
+    (apply system* (find-exe) "-l-" "raco" "demod" "-o" demod-filename
+           (append exceptions
+                   (list filename))))
   
   ;; run whole program
   (define-values (whole-output whole-error)
@@ -50,4 +52,9 @@
    (define ip (build-path tests i))
    (when (modular-program? ip)
      (printf "Checking ~a\n" ip)
-     (test-on-program (path->string ip)))))
+     (test-on-program (path->string ip))
+     (printf "Checking ~a, skip racket/private/pre-base\n" ip)
+     (test-on-program (path->string ip)
+                      (list "-e"
+                            (path->string
+                             (collection-file-path "pre-base.rkt" "racket/private")))))))

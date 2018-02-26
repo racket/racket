@@ -45,24 +45,46 @@ cstructs, and another ctype for user-defined ctypes.}
 @defproc[(ffi-call [ptr cpointer?] [in-types (listof ctype?)] [out-type ctype?]
                    [abi (or/c #f 'default 'stdcall 'sysv) #f]
                    [save-errno? any/c]
-                   [orig-place? any/c])
+                   [orig-place? any/c]
+                   [lock-name (or/c #f string?) #f]
+                   [blocking? any/c #f])
          procedure?]{
 
-The primitive mechanism that creates Racket ``callout'' values for
+The primitive mechanism that creates Racket @tech{callout} values for
 @racket[_cprocedure].  The given @racket[ptr] is wrapped in a
 Racket-callable primitive function that uses the types to specify how
 values are marshaled.}
 
+@defproc[(ffi-call-maker [in-types (listof ctype?)] [out-type ctype?]
+                   [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                   [save-errno? any/c]
+                   [orig-place? any/c]
+                   [lock-name (or/c #f string?) #f]
+                   [blocking? any/c #f])
+         (cpointer . -> . procedure?)]{
 
-@defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
+A curried variant of @racket[ffi-call] that takes the foreign-procedure pointer
+separately.}
+
+
+@defproc[(ffi-callback [proc procedure?] [in-types any/c] [out-type any/c]
                        [abi (or/c #f 'default 'stdcall 'sysv) #f]
                        [atomic? any/c #f]
                        [async-apply (or/c #f ((-> any) . -> . any)) #f])
          ffi-callback?]{
 
 The symmetric counterpart of @racket[ffi-call].  It receives a Racket
-procedure and creates a callback object, which can also be used as a
+procedure and creates a @tech{callback} object, which can also be used as a
 C pointer.}
+
+@defproc[(ffi-callback-maker [in-types any/c] [out-type any/c]
+                       [abi (or/c #f 'default 'stdcall 'sysv) #f]
+                       [atomic? any/c #f]
+                       [async-apply (or/c #f ((-> any) . -> . any)) #f])
+         (procedure? . -> . ffi-callback?)]{
+
+A curried variant of @racket[ffi-callback] that takes the callback procedure
+separately.}
 
 
 @defproc[(ffi-callback? [x any/c]) boolean?]{

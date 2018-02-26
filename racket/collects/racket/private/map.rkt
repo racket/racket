@@ -4,7 +4,8 @@
 
 (module map '#%kernel
   (#%require "small-scheme.rkt" "define.rkt"
-             "performance-hint.rkt")
+             "performance-hint.rkt"
+             '#%paramz)
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
@@ -28,7 +29,7 @@
                       [else
                        (let ([r (cdr l)]) ; so `l` is not necessarily retained during `f`
                          (cons (f (car l)) (loop r)))]))
-                   (map f l))]
+                   (gen-map f (list l)))]
               [(f l1 l2)
                (if (and (procedure? f)
                         (procedure-arity-includes? f 2)
@@ -43,8 +44,8 @@
                              [r2 (cdr l2)])
                          (cons (f (car l1) (car l2)) 
                                (loop r1 r2)))]))
-                   (map f l1 l2))]
-              [(f l . args) (apply map f l args)])])
+                   (gen-map f (list l1 l2)))]
+              [(f l . args) (gen-map f (cons l args))])])
         map))
   
    (define for-each2
@@ -60,7 +61,7 @@
                       [else
                        (let ([r (cdr l)])
                          (begin (f (car l)) (loop r)))]))
-                   (for-each f l))]
+                   (gen-for-each f (list l)))]
               [(f l1 l2)
                (if (and (procedure? f)
                         (procedure-arity-includes? f 2)
@@ -75,8 +76,8 @@
                              [r2 (cdr l2)])
                          (begin (f (car l1) (car l2)) 
                                 (loop r1 r2)))]))
-                   (for-each f l1 l2))]
-              [(f l . args) (apply for-each f l args)])])
+                   (gen-for-each f (list l1 l2)))]
+              [(f l . args) (gen-for-each f (cons l args))])])
         for-each))
 
    (define andmap2
@@ -95,7 +96,7 @@
                            (let ([r (cdr l)])
                              (and (f (car l))
                                   (loop r)))])))
-                   (andmap f l))]
+                   (gen-andmap f (list l)))]
               [(f l1 l2)
                (if (and (procedure? f)
                         (procedure-arity-includes? f 2)
@@ -112,8 +113,8 @@
                                  [r2 (cdr l2)])
                              (and (f (car l1) (car l2)) 
                                   (loop r1 r2)))])))
-                   (andmap f l1 l2))]
-              [(f l . args) (apply andmap f l args)])])
+                   (gen-andmap f (list l1 l2)))]
+              [(f l . args) (gen-andmap f (cons l args))])])
         andmap))
 
    (define ormap2
@@ -131,7 +132,7 @@
                           [else
                            (let ([r (cdr l)])
                              (or (f (car l)) (loop r)))])))
-                   (ormap f l))]
+                   (gen-ormap f (list l)))]
               [(f l1 l2)
                (if (and (procedure? f)
                         (procedure-arity-includes? f 2)
@@ -148,6 +149,101 @@
                                  [r2 (cdr l2)])
                              (or (f (car l1) (car l2)) 
                                  (loop r1 r2)))])))
-                   (ormap f l1 l2))]
-              [(f l . args) (apply ormap f l args)])])
-        ormap))))
+                   (gen-ormap f (list l1 l2)))]
+              [(f l . args) (gen-ormap f (cons l args))])])
+        ormap)))
+
+
+  ;; -------------------------------------------------------------------------
+
+  (define (check-args who f ls)
+    (unless (procedure? f)
+      (raise-argument-error who "procedure?" f))
+    (let loop ([prev-len #f] [ls ls] [i 1])
+      (unless (null? ls)
+        (let ([l (car ls)])
+          (unless (list? l)
+            (raise-argument-error who "list?" l))
+          (let ([len (length l)])
+            (when (and prev-len
+                       (not (= len prev-len)))
+              (raise-arguments-error who "all lists must have same size"
+                                     "first list length" prev-len
+                                     "other list length" len
+                                     "procedure" f))
+            (loop len (cdr ls) (add1 i))))))
+    (unless (procedure-arity-includes? f (length ls))
+      (apply raise-arguments-error who
+             (string-append "argument mismatch;\n"
+                            " the given procedure's expected number of arguments does not match"
+                            " the given number of lists")
+             "given procedure" (unquoted-printing-string
+                                (or (let ([n (object-name f)])
+                                      (and (symbol? n)
+                                           (symbol->string n)))
+                                    "#<procedure>"))
+             (append
+              (let ([a (procedure-arity f)])
+                (cond
+                  [(integer? a)
+                   (list "expected" a)]
+                  [(arity-at-least? a)
+                   (list "expected" (unquoted-printing-string
+                                     (string-append "at least " (number->string (arity-at-least-value a)))))]
+                  [else
+                   null]))
+              (list "given" (length ls))
+              (let ([w (quotient (error-print-width) (length ls))])
+                (if (w . > . 10)
+                    (list "argument lists..."
+                          (unquoted-printing-string
+                           (apply string-append
+                                  (let loop ([ls ls])
+                                    (cond
+                                      [(null? ls) null]
+                                      [else (cons (string-append "\n   "
+                                                                 ((error-value->string-handler)
+                                                                  (car ls)
+                                                                  w))
+                                                  (loop (cdr ls)))])))))
+                    null))))))
+  
+  (define (gen-map f ls)
+    (check-args 'map f ls)
+    (let loop ([ls ls])
+      (cond
+        [(null? (car ls)) null]
+        [else
+         (let ([next-ls (map2 cdr ls)])
+           (cons (apply f (map2 car ls))
+                 (loop next-ls)))])))
+
+  (define (gen-for-each f ls)
+    (check-args 'for-each f ls)
+    (let loop ([ls ls])
+      (unless (null? (car ls))
+        (let ([next-ls (map2 cdr ls)])
+          (apply f (map2 car ls))
+          (loop next-ls)))))
+
+  (define (gen-andmap f ls)
+    (check-args 'andmap f ls)
+    (let loop ([ls ls])
+      (cond
+        [(null? (car ls)) #t]
+        [(null? (cdar ls)) (apply f (map2 car ls))]
+        [else (let ([next-ls (map2 cdr ls)])
+                (and (apply f (map2 car ls))
+                     (loop next-ls)))])))
+
+  (define (gen-ormap f ls)
+    (check-args 'ormap f ls)
+    (let loop ([ls ls])
+      (cond
+        [(null? (car ls)) #f]
+        [(null? (cdar ls)) (apply f (map2 car ls))]
+        [else (let ([next-ls (map2 cdr ls)])
+                (or (apply f (map2 car ls))
+                    (loop next-ls)))])))
+
+  (void))

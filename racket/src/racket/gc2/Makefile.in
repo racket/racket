@@ -43,8 +43,9 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 # typically redirects to RUN_THIS_RACKET_CGC:
 RUN_THIS_RACKET_CGC = ../racket@CGC@
 
-XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/xform.rkt --setup . --depends
-XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o
+SETUP_BOOT = -W "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
+XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/xform-mod.rkt --depends
+XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o ++out
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
@@ -55,7 +56,6 @@ FOREIGN_NOT_USED_OBJ = $(FOREIGN_USED_OBJ)
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
 	bool.@LTO@ \
-	builtin.@LTO@ \
 	char.@LTO@ \
 	compenv.@LTO@ \
 	compile.@LTO@ \
@@ -79,9 +79,9 @@ OBJS =  salloc.@LTO@ \
 	jitstack.@LTO@ \
 	jitstate.@LTO@ \
 	letrec_check.@LTO@ \
+	linklet.@LTO@ \
 	list.@LTO@ \
 	marshal.@LTO@ \
-	module.@LTO@ \
 	mzrt.@LTO@ \
 	network.@LTO@ \
 	numarith.@LTO@ \
@@ -100,6 +100,8 @@ OBJS =  salloc.@LTO@ \
 	sema.@LTO@ \
 	setjmpup.@LTO@ \
 	sfs.@LTO@ \
+	sort.@LTO@ \
+	startup.@LTO@ \
 	string.@LTO@ \
 	struct.@LTO@ \
 	symbol.@LTO@ \
@@ -116,7 +118,6 @@ FOREIGN_NOT_USED_C = $(FOREIGN_USED_C)
 XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/bignum.c \
 	$(XSRCDIR)/bool.c \
-	$(XSRCDIR)/builtin.c \
 	$(XSRCDIR)/char.c \
 	$(XSRCDIR)/compenv.c \
 	$(XSRCDIR)/compile.c \
@@ -139,9 +140,9 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/jitstack.c \
 	$(XSRCDIR)/jitstate.c \
 	$(XSRCDIR)/letrec_check.c \
+	$(XSRCDIR)/linklet.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/marshal.c \
-	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
 	$(XSRCDIR)/numarith.c \
 	$(XSRCDIR)/numcomp.c \
@@ -159,6 +160,8 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/sema.c \
 	$(XSRCDIR)/setjmpup.c \
 	$(XSRCDIR)/sfs.c \
+	$(XSRCDIR)/sort.c \
+	$(XSRCDIR)/startup.c \
 	$(XSRCDIR)/string.c \
 	$(XSRCDIR)/struct.c \
 	$(XSRCDIR)/symbol.c \
@@ -187,7 +190,7 @@ xobjects: $(OBJS) main.@LTO@
 # picked up in ".sdep":
 QUIET_DEPS = $(srcdir)/../src/schvers.h $(srcdir)/../sconfig.h ../mzconfig.h
 
-XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt $(QUIET_DEPS)
+XFORMDEP_NOPRE = $(srcdir)/xform-mod.rkt $(QUIET_DEPS)
 XFORMDEP = $(XFORMDEP_NOPRE) $(XSRCDIR)/precomp.h
 
 MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
@@ -208,8 +211,6 @@ $(XSRCDIR)/bignum.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/bignum.c $(SRCDIR)/bignum.c
 $(XSRCDIR)/bool.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/bool.c $(SRCDIR)/bool.c
-$(XSRCDIR)/builtin.c: $(XFORMDEP)
-	$(XFORM) $(XSRCDIR)/builtin.c $(SRCDIR)/builtin.c
 $(XSRCDIR)/char.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/char.c $(SRCDIR)/char.c
 $(XSRCDIR)/compenv.c: $(XFORMDEP)
@@ -254,10 +255,10 @@ $(XSRCDIR)/jitstate.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jitstate.c $(SRCDIR)/jitstate.c
 $(XSRCDIR)/marshal.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/marshal.c $(SRCDIR)/marshal.c
-$(XSRCDIR)/module.c: $(XFORMDEP)
-	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/letrec_check.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/letrec_check.c $(SRCDIR)/letrec_check.c
+$(XSRCDIR)/linklet.c: $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/linklet.c $(SRCDIR)/linklet.c
 $(XSRCDIR)/list.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
 $(XSRCDIR)/network.c: $(XFORMDEP)
@@ -294,8 +295,12 @@ $(XSRCDIR)/setjmpup.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
 $(XSRCDIR)/sfs.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
+$(XSRCDIR)/sort.c: $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/sort.c $(SRCDIR)/sort.c
+$(XSRCDIR)/startup.c: $(XFORMDEP) ../cstartup.inc $(SRCDIR)/startup-glue.inc
+	$(XFORM_SETUP) --cpp "$(CPP) -I.. -I$(SRCDIR)/../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o ++out $(XSRCDIR)/startup.c $(SRCDIR)/startup.c
 $(XSRCDIR)/string.c: $(XFORMDEP)  $(SRCDIR)/systype.inc
-	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
+	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o ++out $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
 $(XSRCDIR)/symbol.c: $(XFORMDEP)
@@ -311,9 +316,69 @@ $(XSRCDIR)/validate.c: $(XFORMDEP)
 $(XSRCDIR)/vector.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/vector.c $(SRCDIR)/vector.c
 $(XSRCDIR)/foreign.c: $(XFORMDEP)
-	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
+	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o ++out $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
 $(XSRCDIR)/main.c: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
+
+@INCLUDEDEP@ salloc.d
+@INCLUDEDEP@ bignum.d
+@INCLUDEDEP@ bool.d
+@INCLUDEDEP@ char.d
+@INCLUDEDEP@ compenv.d
+@INCLUDEDEP@ compile.d
+@INCLUDEDEP@ complex.d
+@INCLUDEDEP@ dynext.d
+@INCLUDEDEP@ env.d
+@INCLUDEDEP@ error.d
+@INCLUDEDEP@ eval.d
+@INCLUDEDEP@ file.d
+@INCLUDEDEP@ fun.d
+@INCLUDEDEP@ future.d
+@INCLUDEDEP@ gmp.d
+@INCLUDEDEP@ hash.d
+@INCLUDEDEP@ jit.d
+@INCLUDEDEP@ jitalloc.d
+@INCLUDEDEP@ jitarith.d
+@INCLUDEDEP@ jitcall.d
+@INCLUDEDEP@ jitcommon.d
+@INCLUDEDEP@ jitinline.d
+@INCLUDEDEP@ jitprep.d
+@INCLUDEDEP@ jitstack.d
+@INCLUDEDEP@ jitstate.d
+@INCLUDEDEP@ letrec_check.d
+@INCLUDEDEP@ linklet.d
+@INCLUDEDEP@ list.d
+@INCLUDEDEP@ marshal.d
+@INCLUDEDEP@ mzrt.d
+@INCLUDEDEP@ network.d
+@INCLUDEDEP@ numarith.d
+@INCLUDEDEP@ number.d
+@INCLUDEDEP@ numcomp.d
+@INCLUDEDEP@ numstr.d
+@INCLUDEDEP@ optimize.d
+@INCLUDEDEP@ place.d
+@INCLUDEDEP@ port.d
+@INCLUDEDEP@ portfun.d
+@INCLUDEDEP@ print.d
+@INCLUDEDEP@ rational.d
+@INCLUDEDEP@ read.d
+@INCLUDEDEP@ regexp.d
+@INCLUDEDEP@ resolve.d
+@INCLUDEDEP@ sema.d
+@INCLUDEDEP@ setjmpup.d
+@INCLUDEDEP@ sfs.d
+@INCLUDEDEP@ sort.d
+@INCLUDEDEP@ startup.d
+@INCLUDEDEP@ string.d
+@INCLUDEDEP@ struct.d
+@INCLUDEDEP@ symbol.d
+@INCLUDEDEP@ syntax.d
+@INCLUDEDEP@ thread.d
+@INCLUDEDEP@ type.d
+@INCLUDEDEP@ validate.d
+@INCLUDEDEP@ vector.d
+@INCLUDEDEP@ foreign.d
+@INCLUDEDEP@ main.d
 
 $(XSRCDIR)/mzobj.cxx: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/mzobj.cxx $(DEF_C_DIRS) $(srcdir)/../../mzcom/mzobj.cxx
@@ -324,8 +389,6 @@ bignum.@LTO@: $(XSRCDIR)/bignum.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/bignum.c -o bignum.@LTO@
 bool.@LTO@: $(XSRCDIR)/bool.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/bool.c -o bool.@LTO@
-builtin.@LTO@: $(XSRCDIR)/builtin.c
-	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/builtin.c -o builtin.@LTO@
 char.@LTO@: $(XSRCDIR)/char.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/char.c -o char.@LTO@
 compenv.@LTO@: $(XSRCDIR)/compenv.c
@@ -373,12 +436,12 @@ jitstate.@LTO@: $(XSRCDIR)/jitstate.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/jitstate.c -o jitstate.@LTO@
 letrec_check.@LTO@: $(XSRCDIR)/letrec_check.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/letrec_check.c -o letrec_check.@LTO@
+linklet.@LTO@: $(XSRCDIR)/linklet.c
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/linklet.c -o linklet.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 marshal.@LTO@: $(XSRCDIR)/marshal.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/marshal.c -o marshal.@LTO@
-module.@LTO@: $(XSRCDIR)/module.c
-	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
 mzrt.@LTO@: $(SRCDIR)/mzrt.c $(XFORMDEP) $(MZRTDEP)
 	$(CC) $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
@@ -415,6 +478,10 @@ setjmpup.@LTO@: $(XSRCDIR)/setjmpup.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/setjmpup.c -o setjmpup.@LTO@
 sfs.@LTO@: $(XSRCDIR)/sfs.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/sfs.c -o sfs.@LTO@
+sort.@LTO@: $(XSRCDIR)/sort.c
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/sort.c -o sort.@LTO@
+startup.@LTO@: $(XSRCDIR)/startup.c
+	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/startup.c -o startup.@LTO@
 string.@LTO@: $(XSRCDIR)/string.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/string.c -o string.@LTO@
 struct.@LTO@: $(XSRCDIR)/struct.c
@@ -561,8 +628,12 @@ MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgc
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*
-	/bin/rm -rf xform-collects
 	/bin/rm -rf Racket.framework
+
+# If "cstartup.inc" hasn't been built, yet, create it as
+# a redirect to "startup.inc"
+../cstartup.inc:
+	echo '#include "startup.inc"' > ../cstartup.inc
 
 #--------------------------------------------------
 
@@ -571,3 +642,4 @@ test.@LTO@: $(srcdir)/test.c
 
 gct: test.@LTO@ gc2.@LTO@
 	$(CC) -o gct test.@LTO@ gc2.@LTO@
+

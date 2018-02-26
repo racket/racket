@@ -119,6 +119,18 @@ For any @racket[v], @racket[(unbox (box v))] returns @racket[v].
 Sets the content of @racket[box] to @racket[v].}
 
 
+@deftogether[(
+@defproc[(unbox* [box (and box? (not/c impersonator?))]) any/c]
+@defproc[(set-box*! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
+                    [v any/c]) void?]
+)]{
+
+Like @racket[unbox] and @racket[set-box!], but constrained to work on
+boxes that are not @tech{impersonators}.
+
+@history[#:added "6.90.0.15"]}
+
+
 @defproc[(box-cas! [box (and/c box? (not/c immutable?) (not/c impersonator?))]
                    [old any/c] 
                    [new any/c]) 

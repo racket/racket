@@ -68,7 +68,7 @@ typedef struct Scheme_Converter {
   Scheme_Custodian_Reference *mref;
 } Scheme_Converter;
 
-/* locals */
+Scheme_Object *scheme_system_type_proc;
 
 static Scheme_Object *make_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string (int argc, Scheme_Object *argv[]);
@@ -197,9 +197,9 @@ ROSYM static Scheme_Object *sys_symbol;
 ROSYM static Scheme_Object *link_symbol, *machine_symbol, *vm_symbol, *gc_symbol;
 ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
 ROSYM static Scheme_Object *os_symbol, *fs_change_symbol, *cross_symbol;
-ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol;
+ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol, *cs_symbol;
 ROSYM static Scheme_Object *force_symbol, *infer_symbol;
-ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path;
+ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path, *platform_cs_path;
 READ_ONLY static Scheme_Object *zero_length_char_string;
 READ_ONLY static Scheme_Object *zero_length_byte_string;
 
@@ -230,7 +230,7 @@ static const mzchar empty_char_string[1] = { 0 };
 static const mzchar xes_char_string[2] = { 0x78787878, 0 };
 
 void
-scheme_init_string (Scheme_Env *env)
+scheme_init_string (Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
 
@@ -261,9 +261,11 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(racket_symbol);
   REGISTER_SO(cgc_symbol);
   REGISTER_SO(_3m_symbol);
+  REGISTER_SO(cs_symbol);
   racket_symbol = scheme_intern_symbol("racket");
   cgc_symbol = scheme_intern_symbol("cgc");
   _3m_symbol = scheme_intern_symbol("3m");
+  cs_symbol = scheme_intern_symbol("cs");
 
   REGISTER_SO(force_symbol);
   REGISTER_SO(infer_symbol);
@@ -285,19 +287,19 @@ scheme_init_string (Scheme_Env *env)
   error_symbol = scheme_intern_symbol("error");
 
   REGISTER_SO(platform_3m_path);
-#ifdef UNIX_FILE_SYSTEM
-# define MZ3M_SUBDIR "/3m"
-#else
 # ifdef DOS_FILE_SYSTEM
 #  define MZ3M_SUBDIR "\\3m"
+#  define MZCS_SUBDIR "\\cs"
 # else
-#  define MZ3M_SUBDIR ":3m"
-# endif
+#  define MZ3M_SUBDIR "/3m"
+#  define MZCS_SUBDIR "/cs"
 #endif
   REGISTER_SO(platform_3m_path);
   REGISTER_SO(platform_cgc_path);
+  REGISTER_SO(platform_cs_path);
   platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
   platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZ3M_SUBDIR);
+  platform_cs_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZCS_SUBDIR);
 
   REGISTER_SO(embedding_banner);
   REGISTER_SO(vers_str);
@@ -311,16 +313,17 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(scheme_string_p_proc);
   p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("string?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("string?", p, env);
   scheme_string_p_proc = p;
 
-  scheme_add_global_constant("make-string",
+  scheme_addto_prim_instance("make-string",
 			     scheme_make_immed_prim(make_string,
 						    "make-string",
 						    1, 2),
 			     env);
-  scheme_add_global_constant("string",
+  scheme_addto_prim_instance("string",
 			     scheme_make_immed_prim(string,
 						    "string",
 						    0, -1),
@@ -328,258 +331,262 @@ scheme_init_string (Scheme_Env *env)
   
   p = scheme_make_folding_prim(string_length, "string-length", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            |SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("string-length", p,
+                                                            |SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string-length", p,
 			     env);
 
   p = scheme_make_immed_prim(scheme_checked_string_ref, "string-ref", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("string-ref", p, env);
-
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_string_set, "string-set!", 3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("string-set!", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string-set!", p, env);
 
   p = scheme_make_immed_prim(string_eq, "string=?", 2, -1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("string=?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("string=?", p, env);
 
-  scheme_add_global_constant("string-locale=?",
+  scheme_addto_prim_instance("string-locale=?",
 			     scheme_make_immed_prim(string_locale_eq,
 						    "string-locale=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-ci=?",
+  scheme_addto_prim_instance("string-ci=?",
 			     scheme_make_immed_prim(string_ci_eq,
 						    "string-ci=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-locale-ci=?",
+  scheme_addto_prim_instance("string-locale-ci=?",
 			     scheme_make_immed_prim(string_locale_ci_eq,
 						    "string-locale-ci=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string<?",
+  scheme_addto_prim_instance("string<?",
 			     scheme_make_immed_prim(string_lt,
 						    "string<?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-locale<?",
+  scheme_addto_prim_instance("string-locale<?",
 			     scheme_make_immed_prim(string_locale_lt,
 						    "string-locale<?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string>?",
+  scheme_addto_prim_instance("string>?",
 			     scheme_make_immed_prim(string_gt,
 						    "string>?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-locale>?",
+  scheme_addto_prim_instance("string-locale>?",
 			     scheme_make_immed_prim(string_locale_gt,
 						    "string-locale>?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string<=?",
+  scheme_addto_prim_instance("string<=?",
 			     scheme_make_immed_prim(string_lt_eq,
 						    "string<=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string>=?",
+  scheme_addto_prim_instance("string>=?",
 			     scheme_make_immed_prim(string_gt_eq,
 						    "string>=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-ci<?",
+  scheme_addto_prim_instance("string-ci<?",
 			     scheme_make_immed_prim(string_ci_lt,
 						    "string-ci<?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-locale-ci<?",
+  scheme_addto_prim_instance("string-locale-ci<?",
 			     scheme_make_immed_prim(string_locale_ci_lt,
 						    "string-locale-ci<?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-ci>?",
+  scheme_addto_prim_instance("string-ci>?",
 			     scheme_make_immed_prim(string_ci_gt,
 						    "string-ci>?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-locale-ci>?",
+  scheme_addto_prim_instance("string-locale-ci>?",
 			     scheme_make_immed_prim(string_locale_ci_gt,
 						    "string-locale-ci>?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-ci<=?",
+  scheme_addto_prim_instance("string-ci<=?",
 			     scheme_make_immed_prim(string_ci_lt_eq,
 						    "string-ci<=?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("string-ci>=?",
+  scheme_addto_prim_instance("string-ci>=?",
 			     scheme_make_immed_prim(string_ci_gt_eq,
 						    "string-ci>=?",
 						    2, -1),
 			     env);
 
-  scheme_add_global_constant("substring",
+  scheme_addto_prim_instance("substring",
 			     scheme_make_immed_prim(substring,
 						    "substring",
 						    2, 3),
 			     env);
-  scheme_add_global_constant("string-append",
-			     scheme_make_immed_prim(string_append,
-						    "string-append",
-						    0, -1),
-			     env);
-  scheme_add_global_constant("string->list",
+
+  p = scheme_make_immed_prim(string_append, "string-append", 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string-append", p, env);
+
+  scheme_addto_prim_instance("string->list",
 			     scheme_make_immed_prim(string_to_list,
 						    "string->list",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("list->string",
+  scheme_addto_prim_instance("list->string",
 			     scheme_make_immed_prim(list_to_string,
 						    "list->string",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-copy",
+  scheme_addto_prim_instance("string-copy",
 			     scheme_make_immed_prim(string_copy,
 						    "string-copy",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-copy!",
+  scheme_addto_prim_instance("string-copy!",
 			     scheme_make_immed_prim(string_copy_bang,
 						    "string-copy!",
 						    3, 5),
 			     env);
-  scheme_add_global_constant("string-fill!",
+  scheme_addto_prim_instance("string-fill!",
 			     scheme_make_immed_prim(string_fill,
 						    "string-fill!",
 						    2, 2),
 			     env);
-  scheme_add_global_constant("string->immutable-string",
-			     scheme_make_immed_prim(string_to_immutable,
-						    "string->immutable-string",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("string-normalize-nfc",
+
+  p = scheme_make_immed_prim(string_to_immutable, "string->immutable-string", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("string->immutable-string", p, env);
+  
+  scheme_addto_prim_instance("string-normalize-nfc",
 			     scheme_make_immed_prim(string_normalize_c,
 						    "string-normalize-nfc",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-normalize-nfkc",
+  scheme_addto_prim_instance("string-normalize-nfkc",
 			     scheme_make_immed_prim(string_normalize_kc,
 						    "string-normalize-nfkc",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-normalize-nfd",
+  scheme_addto_prim_instance("string-normalize-nfd",
 			     scheme_make_immed_prim(string_normalize_d,
 						    "string-normalize-nfd",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-normalize-nfkd",
+  scheme_addto_prim_instance("string-normalize-nfkd",
 			     scheme_make_immed_prim(string_normalize_kd,
 						    "string-normalize-nfkd",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("string-upcase",
+  scheme_addto_prim_instance("string-upcase",
 			     scheme_make_immed_prim(string_upcase,
 						    "string-upcase",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-downcase",
+  scheme_addto_prim_instance("string-downcase",
 			     scheme_make_immed_prim(string_downcase,
 						    "string-downcase",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-titlecase",
+  scheme_addto_prim_instance("string-titlecase",
 			     scheme_make_immed_prim(string_titlecase,
 						    "string-titlecase",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-foldcase",
+  scheme_addto_prim_instance("string-foldcase",
 			     scheme_make_immed_prim(string_foldcase,
 						    "string-foldcase",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("string-locale-upcase",
+  scheme_addto_prim_instance("string-locale-upcase",
 			     scheme_make_immed_prim(string_locale_upcase,
 						    "string-locale-upcase",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("string-locale-downcase",
+  scheme_addto_prim_instance("string-locale-downcase",
 			     scheme_make_immed_prim(string_locale_downcase,
 						    "string-locale-downcase",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("current-locale",
+  scheme_addto_prim_instance("current-locale",
 			     scheme_register_parameter(current_locale,
 						       "current-locale",
 						       MZCONFIG_LOCALE),
 			     env);
-  scheme_add_global_constant("locale-string-encoding",
+  scheme_addto_prim_instance("locale-string-encoding",
 			     scheme_make_immed_prim(locale_string_encoding,
 						    "locale-string-encoding",
 						    0, 0),
 			     env);
-  scheme_add_global_constant("system-language+country",
+  scheme_addto_prim_instance("system-language+country",
 			     scheme_make_immed_prim(system_language_country,
 						    "system-language+country",
 						    0, 0),
 			     env);
 
-  scheme_add_global_constant("bytes-converter?",
+  scheme_addto_prim_instance("bytes-converter?",
 			     scheme_make_immed_prim(byte_converter_p,
 						    "bytes-converter?",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("bytes-convert",
+  scheme_addto_prim_instance("bytes-convert",
 			     scheme_make_prim_w_arity2(byte_string_convert,
 						       "bytes-convert",
 						       1, 7,
 						       3, 3),
 			     env);
-  scheme_add_global_constant("bytes-convert-end",
+  scheme_addto_prim_instance("bytes-convert-end",
 			     scheme_make_prim_w_arity2(byte_string_convert_end,
 						       "bytes-convert-end",
 						       0, 3,
 						       2, 2),
 			     env);
-  scheme_add_global_constant("bytes-open-converter",
+  scheme_addto_prim_instance("bytes-open-converter",
 			     scheme_make_immed_prim(byte_string_open_converter,
 						    "bytes-open-converter",
 						    2, 2),
 			     env);
-  scheme_add_global_constant("bytes-close-converter",
+  scheme_addto_prim_instance("bytes-close-converter",
 			     scheme_make_immed_prim(byte_string_close_converter,
 						    "bytes-close-converter",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("format",
+  scheme_addto_prim_instance("format",
 			     scheme_make_noncm_prim(format,
                                                     "format",
                                                     1, -1),
 			     env);
-  scheme_add_global_constant("printf",
+  scheme_addto_prim_instance("printf",
 			     scheme_make_noncm_prim(sch_printf,
                                                     "printf",
                                                     1, -1),
 			     env);
-  scheme_add_global_constant("eprintf",
+  scheme_addto_prim_instance("eprintf",
 			     scheme_make_noncm_prim(sch_eprintf,
                                                     "eprintf",
                                                     1, -1),
 			     env);
-  scheme_add_global_constant("fprintf",
+  scheme_addto_prim_instance("fprintf",
 			     scheme_make_noncm_prim(sch_fprintf,
                                                     "fprintf",
                                                     2, -1),
 			     env);
 
-  scheme_add_global_constant("byte?",
+  scheme_addto_prim_instance("byte?",
 			     scheme_make_folding_prim(byte_p,
 						      "byte?",
 						      1, 1, 1),
@@ -588,142 +595,146 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(scheme_byte_string_p_proc);
   p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("bytes?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("bytes?", p, env);
   scheme_byte_string_p_proc = p;
 
-  scheme_add_global_constant("make-bytes",
+  scheme_addto_prim_instance("make-bytes",
 			     scheme_make_immed_prim(make_byte_string,
 						    "make-bytes",
 						    1, 2),
 			     env);
-  scheme_add_global_constant("bytes",
+  scheme_addto_prim_instance("bytes",
 			     scheme_make_immed_prim(byte_string,
 						    "bytes",
 						    0, -1),
 			     env);
 
-  GLOBAL_PRIM_W_ARITY("make-shared-bytes", make_shared_byte_string, 1, 2, env);
-  GLOBAL_PRIM_W_ARITY("shared-bytes", shared_byte_string, 0, -1, env);
+  ADD_PRIM_W_ARITY("make-shared-bytes", make_shared_byte_string, 1, 2, env);
+  ADD_PRIM_W_ARITY("shared-bytes", shared_byte_string, 0, -1, env);
 
   p = scheme_make_folding_prim(byte_string_length, "bytes-length", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            |SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("bytes-length", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bytes-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("bytes-ref", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bytes-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_set, "bytes-set!", 3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("bytes-set!", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bytes-set!", p, env);
 
   p = scheme_make_immed_prim(byte_string_eq, "bytes=?", 2, -1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("bytes=?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("bytes=?", p, env);
 
-  scheme_add_global_constant("bytes<?",
+  scheme_addto_prim_instance("bytes<?",
 			     scheme_make_immed_prim(byte_string_lt,
 						    "bytes<?",
 						    2, -1),
 			     env);
-  scheme_add_global_constant("bytes>?",
+  scheme_addto_prim_instance("bytes>?",
 			     scheme_make_immed_prim(byte_string_gt,
 						    "bytes>?",
 						    2, -1),
 			     env);
 
-  scheme_add_global_constant("subbytes",
+  scheme_addto_prim_instance("subbytes",
 			     scheme_make_immed_prim(byte_substring,
 						    "subbytes",
 						    2, 3),
 			     env);
-  scheme_add_global_constant("bytes-append",
-			     scheme_make_immed_prim(byte_string_append,
-						    "bytes-append",
-						    0, -1),
-			     env);
-  scheme_add_global_constant("bytes->list",
+
+  p = scheme_make_immed_prim(byte_string_append, "bytes-append", 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bytes-append", p, env);
+  
+  scheme_addto_prim_instance("bytes->list",
 			     scheme_make_immed_prim(byte_string_to_list,
 						    "bytes->list",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("list->bytes",
+  scheme_addto_prim_instance("list->bytes",
 			     scheme_make_immed_prim(list_to_byte_string,
 						    "list->bytes",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("bytes-copy",
+  scheme_addto_prim_instance("bytes-copy",
 			     scheme_make_immed_prim(byte_string_copy,
 						    "bytes-copy",
 						    1, 1),
 			     env);
-  scheme_add_global_constant("bytes-copy!",
+  scheme_addto_prim_instance("bytes-copy!",
 			     scheme_make_immed_prim(byte_string_copy_bang,
 						    "bytes-copy!",
 						    3, 5),
 			     env);
-  scheme_add_global_constant("bytes-fill!",
+  scheme_addto_prim_instance("bytes-fill!",
 			     scheme_make_immed_prim(byte_string_fill,
 						    "bytes-fill!",
 						    2, 2),
 			     env);
-  scheme_add_global_constant("bytes->immutable-bytes",
-			     scheme_make_immed_prim(byte_string_to_immutable,
-						    "bytes->immutable-bytes",
-						    1, 1),
-			     env);
+
+  p = scheme_make_immed_prim(byte_string_to_immutable, "bytes->immutable-bytes", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bytes->immutable-bytes", p, env);
 
   p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 4);
   /* Incorrect, since the result can be #f:
      SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
-  scheme_add_global_constant("bytes-utf-8-index", p, env);
+  scheme_addto_prim_instance("bytes-utf-8-index", p, env);
 
   p = scheme_make_immed_prim(byte_string_utf8_length, "bytes-utf-8-length", 1, 4);
   /* Incorrect, since the result can be #f:
      SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
-  scheme_add_global_constant("bytes-utf-8-length", p, env);
+  scheme_addto_prim_instance("bytes-utf-8-length", p, env);
 
-  scheme_add_global_constant("bytes-utf-8-ref",
+  scheme_addto_prim_instance("bytes-utf-8-ref",
 			     scheme_make_immed_prim(byte_string_utf8_ref,
 						    "bytes-utf-8-ref",
 						    2, 4),
 			     env);
 
-  scheme_add_global_constant("bytes->string/utf-8",
+  scheme_addto_prim_instance("bytes->string/utf-8",
 			     scheme_make_immed_prim(byte_string_to_char_string,
 						    "bytes->string/utf-8",
 						    1, 4),
 			     env);
-  scheme_add_global_constant("bytes->string/locale",
+  scheme_addto_prim_instance("bytes->string/locale",
 			     scheme_make_immed_prim(byte_string_to_char_string_locale,
 						    "bytes->string/locale",
 						    1, 4),
 			     env);
-  scheme_add_global_constant("bytes->string/latin-1",
+  scheme_addto_prim_instance("bytes->string/latin-1",
 			     scheme_make_immed_prim(byte_string_to_char_string_latin1,
 						    "bytes->string/latin-1",
 						    1, 4),
 			     env);
-  scheme_add_global_constant("string->bytes/utf-8",
+  scheme_addto_prim_instance("string->bytes/utf-8",
 			     scheme_make_immed_prim(char_string_to_byte_string,
 						    "string->bytes/utf-8",
 						    1, 4),
 			     env);
-  scheme_add_global_constant("string->bytes/locale",
+  scheme_addto_prim_instance("string->bytes/locale",
 			     scheme_make_immed_prim(char_string_to_byte_string_locale,
 						    "string->bytes/locale",
 						    1, 4),
 			     env);
-  scheme_add_global_constant("string->bytes/latin-1",
+  scheme_addto_prim_instance("string->bytes/latin-1",
 			     scheme_make_immed_prim(char_string_to_byte_string_latin1,
 						    "string->bytes/latin-1",
 						    1, 4),
 			     env);
 
-  scheme_add_global_constant("string-utf-8-length",
+  scheme_addto_prim_instance("string-utf-8-length",
 			     scheme_make_immed_prim(char_string_utf8_length,
 						    "string-utf-8-length",
 						    1, 3),
@@ -733,12 +744,12 @@ scheme_init_string (Scheme_Env *env)
   /* In principle, `version' could be foldable, but it invites
      more problems than it solves... */
 
-  scheme_add_global_constant("version",
+  scheme_addto_prim_instance("version",
 			     scheme_make_immed_prim(version,
 						    "version",
 						    0, 0),
 			     env);
-  scheme_add_global_constant("banner",
+  scheme_addto_prim_instance("banner",
 			     scheme_make_immed_prim(banner,
 						    "banner",
 						    0, 0),
@@ -746,43 +757,43 @@ scheme_init_string (Scheme_Env *env)
 
   /* Environment variables */
 
-  scheme_add_global_constant("environment-variables?",
+  scheme_addto_prim_instance("environment-variables?",
 			     scheme_make_folding_prim(env_p,
                                                       "environment-variables?",
                                                       1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("current-environment-variables",
+  scheme_addto_prim_instance("current-environment-variables",
 			     scheme_register_parameter(current_environment_variables,
 						       "current-environment-variables",
 						       MZCONFIG_CURRENT_ENV_VARS),
 			     env);  
 
-  scheme_add_global_constant("environment-variables-ref",
+  scheme_addto_prim_instance("environment-variables-ref",
 			     scheme_make_immed_prim(sch_getenv,
 						    "environment-variables-ref",
 						    2, 2),
 			     env);
 
-  scheme_add_global_constant("environment-variables-set!",
+  scheme_addto_prim_instance("environment-variables-set!",
 			     scheme_make_prim_w_arity(sch_putenv,
                                                       "environment-variables-set!",
                                                       3, 4),
 			     env);
 
-  scheme_add_global_constant("environment-variables-names",
+  scheme_addto_prim_instance("environment-variables-names",
 			     scheme_make_immed_prim(sch_getenv_names,
 						    "environment-variables-names",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("environment-variables-copy",
+  scheme_addto_prim_instance("environment-variables-copy",
 			     scheme_make_immed_prim(env_copy,
 						    "environment-variables-copy",
 						    1, 1),
 			     env);
 
-  scheme_add_global_constant("make-environment-variables",
+  scheme_addto_prim_instance("make-environment-variables",
 			     scheme_make_immed_prim(env_make,
 						    "make-environment-variables",
 						    0, -1),
@@ -790,25 +801,26 @@ scheme_init_string (Scheme_Env *env)
 
   /* Don't make these folding, since they're platform-specific: */
 
-  scheme_add_global_constant("system-type",
-			     scheme_make_immed_prim(system_type,
-						    "system-type",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("system-library-subpath",
+  REGISTER_SO(scheme_system_type_proc);
+  scheme_system_type_proc = scheme_make_immed_prim(system_type,
+                                                   "system-type",
+                                                   0, 1);
+  scheme_addto_prim_instance("system-type", scheme_system_type_proc, env);
+
+  scheme_addto_prim_instance("system-library-subpath",
 			     scheme_make_immed_prim(system_library_subpath,
 						    "system-library-subpath",
 						    0, 1),
 			     env);
 
-  scheme_add_global_constant("current-command-line-arguments",
+  scheme_addto_prim_instance("current-command-line-arguments",
 			     scheme_register_parameter(cmdline_args,
 						       "current-command-line-arguments",
 						       MZCONFIG_CMDLINE_ARGS),
 			     env);
 
 
-  scheme_add_global_constant("path<?",
+  scheme_addto_prim_instance("path<?",
 			     scheme_make_immed_prim(path_lt,
 						    "path<?",
 						    2, -1),
@@ -2425,7 +2437,10 @@ static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
     if (SAME_OBJ(_3m_symbol, argv[0]))
       return platform_3m_path;
 
-    scheme_wrong_contract("system-library-subpath", "(or/c 'cgc '3m #f)", 0, argc, argv);
+    if (SAME_OBJ(cs_symbol, argv[0]))
+      return platform_cs_path;
+
+    scheme_wrong_contract("system-library-subpath", "(or/c 'cgc '3m 'cs #f)", 0, argc, argv);
     return NULL;
   } else {
 #ifdef MZ_PRECISE_GC

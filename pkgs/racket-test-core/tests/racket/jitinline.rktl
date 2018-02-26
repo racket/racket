@@ -47,7 +47,9 @@
                                                          thing? rock? stone?
                                                          continuation-mark-set-first))
 				  (let ([s (with-handlers ([exn? exn-message])
-                                             (let ([bad bad-value])
+                                             (let ([bad (if (eq? bad-value 'unsafe-undefined)
+                                                            unsafe-undefined
+                                                            bad-value)])
                                                (cond
                                                 [first-arg (proc first-arg bad)]
                                                 [second-arg (proc bad second-arg)]
@@ -702,8 +704,14 @@
     (bin-exact 'b 'vector-ref #(a b c) 1)
     (bin-exact 'c 'vector-ref #(a b c) 2)
 
+    (bin-exact 'a 'vector*-ref #(a b c) 0 #t)
+    (bin-exact 'b 'vector*-ref #(a b c) 1)
+    (bin-exact 'c 'vector*-ref #(a b c) 2)
+
     (un-exact 'a 'unbox (box 'a) #t)
+    (un-exact 'a 'unbox* (box 'a) #t)
     (un-exact 3 'vector-length (vector 'a 'b 'c) #t)
+    (un-exact 3 'vector*-length (vector 'a 'b 'c) #t)
 
     (bin-exact 1.1 'flvector-ref (flvector 1.1 2.2 3.3) 0 #t)
     (bin-exact 3.3 'flvector-ref (flvector 1.1 2.2 3.3) 2)
@@ -837,7 +845,7 @@
       (bin-exact 3.3t0 'extflvector-ref (extflvector 1.1t0 2.2t0 3.3t0) 2)
       (un-exact 3 'extflvector-length (extflvector 1.1t0 2.2t0 3.3t0) #t)
 
-      (bin-exact 5 'check-not-unsafe-undefined 5 'check-not-unsafe-undefined #:bad-value unsafe-undefined)
+      (bin-exact 5 'check-not-unsafe-undefined 5 'check-not-unsafe-undefined #:bad-value 'unsafe-undefined)
       )
     
     (let ([test-setter
@@ -857,6 +865,7 @@
 				      3rd-all-ok?))
 			 '(0 1 2))))])
       (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref #t)
+      (test-setter make-vector #f 7 'vector*-set! vector*-set! vector*-ref #t)
       (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref #f)
       (test-setter make-string #\a #\7 'string-set! string-set! string-ref #f)
       (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f)
@@ -869,14 +878,29 @@
         (test-setter (lambda (n v) (chap-vec (chap-vec (make-vector n v))))
                      #f 7 'vector-set! vector-set! vector-ref #t)))
 
+    (err/rt-test (apply (list-ref (list (lambda (v) (vector*-length v))) (random 1)) 
+                        (list (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))))
+    (err/rt-test (apply (list-ref (list (lambda (v) (vector*-ref v 0))) (random 1)) 
+                        (list (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))))
+    (err/rt-test (apply (list-ref (list (lambda (v) (unbox* v))) (random 1)) 
+                        (list (chaperone-box (box 1) (lambda (b v) v) (lambda (b v) v)))))
+
     (err/rt-test (apply (list-ref (list (lambda (v) (vector-set! v 0 #t))) (random 1)) 
                         (list (vector-immutable 1 2 3))))
+    (err/rt-test (apply (list-ref (list (lambda (v) (vector*-set! v 0 #t))) (random 1)) 
+                        (list (vector-immutable 1 2 3))))
+    (err/rt-test (apply (list-ref (list (lambda (v) (vector*-set! v 0 #t))) (random 1)) 
+                        (list (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))))
     (err/rt-test (apply (list-ref (list (lambda (s) (string-set! s 0 #\a))) (random 1)) 
                         (list "123")))
     (err/rt-test (apply (list-ref (list (lambda (s) (bytes-set! s 0 0))) (random 1)) 
                         (list #"123")))
     (err/rt-test (apply (list-ref (list (lambda (b) (set-box! b #t))) (random 1)) 
                         (list (box-immutable 1))))
+    (err/rt-test (apply (list-ref (list (lambda (b) (set-box*! b #t))) (random 1)) 
+                        (list (box-immutable 1))))
+    (err/rt-test (apply (list-ref (list (lambda (v) (set-box*! v 'no))) (random 1)) 
+                        (list (chaperone-box (box 1) (lambda (b v) v) (lambda (b v) v)))))
     
     (let ([v (box 1)])
       (check-error-message 'set-box! (eval `(lambda (x) (set-box! x 10))))

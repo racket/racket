@@ -1,0 +1,8 @@
+(library (regexp)
+  (export)
+  (import (chezpart)
+          (rumble)
+          (io))
+  (include "include.ss")
+  (include-generated "regexp.scm")
+  (set-intern-regexp?! 1/regexp?))

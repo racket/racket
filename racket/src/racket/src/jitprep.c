@@ -35,7 +35,7 @@
 
 #ifdef MZ_USE_JIT
 
-static Scheme_Object *do_define_syntaxes_clone(Scheme_Object *expr, int jit);
+static Scheme_Object *jit_expr(Scheme_Object *expr);
 
 static Scheme_Object *jit_application(Scheme_Object *o)
 {
@@ -48,7 +48,7 @@ static Scheme_Object *jit_application(Scheme_Object *o)
 
   for (i = 0; i < n; i++) {
     orig = app->args[i];
-    naya = scheme_jit_expr(orig);
+    naya = jit_expr(orig);
     if (!SAME_OBJ(orig, naya))
       break;
   }
@@ -65,7 +65,7 @@ static Scheme_Object *jit_application(Scheme_Object *o)
 
   for (i++; i < n; i++) {
     orig = app2->args[i];
-    naya = scheme_jit_expr(orig);
+    naya = jit_expr(orig);
     app2->args[i] = naya;
   }
   
@@ -79,8 +79,8 @@ static Scheme_Object *jit_application2(Scheme_Object *o)
 
   app = (Scheme_App2_Rec *)o;
 
-  nrator = scheme_jit_expr(app->rator);
-  nrand = scheme_jit_expr(app->rand);
+  nrator = jit_expr(app->rator);
+  nrand = jit_expr(app->rand);
   
   if (SAME_OBJ(nrator, app->rator)
       && SAME_OBJ(nrand, app->rand))
@@ -101,9 +101,9 @@ static Scheme_Object *jit_application3(Scheme_Object *o)
 
   app = (Scheme_App3_Rec *)o;
 
-  nrator = scheme_jit_expr(app->rator);
-  nrand1 = scheme_jit_expr(app->rand1);
-  nrand2 = scheme_jit_expr(app->rand2);
+  nrator = jit_expr(app->rator);
+  nrand1 = jit_expr(app->rand1);
+  nrand2 = jit_expr(app->rand2);
   
   if (SAME_OBJ(nrator, app->rator)
       && SAME_OBJ(nrand1, app->rand1)
@@ -130,7 +130,7 @@ static Scheme_Object *jit_sequence(Scheme_Object *o)
 
   for (i = 0; i < n; i++) {
     orig = seq->array[i];
-    naya = scheme_jit_expr(orig);
+    naya = jit_expr(orig);
     if (!SAME_OBJ(orig, naya))
       break;
   }
@@ -146,7 +146,7 @@ static Scheme_Object *jit_sequence(Scheme_Object *o)
 
   for (i++; i < n; i++) {
     orig = seq2->array[i];
-    naya = scheme_jit_expr(orig);
+    naya = jit_expr(orig);
     seq2->array[i] = naya;
   }
   
@@ -160,9 +160,9 @@ static Scheme_Object *jit_branch(Scheme_Object *o)
 
   b = (Scheme_Branch_Rec *)o;
 
-  t = scheme_jit_expr(b->test);
-  tb = scheme_jit_expr(b->tbranch);
-  fb = scheme_jit_expr(b->fbranch);
+  t = jit_expr(b->test);
+  tb = jit_expr(b->tbranch);
+  fb = jit_expr(b->fbranch);
 
   if (SAME_OBJ(t, b->test)
       && SAME_OBJ(tb, b->tbranch)
@@ -183,8 +183,8 @@ static Scheme_Object *jit_let_value(Scheme_Object *o)
   Scheme_Let_Value *lv = (Scheme_Let_Value *)o;
   Scheme_Object *body, *rhs;
 
-  rhs = scheme_jit_expr(lv->value);
-  body = scheme_jit_expr(lv->body);
+  rhs = jit_expr(lv->value);
+  body = jit_expr(lv->body);
 
   if (SAME_OBJ(rhs, lv->value)
       && SAME_OBJ(body, lv->body))
@@ -203,8 +203,8 @@ static Scheme_Object *jit_let_one(Scheme_Object *o)
   Scheme_Let_One *lo = (Scheme_Let_One *)o;
   Scheme_Object *body, *rhs;
 
-  rhs = scheme_jit_expr(lo->value);
-  body = scheme_jit_expr(lo->body);
+  rhs = jit_expr(lo->value);
+  body = jit_expr(lo->body);
 
   if (SAME_OBJ(rhs, lo->value)
       && SAME_OBJ(body, lo->body))
@@ -223,7 +223,7 @@ static Scheme_Object *jit_let_void(Scheme_Object *o)
   Scheme_Let_Void *lv = (Scheme_Let_Void *)o;
   Scheme_Object *body;
 
-  body = scheme_jit_expr(lv->body);
+  body = jit_expr(lv->body);
 
   if (SAME_OBJ(body, lv->body))
     return o;
@@ -255,7 +255,7 @@ static Scheme_Object *jit_letrec(Scheme_Object *o)
     procs2[i] = v;
   }
 
-  v = scheme_jit_expr(lr->body);
+  v = jit_expr(lr->body);
   lr2->body = v;
 
   return (Scheme_Object *)lr2;
@@ -266,9 +266,9 @@ static Scheme_Object *jit_wcm(Scheme_Object *o)
   Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
   Scheme_Object *k, *v, *b;
 
-  k = scheme_jit_expr(wcm->key);
-  v = scheme_jit_expr(wcm->val);
-  b = scheme_jit_expr(wcm->body);
+  k = jit_expr(wcm->key);
+  v = jit_expr(wcm->val);
+  b = jit_expr(wcm->body);
   if (SAME_OBJ(wcm->key, k)
       && SAME_OBJ(wcm->val, v)
       && SAME_OBJ(wcm->body, b))
@@ -300,26 +300,26 @@ static Scheme_Object *clone_inline_variant(Scheme_Object *obj, Scheme_Object *na
 
 static Scheme_Object *define_values_jit(Scheme_Object *data)
 {
-  Scheme_Object *orig = SCHEME_VEC_ELS(data)[0], *naya;
+  Scheme_Object *orig = SCHEME_DEFN_RHS(data), *naya;
 
   if (SAME_TYPE(SCHEME_TYPE(orig), scheme_lambda_type)
-      && (SCHEME_VEC_SIZE(data) == 2))
-    naya = scheme_jit_closure(orig, SCHEME_VEC_ELS(data)[1]);
+      && (SCHEME_DEFN_VAR_COUNT(data) == 1))
+    naya = scheme_jit_closure(orig, SCHEME_DEFN_VAR_(data, 0));
   else if (SAME_TYPE(SCHEME_TYPE(orig), scheme_inline_variant_type)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(orig)[0]), scheme_lambda_type)
-           && (SCHEME_VEC_SIZE(data) == 2)) {
-    naya = scheme_jit_closure(SCHEME_VEC_ELS(orig)[0], SCHEME_VEC_ELS(data)[1]);
-    if (!SAME_OBJ(naya, SCHEME_VEC_ELS(orig)[0]))
+           && (SCHEME_DEFN_VAR_COUNT(data) == 1)) {
+    naya = scheme_jit_closure(SCHEME_VEC_ELS(orig)[0], SCHEME_DEFN_VAR_(data, 0));
+    if (!SAME_OBJ(naya, SCHEME_DEFN_RHS(orig)))
       naya = clone_inline_variant(orig, naya);
   } else
-    naya = scheme_jit_expr(orig);
+    naya = jit_expr(orig);
 
   if (SAME_OBJ(naya, orig))
     return data;
   else {
     orig = naya;
     naya = scheme_clone_vector(data, 0, 1);
-    SCHEME_VEC_ELS(naya)[0] = orig;
+    SCHEME_DEFN_RHS(naya) = orig;
     return naya;
   }
 }
@@ -329,7 +329,7 @@ static Scheme_Object *inline_variant_jit(Scheme_Object *data)
   Scheme_Object *a, *orig;
 
   orig = SCHEME_VEC_ELS(data)[0];
-  a = scheme_jit_expr(orig);
+  a = jit_expr(orig);
   if (!SAME_OBJ(a, orig))
     return clone_inline_variant(data, a);
   else
@@ -343,7 +343,7 @@ static Scheme_Object *set_jit(Scheme_Object *data)
 
   orig_val = sb->val;
 
-  naya_val = scheme_jit_expr(orig_val);
+  naya_val = jit_expr(orig_val);
   
   if (SAME_OBJ(naya_val, orig_val))
     return data;
@@ -364,8 +364,8 @@ static Scheme_Object *apply_values_jit(Scheme_Object *data)
 {
   Scheme_Object *f, *e;
 
-  f = scheme_jit_expr(SCHEME_PTR1_VAL(data));
-  e = scheme_jit_expr(SCHEME_PTR2_VAL(data));
+  f = jit_expr(SCHEME_PTR1_VAL(data));
+  e = jit_expr(SCHEME_PTR2_VAL(data));
   
   if (SAME_OBJ(f, SCHEME_PTR1_VAL(data))
       && SAME_OBJ(e, SCHEME_PTR2_VAL(data)))
@@ -384,9 +384,9 @@ static Scheme_Object *with_immed_mark_jit(Scheme_Object *o)
   Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
   Scheme_Object *k, *v, *b;
 
-  k = scheme_jit_expr(wcm->key);
-  v = scheme_jit_expr(wcm->val);
-  b = scheme_jit_expr(wcm->body);
+  k = jit_expr(wcm->key);
+  v = jit_expr(wcm->val);
+  b = jit_expr(wcm->body);
   if (SAME_OBJ(wcm->key, k)
       && SAME_OBJ(wcm->val, v)
       && SAME_OBJ(wcm->body, b))
@@ -482,7 +482,7 @@ static Scheme_Object *bangboxenv_jit(Scheme_Object *data)
   Scheme_Object *orig, *naya, *new_data;
 
   orig = SCHEME_PTR2_VAL(data);
-  naya = scheme_jit_expr(orig);
+  naya = jit_expr(orig);
   if (SAME_OBJ(naya, orig))
     return data;
   else {
@@ -503,7 +503,7 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
   count = seq->count;
   for (i = 0; i < count; i++) {
     old = seq->array[i];
-    naya = scheme_jit_expr(old);
+    naya = jit_expr(old);
     if (!SAME_OBJ(old, naya))
       break;
   }
@@ -522,21 +522,11 @@ static Scheme_Object *begin0_jit(Scheme_Object *data)
   seq2->array[i] = naya;
   for (i++; i < count; i++) {
     old = seq->array[i];
-    naya = scheme_jit_expr(old);
+    naya = jit_expr(old);
     seq2->array[i] = naya;
   }
   
   return (Scheme_Object *)seq2;
-}
-
-static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr)
-{
-  return do_define_syntaxes_clone(expr, 1);
-}
-
-static Scheme_Object *begin_for_syntax_jit(Scheme_Object *expr)
-{
-  return do_define_syntaxes_clone(expr, 1);
 }
 
 /*========================================================================*/
@@ -589,7 +579,7 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 /*                            expressions                                 */
 /*========================================================================*/
 
-Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
+static Scheme_Object *jit_expr(Scheme_Object *expr)
 {
   Scheme_Type type = SCHEME_TYPE(expr);
 
@@ -601,7 +591,6 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
   case scheme_application3_type:
     return jit_application3(expr);
   case scheme_sequence_type:
-  case scheme_splice_sequence_type:
     return jit_sequence(expr);
   case scheme_branch_type:
     return jit_branch(expr);
@@ -632,18 +621,12 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     }
   case scheme_define_values_type:
     return define_values_jit(expr);
-  case scheme_define_syntaxes_type:
-    return define_syntaxes_jit(expr);
-  case scheme_begin_for_syntax_type:
-    return begin_for_syntax_jit(expr);
   case scheme_set_bang_type:
     return set_jit(expr);
   case scheme_boxenv_type:
     return bangboxenv_jit(expr);
   case scheme_begin0_sequence_type:
     return begin0_jit(expr);
-  case scheme_require_form_type:
-    return scheme_top_level_require_jit(expr);
   case scheme_varref_form_type:
     return ref_jit(expr);
   case scheme_apply_values_type:
@@ -652,8 +635,6 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     return with_immed_mark_jit(expr);
   case scheme_case_lambda_sequence_type:
     return scheme_case_lambda_jit(expr);
-  case scheme_module_type:
-    return scheme_module_jit(expr);
   case scheme_inline_variant_type:
     return inline_variant_jit(expr);
   default:
@@ -661,60 +642,47 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
   }
 }
 
+Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
+/* step 1: clone the immediate record, to be mutated for actual prepataion
+   step 2: actual preparation */
+{
+  Scheme_Linklet *new_linklet;
+  Scheme_Object *bodies, *v;
+  int i;
+
+  if (!linklet->jit_ready) {
+    new_linklet = MALLOC_ONE_TAGGED(Scheme_Linklet);
+    memcpy(new_linklet, linklet, sizeof(Scheme_Linklet));
+  } else
+    new_linklet = linklet;
+
+  if (new_linklet->jit_ready >= step)
+    return new_linklet;
+
+  if (step == 1) {
+    new_linklet->jit_ready = 1;
+    return new_linklet;
+  }
+
+  i = SCHEME_VEC_SIZE(linklet->bodies);
+  bodies = scheme_make_vector(i, NULL);
+  while (i--) {
+    v = jit_expr(SCHEME_VEC_ELS(linklet->bodies)[i]);
+    SCHEME_VEC_ELS(bodies)[i] = v;
+  }
+
+  new_linklet->bodies = bodies;
+
+  new_linklet->jit_ready = 2;
+
+  return new_linklet;
+}
+
 #else
 
-Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
+Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
 {
-  return expr;
+  return linklet;
 }
 
 #endif
-
-static Scheme_Object *do_define_syntaxes_clone(Scheme_Object *expr, int jit)
-{
-  Resolve_Prefix *rp, *orig_rp;
-  Scheme_Object *naya, *rhs;
-  
-  rhs = SCHEME_VEC_ELS(expr)[0];
-#ifdef MZ_USE_JIT
-  if (jit) {
-    if (SAME_TYPE(SCHEME_TYPE(expr), scheme_define_syntaxes_type))
-      naya = scheme_jit_expr(rhs);
-    else {
-      int changed = 0;
-      Scheme_Object *a, *l = rhs;
-      naya = scheme_null;
-      while (!SCHEME_NULLP(l)) {
-        a = scheme_jit_expr(SCHEME_CAR(l));
-        if (!SAME_OBJ(a, SCHEME_CAR(l)))
-          changed = 1;
-        naya = scheme_make_pair(a, naya);
-        l = SCHEME_CDR(l);
-      }
-      if (changed)
-        naya = scheme_reverse(naya);
-      else
-        naya = rhs;
-    }
-  } else
-#endif
-    naya = rhs;
-
-  orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(expr)[1];
-  rp = scheme_prefix_eval_clone(orig_rp);
-  
-  if (SAME_OBJ(naya, rhs)
-      && SAME_OBJ(orig_rp, rp))
-    return expr;
-  else {
-    expr = scheme_clone_vector(expr, 0, 1);
-    SCHEME_VEC_ELS(expr)[0] = naya;
-    SCHEME_VEC_ELS(expr)[1] = (Scheme_Object *)rp;
-    return expr;
-  }
-}
-
-Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *expr)
-{
-  return do_define_syntaxes_clone(expr, 0);
-}

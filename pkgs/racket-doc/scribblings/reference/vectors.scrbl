@@ -72,6 +72,23 @@ slot is position @racket[0], and the last slot is one less than
 
 Updates the slot @racket[pos] of @racket[vec] to contain @racket[v].}
 
+
+@deftogether[(
+@defproc[(vector*-length [vec (and/c vector? (not/c impersonator?))]) exact-nonnegative-integer?]
+@defproc[(vector*-ref [vec (and/c vector? (not/c impersonator?))] [pos exact-nonnegative-integer?]) any/c]
+@defproc[(vector*-set! [vec (and/c vector? (not/c immutable?)  (not/c impersonator?))]
+                       [pos exact-nonnegative-integer?]
+                       [v any/c])
+         void?]
+)]{
+
+Like @racket[vector-length], @racket[vector-ref], and
+@racket[vector-set!], but constrained to work on vectors that are not
+@tech{impersonators}.
+
+@history[#:added "6.90.0.15"]}
+
+
 @defproc[(vector-cas! [vec (and/c vector? (not/c immutable?) (not/c impersonator?))]
                       [pos exact-nonnegative-integer?]
                       [old-v any/c]

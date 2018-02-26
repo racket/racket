@@ -248,6 +248,7 @@ install-pdf:
 clean:
 	cd racket; $(MAKE) clean
 	if [ -d gracket ]; then cd gracket; $(MAKE) clean; fi
+	rm -rf compiled
 	rm -f TAGS
 
 # Reconfigure ----------------------------------------

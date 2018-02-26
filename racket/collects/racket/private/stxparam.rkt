@@ -4,15 +4,17 @@
              (for-syntax '#%kernel 
                          "stx.rkt" "stxcase-scheme.rkt" 
                          "small-scheme.rkt" 
+                         "more-scheme.rkt"
                          "stxloc.rkt" "stxparamkey.rkt"))
 
-  (#%provide (for-syntax do-syntax-parameterize))
+  (#%provide (for-syntax do-syntax-parameterize)
+             let-local-keys)
 
-  (define-for-syntax (do-syntax-parameterize stx let-syntaxes-id empty-body-ok? keep-orig?)
+  (define-for-syntax (do-syntax-parameterize stx letrec-syntaxes-id empty-body-ok? keep-ids?)
     (syntax-case stx ()
-      [(_ ([id val] ...) body ...)
+      [(-syntax-parameterize ([id val] ...) body ...)
        (let ([ids (syntax->list #'(id ...))])
-	 (with-syntax ([((gen-id must-be-renamer?) ...)
+	 (with-syntax ([((gen-id local-key who/must-be-renamer) ...)
                     (map (lambda (id)
                            (unless (identifier? id)
                              (raise-syntax-error
@@ -28,10 +30,10 @@
                                 stx
                                 id))
                              (list
-                              (syntax-local-get-shadower
-                               (syntax-local-introduce (syntax-parameter-target sp))
-                               #t)
-                              (rename-transformer-parameter? sp))))
+                              (car (generate-temporaries '(stx-param)))
+                              (syntax-parameter-key sp)
+                              (and (rename-transformer-parameter? sp)
+                                   #'-syntax-parameterize))))
                          ids)])
 	   (let ([dup (check-duplicate-identifier ids)])
 	     (when dup
@@ -46,15 +48,29 @@
                 #f
                 "missing body expression(s)"
                 stx)))
-           (with-syntax ([let-syntaxes let-syntaxes-id]
-                         [(orig ...) (if keep-orig?
-                                         (list ids)
-                                         #'())])
+           (with-syntax ([letrec-syntaxes letrec-syntaxes-id]
+                         [(kept-id ...) (if keep-ids?
+                                            #'(id ...)
+                                            '())])
              (syntax/loc stx
-               (let-syntaxes ([(gen-id)
-                               (convert-renamer
-                                (if must-be-renamer? (quote-syntax val) #f)
-                                val)]
-                              ...)
-                 orig ...
-                 body ...)))))])))
+               (letrec-syntaxes ([(gen-id) (wrap-parameter-value 'who/must-be-renamer val)]
+                                 ...)
+                 kept-id ...
+                 (let-local-keys ([local-key gen-id] ...)
+                   body ...))))))]))
+  
+  (define-syntax (let-local-keys stx)
+    (if (eq? 'expression (syntax-local-context))
+        (let-values ([(expr opaque-expr)
+                      (syntax-case stx ()
+                        [(_ ([local-key id] ...) body ...)
+                         (parameterize ([current-parameter-environment
+                                          (extend-parameter-environment
+                                            (current-parameter-environment)
+                                            #'([local-key id] ...))])
+                           (syntax-local-expand-expression
+                            #'(let-values () body ...)
+                            #t))])])
+          opaque-expr)
+        (with-syntax ([stx stx])
+          #'(#%expression stx)))))

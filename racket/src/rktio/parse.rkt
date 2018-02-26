@@ -28,12 +28,18 @@
 ;;         | (*ref <type>) ; transparent argument, can be represented by a byte string
 
 (define output-file #f)
+(define c-mode? #f)
+(define .def-mode? #f)
 
 (define input-file
   (command-line
    #:once-each
    [("-o") file "Write output to <file>"
     (set! output-file file)]
+   [("-c") "Generate foreign-symbol registration"
+    (set! c-mode? #t)]
+   [("-d") "Generate .def file"
+    (set! .def-mode? #t)]
    #:args
    (file)
    file))
@@ -46,7 +52,7 @@
        OPEN CLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
        __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
        DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT
-       CONST NULLABLE))
+       CONST NULLABLE BLOCKING))
 
 (define lex
   (lexer-src-pos
@@ -75,6 +81,7 @@
    ["RKTIO_EXTERN_STEP" 'EXTERN/STEP]
    ["RKTIO_EXTERN_ERR" 'EXTERN/ERR]
    ["RKTIO_NULLABLE" 'NULLABLE]
+   ["RKTIO_BLOCKING" 'BLOCKING]
    [(:seq (:or #\_ (:/ #\A #\Z #\a #\z))
           (:* (:or #\_ (:/ #\A #\Z #\a #\z #\0 #\9))))
     (token-ID (string->symbol lexeme))]
@@ -109,6 +116,7 @@
             [(DEFINE EXTERN/STEP EXTERN) #f]
             [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]
             [(DEFINE NULLABLE) #f]
+            [(DEFINE BLOCKING) #f]
             [(STRUCT ID SEMI) #f]
             [(TYPEDEF <type> <id> SEMI)
              (if (eq? $2 $3)
@@ -118,15 +126,17 @@
              (if (eq? $2 $5)
                  `(define-struct-type ,$2 ,$4)
                  (error 'parse "typedef struct names don't match at ~s" $5))]
-            [(<extern> <return-type> <id> OPEN <params> SEMI)
-             (let ([r-type (shift-stars $3 $2)]
-                   [id (unstar $3)])
-               `(,@(adjust-errno $1 r-type id) ,r-type ,id ,$5))]
+            [(<extern> <blocking> <return-type> <id> OPEN <params> SEMI)
+             (let ([r-type (shift-stars $4 $3)]
+                   [id (unstar $4)])
+               `(,@(adjust-errno $1 r-type id) ,$2 ,r-type ,id ,$6))]
             [(ENUM COPEN <enumeration> SEMI) `(begin . ,(enum-definitions $3))])
     (<extern> [(EXTERN) 'define-function/errno]
               [(EXTERN/STEP) 'define-function/errno+step]
               [(EXTERN/NOERR) 'define-function]
               [(EXTERN/ERR OPEN ID CLOSE) `(define-function/errno ,$3)])
+    (<blocking> [(BLOCKING) '(blocking)]
+                [() '()])
     (<params> [(VOID CLOSE) null]
               [(<paramlist>) $1])
     (<paramlist> [(<type> <id> CLOSE) `((,(shift-stars $2 $1) ,(unstar $2)))]
@@ -264,11 +274,11 @@
 
 (define (update-types e)
   (match e
-    [`(,def ,ret ,name ,args)
-     `(,def ,(update-type ret) ,name
+    [`(,def ,flags ,ret ,name ,args)
+     `(,def ,flags ,(update-type ret) ,name
         ,(map (lambda (a) (update-bind a #:as-argument? #t)) args))]
-    [`(,def ,err-val ,ret ,name ,args)
-     `(,def ,err-val ,(update-type ret) ,name
+    [`(,def ,err-val ,flags ,ret ,name ,args)
+     `(,def ,err-val ,flags ,(update-type ret) ,name
         ,(map (lambda (a) (update-bind a #:as-argument? #t)) args))]
     [else e]))
 
@@ -286,16 +296,41 @@
         (filter (lambda (e) (not (or (constant-defn? e) (type-defn? e))))
                 unsorted-content))))
 
+(define (function-definition? e)
+  (and (pair? e)
+       (or (eq? 'define-function (car e))
+           (eq? 'define-function/errno (car e))
+           (eq? 'define-function/errno+step (car e)))))
+
 (define (show-content)
-  (printf "(begin\n")
-  (for ([e (in-list content)]
-        #:when e)
-    (pretty-write e))
-  (printf ")\n"))
+  (cond
+    [c-mode?
+     (for ([e (in-list content)]
+           #:when (function-definition? e))
+       (define n (list-ref e (- (length e) 2)))
+       (printf "Sforeign_symbol(~s, (void *)~a);\n" (symbol->string n) n))]
+    [.def-mode?
+     (for ([e (in-list content)]
+           #:when (function-definition? e))
+       (define n (list-ref e (- (length e) 2)))
+       (printf "~a\n" n))]
+    [else
+     (printf "(begin\n")
+     (for ([e (in-list content)]
+           #:when e)
+       (pretty-write e))
+     (printf ")\n")]))
 
 (if output-file
     (with-output-to-file output-file
       #:exists 'truncate
-      (lambda () (show-content)))
+      (lambda ()
+        (cond
+          [c-mode?
+           (printf "/* Extracted from rktio.h by rktio/parse.rkt */\n")]
+          [.def-mode?
+           (printf "EXPORTS\n")]
+          [else
+           (printf ";; Extracted from rktio.h by rktio/parse.rkt\n")])
+        (show-content)))
     (show-content))
-

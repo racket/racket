@@ -4,8 +4,8 @@
 
 (module misc '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" "path.rkt" "old-path.rkt"
-             "path-list.rkt" "executable-path.rkt" "collect.rkt"
-             "reading-param.rkt" "load.rkt"
+             "path-list.rkt" "executable-path.rkt"
+             "reading-param.rkt"
              (for-syntax '#%kernel "qq-and-or.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------
@@ -254,12 +254,12 @@
              load/cd
              load-relative load-relative-extension
              path-list-string->path-list find-executable-path
-             collection-path collection-file-path load/use-compiled
              guard-evt channel-get channel-try-get channel-put
              port? writeln displayln println
-             find-library-collection-paths
-             find-library-collection-links
              bytes-environment-variable-name?
              string-environment-variable-name?
              getenv putenv
-             call-with-default-reading-parameterization))
+             call-with-default-reading-parameterization
+
+             ;; From '#%kernel, but re-exported for compatibility:
+             collection-path collection-file-path))

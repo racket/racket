@@ -7,7 +7,8 @@
                          "stxparam-exptime.rkt"
                          "private/stxcase-scheme.rkt" 
                          "private/small-scheme.rkt" 
-                         "private/stxloc.rkt" "private/stxparamkey.rkt"))
+                         "private/stxloc.rkt"
+                         "private/stxparamkey.rkt"))
 
   (#%provide define-syntax-parameter
              define-rename-transformer-parameter
@@ -20,27 +21,24 @@
       [(_ id init-val)
        (with-syntax ([gen-id (car (generate-temporaries (list #'id)))])
          #'(begin
-             (define-syntax gen-id (convert-renamer #f init-val))
-             (define-syntax id 
-               (let ([gen-id #'gen-id])
-                 (make-set!-transformer
-                  (make-syntax-parameter 
-                   (lambda (stx)
-                     (let ([v (syntax-parameter-target-value gen-id)])
-                       (apply-transformer v stx #'set!)))
-                   gen-id))))))]))
+             (define-syntax gen-id (wrap-parameter-value #f init-val))
+             (define-syntax id
+               (let ([key (gensym)])
+                 (make-syntax-parameter
+                  (quote-syntax gen-id)
+                  key)))))]))
 
   (define-syntax (define-rename-transformer-parameter stx)
     (syntax-case stx ()
       [(_ id init-val)
        (with-syntax ([gen-id (car (generate-temporaries (list #'id)))])
          #'(begin
-             (define-syntax gen-id (convert-renamer #'init-val init-val))
+             (define-syntax gen-id (wrap-parameter-value 'define-rename-transformer-parameter init-val))
              (define-syntax id 
-               (let ([gen-id #'gen-id])
+               (let ([key (gensym)])
                  (make-rename-transformer-parameter 
-                  #f
-                  gen-id)))))]))
+                  #'gen-id ; needed if `key` is not set
+                  key)))))]))
 
   (define-syntax (syntax-parameterize stx)
-    (do-syntax-parameterize stx #'let-syntaxes #f #f)))
+    (do-syntax-parameterize stx #'letrec-syntaxes #f #f)))

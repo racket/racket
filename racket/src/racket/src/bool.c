@@ -64,7 +64,6 @@ typedef struct Equal_Info {
   Scheme_Object *next, *next_next;
   Scheme_Object *insp;
   intptr_t for_chaperone; /* 3 => for impersonator */
-  intptr_t eq_for_modidx;
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -82,7 +81,7 @@ void scheme_init_true_false(void)
   scheme_void->type = scheme_void_type;
 }
 
-void scheme_init_bool (Scheme_Env *env)
+void scheme_init_bool (Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
 
@@ -96,59 +95,68 @@ void scheme_init_bool (Scheme_Env *env)
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
   scheme_not_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("not", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("not", p, env);
 
   p = scheme_make_folding_prim(true_object_p_prim, "true-object?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_true_object_p_proc = p;
-  scheme_add_global_constant("true-object?", p, env);
+  scheme_addto_prim_instance("true-object?", p, env);
 
   p = scheme_make_folding_prim(boolean_p_prim, "boolean?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_boolean_p_proc = p;
-  scheme_add_global_constant("boolean?", p, env);
+  scheme_addto_prim_instance("boolean?", p, env);
 
   p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_eq_proc = p;
-  scheme_add_global_constant("eq?", p, env);
+  scheme_addto_prim_instance("eq?", p, env);
 
   p = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_eqv_proc = p;
-  scheme_add_global_constant("eqv?", scheme_eqv_proc, env);
+  scheme_addto_prim_instance("eqv?", scheme_eqv_proc, env);
   
   p = scheme_make_noncm_prim(equal_prim, "equal?", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_equal_proc = p;
-  scheme_add_global_constant("equal?", scheme_equal_proc, env);
+  scheme_addto_prim_instance("equal?", scheme_equal_proc, env);
 
-  scheme_add_global_constant("equal?/recur", 
+  scheme_addto_prim_instance("equal?/recur", 
                              scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3), 
                              env);
 
   p = scheme_make_immed_prim(chaperone_p, "chaperone?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("chaperone?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("chaperone?", p, env);
 
   p = scheme_make_immed_prim(impersonator_p, "impersonator?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("impersonator?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("impersonator?", p, env);
   p = scheme_make_immed_prim(procedure_impersonator_star_p, "procedure-impersonator*?", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("procedure-impersonator*?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("procedure-impersonator*?", p, env);
 
-  scheme_add_global_constant("chaperone-of?",
+  scheme_addto_prim_instance("chaperone-of?",
                              scheme_make_prim_w_arity(chaperone_of, "chaperone-of?", 2, 2),
                              env);
-  scheme_add_global_constant("impersonator-of?",
+  scheme_addto_prim_instance("impersonator-of?",
                              scheme_make_prim_w_arity(impersonator_of, "impersonator-of?", 2, 2),
                              env);
 }
@@ -193,7 +201,6 @@ XFORM_NONGCING static void init_equal_info(Equal_Info *eql)
   eql->next_next = NULL;
   eql->insp = NULL;
   eql->for_chaperone = 0;
-  eql->eq_for_modidx = 0;
 }
 
 static Scheme_Object *
@@ -342,7 +349,6 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
       return SCHEME_CHAR_VAL(obj1) == SCHEME_CHAR_VAL(obj2);
     case scheme_symbol_type:
     case scheme_keyword_type:
-    case scheme_scope_type:
       /* `eqv?` requires `eq?` */
       return 0;
     default:
@@ -451,7 +457,7 @@ int is_slow_equal (Scheme_Object *obj1, Scheme_Object *obj2)
   return is_equal(obj1, obj2, &eql);
 }
 
-int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
+int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2) XFORM_ASSERT_NO_CONVERSION
 {
   int v;
 
@@ -460,16 +466,6 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
     return v;
 
   return is_slow_equal(obj1, obj2);
-}
-
-int scheme_equal_modix_eq (Scheme_Object *obj1, Scheme_Object *obj2)
-{
-  Equal_Info eql;
-
-  init_equal_info(&eql);
-  eql.eq_for_modidx = 1;
-
-  return is_equal(obj1, obj2, &eql);
 }
 
 static Scheme_Object *union_find(Scheme_Object *obj1, Scheme_Hash_Table *ht)
@@ -873,41 +869,6 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
         return scheme_bucket_table_equal_rec((Scheme_Bucket_Table *)obj1, orig_obj1,
                                              (Scheme_Bucket_Table *)obj2, orig_obj2,
                                              eql);
-      }
-    case scheme_wrap_chunk_type: {
-      return vector_equal(obj1, obj1, obj2, obj2, eql);
-    }
-    case scheme_resolved_module_path_type:
-      {
-        obj1 = SCHEME_PTR_VAL(obj1);
-        obj2 = SCHEME_PTR_VAL(obj2);
-        goto top;
-      }
-    case scheme_module_index_type:
-      {
-        Scheme_Modidx *midx1, *midx2;
-#   include "mzeqchk.inc"
-        midx1 = (Scheme_Modidx *)obj1;
-        midx2 = (Scheme_Modidx *)obj2;
-        if (eql->eq_for_modidx
-            && (SCHEME_FALSEP(midx1->path)
-                || SCHEME_FALSEP(midx2->path)))
-          return 0;
-        else if (is_equal(midx1->path, midx2->path, eql)) {
-          obj1 = midx1->base;
-          obj2 = midx2->base;
-          goto top;
-        }
-      }
-    case scheme_scope_table_type:
-      {
-        Scheme_Scope_Table *mt1 = (Scheme_Scope_Table *)obj1;
-        Scheme_Scope_Table *mt2 = (Scheme_Scope_Table *)obj2;
-        if (!is_equal((Scheme_Object *)mt1->simple_scopes, (Scheme_Object *)mt2->simple_scopes, eql))
-          return 0;
-        obj1 = mt1->multi_scopes;
-        obj2 = mt2->multi_scopes;
-        goto top;
       }
     default:
       if (!eql->for_chaperone && ((t1 == scheme_chaperone_type)

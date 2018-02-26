@@ -1,229 +1,144 @@
 #lang racket/base
+(require compiler/zo-structs
+         "run.rkt"
+         "name.rkt"
+         "import.rkt"
+         "remap.rkt")
 
-(require racket/list
-         racket/match
-         racket/contract
-         compiler/zo-parse
-         "util.rkt"
-         "mpi.rkt"
-         "nodep.rkt"
-         "update-toplevels.rkt")
+(provide merge-linklets)
 
-(define MODULE-TOPLEVEL-OFFSETS (make-hasheq))
+(define (merge-linklets runs names internals lifts imports)
+  (define (syntax-literals-import? path/submod+phase)
+    (eq? (cdr path/submod+phase) 'syntax-literals))
+  (define (transformer-register-import? path/submod+phase)
+    (eq? (cdr path/submod+phase) 'transformer-register))
 
-(define current-get-modvar-rewrite (make-parameter #f))
-(define (merge-compilation-top get-modvar-rewrite top)
-  (parameterize ([current-get-modvar-rewrite get-modvar-rewrite])
-    (match top
-      [(struct compilation-top (max-let-depth binding-namess prefix form))
-       (define-values (new-max-let-depth new-prefix gen-new-forms)
-         (merge-form max-let-depth prefix form))
-       (define total-tls (length (prefix-toplevels new-prefix)))
-       (define total-stxs (length (prefix-stxs new-prefix)))
-       (define total-lifts (prefix-num-lifts new-prefix))
-       (log-debug (format "max-let-depth ~S to ~S" max-let-depth new-max-let-depth))
-       (log-debug (format "total toplevels ~S" total-tls))
-       (log-debug (format "total stxs ~S" total-stxs))
-       (log-debug (format "num-lifts ~S" total-lifts))
-       (for ([i (in-naturals)]
-             [p (in-list (prefix-toplevels new-prefix))])
-         (log-debug (format "new-prefix tls\t~v ~v" i p)))
-       (make-compilation-top
-        new-max-let-depth #hash() new-prefix
-        (make-splice (gen-new-forms new-prefix)))]
-      [else (error 'merge "unrecognized: ~e" top)])))
+  ;; Pick an order for the remaining imports:
+  (define import-keys (for/list ([path/submod+phase (in-hash-keys imports)]
+                                 ;; References to a 'syntax-literals "phase" are
+                                 ;; references to the implicit syntax-literals
+                                 ;; module; drop those:
+                                 #:unless (or (syntax-literals-import? path/submod+phase)
+                                              (transformer-register-import? path/submod+phase)))
+                        path/submod+phase))
 
-(define (merge-forms max-let-depth prefix forms)
-  (if (empty? forms)
-      (values max-let-depth prefix (lambda _ empty))
-      (let*-values ([(fmax-let-depth fprefix gen-fform) (merge-form max-let-depth prefix (first forms))]
-                    [(rmax-let-depth rprefix gen-rforms) (merge-forms fmax-let-depth fprefix (rest forms))])
-        (values rmax-let-depth
-                rprefix
-                (lambda args
-                  (append (apply gen-fform args)
-                          (apply gen-rforms args)))))))
+  (define any-syntax-literals?
+    (for/or ([path/submod+phase (in-hash-keys imports)])
+      (syntax-literals-import? path/submod+phase)))
+  (define any-transformer-registers?
+    (for/or ([path/submod+phase (in-hash-keys imports)])
+      (transformer-register-import? path/submod+phase)))
+  (define syntax-literals-pos 1)
+  (define transformer-register-pos (+ (if any-syntax-literals? 1 0)
+                                      syntax-literals-pos))
+  (define import-counter (+ (if any-transformer-registers? 1 0)
+                            transformer-register-pos))
 
-(define (merge-form max-let-depth prefix form)
-  (match form
-    [(? mod?)
-     (merge-module max-let-depth prefix form)]
-    [(struct seq (forms))
-     (merge-forms max-let-depth prefix forms)]
-    [(struct splice (forms))
-     (merge-forms max-let-depth prefix forms)]
-    [else
-     (values max-let-depth prefix (lambda _ (list form)))]))
+  ;; Map each remaining import to its position
+  (define ordered-importss
+    (for/list ([key (in-list import-keys)])
+      (define ordered-imports (hash-ref imports key))
+      (for ([name (in-list ordered-imports)])
+        (define i (hash-ref names (cons key name)))
+        (set-import-pos! i import-counter)
+        (set! import-counter (add1 import-counter)))
+      ordered-imports))
+  ;; Keep all the same import shapes
+  (define import-shapess
+    (for/list ([key (in-list import-keys)])
+      (for/list ([name (in-list (hash-ref imports key))])
+        (import-shape (hash-ref names (cons key name))))))
 
-(define (index-of v l)
-  (for/or ([e (in-list l)]
-           [i (in-naturals)]
-           #:when (eq? e v))
-    i))
+  ;; Map all syntax-literal references to the same import.
+  ;; We could update each call to the access to use a suitable
+  ;; vector index.
+  (for ([(path/submod+phase imports) (in-hash imports)]
+        #:when (syntax-literals-import? path/submod+phase)
+        [name (in-list imports)])
+    (define i (hash-ref names (cons path/submod+phase name)))
+    (set-import-pos! i syntax-literals-pos))
 
-(define (merge-prefix root-prefix mod-prefix)
-  (match-define (struct prefix (root-num-lifts root-toplevels root-stxs root-src-insp-desc)) root-prefix)
-  (match-define (struct prefix (mod-num-lifts mod-toplevels mod-stxs src-insp-desc)) mod-prefix)
-  (make-prefix (+ root-num-lifts mod-num-lifts)
-               (append root-toplevels mod-toplevels)
-               (append root-stxs mod-stxs)
-               root-src-insp-desc))
+  ;; Map the transformer-register import, if any
+  (let* ([path/submod+phase '(#%transformer-register . transformer-register)]
+         [imports (hash-ref imports path/submod+phase null)])
+    (for ([name (in-list imports)])
+      (define i (hash-ref names (cons path/submod+phase name)))
+      (set-import-pos! i transformer-register-pos)))
 
-(struct toplevel-offset-rewriter (rewrite-fun meta) #:transparent)
+  ;; Map internals and lifts to positions
+  (define first-internal-pos import-counter)
+  (define positions
+    (for/hash ([name (in-list (append internals lifts))]
+               [i (in-naturals first-internal-pos)])
+      (values name i)))
 
-(define (compute-new-modvar mv rw)
-  (match mv
-    [(struct module-variable (modidx sym pos phase constantness))
-     (match rw
-       [(struct modvar-rewrite (self-modidx provide->toplevel))
-        (log-debug (format "Rewriting ~a@~a of ~S" sym pos (mpi->path* modidx)))
-        (define tl (provide->toplevel sym pos))
-        (log-debug (format "Rewriting ~a@~a of ~S to ~S" sym pos (mpi->path* modidx) tl))
-        (match-define (toplevel-offset-rewriter rewrite-fun meta)
-          (hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx
-                    (lambda ()
-                      (error 'compute-new-modvar "toplevel offset not yet computed: ~S" self-modidx))))
-        (log-debug (format "Rewriting ~a@~a of ~S (which is ~a) with ~S" sym pos (mpi->path* modidx) tl meta))
-        (define res (rewrite-fun tl))
-        (log-debug (format "Rewriting ~a@~a of ~S (which is ~a) with ~S and got ~S"
-                           sym pos (mpi->path* modidx) tl meta res))
-        res])]))
+  ;; For each linklet that we merge, make a mapping from
+  ;; the linklet's old position to new names (which can
+  ;; then be mapped to new positions):
+  (define (make-position-mapping r)
+    (define h (make-hasheqv))
+    (define linkl (run-linkl r))
+    (define importss (linkl-importss linkl))
+    (define pos 1)
+    (for ([imports (in-list importss)]
+          [use (in-list (run-uses r))])
+      (for ([name (in-list imports)])
+        (hash-set! h pos (find-name names use name))
+        (set! pos (add1 pos))))
+    (define path/submod+phase (cons (run-path/submod r) (run-phase r)))
+    (for ([name (in-list (append (linkl-exports linkl)
+                                 (linkl-internals linkl)
+                                 (linkl-lifts linkl)))]
+          [pos (in-naturals pos)])
+      (hash-set! h pos (find-name names path/submod+phase name)))
+    h)
 
-(define (filter-rewritable-module-variable? name new-#f-idx toplevel-offset mod-toplevels)
-  (define-values
-    (i new-toplevels remap)
-    (for/fold ([i 0]
-               [new-toplevels empty]
-               [remap empty])
-              ([tl (in-list mod-toplevels)]
-               [idx (in-naturals)])
-      (log-debug (format "[~S] mod-prefix tls\t~v ~v"
-                         name idx tl))
-      (match tl
-        [(and mv (struct module-variable (modidx sym pos phase constantness)))
-         (define rw ((current-get-modvar-rewrite) modidx))
-         ;; XXX We probably don't need to deal with #f phase
-         (unless (or (not phase) (zero? phase))
-           (error 'eliminate-module-variables "Non-zero phases not supported: ~S" mv))
+  ;; Do we need the implicit initial variable for `(#%variable-reference)`?
+  ;; The slot will be reserved whether we use it or not, but the
+  ;; slot is not necessarily initialized if we don't need it.
+  (define saw-zero-pos-toplevel? #f)
+
+  (define body
+    (apply
+     append
+     (for/list ([r (in-list runs)])
+       (define pos-to-name/import (make-position-mapping r))
+       (define (remap-toplevel-pos pos)
          (cond
-           ; Primitive module like #%paramz
-           [(symbol? rw)
-            (log-debug (format "~S from ~S" sym rw))
-            (values (add1 i)
-                    (list* tl new-toplevels)
-                    (list* (+ i toplevel-offset) remap))]
-           [(module-path-index? rw)
-            (values (add1 i)
-                    (list* tl new-toplevels)
-                    (list* (+ i toplevel-offset) remap))]
-           [(modvar-rewrite? rw)
-            (values i
-                    new-toplevels
-                    (list* (compute-new-modvar mv rw) remap))]
+           [(zero? pos)
+            ;; Implicit variable for `(#%variable-reference)` stays in place:
+            (set! saw-zero-pos-toplevel? #t)
+            0]
            [else
-            (error 'filter-rewritable-module-variable? "Unsupported module-rewrite: ~S" rw)])]
-        [tl
-         (cond
-           [(and new-#f-idx (not tl))
-            (log-debug (format "[~S] dropping a #f at ~v that would have been at ~v but is now at ~v"
-                               name idx (+ i toplevel-offset) new-#f-idx))
-            (values i
-                    new-toplevels
-                    (list* new-#f-idx remap))]
-           [else
-            (values (add1 i)
-                    (list* tl new-toplevels)
-                    (list* (+ i toplevel-offset) remap))])])))
-  ; XXX This would be more efficient as a vector
-  (values (reverse new-toplevels)
-          (reverse remap)))
+            (define new-name/import (hash-ref pos-to-name/import pos))
+            (if (import? new-name/import)
+                (import-pos new-name/import)
+                (hash-ref positions new-name/import))]))
 
-(define (merge-module max-let-depth top-prefix mod-form)
-  (match mod-form
-    [(struct mod (name srcname self-modidx
-                       mod-prefix provides requires body syntax-bodies
-                       unexported mod-max-let-depth dummy lang-info
-                       internal-context binding-names
-                       flags pre-submodules post-submodules))
-     (define top-toplevels (prefix-toplevels top-prefix))
-     (define toplevel-offset (length top-toplevels))
-     (define topsyntax-offset (length (prefix-stxs top-prefix)))
-     (define lift-offset (prefix-num-lifts top-prefix))
-     (define mod-toplevels (prefix-toplevels mod-prefix))
-     (define new-#f-idx
-       (index-of #f top-toplevels))
-     (when new-#f-idx
-       (log-debug (format "[~S] found a #f entry in prefix already at ~v, squashing"
-                          name new-#f-idx)))
-     (define-values (new-mod-toplevels toplevel-remap)
-       (filter-rewritable-module-variable? name new-#f-idx toplevel-offset mod-toplevels))
-     (define num-mod-toplevels
-       (length toplevel-remap))
-     (define mod-stxs
-       (length (prefix-stxs mod-prefix)))
-     (define mod-num-lifts
-       (prefix-num-lifts mod-prefix))
-     (define new-mod-prefix
-       (struct-copy prefix mod-prefix
-                    [toplevels new-mod-toplevels]))
-     (define offset-meta (vector name srcname self-modidx))
-     (log-debug "Setting toplevel offsets rewriter for ~S and it is currently ~S"
-                offset-meta
-                (hash-ref MODULE-TOPLEVEL-OFFSETS self-modidx #f))
-     (hash-set! MODULE-TOPLEVEL-OFFSETS self-modidx
-                (toplevel-offset-rewriter
-                 (lambda (n)
-                   (log-debug "Finding offset ~a in ~S of ~S" n toplevel-remap offset-meta)
-                   (list-ref toplevel-remap n))
-                 offset-meta))
-     (unless (= (length toplevel-remap)
-                (length mod-toplevels))
-       (error 'merge-module "Not remapping everything: ~S ~S"
-              mod-toplevels toplevel-remap))
-     (log-debug (format "[~S] Incrementing toplevels by ~a"
-                        name
-                        toplevel-offset))
-     (log-debug (format "[~S] Incrementing lifts by ~a"
-                        name
-                        lift-offset))
-     (log-debug (format "[~S] Filtered mod-vars from ~a to ~a"
-                        name
-                        (length mod-toplevels)
-                        (length new-mod-toplevels)))
-     (values (max max-let-depth mod-max-let-depth)
-             (merge-prefix top-prefix new-mod-prefix)
-             (lambda (top-prefix)
-               (log-debug (format "[~S] Updating top-levels" name))
-               (define top-lift-start (prefix-lift-start top-prefix))
-               (define mod-lift-start (prefix-lift-start mod-prefix))
-               (define total-lifts (prefix-num-lifts top-prefix))
-               (define max-toplevel (+ top-lift-start total-lifts))
-               (define update
-                 (update-toplevels
-                  (lambda (n)
-                    (define new-idx
-                      (cond
-                        [(mod-lift-start . <= . n)
-                         (log-debug (format "[~S] ~v is a lift"
-                                            name n))
-                         (define which-lift (- n mod-lift-start))
-                         (define lift-tl (+ top-lift-start lift-offset which-lift))
-                         (when (lift-tl . >= . max-toplevel)
-                           (error 'merge-module "[~S] lift error: orig(~a) which(~a) max(~a) lifts(~a) now(~a)"
-                                  name n which-lift num-mod-toplevels mod-num-lifts lift-tl))
-                         lift-tl]
-                        [else
-                         ;; xxx maybe change this to a vector after it is made to make this efficient
-                         (list-ref toplevel-remap n)]))
-                    (log-debug (format "[~S] ~v is remapped to ~v"
-                                       name n new-idx))
-                    new-idx)
-                  (lambda (n)
-                    (+ n topsyntax-offset))
-                  (prefix-syntax-start top-prefix)))
-               (map update body)))]))
+       (remap-positions (linkl-body (run-linkl r))
+                        remap-toplevel-pos
+                        #:application-hook
+                        (lambda (rator rands remap)
+                          ;; Check for a `(.get-syntax-literal! '<pos>)` call
+                          (cond
+                            [(and (toplevel? rator)
+                                  (let ([i (hash-ref pos-to-name/import (toplevel-pos rator))])
+                                    (and (import? i)
+                                         (eqv? syntax-literals-pos (import-pos i)))))
+                             ;; This is a `(.get-syntax-literal! '<pos>)` call
+                             (application (remap rator)
+                                          ;; To support syntax objects, change the offset
+                                          rands)]
+                            [else #f]))))))
 
-(provide/contract
- [merge-compilation-top (-> get-modvar-rewrite/c
-                            compilation-top?
-                            compilation-top?)])
+  (values body
+          first-internal-pos
+          ;; Communicates into to `wrap-bundle`:
+          (lambda ()
+            (values runs
+                    import-keys
+                    ordered-importss
+                    import-shapess
+                    any-syntax-literals?
+                    any-transformer-registers?
+                    saw-zero-pos-toplevel?))))

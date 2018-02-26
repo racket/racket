@@ -61,7 +61,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;..\..\rktio;..\librktio</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;..\..\rktio;..\librktio;..\libracket</AdditionalIncludeDirectories>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader></PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -172,7 +172,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\racket\src\bignum.c" />
     <ClCompile Include="..\..\racket\src\bool.c" />
-    <ClCompile Include="..\..\racket\src\builtin.c" />
     <ClCompile Include="..\..\racket\src\char.c" />
     <ClCompile Include="..\..\racket\src\compenv.c" />
     <ClCompile Include="..\..\racket\src\compile.c" />
@@ -198,7 +197,7 @@
     <ClCompile Include="..\..\racket\src\jitstate.c" />
     <ClCompile Include="..\..\racket\src\list.c" />
     <ClCompile Include="..\..\racket\src\letrec_check.c" />
-    <ClCompile Include="..\..\racket\src\module.c" />
+    <ClCompile Include="..\..\racket\src\linklet.c" />
     <ClCompile Include="..\..\racket\src\marshal.c" />
     <ClCompile Include="..\..\racket\src\mzrt.c" />
     <ClCompile Include="..\..\racket\src\mzsj86.c" />
@@ -220,6 +219,8 @@
     <ClCompile Include="..\..\racket\src\sema.c" />
     <ClCompile Include="..\..\racket\src\setjmpup.c" />
     <ClCompile Include="..\..\racket\src\sfs.c" />
+    <ClCompile Include="..\..\racket\src\sort.c" />
+    <ClCompile Include="..\..\racket\src\startup.c" />
     <ClCompile Include="..\..\racket\src\string.c" />
     <ClCompile Include="..\..\racket\src\struct.c" />
     <ClCompile Include="..\..\racket\src\symbol.c" />

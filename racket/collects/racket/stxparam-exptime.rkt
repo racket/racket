@@ -9,14 +9,11 @@
   
   (define-values (syntax-parameter-value)
     (lambda (id)
-      (let* ([v (syntax-local-value id (lambda () #f))]
-             [v (if (set!-transformer? v)
-                    (set!-transformer-procedure v)
-                    v)])
+      (let* ([v (syntax-local-value id (lambda () #f))])
         (unless (syntax-parameter? v)
           (raise-argument-error 'syntax-parameter-value "syntax-parameter?" v))
-        (let ([target (syntax-parameter-target v)])
-          (syntax-parameter-target-value target)))))
+        (syntax-parameter-key-value (syntax-parameter-key v)
+                                    (syntax-parameter-default-id v)))))
 
   (define-values (make-parameter-rename-transformer)
     (lambda (id)

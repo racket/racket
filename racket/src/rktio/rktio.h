@@ -88,6 +88,7 @@ Thread and signal conventions:
 #define RKTIO_EXTERN_STEP   RKTIO_EXTERN
 
 #define RKTIO_NULLABLE      /* empty */
+#define RKTIO_BLOCKING      /* empty */
 
 /*************************************************/
 /* Initialization and general datatypes          */
@@ -736,7 +737,7 @@ enum {
   RKTIO_LTPS_HANDLE_FREE
 };
 
-RKTIO_EXTERN void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
+RKTIO_EXTERN RKTIO_BLOCKING void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
 /* Waits up to `nsecs` seconds (or forever if `nsecs` is 0), until
    something registered with `fds` or `lt` is ready, or until there's
    some other activity that sometimes causes an early wakeup. */

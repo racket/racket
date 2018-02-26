@@ -530,13 +530,13 @@
 (test-comp '(lambda (w z) (pair? (list w (random) w)))
            '(lambda (w z) (random) #t))
 (test-comp '(lambda (w z) (pair? (list (read) (random) w)))
-           '(lambda (w z) (read) (random) #t))
+           '(lambda (w z) (values (read)) (random) #t))
 (test-comp '(lambda (w z) (pair? (list z (random) (read))))
-           '(lambda (w z) (random) (read) #t))
+           '(lambda (w z) (random) (values (read)) #t))
 (test-comp '(lambda (w z) (pair? (list (if z (random) (error 'e)) (read))))
-           '(lambda (w z) (if z (random) (error 'e)) (read) #t))
+           '(lambda (w z) (if z (random) (error 'e)) (values (read)) #t))
 (test-comp '(lambda (w z) (pair? (list (with-continuation-mark 'k 'v (read)) (random))))
-           '(lambda (w z) (with-continuation-mark 'k 'v (read)) (random) #t))
+           '(lambda (w z) (values (with-continuation-mark 'k 'v (read))) (random) #t))
 (test-comp '(lambda (w z) (vector? (vector w z)))
            '(lambda (w z) #t))
 (test-comp '(lambda (w z) (vector? (vector-immutable w z)))
@@ -713,8 +713,11 @@
 ;The optimizer is not capable of figuring out that the result of map is a list?
 (test-arg-types '(k:map procedure? list?) 'list?)
 (test-arg-types '(k:map procedure? list? list?) 'list?)
-(test-arg-types '(map procedure? list?) #f) ;should be list?
-(test-arg-types '(map procedure? list? list?) #f) ;should be list? 
+
+;Non-inlined slow-path means that the optimizer cannot infer for
+;non-built-in `map`:
+;(test-arg-types '(map procedure? list?) #f) ;should be list?
+;(test-arg-types '(map procedure? list? list?) #f) ;should be list? 
 
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
@@ -1186,6 +1189,9 @@
                       (begin (quote-syntax foo) 3))])
               x)
            '3)
+
+;; The compiler doens't currently recognize the expansion of `quote-syntax`
+#;
 (test-comp '(if (lambda () 10)
                 'ok
                 (quote-syntax no!))
@@ -2140,6 +2146,8 @@
               (void 10))
            '(module m racket/base))
 
+;; The compiler doens't currently recognize the expansion of `quote-syntax`
+#;
 (test-comp '(module m racket/base
               (void (quote-syntax unused!)))
            '(module m racket/base))
@@ -3003,6 +3011,7 @@
                (require (submod ".." a))
                (list b c (c)))))
 
+
 (test-comp `(module m racket/base
              (module a racket/base
                (provide b c)
@@ -3031,6 +3040,36 @@
              (module d racket/base
                (require (submod ".." a))
                (list b c (c 1)))))
+
+;; Use of `c` added to `a` via `b`
+(test-comp `(module m racket/base
+             (module c racket/base
+               (provide c)
+               (define c 'c)
+               (set! c c))
+             (module b racket/base
+               (require (submod ".." c))
+               (provide b)
+               (define (b) c))
+             (module a racket/base
+               (require (submod ".." b)
+                        (submod ".." c))
+               c
+               (b)))
+           `(module m racket/base
+             (module c racket/base
+               (provide c)
+               (define c 'c)
+               (set! c c))
+             (module b racket/base
+               (require (submod ".." c))
+               (provide b)
+               (define (b) c))
+             (module a racket/base
+               (require (submod ".." b)
+                        (submod ".." c))
+               c
+               c)))
 
 (module check-inline-request racket/base
   (require racket/performance-hint)
@@ -4053,19 +4092,19 @@
 (test-comp '(letrec-values ([(x y) (error "oops")]) 11)
            '(error "oops"))
 (test-comp '(let-values (((y) (read)) (() (error "oops"))) 11)
-           '(let () (begin (read) (error "oops"))))
+           '(let () (begin (values (read)) (error "oops"))))
 (test-comp '(let-values (((y) (read)) (() (error "oops"))) 11)
-           '(let () (begin (read) (error "oops"))))
+           '(let () (begin (values (read)) (error "oops"))))
 (test-comp '(let-values ((() (error "oops")) ((x) 9)) 11)
            '(error "oops"))
 (test-comp '(let-values ((() (error "oops")) (() (values))) 11)
            '(error "oops"))
 (test-comp '(let-values (((y) (read)) (() (error "oops")) ((x) 9)) 11)
-           '(let () (begin (read) (error "oops"))))
+           '(let () (begin (values (read)) (error "oops"))))
 (test-comp '(let-values (((y) (read)) (() (error "oops")) (() (values))) 11)
-           '(let () (begin (read) (error "oops"))))
+           '(let () (begin (values (read)) (error "oops"))))
 (test-comp '(error "oops")
-           '(let () (begin (read) (error "oops")))
+           '(let () (begin (values (read)) (error "oops")))
            #f)
 
 (test-comp '(with-continuation-mark
@@ -5013,24 +5052,28 @@
    (write-bytes
     (zo-marshal
      (match m
-       [(compilation-top max-let-depth binding-namess prefix code)
-        (compilation-top max-let-depth binding-namess prefix 
-                         (let ([body (mod-body code)])
-                           (struct-copy mod code [body
-                                                  (match body 
-                                                    [(list a b)
-                                                     (list (match a
-                                                             [(application rator (list rand))
-                                                              (application
-                                                               rator
-                                                               (list
-                                                                (struct-copy 
-                                                                 lam rand
-                                                                 [body
-                                                                  (match (lam-body rand)
-                                                                    [(toplevel depth pos const? ready?)
-                                                                     (toplevel depth pos #t #t)])])))])
-                                                           b)])])))]))
+       [(linkl-bundle t)
+        (linkl-bundle
+         (hash-set t
+                   0
+                   (let* ([l (hash-ref t 0)]
+                          [body (linkl-body l)])
+                     (struct-copy linkl l [body
+                                           (match body 
+                                             [(list a b c)
+                                              (list (match a
+                                                      [(application rator (list rand))
+                                                       (application
+                                                        rator
+                                                        (list
+                                                         (struct-copy 
+                                                          lam rand
+                                                          [body
+                                                           (match (lam-body rand)
+                                                             [(toplevel depth pos const? ready?)
+                                                              (toplevel depth pos #t #t)])])))])
+                                                    b
+                                                    c)])]))))]))
     o2))
 
   ;; validator should reject this at read or eval time (depending on how lazy validation is):
@@ -5058,7 +5101,8 @@
 
   ; extract the content of the begin0 expression
   (define (analyze-beg0 m)
-    (define def-z (car (mod-body (compilation-top-code m))))
+    (define lb (hash-ref (linkl-directory-table m)'()))
+    (define def-z (car (linkl-body (hash-ref (linkl-bundle-table lb) 0))))
     (define body-z (let-one-body (def-values-rhs def-z)))
     (define expr-z (car (beg0-seq body-z)))
     (cond
@@ -5272,8 +5316,9 @@
       (write (compile l) o)
       (parameterize ([read-accept-compiled #t])
         (zo-parse (open-input-bytes (get-output-bytes o))))))
-  (let* ([m (compilation-top-code b)]
-         [d (car (mod-body m))]
+  (let* ([lb (hash-ref (linkl-directory-table b) '())]
+         [m (hash-ref (linkl-bundle-table lb) 0)]
+         [d (car (linkl-body m))]
          [b (closure-code (def-values-rhs d))]
          [c (application-rator (lam-body b))]
          [l (closure-code c)]
@@ -5294,8 +5339,9 @@
       (write (compile l) o)
       (parameterize ([read-accept-compiled #t])
         (zo-parse (open-input-bytes (get-output-bytes o))))))
-  (let* ([m (compilation-top-code b)]
-         [d (car (mod-body m))]
+  (let* ([lb (hash-ref (linkl-directory-table b) '())]
+         [m (hash-ref (linkl-bundle-table lb) 0)]
+         [d (car (linkl-body m))]
          [rhs (def-values-rhs d)]
          [b (inline-variant-direct rhs)]
          [v (application-rator (lam-body b))])
@@ -5313,8 +5359,9 @@
       (write (compile l) o)
       (parameterize ([read-accept-compiled #t])
         (zo-parse (open-input-bytes (get-output-bytes o))))))
-  (let* ([m (compilation-top-code b)]
-         [d (cadr (mod-body m))]
+  (let* ([lb (hash-ref (linkl-directory-table b) '())]
+         [m (hash-ref (linkl-bundle-table lb) 0)]
+         [d (cadr (linkl-body m))]
          [rhs (def-values-rhs d)]
          [b (inline-variant-direct rhs)]
          [v (application-rator (lam-body b))])
@@ -5409,7 +5456,7 @@
       (lambda ()
         (with-handlers ([exn:fail:out-of-memory? void])
           (arithmetic-shift 1 30070458541082)))))))
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (void (dynamic-require ''uses-too-much-memory-for-shift #f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

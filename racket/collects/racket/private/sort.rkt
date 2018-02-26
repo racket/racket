@@ -17,8 +17,7 @@ redundant pointer arithmetic in that paper is dealing with cases of uneven
 number of elements.)
 
 The source uses macros to optimize some common cases (eg, no `getkey'
-function, or precompiled versions with inlinable common comparison
-predicates) -- they are local macros so they're not left in the compiled
+function) -- they are local macros so they're not left in the compiled
 code.
 
 |#
@@ -151,34 +150,6 @@ code.
           (unless (zero? n/2-) (copying-mergesort Alo Amid2 n/2-))
           (merge #f B1lo (i+ B1lo n/2+) Amid2 Ahi Alo)))))
   
-  ;; - - - - - - - - - - - - - - - - - - - - - - - -
-  ;; Precompiling of standard comparison functions
-  ;; for standard data types
-  ;; - - - - - - - - - - - - - - - - - - - - - - - -
-  (define precompiled-sorts
-    (let ([sorts (make-hasheq)])
-      (define-syntax-rule (precomp less-than? more ...)
-        (let ([sort-proc
-               (λ (A n) (sort-internal-body A less-than? n #f))])
-          (hash-set! sorts less-than? sort-proc)
-          (hash-set! sorts more sort-proc) ...))
-      ;; for comparison ops provided by racket/base we build
-      ;; fast precompiled versions
-      (precomp unsafe-fl< unsafe-fl<=)
-      (precomp unsafe-fl> unsafe-fl>=)
-      (precomp i< i<=)
-      (precomp i> i>=)
-      (precomp < <=)
-      (precomp > >=)
-      (precomp string<? string<=?)
-      (precomp string>? string>=?)
-      (precomp string-ci<? string-ci<=?)
-      (precomp string-ci>? string-ci>=?)
-      (precomp char<? char<=?)
-      (precomp char>? char>=?)
-      (precomp keyword<?)
-      (make-immutable-hasheq (hash-map sorts cons))))
-  
   (define (generic-sort A less-than? n)
     (sort-internal-body A less-than? n #f))
   
@@ -188,12 +159,7 @@ code.
   (define-syntax (sort-internal stx)
     (syntax-case stx ()
       [(_ vec less-than? n #:key #f)
-       #'(let ([precomp (hash-ref precompiled-sorts less-than? #f)])
-           (if precomp
-               ;; use a precompiled function if found
-               (precomp vec n)
-               ;; otherwise, use the generic code
-               (generic-sort vec less-than? n)))]
+       #'(generic-sort vec less-than? n)]
       [(_ vec less-than? n #:key key)
        #'(generic-sort/key vec less-than? n key)]))
   

@@ -60,7 +60,7 @@
                          #:cmdline (listof string?)
                          #:gracket? any/c
                          #:mred? any/c
-                         #:variant (or/c '3m 'cgc)
+                         #:variant (or/c '3m 'cgc 'cs)
                          #:aux (listof (cons/c symbol? any/c))
                          #:collects-path (or/c #f
                                                path-string?
@@ -1720,7 +1720,8 @@
                                    (lambda () (find-cmdline 
                                                "configuration"
                                                #"cOnFiG:")))]
-                         [typepos (and (or mred? (eq? variant '3m))
+                         [typepos (and (or mred? (or (eq? variant '3m)
+                                                     (eq? variant 'cs)))
                                        (with-input-from-file dest-exe 
                                          (lambda () (find-cmdline 
                                                      "exeuctable type"
@@ -1743,6 +1744,9 @@
                             (when (eq? variant '3m)
                               (file-position out (+ typepos 15))
                               (write-bytes #"3" out))
+                            (when (eq? variant 'cs)
+                              (file-position out (+ typepos 15))
+                              (write-bytes #"s" out))
                             (flush-output out))
                           (file-position out (+ numpos 7))
                           (write-bytes #"!" out)

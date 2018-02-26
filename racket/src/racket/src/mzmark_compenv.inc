@@ -12,32 +12,9 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Comp_Env *e = (Scheme_Comp_Env *)p;
 
-  gcMARK2(e->genv, gc);
-  gcMARK2(e->insp, gc);
-  gcMARK2(e->prefix, gc);
-  gcMARK2(e->next, gc);
-  gcMARK2(e->use_scopes_next, gc);
-  gcMARK2(e->intdef_next, gc);
-  gcMARK2(e->scopes, gc);
-  gcMARK2(e->value_name, gc);
-  gcMARK2(e->observer, gc);
-  gcMARK2(e->binders, gc);
-  gcMARK2(e->bindings, gc);
-  gcMARK2(e->vals, gc);
-  gcMARK2(e->shadower_deltas, gc);
   gcMARK2(e->vars, gc);
-  gcMARK2(e->dup_check, gc);
-  gcMARK2(e->intdef_name, gc);
-  gcMARK2(e->in_modidx, gc);
-  gcMARK2(e->skip_table, gc);
-  
-  gcMARK2(e->use, gc);
-  gcMARK2(e->lifts, gc);
-  gcMARK2(e->bindings, gc);
-
-  gcMARK2(e->binding_namess, gc);
-
-  gcMARK2(e->expand_result_adjust_arg, gc);
+  gcMARK2(e->value_name, gc);
+  gcMARK2(e->linklet, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -52,32 +29,9 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Comp_Env *e = (Scheme_Comp_Env *)p;
 
-  gcFIXUP2(e->genv, gc);
-  gcFIXUP2(e->insp, gc);
-  gcFIXUP2(e->prefix, gc);
-  gcFIXUP2(e->next, gc);
-  gcFIXUP2(e->use_scopes_next, gc);
-  gcFIXUP2(e->intdef_next, gc);
-  gcFIXUP2(e->scopes, gc);
-  gcFIXUP2(e->value_name, gc);
-  gcFIXUP2(e->observer, gc);
-  gcFIXUP2(e->binders, gc);
-  gcFIXUP2(e->bindings, gc);
-  gcFIXUP2(e->vals, gc);
-  gcFIXUP2(e->shadower_deltas, gc);
   gcFIXUP2(e->vars, gc);
-  gcFIXUP2(e->dup_check, gc);
-  gcFIXUP2(e->intdef_name, gc);
-  gcFIXUP2(e->in_modidx, gc);
-  gcFIXUP2(e->skip_table, gc);
-  
-  gcFIXUP2(e->use, gc);
-  gcFIXUP2(e->lifts, gc);
-  gcFIXUP2(e->bindings, gc);
-
-  gcFIXUP2(e->binding_namess, gc);
-
-  gcFIXUP2(e->expand_result_adjust_arg, gc);
+  gcFIXUP2(e->value_name, gc);
+  gcFIXUP2(e->linklet, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

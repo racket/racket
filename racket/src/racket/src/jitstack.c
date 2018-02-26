@@ -198,7 +198,8 @@ Scheme_Object *scheme_native_stack_trace(void)
   }
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
-  unw_getcontext(&cx);
+  if (unw_getcontext(&cx) != 0)
+    return NULL;
   unw_init_local(&c, &cx);
   unw_set_safe_pointer_range(&c, stack_start, real_stack_end);
   use_unw = 1;
@@ -694,36 +695,16 @@ void scheme_jit_now(Scheme_Object *f)
 }
 
 
-typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
-typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
-typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
+typedef Scheme_Object *(*Linklet_Run_Proc)(Scheme_Linklet *linklet, Scheme_Instance *inst, Scheme_Object **name);
 typedef void (*Thread_Start_Child_Proc)(Scheme_Thread *child, Scheme_Object *child_thunk);
 
-void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
+Scheme_Object *scheme_linklet_run_start(Scheme_Linklet *linklet, Scheme_Instance *inst, Scheme_Object *name)
 {
-  Module_Run_Proc proc = (Module_Run_Proc)sjc.module_run_start_code;
+  Linklet_Run_Proc proc = (Linklet_Run_Proc)sjc.linklet_run_start_code;
   if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
-    return proc(menv, env, &name);
+    return proc(linklet, inst, &name);
   else
-    return scheme_module_run_finish(menv, env);
-}
-
-void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name)
-{
-  Module_Exprun_Proc proc = (Module_Exprun_Proc)sjc.module_exprun_start_code;
-  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
-    return proc(menv, set_ns, &name);
-  else
-    return scheme_module_exprun_finish(menv, set_ns);
-}
-
-void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)
-{
-  Module_Start_Proc proc = (Module_Start_Proc)sjc.module_start_start_code;
-  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
-    return proc(a, &name);
-  else
-    return scheme_module_start_finish(a);
+    return scheme_linklet_run_finish(linklet, inst, 1);
 }
 
 void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)

@@ -14,6 +14,7 @@
 (provide create-dirs-catalog)
 
 (module+ main
+  (define immediate? #f)
   (define link? #f)
   (define merge? #f)
   (define check-metadata? #f)
@@ -21,6 +22,8 @@
   
   (command-line
    #:once-each
+   ["--immediate" "Check given directories as immediate packages"
+    (set! immediate? #t)]
    ["--link" "Install packages as links"
     (set! link? #t)]
    ["--merge" "Preserve existing packages in catalog"
@@ -34,6 +37,7 @@
    (create-dirs-catalog catalog-path
                         ;; a list:
                         dir
+                        #:immediate? immediate?
                         #:status-printf (if quiet? void printf)
                         #:link? link?
                         #:merge? merge?
@@ -41,6 +45,7 @@
   
 (define (create-dirs-catalog catalog-path
                              dirs
+                             #:immediate? [immediate? #f]
                              #:status-printf [status-printf void]
                              #:link? [link? #f]
                              #:merge? [merge? #f]
@@ -55,21 +60,31 @@
   ;; further into the package)
   (for ([src-dir (in-list dirs)])
     (when (directory-exists? src-dir)
-      (let loop ([src-dir src-dir])
+      (define (check-content src-dir)
         (for ([f (in-list (directory-list src-dir))])
           (define src-f (build-path src-dir f))
-          (cond
-           [(file-exists? (build-path src-f "info.rkt"))
-            (define f-name (path->string f))
-            (when (hash-ref found f-name #f)
-              (error 'pack-local 
-                     "found package ~a multiple times: ~a and ~a"
-                     f-name
-                     (hash-ref found f-name)
-                     src-f))
-            (hash-set! found f-name src-f)]
-           [(directory-exists? src-f)
-            (loop src-f)])))))
+          (check-path src-f f)))
+      (define (check-path src-f f)
+        (cond
+          [(file-exists? (build-path src-f "info.rkt"))
+           (define f-name (path->string f))
+           (when (hash-ref found f-name #f)
+             (error 'pack-local 
+                    "found package ~a multiple times: ~a and ~a"
+                    f-name
+                    (hash-ref found f-name)
+                    src-f))
+           (hash-set! found f-name src-f)]
+          [(directory-exists? src-f)
+           (check-content src-f)]))
+      (cond
+        [(and immediate?
+              (let-values ([(base name dir?) (split-path src-dir)])
+                (and (path? name)
+                     name)))
+         => (lambda (f) (check-path src-dir f))]
+        [else
+         (check-content src-dir)])))
 
   (unless merge?
     (when (directory-exists? (build-path catalog-path "pkg"))

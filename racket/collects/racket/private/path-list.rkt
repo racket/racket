@@ -4,11 +4,7 @@
   (#%provide path-list-string->path-list)
 
   (define-values (path-list-string->path-list)
-    (let ((r (byte-regexp (string->bytes/utf-8
-			   (let ((sep (if (eq? (system-type) 'windows)
-                                          ";"
-                                          ":")))
-			     (format "([^~a]*)~a(.*)" sep sep)))))
+    (let ((r #f)
 	  (cons-path (lambda (default s l) 
                        (let ([s (if (eq? (system-type) 'windows)
                                     (regexp-replace* #rx#"\"" s #"")
@@ -18,6 +14,12 @@
                              (cons (bytes->path s)
                                    l))))))
       (lambda (s default)
+        (unless r
+          (set! r (byte-regexp (string->bytes/utf-8
+                                (let ((sep (if (eq? (system-type) 'windows)
+                                               ";"
+                                               ":")))
+                                  (format "([^~a]*)~a(.*)" sep sep))))))
 	(unless (or (bytes? s)
 		    (string? s))
 	  (raise-argument-error 'path-list-string->path-list "(or/c bytes? string?)" s))

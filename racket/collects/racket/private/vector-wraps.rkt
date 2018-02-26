@@ -17,12 +17,13 @@
                       for/fXvector
                       for*/fXvector
                       fXvector-copy
-                      fXzero)
+                      fXzero
+                      check-fXvector)
   (...
    (begin
      (define-:vector-like-gen :fXvector-gen unsafe-fXvector-ref)
 
-     (define-in-vector-like in-fXvector*
+     (define-in-vector-like (in-fXvector* check-fXvector)
        fXvector-str fXvector? fXvector-length :fXvector-gen)
 
      (define-sequence-syntax in-fXvector
@@ -32,6 +33,7 @@
                             #'fXvector?
                             #'unsafe-fXvector-length
                             #'in-fXvector*
+                            #'check-fXvector
                             #'unsafe-fXvector-ref))
 
      (define (unsafe-fXvector-copy! vec dest-start flv start end)

@@ -155,7 +155,8 @@
   for/bit-vector
   for*/bit-vector
   bit-vector-copy
-  #f)
+  #f
+  check-bitvector)
 
 ;; A bit vector is represented as bytes.
 (serializable-struct bit-vector (words size)

@@ -1,11 +1,11 @@
 (module mkincludes '#%kernel
-  (#%require '#%min-stx)
   ;; Arguments are
   ;;   <output-file> [<cpp-command> <3m-exe-suffix> <run-racket-command> <this-racket-command>]
   (define-values (args) (current-command-line-arguments))
   
   (define-values (ht)
-    (if (or (= (vector-length args) 1)
+    (if (if (= (vector-length args) 1)
+            #t
             (equal? (vector-ref args (- (vector-length args) 1))
                     (vector-ref args (- (vector-length args) 2))))
         ;; Not cross-compiling

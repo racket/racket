@@ -118,14 +118,14 @@
 (syntax-test #'(module m racket/base (#%require (all-except n . n))))
 (syntax-test #'(module m racket/base (#%require (rename))))
 (syntax-test #'(module m racket/base (#%require (rename . n))))
-(syntax-test #'(module m racket/base (#%require (rename n))))
-(syntax-test #'(module m racket/base (#%require (rename n . n))))
-(syntax-test #'(module m racket/base (#%require (rename n n))))
-(syntax-test #'(module m racket/base (#%require (rename n n . m))))
-(syntax-test #'(module m racket/base (#%require (rename n 1 m))))
-(syntax-test #'(module m racket/base (#%require (rename n n 1))))
-(syntax-test #'(module m racket/base (#%require (rename n n not-there))))
-(syntax-test #'(module m racket/base (#%require (rename n n m extra))))
+(syntax-test #'(module m racket/base (#%require (rename 'n))))
+(syntax-test #'(module m racket/base (#%require (rename 'n . n))))
+(syntax-test #'(module m racket/base (#%require (rename 'n n))))
+(syntax-test #'(module m racket/base (#%require (rename 'n n . m))))
+(syntax-test #'(module m racket/base (#%require (rename 'n 1 m))))
+(syntax-test #'(module m racket/base (#%require (rename 'n n 1))))
+(syntax-test #'(module m racket/base (#%require (rename 'n n not-there))))
+(syntax-test #'(module m racket/base (#%require (rename 'n n m extra))))
 
 (syntax-test #'(module m racket/base (define x 6) (define x 5)))
 (syntax-test #'(module m racket/base (define x 10) (define-syntax x 10)))
@@ -971,7 +971,7 @@
   (define b-s (compile-m b-expr (list a-s)))
 
   (define temp-dir (find-system-path 'temp-dir))
-  (define dir (build-path temp-dir "compiled"))
+  (define dir (build-path temp-dir (car (use-compiled-file-paths))))
   (define dir-existed? (directory-exists? dir))
   (unless dir-existed? (make-directory dir))
 
@@ -1132,7 +1132,7 @@
                          '(rename-out [z x])
                          "x"
                          ;; slow:
-                         "exp\nexp\nrun\nexp\nexp\n"))])
+                         "exp\nexp\nrun\nexp\n"))])
   (define ns (make-base-namespace))
   (define o (open-output-string))
   (parameterize ([current-output-port o])
@@ -1279,7 +1279,7 @@ case of module-leve bindings; it doesn't cover local bindings.
   (define vlen (bytes-ref s (+ start 2)))
   (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
   (case mode
-    [(#\T)
+    [(#\B)
      (define h (make-bytes 20 (+ 42 c)))
      (bytes-copy! s (+ start 4 vlen) h)]
     [(#\D)
@@ -1303,8 +1303,8 @@ case of module-leve bindings; it doesn't cover local bindings.
                         (module s racket/base
                           (provide x)
                           (define x 1)))))
-  (make-directory* (build-path dir "compiled"))
-  (define zo-path (build-path dir "compiled" "tmx_rkt.zo"))
+  (make-directory* (build-path dir  (car (use-compiled-file-paths))))
+  (define zo-path (build-path dir  (car (use-compiled-file-paths)) "tmx_rkt.zo"))
 
   (define bstr
     (let ([b (open-output-bytes)])
@@ -1335,8 +1335,8 @@ case of module-leve bindings; it doesn't cover local bindings.
   (define e (compile '(module tmx2 racket/kernel
                         (#%provide x)
                         (define-values (x) 1))))
-  (make-directory* (build-path dir "compiled"))
-  (define zo-path (build-path dir "compiled" "tmx2_rkt.zo"))
+  (make-directory* (build-path dir (car (use-compiled-file-paths))))
+  (define zo-path (build-path dir (car (use-compiled-file-paths)) "tmx2_rkt.zo"))
 
   (define bstr
     (let ([b (open-output-bytes)])
@@ -1477,6 +1477,46 @@ case of module-leve bindings; it doesn't cover local bindings.
   (provide out))
 
 (test 11 dynamic-require ''module-lift-example-3 'out)
+
+(module module-lift-example-4 racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (main stx)
+    (syntax-case stx ()
+      [(_ body ...)
+       (syntax-local-lift-module #`(module* main #f (main-method)))
+       #'(define (main-method)
+           body ...)]))
+
+  (provide out)
+  (define out #f)
+
+  (main (set! out 12)))
+
+(test (void) dynamic-require '(submod 'module-lift-example-4 main) #f)
+(test 12 dynamic-require ''module-lift-example-4 'out)
+
+(module module-lift-example-5 racket/base
+  (module a racket/base
+    (require (for-syntax racket/base))
+
+    (provide main)
+
+    (define-syntax (main stx)
+      (syntax-case stx ()
+        [(_ body ...)
+         (syntax-local-lift-module #`(module* main #f (main-method)))
+         #'(define (main-method)
+             body ...)])))
+
+  (module b racket/base
+    (require (submod ".." a))
+    (provide out)
+    (define out #f)
+    (main (set! out 13))))
+
+(test (void) dynamic-require '(submod 'module-lift-example-5 b main) #f)
+(test 13 dynamic-require '(submod 'module-lift-example-5 b) 'out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check addition of 'disappeared-use by `provide`
@@ -1677,23 +1717,23 @@ case of module-leve bindings; it doesn't cover local bindings.
   (define tmp (make-temporary-file "~a-module-test" 'directory))
   (parameterize ([current-directory tmp]
                  [current-load-relative-directory tmp])
-    (make-directory "compiled")
+    (make-directory* (car (use-compiled-file-paths)))
     (call-with-output-file*
-     "compiled/a_rkt.zo"
+     (build-path (car (use-compiled-file-paths)) "a_rkt.zo")
      (lambda (o) (write (compile '(module a racket/base
-                              (provide (all-defined-out))
-                              (define a 1)
-                              (define b 2)
-                              (define c 3)))
-                   o)))
+                                    (provide (all-defined-out))
+                                    (define a 1)
+                                    (define b 2)
+                                    (define c 3)))
+                        o)))
     (call-with-output-file*
-     "compiled/b_rkt.zo"
+     (build-path (car (use-compiled-file-paths)) "b_rkt.zo")
      (lambda (o) (write (compile '(module b racket/base
-                              (require "a.rkt"
-                                       ;; Force saving of context, instead of
-                                       ;; reconstruction:
-                                       (only-in racket/base [car extra-car]))))
-                   o))))
+                                    (require "a.rkt"
+                                             ;; Force saving of context, instead of
+                                             ;; reconstruction:
+                                             (only-in racket/base [car extra-car]))))
+                        o))))
   (dynamic-require (build-path tmp "b.rkt") #f)
   (define ns (module->namespace (build-path tmp "b.rkt")))
   (test #t
@@ -1906,6 +1946,42 @@ case of module-leve bindings; it doesn't cover local bindings.
                                      (dynamic-require ''provide-the-x-identifier 'x-id))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `all-defined` exports at only the right phase
+
+(module module-that-exports-at-phase-0-only racket/kernel
+  (#%require (for-syntax racket/kernel))
+  (#%provide (all-defined))
+  (define-values (x) 1)
+  (begin-for-syntax
+    (define-values (x) 2)))
+
+(module module-that-imports-at-multiple-phases racket/kernel
+  (#%require 'module-that-exports-at-phase-0-only
+             ;; Causes a collsion if the module exports too much
+             (for-syntax 'module-that-exports-at-phase-0-only)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a top-level binding doesn't interefere
+;; with reference
+
+(define very-confused-x 1)
+
+(module m-that-defines-very-confused-x racket
+  ;; this line is necessary, but you can require anything
+  ;;(require (only-in racket/base))
+  
+  (define very-confused-x 10))
+
+(require 'm-that-defines-very-confused-x)
+
+(test 10
+      'very-confused-x
+      (parameterize ([current-namespace (module->namespace ''m-that-defines-very-confused-x)])
+        ;; Note: #'very-confused-x will have top-level context
+        ;; as well as the module context
+        (eval #'very-confused-x)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure that re-expansion of a simple (in the sense of `require`
 ;; information kept for `module->namspace`) module body is ok
 
@@ -2066,6 +2142,125 @@ case of module-leve bindings; it doesn't cover local bindings.
   (let ([ns (module->namespace ''m)])
     (eval '(f m) ns)
     (eval '(m) ns)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a module can exports syntax bound to a rename transformer
+;; to an unbound identifier
+
+(let ([decl
+       '(module provides-rename-transformer-to-nowhere '#%kernel
+          (#%require (for-syntax '#%kernel))
+          (#%provide x)
+          (define-syntaxes (x) (make-rename-transformer (quote-syntax y))))])
+  (define o (open-output-bytes))
+  (write (compile decl) o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read (open-input-bytes (get-output-bytes o))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `variable-reference->namespace` at phase 1
+;; doesn't interfere with re-expansion when trigged
+;; by a submodule
+;;
+;; This test is by William Bowman, Michael Ballantyne, and
+;; Leif Andersen.
+
+(let ([m '(module namespace-mismatch racket/base
+            (#%plain-module-begin
+
+             (#%require (for-syntax racket/base))
+
+             (begin-for-syntax
+               (let ([ns (variable-reference->namespace (#%variable-reference))])
+                 ;; The top level at phase 1 ...
+                 (eval #'(define-syntax-rule (m) (begin (define x 2) x)) ns)
+                 ;; The expander will have to find the right macro-introduced `x`:
+                 (eval #'(m) ns))
+               (#%plain-lambda () foo))
+
+             (begin-for-syntax
+               (define-values (foo) #f))
+
+             (module* f #f
+               (#%plain-module-begin))))])
+  (expand (expand m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that prefixing a submodule require doesn't
+;; run into trouble related to the expand-time submodule
+;; instance not being registered in the bulk-binding
+;; provides table
+
+(module check-prefixed-bulk-provides-from-submodules racket/base
+  (module a racket/base
+    (provide a1 a2 a3)
+    (define a1 'a1)
+    (define a2 'a2)
+    (define a3 'a3))
+  
+  (require (prefix-in a: 'a))
+
+  (define another 'x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Allow a reference to a never-defined variable in a `local-expand`
+;; or `syntax-local-bind-syntaxes` on the grounds that the result is
+;; not necessarily in the module's expansion. But keep track of
+;; missing variables encountered during
+;; `syntax-local-expand-expression`, since the opqaue result can be
+;; included without further inspection.
+
+(module im-ok-and-your-ok-local-expand racket/base
+  (require (for-syntax racket/base)
+           (for-meta 2 racket/base))
+  (begin-for-syntax
+    (define-syntax (m stx)
+      (local-expand #'(lambda () nonesuch) 'expression '())
+      #''ok)
+    (m)))
+
+(module im-ok-and-your-ok-syntax-local-bind-syntaxes racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-bind-syntaxes (list #'x)
+                                #'(lambda () nonesuch)
+                                (syntax-local-make-definition-context))
+     #''ok)
+  (m))
+
+(syntax-test #'(module im-ok-and-your-ok-local-expand racket/base
+                 (require (for-syntax racket/base)
+                          (for-meta 2 racket/base))
+                 (begin-for-syntax
+                   (define-syntax (m stx)
+                     (syntax-local-expand-expression #'(lambda () nonesuch))
+                     #''ok)
+                   (m))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that shadowing in phase 1 doesn't
+;; prevent `all-from-out` from providing the same
+;; binding unshadowed at phase 0
+
+(module check-shadowing-in-other-phase-d racket/base
+  (provide b)
+  (define b 'd))
+
+(module check-shadowing-in-other-phase-c racket/base
+  (require (for-syntax racket/base))
+  (provide b (all-from-out racket/base)
+           (for-syntax b))
+  (define b 'c)
+  (define-for-syntax b 'c1))
+
+(module check-shadowing-in-other-phase-b 'check-shadowing-in-other-phase-c
+  (require (for-syntax 'check-shadowing-in-other-phase-d))
+  (provide (all-from-out 'check-shadowing-in-other-phase-c)
+           (for-syntax (all-from-out 'check-shadowing-in-other-phase-d))))
+  
+(module check-shadowing-in-other-phase-a racket/base
+  (require 'check-shadowing-in-other-phase-b)
+  b)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

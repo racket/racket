@@ -16,6 +16,9 @@
 
 (define we (make-will-executor))
 
+(test #f will-try-execute we)
+(test 'no will-try-execute we 'no)
+
 ;; Never GC this one:
 (test (void) will-register we test (lambda (x) (error 'bad-will-call)))
 
@@ -61,7 +64,7 @@
 (arity-test will-executor? 1 1)
 (arity-test will-register 3 3)
 (arity-test will-execute 1 1)
-(arity-test will-try-execute 1 1)
+(arity-test will-try-execute 1 2)
 
 ;; ----------------------------------------
 ;; Test custodian boxes
@@ -192,7 +195,7 @@
 ;; ----------------------------------------
 ;; Phantom bytes:
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (define s (make-semaphore))
   (define c (make-custodian))
   (define t (parameterize ([current-custodian c])
@@ -238,7 +241,7 @@
 ;; Check that local variables are cleared for space safety
 ;; before a tail `sync' or `thread-wait':
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (define weak-syms (make-weak-hash))
 
   (define thds
@@ -267,7 +270,7 @@
 ;; a reference can be important to the expansion to a call to a keyword-accepting
 ;; function.
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (define (mk)
     (parameterize ([current-namespace (make-base-namespace)])
       (eval '(module module-with-unoptimized-varref-constant racket/base
@@ -357,10 +360,46 @@
   (test #t 'many-vectors-in-reasonable-space? done?))
 
 ;; ----------------------------------------
+;; Check that a thread that has a reference to
+;; module-level variables doesn't retain the
+;; namespace strongly
+
+(unless (eq? 'cgc (system-type 'gc))
+  (define-values (f w)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (define g (gensym 'gensym-via-namespace))
+      (eval `(module n racket/base
+              ;; If the namespace is retained strongly, then
+              ;; the symbol is reachable through this definition:
+              (define anchor (quote ,g))))
+      (eval `(module m racket/base
+              (require 'n)
+              (provide f sema)
+              (define sema (make-semaphore))
+              (define (f)
+                (thread
+                 (lambda ()
+                   ;; Ideally, this loop retains only `loop`
+                   ;; and `sema`. If it retains everything refereneced
+                   ;; or defined in the module, though, at least make
+                   ;; sure it doesn't retain the whole namespace
+                   (let loop () (sync sema) (loop)))))))
+      (namespace-require ''m)
+      (values (dynamic-require ''m 'f)
+              (make-weak-box g))))
+
+  (define t (f))
+  (sync (system-idle-evt))
+
+  (collect-garbage)
+  (test #f weak-box-value w)
+  (kill-thread t))
+
+;; ----------------------------------------
 ;; Check that ephemeron chains do not lead
 ;; to O(N^2) behavior with 3m
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   (define (wrapper v) (list 1 2 3 4 5 v))
 
   ;; Create a chain of ephemerons where we have all
@@ -423,7 +462,7 @@
 ;; ----------------------------------------
 ;; Check that `apply` doesn't retain its argument
 
-(when (eq? '3m (system-type 'gc))
+(unless (eq? 'cgc (system-type 'gc))
   
   (define retained 0)
 

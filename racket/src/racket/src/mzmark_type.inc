@@ -46,54 +46,6 @@ static int variable_obj_FIXUP(void *p, struct NewGC *gc) {
 #define variable_obj_IS_CONST_SIZE 1
 
 
-static int module_var_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Module_Variable));
-#else
-  return 0;
-#endif
-}
-
-static int module_var_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Module_Variable *mv = (Module_Variable *)p;
-
-  gcMARK2(mv->modidx, gc);
-  gcMARK2(mv->sym, gc);
-  gcMARK2(mv->insp, gc);
-  gcMARK2(mv->shape, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Module_Variable));
-# endif
-#endif
-}
-
-static int module_var_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Module_Variable *mv = (Module_Variable *)p;
-
-  gcFIXUP2(mv->modidx, gc);
-  gcFIXUP2(mv->sym, gc);
-  gcFIXUP2(mv->insp, gc);
-  gcFIXUP2(mv->shape, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Module_Variable));
-# endif
-#endif
-}
-
-#define module_var_IS_ATOMIC 0
-#define module_var_IS_CONST_SIZE 1
-
-
 static int bucket_obj_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Bucket));
@@ -204,40 +156,6 @@ static int toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
 
 #define toplevel_obj_IS_ATOMIC 1
 #define toplevel_obj_IS_CONST_SIZE 1
-
-
-static int quotesyntax_obj_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
-#else
-  return 0;
-#endif
-}
-
-static int quotesyntax_obj_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
-# endif
-#endif
-}
-
-static int quotesyntax_obj_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Quote_Syntax));
-# endif
-#endif
-}
-
-#define quotesyntax_obj_IS_ATOMIC 1
-#define quotesyntax_obj_IS_CONST_SIZE 1
 
 
 static int cpointer_obj_SIZE(void *p, struct NewGC *gc) {
@@ -961,6 +879,9 @@ static int ir_local_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(var->name, gc);
   switch (var->mode) {
+  case SCHEME_VAR_MODE_COMPILE:
+    gcMARK2(var->compile.use_box, gc);
+    break;
   case SCHEME_VAR_MODE_LETREC_CHECK:
     gcMARK2(var->letrec_check.frame, gc);
     break;
@@ -990,6 +911,9 @@ static int ir_local_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(var->name, gc);
   switch (var->mode) {
+  case SCHEME_VAR_MODE_COMPILE:
+    gcFIXUP2(var->compile.use_box, gc);
+    break;
   case SCHEME_VAR_MODE_LETREC_CHECK:
     gcFIXUP2(var->letrec_check.frame, gc);
     break;
@@ -1015,6 +939,40 @@ static int ir_local_FIXUP(void *p, struct NewGC *gc) {
 
 #define ir_local_IS_ATOMIC 0
 #define ir_local_IS_CONST_SIZE 1
+
+
+static int ir_toplevel_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Toplevel));
+#else
+  return 0;
+#endif
+}
+
+static int ir_toplevel_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Toplevel));
+# endif
+#endif
+}
+
+static int ir_toplevel_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Toplevel));
+# endif
+#endif
+}
+
+#define ir_toplevel_IS_ATOMIC 1
+#define ir_toplevel_IS_CONST_SIZE 1
 
 
 static int ir_let_value_SIZE(void *p, struct NewGC *gc) {
@@ -2590,41 +2548,6 @@ static int output_port_FIXUP(void *p, struct NewGC *gc) {
 #define output_port_IS_CONST_SIZE 1
 
 
-
-static int syntax_compiler_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-#else
-  return 0;
-#endif
-}
-
-static int syntax_compiler_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-# endif
-#endif
-}
-
-static int syntax_compiler_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-# endif
-#endif
-}
-
-#define syntax_compiler_IS_ATOMIC 1
-#define syntax_compiler_IS_CONST_SIZE 1
-
-
 static int thread_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
@@ -2688,14 +2611,6 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->return_marks_to, gc);
   gcMARK2(pr->returned_marks, gc);
   
-  gcMARK2(pr->current_local_env, gc);
-  gcMARK2(pr->current_local_scope, gc);
-  gcMARK2(pr->current_local_use_scope, gc);
-  gcMARK2(pr->current_local_name, gc);
-  gcMARK2(pr->current_local_modidx, gc);
-  gcMARK2(pr->current_local_menv, gc);
-  gcMARK2(pr->current_local_bindings, gc);
-
   gcMARK2(pr->current_mt, gc);
 
   gcMARK2(pr->constant_folding, gc);
@@ -2820,14 +2735,6 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->return_marks_to, gc);
   gcFIXUP2(pr->returned_marks, gc);
   
-  gcFIXUP2(pr->current_local_env, gc);
-  gcFIXUP2(pr->current_local_scope, gc);
-  gcFIXUP2(pr->current_local_use_scope, gc);
-  gcFIXUP2(pr->current_local_name, gc);
-  gcFIXUP2(pr->current_local_modidx, gc);
-  gcFIXUP2(pr->current_local_menv, gc);
-  gcFIXUP2(pr->current_local_bindings, gc);
-
   gcFIXUP2(pr->current_mt, gc);
 
   gcFIXUP2(pr->constant_folding, gc);
@@ -3284,7 +3191,7 @@ static int bucket_table_val_FIXUP(void *p, struct NewGC *gc) {
 #define bucket_table_val_IS_CONST_SIZE 1
 
 
-static int namespace_val_SIZE(void *p, struct NewGC *gc) {
+static int env_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
 #else
@@ -3292,50 +3199,13 @@ static int namespace_val_SIZE(void *p, struct NewGC *gc) {
 #endif
 }
 
-static int namespace_val_MARK(void *p, struct NewGC *gc) {
+static int env_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Env *e = (Scheme_Env *)p;
 
-  gcMARK2(e->module, gc);
-  gcMARK2(e->module_registry, gc);
-  gcMARK2(e->module_pre_registry, gc);
-  gcMARK2(e->guard_insp, gc);
-  gcMARK2(e->access_insp, gc);
-
-  gcMARK2(e->stx_context, gc);
-  gcMARK2(e->tmp_bind_scope, gc);
-
-  gcMARK2(e->syntax, gc);
-  gcMARK2(e->exp_env, gc);
-  gcMARK2(e->template_env, gc);
-  gcMARK2(e->label_env, gc);
-  gcMARK2(e->instance_env, gc);
-  gcMARK2(e->reader_env, gc);
-
-  gcMARK2(e->shadowed_syntax, gc);
-
-  gcMARK2(e->lift_key, gc);
-
-  gcMARK2(e->link_midx, gc);
-  gcMARK2(e->require_names, gc);
-  gcMARK2(e->et_require_names, gc);
-  gcMARK2(e->tt_require_names, gc);
-  gcMARK2(e->dt_require_names, gc);
-  gcMARK2(e->other_require_names, gc);
-  gcMARK2(e->running, gc);
-  gcMARK2(e->did_starts, gc);
-  gcMARK2(e->available_next[0], gc);
-  gcMARK2(e->available_next[1], gc);
-
-  gcMARK2(e->toplevel, gc);
-  gcMARK2(e->modchain, gc);
-
-  gcMARK2(e->modvars, gc);
-
-  gcMARK2(e->weak_self_link, gc);
-
-  gcMARK2(e->binding_names, gc);
-
+  gcMARK2(e->namespace, gc);
+  gcMARK2(e->instance, gc);
+  gcMARK2(e->protected, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -3345,50 +3215,13 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 #endif
 }
 
-static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
+static int env_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Env *e = (Scheme_Env *)p;
 
-  gcFIXUP2(e->module, gc);
-  gcFIXUP2(e->module_registry, gc);
-  gcFIXUP2(e->module_pre_registry, gc);
-  gcFIXUP2(e->guard_insp, gc);
-  gcFIXUP2(e->access_insp, gc);
-
-  gcFIXUP2(e->stx_context, gc);
-  gcFIXUP2(e->tmp_bind_scope, gc);
-
-  gcFIXUP2(e->syntax, gc);
-  gcFIXUP2(e->exp_env, gc);
-  gcFIXUP2(e->template_env, gc);
-  gcFIXUP2(e->label_env, gc);
-  gcFIXUP2(e->instance_env, gc);
-  gcFIXUP2(e->reader_env, gc);
-
-  gcFIXUP2(e->shadowed_syntax, gc);
-
-  gcFIXUP2(e->lift_key, gc);
-
-  gcFIXUP2(e->link_midx, gc);
-  gcFIXUP2(e->require_names, gc);
-  gcFIXUP2(e->et_require_names, gc);
-  gcFIXUP2(e->tt_require_names, gc);
-  gcFIXUP2(e->dt_require_names, gc);
-  gcFIXUP2(e->other_require_names, gc);
-  gcFIXUP2(e->running, gc);
-  gcFIXUP2(e->did_starts, gc);
-  gcFIXUP2(e->available_next[0], gc);
-  gcFIXUP2(e->available_next[1], gc);
-
-  gcFIXUP2(e->toplevel, gc);
-  gcFIXUP2(e->modchain, gc);
-
-  gcFIXUP2(e->modvars, gc);
-
-  gcFIXUP2(e->weak_self_link, gc);
-
-  gcFIXUP2(e->binding_names, gc);
-
+  gcFIXUP2(e->namespace, gc);
+  gcFIXUP2(e->instance, gc);
+  gcFIXUP2(e->protected, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -3398,48 +3231,54 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
 #endif
 }
 
-#define namespace_val_IS_ATOMIC 0
-#define namespace_val_IS_CONST_SIZE 1
+#define env_val_IS_ATOMIC 0
+#define env_val_IS_CONST_SIZE 1
 
 
-static int module_reg_val_SIZE(void *p, struct NewGC *gc) {
+static int startup_env_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Startup_Env));
 #else
   return 0;
 #endif
 }
 
-static int module_reg_val_MARK(void *p, struct NewGC *gc) {
+static int startup_env_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
-  gcMARK2(r->loaded, gc);
-  gcMARK2(r->exports, gc);
+  Scheme_Startup_Env *e = (Scheme_Startup_Env *)p;
+
+  gcMARK2(e->current_table, gc);
+  gcMARK2(e->primitive_tables, gc);
+  gcMARK2(e->all_primitives_table, gc);
+  gcMARK2(e->primitive_ids_table, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Startup_Env));
 # endif
 #endif
 }
 
-static int module_reg_val_FIXUP(void *p, struct NewGC *gc) {
+static int startup_env_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Module_Registry *r = (Scheme_Module_Registry *)p;
-  gcFIXUP2(r->loaded, gc);
-  gcFIXUP2(r->exports, gc);
+  Scheme_Startup_Env *e = (Scheme_Startup_Env *)p;
+
+  gcFIXUP2(e->current_table, gc);
+  gcFIXUP2(e->primitive_tables, gc);
+  gcFIXUP2(e->all_primitives_table, gc);
+  gcFIXUP2(e->primitive_ids_table, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Registry));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Startup_Env));
 # endif
 #endif
 }
 
-#define module_reg_val_IS_ATOMIC 0
-#define module_reg_val_IS_CONST_SIZE 1
+#define startup_env_val_IS_ATOMIC 0
+#define startup_env_val_IS_CONST_SIZE 1
 
 
 static int random_state_val_SIZE(void *p, struct NewGC *gc) {
@@ -3476,56 +3315,12 @@ static int random_state_val_FIXUP(void *p, struct NewGC *gc) {
 #define random_state_val_IS_CONST_SIZE 1
 
 
-static int compilation_top_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
-#else
-  return 0;
-#endif
-}
-
-static int compilation_top_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
-  gcMARK2(t->code, gc);
-  gcMARK2(t->prefix, gc);
-  gcMARK2(t->binding_namess, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
-# endif
-#endif
-}
-
-static int compilation_top_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
-  gcFIXUP2(t->code, gc);
-  gcFIXUP2(t->prefix, gc);
-  gcFIXUP2(t->binding_namess, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
-# endif
-#endif
-}
-
-#define compilation_top_val_IS_ATOMIC 0
-#define compilation_top_val_IS_CONST_SIZE 1
-
-
 static int prefix_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   Scheme_Prefix *pf = (Scheme_Prefix *)p;
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
+                    + ((((pf->num_slots + 31) / 32) 
                        * sizeof(int))));
 #else
   return 0;
@@ -3544,7 +3339,7 @@ static int prefix_val_MARK(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
+                    + ((((pf->num_slots + 31) / 32) 
                        * sizeof(int))));
 # endif
 #endif
@@ -3562,7 +3357,7 @@ static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
   return
   gcBYTES_TO_WORDS((sizeof(Scheme_Prefix) 
 		    + ((pf->num_slots-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                    + ((((pf->num_slots - pf->num_stxes) + 31) / 32) 
+                    + ((((pf->num_slots + 31) / 32) 
                        * sizeof(int))));
 # endif
 #endif
@@ -3570,98 +3365,6 @@ static int prefix_val_FIXUP(void *p, struct NewGC *gc) {
 
 #define prefix_val_IS_ATOMIC 0
 #define prefix_val_IS_CONST_SIZE 0
-
-
-static int resolve_prefix_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
-#else
-  return 0;
-#endif
-}
-
-static int resolve_prefix_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Resolve_Prefix *rp = (Resolve_Prefix *)p;
-  gcMARK2(rp->toplevels, gc);
-  gcMARK2(rp->stxes, gc);
-  gcMARK2(rp->delay_info_rpair, gc);
-  gcMARK2(rp->src_insp_desc, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
-# endif
-#endif
-}
-
-static int resolve_prefix_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Resolve_Prefix *rp = (Resolve_Prefix *)p;
-  gcFIXUP2(rp->toplevels, gc);
-  gcFIXUP2(rp->stxes, gc);
-  gcFIXUP2(rp->delay_info_rpair, gc);
-  gcFIXUP2(rp->src_insp_desc, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
-# endif
-#endif
-}
-
-#define resolve_prefix_val_IS_ATOMIC 0
-#define resolve_prefix_val_IS_CONST_SIZE 1
-
-
-static int comp_prefix_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
-#else
-  return 0;
-#endif
-}
-
-static int comp_prefix_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Comp_Prefix *cp = (Comp_Prefix *)p;
-  gcMARK2(cp->toplevels, gc);
-  gcMARK2(cp->inline_variants, gc);
-  gcMARK2(cp->unbound, gc);
-  gcMARK2(cp->stxes, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
-# endif
-#endif
-}
-
-static int comp_prefix_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Comp_Prefix *cp = (Comp_Prefix *)p;
-  gcFIXUP2(cp->toplevels, gc);
-  gcFIXUP2(cp->inline_variants, gc);
-  gcFIXUP2(cp->unbound, gc);
-  gcFIXUP2(cp->stxes, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
-# endif
-#endif
-}
-
-#define comp_prefix_val_IS_ATOMIC 0
-#define comp_prefix_val_IS_CONST_SIZE 1
 
 
 static int svector_val_SIZE(void *p, struct NewGC *gc) {
@@ -3719,10 +3422,6 @@ static int stx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->scopes, gc);
-  gcMARK2(stx->u.to_propagate, gc);
-  gcMARK2(stx->shifts, gc);
-  gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -3738,10 +3437,6 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcFIXUP2(stx->val, gc);
   gcFIXUP2(stx->srcloc, gc);
-  gcFIXUP2(stx->scopes, gc);
-  gcFIXUP2(stx->u.to_propagate, gc);
-  gcFIXUP2(stx->shifts, gc);
-  gcFIXUP2(stx->taints, gc);
   gcFIXUP2(stx->props, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -3756,388 +3451,104 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
 #define stx_val_IS_CONST_SIZE 1
 
 
-static int stx_off_val_SIZE(void *p, struct NewGC *gc) {
+static int linklet_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Linklet));
 #else
   return 0;
 #endif
 }
 
-static int stx_off_val_MARK(void *p, struct NewGC *gc) {
+static int linklet_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Stx_Offset *o = (Scheme_Stx_Offset *)p;
-  gcMARK2(o->src, gc);
+  Scheme_Linklet *l = (Scheme_Linklet *)p;
+
+  gcMARK2(l->name, gc);
+  gcMARK2(l->importss, gc);
+  gcMARK2(l->import_shapes, gc);
+  gcMARK2(l->defns, gc);
+  gcMARK2(l->source_names, gc);
+  gcMARK2(l->bodies, gc);
+  gcMARK2(l->constants, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Linklet));
 # endif
 #endif
 }
 
-static int stx_off_val_FIXUP(void *p, struct NewGC *gc) {
+static int linklet_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Stx_Offset *o = (Scheme_Stx_Offset *)p;
-  gcFIXUP2(o->src, gc);
+  Scheme_Linklet *l = (Scheme_Linklet *)p;
+
+  gcFIXUP2(l->name, gc);
+  gcFIXUP2(l->importss, gc);
+  gcFIXUP2(l->import_shapes, gc);
+  gcFIXUP2(l->defns, gc);
+  gcFIXUP2(l->source_names, gc);
+  gcFIXUP2(l->bodies, gc);
+  gcFIXUP2(l->constants, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Offset));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Linklet));
 # endif
 #endif
 }
 
-#define stx_off_val_IS_ATOMIC 0
-#define stx_off_val_IS_CONST_SIZE 1
+#define linklet_val_IS_ATOMIC 0
+#define linklet_val_IS_CONST_SIZE 1
 
 
-static int module_val_SIZE(void *p, struct NewGC *gc) {
+static int instance_val_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Instance));
 #else
   return 0;
 #endif
 }
 
-static int module_val_MARK(void *p, struct NewGC *gc) {
+static int instance_val_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Module *m = (Scheme_Module *)p;
+  Scheme_Instance *i = (Scheme_Instance *)p;
 
-  gcMARK2(m->phaseless, gc);
-
-  gcMARK2(m->code_key, gc);
-
-  gcMARK2(m->modname, gc);
-  gcMARK2(m->modsrc, gc);
-
-  gcMARK2(m->et_requires, gc);
-  gcMARK2(m->requires, gc);
-  gcMARK2(m->tt_requires, gc);
-  gcMARK2(m->dt_requires, gc);
-  gcMARK2(m->other_requires, gc);
-
-  gcMARK2(m->bodies, gc);
-
-  gcMARK2(m->me, gc);
-
-  gcMARK2(m->exp_infos, gc);
-
-  gcMARK2(m->self_modidx, gc);
-
-  gcMARK2(m->binding_names, gc);
-  gcMARK2(m->et_binding_names, gc);
-  gcMARK2(m->other_binding_names, gc);
-
-  gcMARK2(m->insp, gc);
-
-  gcMARK2(m->lang_info, gc);
-
-  gcMARK2(m->hints, gc);
-  gcMARK2(m->ii_src, gc);
-  gcMARK2(m->super_bxs_info, gc);
-  gcMARK2(m->sub_iidx_ptrs, gc);
-
-  gcMARK2(m->comp_prefix, gc);
-  gcMARK2(m->prefix, gc);
-  gcMARK2(m->dummy, gc);
-
-  gcMARK2(m->rn_stx, gc);
-
-  gcMARK2(m->submodule_path, gc);
-  gcMARK2(m->pre_submodules, gc);
-  gcMARK2(m->post_submodules, gc);
-  gcMARK2(m->pre_submodule_names, gc);
-  gcMARK2(m->supermodule, gc);
-  gcMARK2(m->submodule_ancestry, gc);
-
-  gcMARK2(m->primitive, gc);
+  gcMARK2(i->variables.a, gc);
+  gcMARK2(i->weak_self_link, gc);
+  gcMARK2(i->source_names, gc);
+  gcMARK2(i->name, gc);
+  gcMARK2(i->data, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Instance));
 # endif
 #endif
 }
 
-static int module_val_FIXUP(void *p, struct NewGC *gc) {
+static int instance_val_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Module *m = (Scheme_Module *)p;
+  Scheme_Instance *i = (Scheme_Instance *)p;
 
-  gcFIXUP2(m->phaseless, gc);
-
-  gcFIXUP2(m->code_key, gc);
-
-  gcFIXUP2(m->modname, gc);
-  gcFIXUP2(m->modsrc, gc);
-
-  gcFIXUP2(m->et_requires, gc);
-  gcFIXUP2(m->requires, gc);
-  gcFIXUP2(m->tt_requires, gc);
-  gcFIXUP2(m->dt_requires, gc);
-  gcFIXUP2(m->other_requires, gc);
-
-  gcFIXUP2(m->bodies, gc);
-
-  gcFIXUP2(m->me, gc);
-
-  gcFIXUP2(m->exp_infos, gc);
-
-  gcFIXUP2(m->self_modidx, gc);
-
-  gcFIXUP2(m->binding_names, gc);
-  gcFIXUP2(m->et_binding_names, gc);
-  gcFIXUP2(m->other_binding_names, gc);
-
-  gcFIXUP2(m->insp, gc);
-
-  gcFIXUP2(m->lang_info, gc);
-
-  gcFIXUP2(m->hints, gc);
-  gcFIXUP2(m->ii_src, gc);
-  gcFIXUP2(m->super_bxs_info, gc);
-  gcFIXUP2(m->sub_iidx_ptrs, gc);
-
-  gcFIXUP2(m->comp_prefix, gc);
-  gcFIXUP2(m->prefix, gc);
-  gcFIXUP2(m->dummy, gc);
-
-  gcFIXUP2(m->rn_stx, gc);
-
-  gcFIXUP2(m->submodule_path, gc);
-  gcFIXUP2(m->pre_submodules, gc);
-  gcFIXUP2(m->post_submodules, gc);
-  gcFIXUP2(m->pre_submodule_names, gc);
-  gcFIXUP2(m->supermodule, gc);
-  gcFIXUP2(m->submodule_ancestry, gc);
-
-  gcFIXUP2(m->primitive, gc);
+  gcFIXUP2(i->variables.a, gc);
+  gcFIXUP2(i->weak_self_link, gc);
+  gcFIXUP2(i->source_names, gc);
+  gcFIXUP2(i->name, gc);
+  gcFIXUP2(i->data, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Instance));
 # endif
 #endif
 }
 
-#define module_val_IS_ATOMIC 0
-#define module_val_IS_CONST_SIZE 1
-
-
-static int exp_info_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
-#else
-  return 0;
-#endif
-}
-
-static int exp_info_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Module_Export_Info *m = (Scheme_Module_Export_Info *)p;
-
-  gcMARK2(m->provide_protects, gc);
-  gcMARK2(m->indirect_provides, gc);
-
-  gcMARK2(m->indirect_syntax_provides, gc);
-
-  gcMARK2(m->accessible, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
-# endif
-#endif
-}
-
-static int exp_info_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Module_Export_Info *m = (Scheme_Module_Export_Info *)p;
-
-  gcFIXUP2(m->provide_protects, gc);
-  gcFIXUP2(m->indirect_provides, gc);
-
-  gcFIXUP2(m->indirect_syntax_provides, gc);
-
-  gcFIXUP2(m->accessible, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Export_Info));
-# endif
-#endif
-}
-
-#define exp_info_val_IS_ATOMIC 0
-#define exp_info_val_IS_CONST_SIZE 1
-
-
-static int module_phase_exports_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
-#else
-  return 0;
-#endif
-}
-
-static int module_phase_exports_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
-
-  gcMARK2(m->phase_index, gc);
-
-  gcMARK2(m->src_modidx, gc);
-
-  gcMARK2(m->provides, gc);
-  gcMARK2(m->provide_srcs, gc);
-  gcMARK2(m->provide_src_names, gc);
-  gcMARK2(m->provide_nominal_srcs, gc);
-  gcMARK2(m->provide_src_phases, gc);
-
-  gcMARK2(m->ht, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
-# endif
-#endif
-}
-
-static int module_phase_exports_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Module_Phase_Exports *m = (Scheme_Module_Phase_Exports *)p;
-
-  gcFIXUP2(m->phase_index, gc);
-
-  gcFIXUP2(m->src_modidx, gc);
-
-  gcFIXUP2(m->provides, gc);
-  gcFIXUP2(m->provide_srcs, gc);
-  gcFIXUP2(m->provide_src_names, gc);
-  gcFIXUP2(m->provide_nominal_srcs, gc);
-  gcFIXUP2(m->provide_src_phases, gc);
-
-  gcFIXUP2(m->ht, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Phase_Exports));
-# endif
-#endif
-}
-
-#define module_phase_exports_val_IS_ATOMIC 0
-#define module_phase_exports_val_IS_CONST_SIZE 1
-
-
-static int module_exports_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
-#else
-  return 0;
-#endif
-}
-
-static int module_exports_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
-
-  gcMARK2(m->rt, gc);
-  gcMARK2(m->et, gc);
-  gcMARK2(m->dt, gc);
-  gcMARK2(m->other_phases, gc);
-
-  gcMARK2(m->src_modidx, gc);
-  gcMARK2(m->modsrc, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
-# endif
-#endif
-}
-
-static int module_exports_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Module_Exports *m = (Scheme_Module_Exports *)p;
-
-  gcFIXUP2(m->rt, gc);
-  gcFIXUP2(m->et, gc);
-  gcFIXUP2(m->dt, gc);
-  gcFIXUP2(m->other_phases, gc);
-
-  gcFIXUP2(m->src_modidx, gc);
-  gcFIXUP2(m->modsrc, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Module_Exports));
-# endif
-#endif
-}
-
-#define module_exports_val_IS_ATOMIC 0
-#define module_exports_val_IS_CONST_SIZE 1
-
-
-static int modidx_val_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
-#else
-  return 0;
-#endif
-}
-
-static int modidx_val_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Modidx *modidx = (Scheme_Modidx *)p;
-
-  gcMARK2(modidx->path, gc);
-  gcMARK2(modidx->base, gc);
-  gcMARK2(modidx->resolved, gc);
-  gcMARK2(modidx->shift_cache, gc);
-  gcMARK2(modidx->cache_next, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
-# endif
-#endif
-}
-
-static int modidx_val_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Modidx *modidx = (Scheme_Modidx *)p;
-
-  gcFIXUP2(modidx->path, gc);
-  gcFIXUP2(modidx->base, gc);
-  gcFIXUP2(modidx->resolved, gc);
-  gcFIXUP2(modidx->shift_cache, gc);
-  gcFIXUP2(modidx->cache_next, gc);
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Modidx));
-# endif
-#endif
-}
-
-#define modidx_val_IS_ATOMIC 0
-#define modidx_val_IS_CONST_SIZE 1
+#define instance_val_IS_ATOMIC 0
+#define instance_val_IS_CONST_SIZE 1
 
 
 static int guard_val_SIZE(void *p, struct NewGC *gc) {

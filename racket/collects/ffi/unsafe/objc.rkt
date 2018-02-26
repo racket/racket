@@ -219,9 +219,7 @@
                       (cast (objc_lookUpClass name) _Class _Protocol))))
 
 (define-objc sel_registerName (_fun _string -> _SEL)
-  #:fail (lambda () (lambda (name)
-                      ;; Fake registration using interned symbols
-                      (cast (string->symbol name) _racket _gcpointer))))
+  #:fail (lambda () (lambda (name) #f)))
 
 (define-objc objc_allocateClassPair (_fun _Class _string _long -> _Class)
   #:fail (lambda () #f))

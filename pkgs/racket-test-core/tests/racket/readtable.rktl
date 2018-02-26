@@ -157,7 +157,7 @@
 				(let ([s1 (format "a~ab" ch)]
 				      [s2 (format "~aab~a" ch ch)])
 				  (test-read s1 (list (string->symbol s1)))
-				  (test-read s2 (list (string->symbol s2)) #f)
+                                  (test-read s2 (list (string->symbol s2)) #f)
 				  (let ([blank (if (char=? ch #\space)
 						   #\newline
 						   #\space)])

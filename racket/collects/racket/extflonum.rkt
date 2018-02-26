@@ -21,4 +21,5 @@
   for/extflvector
   for*/extflvector
   extflvector-copy
-  0.0T0)
+  0.0T0
+  check-extflonum)

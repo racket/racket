@@ -6032,7 +6032,7 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 #endif
 
-void scheme_regexp_initialize(Scheme_Env *env)
+void scheme_regexp_initialize(Scheme_Startup_Env *env)
 {
 #ifdef MZ_PRECISE_GC
   GC_REG_TRAV(scheme_regexp_type, mark_regexp);
@@ -6043,30 +6043,30 @@ void scheme_regexp_initialize(Scheme_Env *env)
   REGISTER_SO(empty_byte_string);
   empty_byte_string = scheme_alloc_byte_string(0, 0);
 
-  GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 2, env);
-  GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 2, env);
-  GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 2, env);
-  GLOBAL_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 2, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match",                          compare,                 2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match/end",                      compare_end,             2, 7, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-positions/end",            positions_end,           2, 7, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions/end",       positions_peek_end,      2, 7, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 6, env);
-  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate/end", positions_peek_nonblock_end, 2, 7, env);
-  GLOBAL_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 4, env);
-  GLOBAL_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 4, env);
+  ADD_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 2, env);
+  ADD_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 2, env);
+  ADD_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 2, env);
+  ADD_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 2, env);
+  ADD_PRIM_W_ARITY("regexp-match",                          compare,                 2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match/end",                      compare_end,             2, 7, env);
+  ADD_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-positions/end",            positions_end,           2, 7, env);
+  ADD_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek-positions/end",       positions_peek_end,      2, 7, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 6, env);
+  ADD_PRIM_W_ARITY("regexp-match-peek-positions-immediate/end", positions_peek_nonblock_end, 2, 7, env);
+  ADD_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 4, env);
+  ADD_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 4, env);
 
-  GLOBAL_FOLDING_PRIM("regexp?",                               regexp_p,        1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("byte-regexp?",                          byte_regexp_p,   1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("pregexp?",                              pregexp_p,       1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
+  ADD_FOLDING_PRIM("regexp?",                               regexp_p,        1, 1, 1, env);
+  ADD_FOLDING_PRIM("byte-regexp?",                          byte_regexp_p,   1, 1, 1, env);
+  ADD_FOLDING_PRIM("pregexp?",                              pregexp_p,       1, 1, 1, env);
+  ADD_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
 
-  GLOBAL_FOLDING_PRIM("regexp-max-lookbehind",                 regexp_lookbehind, 1, 1, 1, env);
+  ADD_FOLDING_PRIM("regexp-max-lookbehind",                 regexp_lookbehind, 1, 1, 1, env);
 }
 
 void scheme_init_regexp_places()

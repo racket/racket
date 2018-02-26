@@ -119,7 +119,7 @@
   scheme_extension_table->scheme_get_string_output = scheme_get_string_output;
   scheme_extension_table->scheme_pipe = scheme_pipe;
   scheme_extension_table->scheme_add_global = scheme_add_global;
-  scheme_extension_table->scheme_add_global_constant = scheme_add_global_constant;
+  scheme_extension_table->scheme_addto_prim_instance = scheme_addto_prim_instance;
   scheme_extension_table->scheme_remove_global = scheme_remove_global;
   scheme_extension_table->scheme_constant = scheme_constant;
   scheme_extension_table->scheme_new_special_frame = scheme_new_special_frame;

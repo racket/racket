@@ -655,6 +655,7 @@ fixnum).}
 
  @history[#:added "6.9.0.2"]
 }
+
 @; ------------------------------------------------------------------------
 
 @include-section["unsafe-undefined.scrbl"]

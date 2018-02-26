@@ -193,7 +193,9 @@ call.  If no will is ready for immediate execution,
 @defproc[(will-try-execute [executor any/c]) any]{
 
 Like @racket[will-execute] if a will is ready for immediate
-execution. Otherwise, @racket[#f] is returned.}
+execution. Otherwise, @racket[v] is returned.
+
+@history[#:changed "6.90.0.4" @elem{Added the @racket[v] argument.}]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "garbagecollection"]{Garbage Collection}

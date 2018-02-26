@@ -100,13 +100,13 @@ static void register_traversers(void);
 static void *place_start_proc(void *arg);
 MZ_DO_NOT_INLINE(static void *place_start_proc_after_stack(void *data_arg, void *stack_base));
 
-# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
+# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) ADD_PRIM_W_ARITY(name, func, a1, a2, env)
 
 #else
 
 SHARED_OK static int scheme_places_enabled = 0;
 
-# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, not_implemented, a1, a2, env)
+# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) ADD_PRIM_W_ARITY(name, not_implemented, a1, a2, env)
 
 static Scheme_Object *not_implemented(int argc, Scheme_Object **argv)
 {
@@ -124,39 +124,35 @@ static void register_traversers(void) { }
 /*                             initialization                             */
 /*========================================================================*/
 
-void scheme_init_place(Scheme_Env *env)
+void scheme_init_place(Scheme_Startup_Env *env)
 {
-  Scheme_Env *plenv;
-
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
-  
-  plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  GLOBAL_PRIM_W_ARITY("place-enabled?",       scheme_place_enabled,   0, 0, plenv);
-  GLOBAL_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, plenv);
-  PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           5, 5, plenv);
-  PLACE_PRIM_W_ARITY("place-pumper-threads",  place_pumper_threads,   1, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 2, plenv);
-  PLACE_PRIM_W_ARITY("place?",                place_p,         1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel",         place_channel,   0, 0, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-put",     place_send,      2, 2, plenv);
-  PLACE_PRIM_W_ARITY("place-channel-get",     place_receive,   1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-channel?",        place_channel_p, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-message-allowed?", place_allowed_p, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-dead-evt",        make_place_dead, 1, 1, plenv);
+  scheme_switch_prim_instance(env, "#%place");
 
-  scheme_finish_primitive_module(plenv);
+  ADD_PRIM_W_ARITY("place-enabled?",       scheme_place_enabled,   0, 0, env);
+  ADD_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, env);
+  PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           5, 5, env);
+  PLACE_PRIM_W_ARITY("place-pumper-threads",  place_pumper_threads,   1, 2, env);
+  PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, env);
+  PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, env);
+  PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, env);
+  PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 2, env);
+  PLACE_PRIM_W_ARITY("place?",                place_p,         1, 1, env);
+  PLACE_PRIM_W_ARITY("place-channel",         place_channel,   0, 0, env);
+  PLACE_PRIM_W_ARITY("place-channel-put",     place_send,      2, 2, env);
+  PLACE_PRIM_W_ARITY("place-channel-get",     place_receive,   1, 1, env);
+  PLACE_PRIM_W_ARITY("place-channel?",        place_channel_p, 1, 1, env);
+  PLACE_PRIM_W_ARITY("place-message-allowed?", place_allowed_p, 1, 1, env);
+  PLACE_PRIM_W_ARITY("place-dead-evt",        make_place_dead, 1, 1, env);
 
-  /* Treat place creation as "unsafe", since the new place starts with
-     permissive guards that can access unsafe features that affect
-     existing places. */
-  scheme_protect_primitive_provide(plenv, scheme_intern_symbol("dynamic-place"));
+  scheme_restore_prim_instance(env);
+}
 
+void scheme_init_place_per_place()
+{
 #ifdef MZ_USE_PLACES
   REGISTER_SO(all_child_places);
   
@@ -264,6 +260,12 @@ static void close_six_fds(rktio_fd_t **rw) {
   }
 }
 
+static int is_predefined_module_path(Scheme_Object *v)
+{
+  /* Every table of primitives should have a corresponding predefined module */
+  return !!scheme_hash_get(scheme_startup_env->primitive_tables, v);
+}
+
 Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   Scheme_Object         *tmp;
@@ -343,7 +345,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     out_arg = args[3];
     err_arg = args[4];
 
-    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0]) && !SCHEME_MODNAMEP(args[0])) {
+    if (!scheme_is_module_path(args[0]) && !SCHEME_PATHP(args[0]) && !scheme_is_resolved_module_path(args[0])) {
       scheme_wrong_contract("dynamic-place", "(or/c module-path? path? resolved-module-path?)", 0, argc, args);
     }
     if (!SCHEME_SYMBOLP(args[1])) {
@@ -361,7 +363,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
     if (SCHEME_PAIRP(args[0]) 
         && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)
-        && !scheme_is_predefined_module_p(args[0])) {
+        && !is_predefined_module_path(args[0])) {
       scheme_contract_error("dynamic-place", "not a filesystem or predefined module-path", 
                             "module path", 1, args[0],
                             NULL);
@@ -2358,13 +2360,10 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     saved_error_buf = p->error_buf;
     p->error_buf = &new_error_buf;
     if (!scheme_setjmp(new_error_buf)) {
-      Scheme_Object *dynamic_require;
-
       if (!scheme_rktio)
         scheme_signal_error("place: I/O manager initialization failed");
 
-      dynamic_require = scheme_builtin_value("dynamic-require");
-      place_main = scheme_apply(dynamic_require, 2, a);
+      place_main = scheme_dynamic_require(2, a);
       a[0] = channel;
       (void)scheme_apply(place_main, 1, a);
       rc = scheme_make_integer(0);

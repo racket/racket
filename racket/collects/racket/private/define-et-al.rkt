@@ -184,14 +184,7 @@
 			  `(begin
 			     (define-values
 			       ,defined-names
-			       ,(let ([core (make-core name (and inspector 'inspector) super-id/struct: field-names)])
-				  (if inspector
-				      `(let-values ([(inspector) ,inspector])
-					 (if (if inspector (not (inspector? inspector)) #f)
-					     (raise-argument-error 'define-struct "(or/c inspector? #f)" inspector)
-                                             (void))
-					 ,core)
-				      core)))
+                               ,(make-core name inspector super-id/struct: field-names))
 			     (define-syntaxes (,name) ,stx-info))
 			  stx)])
 		    (if super-id

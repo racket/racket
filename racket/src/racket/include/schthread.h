@@ -158,7 +158,6 @@ typedef struct Thread_Local_Variables {
   void *jit_buffer_cache_;
   intptr_t jit_buffer_cache_size_;
   int jit_buffer_cache_registered_;
-  struct Scheme_Object *quick_stx_;
   int scheme_continuation_application_count_;
   int scheme_cont_capture_count_;
   int scheme_prompt_capture_count_;
@@ -167,8 +166,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Prompt *available_regular_prompt_;
   struct Scheme_Dynamic_Wind *available_prompt_dw_;
   struct Scheme_Meta_Continuation *available_prompt_mc_;
-  struct Scheme_Object *cwv_stx_;
-  int cwv_stx_phase_;
   struct Scheme_Cont *offstack_cont_;
   struct Scheme_Overflow *offstack_overflow_;
   struct Scheme_Overflow_Jmp *scheme_overflow_jmp_;
@@ -187,9 +184,6 @@ typedef struct Thread_Local_Variables {
   mz_long_double scheme_jit_save_extfp2_;
 #endif
   struct Scheme_Bucket_Table *starts_table_;
-  struct Scheme_Bucket_Table *submodule_empty_modidx_table_;
-  struct Scheme_Modidx *modidx_caching_chain_;
-  struct Scheme_Object *global_shift_cache_;
   struct mz_proc_thread *proc_thread_self_;
   struct Scheme_Object *scheme_orig_stdout_port_;
   struct Scheme_Object *scheme_orig_stderr_port_;
@@ -233,15 +227,8 @@ typedef struct Thread_Local_Variables {
   void *stack_copy_cache_[STACK_COPY_CACHE_SIZE];
   intptr_t stack_copy_size_cache_[STACK_COPY_CACHE_SIZE];
   int scc_pos_;
-  mzlonglong scope_counter_;
-  struct Scheme_Object *last_phase_shift_;
-  struct Scheme_Object *nominal_ipair_cache_;
-  struct Scheme_Bucket_Table *taint_intern_table_;
-  struct Binding_Cache_Entry *binding_cache_table_;
-  intptr_t binding_cache_pos_;
-  intptr_t binding_cache_len_;
-  struct Scheme_Scope_Set *recent_scope_sets_[2][NUM_RECENT_SCOPE_SETS];
-  int recent_scope_sets_pos_[2];
+  struct Scheme_Instance *scheme_startup_instance_;
+  struct startup_instance_top_t *c_startup_instance_top_;
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -292,16 +279,12 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Logger *scheme_gc_logger_;
   struct Scheme_Logger *scheme_future_logger_;
   struct Scheme_Logger *scheme_place_logger_;
-  int intdef_counter_;
   int scheme_overflow_count_;
   struct Scheme_Object *original_pwd_;
   void *file_path_wc_buffer_;
   intptr_t scheme_hash_request_count_;
   intptr_t scheme_hash_iteration_count_;
-  struct Scheme_Env *initial_modules_env_;
-  int num_initial_modules_;
-  struct Scheme_Object **initial_modules_;
-  int generate_lifts_count_;
+  struct Scheme_Bucket_Table *scheme_namespace_to_env_;
   int special_is_ok_;
   int scheme_force_port_closed_;
   int fd_reserved_;
@@ -334,7 +317,6 @@ typedef struct Thread_Local_Variables {
   int gensym_counter_;
   struct Scheme_Object *dummy_input_port_;
   struct Scheme_Object *dummy_output_port_;
-  struct Scheme_Bucket_Table *place_local_modpath_table_;
   struct Scheme_Hash_Table *opened_libs_;
   struct mzrt_mutex *jit_lock_;
   struct free_list_entry *free_list_;
@@ -355,8 +337,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Place *all_child_places_;
   struct Scheme_Place_Bi_Channel_Link *place_channel_links_;
   struct Scheme_Object **reusable_ifs_stack_;
-  struct Scheme_Object *empty_self_shift_cache_;
-  struct Scheme_Bucket_Table *scheme_module_code_cache_;
   struct Scheme_Object *group_member_cache_;
   struct Scheme_Prefix *scheme_prefix_finalize_;
   struct Scheme_Prefix *scheme_inc_prefix_finalize_;
@@ -373,17 +353,9 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *configuration_callback_cache_[2];
   struct FFI_Orig_Place_Call *cached_orig_place_todo_;
   struct Scheme_Hash_Table *ffi_lock_ht_;
-  struct Scheme_Object *scheme_sys_wraps0_;
-  struct Scheme_Object *scheme_sys_wraps1_;
-  struct Scheme_Object *scheme_module_stx_;
-  struct Scheme_Object *scheme_modulestar_stx_;
-  struct Scheme_Object *scheme_module_begin_stx_;
-  struct Scheme_Object *scheme_begin_stx_;
-  struct Scheme_Object *scheme_define_values_stx_;
-  struct Scheme_Object *scheme_define_syntaxes_stx_;
-  struct Scheme_Object *scheme_top_stx_;
-  struct Scheme_Object *scheme_begin_for_syntax_stx_;
-  struct Scheme_Object *more_constant_stxes_[NUM_MORE_CONSTANT_STXES];
+  struct Scheme_Object *is_syntax_proc_;
+  struct Scheme_Object *expander_syntax_to_datum_proc_;
+  struct Scheme_Hash_Table *local_primitive_tables_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -391,6 +363,7 @@ typedef struct Thread_Local_Variables {
 # include <pthread.h>
 MZ_EXTERN pthread_key_t scheme_thread_local_key;
 # if defined(__APPLE__) && defined(__MACH__)
+# define PREFER_TO_CACHE_THREAD_LOCAL
 MZ_EXTERN int scheme_thread_local_offset;
 # endif
 # ifndef INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -554,7 +527,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define jit_buffer_cache XOA (scheme_get_thread_local_variables()->jit_buffer_cache_)
 #define jit_buffer_cache_size XOA (scheme_get_thread_local_variables()->jit_buffer_cache_size_)
 #define jit_buffer_cache_registered XOA (scheme_get_thread_local_variables()->jit_buffer_cache_registered_)
-#define quick_stx XOA (scheme_get_thread_local_variables()->quick_stx_)
 #define scheme_continuation_application_count XOA (scheme_get_thread_local_variables()->scheme_continuation_application_count_)
 #define scheme_cont_capture_count XOA (scheme_get_thread_local_variables()->scheme_cont_capture_count_)
 #define scheme_prompt_capture_count XOA (scheme_get_thread_local_variables()->scheme_prompt_capture_count_)
@@ -563,8 +535,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define available_regular_prompt XOA (scheme_get_thread_local_variables()->available_regular_prompt_)
 #define available_prompt_dw XOA (scheme_get_thread_local_variables()->available_prompt_dw_)
 #define available_prompt_mc XOA (scheme_get_thread_local_variables()->available_prompt_mc_)
-#define cwv_stx XOA (scheme_get_thread_local_variables()->cwv_stx_)
-#define cwv_stx_phase XOA (scheme_get_thread_local_variables()->cwv_stx_phase_)
 #define offstack_cont XOA (scheme_get_thread_local_variables()->offstack_cont_)
 #define offstack_overflow XOA (scheme_get_thread_local_variables()->offstack_overflow_)
 #define scheme_overflow_jmp XOA (scheme_get_thread_local_variables()->scheme_overflow_jmp_)
@@ -584,9 +554,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_jit_save_extfp2 XOA (scheme_get_thread_local_variables()->scheme_jit_save_extfp2_)
 #endif
 #define starts_table XOA (scheme_get_thread_local_variables()->starts_table_)
-#define submodule_empty_modidx_table XOA (scheme_get_thread_local_variables()->submodule_empty_modidx_table_)
-#define modidx_caching_chain XOA (scheme_get_thread_local_variables()->modidx_caching_chain_)
-#define global_shift_cache XOA (scheme_get_thread_local_variables()->global_shift_cache_)
 #define proc_thread_self XOA (scheme_get_thread_local_variables()->proc_thread_self_)
 #define scheme_orig_stdout_port XOA (scheme_get_thread_local_variables()->scheme_orig_stdout_port_)
 #define scheme_orig_stderr_port XOA (scheme_get_thread_local_variables()->scheme_orig_stderr_port_)
@@ -630,15 +597,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define stack_copy_cache XOA (scheme_get_thread_local_variables()->stack_copy_cache_)
 #define stack_copy_size_cache XOA (scheme_get_thread_local_variables()->stack_copy_size_cache_)
 #define scc_pos XOA (scheme_get_thread_local_variables()->scc_pos_)
-#define nominal_ipair_cache XOA (scheme_get_thread_local_variables()->nominal_ipair_cache_)
-#define scope_counter XOA (scheme_get_thread_local_variables()->scope_counter_)
-#define last_phase_shift XOA (scheme_get_thread_local_variables()->last_phase_shift_)
-#define taint_intern_table XOA (scheme_get_thread_local_variables()->taint_intern_table_)
-#define binding_cache_table XOA (scheme_get_thread_local_variables()->binding_cache_table_)
-#define binding_cache_pos XOA (scheme_get_thread_local_variables()->binding_cache_pos_)
-#define binding_cache_len XOA (scheme_get_thread_local_variables()->binding_cache_len_)
-#define recent_scope_sets XOA (scheme_get_thread_local_variables()->recent_scope_sets_)
-#define recent_scope_sets_pos XOA (scheme_get_thread_local_variables()->recent_scope_sets_pos_)
+#define scheme_startup_instance XOA (scheme_get_thread_local_variables()->scheme_startup_instance_)
+#define c_startup_instance_top XOA (scheme_get_thread_local_variables()->c_startup_instance_top_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
@@ -690,16 +650,12 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_gc_logger XOA (scheme_get_thread_local_variables()->scheme_gc_logger_)
 #define scheme_future_logger XOA (scheme_get_thread_local_variables()->scheme_future_logger_)
 #define scheme_place_logger XOA (scheme_get_thread_local_variables()->scheme_place_logger_)
-#define intdef_counter XOA (scheme_get_thread_local_variables()->intdef_counter_)
 #define scheme_overflow_count XOA (scheme_get_thread_local_variables()->scheme_overflow_count_)
 #define original_pwd XOA (scheme_get_thread_local_variables()->original_pwd_)
 #define file_path_wc_buffer XOA (scheme_get_thread_local_variables()->file_path_wc_buffer_)
 #define scheme_hash_request_count XOA (scheme_get_thread_local_variables()->scheme_hash_request_count_)
 #define scheme_hash_iteration_count XOA (scheme_get_thread_local_variables()->scheme_hash_iteration_count_)
-#define initial_modules_env XOA (scheme_get_thread_local_variables()->initial_modules_env_)
-#define num_initial_modules XOA (scheme_get_thread_local_variables()->num_initial_modules_)
-#define initial_modules XOA (scheme_get_thread_local_variables()->initial_modules_)
-#define generate_lifts_count XOA (scheme_get_thread_local_variables()->generate_lifts_count_)
+#define scheme_namespace_to_env XOA (scheme_get_thread_local_variables()->scheme_namespace_to_env_)
 #define special_is_ok XOA (scheme_get_thread_local_variables()->special_is_ok_)
 #define scheme_force_port_closed XOA (scheme_get_thread_local_variables()->scheme_force_port_closed_)
 #define fd_reserved XOA (scheme_get_thread_local_variables()->fd_reserved_)
@@ -732,7 +688,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
 #define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
-#define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
 #define opened_libs XOA (scheme_get_thread_local_variables()->opened_libs_)
 #define jit_lock XOA (scheme_get_thread_local_variables()->jit_lock_)
 #define free_list XOA (scheme_get_thread_local_variables()->free_list_)
@@ -753,8 +708,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define all_child_places XOA (scheme_get_thread_local_variables()->all_child_places_)
 #define place_channel_links XOA (scheme_get_thread_local_variables()->place_channel_links_)
 #define reusable_ifs_stack XOA (scheme_get_thread_local_variables()->reusable_ifs_stack_)
-#define empty_self_shift_cache XOA (scheme_get_thread_local_variables()->empty_self_shift_cache_)
-#define scheme_module_code_cache XOA (scheme_get_thread_local_variables()->scheme_module_code_cache_)
 #define group_member_cache XOA (scheme_get_thread_local_variables()->group_member_cache_)
 #define scheme_prefix_finalize XOA (scheme_get_thread_local_variables()->scheme_prefix_finalize_)
 #define scheme_inc_prefix_finalize XOA (scheme_get_thread_local_variables()->scheme_inc_prefix_finalize_)
@@ -771,17 +724,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define configuration_callback_cache XOA (scheme_get_thread_local_variables()->configuration_callback_cache_)
 #define cached_orig_place_todo XOA (scheme_get_thread_local_variables()->cached_orig_place_todo_)
 #define ffi_lock_ht XOA (scheme_get_thread_local_variables()->ffi_lock_ht_)
-#define scheme_sys_wraps0 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps0_)
-#define scheme_sys_wraps1 XOA (scheme_get_thread_local_variables()->scheme_sys_wraps1_)
-#define scheme_module_stx XOA (scheme_get_thread_local_variables()->scheme_module_stx_)
-#define scheme_modulestar_stx XOA (scheme_get_thread_local_variables()->scheme_modulestar_stx_)
-#define scheme_module_begin_stx XOA (scheme_get_thread_local_variables()->scheme_module_begin_stx_)
-#define scheme_begin_stx XOA (scheme_get_thread_local_variables()->scheme_begin_stx_)
-#define scheme_define_values_stx XOA (scheme_get_thread_local_variables()->scheme_define_values_stx_)
-#define scheme_define_syntaxes_stx XOA (scheme_get_thread_local_variables()->scheme_define_syntaxes_stx_)
-#define scheme_top_stx XOA (scheme_get_thread_local_variables()->scheme_top_stx_)
-#define scheme_begin_for_syntax_stx XOA (scheme_get_thread_local_variables()->scheme_begin_for_syntax_stx_)
-#define more_constant_stxes XOA (scheme_get_thread_local_variables()->more_constant_stxes_)
+#define is_syntax_proc XOA (scheme_get_thread_local_variables()->is_syntax_proc_)
+#define expander_syntax_to_datum_proc XOA (scheme_get_thread_local_variables()->expander_syntax_to_datum_proc_)
+#define local_primitive_tables XOA (scheme_get_thread_local_variables()->local_primitive_tables_)
 
 /* **************************************** */
 

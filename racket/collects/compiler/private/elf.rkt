@@ -258,6 +258,14 @@
                           (section-size s)))
          s)))
 
+;; The `get-data` function takes an offset and must return
+;;  (values bytes any1 any2)
+;; The result of `add-racket-section` is either
+;;  (values #f #f #f #f) ; => not an ELF file
+;; or
+;;  (values start-pos end-pos any1 any2)
+;; where `any1` and `any2` are return through
+;; from `get-data`.
 (define (add-racket-section src-file dest-file section-name get-data)
   (call-with-input-file* 
    src-file 
@@ -275,7 +283,7 @@
                       void)))))))
 
 (define (expand-elf in dest-file
-                    ;; Current state parted from `in`:
+                    ;; Current state parsed from `in`:
                     elf sections programs str-section strs total-size
                     ;; New state:
                     section-name ; #f or name of new section

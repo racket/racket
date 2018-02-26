@@ -17,7 +17,6 @@ ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(C
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
 	bool.@LTO@ \
-	builtin.@LTO@ \
 	char.@LTO@ \
 	compenv.@LTO@ \
 	compile.@LTO@ \
@@ -41,9 +40,9 @@ OBJS =  salloc.@LTO@ \
 	jitstack.@LTO@ \
 	jitstate.@LTO@ \
 	letrec_check.@LTO@ \
+	linklet.@LTO@ \
 	list.@LTO@ \
 	marshal.@LTO@ \
-	module.@LTO@ \
 	mzrt.@LTO@ \
 	network.@LTO@ \
 	numarith.@LTO@ \
@@ -62,6 +61,8 @@ OBJS =  salloc.@LTO@ \
 	sema.@LTO@ \
 	setjmpup.@LTO@ \
 	sfs.@LTO@ \
+	sort.@LTO@ \
+	startup.@LTO@ \
 	string.@LTO@ \
 	struct.@LTO@ \
 	symbol.@LTO@ \
@@ -75,7 +76,6 @@ OBJS =  salloc.@LTO@ \
 SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/bignum.c \
 	$(srcdir)/bool.c \
-	$(srcdir)/builtin.c \
 	$(srcdir)/char.c \
 	$(srcdir)/compenv.c \
 	$(srcdir)/compile.c \
@@ -99,9 +99,9 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/jitstack.c \
 	$(srcdir)/jitstate.c \
 	$(srcdir)/letrec_check.c \
+	$(srcdir)/linklet.c \
 	$(srcdir)/list.c \
 	$(srcdir)/marshal.c \
-	$(srcdir)/module.c \
 	$(srcdir)/mzrt.c \
 	$(srcdir)/network.c \
 	$(srcdir)/numarith.c \
@@ -120,6 +120,7 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/sema.c \
 	$(srcdir)/setjmpup.c \
 	$(srcdir)/sfs.c \
+	$(srcdir)/startup.c \
 	$(srcdir)/string.c \
 	$(srcdir)/struct.c \
 	$(srcdir)/symbol.c \
@@ -185,8 +186,6 @@ bignum.@LTO@: $(srcdir)/bignum.c $(srcdir)/bgnfloat.inc
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/bignum.c -o bignum.@LTO@
 bool.@LTO@: $(srcdir)/bool.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/bool.c -o bool.@LTO@
-builtin.@LTO@: $(srcdir)/builtin.c
-	$(CC) $(ALL_CFLAGS) -c $(srcdir)/builtin.c -o builtin.@LTO@
 char.@LTO@: $(srcdir)/char.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/char.c -o char.@LTO@
 compenv.@LTO@: $(srcdir)/compenv.c
@@ -234,12 +233,12 @@ jitstate.@LTO@: $(srcdir)/jitstate.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jitstate.c -o jitstate.@LTO@
 letrec_check.@LTO@: $(srcdir)/letrec_check.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/letrec_check.c -o letrec_check.@LTO@
+linklet.@LTO@: $(srcdir)/linklet.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/linklet.c -o linklet.@LTO@
 list.@LTO@: $(srcdir)/list.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/list.c -o list.@LTO@
 marshal.@LTO@: $(srcdir)/marshal.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/marshal.c -o marshal.@LTO@
-module.@LTO@: $(srcdir)/module.c
-	$(CC) $(ALL_CFLAGS) -c $(srcdir)/module.c -o module.@LTO@
 mzrt.@LTO@: $(srcdir)/mzrt.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(srcdir)/network.c
@@ -276,6 +275,10 @@ setjmpup.@LTO@: $(srcdir)/setjmpup.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/setjmpup.c -o setjmpup.@LTO@
 sfs.@LTO@: $(srcdir)/sfs.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/sfs.c -o sfs.@LTO@
+sort.@LTO@: $(srcdir)/sort.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/sort.c -o sort.@LTO@
+startup.@LTO@: $(srcdir)/startup.c
+	$(CC) $(ALL_CFLAGS) -c $(srcdir)/startup.c -I.. -I$(srcdir) -o startup.@LTO@
 string.@LTO@: $(srcdir)/string.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/string.c -I. -o string.@LTO@
 struct.@LTO@: $(srcdir)/struct.c
@@ -332,8 +335,6 @@ bignum.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/stypes.h    
 bool.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/stypes.h $(srcdir)/mzeqchk.inc
-builtin.@LTO@: $(COMMON_HEADERS)  \
-        $(srcdir)/stypes.h  $(srcdir)/schminc.h $(srcdir)/startup.inc $(srcdir)/cstartup.inc
 char.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  $(srcdir)/schuchar.inc
 compenv.@LTO@: $(COMMON_HEADERS)  \
@@ -376,11 +377,11 @@ jitstack.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS) $(srcdir)/codetab.inc \
 jitstate.@LTO@: $(COMMON_HEADERS) $(JIT_HEADERS)
 letrec_check.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  
+linklet.@LTO@: $(COMMON_HEADERS) \
+        $(srcdir)/stypes.h
 list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  
 marshal.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/stypes.h
-module.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h
 mzrt.@LTO@: $(COMMON_HEADERS)
 network.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
@@ -411,8 +412,7 @@ rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h    
 read.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
-        $(srcdir)/stypes.h $(srcdir)/mzmark_read.inc \
-        $(srcdir)/read_vector.inc
+        $(srcdir)/stypes.h $(srcdir)/mzmark_read.inc
 regexp.@LTO@:  $(COMMON_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_regexp.inc $(srcdir)/schrx.h
 resolve.@LTO@:  $(COMMON_HEADERS) \
@@ -421,6 +421,11 @@ setjmpup.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h   $(srcdir)/schmach.h
 sfs.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_sfs.inc
+sort.@LTO@: $(COMMON_HEADERS) \
+         $(srcdir)/stypes.h
+startup.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
+         $(srcdir)/stypes.h  $(srcdir)/schminc.h $(srcdir)/startup.inc ../cstartup.inc \
+         $(srcdir)/startup-glue.inc
 string.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
          $(srcdir)/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
          $(srcdir)/schustr.inc $(srcdir)/systype.inc
@@ -438,3 +443,8 @@ vector.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h
 validate.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_validate.inc
+
+# If "cstartup.inc" hasn't been built, yet, create it as
+# a redirect to "startup.inc"
+../cstartup.inc:
+	echo '#include "startup.inc"' > ../cstartup.inc

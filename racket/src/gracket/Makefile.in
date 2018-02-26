@@ -89,6 +89,8 @@ LINKRESULT_wx_xt = gracket@CGC@
 LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
+BOOT_SETUP = @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1
 
@@ -126,7 +128,8 @@ GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MZFW) $(MRAPPSKEL) grmain.@LTO@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 
 $(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt $(srcdir)/../racket/src/schvers.h $(srcdir)/../mac/icon/GRacket.icns
-	env BUILDBASE=.. @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
+	env BUILDBASE=.. @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -l- setup $(BOOT_SETUP) $(MRAPPSKEL) mrappskel.d $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
+@INCLUDEDEP@ mrappskel.d
 
 ee-app: gracket grmain_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(GRACKETLINKER) $(GRACKETLDFLAGS) $(MRSTATIC) -o $(EEAPP) grmain_ee.@LTO@ $(EEOBJECTS) $(GRACKETLDLIBS) $(MRSTATIC_STUB) ; fi

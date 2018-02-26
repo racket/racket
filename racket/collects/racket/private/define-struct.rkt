@@ -518,7 +518,13 @@
                        [prune (lambda (stx) (identifier-prune-lexical-context stx
                                                                               (list (syntax-e stx) '#%top)))]
                        [reflect-name-expr (if reflect-name-expr
-                                              (quasisyntax (check-reflection-name 'fm #,reflect-name-expr))
+                                              (syntax-case reflect-name-expr (quote)
+                                                [(quote id)
+                                                 (identifier? #'id)
+                                                 ;; No need to generate run-time test for a symbol:
+                                                 reflect-name-expr]
+                                                [else
+                                                 (quasisyntax (check-reflection-name 'fm #,reflect-name-expr))])
                                               (quasisyntax '#,id))])
                    
                    (define struct-name-size (string-length (symbol->string (syntax-e id))))

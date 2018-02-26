@@ -211,11 +211,6 @@
   scheme_extension_table->scheme_extract_one_cc_mark = scheme_extract_one_cc_mark;
   scheme_extension_table->scheme_extract_one_cc_mark_to_tag = scheme_extract_one_cc_mark_to_tag;
   scheme_extension_table->scheme_do_eval = scheme_do_eval;
-  scheme_extension_table->scheme_eval_compiled_stx_string = scheme_eval_compiled_stx_string;
-  scheme_extension_table->scheme_load_compiled_stx_string = scheme_load_compiled_stx_string;
-  scheme_extension_table->scheme_compiled_stx_symbol = scheme_compiled_stx_symbol;
-  scheme_extension_table->scheme_eval_compiled_sized_string = scheme_eval_compiled_sized_string;
-  scheme_extension_table->scheme_eval_compiled_sized_string_with_magic = scheme_eval_compiled_sized_string_with_magic;
   scheme_extension_table->scheme_detach_multple_array = scheme_detach_multple_array;
 #ifndef SCHEME_NO_GC
 # ifndef SCHEME_NO_GC_PROTO
@@ -615,21 +610,16 @@
   scheme_extension_table->scheme_make_envunbox = scheme_make_envunbox;
   scheme_extension_table->scheme_lookup_global = scheme_lookup_global;
   scheme_extension_table->scheme_global_bucket = scheme_global_bucket;
-  scheme_extension_table->scheme_global_keyword_bucket = scheme_global_keyword_bucket;
   scheme_extension_table->scheme_module_bucket = scheme_module_bucket;
   scheme_extension_table->scheme_builtin_value = scheme_builtin_value;
   scheme_extension_table->scheme_set_global_bucket = scheme_set_global_bucket;
-  scheme_extension_table->scheme_install_macro = scheme_install_macro;
-  scheme_extension_table->scheme_save_initial_module_set = scheme_save_initial_module_set;
-  scheme_extension_table->scheme_primitive_module = scheme_primitive_module;
-  scheme_extension_table->scheme_finish_primitive_module = scheme_finish_primitive_module;
-  scheme_extension_table->scheme_set_primitive_module_phaseless = scheme_set_primitive_module_phaseless;
-  scheme_extension_table->scheme_protect_primitive_provide = scheme_protect_primitive_provide;
   scheme_extension_table->scheme_make_modidx = scheme_make_modidx;
-  scheme_extension_table->scheme_apply_for_syntax_in_env = scheme_apply_for_syntax_in_env;
   scheme_extension_table->scheme_dynamic_require = scheme_dynamic_require;
+  scheme_extension_table->scheme_dynamic_require_reader = scheme_dynamic_require_reader;
   scheme_extension_table->scheme_namespace_require = scheme_namespace_require;
   scheme_extension_table->scheme_is_module_path = scheme_is_module_path;
+  scheme_extension_table->scheme_is_module_path_index = scheme_is_module_path_index;
+  scheme_extension_table->scheme_is_resolved_module_path = scheme_is_resolved_module_path;
   scheme_extension_table->scheme_datum_to_kernel_stx = scheme_datum_to_kernel_stx;
   scheme_extension_table->scheme_module_is_declared = scheme_module_is_declared;
   scheme_extension_table->scheme_intern_symbol = scheme_intern_symbol;

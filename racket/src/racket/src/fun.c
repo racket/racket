@@ -30,7 +30,6 @@
    overflow and continuation-jump limits. */
 
 #include "schpriv.h"
-#include "schexpobs.h"
 #include "schmach.h"
 #include "schrktio.h"
 
@@ -82,6 +81,7 @@ READ_ONLY static Scheme_Object *call_with_prompt_proc;
 READ_ONLY static Scheme_Object *abort_continuation_proc;
 READ_ONLY static Scheme_Object *internal_call_cc_prim;
 READ_ONLY static Scheme_Object *finish_call_cc_prim;
+READ_ONLY static Scheme_Object *propagate_abort_prim;
 
 /* Caches need to be thread-local: */
 THREAD_LOCAL_DECL(static Scheme_Prompt *available_prompt);
@@ -105,6 +105,7 @@ static Scheme_Object *ormap (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *internal_call_cc (int argc, Scheme_Object *argv[]);
 static Scheme_Object *finish_call_cc (int argc, Scheme_Object *argv[]);
+static Scheme_Object *propagate_abort (int argc, Scheme_Object *argv[]);
 static Scheme_Object *continuation_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_continuation_barrier (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_prompt (int argc, Scheme_Object *argv[]);
@@ -207,7 +208,7 @@ typedef struct Scheme_Dynamic_Wind_List {
 /*========================================================================*/
 
 void
-scheme_init_fun (Scheme_Env *env)
+scheme_init_fun (Scheme_Startup_Env *env)
 {
   Scheme_Object *o;
 
@@ -228,8 +229,9 @@ scheme_init_fun (Scheme_Env *env)
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("procedure?", o, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("procedure?", o, env);
 
   scheme_procedure_p_proc = o;
 
@@ -238,34 +240,30 @@ scheme_init_fun (Scheme_Env *env)
                                                 "apply",
                                                 2, -1,
                                                 0, -1);
-  scheme_add_global_constant("apply", scheme_apply_proc, env);
-  scheme_add_global_constant("map",
-			     scheme_make_noncm_prim(map,
-                                                    "map",
-                                                    2, -1),
-			     env);
-  scheme_add_global_constant("for-each",
-			     scheme_make_noncm_prim(for_each,
-                                                    "for-each",
-                                                    2, -1),
-			     env);
-  scheme_add_global_constant("andmap",
-			     scheme_make_prim_w_arity(andmap,
-						      "andmap",
-						      2, -1),
-			     env);
-  scheme_add_global_constant("ormap",
-			     scheme_make_prim_w_arity(ormap,
-						      "ormap",
-						      2, -1),
-			     env);
+  scheme_addto_prim_instance("apply", scheme_apply_proc, env);
+
+  o = scheme_make_noncm_prim(map, "map", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("map", o, env);
+
+  o = scheme_make_noncm_prim(for_each, "for-each", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("for-each", o, env);
+
+  o = scheme_make_prim_w_arity(andmap, "andmap", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("andmap", o, env);
+
+  o = scheme_make_prim_w_arity(ormap, "ormap", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("ormap", o, env);
 
   REGISTER_SO(scheme_call_with_values_proc);
   scheme_call_with_values_proc = scheme_make_prim_w_arity2(call_with_values,
                                                            "call-with-values",
                                                            2, 2,
                                                            0, -1);
-  scheme_add_global_constant("call-with-values",
+  scheme_addto_prim_instance("call-with-values",
 			     scheme_call_with_values_proc,
 			     env);
 
@@ -278,7 +276,7 @@ scheme_init_fun (Scheme_Env *env)
                                                                              | SCHEME_PRIM_IS_BINARY_INLINED
                                                                              | SCHEME_PRIM_IS_NARY_INLINED
                                                                              | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("values",
+  scheme_addto_prim_instance("values",
 			     scheme_values_proc,
 			     env);
 
@@ -286,7 +284,7 @@ scheme_init_fun (Scheme_Env *env)
 				"call-with-escape-continuation",
 				1, 1,
 				0, -1);
-  scheme_add_global_constant("call-with-escape-continuation", o, env);
+  scheme_addto_prim_instance("call-with-escape-continuation", o, env);
 
   REGISTER_SO(internal_call_cc_prim);
   internal_call_cc_prim = scheme_make_prim_w_arity2(internal_call_cc,
@@ -298,6 +296,8 @@ scheme_init_fun (Scheme_Env *env)
                                                   "finish-call-with-current-continuation",
                                                   2, 2,
                                                   0, -1);
+  REGISTER_SO(propagate_abort_prim);
+  propagate_abort_prim = scheme_make_prim_w_arity(propagate_abort, "propagate-abort", 0, -1);
 
 # define MAX_CALL_CC_ARG_COUNT 2
   o = scheme_make_prim_w_arity2(call_cc,
@@ -305,15 +305,15 @@ scheme_init_fun (Scheme_Env *env)
 				1, MAX_CALL_CC_ARG_COUNT,
 				0, -1);
 
-  scheme_add_global_constant("call-with-current-continuation", o, env);
+  scheme_addto_prim_instance("call-with-current-continuation", o, env);
 
-  scheme_add_global_constant("continuation?",
+  scheme_addto_prim_instance("continuation?",
                              scheme_make_folding_prim(continuation_p,
 						      "continuation?",
 						      1, 1, 1),
                              env);
 
-  scheme_add_global_constant("call-with-continuation-barrier",
+  scheme_addto_prim_instance("call-with-continuation-barrier",
 			     scheme_make_prim_w_arity2(call_with_continuation_barrier,
 						       "call-with-continuation-barrier",
 						       1, 1,
@@ -325,11 +325,11 @@ scheme_init_fun (Scheme_Env *env)
                                                     "call-with-continuation-prompt",
                                                     1, -1,
                                                     0, -1);
-  scheme_add_global_constant("call-with-continuation-prompt",
+  scheme_addto_prim_instance("call-with-continuation-prompt",
 			     call_with_prompt_proc, 
 			     env);
 
-  scheme_add_global_constant("call-with-composable-continuation",
+  scheme_addto_prim_instance("call-with-composable-continuation",
 			     scheme_make_prim_w_arity2(call_with_control,
                                                        "call-with-composable-continuation",
                                                        1, 2,
@@ -340,93 +340,93 @@ scheme_init_fun (Scheme_Env *env)
   abort_continuation_proc = scheme_make_prim_w_arity(abort_continuation,
                                                      "abort-current-continuation",
                                                      1, -1);
-  scheme_add_global_constant("abort-current-continuation",
+  scheme_addto_prim_instance("abort-current-continuation",
 			     abort_continuation_proc, 
 			     env);
 
-  scheme_add_global_constant("continuation-prompt-available?",
+  scheme_addto_prim_instance("continuation-prompt-available?",
 			     scheme_make_prim_w_arity(continuation_prompt_available,
                                                       "continuation-prompt-available?",
                                                       1, 2), 
 			     env);
 
-  scheme_add_global_constant("make-continuation-prompt-tag",
+  scheme_addto_prim_instance("make-continuation-prompt-tag",
 			     scheme_make_prim_w_arity(make_prompt_tag,
                                                       "make-continuation-prompt-tag",
                                                       0, 1), 
 			     env);
 
-  scheme_add_global_constant("default-continuation-prompt-tag",
+  scheme_addto_prim_instance("default-continuation-prompt-tag",
                              scheme_make_prim_w_arity(get_default_prompt_tag,
                                                       "default-continuation-prompt-tag",
                                                       0, 0), 
 			     env);
-  scheme_add_global_constant("continuation-prompt-tag?",
+  scheme_addto_prim_instance("continuation-prompt-tag?",
                              scheme_make_folding_prim(prompt_tag_p,
 						      "continuation-prompt-tag?",
 						      1, 1, 1),
                              env);
-  scheme_add_global_constant("impersonate-prompt-tag",
+  scheme_addto_prim_instance("impersonate-prompt-tag",
                              scheme_make_prim_w_arity(impersonate_prompt_tag,
 						      "impersonate-prompt-tag",
 						      3, -1),
                              env);
-  scheme_add_global_constant("chaperone-prompt-tag",
+  scheme_addto_prim_instance("chaperone-prompt-tag",
                              scheme_make_prim_w_arity(chaperone_prompt_tag,
 						      "chaperone-prompt-tag",
 						      3, -1),
                              env);
 
-  scheme_add_global_constant("call-with-semaphore",
+  scheme_addto_prim_instance("call-with-semaphore",
 			     scheme_make_prim_w_arity2(call_with_sema,
 						       "call-with-semaphore",
 						       2, -1,
 						       0, -1), 
 			     env);
-  scheme_add_global_constant("call-with-semaphore/enable-break",
+  scheme_addto_prim_instance("call-with-semaphore/enable-break",
 			     scheme_make_prim_w_arity2(call_with_sema_enable_break,
 						       "call-with-semaphore/enable-break",
 						       2, -1,
 						       0, -1),
 			     env);
 
-  scheme_add_global_constant("make-continuation-mark-key",
+  scheme_addto_prim_instance("make-continuation-mark-key",
 			     scheme_make_prim_w_arity(make_continuation_mark_key,
 						      "make-continuation-mark-key",
 						      0, 1),
 			     env);
-  scheme_add_global_constant("continuation-mark-key?",
+  scheme_addto_prim_instance("continuation-mark-key?",
 			     scheme_make_prim_w_arity(continuation_mark_key_p,
 						      "continuation-mark-key?",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("impersonate-continuation-mark-key",
+  scheme_addto_prim_instance("impersonate-continuation-mark-key",
                              scheme_make_prim_w_arity(impersonate_continuation_mark_key,
 						      "impersonate-continuation-mark-key",
 						      3, -1),
                              env);
-  scheme_add_global_constant("chaperone-continuation-mark-key",
+  scheme_addto_prim_instance("chaperone-continuation-mark-key",
                              scheme_make_prim_w_arity(chaperone_continuation_mark_key,
 						      "chaperone-continuation-mark-key",
 						      3, -1),
                              env);
 
-  scheme_add_global_constant("current-continuation-marks",
+  scheme_addto_prim_instance("current-continuation-marks",
 			     scheme_make_prim_w_arity(cc_marks,
 						      "current-continuation-marks",
 						      0, 1),
 			     env);
-  scheme_add_global_constant("continuation-marks",
+  scheme_addto_prim_instance("continuation-marks",
 			     scheme_make_prim_w_arity(cont_marks,
 						      "continuation-marks",
 						      1, 2),
 			     env);
-  scheme_add_global_constant("continuation-mark-set->list",
+  scheme_addto_prim_instance("continuation-mark-set->list",
 			     scheme_make_prim_w_arity(extract_cc_marks,
 						      "continuation-mark-set->list",
 						      2, 3),
 			     env);
-  scheme_add_global_constant("continuation-mark-set->list*",
+  scheme_addto_prim_instance("continuation-mark-set->list*",
 			     scheme_make_prim_w_arity(extract_cc_markses,
 						      "continuation-mark-set->list*",
 						      2, 4),
@@ -436,22 +436,22 @@ scheme_init_fun (Scheme_Env *env)
                                "continuation-mark-set-first",
                                2, 4);
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("continuation-mark-set-first", o, env);
+  scheme_addto_prim_instance("continuation-mark-set-first", o, env);
 
   REGISTER_SO(scheme_call_with_immed_mark_proc);
   scheme_call_with_immed_mark_proc = scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
                                                                "call-with-immediate-continuation-mark",
                                                                2, 3,
                                                                0, -1);
-  scheme_add_global_constant("call-with-immediate-continuation-mark",
+  scheme_addto_prim_instance("call-with-immediate-continuation-mark",
 			     scheme_call_with_immed_mark_proc,
 			     env);
-  scheme_add_global_constant("continuation-mark-set?",
+  scheme_addto_prim_instance("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
 						      "continuation-mark-set?",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("continuation-mark-set->context",
+  scheme_addto_prim_instance("continuation-mark-set->context",
 			     scheme_make_prim_w_arity(extract_cc_proc_marks,
 						      "continuation-mark-set->context",
 						      1, 1),
@@ -462,70 +462,71 @@ scheme_init_fun (Scheme_Env *env)
 					      "void",
 					      0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(scheme_void_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("void", scheme_void_proc, env);
+  scheme_addto_prim_instance("void", scheme_void_proc, env);
 
   
   REGISTER_SO(scheme_void_p_proc);
   scheme_void_p_proc = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(scheme_void_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("void?", scheme_void_p_proc, env);
+                                                                             | SCHEME_PRIM_IS_OMITABLE
+                                                                             | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("void?", scheme_void_p_proc, env);
 
-  scheme_add_global_constant("time-apply",
+  scheme_addto_prim_instance("time-apply",
 			     scheme_make_prim_w_arity2(time_apply,
 						       "time-apply",
 						       2, 2,
 						       4, 4),
 			     env);
-  scheme_add_global_constant("current-milliseconds",
+  scheme_addto_prim_instance("current-milliseconds",
 			     scheme_make_immed_prim(current_milliseconds,
                                                     "current-milliseconds",
                                                     0, 0),
 			     env);
-  scheme_add_global_constant("current-inexact-milliseconds",
+  scheme_addto_prim_instance("current-inexact-milliseconds",
 			     scheme_make_immed_prim(current_inexact_milliseconds,
                                                     "current-inexact-milliseconds",
                                                     0, 0),
 			     env);
-  scheme_add_global_constant("current-process-milliseconds",
+  scheme_addto_prim_instance("current-process-milliseconds",
 			     scheme_make_immed_prim(current_process_milliseconds,
                                                     "current-process-milliseconds",
                                                     0, 1),
 			     env);
-  scheme_add_global_constant("current-gc-milliseconds",
+  scheme_addto_prim_instance("current-gc-milliseconds",
 			     scheme_make_immed_prim(current_gc_milliseconds,
                                                     "current-gc-milliseconds",
                                                     0, 0),
 			     env);
-  scheme_add_global_constant("current-seconds",
+  scheme_addto_prim_instance("current-seconds",
 			     scheme_make_immed_prim(current_seconds,
                                                     "current-seconds",
                                                     0, 0),
 			     env);
-  scheme_add_global_constant("seconds->date",
+  scheme_addto_prim_instance("seconds->date",
 			     scheme_make_immed_prim(seconds_to_date,
                                                     "seconds->date",
                                                     1, 2),
 			     env);
 
-  scheme_add_global_constant("dynamic-wind",
+  scheme_addto_prim_instance("dynamic-wind",
 			     scheme_make_prim_w_arity(dynamic_wind,
 						      "dynamic-wind",
 						      3, 3),
 			     env);
 
-  scheme_add_global_constant("object-name",
+  scheme_addto_prim_instance("object-name",
 			     scheme_make_folding_prim(object_name,
 						      "object-name",
 						      1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("procedure-arity",
+  scheme_addto_prim_instance("procedure-arity",
 			     scheme_make_folding_prim(procedure_arity,
 						      "procedure-arity",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("procedure-arity?",
+  scheme_addto_prim_instance("procedure-arity?",
 			     scheme_make_folding_prim(procedure_arity_p,
 						      "procedure-arity?",
 						      1, 1, 1),
@@ -534,98 +535,102 @@ scheme_init_fun (Scheme_Env *env)
   o = scheme_make_folding_prim(scheme_procedure_arity_includes,
                                "procedure-arity-includes?",
                                2, 3, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_procedure_arity_includes_proc = o;
-  scheme_add_global_constant("procedure-arity-includes?", o, env);
+  scheme_addto_prim_instance("procedure-arity-includes?", o, env);
 
-  scheme_add_global_constant("procedure-reduce-arity",
+  scheme_addto_prim_instance("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
 						      "procedure-reduce-arity",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("procedure-rename",
+  scheme_addto_prim_instance("procedure-rename",
 			     scheme_make_prim_w_arity(procedure_rename,
 						      "procedure-rename",
 						      2, 2),
 			     env);
-  scheme_add_global_constant("procedure->method",
+  scheme_addto_prim_instance("procedure->method",
 			     scheme_make_prim_w_arity(procedure_to_method,
 						      "procedure->method",
 						      1, 1),
 			     env);
-  scheme_add_global_constant("procedure-closure-contents-eq?",
-			     scheme_make_folding_prim(procedure_equal_closure_p,
-						      "procedure-closure-contents-eq?",
-						      2, 2, 1),
-			     env);
+
+  o = scheme_make_folding_prim(procedure_equal_closure_p,
+                               "procedure-closure-contents-eq?",
+                               2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("procedure-closure-contents-eq?", o, env);
 
   REGISTER_SO(scheme_procedure_specialize_proc);
   o = scheme_make_prim_w_arity(procedure_specialize,
                                "procedure-specialize",
                                1, 1);
   scheme_procedure_specialize_proc = o;
-  scheme_add_global_constant("procedure-specialize", o, env);
+  scheme_addto_prim_instance("procedure-specialize", o, env);
 
-  scheme_add_global_constant("chaperone-procedure",
+  scheme_addto_prim_instance("chaperone-procedure",
 			     scheme_make_prim_w_arity(chaperone_procedure,
 						      "chaperone-procedure",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("impersonate-procedure",
+  scheme_addto_prim_instance("impersonate-procedure",
 			     scheme_make_prim_w_arity(impersonate_procedure,
 						      "impersonate-procedure",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("chaperone-procedure*",
+  scheme_addto_prim_instance("chaperone-procedure*",
 			     scheme_make_prim_w_arity(chaperone_procedure_star,
 						      "chaperone-procedure*",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("impersonate-procedure*",
+  scheme_addto_prim_instance("impersonate-procedure*",
 			     scheme_make_prim_w_arity(impersonate_procedure_star,
 						      "impersonate-procedure*",
 						      2, -1),
 			     env);
 
-  scheme_add_global_constant("primitive?",
+  scheme_addto_prim_instance("primitive?",
 			     scheme_make_folding_prim(primitive_p,
 						      "primitive?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("primitive-closure?",
+  scheme_addto_prim_instance("primitive-closure?",
 			     scheme_make_folding_prim(primitive_closure_p,
 						      "primitive-closure?",
 						      1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("primitive-result-arity",
+  scheme_addto_prim_instance("primitive-result-arity",
 			     scheme_make_folding_prim(primitive_result_arity,
 						      "primitive-result-arity",
 						      1, 1, 1),
 			     env);
 
-  scheme_add_global_constant("procedure-result-arity",
+  scheme_addto_prim_instance("procedure-result-arity",
                              scheme_make_folding_prim(procedure_result_arity,
                                                       "procedure-result-arity",
                                                       1, 1, 1),
                              env);
 
-  scheme_add_global_constant("current-print",
+  scheme_addto_prim_instance("current-print",
 			     scheme_register_parameter(current_print,
 						       "current-print",
 						       MZCONFIG_PRINT_HANDLER),
 			     env);
-  scheme_add_global_constant("current-prompt-read",
+  scheme_addto_prim_instance("current-prompt-read",
 			     scheme_register_parameter(current_prompt_read,
 						       "current-prompt-read",
 						       MZCONFIG_PROMPT_READ_HANDLER),
 			     env);
-  scheme_add_global_constant("current-read-interaction",
+  scheme_addto_prim_instance("current-read-interaction",
 			     scheme_register_parameter(current_read,
 						       "current-read-interaction",
 						       MZCONFIG_READ_HANDLER),
 			     env);
-  scheme_add_global_constant("current-get-interaction-input-port",
+  scheme_addto_prim_instance("current-get-interaction-input-port",
 			     scheme_register_parameter(current_get_read_input_port,
 						       "current-get-interaction-input-port",
 						       MZCONFIG_READ_INPUT_PORT_HANDLER),
@@ -674,7 +679,7 @@ scheme_init_fun (Scheme_Env *env)
 }
 
 void
-scheme_init_unsafe_fun (Scheme_Env *env)
+scheme_init_unsafe_fun (Scheme_Startup_Env *env)
 {
   Scheme_Object *o;
 
@@ -683,37 +688,37 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   scheme_check_not_undefined_proc = o;
   SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_OPT_IMMEDIATE
                                 | scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED));
-  scheme_add_global_constant("check-not-unsafe-undefined", o, env);
+  scheme_addto_prim_instance("check-not-unsafe-undefined", o, env);
 
   REGISTER_SO(scheme_check_assign_not_undefined_proc);
   o = scheme_make_prim_w_arity(scheme_check_assign_not_undefined, "check-not-unsafe-undefined/assign", 2, 2);
   scheme_check_assign_not_undefined_proc = o;
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("check-not-unsafe-undefined/assign", o, env);
+  scheme_addto_prim_instance("check-not-unsafe-undefined/assign", o, env);
 
-  scheme_add_global_constant("unsafe-undefined", scheme_undefined, env);
+  scheme_addto_prim_instance("unsafe-undefined", scheme_undefined, env);
 
   REGISTER_SO(scheme_chaperone_undefined_property);
   o = scheme_make_struct_type_property(scheme_intern_symbol("chaperone-unsafe-undefined"));
   scheme_chaperone_undefined_property = o;
-  scheme_add_global_constant("prop:chaperone-unsafe-undefined", o, env);
+  scheme_addto_prim_instance("prop:chaperone-unsafe-undefined", o, env);
 
   o = scheme_make_prim_w_arity(chaperone_unsafe_undefined, "chaperone-struct-unsafe-undefined", 1, 1);
-  scheme_add_global_constant("chaperone-struct-unsafe-undefined", o, env);
+  scheme_addto_prim_instance("chaperone-struct-unsafe-undefined", o, env);
 
-  scheme_add_global_constant("unsafe-chaperone-procedure",
+  scheme_addto_prim_instance("unsafe-chaperone-procedure",
 			     scheme_make_prim_w_arity(unsafe_chaperone_procedure,
 						      "unsafe-chaperone-procedure",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("unsafe-impersonate-procedure",
+  scheme_addto_prim_instance("unsafe-impersonate-procedure",
 			     scheme_make_prim_w_arity(unsafe_impersonate_procedure,
 						      "unsafe-impersonate-procedure",
 						      2, -1),
 			     env);
 
-  GLOBAL_PRIM_W_ARITY("unsafe-abort-current-continuation/no-wind", unsafe_abort_continuation_no_dws, 2, 2, env);
-  GLOBAL_PRIM_W_ARITY("unsafe-call-with-composable-continuation/no-wind", unsafe_call_with_control_no_dws, 2, 2, env);
+  ADD_PRIM_W_ARITY("unsafe-abort-current-continuation/no-wind", unsafe_abort_continuation_no_dws, 2, 2, env);
+  ADD_PRIM_W_ARITY("unsafe-call-with-composable-continuation/no-wind", unsafe_call_with_control_no_dws, 2, 2, env);
 }
 
 void
@@ -744,7 +749,7 @@ make_prim_closure(Scheme_Prim *fun, int eternal,
 {
   Scheme_Primitive_Proc *prim;
   int hasr, size;
-
+  
   hasr = ((minr != 1) || (maxr != 1));
   size = (hasr 
 	  ? sizeof(Scheme_Prim_W_Result_Arity) 
@@ -827,7 +832,8 @@ scheme_make_noncm_prim(Scheme_Prim *fun, const char *name,
 {
   /* A non-cm primitive leaves the mark stack unchanged when it returns,
      it can't return multiple values or a tail call, and it cannot
-     use its third argument (i.e., the closure pointer). */
+     use its third argument (i.e., the closure pointer) unless
+     SCHEME_PRIM_IS_CLOSURE is also set. */
   return make_prim_closure(fun, 1, name, mina, maxa,
 			   SCHEME_PRIM_OPT_NONCM,
 			   1, 1,
@@ -1137,38 +1143,6 @@ static Scheme_Prompt *allocate_prompt(Scheme_Prompt **cached_prompt) {
   return prompt;
 }
 
-static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *state) {
-    state->current_local_env = thread->current_local_env;
-    state->scope             = thread->current_local_scope;
-    state->use_scope         = thread->current_local_use_scope;
-    state->name              = thread->current_local_name;
-    state->modidx            = thread->current_local_modidx;
-    state->menv              = thread->current_local_menv;
-}
-
-static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *thread) {
-    thread->current_local_env     = state->current_local_env;
-    thread->current_local_scope   = state->scope;
-    thread->current_local_use_scope = state->use_scope;
-    thread->current_local_name    = state->name;
-    thread->current_local_modidx  = state->modidx;
-    thread->current_local_menv    = state->menv;
-}
-
-void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
-                              Scheme_Object *scope, Scheme_Object *use_scope,
-                              Scheme_Object *name, 
-                              Scheme_Env *menv,
-                              Scheme_Object *modidx)
-{
-  state->current_local_env = env;
-  state->scope             = scope;
-  state->use_scope         = use_scope;
-  state->name              = name;
-  state->modidx            = modidx;
-  state->menv              = menv;
-}
-
 static void *apply_again_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -1188,10 +1162,10 @@ static void *apply_again_k(void)
 }
 
 void *scheme_top_level_do(void *(*k)(void), int eb) {
-    return scheme_top_level_do_worker(k, eb, 0, NULL);
+    return scheme_top_level_do_worker(k, eb, 0);
 }
 
-void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Scheme_Dynamic_State *dyn_state)
+void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread)
 {
   /* Wraps a function `k' with a handler for stack overflows and
      barriers to full-continuation jumps. No barrier if !eb. */
@@ -1200,7 +1174,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
   mz_jmp_buf *save;
   mz_jmp_buf newbuf;
   Scheme_Stack_State envss;
-  Scheme_Dynamic_State save_dyn_state;
   Scheme_Thread * volatile p = scheme_current_thread;
   volatile int old_pcc = scheme_prompt_capture_count;
   Scheme_Cont_Frame_Data cframe;
@@ -1237,12 +1210,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
   while (1) {
 
     scheme_save_env_stack_w_thread(envss, p);
-    save_dynamic_state(p, &save_dyn_state);
-    
-    if (dyn_state) {
-      restore_dynamic_state(dyn_state, p);
-      dyn_state = NULL;
-    }
     
     if (prompt) {
       scheme_push_continuation_frame(&cframe);
@@ -1286,7 +1253,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
             }
           }
         }
-        restore_dynamic_state(&save_dyn_state, p);
       }
 
       if (!again)
@@ -1312,8 +1278,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
 
   if (!new_thread) {
     p = scheme_current_thread;
-
-    restore_dynamic_state(&save_dyn_state, p);
 
     p->error_buf = save;
   }
@@ -1380,27 +1344,41 @@ force_values(Scheme_Object *obj, int multi_ok)
 {
   if (SAME_OBJ(obj, SCHEME_TAIL_CALL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
-    GC_CAN_IGNORE Scheme_Object *rator;
+    GC_CAN_IGNORE Scheme_Object *rator, *result;
     GC_CAN_IGNORE Scheme_Object **rands;
-      
+    int argc = p->ku.apply.tail_num_rands, popc = 0;
+
+    rands = p->ku.apply.tail_rands;
+
     /* Watch out for use of tail buffer: */
-    if (p->ku.apply.tail_rands == p->tail_buffer)
-      scheme_realloc_tail_buffer(p);
+    if (rands == p->tail_buffer) {
+      GC_CAN_IGNORE Scheme_Object **runstack = MZ_RUNSTACK;
+      if (((runstack - MZ_RUNSTACK_START) - argc) > SCHEME_TAIL_COPY_THRESHOLD) {
+        /* There's room on the runstack; use that instead of allocating a new buffer */
+        runstack -= argc;
+        memcpy(runstack, rands, argc * sizeof(Scheme_Object *));
+        rands = runstack;
+        popc = argc;
+        MZ_RUNSTACK = rands;
+      } else {
+        scheme_realloc_tail_buffer(p);
+        rands = p->ku.apply.tail_rands;
+      }
+    }
 
     rator = p->ku.apply.tail_rator;
-    rands = p->ku.apply.tail_rands;
     p->ku.apply.tail_rator = NULL;
     p->ku.apply.tail_rands = NULL;
       
-    if (multi_ok) {
-      return _scheme_apply_multi(rator,
-				 p->ku.apply.tail_num_rands,
-				 rands);
-    } else {
-      return _scheme_apply(rator,
-			   p->ku.apply.tail_num_rands,
-			   rands);
-    }
+    if (multi_ok)
+      result = _scheme_apply_multi(rator, argc, rands);
+    else
+      result = _scheme_apply(rator, argc, rands);
+
+    if (popc)
+      MZ_RUNSTACK += popc;
+
+    return result;
   } else if (SAME_OBJ(obj, SCHEME_EVAL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
     if (multi_ok)
@@ -1516,33 +1494,7 @@ scheme_apply_thread_thunk(Scheme_Object *rator)
   p->ku.k.i1 = 0;
   p->ku.k.i2 = 1;
 
-  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 1, NULL);
-}
-
-Scheme_Object *
-scheme_apply_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state)
-{
-  Scheme_Thread *p = scheme_current_thread;
-
-  p->ku.k.p1 = rator;
-  p->ku.k.p2 = rands;
-  p->ku.k.i1 = num_rands;
-  p->ku.k.i2 = 0;
-
-  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 0, dyn_state);
-}
-
-Scheme_Object *
-scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state)
-{
-  Scheme_Thread *p = scheme_current_thread;
-
-  p->ku.k.p1 = rator;
-  p->ku.k.p2 = rands;
-  p->ku.k.i1 = num_rands;
-  p->ku.k.i2 = 1;
-
-  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 0, dyn_state);
+  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 1);
 }
 
 Scheme_Object *
@@ -1728,302 +1680,6 @@ Scheme_Object *
 _scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands)
 {
   return X_scheme_apply_to_list(rator, rands, 0, 0);
-}
-
-static Scheme_Object *cert_with_specials_k(void);
-
-static Scheme_Object *
-cert_with_specials(Scheme_Object *code, 
-                   Scheme_Object *insp,
-                   Scheme_Object *old_stx,
-                   intptr_t phase, 
-		   int deflt, int cadr_deflt)
-/* Arms (insp) or re-arms (old_stx) taints. */
-{
-  Scheme_Object *prop;
-  int next_cadr_deflt = 0, phase_delta = 0;
-
-#ifdef DO_STACK_CHECK
-  {
-# include "mzstkchk.h"
-    {
-      Scheme_Thread *p = scheme_current_thread;
-      Scheme_Object **args;
-      args = MALLOC_N(Scheme_Object*, 3);
-      args[0] = code;
-      args[1] = insp;
-      args[2] = old_stx;
-      p->ku.k.p1 = (void *)args;
-      p->ku.k.i1 = phase;
-      p->ku.k.i2 = deflt;
-      p->ku.k.i3 = cadr_deflt;
-      return scheme_handle_stack_overflow(cert_with_specials_k);
-    }
-  }
-#endif
-
-  if (SCHEME_STXP(code)) {
-    if (scheme_stx_is_tainted(code))
-       /* nothing happens to already-tainted syntax objects */
-      return code;
-
-    prop = scheme_stx_property(code, taint_mode_symbol, NULL);
-    if (SCHEME_FALSEP(prop))
-      prop = scheme_stx_property(code, certify_mode_symbol, NULL);
-    if (SAME_OBJ(prop, none_symbol))
-      return code;
-    else if (SAME_OBJ(prop, opaque_symbol)) {
-      if (old_stx)
-        return scheme_stx_taint_rearm(code, old_stx);
-      else
-        return scheme_stx_taint_arm(code, insp);
-    } else if (SAME_OBJ(prop, transparent_symbol)) {
-      cadr_deflt = 0;
-      /* fall through */
-    } else if (SAME_OBJ(prop, transparent_binding_symbol)) {
-      cadr_deflt = 0;
-      next_cadr_deflt = 1;
-      /* fall through */
-    } else {
-      /* Default transparency depends on module-identifier=? comparison
-	 to `begin', `define-values', and `define-syntaxes'. */
-      int trans = deflt;
-      if (SCHEME_TRUEP(prop))
-        scheme_log(NULL,
-                   SCHEME_LOG_WARNING,
-                   0,
-                   "warning: unrecognized 'taint-mode property value: %V",
-                   prop);
-      if (SCHEME_STX_PAIRP(code)) {
-	Scheme_Object *name;
-	/* name = SCHEME_STX_CAR(code); */
-        name = scheme_stx_taint_disarm(code, NULL);
-        name = SCHEME_STX_CAR(name);
-	if (SCHEME_STX_SYMBOLP(name)) {
-	  if (scheme_stx_free_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_free_eq_x(scheme_module_begin_stx, name, phase)) {
-	    trans = 1;
-	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
-	    trans = 1;
-	    next_cadr_deflt = 0;
-            phase_delta = 1;
-	  } else if (scheme_stx_free_eq_x(scheme_define_values_stx, name, phase)
-		     || scheme_stx_free_eq_x(scheme_define_syntaxes_stx, name, phase)) {
-	    trans = 1;
-	    next_cadr_deflt = 1;
-	  }
-	}
-      }
-
-      if (!trans) {
-        if (old_stx)
-          return scheme_stx_taint_rearm(code, old_stx);
-        else
-          return scheme_stx_taint_arm(code, insp);
-      }
-    }
-  }
-
-  if (SCHEME_STX_PAIRP(code)) {
-    Scheme_Object *a, *d, *v;
-    
-    a = SCHEME_STX_CAR(code);
-    a = cert_with_specials(a, insp, old_stx, phase + phase_delta, cadr_deflt, 0);
-    d = SCHEME_STX_CDR(code);
-    d = cert_with_specials(d, insp, old_stx, phase + phase_delta, 1, next_cadr_deflt);
-
-    v = scheme_make_pair(a, d);
-
-    if (SCHEME_PAIRP(code))
-      return v;
-
-    v = scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
-
-    if (scheme_syntax_is_original(v)
-        && !scheme_syntax_is_original(code)) {
-      /* Since we copied properties without scopes, we need to
-         explicitly remove originalness */
-      v = scheme_syntax_remove_original(v);
-    }
-
-    return v;
-  } else if (SCHEME_STX_NULLP(code))
-    return code;
-
-  if (old_stx)
-    return scheme_stx_taint_rearm(code, old_stx);
-  else
-    return scheme_stx_taint_arm(code, insp);
-}
-
-static Scheme_Object *cert_with_specials_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object **args = (Scheme_Object **)p->ku.k.p1;
-
-  p->ku.k.p1 = NULL;
-
-  return cert_with_specials(args[0], args[1], args[2],
-                            p->ku.k.i1,
-                            p->ku.k.i2, p->ku.k.i3);
-}
-
-Scheme_Object *
-scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
-		   Scheme_Object *rator, Scheme_Object *code,
-		   Scheme_Comp_Env *env, Scheme_Object *boundname,
-                   Scheme_Compile_Expand_Info *rec, int drec,
-		   int for_set,
-                   int scope_macro_use)
-{
-  Scheme_Object *orig_code = code;
-
-  if (scheme_is_rename_transformer(rator)) {
-    Scheme_Object *scope;
-   
-    rator = scheme_rename_transformer_id(rator, env);
-    /* rator is now an identifier */
-
-    /* and it's introduced by this expression: */
-    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
-    rator = scheme_stx_flip_scope(rator, scope, scheme_true);
-
-    if (for_set) {
-      Scheme_Object *tail, *setkw;
-
-      tail = SCHEME_STX_CDR(code);
-      setkw = SCHEME_STX_CAR(code);
-      tail = SCHEME_STX_CDR(tail);
-      code = scheme_make_pair(setkw, scheme_make_pair(rator, tail));
-      code = scheme_datum_to_syntax(code, orig_code, orig_code, 0, 0);
-    } else if (SCHEME_SYMBOLP(SCHEME_STX_VAL(code)))
-      code = rator;
-    else {
-      code = SCHEME_STX_CDR(code);
-      code = scheme_make_pair(rator, code);
-      code = scheme_datum_to_syntax(code, orig_code, scheme_sys_wraps(env), 0, 0);
-    }
-
-    code = scheme_stx_track(code, orig_code, name);
-
-    /* Restore old dye packs: */
-    code = cert_with_specials(code, NULL, orig_code, env->genv->phase, 0, 0);
-
-    return code;
-  } else {
-    Scheme_Object *scope, *use_scope, *rands_vec[1], *track_code, *pre_code;
-
-    if (scheme_is_set_transformer(rator))
-      rator = scheme_set_transformer_proc(rator);
-
-    {
-      /* Ensure that source doesn't already have 'taint-mode or 'certify-mode, 
-         in case argument properties are used for result properties. */
-      Scheme_Object *prop;
-      prop = scheme_stx_property(code, taint_mode_symbol, NULL);
-      if (SCHEME_TRUEP(prop))
-        code = scheme_stx_property(code, taint_mode_symbol, scheme_false);
-      prop = scheme_stx_property(code, certify_mode_symbol, NULL);
-      if (SCHEME_TRUEP(prop))
-        code = scheme_stx_property(code, certify_mode_symbol, scheme_false);
-    }
-    track_code = code;  /* after mode properties are removed */
-
-    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
-    code = scheme_stx_flip_scope(code, scope, scheme_true);
-
-    if (scope_macro_use) {
-      use_scope = scheme_new_scope(SCHEME_STX_USE_SITE_SCOPE);
-      scheme_add_compilation_frame_use_site_scope(env, use_scope);
-      code = scheme_stx_add_scope(code, use_scope, scheme_true);
-    } else
-      use_scope = NULL;
-    
-    code = scheme_stx_taint_disarm(code, NULL);
-
-    pre_code = code;
-    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(env->observer, code);
-
-    {
-      Scheme_Dynamic_State dyn_state;
-      Scheme_Cont_Frame_Data cframe;
-      Scheme_Config *config;
-
-      scheme_prepare_exp_env(env->genv);
-      config = scheme_extend_config(scheme_current_config(),
-                                    MZCONFIG_ENV,
-                                    (Scheme_Object *)env->genv->exp_env);
-      scheme_push_continuation_frame(&cframe);
-      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-
-      scheme_set_dynamic_state(&dyn_state, env, scope, use_scope, boundname, 
-                               menv, menv ? menv->link_midx : env->genv->link_midx);
-
-      rands_vec[0] = code;
-      code = scheme_apply_with_dynamic_state(rator, 1, rands_vec, &dyn_state);
-
-      scheme_pop_continuation_frame(&cframe);
-    }
-
-    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(env->observer, code, pre_code);
-
-    if (!SCHEME_STXP(code)) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "%S: received value from syntax expander was not syntax\n"
-                       "  received: %V",
-                       SCHEME_STX_SYM(name),
-                       code);
-    }
-
-    code = scheme_stx_flip_scope(code, scope, scheme_true);
-
-    code = scheme_stx_track(code, track_code, name);
-    
-    /* Restore old dye packs: */
-    code = cert_with_specials(code, NULL, orig_code, env->genv->phase, 0, 0);
-
-    return code;
-  }
-}
-
-Scheme_Object *scheme_syntax_taint_arm(Scheme_Object *stx, Scheme_Object *insp, int use_mode)
-{
-  intptr_t phase;
-
-  if (SCHEME_FALSEP(insp)) {
-    insp = scheme_get_local_inspector();
-  }
-
-  if (use_mode) {
-    Scheme_Thread *p = scheme_current_thread;
-    phase = (p->current_local_env
-             ? p->current_local_env->genv->phase
-             : p->current_phase_shift);
-    return cert_with_specials(stx, insp, NULL, phase, 0, 0);
-  } else
-    return scheme_stx_taint_arm(stx, insp);
-}
-
-Scheme_Object *scheme_syntax_taint_disarm(Scheme_Object *o, Scheme_Object *insp)
-{
-  if (SCHEME_FALSEP(insp)) {
-    insp = scheme_get_local_inspector();
-  }
-
-  return scheme_stx_taint_disarm(o, insp);
-}
-
-Scheme_Object *scheme_syntax_taint_rearm(Scheme_Object *stx, Scheme_Object *from_stx)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  intptr_t phase;
-  
-  phase = (p->current_local_env
-           ? p->current_local_env->genv->phase
-           : p->current_phase_shift);
-  
-  return cert_with_specials(stx, NULL, from_stx, phase, 0, 0);
 }
 
 /*========================================================================*/
@@ -2367,8 +2023,10 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
 
     if (type == scheme_lambda_type) 
       data = (Scheme_Lambda *)p;
-    else
+    else if (type == scheme_closure_type)
       data = SCHEME_CLOSURE_CODE(p);
+    else
+      return scheme_false;
 
     mina = maxa = data->num_params;
     if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
@@ -2551,7 +2209,7 @@ int scheme_closure_preserves_marks(Scheme_Object *p)
   return 0;
 }
 
-Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected)
+Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected, int imprecise)
 /* result is interned --- a symbol or fixnum */
 {
   Scheme_Object *p;
@@ -2559,11 +2217,11 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
   if (expected 
       && SCHEME_SYMBOLP(expected)) {
     if (SCHEME_SYM_VAL(expected)[0] == 's') {
-      return (scheme_check_structure_shape(e, expected)
+      return (scheme_get_or_check_structure_shape(e, expected)
               ? expected
               : NULL);
     } else if (SCHEME_SYM_VAL(expected)[0] == 'p') {
-      return (scheme_check_structure_property_shape(e, expected)
+      return (scheme_get_or_check_structure_property_shape(e, expected)
               ? expected
               : NULL);
     }
@@ -2576,7 +2234,9 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
     return NULL;
 
   p = scheme_get_or_check_arity(e, -3);
-
+  if (SCHEME_FALSEP(p))
+    return NULL;
+  
   if (SCHEME_PAIRP(p)) {
     /* encode as a symbol */
     int sz = 32, c = 0;
@@ -2603,8 +2263,13 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
        it preserves marks, which is useful information for the JIT. */
     intptr_t i = SCHEME_INT_VAL(p);
     i = ((uintptr_t)i) << 1;
-    if (scheme_closure_preserves_marks(e)) {
-      i |= 0x1;
+    if (expected && SCHEME_INTP(expected) && !(SCHEME_INT_VAL(expected) & 0x1)) {
+      /* It's ok for an `e` that preserves marks to match an
+         expectation of not preserving marks */
+    } else {
+      if (!imprecise && scheme_closure_preserves_marks(e)) {
+        i |= 0x1;
+      }
     }
     p = scheme_make_integer(i);
   }
@@ -2821,7 +2486,8 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
   } else {
     Scheme_Object *name;
 
-    if (type == scheme_ir_lambda_type) {
+    if ((type == scheme_ir_lambda_type)
+        || (type == scheme_lambda_type)) {
       name = ((Scheme_Lambda *)p)->name;
     } else if (type == scheme_closure_type) {
       name = SCHEME_CLOSURE_CODE(p)->name;
@@ -3091,7 +2757,7 @@ Scheme_Object *scheme_procedure_arity_includes(int argc, Scheme_Object *argv[])
   /* -2 means a bignum */
 
   inc_ok = ((argc > 2) && SCHEME_TRUEP(argv[2]));
-  
+
   return get_or_check_arity(argv[0], n, argv[1], inc_ok);
 }
 
@@ -3122,7 +2788,7 @@ static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
   return 0;
 }
 
-void scheme_init_reduced_proc_struct(Scheme_Env *env)
+void scheme_init_reduced_proc_struct(Scheme_Startup_Env *env)
 {
   if (!scheme_reduced_procedure_struct) {
     Scheme_Inspector *insp;
@@ -7445,7 +7111,7 @@ static Scheme_Object *do_call_with_prompt(Scheme_Closed_Prim f, void *data,
   prim = scheme_make_closed_prim(f, data);
   a[0] = prim;
   a[1] = scheme_default_prompt_tag;
-  a[2] = scheme_make_prim(propagate_abort);
+  a[2] = propagate_abort_prim;
 
   if (multi) {
     if (top_level)
@@ -8401,23 +8067,14 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
 	name = scheme_make_pair(scheme_false, loc);
       else
 	name = scheme_make_pair(SCHEME_VEC_ELS(name)[0], loc);
-    } else if (SCHEME_PAIRP(name) && SCHEME_RMPP(SCHEME_CAR(name))) {
-      /* a resolved module path means that we're running a module body */
+    } else if (SCHEME_PAIRP(name) && SAME_OBJ(SCHEME_CDR(name), scheme_true)) {
+      /* a pair with #t we're running a module body */
       const char *what;
 
-      if (SCHEME_FALSEP(SCHEME_CDR(name)))
-        what = "[traversing imports]";
-      else if (SCHEME_VOIDP(SCHEME_CDR(name)))
-        what = "[running expand-time body]";
-      else
-        what = "[running body]";
+      what = "[running body]";
 
       name = SCHEME_CAR(name);
-      name = SCHEME_PTR_VAL(name);
-      if (SCHEME_PAIRP(name))
-        name = scheme_make_pair(scheme_intern_symbol("submod"), name);
-      loc = scheme_make_location(name, scheme_false, 
-                                 scheme_false, scheme_false, scheme_false);
+      loc = scheme_make_location(name, scheme_false, scheme_false, scheme_false, scheme_false);
 
       name = scheme_intern_symbol(what);
       name = scheme_make_pair(name, loc);
@@ -8784,10 +8441,10 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
   if (SCHEME_TRUEP(argv[0])
       && !SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_cont_mark_set_type))
     scheme_wrong_contract("continuation-mark-set-first", "(or/c continuation-mark-set? #f)", 0, argc, argv);
-  
+
   if ((argv[1] == scheme_parameterization_key)
       || (argv[1] == scheme_break_enabled_key)) {
-    /* Minor hack: these keys are used in "startup.rkt" to access
+    /* Minor hack: these keys are used in the startup linklet to access
        parameterizations, and we want that access to go through
        prompts. If they keys somehow leaked, it's ok, because that
        doesn't expose anything that isn't already exposed by functions
@@ -10048,8 +9705,9 @@ scheme_default_read_handler(int argc, Scheme_Object *argv[])
                           argv);
 
   config = scheme_current_config();
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-  config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
+  // FIXME
+  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
+  // config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_false);
 
   scheme_push_continuation_frame(&cframe);
   scheme_install_config(config);

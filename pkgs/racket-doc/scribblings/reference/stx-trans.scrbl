@@ -269,7 +269,10 @@ recursively (i.e., expansion proceeds to sub-expressions).
 If @racket[stop-ids] is @racket[#f]
 instead of a list, then @racket[stx] is expanded only as long as the
 outermost form of @racket[stx] is a macro (i.e., expansion does not
-proceed to sub-expressions).
+proceed to sub-expressions). Independent of @racket[stop-ids], when
+@racket[local-expand] encounters an identifier that has a local binding
+but no binding in the current expansion context, the variable is left
+as-is (as opposed to triggering an ``out of context'' syntax error).
 
 A fully expanded form can include the
 bindings listed in @secref["fully-expanded"] plus the
@@ -346,23 +349,31 @@ expansion history to external tools.
                                    an explicit wrapper.}]}
 
 
-@defproc[(syntax-local-expand-expression [stx any/c])
-         (values syntax? syntax?)]{
+@defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? #f])
+         (values (if opaque-only? #f syntax?) syntax?)]{
 
 Like @racket[local-expand] given @racket['expression] and an empty
 stop list, but with two results: a syntax object for the fully
-expanded expression, and a syntax object whose content is opaque. The
-latter can be used in place of the former (perhaps in a larger
+expanded expression, and a syntax object whose content is opaque.
+
+The latter can be used in place of the former (perhaps in a larger
 expression produced by a macro transformer), and when the macro
 expander encounters the opaque object, it substitutes the fully
 expanded expression without re-expanding it; the
 @exnraise[exn:fail:syntax] if the expansion context includes
-@tech{scopes} that were not present for the original expansion, in which
-case re-expansion might produce different results. Consistent use of
-@racket[syntax-local-expand-expression] and the opaque object thus
-avoids quadratic expansion times when local expansions are nested.
+@tech{scopes} that were not present for the original expansion, in
+which case re-expansion might produce different results. Consistent
+use of @racket[syntax-local-expand-expression] and the opaque object
+thus avoids quadratic expansion times when local expansions are
+nested.
 
-@transform-time[]}
+If @racket[opaque-only?] is true, then the first result is @racket[#f]
+instead of the expanded expression. Obtaining only the second, opaque
+result can be more efficient in some expansion contexts.
+
+@transform-time[]
+
+@history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}]}
 
 
 @defproc[(local-transformer-expand [stx any/c]

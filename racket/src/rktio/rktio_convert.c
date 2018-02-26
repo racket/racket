@@ -261,7 +261,7 @@ static char *nl_langinfo_dup()
 	int len, j;
 	char *enc;
 	i++;
-	len = scheme_char_strlen(current_locale_name) - i;
+	len = strlen(current_locale_name) - i;
 	enc = malloc(2 + len + 1);
 
         /* Check whether the encoding is numeric, in which case

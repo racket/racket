@@ -118,63 +118,61 @@ static void udp_evt_needs_wakeup(Scheme_Object *_uw, void *fds);
 static void register_traversers(void);
 #endif
 
-void scheme_init_network(Scheme_Env *env)
+void scheme_init_network(Scheme_Startup_Env *env)
 {
-  Scheme_Env *netenv;
-
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
 
-  netenv = scheme_primitive_module(scheme_intern_symbol("#%network"), env);
+  scheme_switch_prim_instance(env, "#%network");
 
-  GLOBAL_PRIM_W_ARITY2 ( "tcp-connect"               , tcp_connect              , 2 , 4 , 2 , 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY2 ( "tcp-connect/enable-break"  , tcp_connect_break        , 2 , 4 , 2 , 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "tcp-listen"                , tcp_listen               , 1 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "tcp-close"                 , tcp_stop                 , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "tcp-accept-ready?"         , tcp_accept_ready         , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY2 ( "tcp-accept"                , tcp_accept               , 1 , 1 , 2 , 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "tcp-accept-evt"            , tcp_accept_evt           , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY2 ( "tcp-accept/enable-break"   , tcp_accept_break         , 1 , 1 , 2 , 2 , netenv ) ;
-  GLOBAL_FOLDING_PRIM  ( "tcp-listener?"             , tcp_listener_p           , 1 , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY2 ( "tcp-addresses"             , tcp_addresses            , 1 , 2 , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "tcp-abandon-port"          , tcp_abandon_port         , 1 , 1 , netenv ) ;
-  GLOBAL_FOLDING_PRIM  ( "tcp-port?"                 , tcp_port_p               , 1 , 1 , 1 , netenv ) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-connect"               , tcp_connect              , 2 , 4 , 2 , 2 , env) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-connect/enable-break"  , tcp_connect_break        , 2 , 4 , 2 , 2 , env) ;
+  ADD_PRIM_W_ARITY  ( "tcp-listen"                , tcp_listen               , 1 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "tcp-close"                 , tcp_stop                 , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "tcp-accept-ready?"         , tcp_accept_ready         , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-accept"                , tcp_accept               , 1 , 1 , 2 , 2 , env) ;
+  ADD_PRIM_W_ARITY  ( "tcp-accept-evt"            , tcp_accept_evt           , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-accept/enable-break"   , tcp_accept_break         , 1 , 1 , 2 , 2 , env) ;
+  ADD_FOLDING_PRIM  ( "tcp-listener?"             , tcp_listener_p           , 1 , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY2 ( "tcp-addresses"             , tcp_addresses            , 1 , 2 , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "tcp-abandon-port"          , tcp_abandon_port         , 1 , 1 , env) ;
+  ADD_FOLDING_PRIM  ( "tcp-port?"                 , tcp_port_p               , 1 , 1 , 1 , env) ;
 
-  GLOBAL_PRIM_W_ARITY  ( "udp-open-socket"           , make_udp                 , 0 , 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-close"                 , udp_close                , 1 , 1 , netenv ) ;
-  GLOBAL_FOLDING_PRIM  ( "udp?"                      , udp_p                    , 1 , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-bound?"                , udp_bound_p              , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-connected?"            , udp_connected_p          , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-bind!"                 , udp_bind                 , 3 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-connect!"              , udp_connect              , 3 , 3 , netenv ) ;
+  ADD_PRIM_W_ARITY  ( "udp-open-socket"           , make_udp                 , 0 , 2 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-close"                 , udp_close                , 1 , 1 , env) ;
+  ADD_FOLDING_PRIM  ( "udp?"                      , udp_p                    , 1 , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-bound?"                , udp_bound_p              , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-connected?"            , udp_connected_p          , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-bind!"                 , udp_bind                 , 3 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-connect!"              , udp_connect              , 3 , 3 , env) ;
 
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-to"               , udp_send_to              , 4 , 6 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send"                  , udp_send                 , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-to*"              , udp_send_to_star         , 4 , 6 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send*"                 , udp_send_star            , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-to/enable-break"  , udp_send_to_enable_break , 4 , 6 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send/enable-break"     , udp_send_enable_break    , 2 , 4 , netenv ) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-to"               , udp_send_to              , 4 , 6 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send"                  , udp_send                 , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-to*"              , udp_send_to_star         , 4 , 6 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send*"                 , udp_send_star            , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-to/enable-break"  , udp_send_to_enable_break , 4 , 6 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send/enable-break"     , udp_send_enable_break    , 2 , 4 , env) ;
 
-  GLOBAL_PRIM_W_ARITY  ( "udp-receive!"              , udp_receive              , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-receive!*"             , udp_receive_star         , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-receive!/enable-break" , udp_receive_enable_break , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-receive-ready-evt"     , udp_read_ready_evt       , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-ready-evt"        , udp_write_ready_evt      , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-receive!-evt"          , udp_read_evt             , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-evt"              , udp_write_evt            , 2 , 4 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , netenv ) ;
+  ADD_PRIM_W_ARITY  ( "udp-receive!"              , udp_receive              , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-receive!*"             , udp_receive_star         , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-receive!/enable-break" , udp_receive_enable_break , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-receive-ready-evt"     , udp_read_ready_evt       , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-ready-evt"        , udp_write_ready_evt      , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-receive!-evt"          , udp_read_evt             , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-evt"              , udp_write_evt            , 2 , 4 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , env) ;
 
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-loopback?"   , udp_multicast_loopback_p , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-loopback!", udp_multicast_set_loopback,2, 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-ttl"         , udp_multicast_ttl        , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-ttl!"    , udp_multicast_set_ttl    , 2 , 2 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-interface"   , udp_multicast_interface  , 1 , 1 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-set-interface!", udp_multicast_set_interface,2,2, netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-join-group!" , udp_multicast_join_group , 3 , 3 , netenv ) ;
-  GLOBAL_PRIM_W_ARITY  ( "udp-multicast-leave-group!", udp_multicast_leave_group, 3 , 3 , netenv ) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-loopback?"   , udp_multicast_loopback_p , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-set-loopback!", udp_multicast_set_loopback,2, 2 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-ttl"         , udp_multicast_ttl        , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-set-ttl!"    , udp_multicast_set_ttl    , 2 , 2 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-interface"   , udp_multicast_interface  , 1 , 1 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-set-interface!", udp_multicast_set_interface,2,2, env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-join-group!" , udp_multicast_join_group , 3 , 3 , env) ;
+  ADD_PRIM_W_ARITY  ( "udp-multicast-leave-group!", udp_multicast_leave_group, 3 , 3 , env) ;
 
-  scheme_finish_primitive_module(netenv);
+  scheme_restore_prim_instance(env);
 }
 
 static int check_fd_sema(rktio_fd_t *s, int mode, Scheme_Schedule_Info *sinfo, Scheme_Object *orig)

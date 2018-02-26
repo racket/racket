@@ -1,91 +1,63 @@
 #lang racket/base
-(require compiler/cm
-         compiler/zo-marshal
-         "alpha.rkt"
-         "gc-toplevels.rkt"
+(require racket/set
+         compiler/cm
+         "find.rkt"
+         "name.rkt"
          "merge.rkt"
-         "module.rkt"
-         "mpi.rkt"
-         "nodep.rkt"
-         "replace-modidx.rkt")
+         "gc.rkt"
+         "bundle.rkt"
+         "write.rkt")
 
-(provide current-excluded-modules
+(provide demodularize
+
          garbage-collect-toplevels-enabled
-         recompile-enabled
-         demodularize)
+         current-excluded-modules
+         recompile-enabled)
 
 (define garbage-collect-toplevels-enabled (make-parameter #f))
 (define recompile-enabled (make-parameter #f))
 
 (define logger (make-logger 'demodularizer (current-logger)))
 
-(define (demodularize file-to-batch [output-file #f])
-  (parameterize ([current-logger logger])
-    (define-values (base name must-be-dir?) (split-path file-to-batch))
-    (when must-be-dir?
-      (error 'demodularize "Cannot run on directory: ~a" file-to-batch))
-    (unless (file-exists? file-to-batch)
-      (error 'demodularize "File does not exist: ~a" file-to-batch))
-    
-    ;; Compile
+(define (demodularize input-file [given-output-file #f])
+  (parameterize ([current-logger logger]
+                 [current-excluded-modules (for/set ([path (in-set (current-excluded-modules))])
+                                             (normal-case-path (simplify-path (path->complete-path path))))])
+
     (log-info "Compiling module")
     (parameterize ([current-namespace (make-base-empty-namespace)])
-      (managed-compile-zo file-to-batch))
-    
-    (define merged-zo-path 
-      (or output-file
-          (path-add-suffix file-to-batch #"_merged.zo")))
-    
-    ;; Transformations
-    (define path-cache (make-hasheq))
-    
-    (log-info "Removing dependencies")
-    (define-values (batch-nodep top-lang-info top-self-modidx get-modvar-rewrite)
-      (parameterize ([MODULE-PATHS path-cache])
-        (nodep-file file-to-batch)))
-    
-    (log-info "Merging modules")
-    (define batch-merge
-      (parameterize ([MODULE-PATHS path-cache])
-        (merge-compilation-top get-modvar-rewrite batch-nodep)))
-    
-    (define batch-gcd
-      (if (garbage-collect-toplevels-enabled)
-          (begin
-            (log-info "GC-ing top-levels")
-            (gc-toplevels batch-merge))
-          batch-merge))
-    
-    (log-info "Alpha-varying top-levels")
-    (define batch-alpha
-      (alpha-vary-ctop batch-gcd))
-    
-    (log-info "Replacing self-modidx")
-    (define batch-replace-modidx
-      (replace-modidx batch-alpha top-self-modidx))
-    
-    (define batch-modname
-      (string->symbol (regexp-replace #rx"\\.zo$" (path->string merged-zo-path) "")))
-    (log-info (format "Modularizing into ~a" batch-modname))
-    (define batch-mod
-      (wrap-in-kernel-module batch-modname batch-modname top-lang-info top-self-modidx batch-replace-modidx))
-    
-    (log-info "Writing merged zo")
-    (void
-     (with-output-to-file 
-         merged-zo-path
-       (lambda ()
-         (zo-marshal-to batch-mod (current-output-port)))
-       #:exists 'replace))
-  
-    (void
-      (when (recompile-enabled)
-        (define recomp
-          (compiled-expression-recompile 
-            (parameterize ([read-accept-compiled #t])
-              (call-with-input-file merged-zo-path read))))
-        (call-with-output-file merged-zo-path
-          (lambda (out)
-            (write recomp out))
-          #:exists 'replace)))))
+      (managed-compile-zo input-file))
 
+    (log-info "Finding modules")
+    (define-values (runs excluded-module-mpis) (find-modules input-file))
+
+    (log-info "Selecting names")
+    (define-values (names internals lifts imports) (select-names runs))
+
+    (log-info "Merging linklets")
+    (define-values (body first-internal-pos get-merge-info)
+      (merge-linklets runs names internals lifts imports))
+
+    (log-info "GCing definitions")
+    (define-values (new-body new-internals new-lifts)
+      (gc-definitions body internals lifts first-internal-pos
+                      #:assume-pure? (garbage-collect-toplevels-enabled)))
+
+    (log-info "Bundling linklet")
+    (define bundle (wrap-bundle new-body new-internals new-lifts
+                                excluded-module-mpis
+                                get-merge-info))
+
+    (log-info "Writing bytecode")
+    (define output-file (or given-output-file
+                            (path-add-suffix input-file #"_merged.zo")))
+    (write-module output-file bundle)
+
+    (when (recompile-enabled)
+      (log-info "Recompiling and rewriting bytecode")
+      (define zo (compiled-expression-recompile
+                  (parameterize ([read-accept-compiled #t])
+                    (call-with-input-file* output-file read))))
+      (call-with-output-file* output-file
+                              #:exists 'replace
+                              (lambda (out) (write zo out))))))

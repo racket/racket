@@ -39,6 +39,7 @@ struct rktio_fd_t {
   struct Win_FD_Input_Thread *th; /* input mode */
   struct Win_FD_Output_Thread *oth; /* output mode */
   int unblocked; /* whether non-blocking mode is installed */
+  int write_limit; /* non-0 => max on amount to try writing */
   char *buffer; /* shared with reading thread */
   int has_pending_byte; /* for text-mode input, may be dropped by a following lf */
   int pending_byte; /* for text-mode input, either a CR waiting to decode, or byte that didn't fit */
@@ -1167,7 +1168,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
   if (rktio_fd_is_regular_file(rktio, rfd)
       || rktio_fd_is_terminal(rktio, rfd)) {
     /* Regular files never block, so this code looks like the Unix
-       code.   */
+       code. */
 
     /* If we try to write too much at once, the result
        is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
@@ -1235,7 +1236,6 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       if (nonblocking) {
         /* Unless we're still trying to flush old data, write to the
            pipe and have the other thread start flushing it. */
-        DWORD nonblock = PIPE_NOWAIT;
         int flushed;
 
         if (rfd->oth) {
@@ -1267,13 +1267,34 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
              write fails. (Yuck.) */
           while (1) {
             if (!rfd->unblocked) {
+	      DWORD nonblock = PIPE_NOWAIT;
               ok = SetNamedPipeHandleState((HANDLE)rfd->fd, &nonblock, NULL, NULL);
               if (ok)
                 rfd->unblocked = 1;
-              else
+              else {
                 errsaved = GetLastError();
+		if (errsaved == ERROR_INVALID_FUNCTION) {
+		  /* The handle (not a pipe?) doesn't support non-blocking mode. But
+		     since we only try to write when the pipe is flushed, we can just
+		     keep each request under the buffer size. */
+		  DWORD bufsz;
+		  if (GetNamedPipeInfo((HANDLE)rfd->fd, NULL, &bufsz, NULL, NULL)
+		      && (bufsz > 0))
+		    rfd->write_limit = bufsz;
+		  else {
+		    /* 256 should be small enough? */
+		    rfd->write_limit = 256;
+		  }
+		  rfd->unblocked = 1;
+		  ok = 1;
+		} 
+	      }
             } else
               ok = 1;
+
+	    if (rfd->write_limit && (towrite > rfd->write_limit))
+	      towrite = rfd->write_limit;
+
             if (ok) {
               ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
               if (!ok)
@@ -1477,6 +1498,7 @@ static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
       csi(rfd->oth->thread);
     }
     CloseHandle(rfd->oth->thread);
+    printf("done\n"); fflush();
     rfd->oth->done = 1;
     ReleaseSemaphore(rfd->oth->work_sema, 1, NULL);
 
@@ -1535,9 +1557,9 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 	err_no = 0;
 
       WaitForSingleObject(oth->lock_sema, INFINITE);
-      if (!ok)
+      if (!ok) {
 	oth->err_no = err_no;
-      else {
+      } else {
 	oth->buflen -= wrote;
 	if (oth->buflen)
 	  memmove(oth->buffer, oth->buffer + wrote, oth->buflen);
@@ -1563,6 +1585,7 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 {
+  printf("clean up %p\n", oth); fflush(NULL);
   CloseHandle(oth->lock_sema);
   CloseHandle(oth->work_sema);
 

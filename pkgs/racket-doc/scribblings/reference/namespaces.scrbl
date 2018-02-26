@@ -170,7 +170,8 @@ exception.}
 @defproc[(namespace-set-variable-value! [sym symbol?]
                                         [v any/c]
                                         [map? any/c #f]
-                                        [namespace namespace? (current-namespace)])
+                                        [namespace namespace? (current-namespace)]
+                                        [as-constant? any/c #f])
          void?]{
 
 Sets the value of @racket[sym] in the top-level environment of
@@ -180,7 +181,13 @@ it is not already defined.
 If @racket[map?] is supplied as true, then the namespace's
 @tech{identifier} mapping is also adjusted (see
 @secref["namespace-model"]) in the @tech{phase level} corresponding to
-the @tech{base phase}, so that @racket[sym] maps to the variable.}
+the @tech{base phase}, so that @racket[sym] maps to the variable.
+
+If @racket[as-constant?] is true, then the variable is made a constant
+(so future assignments are rejected) after @racket[v] is installed as
+the value.
+
+@history[#:changed "6.6.1" @elem{Added the @racket[as-constant?] argument.}]}
 
 
 @defproc[(namespace-undefine-variable! [sym symbol?]
@@ -502,8 +509,7 @@ an anonymous module variable as produced by
 
 Returns @racket[#t] if the module of the variable reference itself
 (not necessarily a referenced variable) is compiled in unsafe mode,
-@racket[#f] otherwise. Since unsafe-mode compilation is not currently
-supported, the result is always @racket[#f].
+@racket[#f] otherwise.
 
 The @racket[variable-reference-from-unsafe?] procedure is intended for
 use as
@@ -512,6 +518,12 @@ use as
 (variable-reference-from-unsafe? (#%variable-reference))
 ]
 
-which the compiler can currently optimize to a literal @racket[#f].
+which the compiler can optimize to a literal @racket[#t] or
+@racket[#f] (since the enclosing module is being compiled in
+@tech{unsafe mode} or not).
+
+Currently @tech{unsafe mode} can be controlled only through the
+@tech{linklet} interface, but future changes may make @tech{unsafe
+mode} more accessible at the module level.
 
 @history[#:added "6.12.0.4"]}

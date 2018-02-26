@@ -56,7 +56,8 @@
 ;; generally retain the location in a file of an offset that needs to
 ;; be updated.
 ;;
-(define (add-plt-segment file segdata)
+(define (add-plt-segment file segdata
+                         #:name [segment-name #"__PLTSCHEME"])
   (let-values ([(p out) (open-input-output-file file #:exists 'update)])
     (dynamic-wind
         void
@@ -136,7 +137,8 @@
                                      [nreloc (read-ulong p)]
                                      [flags (read-ulong p)])
                                  (when ((+ offset vmsz) . > . (+ cmdssz (if (equal? exe-id #xFeedFacf) 32 28)))
-                                   (when (offset . < . min-used)
+                                   (when (and (positive? offset)
+                                              (offset . < . min-used))
                                      ;; (printf "   new min!\n")
                                      (set! min-used offset)))
                                  ;; (printf "    ~s,~s 0x~x 0x~x\n" seg sect offset vmsz)
@@ -276,7 +278,7 @@
               (file-position out link-edit-pos)
               (write-ulong (if link-edit-64? #x19 1) out) ; LC_SEGMENT[_64]
               (write-ulong new-cmd-sz out)
-              (display #"__PLTSCHEME\0\0\0\0\0" out)
+              (display (pad-segment-name segment-name) out)
               ((if link-edit-64? write-xulong write-ulong) out-addr out)
               ((if link-edit-64? write-xulong write-ulong) outlen out)
               ((if link-edit-64? write-xulong write-ulong) out-offset out)
@@ -377,6 +379,9 @@
         (lambda ()
           (close-input-port p)
           (close-output-port out)))))
+
+(define (pad-segment-name bs)
+  (bytes-append bs (make-bytes (- 16 (bytes-length bs)))))
 
 (define (fix-offset p pos out d base delta)
   (when (and out (not (zero? delta)))

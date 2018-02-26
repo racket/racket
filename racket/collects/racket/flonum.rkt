@@ -28,7 +28,8 @@
   for/flvector
   for*/flvector
   flvector-copy
-  0.0)
+  0.0
+  check-flvector)
 
 (define (flrandom r)
   (if (pseudo-random-generator? r)

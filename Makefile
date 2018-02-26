@@ -64,11 +64,24 @@ INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
 ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 plain-in-place:
+	$(MAKE) plain-minimal-in-place
+	$(MAKE) in-place-setup
+
+plain-in-place-after-base:
+	$(MAKE) plain-minimal-in-place-after-base
+	$(MAKE) in-place-setup
+
+plain-minimal-in-place:
 	$(MAKE) plain-base
+	$(MAKE) plain-minimal-in-place-after-base
+
+plain-minimal-in-place-after-base:
 	$(MAKE) pkgs-catalog
 	$(RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+
+in-place-setup:
 	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-in-place:
@@ -91,7 +104,7 @@ cpus-as-is:
 
 plain-as-is:
 	$(MAKE) base
-	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(MAKE) in-place-setup
 
 win32-as-is:
 	$(MAKE) win32-base
@@ -148,7 +161,9 @@ set-src-catalog:
 
 CONFIGURE_ARGS_qq = 
 
-SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
+SELF_UP = 
+SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
+INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
 base:
 	if [ "$(CPUS)" = "" ] ; \
@@ -159,13 +174,16 @@ cpus-base:
 	$(MAKE) -j $(CPUS) plain-base JOB_OPTIONS="-j $(CPUS)"
 
 plain-base:
-	mkdir -p build/config
-	echo '#hash((links-search-files . ()))' > build/config/config.rktd
+	$(MAKE) base-config
 	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
 	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
-	cd racket/src/build; $(MAKE) install $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
+	cd racket/src/build; $(MAKE) install $(INSTALL_SETUP_ARGS)
+
+base-config:
+	mkdir -p build/config
+	echo '#hash((links-search-files . ()))' > build/config/config.rktd
 
 win32-base:
 	$(MAKE) win32-remove-setup-dlls
@@ -194,6 +212,77 @@ native-for-cross:
 
 racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build/cross; ../../configure
+
+# ------------------------------------------------------------
+# Racket-on-Chez build
+
+# If `RACKET` is not set, then we bootstrap by first building the
+# traditional virtual machine
+RACKET =
+
+# If `SCHEME_SRC` is not set, then we'll download a copy of
+# Chez Scheme from `CHEZ_SCHEME_REPO`
+SCHEME_SRC = 
+DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
+
+CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
+
+# Redirected for "as-is":
+BASE_TARGET = plain-minimal-in-place
+CS_SETUP_TARGET = plain-in-place-after-base
+
+cs:
+	if [ "$(SCHEME_SRC)" = "" ] ; \
+         then $(MAKE) scheme-src ; fi
+	if [ "$(RACKET)" = "" ] ; \
+         then $(MAKE) racket-then-cs ; \
+         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+
+cs-as-is:
+	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
+
+cs-after-racket:
+	if [ "$(RACKET)" = "" ] ; \
+         then $(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)" ; \
+         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+
+racket-then-cs:
+	$(MAKE) $(BASE_TARGET) PKGS="compiler-lib parser-tools-lib"
+	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) -D -l compiler parser-tools
+	$(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)"
+
+ABS_RACKET = "`$(RACKET) racket/src/cs/absify.rkt --exec $(RACKET)`"
+ABS_SCHEME_SRC = "`$(RACKET) racket/src/cs/absify.rkt $(SCHEME_SRC)`"
+
+cs-after-racket-with-racket:
+	if [ "$(SCHEME_SRC)" = "" ] ; \
+	  then $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(DEFAULT_SCHEME_SRC)" ; \
+	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" ; fi
+
+cs-after-racket-with-racket-and-scheme-src:
+	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
+
+cs-after-racket-with-abs-paths:
+	$(MAKE) racket/src/build/cs/Makefile
+	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)"
+	$(MAKE) base-config
+	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
+	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
+
+racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
+	mkdir -p cd racket/src/build/cs
+	cd racket/src/build/cs; ../../cs/c/configure
+
+scheme-src:
+	$(MAKE) racket/src/build/ChezScheme
+	$(MAKE) update-ChezScheme
+
+racket/src/build/ChezScheme:
+	mkdir -p racket/src/build
+	cd racket/src/build && git clone $(CHEZ_SCHEME_REPO)
+
+update-ChezScheme:
+	cd racket/src/build/ChezScheme && git pull && git submodule update
 
 # ------------------------------------------------------------
 # Configuration options for building installers
@@ -331,8 +420,8 @@ SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
 # Helper macros:
 USER_CONFIG = -G build/user/config -X racket/collects -A build/user
-RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
-RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
+USER_RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
+USER_RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
@@ -352,11 +441,11 @@ WIN32_IN_BUNDLE_RACO = bundle\racket\raco
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
 
-PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata
+PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata --immediate
 PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
-	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
+	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs racket/src/expander
 	$(RUN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(RUN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
@@ -409,47 +498,47 @@ stamp-from-date:
 build-from-catalog:
 	rm -rf build/user
 	rm -rf build/catalog-copy
-	$(RACO) pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
+	$(USER_RACO) pkg catalog-copy "$(SRC_CATALOG)" build/catalog-copy
 	$(MAKE) server-cache-config
-	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
+	$(USER_RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
-	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
-	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS) $(TEST_PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
-	$(RACO) setup --avoid-main $(JOB_OPTIONS)
+	$(USER_RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
+	$(USER_RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS) $(TEST_PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
+	$(USER_RACO) setup --avoid-main $(JOB_OPTIONS)
 
 server-cache-config:
-	$(RACO) pkg config -i --set download-cache-dir build/cache
-	$(RACO) pkg config -i --set download-cache-max-files 1023
-	$(RACO) pkg config -i --set download-cache-max-bytes 671088640
+	$(USER_RACO) pkg config -i --set download-cache-dir build/cache
+	$(USER_RACO) pkg config -i --set download-cache-max-files 1023
+	$(USER_RACO) pkg config -i --set download-cache-max-bytes 671088640
 
 set-server-config:
-	$(RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
+	$(USER_RACKET) -l distro-build/set-server-config build/user/config/config.rktd $(CONFIG_MODE_q) "" "" "$(DOC_SEARCH)" ""
 
 # Although a client will build its own "collects", pack up the
 # server's version to be used by each client, so that every client has
 # exactly the same bytecode (which matters for SHA1-based dependency
 # tracking):
 origin-collects:
-	$(RACKET) -l distro-build/pack-collects
+	$(USER_RACKET) -l distro-build/pack-collects
 
 # Now that we've built packages from local sources, create "built"
 # versions of the packages from the installation into "build/user":
 built-catalog:
-	$(RACKET) -l distro-build/pack-built build/pkgs.rktd
+	$(USER_RACKET) -l distro-build/pack-built build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
 # as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	$(RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
+	$(USER_RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
 # instead of "built" mode:
 binary-catalog:
-	$(RACKET) -l- distro-build/pack-built --mode binary build/pkgs.rktd
+	$(USER_RACKET) -l- distro-build/pack-built --mode binary build/pkgs.rktd
 binary-catalog-server:
-	$(RACKET) -l- distro-build/serve-catalog --mode binary $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT)
+	$(USER_RACKET) -l- distro-build/serve-catalog --mode binary $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT)
 
 # ------------------------------------------------------------
 # On each supported platform (for an installer build):
@@ -485,7 +574,7 @@ client:
 	$(MAKE) base $(COPY_ARGS)
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
 	$(MAKE) bundle-from-server $(COPY_ARGS)
-	$(RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
+	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 win32-client:
@@ -499,7 +588,7 @@ win32-client:
 # Install the "distro-build" package from the server into
 # a local build:
 distro-build-from-server:
-	$(RACO) pkg install $(REMOTE_USER_AUTO) distro-build-client
+	$(USER_RACO) pkg install $(REMOTE_USER_AUTO) distro-build-client
 
 # Copy our local build into a "bundle/racket" build, dropping in the
 # process things that should not be in an installer (such as the "src"
@@ -511,13 +600,13 @@ distro-build-from-server:
 bundle-from-server:
 	rm -rf bundle
 	mkdir -p bundle/racket
-	$(RACKET) -l setup/unixstyle-install bundle racket bundle/racket
-	$(RACKET) -l setup/winstrip bundle/racket
-	$(RACKET) -l setup/winvers-change bundle/racket
-	$(RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(USER_RACKET) -l setup/unixstyle-install bundle racket bundle/racket
+	$(USER_RACKET) -l setup/winstrip bundle/racket
+	$(USER_RACKET) -l setup/winvers-change bundle/racket
+	$(USER_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
-	$(RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
+	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
@@ -528,7 +617,7 @@ DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
 # Create an installer from the build (with installed packages) that's
 # in "bundle/racket":
 installer-from-bundle:
-	$(RACKET) -l- distro-build/installer $(DIST_ARGS_q)
+	$(USER_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
 
 win32-distro-build-from-server:
 	$(WIN32_RACO) pkg install $(REMOTE_USER_AUTO) distro-build-client
@@ -589,7 +678,7 @@ DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
                $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
-DRIVE_CMD_q = $(RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
+DRIVE_CMD_q = $(USER_RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
 installers:
@@ -615,8 +704,8 @@ DOC_CATALOGS = build/built/catalog build/native/catalog
 
 site-from-installers:
 	rm -rf build/docs
-	$(RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
-	$(RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
+	$(USER_RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
+	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
 
 # ------------------------------------------------------------
 # Create a snapshot site:
@@ -626,4 +715,4 @@ snapshot-site:
 	$(MAKE) snapshot-at-site
 
 snapshot-at-site:
-	$(RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)
+	$(USER_RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)

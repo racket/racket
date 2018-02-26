@@ -868,7 +868,20 @@
 
 (test 5 'implicit-begin (let () (begin) 10 5))
 
-(error-test #'(begin (define foo (let/cc k k)) (foo 10)) exn:application:type?) ; not exn:application:continuation?
+;; Weird test: check that `eval` does not wrap its last argument
+;; in a prompt, which means that `(foo 10)` replaces the continuation
+;; that would check for an error
+(error-test #'(begin (define foo (let/cc k k)) (foo 10)) (lambda (x) #f))
+
+;; Check that `eval` does wrap a prompt around non-tail expressions
+(test 10
+      (lambda (e) (call-with-continuation-prompt (lambda () (eval e))))
+      #'(begin (define foo (let/cc k k)) (foo 10) foo))
+
+;; Check that `eval` doesn't add a prompt around definitions:
+(eval #'(define foo (let/cc k k)))
+(eval #'(define never-gets-defined (eval #'(foo 9))))
+(err/rt-test (eval #'never-gets-defined) exn:fail:contract:variable?)
 
 (define f-check #t)
 (define f (delay (begin (set! f-check #f) 5)))
@@ -1845,7 +1858,7 @@
    free-identifier=?
    f-id
    (eval '(extract (f #:x 8)
-                   (lv ([(proc) f2] . _) (if const? (app f3 . _) . _))
+                   (lv _ (if const? (app f3 . _) . _))
                    f3
                    #f)))
   (test
@@ -1853,17 +1866,17 @@
    free-identifier=?
    f-id
    (eval '(extract (f #:x 8)
-                   (lv ([(proc) f2] . _) (if const? (app f3 . _) . _))
-                   f2
-                   #t)))
+           (lv _ (if const? (app f3 . _) (app2 (app3 check&extract _ f2 . _) . _)))
+           f2
+           #t)))
   (test
    #t
    free-identifier=?
    f-id
    (eval '(extract (f #:y 9)
-                   (lv ([(proc) f2] . _) . _)
-                   f2
-                   #t)))
+           (lv _ (app2 (app3 check&extract _ f2 . _) . _))
+           f2
+           #t)))
   (test
    #t
    free-identifier=?

@@ -14,8 +14,8 @@
          racket/extflonum)
 
 (provide/contract
- [zo-marshal (compilation-top? . -> . bytes?)]
- [zo-marshal-to (compilation-top? output-port? . -> . void?)])
+ [zo-marshal ((or/c linkl-directory? linkl-bundle?) . -> . bytes?)]
+ [zo-marshal-to ((or/c linkl-directory? linkl-bundle?) output-port? . -> . void?)])
 
 (struct not-ready ())
 
@@ -27,15 +27,17 @@
   (get-output-bytes bs))
 
 (define (zo-marshal-to top outp) 
-  (if (and (mod? (compilation-top-code top))
-           (or (pair? (mod-pre-submodules (compilation-top-code top)))
-               (pair? (mod-post-submodules (compilation-top-code top)))))
-      ;; module directory and submodules:
-      (zo-marshal-modules-to top outp)
-      ;; single module or other:
-      (zo-marshal-top-to top outp)))
+  (match top
+    [(linkl-directory table)
+     ;; linklet directory:
+     (zo-marshal-directory-to table outp)]
+    [(linkl-bundle table)
+     ;; single linklet bundle:
+     (zo-marshal-bundle-to table outp)]
+    [else
+     (error 'zo-marshal-top "not a linklet bundle or directory:" top)]))
 
-(define (zo-marshal-modules-to top outp)
+(define (zo-marshal-directory-to top outp)
   ;; Write the compiled form header
   (write-bytes #"#~" outp)
   ;; Write the version:
@@ -45,80 +47,78 @@
 
   (write-byte (char->integer #\D) outp)
 
-  (struct mod-bytes (code-bstr name-bstr offset))
-  ;; bytestring encodings of the modules and module names
-  ;; --- in the order that they must be written:
-  (define pre-mod-bytess
-    (reverse
-     (let loop ([m (compilation-top-code top)] [pre-accum null])
-       (define (encode-module-name name)
-         (if (symbol? name)
-             #""
-             (apply bytes-append
-                    (for/list ([sym (in-list (cdr name))])
-                      (define b (string->bytes/utf-8 (symbol->string sym)))
-                      (define len (bytes-length b))
-                      (bytes-append (if (len . < . 255)
-                                        (bytes len)
-                                        (bytes-append
-                                         (bytes 255)
-                                         (integer->integer-bytes len 4 #f #f)))
-                                    b)))))
-       (define accum
-         (let iloop ([accum pre-accum] [subm (mod-pre-submodules m)])
-           (if (null? subm)
-               accum
-               (iloop (loop (car subm) accum) (cdr subm)))))
-       (define o (open-output-bytes))
-       (zo-marshal-top-to (struct-copy compilation-top top 
-                                       [code (struct-copy mod m 
-                                                          [pre-submodules null]
-                                                          [post-submodules null])])
-                          o)
-       (define new-accum
-         (cons (mod-bytes (get-output-bytes o)
-                          (encode-module-name (mod-name m))
-                          0)
-               accum))
-       (let iloop ([accum new-accum] [subm (mod-post-submodules m)])
-         (if (null? subm)
-             accum
-             (iloop (loop (car subm) accum) (cdr subm)))))))
-  (write-bytes (int->bytes (length pre-mod-bytess)) outp)
+  (struct bundle-bytes (code-bstr name-list name-bstr offset))
+  ;; bytestring encodings of the bundles and bundle names
+  (define unsorted-pre-bundle-bytess
+    (for/list ([(name bundle) (in-hash top)])
+      (define name-bstr
+        (if (null? name)
+            #""
+            (apply bytes-append
+                   (for/list ([sym (in-list name)])
+                     (define b (string->bytes/utf-8 (symbol->string sym)))
+                     (define len (bytes-length b))
+                     (bytes-append (if (len . < . 255)
+                                       (bytes len)
+                                       (bytes-append
+                                        (bytes 255)
+                                        (integer->integer-bytes len 4 #f #f)))
+                                   b)))))
+      (define o (open-output-bytes))
+      (zo-marshal-bundle-to (linkl-bundle-table bundle) o)
+      (bundle-bytes (get-output-bytes o)
+                    name
+                    name-bstr
+                    0)))
+  ;; Write order must correspond to a post-order traversal
+  ;; of the tree, so write
+  (define pre-bundle-bytess
+    (sort unsorted-pre-bundle-bytess
+          (lambda (a b)
+            (let loop ([a (bundle-bytes-name-list a)] [b (bundle-bytes-name-list b)])
+              (cond
+               [(null? a) #f]
+               [(null? b) #t]
+               [(eq? (car a) (car b)) (loop (cdr a) (cdr b))]
+               [(symbol<? (car a) (car b)) #t]
+               [else #f])))))
+  ;; Write count:
+  (write-bytes (int->bytes (length pre-bundle-bytess)) outp)
   ;; Size of btree:
   (define header-size
     (+ 8
        (string-length (version))))
   (define btree-size
     (+ header-size
-       (apply + (for/list ([mb (in-list pre-mod-bytess)])
-                  (+ (bytes-length (mod-bytes-name-bstr mb))
+       (apply + (for/list ([mb (in-list pre-bundle-bytess)])
+                  (+ (bytes-length (bundle-bytes-name-bstr mb))
                      20)))))
-  ;; Add offsets to mod-bytess:
-  (define mod-bytess (let loop ([offset btree-size] [mod-bytess pre-mod-bytess])
-                       (if (null? mod-bytess)
+  ;; Add offsets to bundle-bytess:
+  (define bundle-bytess (let loop ([offset btree-size] [bundle-bytess pre-bundle-bytess])
+                       (if (null? bundle-bytess)
                            null
-                           (let ([mb (car mod-bytess)])
-                             (cons (mod-bytes (mod-bytes-code-bstr mb)
-                                              (mod-bytes-name-bstr mb)
-                                              offset)
+                           (let ([mb (car bundle-bytess)])
+                             (cons (bundle-bytes (bundle-bytes-code-bstr mb)
+                                                 (bundle-bytes-name-list mb)
+                                                 (bundle-bytes-name-bstr mb)
+                                                 offset)
                                    (loop (+ offset
-                                            (bytes-length (mod-bytes-code-bstr mb)))
-                                         (cdr mod-bytess)))))))
+                                            (bytes-length (bundle-bytes-code-bstr mb)))
+                                         (cdr bundle-bytess)))))))
   ;; Sort by name for btree order:
-  (define sorted-mod-bytess 
-    (list->vector (sort mod-bytess bytes<? #:key mod-bytes-name-bstr)))
-  (define right-offsets (make-vector (vector-length sorted-mod-bytess) 0))
+  (define sorted-bundle-bytess 
+    (list->vector (sort bundle-bytess bytes<? #:key bundle-bytes-name-bstr)))
+  (define right-offsets (make-vector (vector-length sorted-bundle-bytess) 0))
   ;; Write out btree or compute offsets:
   (define (write-btree write-bytes)
-    (let loop ([lo 0] [hi (vector-length sorted-mod-bytess)] [pos header-size])
+    (let loop ([lo 0] [hi (vector-length sorted-bundle-bytess)] [pos header-size])
       (define mid (quotient (+ lo hi) 2))
-      (define mb (vector-ref sorted-mod-bytess mid))
-      (define name-len (bytes-length (mod-bytes-name-bstr mb)))
+      (define mb (vector-ref sorted-bundle-bytess mid))
+      (define name-len (bytes-length (bundle-bytes-name-bstr mb)))
       (write-bytes (int->bytes name-len) outp)
-      (write-bytes (mod-bytes-name-bstr mb) outp)
-      (write-bytes (int->bytes (mod-bytes-offset mb)) outp)
-      (write-bytes (int->bytes (bytes-length (mod-bytes-code-bstr mb))) outp)
+      (write-bytes (bundle-bytes-name-bstr mb) outp)
+      (write-bytes (int->bytes (bundle-bytes-offset mb)) outp)
+      (write-bytes (int->bytes (bytes-length (bundle-bytes-code-bstr mb))) outp)
       (define left-pos (+ pos name-len 20))
       (write-bytes (int->bytes (if (= lo mid)
                                    0
@@ -137,31 +137,16 @@
           (loop (add1 mid) hi right-pos))))
   (write-btree void) ; to fill `right-offsets'
   (write-btree write-bytes) ; to actually write the btree
-  ;; write modules:
-  (for ([mb (in-list mod-bytess)])
-    (write-bytes (mod-bytes-code-bstr mb) outp)))
+  ;; Write bundles:
+  (for ([mb (in-list bundle-bytess)])
+    (write-bytes (bundle-bytes-code-bstr mb) outp)))
 
-(define (zo-marshal-top-to top outp) 
-  
-  ; For detecting sharing in wraps:
-  (define stx-objs (make-hasheq))
-  (define wraps (make-hasheq))
-  (define hash-consed (make-hash))
-  (define hash-consed-results (make-hasheq))
-  
+(define (zo-marshal-bundle-to top outp) 
   ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
   (define (out-compilation-top shared-obj-pos shared-obj-pos-any counting? outp)
-    (define ct
-      (match top
-        [(compilation-top max-let-depth binding-namess prefix form)
-         (list* max-let-depth
-                (binding-namess-hash->list binding-namess)
-                prefix
-                (protect-quote form))]))
-    (out-anything ct (make-out outp shared-obj-pos shared-obj-pos-any counting?
-                               stx-objs wraps hash-consed hash-consed-results))
+    (out-anything top (make-out outp shared-obj-pos shared-obj-pos-any counting?))
     (file-position outp))
   
   ; -> vector
@@ -231,8 +216,7 @@
                 [i (in-naturals)])
        (begin0
          (file-position outp)
-         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) shared-obj-pos #f
-                                   stx-objs wraps hash-consed hash-consed-results))))
+         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) shared-obj-pos #f))))
      (file-position outp)))
   
   ; Calculate file positions
@@ -248,7 +232,8 @@
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
 
-  (write-byte (char->integer #\T) outp)
+  ;; "B" is for linklet "bundle" (as opposed to a linklet directory)
+  (write-byte (char->integer #\B) outp)
 
   ; Write empty hash code
   (write-bytes (make-bytes 20 0) outp)
@@ -260,7 +245,7 @@
   (write-bytes (bytes (if all-short? 1 0)) outp)
   (for ([o (in-list offsets)])
     (write-bytes (integer->integer-bytes o (if all-short? 2 4) #f #f) outp))
-  ; Post-shared is where the ctop actually starts
+  ; Post-shared is where the top actually starts
   (write-bytes (int->bytes post-shared) outp)
   ; This is where the file should end
   (write-bytes (int->bytes all-forms-length) outp)
@@ -278,23 +263,16 @@
 (define let-void-type-num 10)
 (define letrec-type-num 11)
 (define wcm-type-num 13)
-(define quote-syntax-type-num 14)
-(define define-values-type-num 15)
-(define define-syntaxes-type-num 16)
-(define begin-for-syntax-type-num 17)
-(define set-bang-type-num 18)
-(define boxenv-type-num 19)
-(define begin0-sequence-type-num 20)
-(define splice-sequence-type-num 21)
-(define require-form-type-num 22)
-(define varref-form-type-num 23)
-(define apply-values-type-num 24)
-(define with-immed-mark-type-num 25)
-(define case-lambda-sequence-type-num 26)
-(define module-type-num 27)
-(define inline-variants-type-num 28)
-(define variable-type-num 37)
-(define prefix-type-num 122)
+(define define-values-type-num 14)
+(define set-bang-type-num 15)
+(define boxenv-type-num 16)
+(define begin0-sequence-type-num 17)
+(define varref-form-type-num 18)
+(define apply-values-type-num 19)
+(define with-immed-mark-type-num 20)
+(define case-lambda-sequence-type-num 21)
+(define inline-variants-type-num 22)
+(define linklet-type-num 24)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -324,9 +302,8 @@
   CPT_LIST
   CPT_VECTOR
   CPT_HASH_TABLE
-  CPT_STX
   CPT_LET_ONE_TYPED
-  CPT_MARSHALLED
+  CPT_LINKLET
   CPT_QUOTE
   CPT_REFERENCE
   CPT_LOCAL
@@ -335,25 +312,30 @@
   CPT_APPLICATION
   CPT_LET_ONE
   CPT_BRANCH
-  CPT_MODULE_INDEX
-  CPT_MODULE_VAR
   CPT_PATH
   CPT_CLOSURE
-  CPT_DELAY_REF ; XXX should be used to delay loading of syntax objects and lambda bodies
+  CPT_DELAY_REF ; used to delay loading of syntax objects and lambda bodies
   CPT_PREFAB
   CPT_LET_ONE_UNUSED
-  CPT_SCOPE
-  CPT_ROOT_SCOPE
-  CPT_SHARED)
+  CPT_SHARED
+  CPT_TOPLEVEL
+  CPT_BEGIN
+  CPT_BEGIN0
+  CPT_LET_VALUE
+  CPT_LET_VOID
+  CPT_LETREC
+  CPT_WCM
+  CPT_DEFINE_VALUES
+  CPT_SET_BANG
+  CPT_VARREF
+  CPT_APPLY_VALUES
+  CPT_OTHER_FORM)
 
-(define CPT_SMALL_NUMBER_START 39)
-(define CPT_SMALL_NUMBER_END 62)
+(define CPT_SMALL_NUMBER_START 46)
+(define CPT_SMALL_NUMBER_END 74)
 
-(define CPT_SMALL_SYMBOL_START 62)
-(define CPT_SMALL_SYMBOL_END 80)
-
-(define CPT_SMALL_MARSHALLED_START 80)
-(define CPT_SMALL_MARSHALLED_END 92)
+(define CPT_SMALL_SYMBOL_START 74)
+(define CPT_SMALL_SYMBOL_END 92)
 
 (define CPT_SMALL_LIST_MAX 50)
 (define CPT_SMALL_PROPER_LIST_START 92)
@@ -391,90 +373,6 @@
 
 (define-struct protected-symref (val))
 
-(define (encode-stx-obj w out)
-  (match w
-    [(struct stx-obj (datum wraps srcloc props tamper-status))
-     (let* ([enc-datum
-             (match datum
-               [(cons a b)
-                (let ([p (cons (encode-stx-obj a out)
-                               (let bloop ([b b])
-                                 (match b
-                                   ['() null]
-                                   [(cons b1 b2)
-                                    (cons (encode-stx-obj b1 out)
-                                          (bloop b2))]
-                                   [else
-                                    (encode-stx-obj b out)])))]
-                      [len (let loop ([datum datum][len 0])
-                             (cond
-                               [(null? datum) #f]
-                               [(pair? datum) (loop (cdr datum) (add1 len))]
-                               [else len]))])
-                  ;; for improper lists, we need to include the length so the 
-                  ;; parser knows where the end of the improper list is
-                  (if len
-                      (cons len p) 
-                      p))]
-               [(box x)
-                (box (encode-stx-obj x out))]
-               [(? vector? v)
-                (vector-map (lambda (e) (encode-stx-obj e out)) v)]
-               [(? prefab-struct-key)
-                (define l (vector->list (struct->vector datum)))
-                (apply
-                 make-prefab-struct
-                 (car l)
-                 (map (lambda (e) (encode-stx-obj e out)) (cdr l)))]
-               [_ datum])]
-            [e-wraps (share-everywhere (encode-wrap wraps (out-wraps out)) out)]
-            [esrcloc (let ()
-                       (define (avail? n) (n . >= . 0))
-                       (define (xvector a b c d e)
-                         ;; Add paren-shape info, if any:
-                         (case (hash-ref props 'paren-shape #f)
-                           [(#\[) (yvector a b c d e #\[)]
-                           [(#\{) (yvector a b c d e #\{)]
-                           [else (if (or a (avail? b) (avail? c) (avail? d))
-                                     (yvector a b c d e #f)
-                                     #f)]))
-                       (define (yvector a b c d e f)
-                         ;; Add properties, if any:
-                         (if (positive? (- (hash-count props) (if f 1 0)))
-                             (vector a b c d e f
-                                     (sort (for/list ([(k v) (in-hash props)]
-                                                      #:unless (and f
-                                                                    (eq? k 'paren-shape)))
-                                             (cons k v))
-                                           symbol<?
-                                           #:key car))
-                             (if f
-                                 (vector a b c d e f)
-                                 (vector a b c d e))))
-                       (define (norm v) (or v -1))
-                       (share-everywhere
-                        (if srcloc
-                            (xvector (srcloc-source srcloc)
-                                     (norm (srcloc-line srcloc))
-                                     (norm (srcloc-column srcloc))
-                                     (norm (srcloc-position srcloc))
-                                     (norm (srcloc-span srcloc)))
-                            (xvector #f -1 -1 -1 -1))
-                        out))])
-       (cond
-        [esrcloc
-         (case tamper-status
-           [(tainted) (vector enc-datum e-wraps esrcloc 1)]
-           [(armed) (vector enc-datum e-wraps esrcloc 2)]
-           [else (vector enc-datum e-wraps esrcloc)])]
-        [(not (eq? tamper-status 'clean))
-         (vector enc-datum e-wraps 
-                 (case tamper-status
-                   [(tainted) 1]
-                   [(armed) 2]))]
-        [else
-         (cons enc-datum e-wraps)]))]))
-
 (define-struct out (s
                     ;; The output port for writing bytecode.
                     shared-index
@@ -491,20 +389,6 @@
                     counting?
                     ;; Set to #t for the first (sharing-finding pass), #f
                     ;; otherwise.
-                    stx-objs
-                    ;; Hash table from syntax objects to encoded forms; set on
-                    ;; first pass and encoding are retrieved on following passes.
-                    wraps
-                    ;; Hash table from syntax-object wraps to encodings; also
-                    ;; set on first pass and used on later passes.
-                    hash-consed
-                    ;; Table of hash-consed parts of wrap encodings. This table
-                    ;; is `equal?`-based, but with a wrapper to compare self
-                    ;; modidxs with `eq?`.
-                    hash-consed-results
-                    ;; An `eq?`-based table of hash-cons results. Any of these
-                    ;; values that are shared need to be written with CPT_SHARED
-                    ;; so graph structure can be managed.
                     ))
 
 (define (out-shared v out k)
@@ -514,13 +398,7 @@
             (begin
               (out-byte CPT_SYMREF out)
               (out-number n out))
-            (let ([sharepoint? (hash-ref (out-hash-consed-results out) v #f)])
-              (when sharepoint?
-                (let ([n2 ((out-shared-index-any out) v)])
-                  (when n2
-                    (out-byte CPT_SHARED out)
-                    (out-number n2 out))))
-              (k))))
+            (k)))
       (k)))
 
 (define (out-byte v out)
@@ -546,14 +424,6 @@
      (out-byte #xF0 out)
      (out-bytes (int->bytes n) out)]))
 
-(define (out-marshaled type-num val out)
-  (if (type-num . < . (- CPT_SMALL_MARSHALLED_END CPT_SMALL_MARSHALLED_START))
-      (out-byte (+ CPT_SMALL_MARSHALLED_START type-num) out)
-      (begin
-        (out-byte CPT_MARSHALLED out)
-        (out-number type-num out)))
-  (out-anything val out))
-
 (define (or-pred? v . ps)
   (ormap (lambda (?) (? v)) ps))
 
@@ -561,9 +431,7 @@
 
 (define (shareable? v)
   (define never-share-this?
-    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void? hash?
-              ;; For root scope:
-              scope?))
+    (or-pred? v char? maybe-same-as-fixnum? empty? boolean? void? hash?))
   (define always-share-this?
     (or-pred? v closure?))
   (or always-share-this?
@@ -624,135 +492,40 @@
         (out-byte CPT_FALSE out)]
        [(? void?)
         (out-byte CPT_VOID out)]
-       [(? (lambda (s) (and (scope? s) (eq? (scope-name s) 'root))))
-        (out-byte CPT_ROOT_SCOPE out)]
-       [(struct module-variable (modidx sym pos phase constantness))
-        (define (to-sym #:prefix [prefix "struct"] n)
-          (string->symbol (format "~a~a" prefix n)))
-        (out-byte CPT_MODULE_VAR out)
-        (out-anything modidx out)
-        (out-anything sym out)
-        (out-anything (cond
-                       [(function-shape? constantness)
-                        (let ([a (function-shape-arity constantness)])
-                          (cond
-                           [(arity-at-least? a) 
-                            (bitwise-ior (arithmetic-shift (- (add1 (arity-at-least-value a))) 1)
-                                         (if (function-shape-preserves-marks? constantness) 1 0))]
-                           [(list? a)
-                            (string->symbol (apply
-                                             string-append
-                                             (add-between
-                                              (for/list ([a (in-list a)])
-                                                (define n (if (arity-at-least? a)
-                                                              (- (add1 (arity-at-least-value a)))
-                                                              a))
-                                                (number->string n))
-                                              ":")))]
-                           [else 
-                            (bitwise-ior (arithmetic-shift a 1) 
-                                         (if (function-shape-preserves-marks? constantness) 1 0))]))]
-                       [(struct-type-shape? constantness)
-                        (to-sym (arithmetic-shift (struct-type-shape-field-count constantness)
-                                                  3))]
-                       [(constructor-shape? constantness)
-                        (to-sym (bitwise-ior 1 (arithmetic-shift (constructor-shape-arity constantness)
-                                                                 3)))]
-                       [(predicate-shape? constantness) (to-sym 2)]
-                       [(accessor-shape? constantness)
-                        (to-sym (bitwise-ior 3 (arithmetic-shift (accessor-shape-field-count constantness)
-                                                                 3)))]
-                       [(mutator-shape? constantness)
-                        (to-sym (bitwise-ior 4 (arithmetic-shift (mutator-shape-field-count constantness)
-                                                                 3)))]
-                       [(struct-type-property-shape? constantness)
-                        (to-sym #:prefix "prop" 
-                                (if (struct-type-property-shape-has-guard? constantness)
-                                    1
-                                    0))]
-                       [(property-predicate-shape? constantness)
-                        (to-sym #:prefix "prop" 2)]
-                       [(property-accessor-shape? constantness)
-                        (to-sym #:prefix "prop" 3)]
-                       [(struct-other-shape? constantness)
-                        (to-sym 5)]
-                       [else #f])
-                      out)
-        (case constantness
-          [(#f) (void)]
-          [(fixed) (out-number -5 out)]
-          [else (out-number -4 out)])
-        (unless (zero? phase)
-          (out-number -2 out)
-          (out-number phase out))
-        (out-number pos out)]
        [(struct closure (lam gen-id))
         (out-byte CPT_CLOSURE out)
         (let ([pos ((out-shared-index out) v #:error? #t)])
           (out-number pos out)
           (out-anything lam out))]
-       [(struct prefix (num-lifts toplevels stxs src-insp-desc))
-        (out-marshaled
-         prefix-type-num
-         (list* src-insp-desc
-                num-lifts
-                (list->vector toplevels)
-                (list->vector stxs))
-         out)]
-       [(struct global-bucket (name)) 
-        (out-marshaled variable-type-num name out)]
-       [(? mod?)
-        (out-module v out)]
+       [(? linkl?)
+        (out-linklet v out)]
        [(struct def-values (ids rhs))
-        (out-marshaled define-values-type-num
-                       (list->vector (cons (protect-quote rhs) ids))
-                       out)]
-       [(struct def-syntaxes (ids rhs prefix max-let-depth dummy))
-        (out-marshaled define-syntaxes-type-num
-                       (list->vector (list* (protect-quote rhs)
-                                            prefix
-                                            max-let-depth
-                                            dummy
-                                            ids))
-                       out)]
-       [(struct seq-for-syntax (rhs prefix max-let-depth dummy))
-        (out-marshaled begin-for-syntax-type-num
-                       (vector (map protect-quote rhs)
-                               prefix
-                               max-let-depth
-                               dummy)
-                       out)]
+        (out-byte CPT_DEFINE_VALUES out)
+        (out-anything (list->vector (cons (protect-quote rhs) ids)) out)]
        [(struct beg0 (forms))
-        (out-marshaled begin0-sequence-type-num (map protect-quote forms) out)]
+        (out-byte CPT_BEGIN0 out)
+        (out-number (length forms) out)
+        (for ([form (in-list forms)]) (out-anything (protect-quote form) out))]
        [(struct seq (forms))
-        (out-marshaled sequence-type-num (map protect-quote forms) out)]
-       [(struct splice (forms))
-        (out-marshaled splice-sequence-type-num forms out)]
-       [(struct req (reqs dummy))
-        (out-marshaled require-form-type-num (cons dummy reqs) out)]
+        (out-byte CPT_BEGIN out)
+        (out-number (length forms) out)
+        (for ([form (in-list forms)]) (out-anything (protect-quote form) out))]
        [(struct toplevel (depth pos const? ready?))
-        (out-marshaled toplevel-type-num
-                       (cons
-                        depth
-                        (if (or const? ready?)
-                            (cons pos
-                                  (bitwise-ior 
-                                   (if const? #x2 0)
-                                   (if ready? #x1 0)))
-                            pos))
-                       out)]
-       [(struct topsyntax (depth pos midpt))
-        (out-marshaled quote-syntax-type-num
-                       (cons depth
-                             (cons pos midpt))
-                       out)]
+        (out-byte CPT_TOPLEVEL out)
+        (out-number (bitwise-ior 
+                     (if const? #x2 0)
+                     (if ready? #x1 0))
+                    out)
+        (out-number pos out)
+        (out-number depth out)]
        [(struct primval (id))
         (out-byte CPT_REFERENCE out)
         (out-number id out)]
        [(struct assign (id rhs undef-ok?))
-        (out-marshaled set-bang-type-num
-                       (cons undef-ok? (cons id (protect-quote rhs)))
-                       out)]
+        (out-byte CPT_SET_BANG out)
+        (out-number (if undef-ok? 1 0) out)
+        (out-anything id out)
+        (out-anything (protect-quote rhs) out)]
        [(struct localref (unbox? offset clear? other-clears? type))
         (if (and (not clear?) (not other-clears?) (not flonum?)
                  (offset . < . (- CPT_SMALL_LOCAL_END CPT_SMALL_LOCAL_START)))
@@ -775,10 +548,11 @@
        [(? lam?)
         (out-lam v out)]
        [(struct case-lam (name lams))
-        (out-marshaled case-lambda-sequence-type-num
-                       (cons (or name null)
-                             lams)
-                       out)]
+        (out-byte CPT_OTHER_FORM out)
+        (out-number case-lambda-sequence-type-num out)
+        (out-number (length lams) out)
+        (out-anything name out)
+        (for ([lam (in-list lams)]) (out-anything lam out))]
        [(struct let-one (rhs body type unused?))
         (out-byte (cond
                     [type CPT_LET_ONE_TYPED]
@@ -790,34 +564,27 @@
         (when type
           (out-number (type->index type) out))]
        [(struct let-void (count boxes? body))
-        (out-marshaled let-void-type-num
-                       (list*
-                        count
-                        boxes?
-                        (protect-quote body))
-                       out)]
+        (out-byte CPT_LET_VOID out)
+        (out-number count out)
+        (out-number (if boxes? 1 0) out)
+        (out-anything (protect-quote body) out)]
        [(struct let-rec (procs body))
-        (out-marshaled letrec-type-num
-                       (list*
-                        (length procs)
-                        (protect-quote body)
-                        procs)
-                       out)]
+        (out-byte CPT_LETREC out)
+        (out-number (length procs) out)
+        (for ([proc (in-list procs)]) (out-anything proc out))
+        (out-anything (protect-quote body) out)]
        [(struct install-value (count pos boxes? rhs body))
-        (out-marshaled let-value-type-num
-                       (list*
-                        count
-                        pos
-                        boxes?
-                        (protect-quote rhs)
-                        (protect-quote body))
-                       out)]
+        (out-byte CPT_LET_VALUE out)
+        (out-number count out)
+        (out-number pos out)
+        (out-number (if boxes? 1 0) out)
+        (out-anything (protect-quote rhs) out)
+        (out-anything (protect-quote body) out)]
        [(struct boxenv (pos body))
-        (out-marshaled boxenv-type-num
-                       (cons
-                        pos
-                        (protect-quote body))
-                       out)]
+        (out-byte CPT_OTHER_FORM out)
+        (out-number boxenv-type-num out)
+        (out-anything pos out)
+        (out-anything (protect-quote body) out)]
        [(struct branch (test then else))
         (out-byte CPT_BRANCH out)
         (out-anything (protect-quote test) out)
@@ -834,28 +601,32 @@
                       (out-anything (protect-quote e) out))
                     (cons rator rands)))]
        [(struct apply-values (proc args-expr))
-        (out-marshaled apply-values-type-num
-                       (cons (protect-quote proc)
-                             (protect-quote args-expr))
-                       out)]
+        (out-byte CPT_APPLY_VALUES out)
+        (out-anything (protect-quote proc) out)
+        (out-anything (protect-quote args-expr) out)]
        [(struct with-immed-mark (key val body))
-        (out-marshaled with-immed-mark-type-num
-                       (vector
-                        (protect-quote key)
-                        (protect-quote val)
-                        (protect-quote body))
-                       out)]
+        (out-byte CPT_OTHER_FORM out)
+        (out-number with-immed-mark-type-num out)
+        (out-anything (protect-quote key) out)
+        (out-anything (protect-quote val) out)
+        (out-anything (protect-quote body) out)]
        [(struct with-cont-mark (key val body))
-        (out-marshaled wcm-type-num
-                       (list*
-                        (protect-quote key)
-                        (protect-quote val)
-                        (protect-quote body))
-                       out)]
-       [(struct varref (expr dummy))
-        (out-marshaled varref-form-type-num
-                       (cons expr dummy)
-                       out)]
+        (out-byte CPT_WCM out)
+        (out-anything (protect-quote key) out)
+        (out-anything (protect-quote val) out)
+        (out-anything (protect-quote body) out)]
+       [(struct varref (expr dummy constant? from-unsafe?))
+        (out-byte CPT_VARREF out)
+        (out-number (bitwise-ior (if constant? 1 0)
+                                 (if from-unsafe? 2 0))
+                    out)
+        (out-anything expr out)
+        (out-anything dummy out)]
+       [(struct inline-variant (direct inline))
+        (out-byte CPT_OTHER_FORM out)
+        (out-number inline-variants-type-num out)
+        (out-anything (protect-quote direct) out)
+        (out-anything (protect-quote inline) out)]
        [(protected-symref v)
         (out-anything ((out-shared-index out) v #:error? #t) out)]
        [(and (? symbol?) (not (? symbol-interned?)))
@@ -963,27 +734,6 @@
                      (out-number len out)))
           (for ([n (in-range (sub1 len) -1 -1)])
             (out-number (vector-ref vec n) out)))]
-       [(? module-path-index?)
-        ;; XXX should add interning of module path indices
-        (out-byte CPT_MODULE_INDEX out)
-        (let-values ([(name base) (module-path-index-split v)])
-          (out-anything name out)
-          (out-anything base out)
-          (unless (or name base)
-            (out-anything (module-path-index-submodule v) out)))]
-       [(stx content)
-        (out-byte CPT_STX out)
-        (out-anything content out)]
-       [(encoded-scope relative-id content)
-        (out-byte CPT_SCOPE out)
-        ;; The `out-shared` wrapper already called `((out-shared-index out) v)` 
-        ;; once, so `pos` will defintely be a number:
-        (let ([pos ((out-shared-index out) v)])
-          (out-number pos out))
-        (out-number relative-id out)
-        (out-anything (share-everywhere content out) out)]
-       [(? stx-obj?)
-        (out-anything (lookup-encoded-stx-obj v out) out)]
        [(? prefab-struct-key)
         (define pre-v (struct->vector v))
         (vector-set! pre-v 0 (prefab-struct-key v))
@@ -1052,202 +802,98 @@
         (out-bytes bstr out)]
        [else (error 'out-anything "~s" (current-type-trace))])))))
 
-(define (out-module mod-form out)
-  (out-marshaled module-type-num
-                 (convert-module mod-form)
-                 out))
+(define (out-linklet linklet-form out)
+  (out-byte CPT_LINKLET out)
+  (out-anything (convert-linklet linklet-form) out))
 
-(define (convert-module mod-form)
-  (match mod-form
-    [(struct mod (name srcname self-modidx
-                       prefix provides requires body syntax-bodies unexported 
-                       max-let-depth dummy lang-info
-                       internal-context binding-names
-                       flags pre-submodules post-submodules))
-     (let* ([lookup-req (lambda (phase)
-                          (let ([a (assq phase requires)])
-                            (if a
-                                (cdr a)
-                                null)))]
-            [other-requires (filter (lambda (l)
-                                      (not (memq (car l) '(#f -1 0 1))))
-                                    requires)]
-            [extract-protects
-             (lambda (phase)
-               (let ([a (assq phase provides)])
-                 (and a
-                      (let ([p (map provided-protected? (append (cadr a)
-                                                                (caddr a)))])
-                        (if (ormap values p)
-                            (list->vector p)
-                            #f)))))]
-            [extract-unexported
-             (lambda (phase)
-               (let ([a (assq phase unexported)])
-                 (and a
-                      (cdr a))))]
-            [list->vector/#f (lambda (default l)
-                               (if (andmap (lambda (x) (equal? x default)) l)
-                                   #f
-                                   (list->vector l)))]
-            [l 
-             (let loop ([l other-requires])
-               (match l
-                 [(list)
-                  empty]
-                 [(list-rest (cons phase reqs) rst)
-                  (list* phase reqs (loop rst))]))]
-            [l (cons (length other-requires) l)]
-            [l (cons (lookup-req #f) l)] ; dt-requires
-            [l (cons (lookup-req -1) l)] ; tt-requires
-            [l (cons (lookup-req 1) l)] ; et-requires
-            [l (cons (lookup-req 0) l)] ; requires
-            [l (cons (list->vector body) l)]
-            [l (append (reverse
-                        (for/list ([b (in-list syntax-bodies)])
-                          (for/vector ([i (in-list (cdr b))])
-                            (define (maybe-one l) ;; a single symbol is ok
-                              (if (and (pair? l) (null? (cdr l)))
-                                  (car l)
-                                  l))
-                            (match i
-                              [(struct def-syntaxes (ids rhs prefix max-let-depth dummy))
-                               (vector (maybe-one ids) rhs max-let-depth prefix #f)]
-                              [(struct seq-for-syntax ((list rhs) prefix max-let-depth dummy))
-                               (vector #f rhs max-let-depth prefix #t)]))))
-                       l)]
-            [l (append (apply
-                        append
-                        (map (lambda (l)
-                               (let* ([phase (car l)]
-                                      [all (append (cadr l) (caddr l))]
-                                      [protects (extract-protects phase)]
-                                      [unexported (extract-unexported phase)])
-                                 (append
-                                  (list phase)
-                                  (if (and (not protects) 
-                                           (not unexported))
-                                      (list (void))
-                                      (let ([unexported (or unexported
-                                                            '(() ()))])
-                                        (list (list->vector (cadr unexported))
-                                              (length (cadr unexported))
-                                              (list->vector (car unexported))
-                                              (length (car unexported))
-                                              protects)))
-                                  (list (list->vector/#f 0 (map provided-src-phase all))
-                                        (list->vector/#f #f (map (lambda (p)
-                                                                   (if (eq? (provided-nom-src p)
-                                                                            (provided-src p))
-                                                                       #f ; #f means "same as src"
-                                                                       (provided-nom-src p)))
-                                                                 all))
-                                        (list->vector (map provided-src-name all))
-                                        (list->vector (map provided-src all))
-                                        (list->vector (map provided-name all))
-                                        (length (cadr l))
-                                        (length all)))))
-                             provides))
-                       l)]
-            [l (cons (length provides) l)] ; number of provide sets
-            [l (cons (add1 (length syntax-bodies)) l)]
-            [l (cons prefix l)]
-            [l (cons dummy l)]
-            [l (cons max-let-depth l)]
-            [l (cons internal-context l)] ; module->namespace syntax
-            [l (list* #f #f l)] ; obsolete `functional?' info
-            [l (cons (protect-quote lang-info) l)] ; lang-info
-            [l (cons (map convert-module post-submodules) l)]
-            [l (cons (map convert-module pre-submodules) l)]
-            [l (cons (if (memq 'cross-phase flags) #t #f) l)]
-            [l (append (pack-binding-names binding-names) l)]
-            [l (cons self-modidx l)]
-            [l (cons srcname l)]
-            [l (cons (if (pair? name) (car name) name) l)]
-            [l (cons (if (pair? name) (cdr name) null) l)])
-       l)]))
-
-(define (lookup-encoded-stx-obj w out)
-  (hash-ref! (out-stx-objs out) w
-             (λ ()
-               (encode-stx-obj w out))))
-
-(define (pack-binding-names binding-names)
-  (define (ht-to-vector ht)
-    (and ht (list->vector (apply append (hash-map ht list)))))
-  (list (ht-to-vector (hash-ref binding-names 0 #f))
-        (ht-to-vector (hash-ref binding-names 1 #f))
-        (list->vector
-         (apply append
-                (for/list ([(phase ht) (in-hash binding-names)]
-                           #:unless (or (= phase 0) (= phase 1)))
-                  (list phase (ht-to-vector ht)))))))
+(define (convert-linklet linklet-form)
+  (match linklet-form
+    [(struct linkl (name importss import-shapess exports internals lifts
+                         source-names body max-let-depth need-instance-access?))
+     (define names-count (* 2 (hash-count source-names)))
+     (list name
+           need-instance-access?
+           max-let-depth
+           (length lifts)
+           (length exports)
+           (list->vector body)
+           (for*/vector #:length names-count ([(k v) (in-hash source-names)]
+                                              [(n) (in-list (list k v))])
+                        n)
+           (list->vector (append exports internals lifts))
+           (list->vector (map list->vector importss))
+           (if (not (for*/or ([import-shapes (in-list import-shapess)]
+                              [import-shape (in-list import-shapes)])
+                      import-shape))
+               #f
+               (for*/vector ([import-shapes (in-list import-shapess)]
+                             [import-shape (in-list import-shapes)])
+                 (encode-shape import-shape))))]))
 
 (define (out-lam expr out)  
   (match expr
     [(struct lam (name flags num-params param-types rest? closure-map closure-types toplevel-map max-let-depth body))
-     (let* ([l (protect-quote body)]
-            [any-refs? (or (not (andmap (lambda (t) (eq? t 'val)) param-types))
+     (let* ([any-refs? (or (not (andmap (lambda (t) (eq? t 'val)) param-types))
                            (not (andmap (lambda (t) (eq? t 'val/ref)) closure-types)))]
             [num-all-params (if (and rest? (not (memq 'only-rest-arg-not-used flags)))
                                 (add1 num-params)
                                 num-params)]
-            [l (cons (make-svector (if any-refs?
-                                       (list->vector
-                                        (append
-                                         (vector->list closure-map)
-                                         (let* ([v (make-vector (ceiling 
-                                                                 (/ (* BITS_PER_ARG (+ num-all-params (vector-length closure-map)))
-                                                                    BITS_PER_MZSHORT)))]
-                                                [set-bit! (lambda (i bit)
-                                                            (let ([pos (quotient (* BITS_PER_ARG i) BITS_PER_MZSHORT)])
-                                                              (vector-set! v pos
-                                                                           (bitwise-ior (vector-ref v pos)
-                                                                                        (arithmetic-shift 
-                                                                                         bit
-                                                                                         (modulo (* BITS_PER_ARG i) BITS_PER_MZSHORT))))))])
-                                           (for ([t (in-list param-types)]
-                                                 [i (in-naturals)])
-                                             (case t
-                                               [(val) (void)]
-                                               [(ref) (set-bit! i 1)]
-                                               [else (set-bit! i (+ 1 (type->index t)))]))
-                                           (for ([t (in-list closure-types)]
-                                                 [i (in-naturals num-all-params)])
-                                             (case t
-                                               [(val/ref) (void)]
-                                               [else (set-bit! i (+ 1 (type->index t)))]))
-                                           (vector->list v))))
-                                       closure-map))
-                     l)]
-            [l (if any-refs?
-                   (cons (vector-length closure-map) l)
-                   l)]
+            [cl-map (make-svector (if any-refs?
+                                      (list->vector
+                                       (append
+                                        (vector->list closure-map)
+                                        (let* ([v (make-vector (ceiling 
+                                                                (/ (* BITS_PER_ARG (+ num-all-params (vector-length closure-map)))
+                                                                   BITS_PER_MZSHORT)))]
+                                               [set-bit! (lambda (i bit)
+                                                           (let ([pos (quotient (* BITS_PER_ARG i) BITS_PER_MZSHORT)])
+                                                             (vector-set! v pos
+                                                                          (bitwise-ior (vector-ref v pos)
+                                                                                       (arithmetic-shift 
+                                                                                        bit
+                                                                                        (modulo (* BITS_PER_ARG i) BITS_PER_MZSHORT))))))])
+                                          (for ([t (in-list param-types)]
+                                                [i (in-naturals)])
+                                            (case t
+                                              [(val) (void)]
+                                              [(ref) (set-bit! i 1)]
+                                              [else (set-bit! i (+ 1 (type->index t)))]))
+                                          (for ([t (in-list closure-types)]
+                                                [i (in-naturals num-all-params)])
+                                            (case t
+                                              [(val/ref) (void)]
+                                              [else (set-bit! i (+ 1 (type->index t)))]))
+                                          (vector->list v))))
+                                      closure-map))]
             [tl-map (and toplevel-map
                          (for/fold ([v 0]) ([i (in-set toplevel-map)])
                            (bitwise-ior v (arithmetic-shift 1 i))))])
-       (out-marshaled unclosed-procedure-type-num
-                      (list*
-                       (+ (if rest? CLOS_HAS_REST 0)
-                          (if any-refs? CLOS_HAS_REF_ARGS 0)
-                          (if (memq 'preserves-marks flags) CLOS_PRESERVES_MARKS 0)
-                          (if (memq 'sfs-clear-rest-args flags) CLOS_NEED_REST_CLEAR 0)
-                          (if (memq 'is-method flags) CLOS_IS_METHOD 0)
-                          (if (memq 'single-result flags) CLOS_SINGLE_RESULT 0))
-                       num-all-params
-                       max-let-depth
-                       (and tl-map
-                            (if (tl-map . <= . #xFFFFFFF)
-                                ;; Encode as a fixnum:
-                                tl-map
-                                ;; Encode as an even-sized vector of 16-bit integers:
-                                (let ([len (* 2 (quotient (+ (integer-length tl-map) 31) 32))])
-                                  (for/vector ([i (in-range len)])
-                                    (let ([s (* i 16)])
-                                      (bitwise-bit-field tl-map s (+ s 16)))))))
-                       name
-                       l)
-                      out))]))
+       (out-byte CPT_OTHER_FORM out)
+       (out-number unclosed-procedure-type-num out)
+       (out-number (+ (if rest? CLOS_HAS_REST 0)
+                      (if any-refs? CLOS_HAS_REF_ARGS 0)
+                      (if (memq 'preserves-marks flags) CLOS_PRESERVES_MARKS 0)
+                      (if (memq 'sfs-clear-rest-args flags) CLOS_NEED_REST_CLEAR 0)
+                      (if (memq 'is-method flags) CLOS_IS_METHOD 0)
+                      (if (memq 'single-result flags) CLOS_SINGLE_RESULT 0))
+                   out)
+       (when any-refs?
+         (out-number (vector-length closure-map) out))
+       (out-number num-all-params out)
+       (out-number max-let-depth out)
+       (out-anything name out)
+       (out-anything (protect-quote body) out)
+       (out-anything cl-map out)
+       (out-anything (and tl-map
+                          (if (tl-map . <= . #xFFFFFFF)
+                              ;; Encode as a fixnum:
+                              tl-map
+                              ;; Encode as an even-sized vector of 16-bit integers:
+                              (let ([len (* 2 (quotient (+ (integer-length tl-map) 31) 32))])
+                                (for/vector ([i (in-range len)])
+                                  (let ([s (* i 16)])
+                                    (bitwise-bit-field tl-map s (+ s 16)))))))
+                     out))]))
 
 (define (out-as-bytes expr ->bytes CPT len2 out #:before-length [before-length #f])
   (define s (->bytes expr))
@@ -1273,260 +919,56 @@
         (find-relative-path r v)
         v)))
 
-(define (binding-namess-hash->list binding-namess)
-  (for/list ([(phase t) (in-hash binding-namess)])
-    (cons phase
-          (list->vector
-           (apply append (for/list ([(id sym) (in-hash t)])
-                           (list id sym)))))))
-
-;; ----------------------------------------
-
-;; We want to hash-cons syntax-object wraps, but a normal `equal?`-based
-;; table would equate different "self" modidxes that we need to keep
-;; separate. So, roll a `simple-equal?` that inspects wraps. We don't
-;; have to deal with cycles, since cycles would always go through a scope,
-;; and we recur into scopes.
-
-(struct modidx-must-be-eq (content)
-        #:property prop:equal+hash
-        (list (lambda (a b eql?)
-                (simple-equal? (modidx-must-be-eq-content a)
-                               (modidx-must-be-eq-content b)))
-              (lambda (a h) (h (modidx-must-be-eq-content a)))
-              (lambda (a h) (h (modidx-must-be-eq-content a)))))
-
-(define (simple-equal? a b)
+(define (encode-shape constantness)
+  (define (to-sym #:prefix [prefix "struct"] n)
+    (string->symbol (format "~a~a" prefix n)))
+  (define (struct-count-shift n) (arithmetic-shift n 5))
+  (define (add-authentic n authentic?) (bitwise-ior n (if authentic? #x10 0)))
   (cond
-   [(eqv? a b) #t]
-   [(pair? a)
-    (and (pair? b)
-         (simple-equal? (car a) (car b))
-         (simple-equal? (cdr a) (cdr b)))]
-   [(vector? a)
-    (and (vector? b)
-         (= (vector-length a) (vector-length b))
-         (for/and ([ae (in-vector a)]
-                   [be (in-vector b)])
-           (simple-equal? ae be)))]
-   [(box? a)
-    (and (box? b)
-         (simple-equal? (unbox a) (unbox b)))]
-   [(module-path-index? a)
-    (and (module-path-index? b)
-         (let-values ([(a-name a-base) (module-path-index-split a)]
-                      [(b-name b-base) (module-path-index-split b)])
-           (and a-name
-                a-base
-                (simple-equal? a-name b-name)
-                (simple-equal? a-base b-base))))]
+   [(eq? constantness 'constant) #t]
+   [(eq? constantness 'fixed) (void)]
+   [(function-shape? constantness)
+    (let ([a (function-shape-arity constantness)])
+      (cond
+       [(arity-at-least? a) 
+        (bitwise-ior (arithmetic-shift (- (add1 (arity-at-least-value a))) 1)
+                     (if (function-shape-preserves-marks? constantness) 1 0))]
+       [(list? a)
+        (string->symbol (apply
+                         string-append
+                         (add-between
+                          (for/list ([a (in-list a)])
+                            (define n (if (arity-at-least? a)
+                                          (- (add1 (arity-at-least-value a)))
+                                          a))
+                            (number->string n))
+                          ":")))]
+       [else 
+        (bitwise-ior (arithmetic-shift a 1) 
+                     (if (function-shape-preserves-marks? constantness) 1 0))]))]
+   [(struct-type-shape? constantness)
+    (to-sym (add-authentic (struct-count-shift (struct-type-shape-field-count constantness))
+                           (struct-type-shape-authentic? constantness)))]
+   [(constructor-shape? constantness)
+    (to-sym (bitwise-ior 1 (struct-count-shift (constructor-shape-arity constantness))))]
+   [(predicate-shape? constantness) (to-sym (add-authentic 2 (predicate-shape-authentic? constantness)))]
+   [(accessor-shape? constantness)
+    (to-sym (bitwise-ior 3 (add-authentic
+                            (struct-count-shift (accessor-shape-field-count constantness))
+                            (accessor-shape-authentic? constantness))))]
+   [(mutator-shape? constantness)
+    (to-sym (bitwise-ior 4 (add-authentic
+                            (struct-count-shift (mutator-shape-field-count constantness))
+                            (mutator-shape-authentic? constantness))))]
+   [(struct-type-property-shape? constantness)
+    (to-sym #:prefix "prop" 
+            (if (struct-type-property-shape-has-guard? constantness)
+                1
+                0))]
+   [(property-predicate-shape? constantness)
+    (to-sym #:prefix "prop" 2)]
+   [(property-accessor-shape? constantness)
+    (to-sym #:prefix "prop" 3)]
+   [(struct-other-shape? constantness)
+    (to-sym 5)]
    [else #f]))
-
-(define (share-everywhere v out)
-  (define (register r)
-    (hash-set! (out-hash-consed-results out) r #t)
-    r)
-  (hash-ref! (out-hash-consed out)
-             (modidx-must-be-eq v)
-             (lambda ()
-               (cond
-                [(pair? v)
-                 (register
-                  (cons (share-everywhere (car v) out)
-                        (share-everywhere (cdr v) out)))]
-                [(vector? v)
-                 (register
-                  (for/vector #:length (vector-length v) ([e (in-vector v)])
-                              (share-everywhere e out)))]
-                [(box? v)
-                 (register
-                  (box (share-everywhere (unbox v) out)))]
-                [else v]))))
-
-;; ----------------------------------------
-
-(define (encode-wrap w ht)
-  (hash-ref! ht w
-             (lambda ()
-               (vector (map-encode encode-shift (wrap-shifts w) ht)
-                       (encode-scope-list (wrap-simple-scopes w) ht)
-                       (map-encode encode-multi-scope (wrap-multi-scopes w) ht)))))
-
-(define (map-encode encode l ht)
-  (cond
-   [(null? l) l]
-   [else
-    (hash-ref! ht l
-               (lambda ()
-                 (cons (encode (car l) ht)
-                       (map-encode encode (cdr l) ht))))]))
-
-(define (encode-shift s ht)
-  (hash-ref! ht s
-             (lambda ()
-               (if (module-shift-from-inspector-desc s)
-                   (vector (module-shift-to s)
-                           (module-shift-from s)
-                           (module-shift-from-inspector-desc s)
-                           (module-shift-to-inspector-desc s))
-                   (vector (module-shift-to s)
-                           (module-shift-from s))))))
-
-(define (encode-scope s ht)
-  (if (eq? 'root (scope-name s))
-      s
-      (hash-ref ht s
-                (lambda ()
-                  (define es (encoded-scope (scope-name s) #f))
-                  (hash-set! ht s es)
-                  (define kind
-                    (case (scope-kind s)
-                      [(module) (if (scope-multi-owner s)
-                                    1
-                                    0)]
-                      [(macro) 2]
-                      [(local) 3]
-                      [(intdef) 4]
-                      [else 5]))
-                  (cond
-                   [(and (null? (scope-bindings s))
-                         (null? (scope-bulk-bindings s)))
-                    (set-encoded-scope-content! es kind)]
-                   [else
-                    (define binding-table
-                      (for/fold ([bt (hasheq)]) ([b (in-list (scope-bindings s))])
-                        (hash-set bt
-                                  (car b)
-                                  (cons (cons (encode-scope-list (cadr b) ht)
-                                              (encode-binding (caddr b) (car b) ht))
-                                        (hash-ref bt (car b) null)))))
-                    (define bindings
-                      (list->vector
-                       (apply
-                        append
-                        (sort (hash-map binding-table list)
-                              symbol<?
-                              #:key car))))
-                    (set-encoded-scope-content!
-                     es
-                     (cons kind
-                           (append (map-encode
-                                    encode-bulk-binding
-                                    (scope-bulk-bindings s)
-                                    ht)
-                                   bindings)))])
-                  es))))
-
-(define (encode-scope-list l ht)
-  (map-encode encode-scope
-              (sort l > #:key (lambda (s)
-                                (if (eq? 'root (scope-name s))
-                                    -1
-                                    (scope-name s))))
-              ht))
-
-(define (encode-multi-scope ms+phase ht)
-  (define ms (car ms+phase))
-  (cons (hash-ref ht ms
-                  (lambda ()
-                    (define v (make-vector (add1 (* 2 (length (multi-scope-scopes ms))))))
-                    (hash-set! ht ms v)
-                    (vector-copy!
-                     v
-                     0
-                     (list->vector
-                      (append (apply
-                               append
-                               (for/list ([e (in-list (multi-scope-scopes ms))])
-                                 (list (car e)
-                                       (encode-scope (cadr e) ht))))
-                              (list (multi-scope-src-name ms)))))
-                    v))
-        (cadr ms+phase)))
-
-(define (encode-binding b name ht)
-  (match b
-    [(free-id=?-binding base id phase)
-     (hash-ref ht b
-               (lambda ()
-                 (match b
-                   [(free-id=?-binding base id phase)
-                    (define bx (box #f))
-                    (hash-set! ht b bx)
-                    (set-box! bx
-                              (cons
-                               (cons (encode-binding base name ht)
-                                     (cons (stx-obj-datum id)
-                                           (stx-obj-wrap id)))
-                               phase))])))]
-    [_
-     (hash-ref! ht b
-                (lambda ()
-                  (match b
-                    [(local-binding name)
-                     name]
-                    [(module-binding encoded)
-                     encoded]
-                    [(? decoded-module-binding?)
-                     (encode-module-binding b name ht)])))]))
-                             
-                 
-(define (encode-module-binding b name ht)
-  (hash-ref! ht (cons name b)
-             (lambda ()
-               (match b
-                 [(decoded-module-binding path export-name phase
-                                          nominal-path nominal-export-name nominal-phase
-                                          import-phase inspector-desc)
-                  (define l 
-                    (cond
-                     [(and (eq? path nominal-path)
-                           (eq? export-name nominal-export-name)
-                           (eqv? phase 0)
-                           (eqv? import-phase 0)
-                           (eqv? nominal-phase phase))
-                      (if (eq? name export-name)
-                          path
-                          (cons path export-name))]
-                     [(and (eq? export-name nominal-export-name)
-                           (eq? name export-name)
-                           (eqv? 0 phase)
-                           (eqv? import-phase 0)
-                           (eqv? nominal-phase phase))
-                      (cons path nominal-path)]
-                     [else
-                      (define nom-mod+phase
-                        (if (eqv? nominal-phase phase)
-                            (if (eqv? 0 import-phase)
-                                nominal-path
-                                (cons nominal-path import-phase))
-                            (cons nominal-path (cons import-phase nominal-phase))))
-                      (define l (list* export-name nom-mod+phase nominal-export-name))
-                      (if (zero? phase)
-                          l
-                          (cons phase l))]))
-                  (if inspector-desc
-                      (cons inspector-desc l)
-                      l)]))))
-
-(define (encode-bulk-binding p ht)
-  (cons (encode-scope-list (car p) ht)
-        (encode-all-from-module (cadr p) ht)))
-
-(define (encode-all-from-module b ht)
-  (hash-ref! ht b
-             (lambda ()
-               (match b
-                 [(all-from-module path phase src-phase inspector-desc exceptions prefix)
-                  (vector path src-phase
-                          (cond
-                           [(and (not prefix) (null? exceptions))
-                            phase]
-                           [(not prefix)
-                            (cons phase (list->vector exceptions))]
-                           [(null? exceptions)
-                            (cons phase prefix)]
-                           [else
-                            (cons phase (cons (list->vector exceptions) prefix))])
-                          inspector-desc)]))))
-

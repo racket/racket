@@ -201,7 +201,7 @@
       (error 'with-handlers
              "exception handler used out of context")))
 
-  (define handler-prompt-key (make-continuation-prompt-tag))
+  (define handler-prompt-key (make-continuation-prompt-tag 'handler-prompt-tag))
 
   (define (call-handled-body bpz handle-proc body-thunk)
     ;; Disable breaks here, so that when the exception handler jumps

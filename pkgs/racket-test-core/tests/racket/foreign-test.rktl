@@ -18,7 +18,8 @@
 (test #f malloc 0 _int)
 (test #f malloc _int 0)
 
-(test 0 bytes-length (make-sized-byte-string #f 0))
+(unless (eq? 'cs (system-type 'gc))
+  (test 0 bytes-length (make-sized-byte-string #f 0)))
 
 ;; Check integer-range checking:
 (let ()
@@ -323,9 +324,10 @@
       (set-box! b #f)))
   ;; ---
   ;; test exposing internal mzscheme functionality
-  (test '(1 2)
-        (get-ffi-obj 'scheme_make_pair #f (_fun _scheme _scheme -> _scheme))
-        1 '(2))
+  (when (eq? 'racket (system-type 'vm))
+    (test '(1 2)
+          (get-ffi-obj 'scheme_make_pair #f (_fun _scheme _scheme -> _scheme))
+          1 '(2)))
   ;; ---
   ;; test arrays
   (let ([p (malloc _c7_list)]) ;; should allocate the right size
@@ -573,7 +575,7 @@
     (test 'hello hash-ref ht seventeen3 #f)))
 
 ;; Check proper handling of offsets:
-(let ()
+(when (eq? 'racket (system-type 'vm))
   (define scheme_make_sized_byte_string 
     (get-ffi-obj 'scheme_make_sized_byte_string #f (_fun _pointer _intptr _int -> _scheme)))
   ;; Non-gcable:
@@ -605,7 +607,7 @@
   (define _stuff-pointer (_cpointer 'stuff))
   
   (define p (cast (ptr-add (malloc 10) 5) _pointer _thing-pointer))
-  (cpointer-gcable? p)
+  (test #t cpointer-gcable? p)
   (define q (cast p _thing-pointer _stuff-pointer))
   (test (cast p _pointer _intptr)
         cast q _pointer _intptr)
@@ -647,7 +649,7 @@
   (define ENOENT 2)
   (define ERANGE 34)
   (define _getcwd   ;; sets errno = ERANGE if path longer than buffer
-    (get-ffi-obj '_getcwd msvcrt (_fun #:save-errno 'posix _bytes _int -> _void)))
+    (get-ffi-obj '_getcwd msvcrt (_fun #:save-errno 'posix _bytes/nul-terminated _int -> _void)))
   (define _chdir    ;; sets errno = ENOENT if path doesn't exist
     (get-ffi-obj '_chdir  msvcrt (_fun #:save-errno 'posix _string -> _int)))
   (define (bad/ERANGE) (_getcwd (make-bytes 1) 1))
@@ -664,7 +666,7 @@
 
 (delete-test-files)
 
-(let ()
+(when (eq? 'racket (system-type 'vm))
   (define _values (get-ffi-obj 'scheme_values #f (_fun _int (_list i _racket) -> _racket)))
   (test-values '(1 "b" three) (lambda () (_values 3 (list 1 "b" 'three)))))
 
@@ -679,8 +681,9 @@
   (test 4.4t0 extflvector-ref v 2)
   (test 2.2t0 ptr-ref (ptr-add (extflvector->cpointer v) (ctype-sizeof _longdouble)) _longdouble))
 
-;; Check a corner of UTF-16 conversion:
-(test "\U171D3" cast (cast "\U171D3" _string/utf-16 _gcpointer) _gcpointer _string/utf-16)
+(when (eq? 'racket (system-type 'vm))
+  ;; Check a corner of UTF-16 conversion:
+  (test "\U171D3" cast (cast "\U171D3" _string/utf-16 _gcpointer) _gcpointer _string/utf-16))
 
 ;; check async:
 (when test-async?
@@ -1000,6 +1003,8 @@
 
 
   ;; --- inplace tests
+  (define can-in-place? (not (eq? 'chez-scheme (system-type 'vm))))
+
   (define-serializable-cstruct _NOIN ([a _int]))
 
   (define-serializable-cstruct _INS ([a _int]) #:serialize-inplace)
@@ -1008,7 +1013,7 @@
 
   (define-serializable-cstruct _INSD ([a _int])
     #:serialize-inplace #:deserialize-inplace
-    #:malloc-mode (if (eq? 'racket (system-type 'vm))
+    #:malloc-mode (if can-in-place?
                       (lambda (_) (error "should not get here"))
                       malloc/register))
 
@@ -1041,7 +1046,7 @@
     ;; modified
     (set-INS-a! ins 456)
     (define ds2 (deserialize s))
-    (check-equal? 456 (INS-a ds2)))
+    (check-equal? (if can-in-place? 456 123) (INS-a ds2)))
 
   ;; inplace deser
   (let ()
@@ -1208,44 +1213,45 @@
 
 ;; ----------------------------------------
 
-(define scheme_make_type
-  (get-ffi-obj 'scheme_make_type #f (_fun _string -> _short)))
-(define scheme_register_type_gc_shape
-  (get-ffi-obj 'scheme_register_type_gc_shape #f (_fun _short (_list i _intptr) -> _void)))
+(when (eq? 'racket (system-type 'vm))
+  (define scheme_make_type
+    (get-ffi-obj 'scheme_make_type #f (_fun _string -> _short)))
+  (define scheme_register_type_gc_shape
+    (get-ffi-obj 'scheme_register_type_gc_shape #f (_fun _short (_list i _intptr) -> _void)))
 
-(define SHAPE_STR_TERM       0)
-(define SHAPE_STR_PTR_OFFSET 1)
+  (define SHAPE_STR_TERM       0)
+  (define SHAPE_STR_PTR_OFFSET 1)
 
-(define-cstruct _tagged ([type-tag _short]
-                         [obj1 _racket]
-                         [non2 _intptr]
-                         [obj3 _racket]
-                         [non4 _intptr])
-  #:define-unsafe
-  #:malloc-mode 'tagged)
-(test #t cpointer-predicate-procedure? tagged?)
+  (define-cstruct _tagged ([type-tag _short]
+                           [obj1 _racket]
+                           [non2 _intptr]
+                           [obj3 _racket]
+                           [non4 _intptr])
+    #:define-unsafe
+    #:malloc-mode 'tagged)
+  (test #t cpointer-predicate-procedure? tagged?)
 
-(define t (scheme_make_type "new-type"))
-(scheme_register_type_gc_shape t (list SHAPE_STR_PTR_OFFSET tagged-obj1-offset
-                                       SHAPE_STR_PTR_OFFSET tagged-obj3-offset
-                                       SHAPE_STR_TERM))
+  (define t (scheme_make_type "new-type"))
+  (scheme_register_type_gc_shape t (list SHAPE_STR_PTR_OFFSET tagged-obj1-offset
+                                         SHAPE_STR_PTR_OFFSET tagged-obj3-offset
+                                         SHAPE_STR_TERM))
 
-(define obj1 (make-string 10))
-(define obj2 (make-bytes 12))
-(define obj3 (make-bytes 14))
-(define obj4 (make-string 16))
+  (define obj1 (make-string 10))
+  (define obj2 (make-bytes 12))
+  (define obj3 (make-bytes 14))
+  (define obj4 (make-string 16))
 
-(define obj2-addr (cast obj2 _racket _intptr))
-(define obj4-addr (cast obj4 _racket _intptr))
+  (define obj2-addr (cast obj2 _racket _intptr))
+  (define obj4-addr (cast obj4 _racket _intptr))
 
-(define o (make-tagged t obj1 obj2-addr obj3 obj4-addr))
+  (define o (make-tagged t obj1 obj2-addr obj3 obj4-addr))
 
-(collect-garbage)
+  (collect-garbage)
 
-(eq? (tagged-obj1 o) obj1)
-(eq? (tagged-obj3 o) obj3)
-(= (tagged-non2 o) obj2-addr)
-(= (tagged-non4 o) obj4-addr)
+  (eq? (tagged-obj1 o) obj1)
+  (eq? (tagged-obj3 o) obj3)
+  (= (tagged-non2 o) obj2-addr)
+  (= (tagged-non4 o) obj4-addr))
 
 ;; ----------------------------------------
 

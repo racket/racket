@@ -150,6 +150,7 @@
 ;; This port produces 0, 1, 2, 0, 1, 2, etc,
 ;;  but it is not thread-safe, because multiple
 ;;  threads might read and change n
+(define mod3-peeked? #f)
 (define mod3-cycle/one-thread
   (let* ([n 2]
 	 [mod! (lambda (s delta)
@@ -157,14 +158,16 @@
                  1)])
     (make-input-port
      'mod3-cycle/not-thread-safe
-     (lambda (s) 
+     (lambda (s)
        (set! n (modulo (add1 n) 3))
        (mod! s 0))
-     (lambda (s skip progress-evt) 
-       (mod! s skip))
+     (lambda (s skip progress-evt)
+       (set! mod3-peeked? #t)
+       (mod! s (add1 skip)))
      void)))
 (test "01201" read-string 5 mod3-cycle/one-thread)
-(test "20120" peek-string 5 (expt 2 5000) mod3-cycle/one-thread)
+(test #f values mod3-peeked?)
+(test "20120" peek-string 5 (sub1 (expt 2 5000)) mod3-cycle/one-thread)
 
 ;; Same thing, but thread-safe and kill-safe, and with progress
 ;; events. Only the server thread touches the stateful part
@@ -520,7 +523,12 @@
   (let ([s (make-bytes 6 (char->integer #\-))])
     (test 5 read-bytes-avail! s in)
     (test #"12311-" values s))
-  (test 3 write-bytes-avail #"1234" out))
+  (test 3 values
+        (let loop ([n 0])
+          (define v (write-bytes-avail* #"1234" out))
+          (if (zero? v)
+              n
+              (loop (+ n v))))))
 
 ;; Further test of peeking in a limited pipe (shouldn't get stuck):
 (let-values ([(i o) (make-pipe 50)]
@@ -633,11 +641,13 @@
   (peek-byte r)
   (let ([t (thread (lambda ()
 		     (port-commit-peeked 1 (port-progress-evt r) ch r)))])
-    (sleep 0.01)
+    (sync (system-idle-evt))
     (let ([t2
 	   (thread (lambda ()
 		     (port-commit-peeked 1 (port-progress-evt r) ch r)))])
-      (sleep 0.01)
+      (sync (system-idle-evt))
+      (test #t thread-running? t)
+      (test #t thread-running? t2)
       (thread-suspend t2)
       (break-thread t2)
       (kill-thread t)
@@ -657,9 +667,9 @@
 		   void)])
 	   (let ([t (thread (lambda () (with-handlers ([exn:break? void])
 					 (read-char p))))])
-	     (sleep 0.1)
+	     (sync (system-idle-evt))
 	     (break-thread t)
-	     (sleep 0.1)
+	     (sync (system-idle-evt))
 	     (test #f thread-running? t))))])
   (try sync)
   (try sync/enable-break)

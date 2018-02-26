@@ -35,7 +35,7 @@
 			(if erroring-set?
 			    (begin
 			      (set! erroring-set? #f)
-			      (error 'output))
+			      (error 'output "~s" s))
 			    (display (subbytes s start end) orig))
 			(- end start)))
 		    void))
@@ -267,7 +267,7 @@
 		(list current-output-port
 		      (list (current-output-port)
 			    erroring-port)
-		      '(begin 
+		      '(let ()
 			 (set! erroring-set? #t) 
 			 (display 5) 
 			 (set! erroring-set? #f))
@@ -420,7 +420,7 @@
 	 [expr (caddr d)]
 	 [exn? (cadddr d)])
      (parameterize ([param alt1])
-	  (test (void) void (teval expr)))
+	  (test (void) void (eval expr)))
      (parameterize ([param alt2])
 	  (error-test (datum->syntax #f expr #f) exn?))))
  params)

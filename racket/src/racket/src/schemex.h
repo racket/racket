@@ -300,14 +300,6 @@ Scheme_Object *(*scheme_extract_one_cc_mark_to_tag)(Scheme_Object *mark_set,
                                                            Scheme_Object *prompt_tag);
 /* Internal */
 Scheme_Object *(*scheme_do_eval)(Scheme_Object *obj, int _num_rands, Scheme_Object **rands, int val);
-Scheme_Object *(*scheme_eval_compiled_stx_string)(Scheme_Object *expr, Scheme_Env *env,
-							 intptr_t shift, Scheme_Object *modidx);
-Scheme_Object *(*scheme_load_compiled_stx_string)(const char *str, intptr_t len);
-Scheme_Object *(*scheme_compiled_stx_symbol)(Scheme_Object *stx);
-Scheme_Object *(*scheme_eval_compiled_sized_string)(const char *str, int len, Scheme_Env *env);
-Scheme_Object *(*scheme_eval_compiled_sized_string_with_magic)(const char *str, int len, Scheme_Env *env, 
-								      Scheme_Object *magic_symbol, Scheme_Object *magic_val,
-								      int multi_ok);
 void (*scheme_detach_multple_array)(Scheme_Object **a);
 /*========================================================================*/
 /*                           memory management                            */
@@ -845,28 +837,23 @@ Scheme_Object *(*scheme_read_byte_string)(Scheme_Object *port);
 Scheme_Object *(*scheme_make_namespace)(int argc, Scheme_Object *argv[]);
 void (*scheme_add_global)(const char *name, Scheme_Object *val, Scheme_Env *env);
 void (*scheme_add_global_symbol)(Scheme_Object *name, Scheme_Object *val,
-			      Scheme_Env *env);
+                                        Scheme_Env *env);
 Scheme_Object *(*scheme_make_envunbox)(Scheme_Object *value);
 Scheme_Object *(*scheme_lookup_global)(Scheme_Object *symbol, Scheme_Env *env);
 Scheme_Bucket *(*scheme_global_bucket)(Scheme_Object *symbol, Scheme_Env *env);
-Scheme_Bucket *(*scheme_global_keyword_bucket)(Scheme_Object *symbol, Scheme_Env *env);
 Scheme_Bucket *(*scheme_module_bucket)(Scheme_Object *mod, Scheme_Object *var, int pos, Scheme_Env *env);
 Scheme_Object *(*scheme_builtin_value)(const char *name); /* convenience */
 void (*scheme_set_global_bucket)(char *proc, Scheme_Bucket *var, Scheme_Object *val,
                                         int set_undef);
-void (*scheme_install_macro)(Scheme_Bucket *b, Scheme_Object *v);
-void (*scheme_save_initial_module_set)(Scheme_Env *env);
-Scheme_Env *(*scheme_primitive_module)(Scheme_Object *name, Scheme_Env *for_env);
-void (*scheme_finish_primitive_module)(Scheme_Env *env);
-void (*scheme_set_primitive_module_phaseless)(Scheme_Env *env, int phaseless);
-void (*scheme_protect_primitive_provide)(Scheme_Env *env, Scheme_Object *name);
 Scheme_Object *(*scheme_make_modidx)(Scheme_Object *path,
-				  Scheme_Object *base,
-				  Scheme_Object *resolved);
-Scheme_Object *(*scheme_apply_for_syntax_in_env)(Scheme_Object *proc, Scheme_Env *env);
+                                            Scheme_Object *base,
+                                            Scheme_Object *resolved);
 Scheme_Object *(*scheme_dynamic_require)(int argc, Scheme_Object *argv[]);
+Scheme_Object *(*scheme_dynamic_require_reader)(int argc, Scheme_Object *argv[]);
 Scheme_Object *(*scheme_namespace_require)(Scheme_Object *);
 int (*scheme_is_module_path)(Scheme_Object *);
+int (*scheme_is_module_path_index)(Scheme_Object *);
+int (*scheme_is_resolved_module_path)(Scheme_Object *);
 Scheme_Object *(*scheme_datum_to_kernel_stx)(Scheme_Object *e);
 int (*scheme_module_is_declared)(Scheme_Object *name, int try_load);
 /*========================================================================*/

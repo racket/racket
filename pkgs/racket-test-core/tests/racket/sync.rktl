@@ -200,7 +200,7 @@
     (semaphore-post s3)
     (test s3 sync/timeout SYNC-SLEEP-DELAY set)
     (test #f sync/timeout SYNC-SLEEP-DELAY set))
-  
+
   (let* ([c (make-channel)]
 	 [set (choice-evt s1 s2 c)])
     (test #f sync/timeout SYNC-SLEEP-DELAY set)
@@ -1191,21 +1191,17 @@
 		(break-enabled #f))
 	      (init ;; init function gets to decide whether to do the normal body:
 	       (lambda ()
-           (printf "here ~s\n"  (procedure? capture-pre))
 		 (dynamic-wind
 		     (lambda ()
-           (printf "here3 ~s\n" (procedure? capture-pre))
 		       (capture-pre
 			reset
 			(lambda ()
-           (printf "here4\n")
 			  (set! did-pre1 #t)
 			  (semaphore-post p)
 			  (pre-thunk)
 			  (pre-semaphore-wait s)
 			  (set! did-pre2 #t))))
 		     (lambda () 
-           (printf "here2\n")
 		       (capture-act
 			reset
 			(lambda ()
@@ -1340,9 +1336,6 @@
 					      (body))])
 			      ;; Grab a continuation for the dyn-wind's pre/act/post
 			      (go (lambda args
-                                    (printf "here???\n")
-                                    (printf "??? ~s\n" k+reset)
-                                    (printf "??? ~s\n" capture)
 				    (apply mk-t 
 					   (lambda (f) (f))
 					   (if (eq? which 'pre) capture no-capture)
@@ -1372,9 +1365,9 @@
 	  'test
 	  (lambda (bstr) never-evt)
 	  (lambda (bstr skip-count progress-evt)
-	    (wrap-evt always-evt (lambda (_) 17)))
+	    (wrap-evt always-evt (lambda (_) 1)))
 	  void)])
-  ;; Make sure we don't get 17
+  ;; Make sure we don't get 1
   (test p sync p))
 
 ;; ----------------------------------------

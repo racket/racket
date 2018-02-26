@@ -109,7 +109,7 @@
 
 (arity-test namespace-mapped-symbols 0 1)
 (arity-test namespace-variable-value 1 4)
-(arity-test namespace-set-variable-value! 2 4)
+(arity-test namespace-set-variable-value! 2 5)
 (arity-test namespace-undefine-variable! 1 2)
 
 (define n (make-base-namespace))
@@ -147,7 +147,7 @@
 
 (test #f
       variable-reference->module-path-index (#%variable-reference test))
-(test (module-path-index-join ''#%kernel #f)
+(test (module-path-index-join ''#%runtime #f)
       variable-reference->module-path-index (#%variable-reference +))
 (require (only-in racket/unsafe/ops
                   [unsafe-fx+ $$unsafe-fx+]))

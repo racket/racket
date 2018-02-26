@@ -266,7 +266,8 @@
                 (apply proc null null args)))]
      [(proc plain-proc)
       (make-optional-keyword-procedure
-       (make-keyword-checker null #f (procedure-arity proc))
+       (make-keyword-checker null #f (and (procedure? proc) ; reundant check helps purity inference
+                                          (procedure-arity proc)))
        proc
        null
        #f
@@ -1053,6 +1054,19 @@
                          arg-accum
                          (cons (cons (car l) (car ids))
                                kw-pairs))]
+                  [(and (identifier? (car l))
+                        (null? bind-accum))
+                   ;; Don't generate an alias for an identifier if we haven't
+                   ;; needed to bind anything earlier, since we'll keep the
+                   ;; arguments in order in that case. This optimization is especially
+                   ;; useful for the rator position of a direct keyword call,
+                   ;; since we avoid generating an alias (that might take a while
+                   ;; to optimize away] to the generic implementation.
+                   (loop (cdr l)
+                         (cdr ids)
+                         null
+                         (cons (car l) arg-accum)
+                         kw-pairs)]
                   [else (loop (cdr l)
                               (cdr ids)
                               (cons (list (car ids) (car l)) bind-accum)
@@ -1277,7 +1291,9 @@
         (arity-check-lambda (kws) (subset? kws allowed-kws))]
        [else
         ;; Some required, some allowed
-        (if (equal? req-kws allowed-kws)
+        (if (and (list? req-kws) ; reundant, but helps inferences of no side effects
+                 (list? allowed-kws) ; also for inference
+                 (eq? (length req-kws) (length allowed-kws)))
             (arity-check-lambda 
              (kws)
              ;; All allowed are required, so check equality

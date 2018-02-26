@@ -553,10 +553,11 @@ For @tech{callouts} to foreign functions with the generated type:
 
  @item{If @racket[blocking?] is true, then a foreign @tech{callout}
        deactivates tracking of the calling OS thread---to the degree
-       supported by the Racket variant---during the foreign call.
-       Currently the value of @racket[blocking?] has no effect, but it
-       may enable activity such as concurrent garbage collection in
-       future variants of Racket. If the blocking @tech{callout} can
+       supported by the Racket variant---during the foreign call. The
+       value of @racket[blocking?] affects only the @tech[#:doc
+       guide.scrbl]{CS} variant of Racket, where it enable activity
+       such as garbage collection in other OS threads while the
+       @tech{callout} blocks. If the blocking @tech{callout} can
        invoke any @tech{callbacks} back to Racket, those
        @tech{callbacks} must be constructed with a non-@racket[#f]
        value of @racket[async-apply], even if they are always applied

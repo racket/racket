@@ -557,6 +557,9 @@
 	  (sleep)
 	  'not-void)))
 
+(err/rt-test (call-with-continuation-barrier
+              (lambda ()
+                (let/cc k (call-in-nested-thread (lambda () (k)))) exn:fail:contract:continuation?)))
 (test 1 call-with-continuation-prompt (lambda ()
                                         (let/cc k (call-in-nested-thread (lambda () (k 1))))))
 (err/rt-test (let/ec k (call-in-nested-thread (lambda () (k)))) exn:fail:contract:continuation?)
@@ -999,9 +1002,10 @@
        [loop (lambda ()
 	       (let loop ()
 		 (set! v (add1 v))
-		 (sync (car all-ticks))
-                 (set! all-ticks (cdr all-ticks))
-                 (loop)))]
+                 (unless (null? all-ticks)
+                   (sync (car all-ticks))
+                   (set! all-ticks (cdr all-ticks))
+                   (loop))))]
        [c0 (make-custodian)])
   (let ([try
 	 (lambda (resumable?)
@@ -1254,7 +1258,7 @@
       (collect-garbage)
       (plumber-flush-all c)
       (test 6 values done)
-      (set! h #f)
+      (test #t plumber-flush-handle? h)
       (collect-garbage)
       (plumber-flush-all c)
       (test 6 values done))))

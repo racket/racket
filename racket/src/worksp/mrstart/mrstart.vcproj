@@ -198,7 +198,7 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;for;f90"
 			>
 			<File
-				RelativePath="..\..\racket\dynsrc\start.c"
+				RelativePath="..\..\start\start.c"
 				>
 			</File>
 			<File

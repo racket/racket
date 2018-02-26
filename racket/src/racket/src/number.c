@@ -345,7 +345,7 @@ void scheme_configure_floating_point(void)
 
 
 void
-scheme_init_number (Scheme_Env *env)
+scheme_init_number (Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -479,69 +479,81 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(number_p, "number?", 1, 1, 1);
   scheme_number_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("number?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("number?", p, env);
 
   p = scheme_make_folding_prim(complex_p, "complex?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("complex?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("complex?", p, env);
 
   REGISTER_SO(scheme_real_p_proc);
   p = scheme_make_folding_prim(real_p, "real?", 1, 1, 1);
   scheme_real_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("real?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("real?", p, env);
   
   p = scheme_make_folding_prim(rational_p, "rational?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("rational?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("rational?", p, env);
 
   p = scheme_make_folding_prim(integer_p, "integer?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("integer?", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("integer?", p, env);
 
   p = scheme_make_folding_prim(exact_integer_p, "exact-integer?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("exact-integer?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("exact-integer?", p, env);
 
   p = scheme_make_folding_prim(exact_nonnegative_integer_p, "exact-nonnegative-integer?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("exact-nonnegative-integer?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("exact-nonnegative-integer?", p, env);
 
   p = scheme_make_folding_prim(exact_positive_integer_p, "exact-positive-integer?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("exact-positive-integer?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("exact-positive-integer?", p, env);
 
   REGISTER_SO(scheme_fixnum_p_proc);
   p = scheme_make_immed_prim(fixnum_p, "fixnum?", 1, 1);
   scheme_fixnum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("fixnum?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("fixnum?", p, env);
 
   p = scheme_make_folding_prim(inexact_real_p, "inexact-real?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("inexact-real?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("inexact-real?", p, env);
 
   REGISTER_SO(scheme_flonum_p_proc);
   p = scheme_make_folding_prim(flonum_p, "flonum?", 1, 1, 1);
   scheme_flonum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("flonum?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("flonum?", p, env);
 
   p = scheme_make_folding_prim(single_flonum_p, "single-flonum?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("single-flonum?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("single-flonum?", p, env);
 
   p = scheme_make_folding_prim(real_to_single_flonum, "real->single-flonum", 1, 1, 1);
-  scheme_add_global_constant("real->single-flonum", p, env);
+  scheme_addto_prim_instance("real->single-flonum", p, env);
 
   p = scheme_make_folding_prim(real_to_double_flonum, "real->double-flonum", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -549,14 +561,14 @@ scheme_init_number (Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("real->double-flonum", p, env);
+  scheme_addto_prim_instance("real->double-flonum", p, env);
 
-  scheme_add_global_constant("exact?", 
+  scheme_addto_prim_instance("exact?", 
 			     scheme_make_folding_prim(exact_p,
 						      "exact?",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("inexact?", 
+  scheme_addto_prim_instance("inexact?", 
 			     scheme_make_folding_prim(scheme_inexact_p,
 						      "inexact?",
 						      1, 1, 1),
@@ -564,36 +576,40 @@ scheme_init_number (Scheme_Env *env)
 
   p = scheme_make_folding_prim(scheme_odd_p, "odd?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("odd?", p, env);
+  scheme_addto_prim_instance("odd?", p, env);
   
   p = scheme_make_folding_prim(scheme_even_p, "even?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("even?", p, env);
+  scheme_addto_prim_instance("even?", p, env);
 
   p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("bitwise-and", p, env);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bitwise-and", p, env);
 
   p = scheme_make_folding_prim(bitwise_or, "bitwise-ior", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("bitwise-ior", p, env);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bitwise-ior", p, env);
 
   p = scheme_make_folding_prim(bitwise_xor, "bitwise-xor", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("bitwise-xor", p, env);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bitwise-xor", p, env);
 
   p = scheme_make_folding_prim(bitwise_not, "bitwise-not", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("bitwise-not", p, env);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("bitwise-not", p, env);
 
   p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("bitwise-bit-set?", p, env);
+  scheme_addto_prim_instance("bitwise-bit-set?", p, env);
 
-  scheme_add_global_constant("bitwise-bit-field",
+  scheme_addto_prim_instance("bitwise-bit-field",
                              scheme_make_folding_prim(bitwise_bit_field, 
                                                       "bitwise-bit-field",
                                                       3, 3, 1), 
@@ -601,109 +617,109 @@ scheme_init_number (Scheme_Env *env)
 
   p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("arithmetic-shift", p, env);
+  scheme_addto_prim_instance("arithmetic-shift", p, env);
 
   p = scheme_make_folding_prim(integer_length, "integer-length", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("integer-length", p, env);
+  scheme_addto_prim_instance("integer-length", p, env);
 
-  scheme_add_global_constant("gcd", 
+  scheme_addto_prim_instance("gcd", 
 			     scheme_make_folding_prim(gcd,
 						      "gcd", 
 						      0, -1, 1),
 			     env);
-  scheme_add_global_constant("lcm", 
+  scheme_addto_prim_instance("lcm", 
 			     scheme_make_folding_prim(lcm,
 						      "lcm", 
 						      0, -1, 1),
 			     env);
-  scheme_add_global_constant("floor", 
+  scheme_addto_prim_instance("floor", 
 			     scheme_make_folding_prim(scheme_floor,
 						      "floor",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("ceiling", 
+  scheme_addto_prim_instance("ceiling", 
 			     scheme_make_folding_prim(ceiling,
 						      "ceiling",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("truncate", 
+  scheme_addto_prim_instance("truncate", 
 			     scheme_make_folding_prim(sch_truncate,
 						      "truncate",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("round", 
+  scheme_addto_prim_instance("round", 
 			     scheme_make_folding_prim(sch_round,
 						      "round",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("numerator", 
+  scheme_addto_prim_instance("numerator", 
 			     scheme_make_folding_prim(numerator,
 						      "numerator",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("denominator", 
+  scheme_addto_prim_instance("denominator", 
 			     scheme_make_folding_prim(denominator,
 						      "denominator",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("exp", 
+  scheme_addto_prim_instance("exp", 
 			     scheme_make_folding_prim(exp_prim,
 						      "exp",
                                                       1, 1, 1),
 			     env);
-  scheme_add_global_constant("log", 
-                             scheme_make_folding_prim(log_prim,
+  scheme_addto_prim_instance("log", 
+			     scheme_make_folding_prim(log_prim,
 						      "log",
                                                       1, 2, 1),
 			     env);
-  scheme_add_global_constant("sin", 
+  scheme_addto_prim_instance("sin", 
 			     scheme_make_folding_prim(sin_prim,
 						      "sin",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("cos", 
+  scheme_addto_prim_instance("cos", 
 			     scheme_make_folding_prim(cos_prim,
 						      "cos",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("tan", 
+  scheme_addto_prim_instance("tan", 
 			     scheme_make_folding_prim(tan_prim,
 						      "tan",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("asin", 
+  scheme_addto_prim_instance("asin", 
 			     scheme_make_folding_prim(asin_prim,
 						      "asin",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("acos", 
+  scheme_addto_prim_instance("acos", 
 			     scheme_make_folding_prim(acos_prim,
 						      "acos",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("atan", 
+  scheme_addto_prim_instance("atan", 
 			     scheme_make_folding_prim(atan_prim,
 						      "atan",
 						      1, 2, 1),
 			     env);
-  scheme_add_global_constant("sqrt", 
+  scheme_addto_prim_instance("sqrt", 
 			     scheme_make_folding_prim(scheme_sqrt,
 						      "sqrt",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("integer-sqrt", 
+  scheme_addto_prim_instance("integer-sqrt", 
 			     scheme_make_folding_prim(int_sqrt,
 						      "integer-sqrt",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("integer-sqrt/remainder", 
+  scheme_addto_prim_instance("integer-sqrt/remainder", 
 			     scheme_make_prim_w_arity2(int_sqrt_rem,
 						       "integer-sqrt/remainder",
 						       1, 1,
 						       2, 2),
 			     env);
-  scheme_add_global_constant("expt", 
+  scheme_addto_prim_instance("expt", 
 			     scheme_make_folding_prim(scheme_expt,
 						      "expt", 
 						      2, 2, 1),
@@ -711,9 +727,9 @@ scheme_init_number (Scheme_Env *env)
 
   p = scheme_make_folding_prim(scheme_checked_make_rectangular, "make-rectangular", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("make-rectangular", p, env);
+  scheme_addto_prim_instance("make-rectangular", p, env);
 
-  scheme_add_global_constant("make-polar", 
+  scheme_addto_prim_instance("make-polar", 
 			     scheme_make_folding_prim(scheme_make_polar,
 						      "make-polar", 
 						      2, 2, 1),
@@ -721,18 +737,18 @@ scheme_init_number (Scheme_Env *env)
 
   p = scheme_make_folding_prim(scheme_checked_real_part, "real-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("real-part", p, env);
+  scheme_addto_prim_instance("real-part", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_imag_part, "imag-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("imag-part", p, env);
+  scheme_addto_prim_instance("imag-part", p, env);
 
-  scheme_add_global_constant("angle", 
+  scheme_addto_prim_instance("angle", 
 			     scheme_make_folding_prim(angle,
 						      "angle",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("magnitude", 
+  scheme_addto_prim_instance("magnitude", 
 			     scheme_make_folding_prim(magnitude,
 						      "magnitude",
 						      1, 1, 1),
@@ -744,41 +760,41 @@ scheme_init_number (Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("exact->inexact", p, env);
+  scheme_addto_prim_instance("exact->inexact", p, env);
 
   p = scheme_make_folding_prim(scheme_inexact_to_exact, "inexact->exact", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant("inexact->exact", p, env);
+  scheme_addto_prim_instance("inexact->exact", p, env);
 }
 
-void scheme_init_flfxnum_number(Scheme_Env *env)
+void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
 
-  scheme_add_global_constant("flvector",
+  scheme_addto_prim_instance("flvector",
                              scheme_make_prim_w_arity(flvector,
                                                       "flvector",
                                                       0, -1),
 			     env);
-  scheme_add_global_constant("flvector?",
+  scheme_addto_prim_instance("flvector?",
                              scheme_make_folding_prim(flvector_p,
                                                       "flvector?",
                                                       1, 1, 1),
 			     env);
-  scheme_add_global_constant("make-flvector",
+  scheme_addto_prim_instance("make-flvector",
                              scheme_make_immed_prim(make_flvector,
                                                     "make-flvector",
                                                     1, 2),
 			     env);
 
-  GLOBAL_PRIM_W_ARITY("shared-flvector", shared_flvector, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY("make-shared-flvector", make_shared_flvector, 1, 2, env);
+  ADD_PRIM_W_ARITY("shared-flvector", shared_flvector, 0, -1, env);
+  ADD_PRIM_W_ARITY("make-shared-flvector", make_shared_flvector, 1, 2, env);
 
   p = scheme_make_immed_prim(flvector_length, "flvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("flvector-length", p, env);
+  scheme_addto_prim_instance("flvector-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_flvector_ref,
                              "flvector-ref",
@@ -789,51 +805,51 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flvector-ref", p, env);
+  scheme_addto_prim_instance("flvector-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_flvector_set,
                              "flvector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_WANTS_FLONUM_THIRD);
-  scheme_add_global_constant("flvector-set!", p, env);
+  scheme_addto_prim_instance("flvector-set!", p, env);
 
-  scheme_add_global_constant("fxvector",
+  scheme_addto_prim_instance("fxvector",
                              scheme_make_prim_w_arity(fxvector,
                                                       "fxvector",
                                                       0, -1),
 			     env);
-  scheme_add_global_constant("fxvector?",
+  scheme_addto_prim_instance("fxvector?",
                              scheme_make_folding_prim(fxvector_p,
                                                       "fxvector?",
                                                       1, 1, 1),
 			     env);
-  scheme_add_global_constant("make-fxvector",
+  scheme_addto_prim_instance("make-fxvector",
                              scheme_make_immed_prim(make_fxvector,
                                                     "make-fxvector",
                                                     1, 2),
 			     env);
 
-  GLOBAL_PRIM_W_ARITY("shared-fxvector", shared_fxvector, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY("make-shared-fxvector", make_shared_fxvector, 1, 2, env);
+  ADD_PRIM_W_ARITY("shared-fxvector", shared_fxvector, 0, -1, env);
+  ADD_PRIM_W_ARITY("make-shared-fxvector", make_shared_fxvector, 1, 2, env);
 
   p = scheme_make_immed_prim(fxvector_length, "fxvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxvector-length", p, env);
+  scheme_addto_prim_instance("fxvector-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_fxvector_ref,
                              "fxvector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxvector-ref", p, env);
+  scheme_addto_prim_instance("fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_fxvector_set,
                              "fxvector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("fxvector-set!", p, env);
+  scheme_addto_prim_instance("fxvector-set!", p, env);
 
   p = scheme_make_folding_prim(integer_to_fl, "->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -842,7 +858,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("->fl", p, env);
+  scheme_addto_prim_instance("->fl", p, env);
 
   p = scheme_make_folding_prim(fl_to_integer, "fl->exact-integer", 1, 1, 1);
   if (scheme_can_inline_fp_comp())
@@ -850,37 +866,41 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("fl->exact-integer", p, env);
+  scheme_addto_prim_instance("fl->exact-integer", p, env);
 
   p = scheme_make_folding_prim(fx_and, "fxand", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxand", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fxand", p, env);
 
   p = scheme_make_folding_prim(fx_or, "fxior", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxior", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fxior", p, env);
 
   p = scheme_make_folding_prim(fx_xor, "fxxor", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxxor", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fxxor", p, env);
 
   p = scheme_make_folding_prim(fx_not, "fxnot", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxnot", p, env);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("fxnot", p, env);
 
   p = scheme_make_folding_prim(fx_lshift, "fxlshift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxlshift", p, env);
+  scheme_addto_prim_instance("fxlshift", p, env);
 
   p = scheme_make_folding_prim(fx_rshift, "fxrshift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fxrshift", p, env);
+  scheme_addto_prim_instance("fxrshift", p, env);
 
   p = scheme_make_folding_prim(fx_to_fl, "fx->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -889,7 +909,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("fx->fl", p, env);
+  scheme_addto_prim_instance("fx->fl", p, env);
 
   p = scheme_make_folding_prim(fl_to_fx, "fl->fx", 1, 1, 1);
   if (scheme_can_inline_fp_comp())
@@ -899,7 +919,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("fl->fx", p, env);
+  scheme_addto_prim_instance("fl->fx", p, env);
 
 
   p = scheme_make_folding_prim(fl_truncate, "fltruncate", 1, 1, 1);
@@ -910,7 +930,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("fltruncate", p, env);
+  scheme_addto_prim_instance("fltruncate", p, env);
 
   p = scheme_make_folding_prim(fl_round, "flround", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -920,7 +940,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flround", p, env);
+  scheme_addto_prim_instance("flround", p, env);
 
   p = scheme_make_folding_prim(fl_ceiling, "flceiling", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -930,7 +950,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flceiling", p, env);
+  scheme_addto_prim_instance("flceiling", p, env);
 
   p = scheme_make_folding_prim(fl_floor, "flfloor", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -940,7 +960,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flfloor", p, env);
+  scheme_addto_prim_instance("flfloor", p, env);
 
   p = scheme_make_folding_prim(fl_sin, "flsin", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -950,7 +970,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flsin", p, env);
+  scheme_addto_prim_instance("flsin", p, env);
 
   p = scheme_make_folding_prim(fl_cos, "flcos", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -960,7 +980,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flcos", p, env);
+  scheme_addto_prim_instance("flcos", p, env);
 
   p = scheme_make_folding_prim(fl_tan, "fltan", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -970,7 +990,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("fltan", p, env);
+  scheme_addto_prim_instance("fltan", p, env);
 
   p = scheme_make_folding_prim(fl_asin, "flasin", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -980,7 +1000,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flasin", p, env);
+  scheme_addto_prim_instance("flasin", p, env);
 
   p = scheme_make_folding_prim(fl_acos, "flacos", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -990,7 +1010,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flacos", p, env);
+  scheme_addto_prim_instance("flacos", p, env);
 
   p = scheme_make_folding_prim(fl_atan, "flatan", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -1000,7 +1020,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flatan", p, env);
+  scheme_addto_prim_instance("flatan", p, env);
 
   p = scheme_make_folding_prim(fl_log, "fllog", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -1010,7 +1030,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("fllog", p, env);
+  scheme_addto_prim_instance("fllog", p, env);
 
   p = scheme_make_folding_prim(fl_exp, "flexp", 1, 1, 1);
   if (scheme_can_inline_fp_op())
@@ -1020,7 +1040,7 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flexp", p, env);
+  scheme_addto_prim_instance("flexp", p, env);
 
   p = scheme_make_folding_prim(fl_expt, "flexpt", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -1030,24 +1050,24 @@ void scheme_init_flfxnum_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flexpt", p, env);
+  scheme_addto_prim_instance("flexpt", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_make_rectangular, "make-flrectangular", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant("make-flrectangular", p, env);
+  scheme_addto_prim_instance("make-flrectangular", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_flreal_part, "flreal-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flreal-part", p, env);
+  scheme_addto_prim_instance("flreal-part", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_flimag_part, "flimag-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("flimag-part", p, env);
+  scheme_addto_prim_instance("flimag-part", p, env);
 }
 
-void scheme_init_extfl_number(Scheme_Env *env)
+void scheme_init_extfl_number(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -1056,38 +1076,39 @@ void scheme_init_extfl_number(Scheme_Env *env)
   p = scheme_make_folding_prim(extflonum_p, "extflonum?", 1, 1, 1);
   scheme_extflonum_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("extflonum?", p, env);
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("extflonum?", p, env);
 
-  scheme_add_global_constant("extflonum-available?",
+  scheme_addto_prim_instance("extflonum-available?",
                              scheme_make_noncm_prim(extflonum_available_p,
                                                     "extflonum-available?",
                                                     0, 0),
 			     env);
 
-  scheme_add_global_constant("extflvector",
+  scheme_addto_prim_instance("extflvector",
                              scheme_make_prim_w_arity(extflvector,
                                                       "extflvector",
                                                       0, -1),
 			     env);
-  scheme_add_global_constant("extflvector?",
+  scheme_addto_prim_instance("extflvector?",
                              scheme_make_folding_prim(extflvector_p,
                                                       "extflvector?",
                                                       1, 1, 1),
 			     env);
-  scheme_add_global_constant("make-extflvector",
+  scheme_addto_prim_instance("make-extflvector",
                              scheme_make_immed_prim(make_extflvector,
                                                     "make-extflvector",
                                                     1, 2),
 			     env);
 
-  GLOBAL_PRIM_W_ARITY("shared-extflvector", shared_extflvector, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY("make-shared-extflvector", make_shared_extflvector, 1, 2, env);
+  ADD_PRIM_W_ARITY("shared-extflvector", shared_extflvector, 0, -1, env);
+  ADD_PRIM_W_ARITY("make-shared-extflvector", make_shared_extflvector, 1, 2, env);
 
   p = scheme_make_immed_prim(extflvector_length, "extflvector-length", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("extflvector-length", p, env);
+  scheme_addto_prim_instance("extflvector-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_extflvector_ref, "extflvector-ref", 2, 2);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1096,7 +1117,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflvector-ref", p, env);
+  scheme_addto_prim_instance("extflvector-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_extflvector_set, "extflvector-set!", 3, 3);
   if (MZ_LONG_DOUBLE_AVAIL_AND(1))
@@ -1105,7 +1126,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_THIRD);
-  scheme_add_global_constant("extflvector-set!", p, env);
+  scheme_addto_prim_instance("extflvector-set!", p, env);
 
   p = scheme_make_folding_prim(integer_to_extfl, "->extfl", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1114,7 +1135,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("->extfl", p, env);
+  scheme_addto_prim_instance("->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_integer, "extfl->exact-integer", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_comp()))
@@ -1122,7 +1143,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("extfl->exact-integer", p, env);
+  scheme_addto_prim_instance("extfl->exact-integer", p, env);
 
   p = scheme_make_folding_prim(real_to_long_double_flonum, "real->extfl", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1131,7 +1152,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("real->extfl", p, env);
+  scheme_addto_prim_instance("real->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_exact, "extfl->exact", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(1))
@@ -1139,7 +1160,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("extfl->exact", p, env);
+  scheme_addto_prim_instance("extfl->exact", p, env);
   
   p = scheme_make_folding_prim(extfl_to_inexact, "extfl->inexact", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(1))
@@ -1147,7 +1168,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
-  scheme_add_global_constant("extfl->inexact", p, env);
+  scheme_addto_prim_instance("extfl->inexact", p, env);
 
   p = scheme_make_folding_prim(fx_to_extfl, "fx->extfl", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1156,7 +1177,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("fx->extfl", p, env);
+  scheme_addto_prim_instance("fx->extfl", p, env);
 
   p = scheme_make_folding_prim(extfl_to_fx, "extfl->fx", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_comp()))
@@ -1166,7 +1187,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("extfl->fx", p, env);
+  scheme_addto_prim_instance("extfl->fx", p, env);
 
 
   p = scheme_make_folding_prim(extfl_truncate, "extfltruncate", 1, 1, 1);
@@ -1177,7 +1198,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extfltruncate", p, env);
+  scheme_addto_prim_instance("extfltruncate", p, env);
 
   p = scheme_make_folding_prim(extfl_round, "extflround", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1187,7 +1208,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflround", p, env);
+  scheme_addto_prim_instance("extflround", p, env);
 
   p = scheme_make_folding_prim(extfl_ceiling, "extflceiling", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1197,7 +1218,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflceiling", p, env);
+  scheme_addto_prim_instance("extflceiling", p, env);
 
   p = scheme_make_folding_prim(extfl_floor, "extflfloor", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1207,7 +1228,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflfloor", p, env);
+  scheme_addto_prim_instance("extflfloor", p, env);
 
   p = scheme_make_folding_prim(extfl_sin, "extflsin", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1217,7 +1238,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflsin", p, env);
+  scheme_addto_prim_instance("extflsin", p, env);
 
   p = scheme_make_folding_prim(extfl_cos, "extflcos", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1227,7 +1248,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflcos", p, env);
+  scheme_addto_prim_instance("extflcos", p, env);
 
   p = scheme_make_folding_prim(extfl_tan, "extfltan", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1237,7 +1258,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extfltan", p, env);
+  scheme_addto_prim_instance("extfltan", p, env);
 
   p = scheme_make_folding_prim(extfl_asin, "extflasin", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1247,7 +1268,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflasin", p, env);
+  scheme_addto_prim_instance("extflasin", p, env);
 
   p = scheme_make_folding_prim(extfl_acos, "extflacos", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1257,7 +1278,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflacos", p, env);
+  scheme_addto_prim_instance("extflacos", p, env);
 
   p = scheme_make_folding_prim(extfl_atan, "extflatan", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1267,7 +1288,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflatan", p, env);
+  scheme_addto_prim_instance("extflatan", p, env);
 
   p = scheme_make_folding_prim(extfl_log, "extfllog", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1277,7 +1298,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extfllog", p, env);
+  scheme_addto_prim_instance("extfllog", p, env);
 
   p = scheme_make_folding_prim(extfl_exp, "extflexp", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1287,7 +1308,7 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflexp", p, env);
+  scheme_addto_prim_instance("extflexp", p, env);
 
   p = scheme_make_folding_prim(extfl_expt, "extflexpt", 2, 2, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(scheme_can_inline_fp_op()))
@@ -1297,10 +1318,10 @@ void scheme_init_extfl_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_BOTH
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("extflexpt", p, env);
+  scheme_addto_prim_instance("extflexpt", p, env);
 }
 
-void scheme_init_unsafe_number(Scheme_Env *env)
+void scheme_init_unsafe_number(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -1309,7 +1330,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxand", p, env);
+  scheme_addto_prim_instance("unsafe-fxand", p, env);
   REGISTER_SO(scheme_unsafe_fxand_proc);
   scheme_unsafe_fxand_proc = p;
 
@@ -1317,7 +1338,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxior", p, env);
+  scheme_addto_prim_instance("unsafe-fxior", p, env);
   REGISTER_SO(scheme_unsafe_fxior_proc);
   scheme_unsafe_fxior_proc = p;
 
@@ -1325,7 +1346,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxxor", p, env);
+  scheme_addto_prim_instance("unsafe-fxxor", p, env);
   REGISTER_SO(scheme_unsafe_fxxor_proc);
   scheme_unsafe_fxxor_proc = p;
 
@@ -1333,7 +1354,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxnot", p, env);
+  scheme_addto_prim_instance("unsafe-fxnot", p, env);
   REGISTER_SO(scheme_unsafe_fxnot_proc);
   scheme_unsafe_fxnot_proc = p;
 
@@ -1341,13 +1362,13 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxlshift", p, env);
+  scheme_addto_prim_instance("unsafe-fxlshift", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_rshift, "unsafe-fxrshift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxrshift", p, env);
+  scheme_addto_prim_instance("unsafe-fxrshift", p, env);
   REGISTER_SO(scheme_unsafe_fxrshift_proc);
   scheme_unsafe_fxrshift_proc = p;
 
@@ -1359,14 +1380,14 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags 
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-fx->fl", p, env);
+  scheme_addto_prim_instance("unsafe-fx->fl", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_to_fx, "unsafe-fl->fx", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_WANTS_FLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fl->fx", p, env);
+  scheme_addto_prim_instance("unsafe-fl->fx", p, env);
 
   p = scheme_make_immed_prim(fl_ref, "unsafe-f64vector-ref",
                              2, 2);
@@ -1378,7 +1399,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-f64vector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-f64vector-ref", p, env);
   
   p = scheme_make_immed_prim(fl_set, "unsafe-f64vector-set!",
                              3, 3);
@@ -1388,14 +1409,14 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_FLONUM_THIRD);
-  scheme_add_global_constant("unsafe-f64vector-set!", p, env);  
+  scheme_addto_prim_instance("unsafe-f64vector-set!", p, env);  
 
   p = scheme_make_immed_prim(unsafe_flvector_length, "unsafe-flvector-length",
                              1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-flvector-length", p, env);
+  scheme_addto_prim_instance("unsafe-flvector-length", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_ref, "unsafe-flvector-ref",
                              2, 2);
@@ -1407,20 +1428,20 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-flvector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-flvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_set, "unsafe-flvector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_WANTS_FLONUM_THIRD);
-  scheme_add_global_constant("unsafe-flvector-set!", p, env);
+  scheme_addto_prim_instance("unsafe-flvector-set!", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_length, "unsafe-fxvector-length",
                              1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxvector-length", p, env);
+  scheme_addto_prim_instance("unsafe-fxvector-length", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_ref, "unsafe-fxvector-ref",
                              2, 2);
@@ -1428,24 +1449,24 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-fxvector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-fxvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_fxvector_set, "unsafe-fxvector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("unsafe-fxvector-set!", p, env);
+  scheme_addto_prim_instance("unsafe-fxvector-set!", p, env);
 
   p = scheme_make_immed_prim(s16_ref, "unsafe-s16vector-ref",
                              2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("unsafe-s16vector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-s16vector-ref", p, env);
   
   p = scheme_make_immed_prim(s16_set, "unsafe-s16vector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("unsafe-s16vector-set!", p, env);  
+  scheme_addto_prim_instance("unsafe-s16vector-set!", p, env);  
 
   p = scheme_make_immed_prim(u16_ref, "unsafe-u16vector-ref",
                              2, 2);
@@ -1453,29 +1474,29 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-u16vector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-u16vector-ref", p, env);
   
   p = scheme_make_immed_prim(u16_set, "unsafe-u16vector-set!",
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
-  scheme_add_global_constant("unsafe-u16vector-set!", p, env);  
+  scheme_addto_prim_instance("unsafe-u16vector-set!", p, env);  
 
   p = scheme_make_folding_prim(unsafe_make_flrectangular, "unsafe-make-flrectangular", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
-  scheme_add_global_constant("unsafe-make-flrectangular", p, env);
+  scheme_addto_prim_instance("unsafe-make-flrectangular", p, env);
 
   p = scheme_make_folding_prim(unsafe_flreal_part, "unsafe-flreal-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-flreal-part", p, env);
+  scheme_addto_prim_instance("unsafe-flreal-part", p, env);
 
   p = scheme_make_folding_prim(unsafe_flimag_part, "unsafe-flimag-part", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-flimag-part", p, env);
+  scheme_addto_prim_instance("unsafe-flimag-part", p, env);
 
   p = scheme_make_immed_prim(unsafe_flrandom, "unsafe-flrandom", 1, 1);
   if (scheme_can_inline_fp_op())
@@ -1484,10 +1505,10 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
-  scheme_add_global_constant("unsafe-flrandom", p, env);
+  scheme_addto_prim_instance("unsafe-flrandom", p, env);
 }
 
-void scheme_init_extfl_unsafe_number(Scheme_Env *env)
+void scheme_init_extfl_unsafe_number(Scheme_Startup_Env *env)
 {
   Scheme_Object *p;
   int flags;
@@ -1500,7 +1521,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags 
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("unsafe-fx->extfl", p, env);
+  scheme_addto_prim_instance("unsafe-fx->extfl", p, env);
 
   p = scheme_make_folding_prim(unsafe_extfl_to_fx, "unsafe-extfl->fx", 1, 1, 1);
   if (MZ_LONG_DOUBLE_AVAIL_AND(1))
@@ -1511,7 +1532,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_FIRST
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-extfl->fx", p, env);
+  scheme_addto_prim_instance("unsafe-extfl->fx", p, env);
 
   p = scheme_make_immed_prim(unsafe_extflvector_length, "unsafe-extflvector-length",
                              1, 1);
@@ -1522,7 +1543,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
-  scheme_add_global_constant("unsafe-extflvector-length", p, env);
+  scheme_addto_prim_instance("unsafe-extflvector-length", p, env);
 
   p = scheme_make_immed_prim(unsafe_extflvector_ref, "unsafe-extflvector-ref",
                              2, 2);
@@ -1534,7 +1555,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("unsafe-extflvector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-extflvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_extflvector_set, "unsafe-extflvector-set!",
                              3, 3);
@@ -1544,7 +1565,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_THIRD);
-  scheme_add_global_constant("unsafe-extflvector-set!", p, env);
+  scheme_addto_prim_instance("unsafe-extflvector-set!", p, env);
 
   p = scheme_make_immed_prim(extfl_ref, "unsafe-f80vector-ref",
                              2, 2);
@@ -1556,7 +1577,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE
                                                             | SCHEME_PRIM_PRODUCES_EXTFLONUM);
-  scheme_add_global_constant("unsafe-f80vector-ref", p, env);
+  scheme_addto_prim_instance("unsafe-f80vector-ref", p, env);
   
   p = scheme_make_immed_prim(extfl_set, "unsafe-f80vector-set!",
                              3, 3);
@@ -1566,7 +1587,7 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_WANTS_EXTFLONUM_THIRD);
-  scheme_add_global_constant("unsafe-f80vector-set!", p, env);
+  scheme_addto_prim_instance("unsafe-f80vector-set!", p, env);
 }
 
 #ifdef _MSC_VER

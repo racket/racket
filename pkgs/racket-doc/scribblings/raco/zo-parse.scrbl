@@ -16,19 +16,17 @@ The @racketmodname[compiler/zo-parse] module re-exports
 @racketmodname[compiler/zo-structs] in addition to
 @racket[zo-parse].
 
-@defproc[(zo-parse [in input-port? (current-input-port)]) compilation-top?]{
+@defproc[(zo-parse [in input-port? (current-input-port)]) (or/c linkl-directory? linkl-bundle?)]{
   Parses a port (typically the result of opening a @filepath{.zo} file)
   containing bytecode.  Beware that the structure types used to
   represent the bytecode are subject to frequent changes across Racket
   versons.
 
-  The parsed bytecode is returned in a @racket[compilation-top]
-  structure.  For a compiled module, the @racket[compilation-top]
-  structure will contain a @racket[mod] structure.  For a top-level
-  sequence, it will normally contain a @racket[seq] or @racket[splice]
-  structure with a list of top-level declarations and expressions.
+  The parsed bytecode is returned in a @racket[link-directory] or
+  @racket[link-bundle] structure---the latter only for the compilation
+  of a module that contains no submodules.
 
-  The bytecode representation of an expression is closer to an
+  Within a linklet, the bytecode representation of an expression is closer to an
   S-expression than a traditional, flat control string.  For example, an
   @racket[if] form is represented by a @racket[branch] structure that
   has three fields: a test expression, a ``then'' expression, and an
@@ -67,14 +65,7 @@ The @racketmodname[compiler/zo-parse] module re-exports
   bucket array in the same way that it captured and restores a local
   variable.  Mutable local variables are boxed similarly to global
   variables, but individual boxes are referenced from the stack and
-  closures.
-
-  Quoted syntax (in the sense of @racket[quote-syntax]) is treated like
-  a global variable, because it must be instantiated for an appropriate
-  phase.  A @racket[prefix] structure within a @racket[compilation-top]
-  or @racket[mod] structure indicates the list of global variables and
-  quoted syntax that need to be instantiated (and put into an array on
-  the stack) before evaluating expressions that might use them.}
+  closures.}
 
 
 @defproc[(decode-module-binding [binding module-binding?]

@@ -56,36 +56,38 @@
           [else (raise-argument-error 'regexp-replace-quote
                                       "(or/c string? bytes?)" s)]))
 
-  ;; This was originally intended to be general, but it has become specialized
-  ;; to deal with the combination of a regexp and a number:
-  (define (make-regexp-tweaker tweaker)
-    (let ([t (make-hash)])
-      (lambda (rx n)
-        (define-syntax-rule (->str x) (if (bytes? x) (bytes->string/utf-8 x) x))
-        (define-syntax-rule (->bts x) (if (bytes? x) x (string->bytes/utf-8 x)))
-        (define-syntax-rule (tweak unwrap wrap convert)
-          (let ([tweaked (tweaker (unwrap rx) n)])
-            ;; the tweaker is allowed to return a regexp
-            (if (or (regexp? tweaked) (byte-regexp? tweaked))
-              tweaked
-              (wrap (convert tweaked)))))
-        (define (run-tweak)
-          (cond [(pregexp? rx)      (tweak object-name pregexp ->str)]
-                [(regexp?  rx)      (tweak object-name regexp  ->str)]
-                [(byte-pregexp? rx) (tweak object-name byte-pregexp ->bts)]
-                [(byte-regexp?  rx) (tweak object-name byte-regexp  ->bts)]
-                ;; allow getting a string, so if someone needs to go
-                ;; from a string to a regexp, there's no penalty
-                ;; because of the intermediate regexp being recreated
-                [(string? rx) (tweak (lambda (x) x) regexp      ->str)]
-                [(bytes?  rx) (tweak (lambda (x) x) byte-regexp ->bts)]
-                [else (raise-argument-error
-                       'regexp-tweaker
-                       "(or/c regexp? byte-regexp? string? bytes?)"
-                       rx)]))
-        (let ([key (cons n rx)])
-          (or (hash-ref t key #f)
-              (let ([rx* (run-tweak)]) (hash-set! t key rx*) rx*))))))
+  (define no-empty-edge-table (make-hash))
+  (define (no-empty-edge-matches rx n)
+    (define (tweaker rx n)
+      (if (bytes? rx)
+          (bytes-append #"(?:" rx #")(?<="
+                        (make-bytes n (char->integer #\.)) #")")
+          (format "(?:~a)(?<=~a)" rx (make-bytes n (char->integer #\.)))))
+    (define-syntax-rule (->str x) (if (bytes? x) (bytes->string/utf-8 x) x))
+    (define-syntax-rule (->bts x) (if (bytes? x) x (string->bytes/utf-8 x)))
+    (define-syntax-rule (tweak unwrap wrap convert)
+      (let ([tweaked (tweaker (unwrap rx) n)])
+        ;; the tweaker is allowed to return a regexp
+        (if (or (regexp? tweaked) (byte-regexp? tweaked))
+            tweaked
+            (wrap (convert tweaked)))))
+    (define (run-tweak)
+      (cond [(pregexp? rx)      (tweak object-name pregexp ->str)]
+            [(regexp?  rx)      (tweak object-name regexp  ->str)]
+            [(byte-pregexp? rx) (tweak object-name byte-pregexp ->bts)]
+            [(byte-regexp?  rx) (tweak object-name byte-regexp  ->bts)]
+            ;; allow getting a string, so if someone needs to go
+            ;; from a string to a regexp, there's no penalty
+            ;; because of the intermediate regexp being recreated
+            [(string? rx) (tweak (lambda (x) x) regexp      ->str)]
+            [(bytes?  rx) (tweak (lambda (x) x) byte-regexp ->bts)]
+            [else (raise-argument-error
+                   'regexp-tweaker
+                   "(or/c regexp? byte-regexp? string? bytes?)"
+                   rx)]))
+    (let ([key (cons n rx)])
+      (or (hash-ref no-empty-edge-table key #f)
+          (let ([rx* (run-tweak)]) (hash-set! no-empty-edge-table key rx*) rx*))))
 
   (define (regexp-try-match pattern input-port [start-k 0] [end-k #f] [out #f]
                             [prefix #""])
@@ -112,13 +114,7 @@
   ;; Helper macro for the regexp functions below, with some utilities.
   (define (bstring-length s)
     (if (bytes? s) (bytes-length s) (string-length s)))
-  (define no-empty-edge-matches
-    (make-regexp-tweaker
-     (lambda (rx n)
-       (if (bytes? rx)
-         (bytes-append #"(?:" rx #")(?<="
-                       (make-bytes n (char->integer #\.)) #")")
-         (format "(?:~a)(?<=~a)" rx (make-bytes n (char->integer #\.)))))))
+
   (define-syntax-rule (regexp-loop
                        name loop start end pattern string ipre
                        success-choose failure-k

@@ -120,7 +120,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\racket\dynsrc\start.c" />
+    <ClCompile Include="..\..\start\start.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\starters\start.rc" />

@@ -23,16 +23,17 @@
 		    dest)])
       (for-each (lambda (p)
 		  (let* ([orig (get-current-framework-path dest p)]
-			 [3m (if (and orig (regexp-match #rx"_3m" orig))
-				 "_3m"
-				 "")]
+			 [variant (cond
+                                    [(and orig (regexp-match #rx"_3m" orig)) "_3m"]
+                                    [(and orig (regexp-match #rx"_CS" orig)) "_CS"]
+                                    [else ""])]
 			 [old-path (or orig
-				       (format "~a.framework/Versions/~a~a/~a" p (version) 3m p))]
+				       (format "~a.framework/Versions/~a~a/~a" p (version) variant p))]
 			 [new-path (if as-given?
                                        (format "~a" fw-path)
                                        (format "~a~a.framework/Versions/~a~a/~a" 
                                                fw-path
-                                               p (version) 3m p))])
+                                               p (version) variant p))])
 		    (get/set-dylib-path dest
 					(byte-regexp
 					 (bytes-append

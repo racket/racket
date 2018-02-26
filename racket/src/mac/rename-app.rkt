@@ -1,6 +1,7 @@
 #lang racket/base
 
-(current-directory (build-path 'up))
+(unless ((vector-length (current-command-line-arguments)) . > . 3)
+  (current-directory (build-path 'up)))
 
 (define app-path (vector-ref (current-command-line-arguments) 0))
 (define old-name (vector-ref (current-command-line-arguments) 1))

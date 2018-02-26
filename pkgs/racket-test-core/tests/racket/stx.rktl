@@ -39,6 +39,16 @@
 (syntax-test #'(quote-syntax))
 (syntax-test #'(quote-syntax . 7))
 
+;; Property is attached only to immediate syntax object:
+(test #f
+      syntax-property
+      (car (syntax-e (datum->syntax #f '(a) #f (syntax-property #'x 'ok 'value))))
+      'ok)
+(test 'value
+      syntax-property
+      (datum->syntax #f '(a) #f (syntax-property #'x 'ok 'value))
+      'ok)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some syntax-case patterns
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -542,14 +552,14 @@
 
 (define base-lib (caddr (identifier-binding* #'lambda)))
 
-(test `('#%kernel case-lambda ,base-lib case-lambda 0 0 0)
+(test `('#%core case-lambda ,base-lib case-lambda 0 0 0)
       identifier-binding* #'case-lambda)
 (test `("private/promise.rkt" delay* ,base-lib delay 0 0 0)
       identifier-binding* #'delay)
-(test `('#%kernel #%module-begin ,base-lib #%plain-module-begin 0 0 0)
+(test `('#%core #%module-begin ,base-lib #%plain-module-begin 0 0 0)
       identifier-binding* #'#%plain-module-begin)
 (require (only-in racket/base [#%plain-module-begin #%pmb]))
-(test '('#%kernel #%module-begin racket/base #%plain-module-begin 0 0 0)
+(test '('#%core #%module-begin racket/base #%plain-module-begin 0 0 0)
       identifier-binding* #'#%pmb)
 
 (let ([b (identifier-binding
@@ -1535,7 +1545,7 @@
 (test '(10 20 #t) '@!$get @!$get)
 |#
 
-(test '(12)
+(test '(1) ; old expander produced 12
       eval
       (expand
        #'(let ([b 12])
@@ -1858,6 +1868,21 @@
                                      (syntax-arm #'(begin (define-values (x y z) (values 1 2 3)))
                                                  #f #t)))))))
 
+(let ()
+  (define i1 (make-inspector))
+  (define i2 (make-inspector))
+  
+  (define x (syntax-arm #'(x) i1))
+  
+  (test #f syntax-tainted? (car (syntax-e (syntax-disarm x i1))))
+  (test #t syntax-tainted? (car (syntax-e (syntax-disarm x i2))))
+  
+  (define y (syntax-rearm (syntax-arm #'(y) i2) x))
+  
+  (test #t syntax-tainted? (car (syntax-e (syntax-disarm y i1))))
+  (test #t syntax-tainted? (car (syntax-e (syntax-disarm y i2))))
+  (test #f syntax-tainted? (car (syntax-e (syntax-disarm (syntax-disarm y i1) i2)))))
+
 (let ([round-trip
        (lambda (stx)
          (parameterize ([current-namespace (make-base-namespace)])
@@ -1969,7 +1994,7 @@
              (require (for-syntax racket/base))
              (begin-for-syntax
               (displayln (syntax-transforming-module-expression?))))))
-  (test "#t\n#f\n" get-output-string o))
+  (test "#t\n#t\n" get-output-string o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that a common wraps encoding that is detected only
@@ -2477,7 +2502,7 @@
 (err/rt-test (syntax-property #'+ 1 #'+ #t)
              (lambda (exn)
                (regexp-match
-                #rx"expected an interned symbol key for a preserved property"
+                #rx"key for a perserved property must be an interned symbol"
                 (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2495,7 +2520,7 @@
     (write (compile (read-syntax path p)) out)
     (eval (read in))
     (define src (syntax-source ((dynamic-require path 'f))))
-    (test (path->string path) values src)))
+    (test path values src)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

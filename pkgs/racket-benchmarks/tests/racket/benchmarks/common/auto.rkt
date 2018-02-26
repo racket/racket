@@ -252,6 +252,18 @@ exec racket -qu "$0" ${1+"$@"}
             (bytes->number (caddr m))
             (bytes->number (cadddr m)))))
 
+  (define (mk-chez bm)
+    (parameterize ([current-input-port
+                    (open-input-string
+                     (format
+                      "(compile-file \"~a.sch\")\n(exit)\n"
+                      bm))]
+                   [current-output-port (open-output-nowhere)])
+      (system "scheme -q")))
+
+  (define (run-chez bm)
+    (system (format "scheme --script ~a.so" bm)))
+
   (define (run-petite bm)
     (parameterize ([current-input-port
                     (open-input-string
@@ -260,11 +272,33 @@ exec racket -qu "$0" ${1+"$@"}
                       bm))])
       (system "petite")))
 
-  (define (extract-petite-times bm str)
-    (let ([m (regexp-match #rx#"([0-9]+) ms elapsed cpu time(?:, including ([0-9]+) ms collecting)?[ \n]* ([0-9]+) ms elapsed real time" str)])
-      (list (bytes->number (cadr m))
-            (bytes->number (cadddr m))
-            (if (caddr m) (bytes->number (caddr m)) 0))))
+  (define (extract-chez-times bm str)
+    (let ([m (regexp-match #rx#"([0-9.]+)s elapsed cpu time(?:, including ([0-9.]+)s collecting)?[ \n]* ([0-9.]+)s elapsed real time" str)])
+      (define (s n) (inexact->exact (floor (* n 1000))))
+      (list (s (bytes->number (cadr m)))
+            (s (bytes->number (cadddr m)))
+            (if (caddr m) (s (bytes->number (caddr m))) 0))))
+
+  (define (setup-chez-sps bm)
+    (setup-sps bm "(only (chezscheme) time)"))
+
+  (define (mk-chez-sps bm)
+    (parameterize ([current-input-port 
+		    (open-input-string
+		     (format (string-append
+			      "(compile-file \"~a.sls\")\n")
+			     bm))]
+		   [current-output-port (open-output-bytes)])
+      (system "scheme")
+      ;; Make sure compiled version is used:
+      (delete-file (format "~a.sls" bm))))
+  
+  (define (run-chez-sps bm)
+    (system "scheme --script prog.sps"))
+
+  (define (clean-up-chez-sps bm)
+    (clean-up-sps bm)
+    (delete-file (format "~a.so" bm)))
 
   ;; requires guile 2.0.2 or higher
   (define (mk-guile bm)
@@ -537,8 +571,22 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 void
                 run-petite
-                extract-petite-times
+                extract-chez-times
                 void
+                racket-specific-progs)
+     (make-impl 'chez
+                void
+                mk-chez
+                run-chez
+                extract-chez-times
+                void
+                racket-specific-progs)
+     (make-impl 'chez-sps
+                setup-chez-sps
+                mk-chez-sps
+                run-chez-sps
+                extract-chez-times
+                clean-up-chez-sps
                 racket-specific-progs)
      (make-impl 'guile
                 void

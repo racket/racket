@@ -150,7 +150,7 @@ already-consumed character(s): the source name, a line number or
 @racket[#f]. When the reader macro is triggered by @racket[read] (or
 @racket[read/recursive]), the procedure is passed only two arguments
 if it accepts two arguments, otherwise it is passed six arguments
-where the last four are all @racket[#f]. See @secref["reader-procs"]
+where the third is always @racket[#f]. See @secref["reader-procs"]
 for information on the procedure's results.
 
 A reader macro normally reads characters from the given input port to
@@ -264,7 +264,7 @@ character and the @racket[#f] readtable.}
          ((if (eof-object? v) 
               raise-read-eof-error 
               raise-read-error)
-          "expected `,' or `>'" src l c p 1)]))]))
+          "expected `,` or `>`" src l c p 1)]))]))
 
 (define (make-delims-table)
   ;; Table to use for recursive reads to disallow delimiters
@@ -274,7 +274,7 @@ character and the @racket[#f] readtable.}
              [(ch port) (misplaced-delimiter ch port #f #f #f #f)]
              [(ch port src line col pos)
               (raise-read-error 
-               (format "misplaced `~a' in tuple" ch) 
+               (format "misplaced `~a` in tuple" ch)
                src line col pos 1)])])
     (make-readtable (current-readtable)
                     #\, 'terminating-macro misplaced-delimiter
@@ -286,14 +286,14 @@ character and the @racket[#f] readtable.}
 (define parse-open-tuple
   (case-lambda
    [(ch port) 
-    ;; `read' mode
+    ;; `read` mode
     (wrap (parse port 
                  (lambda () 
                    (read/recursive port #f 
                                    (make-delims-table)))
                  (object-name port)))]
    [(ch port src line col pos)
-    ;; `read-syntax' mode
+    ;; `read-syntax` mode
     (datum->syntax
      #f
      (wrap (parse port 

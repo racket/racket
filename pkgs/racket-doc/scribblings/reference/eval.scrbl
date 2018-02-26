@@ -205,7 +205,12 @@ Like @racket[load], but @racket[load/cd] sets both
 handler}.}
 
 
-@defparam[current-load-extension proc (path? (or/c symbol? #f) . -> . any)]{
+@defparam[current-load-extension proc (path? (or/c #f
+                                                   symbol?
+                                                   (cons/c (or/c #f symbol?)
+                                                           (non-empty-listof symbol?)))
+                                       . -> . 
+                                       any)]{
 
 A @tech{parameter} that determines a @deftech{extension-load handler}, which is
 called by @racket[load-extension] and the default @tech{compiled-load

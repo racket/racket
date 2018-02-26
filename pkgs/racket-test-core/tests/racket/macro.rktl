@@ -1676,6 +1676,95 @@
 (test '(1 2 3) dynamic-require ''uses-local-lift-values-at-expansion-time 'l)
 
 ;; ----------------------------------------
+;; Check that `local-expand` tentatively allows out-of-context identifiers
+
+(module tentatively-out-of-context racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (new-lam stx)
+    (syntax-case stx ()
+      [(_ x body)
+       (with-syntax ([(_ (x+) body+)
+                      (local-expand #'(lambda (x) body) 'expression null)])
+         (with-syntax ([body++ ;; double-expand body
+                        (local-expand #'body+ 'expression null)])
+           #'(lambda (x+) body++)))]))
+
+  ((new-lam X X) 100))
+
+;; ----------------------------------------
+;; Check that properties interact properly with the rename transformer
+;; that is used to implement `let-syntax` [example from Stephen Chang]
+
+(define-syntax (test-key-property-as-val stx)
+  (syntax-case stx ()
+    [(_ x)
+     (with-syntax ([x/prop (syntax-property #'x 'key 'val)])
+       (with-syntax ([(lam _ (lv1 _ (lv2 _ x+)))
+                      (local-expand
+                       #'(lambda (x)
+                           (let-syntax ([x (lambda (stx) #'x)])
+                             x/prop))
+                       'expression null)])
+         #`'#,(syntax-property #'x+ 'key)))]))
+
+(test 'val 'let-syntax-rename-transformer-property (test-key-property-as-val stx))
+
+;; ----------------------------------------
+;; Check that a chain of rename transformers maintains properties correctly
+
+(module chains-properties-through-two-rename-transformer racket/base
+  (require (for-syntax racket/base))
+  
+  (define a 'a)
+  
+  (define-syntax b (make-rename-transformer (syntax-property #'a 'ids 'b)))
+  (define-syntax c (make-rename-transformer (syntax-property #'b 'ids 'c)))
+  
+  (define-syntax (inspect stx)
+    (syntax-case stx ()
+      [(_ e)
+       (let ([e (local-expand #'e 'expression null)])
+         #`(quote #,(syntax-property e 'ids)))]))
+  
+  (provide prop-val)
+  (define prop-val (inspect c)))
+
+(test '(b . c) dynamic-require ''chains-properties-through-two-rename-transformer 'prop-val)
+
+;; ----------------------------------------
+;; Check that the wrong properties are *not* added when a rename transformer is involed
+
+(module inner-and-outer-properties-around-rename-transformers racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (some-define stx)
+    (syntax-case stx ()
+      [(_ x)
+       #'(define-syntax x
+           (make-rename-transformer
+            (syntax-property #'void 'prop 'inner)))]))
+
+  (some-define x)
+
+  (define-syntax (wrapper stx)
+    (syntax-case stx ()
+      [(_ e)
+       (local-expand
+        (syntax-property #'e 'prop 'outer)
+        'expression null)]))
+
+  (define-syntax (#%app stx)
+    (syntax-case stx ()
+      [(_ f)
+       #`(quote #,(syntax-property #'f 'prop))]))
+
+  (provide prop-val)
+  (define prop-val (wrapper (x))))
+
+(test 'inner dynamic-require ''inner-and-outer-properties-around-rename-transformers 'prop-val)
+
+;; ----------------------------------------
 ;; Check that a `prop:rename-transformer` procedure is called in a
 ;; `syntax-transforming?` mode when used as an expression
 
@@ -1708,6 +1797,13 @@
     (test 'two values also-x)))
 
 ;; ----------------------------------------
+;; Make sure top-level definition replaces a macro binding
+
+(define-syntax-rule (something-previously-bound-as-syntax) 1)
+(define something-previously-bound-as-syntax 5)
+(test 5 values something-previously-bound-as-syntax)
+
+;; ----------------------------------------
 ;; Check that ellipsis-counts errors are reported when a single
 ;; pattern variable is used at different depths
 
@@ -1715,6 +1811,35 @@
               (with-syntax ([((b ...) ...) #'((1 2) (3) ())])
                 #'([(b (b ...)) ...] ...)))
              (lambda (exn) (regexp-match? #rx"incompatible ellipsis" (exn-message exn))))
+
+;; ----------------------------------------
+;; Check `local-expand` for a `#%module-begin` that
+;; routes `require`s through a macro (which involves use-site
+;; scopes)
+
+(module module-begin-check/mb racket/base
+  (require (for-syntax racket/base))
+  
+  (provide (except-out (all-from-out racket/base)
+                       #%module-begin)
+           (rename-out [mb #%module-begin]))
+  
+  (define-syntax (mb stx)
+    (syntax-case stx ()
+      [(_ f ... last)
+       (local-expand #'(#%module-begin f ... last)
+                     'module-begin 
+                     (list #'module*))])))
+
+(module module-begin-check/y racket/base
+  (provide y)
+  (define y 'y))
+
+(module x 'module-begin-check/mb
+  (define-syntax-rule (req mod ...)
+    (require mod ...))
+  (req 'module-begin-check/y)
+  (void y))
 
 ;; ----------------------------------------
 ;; Check that expansion to `#%module-begin` is prepared to handle

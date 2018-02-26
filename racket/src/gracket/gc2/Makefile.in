@@ -56,11 +56,13 @@ MZMMM_wx_xt = @RUN_RACKET_MMM@
 MZMMM_wx_mac = @RUN_RACKET_MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
-XFORM_CMD = $(MZMMM) $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../../racket/gc2/xform.rkt --setup ../../racket/gc2
+SETUP_BOOT = -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
+
+XFORM_CMD = $(MZMMM) $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/../../racket/gc2/xform-mod.rkt
 XFORM_CPP_ARGS = -I$(srcdir)/../../racket/gc2 $(NOGCINC) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@)
 
-XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
-XFORMDEP = $(srcdir)/../../racket/gc2/xform.rkt $(srcdir)/../../racket/gc2/xform-mod.rkt $(srcdir)/../../racket/gc2/gc2.h
+XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o ++out
+XFORMDEP = $(srcdir)/../../racket/gc2/xform-mod.rkt $(srcdir)/../../racket/gc2/gc2.h
 
 GRACKETLDFLAGS = $(LDFLAGS) -L../../racket
 
@@ -72,6 +74,7 @@ XFORMWP = $(XFORM)
 
 xsrc/grmain.c: $(srcdir)/../grmain.c $(XFORMDEP)
 	$(XFORMWP) xsrc/grmain.c $(DEF_C_DIRS) $(srcdir)/../grmain.c
+@INCLUDEDEP@ grmain.d
 
 GCPREINC = -include $(srcdir)/../../racket/gc2/gc2.h
 POSTFLAGS = $(OPTIONS)
@@ -116,7 +119,8 @@ $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ w
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
 $(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h $(srcdir)/../../mac/icon/GRacket.icns
-	env BUILDBASE=../.. BUILDING_3M=yes @RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
+	env BUILDBASE=../.. BUILDING_3M=yes @RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) $(MRAPPSKEL) mrappskel.d $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
+@INCLUDEDEP@ mrappskel.d
 
 ../gracket@MMM@@OSX@ :
 	$(MAKE) ../GRacket@MMM@.app/Contents/MacOS/GRacket@MMM@

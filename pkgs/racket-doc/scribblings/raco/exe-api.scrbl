@@ -71,7 +71,7 @@ parameter is true.
                                                   null]
                                [#:gracket? gracket? any/c #f]
                                [#:mred? mred? any/c #f]
-                               [#:variant variant (or/c 'cgc '3m)
+                               [#:variant variant (or/c 'cgc '3m 'cs)
                                                   (system-type 'gc)]
                                [#:aux aux (listof (cons/c symbol? any/c)) null]
                                [#:collects-path collects-path
@@ -384,7 +384,7 @@ have been applied as needed to refer to the existing file).}
                                [cmdline (listof string?)]
                                [aux (listof (cons/c symbol? any/c)) null]
                                [launcher? any/c #f]
-                               [variant (one-of/c 'cgc '3m) (system-type 'gc)]
+                               [variant (one-of/c 'cgc '3m'cs) (system-type 'gc)]
                                [collects-path (or/c #f
                                                     path-string? 
                                                     (listof path-string?))
@@ -477,9 +477,9 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 @defproc[(find-exe [#:cross? cross? any/c #f]
                    [#:untetherd? untethered? any/c #f]
                    [gracket? any/c #f]
-                   [variant (or/c 'cgc '3m) (if cross?
-                                                (cross-system-type 'gc)
-                                                (system-type 'gc))])
+                   [variant (or/c 'cgc '3m 'cs) (if cross?
+                                                    (cross-system-type 'gc)
+                                                    (system-type 'gc))])
          path?]{
 
   Finds the path to the @exec{racket} or @exec{gracket} (when

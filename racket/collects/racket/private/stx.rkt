@@ -198,6 +198,7 @@
 	(values pre post (= m n)))))
 
   (define-values (intro) #f)
+  (define-values (counter) 0)
   (define-values (gen-temp-id)
     ;; Even though we gensym, using an introducer helps the
     ;;  syntax system simplify renamings that can't apply
@@ -207,7 +208,8 @@
       (if intro
           (void)
           (set! intro (make-syntax-introducer)))
-      (intro (datum->syntax #f (gensym pfx)))))
+      (set! counter (add1 counter))
+      (intro (datum->syntax #f (string->uninterned-symbol (format "~a~a" pfx counter))))))
 
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list

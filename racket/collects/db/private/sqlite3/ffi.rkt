@@ -39,14 +39,14 @@
 
 (define-sqlite sqlite3_open
   (_fun (filename ignored-flags) ::
-        (filename : _bytes)
+        ((bytes-append filename #"\0") : _bytes)
         (db : (_ptr o _sqlite3_database))
         -> (result : _int)
         -> (values db result)))
 
 (define-sqlite sqlite3_open_v2
   (_fun (filename flags) ::
-        (filename : _bytes)
+        ((bytes-append filename #"\0") : _bytes)
         (db : (_ptr o _sqlite3_database))
         (flags : _int)
         (vfs : _pointer = #f)
@@ -63,23 +63,28 @@
 (define (trim-and-copy-buffer buffer)
   (let* ([buffer (string->bytes/utf-8 (string-trim #:left? #f buffer))]
          [n (bytes-length buffer)]
-         [rawcopy (malloc (add1 n) 'atomic-interior)]
-         [copy (make-sized-byte-string rawcopy n)])
-    (memcpy copy buffer n)
+         [rawcopy (malloc (add1 n) 'atomic-interior)])
+    (memcpy rawcopy buffer n)
     (ptr-set! rawcopy _byte n 0)
-    copy))
+    rawcopy))
+
+(define (c-string-length p)
+  (let loop ([i 0])
+    (if (zero? (ptr-ref p _byte i))
+        i
+        (loop (add1 i)))))
 
 (define (points-to-end? tail sql-buffer)
   (ptr-equal? tail
-              (ptr-add sql-buffer (bytes-length sql-buffer))))
+              (ptr-add sql-buffer (c-string-length sql-buffer))))
 
 (define-sqlite sqlite3_prepare
   (_fun (db sql) ::
         (db : _sqlite3_database)
-        (sql-buffer : _bytes = (trim-and-copy-buffer sql))
-        ((bytes-length sql-buffer) : _int)
+        (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
+        ((c-string-length sql-buffer) : _int)
         (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _gcpointer)) ;; points into sql-buffer (atomic-interior)
+        (tail : (_ptr o _pointer)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
         -> (values result statement (and tail
                                          (not (points-to-end? tail sql-buffer))))))
@@ -87,11 +92,11 @@
 (define-sqlite sqlite3_prepare_v2
   (_fun (db sql) ::
         (db : _sqlite3_database)
-        (sql-buffer : _bytes = (trim-and-copy-buffer sql))
-        ((bytes-length sql-buffer) : _int)
+        (sql-buffer : _gcpointer = (trim-and-copy-buffer sql))
+        ((c-string-length sql-buffer) : _int)
         ;; bad prepare statements set statement to NULL, with no error reported
         (statement : (_ptr o _sqlite3_statement/null))
-        (tail : (_ptr o _gcpointer)) ;; points into sql-buffer (atomic-interior)
+        (tail : (_ptr o _pointer)) ;; points into sql-buffer (atomic-interior)
         -> (result : _int)
         -> (values result statement (and tail
                                          (not (points-to-end? tail sql-buffer)))))
@@ -190,9 +195,11 @@
 (define-sqlite sqlite3_column_blob
   (_fun (stmt : _sqlite3_statement)
         (col : _int)
-        -> (blob : _bytes)
-        -> (let ([len (sqlite3_column_bytes stmt col)])
-             (bytes-copy (make-sized-byte-string blob len)))))
+        -> (blob : _pointer)
+        -> (let* ([len (sqlite3_column_bytes stmt col)]
+                  [bstr (make-bytes len)])
+             (memcpy bstr blob len)
+             bstr)))
 
 ;; ----------------------------------------
 

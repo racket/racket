@@ -3142,7 +3142,7 @@ tdep_uc_addr (unw_context_t *uc, int reg)
   return addr;
 }
 
-int dwarf_to_unw_regnum(reg)
+int dwarf_to_unw_regnum(int reg)
 {
 #ifdef UNW_ARM
   return (((reg) < 16) ? (reg) : 0);

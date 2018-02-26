@@ -1922,7 +1922,7 @@
                                  (set! access-k k)
                                  k))]
            [test (lambda (val proc . args)
-                   ;; Avoid printign hash-table argument, which implicitly uses `ref':
+                   ;; Avoid printing hash-table argument, which implicitly uses `ref':
                    (let ([got (apply proc args)])
                      (test #t (format "~s ~s ~s" proc val got) (equal? val got))))])
       (test #f hash-iterate-first h1)

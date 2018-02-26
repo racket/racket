@@ -47,11 +47,6 @@ static Scheme_Object *call_with_output_file (int, Scheme_Object *[]);
 static Scheme_Object *call_with_input_file (int, Scheme_Object *[]);
 static Scheme_Object *with_input_from_file (int, Scheme_Object *[]);
 static Scheme_Object *with_output_to_file (int, Scheme_Object *[]);
-static Scheme_Object *read_f (int, Scheme_Object *[]);
-static Scheme_Object *read_recur_f (int, Scheme_Object *[]);
-static Scheme_Object *read_syntax_f (int, Scheme_Object *[]);
-static Scheme_Object *read_syntax_recur_f (int, Scheme_Object *[]);
-static Scheme_Object *read_language (int, Scheme_Object *[]);
 static Scheme_Object *read_char (int, Scheme_Object *[]);
 static Scheme_Object *read_char_spec (int, Scheme_Object *[]);
 static Scheme_Object *read_byte (int, Scheme_Object *[]);
@@ -99,15 +94,11 @@ static Scheme_Object *sch_print (int, Scheme_Object *[]);
 static Scheme_Object *newline (int, Scheme_Object *[]);
 static Scheme_Object *write_char (int, Scheme_Object *[]);
 static Scheme_Object *write_byte (int, Scheme_Object *[]);
-static Scheme_Object *load (int, Scheme_Object *[]);
-static Scheme_Object *current_load (int, Scheme_Object *[]);
-static Scheme_Object *current_load_use_compiled (int, Scheme_Object *[]);
 static Scheme_Object *current_load_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_write_directory(int argc, Scheme_Object *argv[]);
 #ifdef LOAD_ON_DEMAND
 static Scheme_Object *load_on_demand_enabled(int argc, Scheme_Object *argv[]);
 #endif
-static Scheme_Object *default_load (int, Scheme_Object *[]);
 static Scheme_Object *flush_output (int, Scheme_Object *[]);
 static Scheme_Object *open_input_char_string (int, Scheme_Object *[]);
 static Scheme_Object *open_input_byte_string (int, Scheme_Object *[]);
@@ -168,6 +159,15 @@ READ_ONLY Scheme_Object *scheme_print_proc;
 SHARED_OK Scheme_Object *initial_compiled_file_paths;
 SHARED_OK Scheme_Object *initial_compiled_file_roots;
 
+SHARED_OK static int compiled_file_check = SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS;
+ROSYM static Scheme_Object *initial_compiled_file_check_symbol;
+
+SHARED_OK int scheme_ignore_user_paths;
+void scheme_set_ignore_user_paths(int v) { scheme_ignore_user_paths = v; }
+
+SHARED_OK int scheme_ignore_link_paths;
+void scheme_set_ignore_link_paths(int v) { scheme_ignore_link_paths = v; }
+
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_input_port);
 THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
 
@@ -178,7 +178,7 @@ THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
 /*========================================================================*/
 
 void
-scheme_init_port_fun(Scheme_Env *env)
+scheme_init_port_fun(Scheme_Startup_Env *env)
 {
 #ifdef MZ_PRECISE_GC
   register_traversers();
@@ -220,166 +220,208 @@ scheme_init_port_fun(Scheme_Env *env)
   default_write_handler   = scheme_make_prim_w_arity(sch_default_write_handler,   "default-port-write-handler",   2, 2);
   default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 3);
 
-  scheme_add_global_constant("eof", scheme_eof, env);
+  scheme_addto_prim_instance("eof", scheme_eof, env);
   
-  GLOBAL_PARAMETER("current-input-port",                current_input_port,         MZCONFIG_INPUT_PORT,  env);
-  GLOBAL_PARAMETER("current-output-port",               current_output_port,        MZCONFIG_OUTPUT_PORT, env);
-  GLOBAL_PARAMETER("current-error-port",                current_error_port,         MZCONFIG_ERROR_PORT,  env); 
-  GLOBAL_PARAMETER("current-load",                      current_load,               MZCONFIG_LOAD_HANDLER,          env);
-  GLOBAL_PARAMETER("current-load/use-compiled",         current_load_use_compiled,  MZCONFIG_LOAD_COMPILED_HANDLER, env);
-  GLOBAL_PARAMETER("current-load-relative-directory",   current_load_directory,     MZCONFIG_LOAD_DIRECTORY,        env);
-  GLOBAL_PARAMETER("current-write-relative-directory",  current_write_directory,    MZCONFIG_WRITE_DIRECTORY,       env);
-  GLOBAL_PARAMETER("global-port-print-handler",         global_port_print_handler,  MZCONFIG_PORT_PRINT_HANDLER,    env);
+  ADD_PARAMETER("current-input-port",                current_input_port,         MZCONFIG_INPUT_PORT,  env);
+  ADD_PARAMETER("current-output-port",               current_output_port,        MZCONFIG_OUTPUT_PORT, env);
+  ADD_PARAMETER("current-error-port",                current_error_port,         MZCONFIG_ERROR_PORT,  env); 
+  ADD_PARAMETER("current-load-relative-directory",   current_load_directory,     MZCONFIG_LOAD_DIRECTORY,        env);
+  ADD_PARAMETER("current-write-relative-directory",  current_write_directory,    MZCONFIG_WRITE_DIRECTORY,       env);
+  ADD_PARAMETER("global-port-print-handler",         global_port_print_handler,  MZCONFIG_PORT_PRINT_HANDLER,    env);
 #ifdef LOAD_ON_DEMAND
-  GLOBAL_PARAMETER("load-on-demand-enabled",            load_on_demand_enabled,     MZCONFIG_LOAD_DELAY_ENABLED,    env);
+  ADD_PARAMETER("load-on-demand-enabled",            load_on_demand_enabled,     MZCONFIG_LOAD_DELAY_ENABLED,    env);
 #endif
-  GLOBAL_PARAMETER("port-count-lines-enabled",          global_port_count_lines,    MZCONFIG_PORT_COUNT_LINES,      env);
+  ADD_PARAMETER("port-count-lines-enabled",          global_port_count_lines,    MZCONFIG_PORT_COUNT_LINES,      env);
 
-  GLOBAL_FOLDING_PRIM("input-port?",            input_port_p,               1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("output-port?",           output_port_p,              1, 1, 1, env); 
-  GLOBAL_FOLDING_PRIM("file-stream-port?",      scheme_file_stream_port_p,  1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
+  ADD_FOLDING_PRIM("input-port?",            input_port_p,               1, 1, 1, env);
+  ADD_FOLDING_PRIM("output-port?",           output_port_p,              1, 1, 1, env); 
+  ADD_FOLDING_PRIM("file-stream-port?",      scheme_file_stream_port_p,  1, 1, 1, env);
+  ADD_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
+  ADD_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
 
-  GLOBAL_NONCM_PRIM("port-closed?",             port_closed_p,          1, 1, env); 
-  GLOBAL_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
-  GLOBAL_NONCM_PRIM("open-input-bytes",         open_input_byte_string, 1, 2, env);
-  GLOBAL_NONCM_PRIM("open-input-string",        open_input_char_string, 1, 2, env);
-  GLOBAL_NONCM_PRIM("open-output-file",         open_output_file,       1, 3, env);
-  GLOBAL_NONCM_PRIM("open-output-bytes",        open_output_string,     0, 1, env);
-  GLOBAL_NONCM_PRIM("open-output-string",       open_output_string,     0, 1, env);
-  GLOBAL_NONCM_PRIM("get-output-bytes",         get_output_byte_string, 1, 4, env);
-  GLOBAL_NONCM_PRIM("get-output-string",        get_output_char_string, 1, 1, env);
-  GLOBAL_NONCM_PRIM("open-input-output-file",   open_input_output_file, 1, 3, env);
-  GLOBAL_NONCM_PRIM("close-input-port",         close_input_port,       1, 1, env);
-  GLOBAL_NONCM_PRIM("close-output-port",        close_output_port,      1, 1, env);
-  GLOBAL_NONCM_PRIM("make-input-port",          make_input_port,        4, 10, env);
-  GLOBAL_NONCM_PRIM("make-output-port",         make_output_port,       4, 11, env);
+  ADD_NONCM_PRIM("port-closed?",             port_closed_p,          1, 1, env); 
+  ADD_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
+  ADD_NONCM_PRIM("open-input-bytes",         open_input_byte_string, 1, 2, env);
+  ADD_NONCM_PRIM("open-input-string",        open_input_char_string, 1, 2, env);
+  ADD_NONCM_PRIM("open-output-file",         open_output_file,       1, 3, env);
+  ADD_NONCM_PRIM("open-output-bytes",        open_output_string,     0, 1, env);
+  ADD_NONCM_PRIM("open-output-string",       open_output_string,     0, 1, env);
+  ADD_NONCM_PRIM("get-output-bytes",         get_output_byte_string, 1, 4, env);
+  ADD_NONCM_PRIM("get-output-string",        get_output_char_string, 1, 1, env);
+  ADD_NONCM_PRIM("open-input-output-file",   open_input_output_file, 1, 3, env);
+  ADD_NONCM_PRIM("close-input-port",         close_input_port,       1, 1, env);
+  ADD_NONCM_PRIM("close-output-port",        close_output_port,      1, 1, env);
+  ADD_NONCM_PRIM("make-input-port",          make_input_port,        4, 10, env);
+  ADD_NONCM_PRIM("make-output-port",         make_output_port,       4, 11, env);
   
-  GLOBAL_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 4, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("call-with-input-file",  call_with_input_file,   2, 3, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("with-output-to-file",   with_output_to_file,    2, 4, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("with-input-from-file",  with_input_from_file,   2, 3, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("load",                  load,                   1, 1, 0, -1, env);
-  GLOBAL_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
-  GLOBAL_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
-  GLOBAL_NONCM_PRIM("set-port-next-location!",  set_port_next_location, 4, 4, env);
+  ADD_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 4, 0, -1, env);
+  ADD_PRIM_W_ARITY2("call-with-input-file",  call_with_input_file,   2, 3, 0, -1, env);
+  ADD_PRIM_W_ARITY2("with-output-to-file",   with_output_to_file,    2, 4, 0, -1, env);
+  ADD_PRIM_W_ARITY2("with-input-from-file",  with_input_from_file,   2, 3, 0, -1, env);
+  ADD_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
+  ADD_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
+  ADD_NONCM_PRIM("set-port-next-location!",  set_port_next_location, 4, 4, env);
 
-  GLOBAL_PRIM_W_ARITY("filesystem-change-evt",  filesystem_change_evt,   1, 2, env);
-  GLOBAL_NONCM_PRIM("filesystem-change-evt?",   filesystem_change_evt_p, 1, 1, env);
-  GLOBAL_NONCM_PRIM("filesystem-change-evt-cancel",  filesystem_change_evt_cancel, 1, 1, env);
+  ADD_PRIM_W_ARITY("filesystem-change-evt",  filesystem_change_evt,   1, 2, env);
+  ADD_NONCM_PRIM("filesystem-change-evt?",   filesystem_change_evt_p, 1, 1, env);
+  ADD_NONCM_PRIM("filesystem-change-evt-cancel",  filesystem_change_evt_cancel, 1, 1, env);
 
-  GLOBAL_NONCM_PRIM("read",                           read_f,                         0, 1, env);
-  GLOBAL_NONCM_PRIM("read/recursive",                 read_recur_f,                   0, 4, env);
-  GLOBAL_NONCM_PRIM("read-syntax",                    read_syntax_f,                  0, 2, env);
-  GLOBAL_NONCM_PRIM("read-syntax/recursive",          read_syntax_recur_f,            0, 5, env);
-  GLOBAL_PRIM_W_ARITY2("read-language",               read_language,                  0, 2, 0, -1, env);
-  GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
-  GLOBAL_PRIM_W_ARITY2("read-char-or-special",        read_char_spec,                 0, 3, 0, -1, env);
-  GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
-  GLOBAL_PRIM_W_ARITY2("read-byte-or-special",        read_byte_spec,                 0, 3, 0, -1, env);
-  GLOBAL_NONCM_PRIM("read-bytes-line",                read_byte_line,                 0, 2, env);
-  GLOBAL_NONCM_PRIM("read-line",                      read_line,                      0, 2, env);
-  GLOBAL_NONCM_PRIM("read-string",                    sch_read_string,                1, 2, env);
-  GLOBAL_NONCM_PRIM("read-string!",                   sch_read_string_bang,           1, 4, env);
-  GLOBAL_NONCM_PRIM("peek-string",                    sch_peek_string,                2, 3, env);
-  GLOBAL_NONCM_PRIM("peek-string!",                   sch_peek_string_bang,           2, 5, env);
-  GLOBAL_NONCM_PRIM("read-bytes",                     sch_read_bytes,                 1, 2, env);
-  GLOBAL_NONCM_PRIM("read-bytes!",                    sch_read_bytes_bang,            1, 4, env);
-  GLOBAL_NONCM_PRIM("peek-bytes",                     sch_peek_bytes,                 2, 3, env);
-  GLOBAL_NONCM_PRIM("peek-bytes!",                    sch_peek_bytes_bang,            2, 5, env);
-  GLOBAL_NONCM_PRIM("read-bytes-avail!",              read_bytes_bang,                1, 4, env);
-  GLOBAL_NONCM_PRIM("read-bytes-avail!*",             read_bytes_bang_nonblock,       1, 4, env);
-  GLOBAL_NONCM_PRIM("read-bytes-avail!/enable-break", read_bytes_bang_break,          1, 4, env);
-  GLOBAL_NONCM_PRIM("peek-bytes-avail!",              peek_bytes_bang,                2, 6, env);
-  GLOBAL_NONCM_PRIM("peek-bytes-avail!*",             peek_bytes_bang_nonblock,       2, 6, env);
-  GLOBAL_NONCM_PRIM("peek-bytes-avail!/enable-break", peek_bytes_bang_break,          2, 6, env);
-  GLOBAL_NONCM_PRIM("port-provides-progress-evts?",   can_provide_progress_evt,       1, 1, env);
-  GLOBAL_NONCM_PRIM("write-bytes",                    write_bytes,                    1, 4, env);
-  GLOBAL_NONCM_PRIM("write-string",                   write_string,                   1, 4, env);
-  GLOBAL_NONCM_PRIM("write-bytes-avail",              write_bytes_avail,              1, 4, env);
-  GLOBAL_NONCM_PRIM("write-bytes-avail*",             write_bytes_avail_nonblock,     1, 4, env);
-  GLOBAL_NONCM_PRIM("write-bytes-avail/enable-break", write_bytes_avail_break,        1, 4, env);
-  GLOBAL_NONCM_PRIM("port-writes-atomic?",            can_write_atomic,               1, 1, env);
-  GLOBAL_NONCM_PRIM("port-writes-special?",           can_write_special,              1, 1, env);
-  GLOBAL_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
-  GLOBAL_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
-  GLOBAL_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
-  GLOBAL_PRIM_W_ARITY2("peek-char-or-special",           peek_char_spec,              0, 4, 0, -1, env);
-  GLOBAL_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
-  GLOBAL_PRIM_W_ARITY2("peek-byte-or-special",           peek_byte_spec,              0, 5, 0, -1, env);
-  GLOBAL_NONCM_PRIM("byte-ready?",                    byte_ready_p,                   0, 1, env);
-  GLOBAL_NONCM_PRIM("char-ready?",                    char_ready_p,                   0, 1, env);
-  GLOBAL_NONCM_PRIM("newline",                        newline,                        0, 1, env);
-  GLOBAL_NONCM_PRIM("write-char",                     write_char,                     1, 2, env);
-  GLOBAL_NONCM_PRIM("write-byte",                     write_byte,                     1, 2, env);
-  GLOBAL_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
-  GLOBAL_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
-  GLOBAL_NONCM_PRIM("progress-evt?",                  is_progress_evt,                1, 2, env);
-  GLOBAL_NONCM_PRIM("port-closed-evt",                closed_evt,                     0, 1, env);
-  GLOBAL_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
-  GLOBAL_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
-  GLOBAL_NONCM_PRIM("port-read-handler",              port_read_handler,              1, 2, env);
-  GLOBAL_NONCM_PRIM("port-display-handler",           port_display_handler,           1, 2, env);
-  GLOBAL_NONCM_PRIM("port-write-handler",             port_write_handler,             1, 2, env);
-  GLOBAL_NONCM_PRIM("port-print-handler",             port_print_handler,             1, 2, env);
-  GLOBAL_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
-  GLOBAL_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
-  GLOBAL_NONCM_PRIM("file-position*",                 scheme_file_position_star,      1, 1, env);
-  GLOBAL_NONCM_PRIM("file-truncate",                  scheme_file_truncate,           2, 2, env);
-  GLOBAL_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
-  GLOBAL_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
-  GLOBAL_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);
-  GLOBAL_NONCM_PRIM("port-file-identity",             scheme_file_identity,           1, 1, env);
-  GLOBAL_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
-  GLOBAL_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
+  ADD_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
+  ADD_PRIM_W_ARITY2("read-char-or-special",        read_char_spec,                 0, 3, 0, -1, env);
+  ADD_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
+  ADD_PRIM_W_ARITY2("read-byte-or-special",        read_byte_spec,                 0, 3, 0, -1, env);
+  ADD_NONCM_PRIM("read-bytes-line",                read_byte_line,                 0, 2, env);
+  ADD_NONCM_PRIM("read-line",                      read_line,                      0, 2, env);
+  ADD_NONCM_PRIM("read-string",                    sch_read_string,                1, 2, env);
+  ADD_NONCM_PRIM("read-string!",                   sch_read_string_bang,           1, 4, env);
+  ADD_NONCM_PRIM("peek-string",                    sch_peek_string,                2, 3, env);
+  ADD_NONCM_PRIM("peek-string!",                   sch_peek_string_bang,           2, 5, env);
+  ADD_NONCM_PRIM("read-bytes",                     sch_read_bytes,                 1, 2, env);
+  ADD_NONCM_PRIM("read-bytes!",                    sch_read_bytes_bang,            1, 4, env);
+  ADD_NONCM_PRIM("peek-bytes",                     sch_peek_bytes,                 2, 3, env);
+  ADD_NONCM_PRIM("peek-bytes!",                    sch_peek_bytes_bang,            2, 5, env);
+  ADD_NONCM_PRIM("read-bytes-avail!",              read_bytes_bang,                1, 4, env);
+  ADD_NONCM_PRIM("read-bytes-avail!*",             read_bytes_bang_nonblock,       1, 4, env);
+  ADD_NONCM_PRIM("read-bytes-avail!/enable-break", read_bytes_bang_break,          1, 4, env);
+  ADD_NONCM_PRIM("peek-bytes-avail!",              peek_bytes_bang,                2, 6, env);
+  ADD_NONCM_PRIM("peek-bytes-avail!*",             peek_bytes_bang_nonblock,       2, 6, env);
+  ADD_NONCM_PRIM("peek-bytes-avail!/enable-break", peek_bytes_bang_break,          2, 6, env);
+  ADD_NONCM_PRIM("port-provides-progress-evts?",   can_provide_progress_evt,       1, 1, env);
+  ADD_NONCM_PRIM("write-bytes",                    write_bytes,                    1, 4, env);
+  ADD_NONCM_PRIM("write-string",                   write_string,                   1, 4, env);
+  ADD_NONCM_PRIM("write-bytes-avail",              write_bytes_avail,              1, 4, env);
+  ADD_NONCM_PRIM("write-bytes-avail*",             write_bytes_avail_nonblock,     1, 4, env);
+  ADD_NONCM_PRIM("write-bytes-avail/enable-break", write_bytes_avail_break,        1, 4, env);
+  ADD_NONCM_PRIM("port-writes-atomic?",            can_write_atomic,               1, 1, env);
+  ADD_NONCM_PRIM("port-writes-special?",           can_write_special,              1, 1, env);
+  ADD_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
+  ADD_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
+  ADD_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
+  ADD_PRIM_W_ARITY2("peek-char-or-special",           peek_char_spec,              0, 4, 0, -1, env);
+  ADD_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
+  ADD_PRIM_W_ARITY2("peek-byte-or-special",           peek_byte_spec,              0, 5, 0, -1, env);
+  ADD_NONCM_PRIM("byte-ready?",                    byte_ready_p,                   0, 1, env);
+  ADD_NONCM_PRIM("char-ready?",                    char_ready_p,                   0, 1, env);
+  ADD_NONCM_PRIM("newline",                        newline,                        0, 1, env);
+  ADD_NONCM_PRIM("write-char",                     write_char,                     1, 2, env);
+  ADD_NONCM_PRIM("write-byte",                     write_byte,                     1, 2, env);
+  ADD_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
+  ADD_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
+  ADD_NONCM_PRIM("progress-evt?",                  is_progress_evt,                1, 2, env);
+  ADD_NONCM_PRIM("port-closed-evt",                closed_evt,                     0, 1, env);
+  ADD_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
+  ADD_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
+  ADD_NONCM_PRIM("port-read-handler",              port_read_handler,              1, 2, env);
+  ADD_NONCM_PRIM("port-display-handler",           port_display_handler,           1, 2, env);
+  ADD_NONCM_PRIM("port-write-handler",             port_write_handler,             1, 2, env);
+  ADD_NONCM_PRIM("port-print-handler",             port_print_handler,             1, 2, env);
+  ADD_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
+  ADD_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
+  ADD_NONCM_PRIM("file-position*",                 scheme_file_position_star,      1, 1, env);
+  ADD_NONCM_PRIM("file-truncate",                  scheme_file_truncate,           2, 2, env);
+  ADD_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
+  ADD_NONCM_PRIM("port-try-file-lock?",            scheme_file_try_lock,           2, 2, env);
+  ADD_NONCM_PRIM("port-file-unlock",               scheme_file_unlock,             1, 1, env);
+  ADD_NONCM_PRIM("port-file-identity",             scheme_file_identity,           1, 1, env);
+  ADD_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
+  ADD_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
           
   REGISTER_SO(scheme_eof_object_p_proc);
   scheme_eof_object_p_proc = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(scheme_eof_object_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                                                   | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("eof-object?", scheme_eof_object_p_proc, env);
+                                                                                   | SCHEME_PRIM_IS_OMITABLE
+                                                                                   | SCHEME_PRIM_PRODUCES_BOOL);
+  scheme_addto_prim_instance("eof-object?", scheme_eof_object_p_proc, env);
 
-  scheme_add_global_constant("write",   scheme_write_proc,    env);
-  scheme_add_global_constant("display", scheme_display_proc,  env);
-  scheme_add_global_constant("print",   scheme_print_proc,    env);
+  scheme_addto_prim_instance("write",   scheme_write_proc,    env);
+  scheme_addto_prim_instance("display", scheme_display_proc,  env);
+  scheme_addto_prim_instance("print",   scheme_print_proc,    env);
 
-  GLOBAL_IMMED_PRIM("pipe-content-length",              pipe_length,                1, 1, env);
+  ADD_IMMED_PRIM("pipe-content-length",              pipe_length,                1, 1, env);
 
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
     = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
 }
 
+void scheme_init_param_symbol()
+{
+  REGISTER_SO(initial_compiled_file_check_symbol);
+  if (compiled_file_check == SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS)
+    initial_compiled_file_check_symbol = scheme_intern_symbol("modify-seconds");
+  else
+    initial_compiled_file_check_symbol = scheme_intern_symbol("exists");
+}
 
 void scheme_init_port_fun_config(void)
 {
   scheme_set_root_param(MZCONFIG_LOAD_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_WRITE_DIRECTORY, scheme_false);
-  if (initial_compiled_file_paths)
-    scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, initial_compiled_file_paths);
-  else
-    scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
-  if (initial_compiled_file_roots)
-    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, initial_compiled_file_roots);
-  else
-    scheme_set_root_param(MZCONFIG_USE_COMPILED_ROOTS, scheme_make_pair(scheme_intern_symbol("same"), scheme_null));
-  scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
-  scheme_set_root_param(MZCONFIG_USE_LINK_PATHS, (scheme_ignore_link_paths ? scheme_false : scheme_true));
-
-  {
-    Scheme_Object *dlh;
-    dlh = scheme_make_prim_w_arity2(default_load, "default-load-handler", 2, 2, 0, -1);
-    scheme_set_root_param(MZCONFIG_LOAD_HANDLER, dlh);
-  }
 
   scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER, scheme_default_global_print_handler);
-
+  
   /* Use dummy port: */
   REGISTER_SO(dummy_input_port);
   REGISTER_SO(dummy_output_port);
   dummy_input_port = scheme_make_byte_string_input_port("");
   dummy_output_port = scheme_make_null_output_port(1);
+}
+
+static void set_param(const char *name, Scheme_Object *val)
+{
+  Scheme_Object *param, *a[1];
+  param = scheme_get_startup_export(name);
+  a[0] = val;
+  (void)_scheme_apply_multi(param, 1, a);
+}
+
+static Scheme_Object *get_param(const char *name)
+{
+  Scheme_Object *param;
+  param = scheme_get_startup_export(name);
+  return _scheme_apply(param, 0, NULL);
+}
+
+void scheme_init_resolver_config(void)
+{
+  set_param("use-compiled-file-check", initial_compiled_file_check_symbol);
+  if (initial_compiled_file_paths)
+    set_param("use-compiled-file-paths", initial_compiled_file_paths);
+  else
+    set_param("use-compiled-file-paths", scheme_make_pair(scheme_make_path("compiled"), scheme_null));
+  if (initial_compiled_file_roots)
+    set_param("current-compiled-file-roots", initial_compiled_file_roots);
+  else
+    set_param("current-compiled-file-roots", scheme_make_pair(scheme_intern_symbol("same"), scheme_null));
+  set_param("use-user-specific-search-paths", (scheme_ignore_user_paths ? scheme_false : scheme_true));
+  set_param("use-collection-link-paths", (scheme_ignore_link_paths ? scheme_false : scheme_true));
+}
+
+Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[])
+{
+  if (argc) {
+    set_param("current-library-collection-paths", argv[0]);
+    return scheme_void;
+  } else
+    return get_param("current-library-collection-paths");
+}
+
+Scheme_Object *scheme_current_library_collection_links(int argc, Scheme_Object *argv[])
+{
+  if (argc) {
+    set_param("current-library-collection-links", argv[0]);
+    return scheme_void;
+  } else
+    return get_param("current-library-collection-links");
+}
+
+Scheme_Object *scheme_compiled_file_roots(int argc, Scheme_Object *argv[])
+{
+  if (argc) {
+    set_param("current-compiled-file-roots", argv[0]);
+    return scheme_void;
+  } else
+    return get_param("current-compiled-file-roots");
 }
 
 void scheme_set_compiled_file_paths(Scheme_Object *list)
@@ -394,6 +436,11 @@ void scheme_set_compiled_file_roots(Scheme_Object *list)
   if (!initial_compiled_file_roots)
     REGISTER_SO(initial_compiled_file_roots);
   initial_compiled_file_roots = list;
+}
+
+void scheme_set_compiled_file_check(int c)
+{
+  compiled_file_check = c;
 }
 
 /*========================================================================*/
@@ -2876,162 +2923,10 @@ static Scheme_Object *sch_default_read_handler(void *ignore, int argc, Scheme_Ob
   else
     src = NULL;
 
-  return scheme_internal_read(argv[0], src, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
-}
-
-static int extract_recur_args(const char *who, int argc, Scheme_Object **argv, int delta, 
-                              Scheme_Object **_readtable, int *_recur_graph)
-{
-  int pre_char = -1;
-
-  if (argc > delta + 1) {
-    if (SCHEME_TRUEP(argv[delta + 1])) {
-      if (!SCHEME_CHARP(argv[delta + 1]))
-	scheme_wrong_contract(who, "(or/c char? #f)", delta + 1, argc, argv);
-      pre_char = SCHEME_CHAR_VAL(argv[delta + 1]);
-    }
-    if (argc > delta + 2) {
-      Scheme_Object *readtable;
-      readtable = argv[delta + 2];
-      if (SCHEME_TRUEP(readtable) && !SAME_TYPE(scheme_readtable_type, SCHEME_TYPE(readtable))) {
-	scheme_wrong_contract(who, "(or/c readtable? #f)", delta + 2, argc, argv);
-      }
-      *_readtable = readtable;
-      if (argc > delta + 3) {
-        *_recur_graph = SCHEME_TRUEP(argv[delta + 3]);
-      }
-    }
-  }
-
-  return pre_char;
-}
-
-static Scheme_Object *do_read_f(const char *who, int argc, Scheme_Object *argv[], int recur)
-{
-  Scheme_Object *port, *readtable = NULL;
-  int pre_char = -1, recur_graph = recur;
-  Scheme_Input_Port *ip;
-
-  if (argc && !SCHEME_INPUT_PORTP(argv[0]))
-    scheme_wrong_contract(who, "input-port?", 0, argc, argv);
-
-  if (argc)
-    port = argv[0];
+  if (src)
+    return scheme_read_syntax(argv[0], src);
   else
-    port = CURRENT_INPUT_PORT(scheme_current_config());
-
-  if (recur) {
-    pre_char = extract_recur_args(who, argc, argv, 0, &readtable, &recur_graph);
-  }
-
-  ip = scheme_input_port_record(port);
-
-  if (ip->read_handler && !recur) {
-    Scheme_Object *o[1];
-    o[0] = port;
-    return _scheme_apply(ip->read_handler, 1, o);
-  } else {
-    if (port == scheme_orig_stdin_port)
-      scheme_flush_orig_outputs();
-
-    return scheme_internal_read(port, NULL, -1, 0,
-                                recur_graph, recur, 
-                                pre_char, readtable, 
-                                NULL, NULL, NULL);
-  }
-}
-
-static Scheme_Object *read_f(int argc, Scheme_Object *argv[])
-{
-  return do_read_f("read", argc, argv, 0);
-}
-
-static Scheme_Object *read_recur_f(int argc, Scheme_Object *argv[])
-{
-  return do_read_f("read/recursive", argc, argv, 1);
-}
-
-static Scheme_Object *do_read_syntax_f(const char *who, int argc, Scheme_Object *argv[], int recur)
-{
-  Scheme_Object *port, *readtable = NULL;
-  int pre_char = -1, recur_graph = recur;
-  Scheme_Input_Port *ip;
-
-  if ((argc > 1) && !SCHEME_INPUT_PORTP(argv[1]))
-    scheme_wrong_contract(who, "input-port?", 1, argc, argv);
-
-  if (argc > 1)
-    port = argv[1];
-  else
-    port = CURRENT_INPUT_PORT(scheme_current_config());
-
-  if (recur) {
-    pre_char = extract_recur_args(who, argc, argv, 1, &readtable, &recur_graph);
-  }
-  
-  ip = scheme_input_port_record(port);
-
-  if (ip->read_handler && !recur) {
-    Scheme_Object *o[2], *result;
-    o[0] = port;
-    o[1] = (argc ? argv[0] : ip->name);
-
-    result = _scheme_apply(ip->read_handler, 2, o);
-    if (SCHEME_STXP(result) || SCHEME_EOFP(result))
-      return result;
-    else {
-      o[0] = result;
-      /* -1 for argument count indicates "result" */
-      scheme_wrong_contract("read handler for read-syntax", "syntax?", 0, -1, o);
-      return NULL;
-    }
-  } else {
-    Scheme_Object *src;
-
-    src = (argc ? argv[0] : ip->name);
-
-    if (port == scheme_orig_stdin_port)
-      scheme_flush_orig_outputs();
-
-    return scheme_internal_read(port, src, -1, 0,
-                                recur, recur_graph,
-                                pre_char, readtable, 
-                                NULL, NULL, NULL);
-  }
-}
-
-static Scheme_Object *read_syntax_f(int argc, Scheme_Object *argv[])
-{
-  return do_read_syntax_f("read-syntax", argc, argv, 0);
-}
-
-static Scheme_Object *read_syntax_recur_f(int argc, Scheme_Object *argv[])
-{
-  return do_read_syntax_f("read-syntax/recursive", argc, argv, 1);
-}
-
-static Scheme_Object *read_language(int argc, Scheme_Object **argv)
-{
-  Scheme_Object *port, *v, *fail_thunk = NULL;
-
-  if (argc > 0) {
-    port = argv[0];
-    if (!SCHEME_INPUT_PORTP(port))
-      scheme_wrong_contract("read-language", "input-port?", 0, argc, argv);
-    if (argc > 1) {
-      scheme_check_proc_arity("read-language", 0, 1, argc, argv);
-      fail_thunk = argv[1];
-    }
-  } else {
-    port = CURRENT_INPUT_PORT(scheme_current_config());
-  }
-  
-  v = scheme_read_language(port, !!fail_thunk);
-
-  if (SCHEME_VOIDP(v))
-    return _scheme_tail_apply(fail_thunk, 0, NULL);
-  
-  return v;
+    return scheme_read(argv[0]);
 }
 
 static Scheme_Object *
@@ -3090,14 +2985,12 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
     else if (!scheme_fast_check_arity(spec_wrap, 1))
       scheme_check_proc_arity2(name, 1, pos, argc, argv, 1);
     pos++;
-    if (argc > pos) {
+    if (argc > pos)
       src = argv[pos++];
-      if (SCHEME_FALSEP(src))
-        src = NULL;
-    } else
-      src = NULL;
+    else
+      src = scheme_false;
   } else {
-    src = NULL;
+    src = scheme_false;
     spec_wrap = NULL;
   }
 
@@ -4490,555 +4383,6 @@ static Scheme_Object *filesystem_change_evt_cancel(int argc, Scheme_Object **arg
   return scheme_void;
 }
 
-static intptr_t get_number(Scheme_Object *port, intptr_t pos)
-{
-  unsigned char buffer[4];
-  intptr_t got, orig;
-
-  orig = scheme_set_file_position(port, -1);
-  scheme_set_file_position(port, pos);
-
-  got = scheme_get_byte_string("default-load-handler",
-                               port,
-                               (char *)buffer, 0, 4,
-                               0, 0, scheme_make_integer(0));
-
-  (void)scheme_set_file_position(port, orig);
-
-  if (got != 4)
-    return 0;
-
-  return (buffer[0] | (buffer[1] << 8) | (buffer[2] << 16) | (buffer[3] << 24));
-}
-
-static char *get_bytes(Scheme_Object *port, intptr_t pos, intptr_t len)
-{
-  char *s;
-  intptr_t orig;
-
-  s = scheme_malloc_atomic(len + 1);
-  s[len] = 0;
-
-  orig = scheme_set_file_position(port, -1);
-  scheme_set_file_position(port, pos);
-
-  scheme_get_byte_string("default-load-handler",
-                         port,
-                         (char *)s, 0, len,
-                         0, 0, scheme_make_integer(0));
-
-  (void)scheme_set_file_position(port, orig);
-  
-  return s;
-}
-
-typedef struct {
-  MZTAG_IF_REQUIRED
-  Scheme_Config *config;
-  Scheme_Object *port;
-  Scheme_Thread *p;
-  Scheme_Object *stxsrc;
-  Scheme_Object *expected_module;
-} LoadHandlerData;
-
-static void post_load_handler(void *data)
-{
-  LoadHandlerData *lhd = (LoadHandlerData *)data;
-
-  scheme_close_input_port((Scheme_Object *)lhd->port);
-}
-
-static Scheme_Object *do_load_handler(void *data)
-{
-  LoadHandlerData *lhd = (LoadHandlerData *)data;
-  Scheme_Object *port = lhd->port;
-  Scheme_Thread *p = lhd->p;
-  Scheme_Config *config = lhd->config;
-  Scheme_Object *last_val = scheme_void, *obj, **save_array = NULL, *modname;
-  Scheme_Env *genv;
-  int save_count = 0, got_one = 0, as_module, check_module_name = 0, skip_no_more_check = 0;
-
-  modname = lhd->expected_module;
-
-  if (SCHEME_TRUEP(modname)) {
-    /* Look for a module directory: */
-    intptr_t got;
-    int vers_size, dir_header_size;
-#   define DIR_HEADER_SIZE (3 + 20 + 16)
-    char buffer[DIR_HEADER_SIZE];
-
-    vers_size = strlen(MZSCHEME_VERSION);
-    dir_header_size = 4 + vers_size;
-    if (dir_header_size >= DIR_HEADER_SIZE) 
-      scheme_signal_error("internal error: buffer size mismatch");
-    got = scheme_get_byte_string("default-load-handler",
-                                 port,
-                                 buffer, 0, dir_header_size,
-                                 0, 1, scheme_make_integer(0));
-
-    if ((got == dir_header_size)
-        && (buffer[0] == '#')
-        && (buffer[1] == '~')
-        && (buffer[2] == vers_size)
-        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))
-        && (buffer[3 + vers_size] == 'D')) {    
-      /* File starts with a directory. The directory is a balanced binary search tree,
-         where each node has the shape 
-           <name-len> <name-bytes> <mod-pos> <mod-len> <left-pos> <right-pos>
-         and a 0 position for <left-pos> or <right-pos> means no child. */
-      char *find_name, *s;
-      intptr_t namelen, i, name_size, pos, offset = 0, rellen;
-
-      if (SCHEME_PAIRP(modname))
-        find_name = scheme_submodule_path_to_string(SCHEME_CDR(modname), &namelen);
-      else {
-        find_name = "";
-        namelen = 0;
-      }
-
-      pos = dir_header_size + 4 /* skip total-module count */;
-      
-      while (pos) {
-        name_size = get_number(port, pos);
-        s = get_bytes(port, pos + 4, name_size);
-        if ((name_size == namelen) && !strncmp(find_name, s, name_size)) {
-          /* found it */
-          offset = get_number(port, pos + 4 + name_size);
-          break;
-        }
-        /* try left or right? */
-        rellen = namelen;
-        for (i = 0; (i < rellen) && (i < name_size); i++) {
-          if (find_name[i] != s[i]) {
-            if (((unsigned char *)find_name)[i] < ((unsigned char *)s)[i])
-              rellen = 0;
-            else
-              rellen = name_size + 1;
-            break;
-          }
-        }
-        if (rellen < name_size)
-          pos = get_number(port, pos + 12 + name_size);
-        else
-          pos = get_number(port, pos + 16 + name_size);
-      }
-
-      if (offset) {
-        scheme_set_file_position(port, offset);
-        if (!SCHEME_SYMBOLP(modname))
-          modname = SCHEME_CAR(SCHEME_CDR(modname));
-        skip_no_more_check = 1;
-      } else if (SCHEME_PAIRP(modname)) {
-        /* don't complain if a submodule isn't found */
-        return scheme_void;
-      }
-    }
-  } 
-
-  if (SCHEME_PAIRP(modname)) {
-    modname = SCHEME_CAR(modname);
-
-    if (SCHEME_FALSEP(modname)) {
-      /* caller says the main module is already loaded, 
-         so don't reload for submodules */
-      return scheme_void;
-    }
-  }
-
-  if (scheme_module_code_cache && SCHEME_TRUEP(modname)) {
-    intptr_t got;
-    int vers_size, hash_header_size;
-#   define HASH_HEADER_SIZE (4 + 20 + 16)
-    char buffer[HASH_HEADER_SIZE];
-
-    vers_size = strlen(MZSCHEME_VERSION);
-    hash_header_size = 4 + vers_size + 20;
-    if (hash_header_size >= HASH_HEADER_SIZE) 
-      scheme_signal_error("internal error: buffer size mismatch");
-    got = scheme_get_byte_string("default-load-handler",
-                                 port,
-                                 buffer, 0, hash_header_size,
-                                 0, 1, scheme_make_integer(0));
-
-    obj = NULL;
-    if ((got == hash_header_size)
-        && (buffer[0] == '#')
-        && (buffer[1] == '~')
-        && (buffer[2] == vers_size)
-        && (!scheme_strncmp(buffer + 3, MZSCHEME_VERSION, vers_size))
-        && (buffer[3 + vers_size] == 'T')) {
-      int i;
-      for (i = 0; i < 20; i++) {
-        if (buffer[4 + vers_size + i])
-          break;
-      }
-      if (i < 20) {
-        obj = scheme_make_sized_byte_string(buffer + 4 + vers_size, 20, 1);
-      }
-    }
-
-
-    if (obj) {
-      Scheme_Object *dir;
-      dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
-      if (SCHEME_TRUEP(dir))
-        dir = scheme_path_to_directory_path(dir);
-      obj = scheme_make_pair(obj, dir);
-      obj = scheme_lookup_in_table(scheme_module_code_cache, (const char *)obj);
-      if (obj)
-        obj = scheme_ephemeron_value(obj);
-      if (obj) {
-        /* Synthesize a wrapper to pass through `eval': */
-        Scheme_Compilation_Top *top;
-
-        top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
-        top->iso.so.type = scheme_compilation_top_type;
-        top->code = obj;
-        top->prefix = NULL; /* indicates a wrapper */
-
-        obj = (Scheme_Object *)top;
-        
-        return _scheme_apply_multi(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),
-                                   1, &obj);
-      }
-    }
-  }
-
-  while ((obj = scheme_internal_read(port, lhd->stxsrc, -1, 0, 0, 0, -1, NULL, 
-                                     NULL, NULL, NULL))
-	 && !SCHEME_EOFP(obj)) {
-    save_array = NULL;
-    got_one = 1;
-
-    /* ... begin special support for module loading ... */
-
-    genv = scheme_get_env(config);
-    as_module = 0;
-
-    if (SCHEME_SYMBOLP(modname)) {
-      /* Must be of the form `(module <somename> ...)',possibly compiled. */
-      /* Also, file should have no more expressions. */
-      Scheme_Object *a, *d, *other = NULL;
-      Scheme_Module *m;
-
-      d = obj;
-
-      m = scheme_extract_compiled_module(SCHEME_STX_VAL(d));
-      if (m) {
-        if (check_module_name) {
-          if (!scheme_resolved_module_path_value_matches(m->modname, modname)) {
-            other = m->modname;
-            d = NULL;
-          }
-        }
-      } else {
-	if (!SCHEME_STX_PAIRP(d))
-	  d = NULL;
-	else {
-	  a = SCHEME_STX_CAR(d);
-	  if (!SAME_OBJ(SCHEME_STX_VAL(a), module_symbol))
-	    d = NULL;
-	  else {
-	    d = SCHEME_STX_CDR(d);
-	    if (!SCHEME_STX_PAIRP(d))
-	      d = NULL;
-	    else {
-	      a = SCHEME_STX_CAR(d);
-	      other = SCHEME_STX_VAL(a);
-              if (check_module_name) {
-                if (!SAME_OBJ(other, modname))
-                  d = NULL;
-              }
-	    }
-	  }
-	}
-      }
-
-      /* If d is NULL, shape was wrong */
-      if (!d) {
-        Scheme_Object *err_msg;
-	if (!other || !SCHEME_SYMBOLP(other))
-	  err_msg = scheme_make_byte_string("something else");
-	else {
-	  char *s, *t;
-	  intptr_t len, slen;
-
-	  t = "declaration for `";
-	  len = strlen(t);
-	  slen = SCHEME_SYM_LEN(other);
-
-	  s = (char *)scheme_malloc_atomic(len + slen + 2);
-	  memcpy(s, t, len);
-	  memcpy(s + len, SCHEME_SYM_VAL(other), slen);
-	  s[len + slen] = '\'';
-	  s[len + slen + 1]= 0;
-
-	  err_msg = scheme_make_sized_byte_string(s, len + slen + 1, 0);
-	}
-
-        {
-          Scheme_Input_Port *ip;
-          ip = scheme_input_port_record(port);
-          scheme_raise_exn(MZEXN_FAIL,
-                           "default-load-handler: expected a `module' declaration\n"
-                           "  found: %T\n"
-                           "  in: %V",
-                           err_msg,
-                           ip->name);
-        }
-
-	return NULL;
-      }
-
-      /* Check no more expressions: */
-      if (!skip_no_more_check) {
-        d = scheme_internal_read(port, lhd->stxsrc, -1, 0, 0, 0, -1, NULL, NULL, NULL, NULL);
-        if (!SCHEME_EOFP(d)) {
-          Scheme_Input_Port *ip;
-          ip = scheme_input_port_record(port);
-          scheme_raise_exn(MZEXN_FAIL,
-                           "default-load-handler: expected only a `module' declaration;\n"
-                           " found an extra form\n"
-                           "  in: %V",
-                           modname,
-                           ip->name);
-
-          return NULL;
-        }
-      }
-
-      if (!m) {
-	/* Replace `module' in read expression with one bound to #%kernel's `module': */
-	a = SCHEME_STX_CAR(obj);
-	d = SCHEME_STX_CDR(obj);
-	a = scheme_datum_to_syntax(module_symbol, a, 
-                                   scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
-                                   0, 1);
-	d = scheme_make_pair(a, d);
-	obj = scheme_datum_to_syntax(d, obj, scheme_false, 0, 1);
-        as_module = 1;
-      }
-    } else {
-      /* Add #%top-interaction, since we're in non-module mode: */
-      Scheme_Object *a;
-      a = scheme_make_pair(scheme_intern_symbol("#%top-interaction"), obj);
-      obj = scheme_datum_to_syntax(a, obj, scheme_false, 0, 0);
-    }
-
-    /* ... end special support for module loading ... */
-
-    if (!as_module && genv->stx_context)
-      obj = scheme_top_introduce(obj, genv);
-
-    last_val = _scheme_apply_multi_with_prompt(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),
-                                               1, &obj);
-
-    /* If multi, we must save then: */
-    if (last_val == SCHEME_MULTIPLE_VALUES) {
-      save_array = p->ku.multiple.array;
-      save_count = p->ku.multiple.count;
-
-      if (SAME_OBJ(save_array, p->values_buffer))
-	p->values_buffer = NULL;
-    }
-
-    if (SCHEME_SYMBOLP(modname))
-      break;
-  }
-
-  if (SCHEME_SYMBOLP(modname) && !got_one) {
-    Scheme_Input_Port *ip;
-    ip = scheme_input_port_record(port);
-    scheme_raise_exn(MZEXN_FAIL,
-		     "default-load-handler: expected a `module' declaration;\n"
-                     " found end-of-file\n"
-                     "  in: %V",
-		     modname,
-		     ip->name);
-
-    return NULL;
-  }
-
-  if (save_array) {
-    p->ku.multiple.array = save_array;
-    p->ku.multiple.count = save_count;
-  }
-
-  return last_val;
-}
-
-static int nonempty_symbol_list(Scheme_Object *p)
-{
-  if (!SCHEME_PAIRP(p)) return 0;
-  while (SCHEME_PAIRP(p)) {
-    if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) return 0;
-    p = SCHEME_CDR(p);
-  }
-  return SCHEME_NULLP(p);
-}
-
-static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *port, *name, *expected_module, *v;
-  int use_delay_load;
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Config *config;
-  LoadHandlerData *lhd;
-  Scheme_Cont_Frame_Data cframe;
-
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_contract("default-load-handler", "path-string?", 0, argc, argv);
-  expected_module = argv[1];
-  if (!SCHEME_FALSEP(expected_module) 
-      && !SCHEME_SYMBOLP(expected_module)
-      && (!SCHEME_PAIRP(expected_module)
-          || (!SCHEME_FALSEP(SCHEME_CAR(expected_module))
-              && !SCHEME_SYMBOLP(SCHEME_CAR(expected_module)))
-          || !nonempty_symbol_list(SCHEME_CDR(expected_module))))
-    scheme_wrong_contract("default-load-handler", 
-                          "(or/c #f symbol? (cons/c (or/c #f symbol?) (non-empty-listof symbol?)))",
-                          1, argc, argv);
-
-  port = scheme_do_open_input_file("default-load-handler", 0, 1, argv, 0, SCHEME_TRUEP(expected_module));
-
-  /* Turn on line/column counting, unless it's a .zo file: */
-  if (SCHEME_PATHP(argv[0])) {
-    intptr_t len;
-
-    len = SCHEME_BYTE_STRLEN_VAL(argv[0]);
-    if ((len < 3)
-	|| (SCHEME_BYTE_STR_VAL(argv[0])[len - 3] != '.')
-	|| (SCHEME_BYTE_STR_VAL(argv[0])[len - 2] != 'z')
-	|| (SCHEME_BYTE_STR_VAL(argv[0])[len - 1] != 'o'))
-      scheme_count_lines(port);
-  } else {
-    intptr_t len;
-
-    len = SCHEME_CHAR_STRLEN_VAL(argv[0]);
-    if ((len < 3)
-	|| (SCHEME_CHAR_STR_VAL(argv[0])[len - 3] != '.')
-	|| (SCHEME_CHAR_STR_VAL(argv[0])[len - 2] != 'z')
-	|| (SCHEME_CHAR_STR_VAL(argv[0])[len - 1] != 'o'))
-      scheme_count_lines(port);
-  }
-
-  config = scheme_current_config();
-
-  v = scheme_get_param(config, MZCONFIG_LOAD_DELAY_ENABLED);
-  use_delay_load = SCHEME_TRUEP(v);
-
-  if (SCHEME_TRUEP(expected_module)) {
-    config = scheme_extend_config(config, MZCONFIG_CASE_SENS, 
-                                  (scheme_case_sensitive ? scheme_true : scheme_false)); /* for legacy code */
-    config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_PARENS, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_PARENS, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_GRAPH, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_BOX, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_PIPE_QUOTE, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_DOT, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_INFIX_DOT, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_QUASI, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_READTABLE, scheme_false);
-    config = scheme_extend_config(config, MZCONFIG_READ_CDOT, scheme_false);
-    config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED, scheme_false);
-    config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_TAGGED, scheme_false);
-  } else {
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);
-    config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
-  }
-
-  if (use_delay_load) {
-    v = scheme_path_to_complete_path(argv[0], NULL);
-    config = scheme_extend_config(config, MZCONFIG_DELAY_LOAD_INFO, v);
-  }
-
-  lhd = MALLOC_ONE_RT(LoadHandlerData);
-#ifdef MZTAG_REQUIRED
-  lhd->type = scheme_rt_load_handler_data;
-#endif
-  lhd->p = p;
-  lhd->config = config;
-  lhd->port = port;
-  name = scheme_input_port_record(port)->name;
-  lhd->stxsrc = name;
-  lhd->expected_module = expected_module;
-
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-
-  v = scheme_dynamic_wind(NULL, do_load_handler, post_load_handler,
-			  NULL, (void *)lhd);
-
-  scheme_pop_continuation_frame(&cframe);
-
-  return v;
-}
-
-Scheme_Object *scheme_load_with_clrd(int argc, Scheme_Object *argv[],
-				     char *who, int handler_param)
-{
-  const char *filename;
-  Scheme_Object *load_dir, *a[2], *filename_path, *v;
-  Scheme_Cont_Frame_Data cframe;
-  Scheme_Config *config;
-
-  if (!SCHEME_PATH_STRINGP(argv[0]))
-    scheme_wrong_contract(who, "path-string?", 0, argc, argv);
-
-  filename = scheme_expand_string_filename(argv[0],
-					   who,
-					   NULL,
-					   SCHEME_GUARD_FILE_READ);
-
-  /* Calculate load directory */
-  load_dir = scheme_get_file_directory(filename);
-
-  filename_path = scheme_make_sized_path((char *)filename, -1, 0);
-
-  config = scheme_extend_config(scheme_current_config(),
-				MZCONFIG_LOAD_DIRECTORY,
-				load_dir);
-
-  scheme_push_continuation_frame(&cframe);
-  scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
-
-  a[0] = filename_path;
-  a[1] = scheme_false;
-  v = _scheme_apply_multi(scheme_get_param(config, handler_param), 2, a);
-
-  scheme_pop_continuation_frame(&cframe);
-
-  return v;
-}
-
-static Scheme_Object *load(int argc, Scheme_Object *argv[])
-{
-  return scheme_load_with_clrd(argc, argv, "load", MZCONFIG_LOAD_HANDLER);
-}
-
-static Scheme_Object *
-current_load(int argc, Scheme_Object *argv[])
-{
-  return scheme_param_config("current-load",
-			     scheme_make_integer(MZCONFIG_LOAD_HANDLER),
-			     argc, argv,
-			     2, NULL, NULL, 0);
-}
-
-static Scheme_Object *
-current_load_use_compiled(int argc, Scheme_Object *argv[])
-{
-  return scheme_param_config("current-load/use-compiled",
-			     scheme_make_integer(MZCONFIG_LOAD_COMPILED_HANDLER),
-			     argc, argv,
-			     2, NULL, NULL, 0);
-}
-
 static Scheme_Object *abs_directory_p(const char *name, Scheme_Object *d)
 {
   if (!SCHEME_FALSEP(d)) {
@@ -5132,7 +4476,7 @@ load_on_demand_enabled(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_load(const char *file)
 {
-  Scheme_Object *p[1];
+  Scheme_Object *p[1], *load_proc;
   mz_jmp_buf newbuf, * volatile savebuf;
   Scheme_Object * volatile val;
 
@@ -5142,8 +4486,8 @@ Scheme_Object *scheme_load(const char *file)
   if (scheme_setjmp(newbuf)) {
     val = NULL;
   } else {
-    val = scheme_apply_multi(scheme_make_prim((Scheme_Prim *)load),
-                             1, p);
+    load_proc = scheme_get_startup_export("load");
+    val = scheme_apply_multi(load_proc, 1, p);
   }
   scheme_current_thread->error_buf = savebuf;
 
@@ -5181,7 +4525,6 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_rt_indexed_string, mark_indexed_string);
-  GC_REG_TRAV(scheme_rt_load_handler_data, mark_load_handler_data);
   GC_REG_TRAV(scheme_rt_user_input, mark_user_input);
   GC_REG_TRAV(scheme_rt_user_output, mark_user_output);
 }

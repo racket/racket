@@ -15,6 +15,11 @@ tgt="../rktio/configure"
 echo "Creating $tgt from $src"
 autoconf "$src" > "$tgt"
 chmod +x "$tgt"
+src="../cs/c/configure.ac"
+tgt="../cs/c/configure"
+echo "Creating $tgt from $src"
+autoconf "$src" > "$tgt"
+chmod +x "$tgt"
 exit 0
 |#
 #lang racket/base

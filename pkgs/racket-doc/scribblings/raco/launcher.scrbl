@@ -55,9 +55,9 @@ the following additional associations apply to launchers:
        Racket or GRacket binary, like @exec{raco.exe}. No other
        @racket[aux] associations are used for an old-style launcher.}
 
- @item{@racket['exe-name] (Mac OS, @racket['script-3m] or
-       @racket['script-cgc] variant) --- provides the base name for a
-       @racket['3m]-/@racket['cgc]-variant launcher, which the script
+ @item{@racket['exe-name] (Mac OS, @racket['script-3m],
+       @racket['script-cgc] or @racket['script-cs] variant) --- provides the base name for a
+       @racket['3m]-/@racket['cgc]-/@racket['cs]-variant launcher, which the script
        will call ignoring @racket[args]. If this name is not provided,
        the script will go through the GRacket executable as usual.}
 
@@ -527,24 +527,24 @@ are as follows:
 A parameter that indicates a variant of Racket or GRacket to use for
 launcher creation and for generating launcher names. The default is
 the result of @racket[(system-type 'gc)]. On Unix and Windows, the
-possibilities are @racket['cgc] and @racket['3m]. On Mac OS, the
-@racket['script-3m] and @racket['script-cgc] variants are also
+possibilities are @racket['cgc], @racket['3m], and @racket['cs]. On Mac OS, the
+@racket['script-cgc], @racket['script-3m], and @racket['script-cs] variants are also
 available for GRacket launchers.}
 
 @defproc[(available-gracket-variants) (listof symbol?)]{
 
 Returns a list of symbols corresponding to available variants of GRacket
 in the current Racket installation. The list normally includes at
-least one of @racket['3m] or @racket['cgc]--- whichever is the result
-of @racket[(system-type 'gc)]---and may include the other, as well as
-@racket['script-3m] and/or @racket['script-cgc] on Mac OS.}
+least one of @racket['3m], @racket['cgc], or @racket['cs]--- whichever is the result
+of @racket[(system-type 'gc)]---and may include the others, as well as
+@racket['script-3m], @racket['script-cgc], and/or @racket['script-cs] on Mac OS.}
 
 @defproc[(available-racket-variants) (listof symbol?)]{
 
 Returns a list of symbols corresponding to available variants of
 Racket in the current Racket installation. The list normally
-includes at least one of @racket['3m] or @racket['cgc]---whichever is
-the result of @racket[(system-type 'gc)]---and may include the other.}
+includes at least one of @racket['3m], @racket['cgc], or @racket['cs]---whichever is
+the result of @racket[(system-type 'gc)]---and may include the others.}
 
 @deftogether[(
 @defproc[(mred-launcher-up-to-date? [dest path-string?]
