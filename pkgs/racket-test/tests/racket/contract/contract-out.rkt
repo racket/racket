@@ -1373,7 +1373,7 @@
                 make-point)))
    (λ (x)
      (and (exn:fail:syntax? x)
-          (regexp-match #rx"unbound identifier .* make-point" (exn-message x)))))
+          (regexp-match #rx"unbound identifier.* make-point" (exn-message x)))))
   
   (contract-error-test
    'contract-error-test20
