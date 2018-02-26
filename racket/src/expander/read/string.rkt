@@ -171,17 +171,19 @@
   
   ;; Parse terminator
   (define full-terminator
-    (let loop ()
-      (define c (read-char/special in config source))
-      (cond
-       [(eof-object? c)
-        (reader-error in config #:due-to c
-                      "found end-of-file after `#<<` and before a newline")]
-       [(not (char? c))
-        (reader-error in config #:due-to c
-                      "found non-character while reading `#<<`")]
-       [(char=? c #\newline) null]
-       [else (cons c (loop))])))
+    (cons
+     #\newline
+     (let loop ()
+       (define c (read-char/special in config source))
+       (cond
+         [(eof-object? c)
+          (reader-error in config #:due-to c
+                        "found end-of-file after `#<<` and before a newline")]
+         [(not (char? c))
+          (reader-error in config #:due-to c
+                        "found non-character while reading `#<<`")]
+         [(char=? c #\newline) null]
+         [else (cons c (loop))]))))
   
   ;; Get string content
   (let loop ([terminator full-terminator] [terminator-accum null])

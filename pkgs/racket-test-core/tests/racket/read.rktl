@@ -213,6 +213,12 @@
 (err/rt-test (readstr "\"\\uD800\\uDD\"") exn:fail:read?)
 (err/rt-test (readstr "\"\\uD800\\uDD1\"") exn:fail:read?)
 
+(test "abc" readstr "#<<EOS\nabc\nEOS\n")
+(test "abc" readstr "#<<EOS\nabc\nEOS")
+(test "ok\r\nmore\r" readstr "#<<EOS\r\nok\r\nmore\r\nEOS\r")
+(err/rt-test (readstr "#<<EOS\nabc\nEO") exn:fail:read?)
+(err/rt-test (readstr "#<<EOS\r\nabc\nEOS") exn:fail:read?)
+
 (test (bytes 7) readstr "#\"\\a\"")
 (test (bytes 8) readstr "#\"\\b\"")
 (test (bytes 9) readstr "#\"\\t\"")
