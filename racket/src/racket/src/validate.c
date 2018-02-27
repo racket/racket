@@ -509,7 +509,7 @@ static void ref_validate(Scheme_Object *data, Mz_CPort *port,
                          struct Validate_Clearing *vc, int tailpos,
                          Scheme_Hash_Tree *procs)
 {
-  tl_timestamp++; /* allows (define x (#%variable-reference x)) */
+  tl_timestamp = tl_timestamp + 1; /* allows (define x (#%variable-reference x)) */
   
   if (!SCHEME_FALSEP(SCHEME_PTR1_VAL(data)))
     validate_toplevel(SCHEME_PTR1_VAL(data), port, stack, tls, depth, delta, 
