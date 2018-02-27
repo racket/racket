@@ -102,7 +102,7 @@
        (log-expand ctx 'next)
        (define rebuild-clause (keep-as-needed ctx clause))
        (define-values (exp-formals exp-body)
-         (lambda-clause-expander s disarmed-s formals body ctx 'case-lambda-renames))
+         (lambda-clause-expander s disarmed-s formals body ctx 'lambda-renames))
        (if (expand-context-to-parsed? ctx)
            (list exp-formals exp-body)
            (rebuild rebuild-clause `[,exp-formals ,@exp-body]))))

@@ -115,7 +115,7 @@
 
    (when as-transformer? (log-expand local-ctx 'phase-up))
    (log-expand local-ctx 'local-pre input-s)
-   (when stop-ids (log-expand local-ctx 'start-expand))
+   (when stop-ids (log-expand local-ctx 'start))
    
    (define output-s (cond
                      [(and as-transformer? capture-lifts?)

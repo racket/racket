@@ -35,129 +35,104 @@
   (log-expand* ctx #:when #t [key arg ...]))
 
 (define (call-expand-observe obs key . args)
-  (cond [(hash-ref key->number+arity key)
-         => (lambda (number+arity)
-              (let ([arity (cdr number+arity)])
-                (unless (or (not arity) (= (length args) arity))
-                  (error 'call-expand-observe "wrong arity for ~s: ~e" key args)))
-              (obs (car number+arity)
-                   (cond [(null? args) #f]
-                         [else (apply list* args)])))]
-        [else (error 'call-expand-observe "bad key: ~s" key)]))
+  (cond [(hash-ref key->arity key #f)
+         => (lambda (arity)
+              (unless (or (eq? arity 'any) (eqv? (length args) arity))
+                (error 'call-expand-observe "wrong arity for ~s: ~e" key args)))]
+        [else (error 'call-expand-observe "bad key: ~s" key)])
+  (obs key (cond [(null? args) #f] [else (apply list* args)])))
 
 (define (log-expand-start-top)
   (define obs (current-expand-observe))
   (when obs
     (call-expand-observe obs 'start-top)))
 
-;; For historical reasons, an expander observer currently expects
-;; numbers
-(define key->number+arity
-  ;; event-symbol => (event-num . #args)
-  #hash((visit         . (0 . 1))
-        (resolve       . (1 . 1))
-        (return        . (2 . 1))
-        (next          . (3 . 0))
-        (enter-list    . (4 . 1))
-        (exit-list     . (5 . 1))
-        (enter-prim    . (6 . 1))
-        (exit-prim     . (7 . 1))
-        (enter-macro   . (8 . 1))
-        (exit-macro    . (9 . 1))
-        (enter-block   . (10 . 1))
-        (splice        . (11 . 1))
-        (block->list   . (12 . 1))
-        (next-group    . (13 . 0))
-        (block->letrec . (14 . 1))
-        (let-renames        . (16 . #f))  ;; renames consed by expander... sometimes
-        (lambda-renames     . (17 . 2))
-        (case-lambda-renames . (18 . 2))
-        (letrec-syntaxes-renames . (19 . #f)) ;; renames consed by expander... sometimes
-        (phase-up           . (20 . 0))
+(define key->arity
+  ;; event-symbol => (U Nat 'any)
+  #hash(;; basic empty tokens
+        (start         . 0)
+        (start-top     . 0)
+        (next          . 0)
+        (next-group    . 0)
+        (phase-up      . 0)
+        (enter-bind    . 0)
+        (exit-bind     . 0)
+        (exit-local-bind . 0)
+        (prepare-env   . 0)
 
-        (macro-pre-x        . (21 . 1))
-        (macro-post-x       . (22 . 2))
+        ;; basic tokens
+        (visit         . 1)
+        (resolve       . 1)
+        (enter-macro   . 1)
+        (macro-pre-x   . 1)
+        (macro-post-x  . 2)
+        (exit-macro    . 1)
+        (enter-prim    . 1)
+        (exit-prim     . 1)
+        (return        . 1)
+        (enter-block   . 1)
+        (block->list   . 1)
+        (block->letrec . 1)
+        (splice        . 1)
+        (enter-list    . 1)
+        (exit-list     . 1)
+        (enter-check   . 1)
+        (exit-check    . 1)
+        (module-body   . 1)
+        (lift-loop     . 1)
+        (letlift-loop  . 1)
+        (module-lift-loop . 1)
+        (module-lift-end-loop . 1)
+        (lift-expr     . 2)
+        (lift-statement . 1)
+        (lift-require  . 3)
+        (lift-provide  . 1)
+        (enter-local   . 1)
+        (local-pre     . 1)
+        (local-post    . 1)
+        (exit-local    . 1)
+        (local-bind    . 1)
+        (opaque-expr   . 1)
+        (variable      . 2)
+        (tag           . 1)
+        (rename-one    . 1)
+        (rename-list   . 1)
+        (track-origin  . 2)
+        (local-value   . 1)
+        (local-value-result . 1)
 
-        (module-body        . (23 . 1))
-        (block-renames      . (24 . 2))
+        ;; renames tokens **
+        (lambda-renames . 2)
+        (let-renames    . any)  ;; renames consed by expander... sometimes
+        (letrec-syntaxes-renames . any)  ;; renames consed by expander... sometimes
+        (block-renames  . 2)
 
-        (prim-stop          . (100 . 0))
-        (prim-module        . (101 . 0))
-        (prim-module-begin  . (102 . 0))
-        (prim-define-syntaxes  . (103 . 0))
-        (prim-define-values . (104 . 0))
-        (prim-if            . (105 . 0))
-        (prim-with-continuation-mark . (106 . 0))
-        (prim-begin         . (107 . 0))
-        (prim-begin0        . (108 . 0))
-        (prim-#%app         . (109 . 0))
-        (prim-lambda        . (110 . 0))
-        (prim-case-lambda   . (111 . 0))
-        (prim-let-values    . (112 . 0))
-        (prim-letrec-values . (113 . 0))
-        (prim-letrec-syntaxes+values . (114 . 0))
-        (prim-#%datum         . (115 . 0))
-        (prim-#%top         . (116 . 0))
-        (prim-quote         . (117 . 0))
-        (prim-quote-syntax  . (118 . 0))
-        (prim-require       . (119 . 0))
-        (prim-provide       . (122 . 0))
-
-        (prim-set!          . (123 . 0))
-        (prim-#%expression    . (138 . 0))
-        (prim-#%variable-reference . (149 . 0))
-
-        (prim-#%stratified  . (155 . 0))
-
-        (prim-begin-for-syntax . (156 . 0))
-
-        (prim-submodule     . (158 . 0))
-        (prim-submodule*    . (159 . 0))
-
-        (variable           . (125 . 2))
-
-        (enter-check        . (126 . 1))
-        (exit-check         . (127 . 1))
-
-        (lift-loop          . (128 . 1))
-        (letlift-loop       . (136 . 1))
-        (module-lift-loop   . (137 . 1))
-        (module-lift-end-loop . (135 . 1))
-
-        (local-lift         . (129 . 2))
-        (lift-statement     . (134 . 1))
-        (lift-require       . (150 . 3))
-        (lift-provide       . (151 . 1))
-
-        (enter-local        . (130 . 1))
-        (exit-local         . (131 . 1))
-        (local-pre          . (132 . 1))
-        (local-post         . (133 . 1))
-
-        (enter-local-expr   . (139 . 1))
-        (exit-local-expr    . (140 . 2))
-
-        (start-expand       . (141 . 0))
-
-        (tag                . (142 . 1))
-
-        (local-bind         . (143 . 1))
-        (exit-local-bind    . (160 . 0))
-        (enter-bind         . (144 . 0))
-        (exit-bind          . (145 . 0))
-
-        (opaque-expr        . (146 . 1))
-
-        (rename-list        . (147 . 1))
-
-        (rename-one         . (148 . 1))
-
-        (track-origin       . (152 . 2))
-
-        (local-value        . (153 . 1))
-
-        (local-value-result . (154 . 1))
-
-        (prepare-env        . (157 . 0))
-
-        (start-top          . (201 . 0))))
+        ;; prim tokens
+        (prim-stop          . 0)
+        (prim-module        . 0)
+        (prim-module-begin  . 0)
+        (prim-define-syntaxes . 0)
+        (prim-define-values . 0)
+        (prim-if            . 0)
+        (prim-with-continuation-mark . 0)
+        (prim-begin         . 0)
+        (prim-begin0        . 0)
+        (prim-#%app         . 0)
+        (prim-lambda        . 0)
+        (prim-case-lambda   . 0)
+        (prim-let-values    . 0)
+        (prim-letrec-values . 0)
+        (prim-letrec-syntaxes+values . 0)
+        (prim-#%datum       . 0)
+        (prim-#%top         . 0)
+        (prim-quote         . 0)
+        (prim-quote-syntax  . 0)
+        (prim-require       . 0)
+        (prim-provide       . 0)
+        (prim-set!          . 0)
+        (prim-#%expression  . 0)
+        (prim-#%variable-reference . 0)
+        (prim-#%stratified  . 0)
+        (prim-begin-for-syntax . 0)
+        (prim-submodule     . 0)
+        (prim-submodule*    . 0)))
