@@ -1625,38 +1625,39 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     bref1 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
     refretry = jit_get_ip();
     jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-    __START_INNER_TINY__(1);
+    __START_INNER_TINY__(branch_short);
     ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
     if (!authentic) {
       ref3 = jit_beqi_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
       CHECK_LIMIT();
       ref9 = jit_beqi_i(jit_forward(), JIT_R2, scheme_chaperone_type);
-      __END_INNER_TINY__(1);
+      __END_INNER_TINY__(branch_short);
       bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_chaperone_type);
       CHECK_LIMIT();
-      __START_INNER_TINY__(1);
+      __START_INNER_TINY__(branch_short);
       mz_patch_branch(ref9);
       jit_ldxi_p(JIT_R1, JIT_R1, &SCHEME_CHAPERONE_VAL(0x0));
       (void)jit_jmpi(refretry);
       mz_patch_branch(ref3);
+      __END_INNER_TINY__(branch_short);
     } else {
+      __END_INNER_TINY__(branch_short);
       bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
     }
-    __END_INNER_TINY__(1);
   } else {
     if (check_arg_fixnum) {
       (void)jit_bmsi_ul(refslow2, JIT_R1, 0x1);
     }
     jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-    __START_INNER_TINY__(1);
+    __START_INNER_TINY__(branch_short);
     ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
-    __END_INNER_TINY__(1);
+    __END_INNER_TINY__(branch_short);
     (void)jit_bnei_i(refslow2, JIT_R2, scheme_proc_struct_type);
     bref1 = bref2 = NULL;
   }
-  __START_INNER_TINY__(1);
+  __START_INNER_TINY__(branch_short);
   mz_patch_branch(ref2);
-  __END_INNER_TINY__(1);
+  __END_INNER_TINY__(branch_short);
   CHECK_LIMIT();
 
   if (type_pos != 0) {
@@ -1670,9 +1671,9 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
     if (type_pos < 0) {
       /* common case: types are the same */
       if (kind >= 2) {
-        __START_INNER_TINY__(1);
+        __START_INNER_TINY__(branch_short);
         bref8 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
-        __END_INNER_TINY__(1);
+        __END_INNER_TINY__(branch_short);
       } else
         bref8 = NULL;
     } else
@@ -1740,9 +1741,9 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
       mz_epilog(JIT_V1);
       refdone = NULL;
     } else if (!for_branch) {
-      __START_INNER_TINY__(1);
+      __START_INNER_TINY__(branch_short);
       refdone = jit_jmpi(jit_forward());
-      __END_INNER_TINY__(1);
+      __END_INNER_TINY__(branch_short);
     } else {
       refdone = NULL;
     }
@@ -1776,18 +1777,18 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
           mz_epilog(JIT_V1);
       }
       if (!pop_and_jump) {
-        __START_INNER_TINY__(1);
+        __START_INNER_TINY__(branch_short);
         mz_patch_ucbranch(refdone);
-        __END_INNER_TINY__(1);
+        __END_INNER_TINY__(branch_short);
       }
     }
   } else {
     (void)jit_bner_p(refslow2, JIT_R2, JIT_V1);
     bref4 = NULL;
     if (bref8) {
-      __START_INNER_TINY__(1);
+      __START_INNER_TINY__(branch_short);
       mz_patch_branch(bref8);
-      __END_INNER_TINY__(1);
+      __END_INNER_TINY__(branch_short);
     }
     /* Extract field */
     if (field_pos < 0) {
