@@ -5163,7 +5163,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
       /* Register type based on setter succeeding: */
       if (!SCHEME_NULLP(SCHEME_PROC_SHAPE_IDENTITY(alt))
-          && SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_local_type))
+          && SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type))
         add_type(info, app->rand1, scheme_make_struct_proc_shape(STRUCT_PROC_SHAPE_PRED,
                                                                  SCHEME_PROC_SHAPE_IDENTITY(alt)));
     }
