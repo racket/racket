@@ -101,7 +101,7 @@
           (read-config-line config)
           (read-config-col config)
           (read-config-pos config)
-          (and (read-config-pos config) end-pos (- end-pos (read-config-pos config)))))
+          (and (read-config-pos config) end-pos (max 0 (- end-pos (read-config-pos config))))))
 
 (define (reading-at config line col pos)
   (struct*-copy read-config config

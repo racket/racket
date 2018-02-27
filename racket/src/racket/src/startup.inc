@@ -46105,7 +46105,7 @@ static const char *startup_source =
 "(read-config-line config_1)"
 "(read-config-col config_1)"
 "(read-config-pos config_1)"
-"(if(read-config-pos config_1)(if end-pos_0(- end-pos_0(read-config-pos config_1)) #f) #f))))))"
+"(if(read-config-pos config_1)(if end-pos_0(max 0(- end-pos_0(read-config-pos config_1))) #f) #f))))))"
 "(define-values"
 "(reading-at)"
 "(lambda(config_2 line_2 col_1 pos_105)"
