@@ -185,8 +185,10 @@
          [(char=? c #\newline) null]
          [else (cons c (loop))]))))
   
-  ;; Get string content
-  (let loop ([terminator full-terminator] [terminator-accum null])
+  ;; Get string content.
+  ;; We just saw a newline that could be considered the start of an
+  ;; immediate `full-terminator`.
+  (let loop ([terminator (cdr full-terminator)] [terminator-accum null])
     (define c (read-char/special in config source))
     (cond
      [(eof-object? c)

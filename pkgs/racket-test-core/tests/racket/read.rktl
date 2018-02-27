@@ -219,6 +219,7 @@
 (test "abc" readstr "#<<EOS\nabc\nEOS\n   ")
 (test "abc" readstr "#<<EOS\nabc\nEOS")
 (test "ok\r\nmore\r" readstr "#<<EOS\r\nok\r\nmore\r\nEOS\r")
+(test "" readstr "#<<EOS\nEOS\n")
 (err/rt-test (readstr "#<<EOS\nabc\nEO") exn:fail:read?)
 (err/rt-test (readstr "#<<EOS\r\nabc\nEOS") exn:fail:read?)
 

@@ -52177,7 +52177,7 @@ static const char *startup_source =
 "(accum-string-add! accum-str_5 c_88)"
 "(loop_113 full-terminator_0 null)))))))))))))))"
 " loop_113)"
-" full-terminator_0"
+"(cdr full-terminator_0)"
 " null)"
 "(values))))"
 "(let-values(((str_31)"
