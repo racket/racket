@@ -172,13 +172,13 @@
                                    (define module-uses (hash-ref phase-to-link-modules phase-level))
                                    (define-values (import-module-instances import-instances)
                                      (for/lists (mis is) ([mu (in-list module-uses)])
-                                                (namespace-module-use->module+linklet-instances
-                                                 ns mu
-                                                 #:shift-from original-self
-                                                 #:shift-to self
-                                                 #:phase-shift
-                                                 (phase+ (phase- phase-level (module-use-phase mu))
-                                                         phase-shift))))
+                                       (namespace-module-use->module+linklet-instances
+                                        ns mu
+                                        #:shift-from original-self
+                                        #:shift-to self
+                                        #:phase-shift
+                                        (phase+ (phase- phase-level (module-use-phase mu))
+                                                phase-shift))))
 
                                    (check-require-access phase-linklet #:skip-imports 2
                                                          module-uses import-module-instances insp

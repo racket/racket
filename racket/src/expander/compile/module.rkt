@@ -404,7 +404,7 @@
                  (values phase
                          (module-linklet-info linklet
                                               (hash-ref phase-to-link-module-uses phase #f)
-                                              self
+                                              (compiled-in-memory-original-self cim)
                                               #f ; inspector is the same as the module being compiled
                                               (compiled-in-memory-compile-time-inspector cim)
                                               (and phase-to-extra-inspectorsss

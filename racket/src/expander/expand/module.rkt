@@ -522,7 +522,7 @@
      (cond
       [(not (expand-context-to-parsed? init-ctx))
        ;; Shift the "self" reference that we have been using for expansion
-       ;; to a generic and constant (for a particualr submodule path)
+       ;; to a generic and constant (for a particular submodule path)
        ;; "self", so that we can reocognize it for compilation or to shift
        ;; back on any future re-expansion:
        (define generic-self (make-generic-self-module-path-index self))

@@ -2263,5 +2263,28 @@ case of module-leve bindings; it doesn't cover local bindings.
   b)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that cross-module inlinign doesn't
+;; lose track of shifts for module path indices
+
+(module likely-inlines-across-two-submodules racket/base
+  (provide result)
+
+  (module a racket/base
+    (provide get-x)
+    (define x 5)
+    (set! x x)
+    (define (get-x) x))
+
+  (module b racket/base
+    (require (submod ".." a))
+    (provide get-x2)
+    (define (get-x2) (get-x)))
+
+  (require 'b)
+  (define result (get-x2)))
+
+(test 5 dynamic-require ''likely-inlines-across-two-submodules 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
