@@ -132,7 +132,7 @@
 ;; [Don't use keyword arguments here, because the function is
 ;;  exported for use by an embedding runtime system.]
 (define (expand s [ns (current-namespace)] [observable? #f] [to-parsed? #f] [serializable? #f])
-  (when observable? (log-expand-start))
+  (when observable? (log-expand-start-top))
   (per-top-level s ns
                  #:single (lambda (s ns as-tail?) (expand-single s ns observable? to-parsed? serializable?))
                  #:combine cons
@@ -197,7 +197,7 @@
 (define (expand-to-top-form s [ns (current-namespace)])
   ;; Use `per-top-level` for immediate expansion and lift handling,
   ;; but `#:single #f` makes it return immediately
-  (log-expand-start)
+  (log-expand-start-top)
   (per-top-level s ns
                  #:single #f
                  #:quick-immediate? #f
@@ -226,17 +226,13 @@
                                  [just-once? just-once?]
                                  [for-serializable? serializable?]))
     (define wb-s (and just-once? s))
+    (log-expand tl-ctx 'visit s)
     (define-values (require-lifts lifts exp-s)
-      (if (and quick-immediate?
-               ;; To avoid annoying the macro stepper, bail out quietly
-               ;; if the input is obviously a core form
-               (core-form-sym s phase))
-          (values null null s)
-          (expand-capturing-lifts s (struct*-copy expand-context tl-ctx
-                                                  [only-immediate? #t]
-                                                  [def-ctx-scopes (box null)] ; discarding is ok
-                                                  [phase phase]
-                                                  [namespace ns]))))
+      (expand-capturing-lifts s (struct*-copy expand-context tl-ctx
+                                              [only-immediate? #t]
+                                              [def-ctx-scopes (box null)] ; discarding is ok
+                                              [phase phase]
+                                              [namespace ns])))
     (define disarmed-exp-s (raw:syntax-disarm exp-s))
     (cond
      [(or (pair? require-lifts) (pair? lifts))
@@ -248,12 +244,14 @@
       (if just-once?
           new-s
           (loop new-s phase ns as-tail?))]
-     [(not single) exp-s]
+     [(not single)
+      (log-expand tl-ctx 'return exp-s)
+      exp-s]
      [(and just-once? (not (eq? exp-s wb-s))) exp-s]
      [else
       (case (core-form-sym disarmed-exp-s phase)
         [(begin)
-         (log-top-begin-before ctx exp-s)
+         (log-expand ctx 'prim-begin)
          (define-match m disarmed-exp-s '(begin e ...))
          ;; Map `loop` over the `e`s, but in the case of `eval`,
          ;; tail-call for last one:
@@ -276,22 +274,28 @@
          (cond
            [wrap
             (define new-s (wrap (m 'begin) exp-s (begin-loop (m 'e))))
-            (log-top-begin-after tl-ctx new-s)
+            (log-expand tl-ctx 'return new-s)
             new-s]
            [else (begin-loop (m 'e))])]
         [(begin-for-syntax)
+         (log-expand tl-ctx 'prim-begin-for-syntax)
          (define-match m disarmed-exp-s '(begin-for-syntax e ...))
          (define next-phase (add1 phase))
          (define next-ns (namespace->namespace-at-phase ns next-phase))
+         (log-expand tl-ctx 'prepare-env)
          (when quick-immediate?
            ;; In case `expand-capturing-lifts` didn't already:
            (namespace-visit-available-modules! ns))
          (namespace-visit-available-modules! next-ns) ; to match old behavior for empty body
          (define l
            (for/list ([s (in-list (m 'e))])
+             (log-expand tl-ctx 'next)
              (loop s next-phase next-ns #f)))
          (cond
-          [wrap (wrap (m 'begin-for-syntax) exp-s l)]
+          [wrap
+           (define new-s (wrap (m 'begin-for-syntax) exp-s l))
+           (log-expand tl-ctx 'return new-s)
+           new-s]
           [combine l]
           [else (void)])]
         [else

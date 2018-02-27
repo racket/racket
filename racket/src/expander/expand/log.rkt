@@ -5,7 +5,7 @@
          log-expand*
          log-expand...
          ...log-expand
-         log-expand-start)
+         log-expand-start-top)
 
 (define-syntax log-expand...
   (syntax-rules (lambda)
@@ -45,10 +45,10 @@
                          [else (apply list* args)])))]
         [else (error 'call-expand-observe "bad key: ~s" key)]))
 
-(define (log-expand-start)
+(define (log-expand-start-top)
   (define obs (current-expand-observe))
   (when obs
-    (call-expand-observe obs 'start-expand)))
+    (call-expand-observe obs 'start-top)))
 
 ;; For historical reasons, an expander observer currently expects
 ;; numbers
@@ -158,4 +158,6 @@
 
         (local-value-result . (154 . 1))
 
-        (prepare-env        . (157 . 0))))
+        (prepare-env        . (157 . 0))
+
+        (start-top          . (201 . 0))))
