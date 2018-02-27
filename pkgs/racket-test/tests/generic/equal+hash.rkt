@@ -16,5 +16,6 @@
   (check-false (equal? (kons 1 2) 2))
   (check-false (equal? 2 (kons 1 2)))
   (check-false (equal? (kons 1 2) (kons 3 4)))
-  (check-equal? (equal-hash-code (kons 1 2)) 62)
+  (check-equal? (equal-hash-code (kons 1 2))
+                (equal-hash-code (kons 1 2)))
   )

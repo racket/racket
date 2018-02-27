@@ -27,5 +27,7 @@
   ;; ok if these don't raise unbound id errors
   (check-equal? (with-output-to-string (lambda () (write (tuple 5)))) "#0=#0#")
   (check-equal? (tuple 5) (tuple 5))
-  (check-equal? (equal-hash-code (tuple 5)) 55)
-  (check-equal? (equal-secondary-hash-code (tuple 5)) 46))
+  (check-equal? (equal-hash-code (tuple 5))
+                (equal-hash-code (tuple 5)))
+  (check-equal? (equal-secondary-hash-code (tuple 5))
+                (equal-secondary-hash-code (tuple 5))))
