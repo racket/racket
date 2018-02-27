@@ -389,7 +389,7 @@
          (raise-syntax-error #f "cannot be cross-phase persistent due to required modules"
                              rebuild-s
                              (hash-ref declared-keywords '#:cross-phase-persistent)))
-       (check-cross-phase-persistent-form fully-expanded-bodys-except-post-submodules))
+       (check-cross-phase-persistent-form fully-expanded-bodys-except-post-submodules self))
 
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 4: expand `module*` submodules

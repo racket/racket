@@ -81,7 +81,8 @@
 
         (define-values (m-ns already?)
           (cond
-           [attach-this-instance?
+           [(or attach-this-instance?
+                (module-cross-phase-persistent? m))
             (define m-ns (namespace->module-namespace src-namespace mod-name phase))
             (unless m-ns
               (raise-arguments-error who

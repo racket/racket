@@ -1170,7 +1170,8 @@ and only if no module-level binding is @racket[set!]ed.
                  boolean
                  identifier
                  string
-                 bytes]
+                 bytes
+                 ()]
 ]
 
 This grammar applies after @tech{expansion}, but because a @tech{cross-phase persistent}
