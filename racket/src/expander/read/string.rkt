@@ -172,7 +172,7 @@
   ;; Parse terminator
   (define full-terminator
     (cons
-     #\newline
+     #\newline ;; assumption below that this character is first
      (let loop ()
        (define c (read-char/special in config source))
        (cond
@@ -193,7 +193,7 @@
       (unless (null? terminator)
         (reader-error in config #:due-to c
                       "found end-of-file before terminating `~a`"
-                      (list->string full-terminator)))]
+                      (list->string (cdr full-terminator))))]
      [(not (char? c))
       (reader-error in config #:due-to c
                     "found non-character while reading `#<<`")]
@@ -207,8 +207,13 @@
       (unless (null? terminator-accum)
         (for ([c (in-list (reverse terminator-accum))])
           (accum-string-add! accum-str c)))
-      (accum-string-add! accum-str c)
-      (loop full-terminator null)]))
+      (cond
+        [(char=? c #\newline)
+         ;; assume `full-terminator` starts with #\newline
+         (loop (cdr full-terminator) (list #\newline))]
+        [else
+         (accum-string-add! accum-str c)
+         (loop full-terminator null)])]))
 
   ;; Done
   (define str (accum-string-get! accum-str config))
