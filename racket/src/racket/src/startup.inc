@@ -53157,7 +53157,7 @@ static const char *startup_source =
 " result-v_1)))"
 " result-v_1))"
 "(if(1/special-comment? result-v_1)"
-"(let-values()(read-recur_4 in_57 config_53))"
+"(let-values()(read-recur_4 #f in_57 config_53))"
 "(let-values()"
 "(coerce result-v_1 in_57 config_53))))))))))))))))))))))))))"
 "(define-values"

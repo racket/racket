@@ -234,6 +234,6 @@
         (raise-result-error 'read-language "(procedure-arity-includes?/c 2)" result-v))
       result-v]
      [(special-comment? result-v)
-      (read-recur in config)]
+      (read-recur #f in config)]
      [else
       (coerce result-v in config)])]))
