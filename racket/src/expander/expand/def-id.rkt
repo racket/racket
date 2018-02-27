@@ -49,8 +49,10 @@
     (define defined-sym
       (if (and (not (defined-as-other? (hash-ref defined-syms-at-phase sym #f) id phase top-level-bind-scope))
                ;; Only use `sym` directly if there are no
-               ;; extra scopes on the binding form
-               (no-extra-scopes? id all-scopes-stx top-level-bind-scope phase))
+               ;; extra scopes on the binding form...
+               (no-extra-scopes? id all-scopes-stx top-level-bind-scope phase)
+               ;; ... and if it's interned
+               (symbol-interned? sym))
           sym
           (let loop ([pos 1])
             (define s (string->unreadable-symbol (format "~a.~a" sym pos)))
