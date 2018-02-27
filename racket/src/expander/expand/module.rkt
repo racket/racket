@@ -20,6 +20,7 @@
          "require+provide.rkt"
          "../common/module-path.rkt"
          "lift-context.rkt"
+         "lift-key.rkt"
          "../namespace/core.rkt"
          "context.rkt"
          "use-site.rkt"
@@ -309,6 +310,7 @@
                                                 [def-ctx-scopes def-ctx-scopes]
                                                 [need-eventually-defined need-eventually-defined] ; used only at phase 1 and up
                                                 [declared-submodule-names declared-submodule-names]
+                                                [lift-key #:parent root-expand-context (generate-lift-key)]
                                                 [lifts (make-lift-context
                                                         (make-wrap-as-definition self frame-id
                                                                                  inside-scope all-scopes-s
@@ -714,6 +716,7 @@
       (log-expand partial-body-ctx 'next)
       (define exp-body (performance-region
                         ['expand 'form-in-module/1]
+                        ;; --- expand to core form ---
                         (expand (car bodys) partial-body-ctx)))
       (define disarmed-exp-body (syntax-disarm exp-body))
       (define lifted-defns (get-and-clear-lifts! (expand-context-lifts partial-body-ctx)))

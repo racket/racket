@@ -448,6 +448,8 @@
  (lambda (s ctx)
    (log-expand ctx 'prim-if)
    (define disarmed-s (syntax-disarm s))
+   (define-match bad-m disarmed-s #:try '(_ _ _))
+   (when (bad-m) (raise-syntax-error #f "missing an \"else\" expression" s))
    (define-match m disarmed-s '(if tst thn els))
    (define expr-ctx (as-expression-context ctx))
    (define tail-ctx (as-tail-context expr-ctx #:wrt ctx))

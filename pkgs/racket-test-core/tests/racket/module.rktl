@@ -2286,5 +2286,38 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 5 dynamic-require ''likely-inlines-across-two-submodules 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the lift context is different for multiple
+;; `#%module-begin` expansions. That's important, for example, to make
+;; sure that a lift in the first pass record by the contract system
+;; isn't assumed to be from a lexically earlier expression within a
+;; second pass.
+
+(module module-begin-and-unique-context-check racket/base
+  (require (for-syntax racket/base))
+
+  (provide (except-out (all-from-out racket/base)
+                       #%module-begin)
+           (rename-out [module-begin #%module-begin])
+           check-unique-context)
+
+  (define-for-syntax prev-key #f)
+
+  (define-syntax (module-begin stx)
+    (syntax-case stx ()
+      [(_ form ...)
+       (with-syntax ([(pmb new-form ...) (local-expand #'(#%plain-module-begin form ...) 'module-begin null)])
+         #'(#%plain-module-begin new-form ... (check-unique-context)))]))
+
+  (define-syntax (check-unique-context stx)
+    (define key (syntax-local-lift-context))
+    (when (eq? key prev-key)
+      (raise-syntax-error #f "context didn't change"))
+    (set! prev-key key)
+    #'(void)))
+
+(module use-module-begin-and-unique-context-check 'module-begin-and-unique-context-check
+  (#%expression (check-unique-context)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
