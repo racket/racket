@@ -225,7 +225,7 @@
                 (set-box! counter (add1 (unbox counter)))
                 (define name (string->unreadable-symbol (format "lifted/~a" (unbox counter))))
                 (add-scope (datum->syntax #f name) (new-scope 'macro))))
-  (log-expand ctx 'local-lift ids s)
+  (log-expand ctx 'lift-expr ids s)
   (map (lambda (id) (flip-introduction-scopes id ctx))
        ;; returns converted ids:
        (add-lifted! lifts
