@@ -410,20 +410,39 @@ character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
-                               [special-wrap (or/c (any/c -> any/c) #f) #f]
+                               [special-wrap (or/c (any/c -> any/c) #f 'special) #f]
                                [source-name any/c #f])
          (or/c char? eof-object? any/c)]{
 
 Like @racket[peek-char], but if the input port returns a non-byte
-value after @racket[skip-bytes-amt] byte positions, then it is returned.
+value after @racket[skip-bytes-amt] byte positions, then the result
+depends on @racket[special-wrap]:
+
+@itemlist[
+
+ @item{If @racket[special-wrap] is @racket[#f], then the special value
+       is returned (as for @racket[read-char-or-special]).}
+
+@item{If @racket[special-wrap] is a procedure, then it is applied the
+       special value to produce the result (as for
+       @racket[read-char-or-special]).}
+
+ @item{If @racket[special-wrap] is @racket['special], then
+       @racket['special] is returned in place of the special
+       value---without calling the special-value procedure that is
+       returned by the input-port implementation.}
+
+]
 
 @history[#:changed "6.8.0.2" @elem{Added the @racket[special-wrap] and
-                                   @racket[source-name] arguments.}]}
+                                   @racket[source-name] arguments.}
+         #:changed "6.90.0.16" @elem{Added @racket['special] as an option
+                                     for @racket[special-wrap].}]}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
                                [progress (or/c progress-evt? #f) #f]
-                               [special-wrap (or/c (any/c -> any/c) #f) #f]
+                               [special-wrap (or/c (any/c -> any/c) #f 'special) #f]
                                [source-name any/c #f])
          (or/c byte? eof-object? any/c)]{
 
@@ -432,7 +451,9 @@ instead of a character, and it supports a @racket[progress] argument
 like @racket[peek-bytes-avail!].
 
 @history[#:changed "6.8.0.2" @elem{Added the @racket[special-wrap] and
-                                   @racket[source-name] arguments.}]}
+                                   @racket[source-name] arguments.}
+         #:changed "6.90.0.16" @elem{Added @racket['special] as an option
+                                     for @racket[special-wrap].}]}
 
 
 @defproc[(port-progress-evt [in (and/c input-port? port-provides-progress-evts?)

@@ -16,5 +16,9 @@
 (define-inline (read-char/special in config [source (read-config-source config)])
   (read-char-or-special in special source))
 
+;; Returns `(special 'special)` for any special value:
 (define-inline (peek-char/special in config [skip-count 0] [source (read-config-source config)])
-  (peek-char-or-special in skip-count special source))
+  (define c (peek-char-or-special in skip-count 'special source))
+  (if (eq? c 'special)
+      (special 'special)
+      c))

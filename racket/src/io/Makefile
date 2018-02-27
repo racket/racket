@@ -30,11 +30,11 @@ GENERATE_ARGS = -t main.rkt --submod main \
 io-src-generate:
 	$(RACKET) ../expander/bootstrap-run.rkt $(GENERATE_ARGS)
 
-demo: compiled/rktio.rktl
+demo: $(RKTIO_DEP)
 	$(RACO) make demo.rkt
 	$(RACKET) demo.rkt
 
-demo-thread: compiled/rktio.rktl
+demo-thread: $(RKTIO_DEP)
 	$(RACO) make demo-thread.rkt
 	$(RACKET) demo-thread.rkt
 

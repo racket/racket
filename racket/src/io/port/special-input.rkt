@@ -35,7 +35,7 @@
   (check who input-port? orig-in)
   (check who exact-nonnegative-integer? skip-k)
   (check who #:or-false evt? progress-evt)
-  (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
+  (check who special-wrap-for-peek? #:contract special-wrap-for-peek/c-str special-wrap)
   (when progress-evt
     (check-progress-evt who progress-evt orig-in))
   (let ([in (->core-input-port orig-in)])
@@ -64,7 +64,7 @@
                                   [source-name #f])
   (check who input-port? in)
   (check who exact-nonnegative-integer? skip-k)
-  (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
+  (check who special-wrap-for-peek? #:contract special-wrap-for-peek/c-str special-wrap)
   (extract-special-value (do-peek-char who in skip-k #:special-ok? #t)
                          in source-name skip-k
                          special-wrap))
@@ -74,21 +74,33 @@
 (define (extract-special-value v in source-name delta special-wrap)
   (cond
     [(procedure? v)
-     (define special
-       (cond
-         [(not source-name)
+     (cond
+       [(eq? special-wrap 'special)
+        'special]
+       [else
+        (define special
           (cond
-            [(procedure-arity-includes? v 0)
-             (v)]
+            [(not source-name)
+             (cond
+               [(procedure-arity-includes? v 0)
+                (v)]
+               [else
+                (v #f #f #f #f)])]
             [else
-             (v #f #f #f #f)])]
-         [else
-          (define-values (line col pos) (port-next-location in))
-          (v source-name
-             line
-             (and col (+ col delta))
-             (and pos (+ pos delta)))]))
-     (if special-wrap
-         (special-wrap special)
-         special)]
+             (define-values (line col pos) (port-next-location in))
+             (v source-name
+                line
+                (and col (+ col delta))
+                (and pos (+ pos delta)))]))
+        (if special-wrap
+            (special-wrap special)
+            special)])]
     [else v]))
+
+(define (special-wrap-for-peek? w)
+  (or (not w) (eq? w 'special) (and (procedure? w)
+                                    (procedure-arity-includes? w 1))))
+
+(define special-wrap-for-peek/c-str
+  "(or/c (any/c -> any/c) #f 'special)")
+                

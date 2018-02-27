@@ -952,6 +952,49 @@
   (test #\y read-char-or-special p)
   (test 3 file-position p))
 
+;; Test read-char-or-special:
+(let ([p (make-p (list #"x" a-special #"y") (lambda (x) 5) void)])
+  (test #\x peek-char-or-special p)
+  (test 0 file-position p)
+  (test #\x peek-char-or-special p 0)
+  (test a-special peek-char-or-special p 1)
+  (test #\y peek-char-or-special p 2)
+  (test 0 file-position p)
+  (test #\x read-char-or-special p)
+  (test 1 file-position p)
+  (test a-special peek-char-or-special p)
+  (test 1 file-position p)
+  (test a-special read-char-or-special p)
+  (test 2 file-position p)
+  (test #\y peek-char-or-special p)
+  (test 2 file-position p)
+  (test #\y read-char-or-special p)
+  (test 3 file-position p))
+
+;; Reading somethign like a symbol should stop at a special
+;; without calling the special-producing procedure:
+(let* ([pos 0]
+       [p (make-input-port
+           'voids
+           (lambda (s)
+             (if (pos . < . 3)
+                 (begin
+                   (set! pos (add1 pos))
+                   (bytes-set! s 0 (char->integer #\a))
+                   1)
+                 (lambda args (error "oops/read"))))
+           (lambda (s skip progress-evt)
+             (cond
+              [((+ skip pos) . < . 3)
+               (begin
+                 (bytes-set! s 0 (char->integer #\a))
+                 1)]
+              [((+ skip pos) . < . 4)
+               (lambda args (error "oops/peek"))]
+              [else eof-object]))
+           void)])
+  (test 'aaa read p))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test read-syntax offsets:
 

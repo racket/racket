@@ -368,6 +368,15 @@
 (err/rt-test (read-char infinite-voids) exn:application:mismatch?)
 (test 'void read-byte-or-special infinite-voids)
 (test 'void read-char-or-special infinite-voids)
+(test 'void peek-char-or-special infinite-voids 0)
+(test 'special peek-char-or-special infinite-voids 0 'special)
+(let ([p (make-input-port
+          'voids
+          (lambda (s) (lambda args 'void))
+          (lambda (skip s progress-evt) (lambda args (error "oops")))
+          void)])
+  (test 'special peek-char-or-special infinite-voids 0 'special)
+  (test 'void read-char-or-special infinite-voids))
 (let ([go
        (lambda (get-avail!)
 	 (define (get)

@@ -143,6 +143,7 @@ ROSYM static Scheme_Object *lf_symbol;
 ROSYM static Scheme_Object *crlf_symbol;
 ROSYM static Scheme_Object *module_symbol;
 ROSYM static Scheme_Object *string_symbol;
+ROSYM static Scheme_Object *special_symbol;
 
 READ_ONLY static Scheme_Object *default_read_handler;
 READ_ONLY static Scheme_Object *default_display_handler;
@@ -200,6 +201,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   REGISTER_SO(crlf_symbol);
   REGISTER_SO(module_symbol);
   REGISTER_SO(string_symbol);
+  REGISTER_SO(special_symbol);
 
   any_symbol      = scheme_intern_symbol("any");
   any_one_symbol  = scheme_intern_symbol("any-one");
@@ -208,6 +210,7 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   crlf_symbol     = scheme_intern_symbol("return-linefeed");
   module_symbol   = scheme_intern_symbol("module");
   string_symbol   = scheme_intern_symbol("string");
+  special_symbol  = scheme_intern_symbol("special");
 
   scheme_write_proc   = scheme_make_noncm_prim(sch_write, "write",    1, 2);
   scheme_display_proc = scheme_make_noncm_prim(display,   "display",  1, 2);
@@ -2982,8 +2985,17 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
     spec_wrap = argv[pos];
     if (SCHEME_FALSEP(spec_wrap))
       spec_wrap = NULL;
-    else if (!scheme_fast_check_arity(spec_wrap, 1))
-      scheme_check_proc_arity2(name, 1, pos, argc, argv, 1);
+    else if (!(peek && SAME_OBJ(spec_wrap, special_symbol))
+             && !scheme_fast_check_arity(spec_wrap, 1)) {
+      if (!scheme_check_proc_arity2(NULL, 1, pos, argc, argv, 1)) {
+        scheme_wrong_contract(name,
+                              (peek
+                               ? "(or/c (any/c -> any/c) #f 'special)"
+                               : "(or/c (any/c -> any/c) #f)"),
+                              pos, argc, argv);
+        return NULL;
+      }
+    }
     pos++;
     if (argc > pos)
       src = argv[pos++];
@@ -3021,6 +3033,8 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
   }
 
   if (ch == SCHEME_SPECIAL) {
+    if (SAME_OBJ(spec_wrap, special_symbol))
+      return special_symbol;
     src = scheme_get_ready_special(port, src, peek);
     if (spec_wrap) {
       Scheme_Object *a[1];

@@ -78,7 +78,7 @@
             (rktio_get_last_error rktio-name)
             (rktio_get_last_error_step rktio-name))))
 
-(include "../compiled/rktio.rktl")
+(include "../../rktio/rktio.rktl")
 
 (define rktio_NULL #f)
 
@@ -215,4 +215,4 @@
                                          'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
                                          'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                         form ...))
-                   (include "../compiled/rktio.rktl")))
+                   (include "../../rktio/rktio.rktl")))
