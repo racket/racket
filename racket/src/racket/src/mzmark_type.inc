@@ -3740,6 +3740,7 @@ static int mark_logger_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->root_timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->stdout_level, gc);
   gcMARK2(l->propagate_level, gc);
   gcMARK2(l->readers, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -3760,6 +3761,7 @@ static int mark_logger_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->root_timestamp, gc);
   gcFIXUP2(l->syslog_level, gc);
   gcFIXUP2(l->stderr_level, gc);
+  gcFIXUP2(l->stdout_level, gc);
   gcFIXUP2(l->propagate_level, gc);
   gcFIXUP2(l->readers, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS

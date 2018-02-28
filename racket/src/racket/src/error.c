@@ -54,6 +54,7 @@ void scheme_set_console_output(scheme_console_output_t p) { scheme_console_outpu
 
 SHARED_OK static Scheme_Object *init_syslog_level = scheme_make_integer(INIT_SYSLOG_LEVEL);
 SHARED_OK static Scheme_Object *init_stderr_level = scheme_make_integer(SCHEME_LOG_ERROR);
+SHARED_OK static Scheme_Object *init_stdout_level = scheme_make_integer(0);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_gc_logger);
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_future_logger);
@@ -146,15 +147,23 @@ static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *arg
 static char *make_provided_list(Scheme_Object *o, int count, intptr_t *lenout);
 
 static char *init_buf(intptr_t *len, intptr_t *blen);
-void scheme_set_logging(int syslog_level, int stderr_level)
+
+void scheme_set_logging2(int syslog_level, int stderr_level, int stdout_level)
 {
   if (syslog_level > -1)
     init_syslog_level = scheme_make_integer(syslog_level);
   if (stderr_level > -1)
     init_stderr_level = scheme_make_integer(stderr_level);
+  if (stdout_level > -1)
+    init_stdout_level = scheme_make_integer(stdout_level);
 }
 
-void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level)
+void scheme_set_logging(int syslog_level, int stderr_level)
+{
+  scheme_set_logging2(syslog_level, stderr_level, -1);
+}
+  
+void scheme_set_logging2_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level, Scheme_Object *stdout_level)
 {
   /* A spec is (list* <int> <byte-string> .... <int>) */
   if (syslog_level) {
@@ -165,6 +174,15 @@ void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_
     REGISTER_SO(init_stderr_level);
     init_stderr_level = stderr_level;
   }
+  if (stdout_level) {
+    REGISTER_SO(init_stdout_level);
+    init_stdout_level = stdout_level;
+  }
+}
+
+void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level)
+{
+  scheme_set_logging2_spec(syslog_level, stderr_level, NULL);
 }
 
 void scheme_init_logging_once(void)
@@ -173,8 +191,12 @@ void scheme_init_logging_once(void)
   int j;
   Scheme_Object *l, *s;
 
-  for (j = 0; j < 2; j++) {
-    l = (j ? init_stderr_level : init_syslog_level);
+  for (j = 0; j < 3; j++) {
+    switch (j) {
+    case 0: l = init_syslog_level; break;
+    case 1: l = init_stderr_level; break;
+    default: l = init_stdout_level; break;
+    }
     if (l) {
       while (!SCHEME_INTP(l)) {
         l = SCHEME_CDR(l);
@@ -885,6 +907,7 @@ void scheme_init_logger()
   scheme_main_logger = scheme_make_logger(NULL, NULL);
   scheme_main_logger->syslog_level = init_syslog_level;
   scheme_main_logger->stderr_level = init_stderr_level;
+  scheme_main_logger->stdout_level = init_stdout_level;
 
   REGISTER_SO(scheme_gc_logger);
   scheme_gc_logger = scheme_make_logger(scheme_main_logger, scheme_intern_symbol("GC"));
@@ -3515,6 +3538,9 @@ void update_want_level(Scheme_Logger *logger, Scheme_Object *name)
     level = extract_max_spec_level(parent->stderr_level, name);
     if (level > want_level)
       want_level = level;    
+    level = extract_max_spec_level(parent->stdout_level, name);
+    if (level > want_level)
+      want_level = level;    
 
     if (parent->propagate_level)
       level = extract_max_spec_level(parent->propagate_level, name);
@@ -3736,7 +3762,19 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
       fwrite(buffer, len, 1, stderr);
       fwrite("\n", 1, 1, stderr);
     }
-    
+
+    if (extract_spec_level(logger->stdout_level, name) >= level) {
+      if (name) {
+        intptr_t slen;
+        slen = SCHEME_SYM_LEN(name);
+        fwrite(SCHEME_SYM_VAL(name), slen, 1, stdout);
+        fwrite(": ", 2, 1, stdout);
+      }
+      fwrite(buffer, len, 1, stdout);
+      fwrite("\n", 1, 1, stdout);
+      fflush(stdout);
+    }
+
     queue = logger->readers;
     while (queue) {
       b = SCHEME_CAR(queue);
@@ -3797,6 +3835,7 @@ void scheme_log_abort(char *buffer)
   logger.local_timestamp = 0;
   logger.syslog_level = init_syslog_level;
   logger.stderr_level = init_stderr_level;
+  logger.stdout_level = init_stdout_level;
 
   scheme_log_message(&logger, SCHEME_LOG_FATAL, buffer, strlen(buffer), scheme_false);
 }

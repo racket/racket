@@ -55,6 +55,14 @@ through environment variables:
 
        The default is @racket["error"].}
 
+ @item{If the @indexed-envvar{PLTSTDOUT} environment variable is
+       defined and is not overridden by a command-line flag, it
+       determines the level of the @tech{log receiver} that propagates
+       events to the original output port. The possible values are the
+       same as for @envvar{PLTSTDERR}.
+
+       The default is @racket["none"].}
+
  @item{If the @indexed-envvar{PLTSYSLOG} environment variable is
        defined and is not overridden by a command-line flag, it
        determines the level of the @tech{log receiver} that propagates
@@ -78,7 +86,8 @@ would produce a run-time error if evaluated.
     of @envvar{PLTSTDERR} and @envvar{PLTSYSLOG} was very strict.
     Leading and trailing whitespace was forbidden, and anything other
     than exactly one space character separating two specifications was
-    rejected.}]
+    rejected.}
+        #:changed "6.90.0.17" @elem{Added @envvar{PLTSTDOUT}.}]
 
 @; ----------------------------------------
 @section{Creating Loggers}

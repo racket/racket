@@ -77,10 +77,10 @@
 
  (define rx:logging-spec (pregexp "^[\\s]*(none|fatal|error|warning|info|debug)(?:@([^\\s @]+))?(.*)$"))
  (define rx:all-whitespace (pregexp "^[\\s]*$"))
- (define (parse-logging-spec str where exit-on-fail?)
+ (define (parse-logging-spec which str where exit-on-fail?)
    (define (fail)
      (let ([msg (string-append
-                 "stderr <levels> " where " must be one of the following\n"
+                 which " <levels> " where " must be one of the following\n"
                  " <level>s:\n"
                  "   none fatal error warning info debug\n"
                  "or up to one such <level> in whitespace-separated sequence of\n"
@@ -161,6 +161,7 @@
  (define repl-init? #t)
  (define version? #f)
  (define stderr-logging-arg #f)
+ (define stdout-logging-arg #f)
  (define runtime-for-init? #t)
  (define exit-value 0)
  (define host-collects-dir init-collects-dir)
@@ -309,7 +310,11 @@
            (loop (cdr args))]
           [("-W" "--stderr")
            (let-values ([(spec rest-args) (next-arg "stderr level" arg within-arg args)])
-             (set! stderr-logging-arg (parse-logging-spec spec (format "after ~a switch" (or within-arg arg)) #t))
+             (set! stderr-logging-arg (parse-logging-spec "stderr" spec (format "after ~a switch" (or within-arg arg)) #t))
+             (loop rest-args))]
+          [("-O" "--stdout")
+           (let-values ([(spec rest-args) (next-arg "stdout level" arg within-arg args)])
+             (set! stdout-logging-arg (parse-logging-spec "stdout" spec (format "after ~a switch" (or within-arg arg)) #t))
              (loop rest-args))]
           [("-N" "--name")
            (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
@@ -431,6 +436,13 @@
              (parse-logging-spec spec "in PLTSTDERR environment variable" #f)
              '(error)))))
 
+ (define stdout-logging
+   (or stdout-logging-arg
+       (let ([spec (getenv "PLTSTDOUT")])
+         (if spec
+             (parse-logging-spec spec "in PLTSTDOUT environment variable" #f)
+             '()))))
+
  (when (getenv "PLT_STATS_ON_BREAK")
    (keyboard-interrupt-handler
     (let ([orig (keyboard-interrupt-handler)])
@@ -446,6 +458,9 @@
     (when (and stderr-logging
                (not (null? stderr-logging)))
       (apply add-stderr-log-receiver! (|#%app| current-logger) stderr-logging))
+    (when (and stdout-logging
+               (not (null? stdout-logging)))
+      (apply add-stdout-log-receiver! (|#%app| current-logger) stdout-logging))
     (cond
      [(eq? init-collects-dir 'disable)
       (|#%app| use-collection-link-paths #f)

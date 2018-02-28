@@ -1052,6 +1052,7 @@ mark_logger {
   gcMARK2(l->root_timestamp, gc);
   gcMARK2(l->syslog_level, gc);
   gcMARK2(l->stderr_level, gc);
+  gcMARK2(l->stdout_level, gc);
   gcMARK2(l->propagate_level, gc);
   gcMARK2(l->readers, gc);
  size:

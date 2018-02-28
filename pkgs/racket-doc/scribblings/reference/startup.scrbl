@@ -347,6 +347,12 @@ flags:
         are the same as for the @envvar{PLTSTDERR} environment
         variable. See @secref["logging"] for more information.}
 
+  @item{@FlagFirst{O} @nonterm{levels} or @DFlagFirst{stdout}
+        @nonterm{levels} : Sets the logging level for writing events to
+        the original output port. The possible @nonterm{level} values
+        are the same as for the @envvar{PLTSTDOUT} environment
+        variable. See @secref["logging"] for more information.}
+
   @item{@FlagFirst{L} @nonterm{levels} or @DFlagFirst{syslog}
         @nonterm{levels} : Sets the logging level for writing events to
         the system log. The possible @nonterm{level} values
@@ -438,6 +444,8 @@ of the collapsed set.
 
 Extra arguments following the last option are available from the
 @indexed-racket[current-command-line-arguments] parameter.
+
+@history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}]
 
 @; ----------------------------------------------------------------------
 

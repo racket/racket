@@ -43,7 +43,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 # typically redirects to RUN_THIS_RACKET_CGC:
 RUN_THIS_RACKET_CGC = ../racket@CGC@
 
-SETUP_BOOT = -W "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
+SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
 XFORM_SETUP = @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/xform-mod.rkt --depends
 XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o ++out
 XSRCDIR = xsrc

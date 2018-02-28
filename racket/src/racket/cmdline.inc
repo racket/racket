@@ -729,7 +729,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
   int cross_compile = 0;
-  Scheme_Object *syslog_level = NULL, *stderr_level = NULL;
+  Scheme_Object *syslog_level = NULL, *stderr_level = NULL, *stdout_level = NULL;
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
@@ -1113,6 +1113,14 @@ static int run_from_cmd_line(int argc, char *_argv[],
           argv++;
           was_config_flag = 1;
           break;
+        case 'O':
+          stdout_level = get_arg_log_level(prog, real_switch, "stdout", argc, argv);
+          if (!stdout_level)
+            goto show_need_help;
+          --argc;
+          argv++;
+          was_config_flag = 1;
+          break;
 	case 'L':
           syslog_level = get_arg_log_level(prog, real_switch, "syslog", argc, argv);
           if (!syslog_level)
@@ -1189,6 +1197,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
       stderr_level = get_log_level(prog, NULL, "PLTSTDERR", "stderr", s);
     }
   }
+  if (!stdout_level) {
+    char *s;
+    s = getenv("PLTSTDOUT");
+    if (s) {
+      stdout_level = get_log_level(prog, NULL, "PLTSTDOUT", "stdout", s);
+    }
+  }
   if (getenv("PLTDISABLEGC")) {
     scheme_enable_garbage_collection(0);
   }
@@ -1227,7 +1242,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
     }
   }
 
-  scheme_set_logging_spec(syslog_level, stderr_level);
+  scheme_set_logging2_spec(syslog_level, stderr_level, stdout_level);
 
   collects_path = adjust_collects_path(collects_path, &skip_coll_dirs);
   scheme_set_collects_path(collects_path);
@@ -1407,6 +1422,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
 	 "  -W <levels>, --warn <levels> : Set stderr logging to <levels>\n"
+	 "  -O <levels>, --stdout <levels> : Set stdout logging to <levels>\n"
 	 "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"
 	 " Meta options:\n"
 	 "  -- : No argument following this switch is used as a switch\n"

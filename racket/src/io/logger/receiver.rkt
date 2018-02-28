@@ -10,6 +10,7 @@
 (provide (struct-out log-receiver)
          make-log-receiver
          add-stderr-log-receiver!
+         add-stdout-log-receiver!
          log-receiver-send!)
 
 (struct log-receiver (filters))
@@ -72,12 +73,12 @@
 
 ;; ----------------------------------------
 
-(struct stderr-log-receiver log-receiver ()
+(struct stdio-log-receiver log-receiver (which)
   #:property
   prop:receiver-send
   (lambda (lr msg)
     ;; called in atomic mode and possibly in host interrupt handler
-    (define fd (rktio_std_fd rktio RKTIO_STDERR))
+    (define fd (rktio_std_fd rktio (stdio-log-receiver-which lr)))
     (define bstr (bytes-append (string->bytes/utf-8 (vector-ref msg 1)) #"\n"))
     (define len (bytes-length bstr))
     (let loop ([i 0])
@@ -88,13 +89,20 @@
             (loop i)))))
     (rktio_forget rktio fd)))
 
-(define/who (add-stderr-log-receiver! logger . args)
+(define (add-stdio-log-receiver! who logger args parse-who which)
   (check who logger? logger)
-  (define lr (stderr-log-receiver (parse-filters 'make-stderr-log-receiver args #:default-level 'none)))
+  (define lr (stdio-log-receiver (parse-filters parse-who args #:default-level 'none)
+                                 which))
   (atomically
    (add-log-receiver! logger lr)
    (set-logger-permanent-receivers! logger (cons lr (logger-permanent-receivers logger)))))
 
+(define/who (add-stderr-log-receiver! logger . args)
+  (add-stdio-log-receiver! who logger args 'make-stderr-log-receiver RKTIO_STDERR))
+  
+(define/who (add-stdout-log-receiver! logger . args)
+  (add-stdio-log-receiver! who logger args 'make-stdio-log-receiver RKTIO_STDOUT))
+  
 ;; ----------------------------------------
 
 (define (add-log-receiver! logger lr)

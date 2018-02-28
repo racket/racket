@@ -17,7 +17,8 @@
          log-message  ; ok to call in host-Scheme interrupt handler
          log-receiver?
          make-log-receiver
-         add-stderr-log-receiver!)
+         add-stderr-log-receiver!
+         add-stdout-log-receiver!)
 
 (define root-logger
   (create-logger #:topic #f #:parent #f #:propagate-filters 'none))

@@ -1848,6 +1848,8 @@ MZ_EXTERN void scheme_set_ignore_link_paths(int);
 MZ_EXTERN void scheme_set_cross_compile_mode(int);
 MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 MZ_EXTERN void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level);
+MZ_EXTERN void scheme_set_logging2(int syslog_level, int stderr_level, int stdout_level);
+MZ_EXTERN void scheme_set_logging2_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level, Scheme_Object *stdout_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 
