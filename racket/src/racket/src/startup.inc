@@ -42763,7 +42763,7 @@ static const char *startup_source =
 "(begin"
 " 'namespace-variable-value53"
 "(let-values(((sym_51) sym52_0))"
-"(let-values(((use-mapping?_0)(if use-mapping?49_0 use-mapping?46_0 #f)))"
+"(let-values(((use-mapping?_0)(if use-mapping?49_0 use-mapping?46_0 #t)))"
 "(let-values(((failure-thunk_5)(if failure-thunk50_0 failure-thunk47_0 #f)))"
 "(let-values(((ns_79)(if ns51_0 ns48_0(1/current-namespace))))"
 "(let-values()"

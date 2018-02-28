@@ -160,7 +160,7 @@
 ;; ----------------------------------------
 
 (define (namespace-variable-value sym
-                                  [use-mapping? #f]
+                                  [use-mapping? #t]
                                   [failure-thunk #f]
                                   [ns (current-namespace)])
   (check 'namespace-variable-value symbol? sym)
