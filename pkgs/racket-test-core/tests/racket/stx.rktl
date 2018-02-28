@@ -2524,4 +2524,15 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #t
+      'rename-transformer-srcloc
+      ;; make sure `cons` in the expansion gets the same source line as `1`
+      (let ([stx (expand #'(letrec-syntax ([kons (make-rename-transformer #'cons)])
+                             (kons 1 2)))])
+        (syntax-case stx ()
+          [(_ () (_app cons one . _))
+           (equal? (syntax-line #'cons) (syntax-line #'one))])))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

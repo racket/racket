@@ -292,7 +292,9 @@
      [(expand-context-just-once? ctx) exp-s]
      [else (expand exp-s re-ctx
                    #:alternate-id (and (rename-transformer? t)
-                                       (syntax-track-origin (rename-transformer-target-in-context t ctx)
+                                       (syntax-track-origin (transfer-srcloc
+                                                             (rename-transformer-target-in-context t ctx)
+                                                             id)
                                                             id
                                                             id))
                    #:skip-log? (or (expand-context-only-immediate? ctx)
@@ -742,3 +744,12 @@
   (when (rename-transformer? val)
     (parameterize ([current-expand-context ctx])
       (maybe-install-free=id! val id phase))))
+
+;; Transfer the original ID's source location, if any, when expanding
+;; a reference to a rename transformer
+(define (transfer-srcloc new-s old-s)
+  (define srcloc (syntax-srcloc old-s))
+  (if srcloc
+      (struct-copy syntax new-s
+                   [srcloc srcloc])
+      new-s))
