@@ -1282,7 +1282,7 @@ static Scheme_Object *eval_linklet_body(Scheme_Linklet *linklet, Scheme_Instance
     return scheme_linklet_run_start(linklet, instance, scheme_make_pair(instance->name, scheme_true));
 #endif
   
-  return scheme_linklet_run_finish(linklet, instance, 0);
+  return scheme_linklet_run_finish(linklet, instance, use_prompt);
 }
 
 static void *instantiate_linklet_k(void)
