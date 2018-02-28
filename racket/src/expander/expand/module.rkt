@@ -614,7 +614,7 @@
   ;; If `mb-id` is not bound, we'd like to give a clear error message
   (unless (resolve mb-id phase)
     (raise-syntax-error #f "no #%module-begin binding in the module's language" s))
-  (define mb (datum->syntax disarmed-scopes-s `(,mb-id ,@bodys) s))
+  (define mb (datum->syntax disarmed-scopes-s `(,mb-id ,@bodys) s s))
   (log-expand mb-ctx 'tag mb)
   (when log-rename-one?
     (log-expand mb-ctx 'rename-one mb))

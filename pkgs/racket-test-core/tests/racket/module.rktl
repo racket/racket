@@ -2331,6 +2331,28 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (test 0 dynamic-require ''uses-a-namespace-to-mutate-x 'done)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that syntax properties are propagated from a
+;; `module` form to an implicit `#%module-begin`
+
+(module module-begin-to-export-foo-property racket/base
+  (require (for-syntax racket/base))
+  (provide (rename-out [mb #%module-begin]))
+
+  (define-syntax (mb stx)
+    (with-syntax ([FOO-PROP (syntax-property stx 'foo)])
+      #'(#%module-begin
+         (provide prop)
+         (define prop 'FOO-PROP)))))
+
+(eval (syntax-property
+       (datum->syntax
+        #f
+        '(module export-foo-property-as-bar 'module-begin-to-export-foo-property))
+       'foo "bar"))
+
+(test "bar" dynamic-require ''export-foo-property-as-bar 'prop)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
