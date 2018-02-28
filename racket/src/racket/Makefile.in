@@ -319,7 +319,7 @@ headers:
 # of the the other targets is selected by a recursive `$(MAKE)`.
 
 cstartup@STARTUP_AS_AUTO@:
-	$(MAKE) `@RUN_RACKET_CGC@ -cu $(srcdir)/src/startup-select.rkt`
+	$(MAKE) cstartup_`@RUN_RACKET_CGC@ -cu $(srcdir)/src/startup-select.rkt`
 
 # For compiling the startup code to bytecode
 cstartup@STARTUP_AS_BYTECODE@:
@@ -329,6 +329,10 @@ cstartup@STARTUP_AS_BYTECODE@:
 cstartup@STARTUP_AS_C@:
 	@RUN_RACKET_CGC@ -cu $(srcdir)/src/cify-check.rkt $(CSTARTUPDEST)
 	$(MAKE) cstartup.inc
+
+cstartup_:
+	echo "Bad startup choice, probably an error running startup-select.rkt"
+	exit 1
 
 # Running "cify-startup.rkt" through "$(SETUP_BOOT)" generates more
 # dependencies in "cstartup.d" for `$(CSTARTUPDEST)`
