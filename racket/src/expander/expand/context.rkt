@@ -70,7 +70,7 @@
 (define (make-expand-context ns
                              #:to-parsed? [to-parsed? #f]
                              #:for-serializable? [for-serializable? #f]
-                             #:observable? [observable? #f])
+                             #:observer [observer #f])
   (define root-ctx (namespace-get-root-expand-ctx ns))
   (expand-context (root-expand-context-module-scopes root-ctx)
                   (root-expand-context-post-expansion-scope root-ctx)
@@ -107,7 +107,7 @@
                   #f   ; to-module-lifts
                   #f   ; requires+provides
                   #f   ; name
-                  (and observable? (current-expand-observe))
+                  observer
                   for-serializable?
                   #f))
 
@@ -136,8 +136,10 @@
 
 ;; ----------------------------------------
 
-;; For macro debugging; see "log.rkt"
-
+;; For macro debugging. This parameter is only used by the expander
+;; entry points in "../eval/main.rkt" to set the expand-context
+;; observer. Other expander code uses "log.rkt" to send expansion
+;; events to the observer.
 (define current-expand-observe (make-parameter #f
                                                (lambda (v)
                                                  (unless (or (not v)
