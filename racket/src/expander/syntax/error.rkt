@@ -69,8 +69,9 @@
              (format "\n  in: ~.s" (syntax->datum (datum->syntax #f expr))))
         ""))
   (define src-loc-str
-    (or (extract-source-location sub-expr)
-        (extract-source-location expr)
+    (or (and (error-print-source-location)
+             (or (extract-source-location sub-expr)
+                 (extract-source-location expr)))
         ""))
   (raise (exn:fail:syntax
           (string-append src-loc-str
