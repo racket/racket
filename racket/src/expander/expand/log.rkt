@@ -4,8 +4,7 @@
 (provide log-expand
          log-expand*
          log-expand...
-         ...log-expand
-         log-expand-start-top)
+         ...log-expand)
 
 (define-syntax log-expand...
   (syntax-rules (lambda)
@@ -44,11 +43,6 @@
   (obs key (cond
             [(null? args) #f]
             [else (apply list* args)])))
-
-(define (log-expand-start-top)
-  (define obs (current-expand-observe))
-  (when obs
-    (call-expand-observe obs 'start-top)))
 
 (define key->arity
   ;; event-symbol => (U Nat 'any)

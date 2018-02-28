@@ -1,20 +1,23 @@
 #hash((__x
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (138 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (7 . #s(stx-boundary (s0 (s1 . s2))))
-        (2 . #s(stx-boundary (s0 (s1 . s2))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1 . s2))))
+        (return . #s(stx-boundary (s0 (s1 . s2))))))
       ((#%stratified-body
         (define (first z) z)
         (define (ok x) (second x))
@@ -22,8 +25,8 @@
         (ok (first 5))
         (define more 'oops))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -33,8 +36,7 @@
               (s2 (s7 s8) 8)
               (s5 (s3 5))
               (s2 s9 (s10 s11))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -44,8 +46,39 @@
               (s2 (s7 s8) 8)
               (s5 (s3 5))
               (s2 s9 (s10 s11))))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))
+              (s2 s9 (s10 s11))))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))
+              (s2 s9 (s10 s11))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))
+              (s2 s9 (s10 s11))))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -54,8 +87,8 @@
              (s1 (s6 s7) 8)
              (s4 (s2 5))
              (s1 s8 (s9 s10)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -64,8 +97,8 @@
              (s1 (s6 s7) 8)
              (s4 (s2 5))
              (s1 s8 (s9 s10)))))
-        (155 . #f)
-        (10
+        (prim-#%stratified . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) s2)
@@ -73,7 +106,7 @@
              (s0 (s5 s6) 8)
              (s3 (s1 5))
              (s0 s7 (s8 s9)))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 (s1 s2) s2)
              (s0 (s3 s4) (s5 s4))
@@ -87,309 +120,335 @@
              (s0 (s5 s6) 8)
              (s3 (s1 5))
              (s0 s7 (s8 s9)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 s3)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (0 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (21 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) 8)))
+        (visit . #s(stx-boundary (s0 (s1 s2) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) 8)))
          .
          #s(stx-boundary (s0 (s1 s3) 8)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) 8)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 5))))
-        (127 . #s(stx-boundary (s0 (s1 5))))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 5))))
+        (exit-check . #s(stx-boundary (s0 (s1 5))))
+        (block->letrec
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5)) (s9 s10 (s11 s12))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5)) (s9 s10 (s11 s12))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5)) (s9 s10 (s11 s12))))))
-        (113 . #f)
-        (16
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) s2)))
           #s(stx-boundary ((s3) (s1 (s4) (s5 s4))))
           #s(stx-boundary ((s5) (s1 (s6) 8))))
          .
          #s(stx-boundary ((s7 (s3 (s0 5)) (s8 s9 (s10 s11))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) 8)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (8)))
-        (10 . #s(stx-boundary (8)))
-        (24 #s(stx-boundary (8)) . #s(stx-boundary (8)))
-        (3 . #f)
-        (126 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (12 . #s(stx-boundary (8)))
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 (s1 (s2 5)) (s3 s4 (s5 s6))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 5)) (s3 s4 (s5 s6)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 5)) (s3 s4 (s5 s6)))))
-        (155 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
-        (24
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) 8)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (8)))
+        (enter-block . #s(stx-boundary (8)))
+        (block-renames #s(stx-boundary (8)) . #s(stx-boundary (8)))
+        (next . #f)
+        (enter-check . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->list . #s(stx-boundary (8)))
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1 (s2 5)) (s3 s4 (s5 s6))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 5)) (s3 s4 (s5 s6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 5)) (s3 s4 (s5 s6)))))
+        (prim-#%stratified . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5))))
          .
          #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 5))))
-        (127 . #s(stx-boundary (s0 (s1 5))))
-        (12 . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
-        (4 . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 5))))
-        (8 . #s(stx-boundary (s0 s1 (s2 5))))
-        (21 . #s(stx-boundary (s0 s1 (s2 5))))
-        (22 #s(stx-boundary (s0 s1 (s2 5))) . #s(stx-boundary (s0 s1 (s2 5))))
-        (9 . #s(stx-boundary (s0 s1 (s2 5))))
-        (0 . #s(stx-boundary (s0 s1 (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 5))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 5))))
+        (exit-check . #s(stx-boundary (s0 (s1 5))))
+        (block->list . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 5)) (s2 s3 (s4 s5)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 5))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 5))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 5)))
+         .
+         #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (visit . #s(stx-boundary (s0 s1 (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 5))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))))
       ((quote-syntax (stx-quoted))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 (s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1))))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 (s1))))
-        (2 . #s(stx-boundary (s0 (s1))))
-        (7 . #s(stx-boundary (s0 (s1 (s2)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2)))))
+        (enter-check . #s(stx-boundary (s0 (s1 (s2)))))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 (s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1))))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1))))
+        (return . #s(stx-boundary (s0 (s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2)))))
+        (return . #s(stx-boundary (s0 (s1 (s2)))))))
       ((module m racket/base
          (define-syntax (ok stx)
            (syntax-local-lift-require 'racket/list #'foldl))
          (ok))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 (s7 s8) (s9 s10))) (s4))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 (s7 s8) (s9 s10))) (s4))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (126 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (21 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (22
+        (exit-check
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 (s7 s8) (s9 s10))) (s4))))
+        (visit
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 (s7 s8) (s9 s10))) (s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 (s7 s8) (s9 s10))) (s4))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
@@ -397,43 +456,43 @@
              (s9)))
          .
          #s(stx-boundary (s15 (s8 (s9 s10) (s11 (s3 s12) (s13 s14))) (s9))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
              (s8 (s9 s10) (s11 (s3 s12) (s13 s14)))
              (s9))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
              (s8 (s9 s10) (s11 (s3 s12) (s13 s14)))
              (s9))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
              (s8 (s9 s10) (s11 (s3 s12) (s13 s14)))
              (s9))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
              (s8 (s9 s10) (s11 (s3 s12) (s13 s14)))
              (s9))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
              (s8 (s9 s10) (s11 (s3 s12) (s13 s14)))
              (s9))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
@@ -445,281 +504,327 @@
              (s3 s4 (s5 s6) (s7 s8) (s9 #f))
              (s10 (s11 s12) (s13 (s5 s14) (s15 s16)))
              (s11))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (102 . #f)
-        (148
+        (prim-module-begin . #f)
+        (rename-one
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) (s13 (s5 s14) (s15 s16))))
              (s1 s2 (s11)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (130 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (132 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (133 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (131 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (enter-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-pre . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-post . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (exit-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f))))
          .
          #s(stx-boundary (s8 s9 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (148 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (splice
          #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f)))
          #s(stx-boundary (s7 s8 (s9 (s10 s11) (s12 (s2 s13) (s14 s15)))))
          #s(stx-boundary (s7 s8 (s10))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (158 . #f)
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 #f)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (148 . #s(stx-boundary (s0 #f)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f)))
-        (6 . #s(stx-boundary (s0 s1 #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
-        (130 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (132 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-submodule . #f)
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 #f)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (rename-one . #s(stx-boundary (s0 #f)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 #f))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 #f))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 (s6 s7) (s8 s9))))))
+        (enter-local . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (local-pre . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8)))))
          .
          #s(stx-boundary (s9 (s1 s3) (s4 (s5 s6) (s7 s8)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (133 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (131 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (22
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (local-post
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (exit-local
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9))))))
          .
          #s(stx-boundary (s10 s11 (s12 (s2 s4) (s5 (s6 s7) (s8 s9))))))
-        (9 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (0 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (2 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (148 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
-        (11
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (prim-stop . #f)
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 (s6 s7) (s8 s9)))))))
+        (splice
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8)))))
          #s(stx-boundary (s9 s10 (s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (148 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (103 . #f)
-        (157 . #f)
-        (20 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (prim-define-syntaxes . #f)
+        (prepare-env . #f)
+        (phase-up . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6))))
          .
          #s(stx-boundary (s7 (s1) (s2 (s3 s4) (s5 s6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 s3) (s4 s5)))))
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (prim-lambda . #f)
+        (lambda-renames
+         #s(stx-boundary (s0))
+         .
+         #s(stx-boundary ((s1 (s2 s3) (s4 s5)))))
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 s4))))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (12 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (4 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (block->list . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))))
       ((module m racket/base (define (proc x) x) (provide proc))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (126 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (21 . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
+        (enter-check . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
+        (exit-check . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) s5) (s6 s4))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (enter-check . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 (s2 s3) s3) (s4 s2))))
+        (macro-post-x
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9)))
          .
          #s(stx-boundary (s12 (s8 (s9 s10) s10) (s11 s9))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 (s9 s10) s10) (s11 s9))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
@@ -731,326 +836,339 @@
              (s3 s4 (s5 s6) (s7 s8) (s9 #f))
              (s10 (s11 s12) s12)
              (s13 s11))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (102 . #f)
-        (148
+        (prim-module-begin . #f)
+        (rename-one
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 (s11 s12) s12))
              (s1 s2 (s13 s11)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (130 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (132 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (133 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (131 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (enter-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-pre . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-post . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (exit-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f))))
          .
          #s(stx-boundary (s8 s9 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (148 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (splice
          #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f)))
          #s(stx-boundary (s7 s8 (s9 (s10 s11) s11)))
          #s(stx-boundary (s7 s8 (s12 s10))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (158 . #f)
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 #f)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (148 . #s(stx-boundary (s0 #f)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f)))
-        (6 . #s(stx-boundary (s0 s1 #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
-        (130 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (132 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-submodule . #f)
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 #f)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (rename-one . #s(stx-boundary (s0 #f)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 #f))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 #f))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 s4) s4))))
+        (enter-local . #s(stx-boundary (s0 (s1 s2) s2)))
+        (local-pre . #s(stx-boundary (s0 (s1 s2) s2)))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (133 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (131 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (local-post . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-local . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4))))
          .
          #s(stx-boundary (s5 s6 (s7 (s2 s4) s4))))
-        (9 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (0 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (148 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (return . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) s4)))))
+        (splice
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          #s(stx-boundary (s4 s5 (s6 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (148 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (130 . #s(stx-boundary (s0 s1)))
-        (132 . #s(stx-boundary (s0 s1)))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 (s1 (s2 s3)))) . #s(stx-boundary (s4 s3)))
-        (9 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (133 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (131 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (rename-one . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-local . #s(stx-boundary (s0 s1)))
+        (local-pre . #s(stx-boundary (s0 s1)))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1 (s2 s3))))
+         .
+         #s(stx-boundary (s4 s3)))
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (local-post . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (exit-local . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2 (s3 s4)))))
          .
          #s(stx-boundary (s5 s6 (s7 s4))))
-        (9 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
-        (11 #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (3 . #f)
-        (135)
-        (13 . #f)
-        (6 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (122 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
-        (9 . #s(stx-boundary (s0 s1)))
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (7 . #f)
-        (3 . #f)
-        (7
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (return . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2 (s3 s4))))))
+        (splice #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (next . #f)
+        (module-lift-end-loop)
+        (next-group . #f)
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (prim-provide . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
+        (exit-macro . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s9 (s10) (s11 (s12) s12))
              (s13 s10))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s9 (s10) (s11 (s12) s12))
              (s13 s10))))
-        (148
+        (rename-one
          .
          #s(stx-boundary
             (s0
@@ -1060,7 +1178,7 @@
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s11 (s12) (s13 (s14) s14))
               (s15 s12)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -1070,7 +1188,7 @@
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s11 (s12) (s13 (s14) s14))
               (s15 s12)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -1082,277 +1200,298 @@
               (s15 s12)))))))
       ((module m racket/base 'done)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2 (s3 s4))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 (s3 s4))))
-        (101 . #f)
-        (157 . #f)
-        (148 . #s(stx-boundary (s0 s1)))
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (142 . #s(stx-boundary (s0 (s1 s2))))
-        (126 . #s(stx-boundary (s0 (s1 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2))))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 s4))))
+        (enter-check . #s(stx-boundary (s0 s1 s2 (s3 s4))))
+        (exit-check . #s(stx-boundary (s0 s1 s2 (s3 s4))))
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 (s3 s4))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (tag . #s(stx-boundary (s0 (s1 s2))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8)))
          .
          #s(stx-boundary (s9 (s3 s8))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
-        (21 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
-        (22
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s3 s8))))
+        (macro-post-x
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10))))
          .
          #s(stx-boundary (s11 (s3 s4 (s5 s6) (s7 s8) (s9 #f)) (s5 s10))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (102 . #f)
-        (148
+        (prim-module-begin . #f)
+        (rename-one
          .
          #s(stx-boundary
             (s0 (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f))) (s1 s2 (s5 s10)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (130 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (132 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (133 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (131 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (enter-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-pre . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-post . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (exit-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f))))
          .
          #s(stx-boundary (s8 s9 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (148 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (splice
          #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f)))
          #s(stx-boundary (s7 s8 (s2 s9))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (158 . #f)
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 #f)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (148 . #s(stx-boundary (s0 #f)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f)))
-        (6 . #s(stx-boundary (s0 s1 #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (130 . #s(stx-boundary (s0 s1)))
-        (132 . #s(stx-boundary (s0 s1)))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (133 . #s(stx-boundary (s0 s1)))
-        (131 . #s(stx-boundary (s0 s1)))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-submodule . #f)
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 #f)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (rename-one . #s(stx-boundary (s0 #f)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 #f))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 #f))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-local . #s(stx-boundary (s0 s1)))
+        (local-pre . #s(stx-boundary (s0 s1)))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (local-post . #s(stx-boundary (s0 s1)))
+        (exit-local . #s(stx-boundary (s0 s1)))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2 s3))))
          .
          #s(stx-boundary (s4 s1 (s2 s3))))
-        (9 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (11 #s(stx-boundary (s0 (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (splice #s(stx-boundary (s0 (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5))
          .
          #s(stx-boundary (s6 (s3 s4))))
-        (9 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (0 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (2 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (148 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 () (s2 s3)) s4)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 s2))))
-        (110 . #f)
-        (17 #s(stx-boundary ()) . #s(stx-boundary ((s0 s1))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (5 . #s(stx-boundary ((s0 s1))))
-        (7 . #s(stx-boundary (s0 () (s1 s2))))
-        (2 . #s(stx-boundary (s0 () (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 (s1 () (s2 s3)) s4)))
-        (7 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (2 . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (visit . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (return . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 () (s2 s3)) s4)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s1 s2))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary ()) . #s(stx-boundary ((s0 s1))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-list . #s(stx-boundary ((s0 s1))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 s2))))
+        (return . #s(stx-boundary (s0 () (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 (s1 () (s2 s3)) s4)))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (return . #s(stx-boundary (s0 s1 (s2 () (s3 s4)) s5)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s7 s9 (s10 () (s3 s11)) s12))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s7 s9 (s10 () (s3 s11)) s12))))
-        (148
+        (rename-one
          .
          #s(stx-boundary
             (s0
@@ -1361,7 +1500,7 @@
              (s3
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s9 s11 (s12 () (s5 s13)) s14)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -1370,7 +1509,7 @@
              (s3
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s9 s11 (s12 () (s5 s13)) s14)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -1381,210 +1520,224 @@
               (s9 s11 (s12 () (s5 s13)) s14)))))))
       ((let () (define-syntax (ok stx) (quote-syntax 8)) (ok 5))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (exit-check . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5)))
          .
          #s(stx-boundary (s5 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5)))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 8)))
          .
          #s(stx-boundary (s3 (s1) (s2 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 5)))
-        (21 . #s(stx-boundary (s0 5)))
-        (22 #s(stx-boundary 8) . #s(stx-boundary (s0 5)))
-        (9 . #s(stx-boundary 8))
-        (2 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (14 #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
-        (0 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
-        (114 . #f)
-        (19
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 5)))
+        (macro-pre-x . #s(stx-boundary (s0 5)))
+        (macro-post-x #s(stx-boundary 8) . #s(stx-boundary (s0 5)))
+        (exit-macro . #s(stx-boundary 8))
+        (return . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->letrec #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
+        (visit . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) () 8)))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
          ()
          .
          #s(stx-boundary (8)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (142 . #s(stx-boundary (s0 () (s1 8))))
-        (7 . #s(stx-boundary (s0 () (s1 8))))
-        (2 . #s(stx-boundary (s0 () (s1 8))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 8)))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 8)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (tag . #s(stx-boundary (s0 () (s1 8))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 8))))
+        (return . #s(stx-boundary (s0 () (s1 8))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 8)))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 8)))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))))
       ((with-continuation-mark __x __y __z)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2 s3 s4))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 s3 s4))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2 s3)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 s3)))
-        (106 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (7 . #s(stx-boundary (s0 (s1 . s2) (s1 . s3) (s1 . s4))))
-        (2 . #s(stx-boundary (s0 (s1 . s2) (s1 . s3) (s1 . s4))))
-        (7 . #s(stx-boundary (s0 (s1 (s2 . s3) (s2 . s4) (s2 . s5)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 . s3) (s2 . s4) (s2 . s5)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2 s3 s4))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2 s3 s4))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2 s3 s4))))
+        (visit . #s(stx-boundary (s0 (s1 s2 s3 s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 s3 s4))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 s1 s2 s3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 s3)))
+        (prim-with-continuation-mark . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1 . s2) (s1 . s3) (s1 . s4))))
+        (return . #s(stx-boundary (s0 (s1 . s2) (s1 . s3) (s1 . s4))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 . s3) (s2 . s4) (s2 . s5)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 . s3) (s2 . s4) (s2 . s5)))))))
       ((#%top . __x)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 . s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 . s2))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 . s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (7 . #s(stx-boundary (s0 (s1 . s2))))
-        (2 . #s(stx-boundary (s0 (s1 . s2))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 . s2))))
+        (enter-check . #s(stx-boundary (s0 (s1 . s2))))
+        (exit-check . #s(stx-boundary (s0 (s1 . s2))))
+        (visit . #s(stx-boundary (s0 (s1 . s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 . s2))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 . s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1 . s2))))
+        (return . #s(stx-boundary (s0 (s1 . s2))))))
       ((let () (define-syntax-rule (ok x) x) (ok 5))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
+        (enter-check . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
+        (exit-check . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) s4) (s3 5)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5)))
          .
          #s(stx-boundary (s4 () (s1 (s2 s3) s3) (s2 5))))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) s2) (s1 5))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) s2) (s1 5))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s1 (s2 s3) s3) (s2 5))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 (s1 s2) s2) (s1 5))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) s2) (s1 5))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) s2) (s1 5)))
          .
          #s(stx-boundary ((s0 (s1 s2) s2) (s1 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary
             (s0
              s1
@@ -1601,7 +1754,7 @@
                (s7 (s11 s3 (s12 (s8))))))))
          .
          #s(stx-boundary (s5 (s1 s8) s8)))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -1617,7 +1770,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -1633,7 +1786,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -1649,8 +1802,8 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -1666,7 +1819,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -1682,7 +1835,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1)
@@ -1712,7 +1865,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -1728,7 +1881,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -1744,7 +1897,7 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -1760,8 +1913,8 @@
                #f
                ((s7 s8) (s9 (s10 s3 s8)))
                (s7 (s11 s3 (s12 (s8)))))))))
-        (103 . #f)
-        (148
+        (prim-define-syntaxes . #f)
+        (rename-one
          .
          #s(stx-boundary
             ((s0)
@@ -1776,9 +1929,9 @@
                #f
                ((s6 s7) (s8 (s9 s2 s7)))
                (s6 (s10 s2 (s11 (s7)))))))))
-        (157 . #f)
-        (144 . #f)
-        (0
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -1792,8 +1945,8 @@
               #f
               ((s5 s6) (s7 (s8 s1 s6)))
               (s5 (s9 s1 (s10 (s6))))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -1807,8 +1960,8 @@
               #f
               ((s5 s6) (s7 (s8 s1 s6)))
               (s5 (s9 s1 (s10 (s6))))))))
-        (110 . #f)
-        (17
+        (prim-lambda . #f)
+        (lambda-renames
          #s(stx-boundary (s0))
          .
          #s(stx-boundary
@@ -1821,7 +1974,7 @@
               #f
               ((s4 s5) (s6 (s7 s0 s5)))
               (s4 (s8 s0 (s9 (s5))))))))
-        (10
+        (enter-block
          .
          #s(stx-boundary
             ((s0
@@ -1833,7 +1986,7 @@
               #f
               ((s4 s5) (s6 (s7 s2 s5)))
               (s4 (s8 s2 (s9 (s5))))))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0
               s1
@@ -1855,8 +2008,8 @@
               #f
               ((s4 s5) (s6 (s7 s2 s5)))
               (s4 (s8 s2 (s9 (s5))))))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -1868,7 +2021,7 @@
              #f
              ((s4 s5) (s6 (s7 s2 s5)))
              (s4 (s8 s2 (s9 (s5)))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -1880,8 +2033,8 @@
              #f
              ((s4 s5) (s6 (s7 s2 s5)))
              (s4 (s8 s2 (s9 (s5)))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -1893,7 +2046,7 @@
              #f
              ((s4 s5) (s6 (s7 s2 s5)))
              (s4 (s8 s2 (s9 (s5)))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -1905,7 +2058,7 @@
              #f
              ((s4 s5) (s6 (s7 s2 s5)))
              (s4 (s8 s2 (s9 (s5)))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              ((s1 s2))
@@ -1949,7 +2102,7 @@
              #f
              ((s27 s16) (s19 (s20 s2 s16)))
              (s27 (s21 s2 (s22 (s16)))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -1983,7 +2136,7 @@
                  s3
                  (s0 () (s15 () () (s21 s2 (s22 (s16)))))
                  (s23 #f #:opaque s1))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -2017,7 +2170,7 @@
                  s3
                  (s0 () (s15 () () (s21 s2 (s22 (s16)))))
                  (s23 #f #:opaque s1))))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -2051,8 +2204,8 @@
                  s3
                  (s0 () (s15 () () (s21 s2 (s22 (s16)))))
                  (s23 #f #:opaque s1))))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -2086,7 +2239,7 @@
                  s3
                  (s0 () (s15 () () (s21 s2 (s22 (s16)))))
                  (s23 #f #:opaque s1))))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -2120,7 +2273,7 @@
                  s3
                  (s0 () (s15 () () (s21 s2 (s22 (s16)))))
                  (s23 #f #:opaque s1))))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (((s1) s2))
@@ -2186,7 +2339,7 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -2220,7 +2373,7 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -2254,7 +2407,7 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -2288,7 +2441,7 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0
@@ -2322,7 +2475,7 @@
                   s4
                   (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                   (s24 #f #:opaque s1)))))))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0
@@ -2356,8 +2509,8 @@
                   s4
                   (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                   (s24 #f #:opaque s1)))))))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -2391,8 +2544,8 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -2426,8 +2579,8 @@
                  s4
                  (s3 () (s16 () () (s22 s2 (s23 (s17)))))
                  (s24 #f #:opaque s1))))))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) s1)))
          .
          #s(stx-boundary
@@ -2460,13 +2613,13 @@
                  s3
                  (s2 () (s15 () () (s21 s1 (s22 (s16)))))
                  (s23 #f #:opaque s0))))))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (13 . #f)
-        (10
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0
@@ -2498,7 +2651,7 @@
                  s1
                  (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                  (s23 #f #:opaque s12))))))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0
               ((s1
@@ -2560,8 +2713,8 @@
                  s1
                  (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                  (s23 #f #:opaque s12))))))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -2593,7 +2746,7 @@
                 s1
                 (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                 (s23 #f #:opaque s12)))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -2625,8 +2778,8 @@
                 s1
                 (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                 (s23 #f #:opaque s12)))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -2658,7 +2811,7 @@
                 s1
                 (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                 (s23 #f #:opaque s12)))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -2690,7 +2843,7 @@
                 s1
                 (s0 () (s14 () () (s21 s20 (s22 (s15)))))
                 (s23 #f #:opaque s12)))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (((s1)
@@ -2752,7 +2905,7 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -2784,7 +2937,7 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -2816,7 +2969,7 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -2848,7 +3001,7 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0
@@ -2880,7 +3033,7 @@
                  s1
                  (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                  (s24 #f #:opaque s13))))))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0
@@ -2912,8 +3065,8 @@
                  s1
                  (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                  (s24 #f #:opaque s13))))))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -2945,8 +3098,8 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -2978,8 +3131,8 @@
                 s1
                 (s8 () (s15 () () (s22 s21 (s23 (s16)))))
                 (s24 #f #:opaque s13)))))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary
              ((s0)
               ((s1
@@ -3011,8 +3164,8 @@
                 s0
                 (s7 () (s14 () () (s21 s20 (s22 (s15)))))
                 (s23 #f #:opaque s12)))))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             ((s0
@@ -3028,8 +3181,8 @@
                 #f)
                #f))
              s11)))
-        (1 . #s(stx-boundary s0))
-        (142
+        (resolve . #s(stx-boundary s0))
+        (tag
          .
          #s(stx-boundary
             (s0
@@ -3049,7 +3202,7 @@
                 #f)
                #f))
              s12)))
-        (6
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -3069,8 +3222,8 @@
                 #f)
                #f))
              s12)))
-        (109 . #f)
-        (4
+        (prim-#%app . #f)
+        (enter-list
          .
          #s(stx-boundary
             ((s0
@@ -3086,8 +3239,8 @@
                 #f)
                #f))
              s11)))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -3102,8 +3255,8 @@
                 (s10 s1))
                #f)
               #f))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -3118,8 +3271,8 @@
                 (s10 s1))
                #f)
               #f))))
-        (110 . #f)
-        (17
+        (prim-lambda . #f)
+        (lambda-renames
          #s(stx-boundary (s0))
          .
          #s(stx-boundary
@@ -3133,7 +3286,7 @@
                 (s10 s0))
                #f)
               #f))))
-        (10
+        (enter-block
          .
          #s(stx-boundary
             ((s0
@@ -3146,7 +3299,7 @@
                 (s10 s2))
                #f)
               #f))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0
               (s1 s2)
@@ -3170,8 +3323,8 @@
                 (s10 s2))
                #f)
               #f))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -3184,7 +3337,7 @@
                (s10 s2))
               #f)
              #f)))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -3197,7 +3350,7 @@
                (s10 s2))
               #f)
              #f)))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0
@@ -3210,7 +3363,7 @@
                 (s10 s2))
                #f)
               #f))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0
@@ -3223,8 +3376,8 @@
                 (s10 s2))
                #f)
               #f))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -3237,8 +3390,8 @@
                (s10 s2))
               #f)
              #f)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -3251,29 +3404,29 @@
                (s10 s2))
               #f)
              #f)))
-        (105 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (3 . #f)
-        (0
+        (prim-if . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -3283,8 +3436,8 @@
                (s0 (s5 s2) (s6 ((s7 (s4 s2))) (s8 s7 (s9 (s10 s2)) s7)) #f))
               (s10 s2))
              #f)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -3294,68 +3447,68 @@
                (s0 (s5 s2) (s6 ((s7 (s4 s2))) (s8 s7 (s9 (s10 s2)) s7)) #f))
               (s10 s2))
              #f)))
-        (105 . #f)
-        (0 . #s(stx-boundary ((s0 (s1) s2) (s3 s1))))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 (s1 (s2) s3) (s4 s2))))
-        (6 . #s(stx-boundary (s0 (s1 (s2) s3) (s4 s2))))
-        (109 . #f)
-        (4 . #s(stx-boundary ((s0 (s1) s2) (s3 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s2)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s1)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s2)))
-        (2 . #s(stx-boundary (s0 (s1) s2)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 (s1) s2) (s3 s4 s1))))
-        (7 . #s(stx-boundary (s0 (s1 (s2) s3) (s0 s4 s2))))
-        (2 . #s(stx-boundary (s0 (s1 (s2) s3) (s0 s4 s2))))
-        (3 . #f)
-        (0
+        (prim-if . #f)
+        (visit . #s(stx-boundary ((s0 (s1) s2) (s3 s1))))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 (s1 (s2) s3) (s4 s2))))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2) s3) (s4 s2))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1) s2) (s3 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s2)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s1)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s2)))
+        (return . #s(stx-boundary (s0 (s1) s2)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 (s1) s2) (s3 s4 s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2) s3) (s0 s4 s2))))
+        (return . #s(stx-boundary (s0 (s1 (s2) s3) (s0 s4 s2))))
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             ((s0
               (s1)
               (s2 (s3 s1) (s4 ((s5 (s6 s1))) (s7 s5 (s8 (s9 s1)) s5)) #f))
              (s9 s1))))
-        (1 . #s(stx-boundary s0))
-        (142
+        (resolve . #s(stx-boundary s0))
+        (tag
          .
          #s(stx-boundary
             (s0
@@ -3363,7 +3516,7 @@
               (s2)
               (s3 (s4 s2) (s5 ((s6 (s7 s2))) (s8 s6 (s9 (s10 s2)) s6)) #f))
              (s10 s2))))
-        (6
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -3371,277 +3524,287 @@
               (s2)
               (s3 (s4 s2) (s5 ((s6 (s7 s2))) (s8 s6 (s9 (s10 s2)) s6)) #f))
              (s10 s2))))
-        (109 . #f)
-        (4
+        (prim-#%app . #f)
+        (enter-list
          .
          #s(stx-boundary
             ((s0
               (s1)
               (s2 (s3 s1) (s4 ((s5 (s6 s1))) (s7 s5 (s8 (s9 s1)) s5)) #f))
              (s9 s1))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
              (s1)
              (s2 (s3 s1) (s4 ((s5 (s6 s1))) (s7 s5 (s8 (s9 s1)) s5)) #f))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (s1)
              (s2 (s3 s1) (s4 ((s5 (s6 s1))) (s7 s5 (s8 (s9 s1)) s5)) #f))))
-        (110 . #f)
-        (17
+        (prim-lambda . #f)
+        (lambda-renames
          #s(stx-boundary (s0))
          .
          #s(stx-boundary
             ((s1 (s2 s0) (s3 ((s4 (s5 s0))) (s6 s4 (s7 (s8 s0)) s4)) #f))))
-        (10
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f)))
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f)))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f)))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (s1 s2) (s3 ((s4 (s5 s2))) (s6 s4 (s7 (s8 s2)) s4)) #f)))
-        (105 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (21 . #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (22
+        (prim-if . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (macro-post-x
          #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1)))
          .
          #s(stx-boundary (s7 ((s1 (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (9 . #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (0 . #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
-        (112 . #f)
-        (16
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (visit
+         .
+         #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (((s1) (s2 s3))) (s4 s1 (s5 (s6 s3)) s1))))
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 s2))))
          .
          #s(stx-boundary ((s3 s0 (s4 (s5 s2)) s0))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 s1 (s2 (s3 s4)) s1))))
-        (24
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 s1 (s2 (s3 s4)) s1))))
+        (block-renames
          #s(stx-boundary ((s0 s1 (s2 (s3 s4)) s1)))
          .
          #s(stx-boundary ((s0 s1 (s2 (s3 s4)) s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 s4)) s1)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f))
          .
          #s(stx-boundary (s2 s1 (s3 (s4 s5)) s1)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
-        (127 . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
-        (12 . #s(stx-boundary ((s0 s1 (s2 (s3 (s4 s5)) s1) #f))))
-        (4 . #s(stx-boundary ((s0 s1 (s2 (s3 (s4 s5)) s1) #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
-        (105 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
-        (21 . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
+        (exit-check . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
+        (block->list . #s(stx-boundary ((s0 s1 (s2 (s3 (s4 s5)) s1) #f))))
+        (enter-list . #s(stx-boundary ((s0 s1 (s2 (s3 (s4 s5)) s1) #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 (s3 (s4 s5)) s1) #f)))
+        (prim-if . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 (s2 s3)) s4)))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f))
          .
          #s(stx-boundary (s4 (s1 (s2 s3)) s5)))
-        (9 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (105 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
-        (9 . #s(stx-boundary (s0 s1)))
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (138 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary s0))
-        (7 . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (7 . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) s5 (s6 #f))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) s5 (s6 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (7
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (prim-if . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
+        (exit-macro . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (tag . #s(stx-boundary s0))
+        (exit-prim . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) s5 (s6 #f))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) s5 (s6 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-prim
          .
          #s(stx-boundary (s0 s1 (s0 (s2 s3 (s2 s4 s5)) s1 (s6 #f)) (s6 #f))))
-        (2
+        (return
          .
          #s(stx-boundary (s0 s1 (s0 (s2 s3 (s2 s4 s5)) s1 (s6 #f)) (s6 #f))))
-        (5
+        (exit-list
          .
          #s(stx-boundary ((s0 s1 (s0 (s2 s3 (s2 s4 s5)) s1 (s6 #f)) (s6 #f)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 s3 s4)))
              (s5 s1 (s5 (s2 s6 (s2 s7 s4)) s1 (s8 #f)) (s8 #f)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 s3 s4)))
              (s5 s1 (s5 (s2 s6 (s2 s7 s4)) s1 (s8 #f)) (s8 #f)))))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3650,7 +3813,7 @@
               (((s5) (s1 s6 s3)))
               (s0 s5 (s0 (s1 s7 (s1 s8 s3)) s5 (s9 #f)) (s9 #f)))
              (s9 #f))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3659,7 +3822,7 @@
               (((s5) (s1 s6 s3)))
               (s0 s5 (s0 (s1 s7 (s1 s8 s3)) s5 (s9 #f)) (s9 #f)))
              (s9 #f))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -3668,7 +3831,7 @@
                (((s5) (s1 s6 s3)))
                (s0 s5 (s0 (s1 s7 (s1 s8 s3)) s5 (s9 #f)) (s9 #f)))
               (s9 #f)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3679,7 +3842,7 @@
                (((s6) (s3 s7 s1)))
                (s2 s6 (s2 (s3 s8 (s3 s9 s1)) s6 (s10 #f)) (s10 #f)))
               (s10 #f)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3690,28 +3853,28 @@
                (((s6) (s3 s7 s1)))
                (s2 s6 (s2 (s3 s8 (s3 s9 s1)) s6 (s10 #f)) (s10 #f)))
               (s10 #f)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -3723,7 +3886,7 @@
                 (s2 s6 (s2 (s3 s8 (s3 s9 s1)) s6 (s10 #f)) (s10 #f)))
                (s10 #f)))
              (s3 s9 s1))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3736,7 +3899,7 @@
                 (s3 s6 (s3 (s0 s8 (s0 s9 s2)) s6 (s10 #f)) (s10 #f)))
                (s10 #f)))
              (s0 s9 s2))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3749,15 +3912,15 @@
                 (s3 s6 (s3 (s0 s8 (s0 s9 s2)) s6 (s10 #f)) (s10 #f)))
                (s10 #f)))
              (s0 s9 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3773,7 +3936,7 @@
                 (s11 #f)))
               (s1 s10 s3))
              (s11 #f))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3789,15 +3952,15 @@
                 (s11 #f)))
               (s1 s10 s3))
              (s11 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3816,7 +3979,7 @@
                (s1 s10 s3))
               (s11 #f))
              (s11 #f))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3835,7 +3998,7 @@
                (s1 s10 s3))
               (s11 #f))
              (s11 #f))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -3854,7 +4017,7 @@
                 (s1 s10 s3))
                (s11 #f))
               (s11 #f)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3875,7 +4038,7 @@
                 (s3 s10 s1))
                (s11 #f))
               (s11 #f)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3896,12 +4059,12 @@
                 (s3 s10 s1))
                (s11 #f))
               (s11 #f)))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -3923,7 +4086,7 @@
                 (s11 #f))
                (s11 #f)))
              s12)))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -3946,7 +4109,7 @@
                 (s11 #f))
                (s11 #f)))
              s12)))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -3969,8 +4132,8 @@
                 (s11 #f))
                (s11 #f)))
              s12)))
-        (13 . #f)
-        (10
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0
@@ -3982,7 +4145,7 @@
                 s1
                 (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                 (s17 #f #:opaque s14)))))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0
               s1
@@ -4004,8 +4167,8 @@
                 s1
                 (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                 (s17 #f #:opaque s14)))))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -4017,7 +4180,7 @@
                s1
                (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                (s17 #f #:opaque s14))))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -4029,7 +4192,7 @@
                s1
                (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                (s17 #f #:opaque s14))))))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0
@@ -4041,7 +4204,7 @@
                 s1
                 (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                 (s17 #f #:opaque s14)))))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0
@@ -4053,8 +4216,8 @@
                 s1
                 (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                 (s17 #f #:opaque s14)))))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -4066,8 +4229,8 @@
                s1
                (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                (s17 #f #:opaque s14))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -4079,179 +4242,183 @@
                s1
                (s2 () (s4 () () (s15 s10 (s16 (s5)))))
                (s17 #f #:opaque s14))))))
-        (105 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0
+        (prim-if . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 ((s1 s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0 ((s1 s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0 ((s1 s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0 (((s1) s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4)))))
          .
          #s(stx-boundary
             (s10 ((s1 s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0 (((s1) s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (((s1) s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (((s1) s2)) (s3 (((s4) (s5 0 (s6 s1)))) () (s7 (s8 s9 s4))))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) s1)))
          .
          #s(stx-boundary ((s2 (((s3) (s4 0 (s5 s0)))) () (s6 (s7 s8 s3))))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (13 . #f)
-        (10
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary ((s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1))))))
-        (24
+        (block-renames
          #s(stx-boundary ((s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
          .
          #s(stx-boundary ((s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1))))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
-        (127
+        (exit-check
          .
          #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
-        (12
+        (block->list
          .
          #s(stx-boundary ((s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1))))))
-        (4
+        (enter-list
          .
          #s(stx-boundary ((s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
-        (114 . #f)
-        (19
+        (next . #f)
+        (visit
+         .
+         #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (((s1) (s2 0 (s3 s4)))) () (s5 (s6 s7 s1)))))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 0 (s2 s3)))))
          ()
          .
          #s(stx-boundary ((s4 (s5 s6 s0)))))
-        (157 . #f)
-        (3 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 0 (s2 s3))))
-        (6 . #s(stx-boundary (s0 s1 0 (s2 s3))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 0 (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 0)))
-        (6 . #s(stx-boundary (s0 . 0)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 0)))
-        (2 . #s(stx-boundary (s0 0)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (5 . #s(stx-boundary (s0 (s1 0) (s2 s3))))
-        (7 . #s(stx-boundary (s0 s1 (s2 0) (s3 s4))))
-        (2 . #s(stx-boundary (s0 s1 (s2 0) (s3 s4))))
-        (3 . #f)
-        (145 . #f)
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2 s3)))))
-        (24
+        (prepare-env . #f)
+        (next . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 0 (s2 s3))))
+        (enter-prim . #s(stx-boundary (s0 s1 0 (s2 s3))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 0 (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 0)))
+        (enter-prim . #s(stx-boundary (s0 . 0)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 0)))
+        (return . #s(stx-boundary (s0 0)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-list . #s(stx-boundary (s0 (s1 0) (s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 0) (s3 s4))))
+        (return . #s(stx-boundary (s0 s1 (s2 0) (s3 s4))))
+        (next . #f)
+        (exit-bind . #f)
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 s2 s3)))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2 s3))))
          .
          #s(stx-boundary ((s0 (s1 s2 s3)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (127 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (12 . #s(stx-boundary ((s0 (s1 s2 s3)))))
-        (4 . #s(stx-boundary ((s0 (s1 s2 s3)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 s3 s4))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3 s4))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (153 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (154 . #t)
-        (22 #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s3 s1)))
-        (9 . #s(stx-boundary (s0 s1)))
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (153 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (154 . #t)
-        (22 #s(stx-boundary s0) . #s(stx-boundary (s1 s2)))
-        (9 . #s(stx-boundary s0))
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (142 . #s(stx-boundary (s0 () (s1 s2 s3))))
-        (7 . #s(stx-boundary (s0 () (s1 s2 s3))))
-        (2 . #s(stx-boundary (s0 () (s1 s2 s3))))
-        (5 . #s(stx-boundary ((s0 () (s1 s2 s3)))))
-        (7 . #s(stx-boundary (s0 (((s1) s2)) (s0 () (s3 s4 s1)))))
-        (2 . #s(stx-boundary (s0 (((s1) s2)) (s0 () (s3 s4 s1)))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2 s3))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2 s3))))
+        (block->list . #s(stx-boundary ((s0 (s1 s2 s3)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 s2 s3)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 s3 s4))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3 s4))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 s2 s3))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (local-value . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (local-value-result . #t)
+        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s3 s1)))
+        (exit-macro . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (local-value . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (local-value-result . #t)
+        (macro-post-x #s(stx-boundary s0) . #s(stx-boundary (s1 s2)))
+        (exit-macro . #s(stx-boundary s0))
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (tag . #s(stx-boundary (s0 () (s1 s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 s2 s3))))
+        (return . #s(stx-boundary (s0 () (s1 s2 s3))))
+        (exit-list . #s(stx-boundary ((s0 () (s1 s2 s3)))))
+        (exit-prim . #s(stx-boundary (s0 (((s1) s2)) (s0 () (s3 s4 s1)))))
+        (return . #s(stx-boundary (s0 (((s1) s2)) (s0 () (s3 s4 s1)))))
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -4260,8 +4427,8 @@
               s1
               (s0 () (s7 () () (s8 s9 (s10 (s11)))))
               (s12 #f #:opaque s5)))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -4270,7 +4437,7 @@
               s1
               (s0 () (s7 () () (s8 s9 (s10 (s11)))))
               (s12 #f #:opaque s5)))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -4279,7 +4446,7 @@
               s1
               (s0 () (s7 () () (s8 s9 (s10 (s11)))))
               (s12 #f #:opaque s5)))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (((s1) ((s2 (s3) s4) s5)))
@@ -4295,7 +4462,7 @@
               s1
               (s7 () (s8 () () (s9 s10 (s11 (s12)))))
               (s13 #f #:opaque s5)))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -4304,7 +4471,7 @@
               s1
               (s7 () (s8 () () (s9 s10 (s11 (s12)))))
               (s13 #f #:opaque s5)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -4313,8 +4480,8 @@
               s1
               (s7 () (s8 () () (s9 s10 (s11 (s12)))))
               (s13 #f #:opaque s5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -4323,8 +4490,8 @@
               s1
               (s7 () (s8 () () (s9 s10 (s11 (s12)))))
               (s13 #f #:opaque s5)))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) ((s1 (s2) s3) s4))))
          .
          #s(stx-boundary
@@ -4332,51 +4499,51 @@
               s0
               (s6 () (s7 () () (s8 s9 (s10 (s11)))))
               (s12 #f #:opaque s4)))))
-        (3 . #f)
-        (0 . #s(stx-boundary ((s0 (s1) s2) s3)))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
-        (6 . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
-        (109 . #f)
-        (4 . #s(stx-boundary ((s0 (s1) s2) s3)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s2)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s1)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s2)))
-        (2 . #s(stx-boundary (s0 (s1) s2)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary ((s0 (s1) s2) s3)))
-        (7 . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
-        (2 . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
-        (13 . #f)
-        (10
+        (next . #f)
+        (visit . #s(stx-boundary ((s0 (s1) s2) s3)))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1) s2) s3)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s2)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s1)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s2)))
+        (return . #s(stx-boundary (s0 (s1) s2)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary ((s0 (s1) s2) s3)))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
+        (return . #s(stx-boundary (s0 (s1 (s2) s3) s4)))
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0
               s1
               (s2 () (s3 () () (s4 s5 (s6 (s7)))))
               (s8 #f #:opaque s9)))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 s1 (s2 () (s3 () () (s4 s5 (s6 (s7))))) (s8 #f #:opaque s9))))
          .
@@ -4385,182 +4552,182 @@
               s1
               (s2 () (s3 () () (s4 s5 (s6 (s7)))))
               (s8 #f #:opaque s9)))))
-        (3 . #f)
-        (126
+        (next . #f)
+        (enter-check
          .
          #s(stx-boundary
             (s0 s1 (s2 () (s3 () () (s4 s5 (s6 (s7))))) (s8 #f #:opaque s9))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0 s1 (s2 () (s3 () () (s4 s5 (s6 (s7))))) (s8 #f #:opaque s9))))
-        (12
+        (block->list
          .
          #s(stx-boundary
             ((s0
               s1
               (s2 () (s3 () () (s4 s5 (s6 (s7)))))
               (s8 #f #:opaque s9)))))
-        (4
+        (enter-list
          .
          #s(stx-boundary
             ((s0
               s1
               (s2 () (s3 () () (s4 s5 (s6 (s7)))))
               (s8 #f #:opaque s9)))))
-        (3 . #f)
-        (0
+        (next . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 s1 (s2 () (s3 () () (s4 s5 (s6 (s7))))) (s8 #f #:opaque s9))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 s1 (s2 () (s3 () () (s4 s5 (s6 (s7))))) (s8 #f #:opaque s9))))
-        (105 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (21 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (22
+        (prim-if . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (macro-pre-x . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5))))))
          .
          #s(stx-boundary (s6 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (9 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (0 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (visit . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s1 () () (s2 s3 (s4 (s5)))))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
+        (block-renames
          #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4))))))
          .
          #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
-        (127 . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
-        (12 . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
-        (4 . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
-        (114 . #f)
-        (19 () () . #s(stx-boundary ((s0 s1 (s2 (s3))))))
-        (157 . #f)
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 s1 (s2 (s3))))))
-        (24
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
+        (exit-check . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
+        (block->list . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
+        (enter-list . #s(stx-boundary ((s0 () () (s1 s2 (s3 (s4)))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () () (s1 s2 (s3 (s4))))))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames () () . #s(stx-boundary ((s0 s1 (s2 (s3))))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 s1 (s2 (s3))))))
+        (block-renames
          #s(stx-boundary ((s0 s1 (s2 (s3)))))
          .
          #s(stx-boundary ((s0 s1 (s2 (s3))))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (127 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (12 . #s(stx-boundary ((s0 s1 (s2 (s3))))))
-        (4 . #s(stx-boundary ((s0 s1 (s2 (s3))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
-        (6 . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1))))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 (s1))))
-        (2 . #s(stx-boundary (s0 (s1))))
-        (5 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (7 . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
-        (2 . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
-        (5 . #s(stx-boundary ((s0 s1 s2 (s3 (s4))))))
-        (142 . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
-        (7 . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
-        (2 . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
-        (5 . #s(stx-boundary ((s0 () (s1 s2 s3 (s4 (s5)))))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 s2 s3 (s4 (s5)))))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 s2 s3 (s4 (s5)))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f #:opaque s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f #:opaque s2)))
-        (6 . #s(stx-boundary (s0 s1 #f #:opaque s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f #:opaque s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary #:opaque))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #:opaque)))
-        (6 . #s(stx-boundary (s0 . #:opaque)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #:opaque)))
-        (2 . #s(stx-boundary (s0 #:opaque)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 (s1 #f) (s1 #:opaque) s2)))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f) (s2 #:opaque) s3)))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f) (s2 #:opaque) s3)))
-        (7
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (exit-check . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (block->list . #s(stx-boundary ((s0 s1 (s2 (s3))))))
+        (enter-list . #s(stx-boundary ((s0 s1 (s2 (s3))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1))))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1))))
+        (return . #s(stx-boundary (s0 (s1))))
+        (exit-list . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (exit-prim . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
+        (return . #s(stx-boundary (s0 s1 s2 (s3 (s4)))))
+        (exit-list . #s(stx-boundary ((s0 s1 s2 (s3 (s4))))))
+        (tag . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
+        (return . #s(stx-boundary (s0 () (s1 s2 s3 (s4 (s5))))))
+        (exit-list . #s(stx-boundary ((s0 () (s1 s2 s3 (s4 (s5)))))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 s2 s3 (s4 (s5)))))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 s2 s3 (s4 (s5)))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f #:opaque s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f #:opaque s2)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f #:opaque s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f #:opaque s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary #:opaque))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #:opaque)))
+        (enter-prim . #s(stx-boundary (s0 . #:opaque)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #:opaque)))
+        (return . #s(stx-boundary (s0 #:opaque)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 (s1 #f) (s1 #:opaque) s2)))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f) (s2 #:opaque) s3)))
+        (return . #s(stx-boundary (s0 s1 (s2 #f) (s2 #:opaque) s3)))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              s1
              (s2 () (s2 () (s3 s4 s5 (s6 (s7)))))
              (s3 s8 (s6 #f) (s6 #:opaque) s9))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              s1
              (s2 () (s2 () (s3 s4 s5 (s6 (s7)))))
              (s3 s8 (s6 #f) (s6 #:opaque) s9))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
               s1
               (s2 () (s2 () (s3 s4 s5 (s6 (s7)))))
               (s3 s8 (s6 #f) (s6 #:opaque) s9)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -4569,7 +4736,7 @@
               s1
               (s0 () (s0 () (s2 s8 s9 (s10 (s11)))))
               (s2 s12 (s10 #f) (s10 #:opaque) s6)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -4578,7 +4745,7 @@
               s1
               (s0 () (s0 () (s2 s8 s9 (s10 (s11)))))
               (s2 s12 (s10 #f) (s10 #:opaque) s6)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -4590,7 +4757,7 @@
                s1
                (s2 () (s2 () (s4 s10 s11 (s12 (s13)))))
                (s4 s14 (s12 #f) (s12 #:opaque) s9))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -4602,7 +4769,7 @@
                s1
                (s2 () (s2 () (s4 s10 s11 (s12 (s13)))))
                (s4 s14 (s12 #f) (s12 #:opaque) s9))))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -4614,7 +4781,7 @@
                 s1
                 (s2 () (s2 () (s4 s10 s11 (s12 (s13)))))
                 (s4 s14 (s12 #f) (s12 #:opaque) s9)))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -4648,7 +4815,7 @@
                 s1
                 (s0 () (s0 () (s2 s16 s17 (s12 (s18)))))
                 (s2 s19 (s12 #f) (s12 #:opaque) s13)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -4682,7 +4849,7 @@
                 s1
                 (s0 () (s0 () (s2 s16 s17 (s12 (s18)))))
                 (s2 s19 (s12 #f) (s12 #:opaque) s13)))))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -4716,7 +4883,7 @@
                  s1
                  (s0 () (s0 () (s2 s16 s17 (s12 (s18)))))
                  (s2 s19 (s12 #f) (s12 #:opaque) s13))))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -4755,7 +4922,7 @@
                  s3
                  (s0 () (s0 () (s4 s17 s2 (s14 (s18)))))
                  (s4 s19 (s14 #f) (s14 #:opaque) s1))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -4794,7 +4961,7 @@
                  s3
                  (s0 () (s0 () (s4 s17 s2 (s14 (s18)))))
                  (s4 s19 (s14 #f) (s14 #:opaque) s1))))))))
-        (5
+        (exit-list
          .
          #s(stx-boundary
             ((s0
@@ -4833,7 +5000,7 @@
                   s3
                   (s0 () (s0 () (s4 s17 s2 (s14 (s18)))))
                   (s4 s19 (s14 #f) (s14 #:opaque) s1)))))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -4874,7 +5041,7 @@
                   s4
                   (s2 () (s2 () (s5 s17 s1 (s14 (s18)))))
                   (s5 s19 (s14 #f) (s14 #:opaque) s3)))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -4915,19 +5082,19 @@
                   s4
                   (s2 () (s2 () (s5 s17 s1 (s14 (s18)))))
                   (s5 s19 (s14 #f) (s14 #:opaque) s3)))))))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 5)))
-        (21 . #s(stx-boundary (s0 5)))
-        (22 #s(stx-boundary 5) . #s(stx-boundary (s0 5)))
-        (9 . #s(stx-boundary 5))
-        (2 . #s(stx-boundary 5))
-        (127 . #s(stx-boundary 5))
-        (14
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 5)))
+        (macro-pre-x . #s(stx-boundary (s0 5)))
+        (macro-post-x #s(stx-boundary 5) . #s(stx-boundary (s0 5)))
+        (exit-macro . #s(stx-boundary 5))
+        (return . #s(stx-boundary 5))
+        (exit-check . #s(stx-boundary 5))
+        (block->letrec
          #s(stx-boundary
             (s0
              (((s1)
@@ -4944,7 +5111,7 @@
                  (s7 (s11 s3 (s12 (s8))))))))
              ()
              5)))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -4962,8 +5129,8 @@
                  (s7 (s11 s3 (s12 (s8))))))))
              ()
              5)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -4981,8 +5148,8 @@
                  (s7 (s11 s3 (s12 (s8))))))))
              ()
              5)))
-        (114 . #f)
-        (19
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary
              ((s0)
               (s1
@@ -4999,254 +5166,274 @@
          ()
          .
          #s(stx-boundary (5)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (5)))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary ((s0 5))))
-        (142 . #s(stx-boundary (s0 () (s1 5))))
-        (7 . #s(stx-boundary (s0 () (s1 5))))
-        (2 . #s(stx-boundary (s0 () (s1 5))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 5)))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 5)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () (s2 5))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () (s2 5))))))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (5)))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary ((s0 5))))
+        (tag . #s(stx-boundary (s0 () (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 5))))
+        (return . #s(stx-boundary (s0 () (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 5)))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 5)))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () (s2 5))))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () (s2 5))))))))
       ((let () (define (ok x) (second x)) (define (second y) 8) (ok 5))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 s4)) (s2 (s5 s6) 8) (s3 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 s4)) (s2 (s5 s6) 8) (s3 5)))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 s4)) (s2 (s5 s6) 8) (s3 5)))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 s4)) (s2 (s5 s6) 8) (s3 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 s4)) (s2 (s5 s6) 8) (s3 5)))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (22
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5)))
          .
          #s(stx-boundary (s6 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (0
+        (visit
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 s3)) (s1 (s4 s5) 8) (s2 5))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5))))
-        (24
+        (prim-let-values . #f)
+        (let-renames
+         ()
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5))))
+        (next-group . #f)
+        (enter-block
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5)))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 s2)) (s0 (s3 s4) 8) (s1 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 s3)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (0 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (21 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) 8)))
+        (visit . #s(stx-boundary (s0 (s1 s2) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) 8)))
          .
          #s(stx-boundary (s0 (s1 s3) 8)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) 8)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (127 . #s(stx-boundary (s0 5)))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (exit-check . #s(stx-boundary (s0 5)))
+        (block->letrec
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 s3))) ((s4) (s2 (s5) 8))) (s1 5))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 s3))) ((s4) (s2 (s5) 8))) (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 s3))) ((s4) (s2 (s5) 8))) (s1 5))))
-        (113 . #f)
-        (16
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 s2))))
           #s(stx-boundary ((s3) (s1 (s4) 8))))
          .
          #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) 8)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (8)))
-        (10 . #s(stx-boundary (8)))
-        (24 #s(stx-boundary (8)) . #s(stx-boundary (8)))
-        (3 . #f)
-        (126 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (12 . #s(stx-boundary (8)))
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary ((s0 s1 (s2 5)))))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) 8)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (8)))
+        (enter-block . #s(stx-boundary (8)))
+        (block-renames #s(stx-boundary (8)) . #s(stx-boundary (8)))
+        (next . #f)
+        (enter-check . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->list . #s(stx-boundary (8)))
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 5))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 5)))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 s5 s3))) ((s5) (s2 (s6) (s7 8))))
              (s4 s1 (s7 5)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 s5 s3))) ((s5) (s2 (s6) (s7 8))))
              (s4 s1 (s7 5)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -5254,7 +5441,7 @@
              (s1
               (((s2) (s3 (s4) (s5 s6 s4))) ((s6) (s3 (s7) (s8 8))))
               (s5 s2 (s8 5))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -5262,7 +5449,7 @@
              (s1
               (((s2) (s3 (s4) (s5 s6 s4))) ((s6) (s3 (s7) (s8 8))))
               (s5 s2 (s8 5))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -5271,7 +5458,7 @@
               (s2
                (((s3) (s4 (s5) (s6 s7 s5))) ((s7) (s4 (s8) (s9 8))))
                (s6 s3 (s9 5)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -5282,32 +5469,43 @@
                (s6 s3 (s9 5)))))))))
       ((module m racket/base (require racket/list) foldl)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (148 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (126 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s3)))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
+        (enter-check . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
+        (exit-check . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
+        (visit . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 (s3 s4) s5)))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) s3)))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) s3)))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s3)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s3)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s3)))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10))
          .
          #s(stx-boundary (s11 (s8 s9) s10)))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
-        (21
+        (exit-macro
          .
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
-        (22
+        (return
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)) (s8 s9) s10)))
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
@@ -5315,302 +5513,321 @@
              (s1 s2 s12)))
          .
          #s(stx-boundary (s13 (s3 s4 (s5 s6) (s7 s8) (s9 #f)) (s10 s11) s12)))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (102 . #f)
-        (148
+        (prim-module-begin . #f)
+        (rename-one
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
              (s1 s2 (s10 s11))
              (s1 s2 s12))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (130 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (132 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (133 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (131 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (enter-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-pre . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-post . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (exit-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f))))
          .
          #s(stx-boundary (s8 s9 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (148 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (splice
          #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f)))
          #s(stx-boundary (s7 s8 (s9 s10)))
          #s(stx-boundary (s7 s8 s11)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (158 . #f)
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 #f)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (148 . #s(stx-boundary (s0 #f)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f)))
-        (6 . #s(stx-boundary (s0 s1 #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (130 . #s(stx-boundary (s0 s1)))
-        (132 . #s(stx-boundary (s0 s1)))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
-        (9 . #s(stx-boundary (s0 s1)))
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (133 . #s(stx-boundary (s0 s1)))
-        (131 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 (s1 s2))) . #s(stx-boundary (s3 s4 (s5 s2))))
-        (9 . #s(stx-boundary (s0 (s1 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2))))
-        (2 . #s(stx-boundary (s0 (s1 s2))))
-        (148 . #s(stx-boundary (s0 (s1 s2))))
-        (11 #s(stx-boundary (s0 s1)) #s(stx-boundary (s2 s3 s4)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (130 . #s(stx-boundary s0))
-        (132 . #s(stx-boundary s0))
-        (141 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (133 . #s(stx-boundary s0))
-        (131 . #s(stx-boundary s0))
-        (22 #s(stx-boundary (s0 (s1 s2))) . #s(stx-boundary (s3 s1 s2)))
-        (9 . #s(stx-boundary (s0 (s1 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2))))
-        (2 . #s(stx-boundary (s0 (s1 s2))))
-        (148 . #s(stx-boundary (s0 (s1 s2))))
-        (11 #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (22 #s(stx-boundary (s0 s1 (s2 () s3) s4)) . #s(stx-boundary (s5 s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (0 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (2 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (148 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 () s2) s3)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () s1)))
-        (110 . #f)
-        (17 #s(stx-boundary ()) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 () s1)))
-        (2 . #s(stx-boundary (s0 () s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 (s1 () s2) s3)))
-        (7 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (2 . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-submodule . #f)
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 #f)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (rename-one . #s(stx-boundary (s0 #f)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 #f))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 #f))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-local . #s(stx-boundary (s0 s1)))
+        (local-pre . #s(stx-boundary (s0 s1)))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
+        (exit-macro . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (local-post . #s(stx-boundary (s0 s1)))
+        (exit-local . #s(stx-boundary (s0 s1)))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1 s2)))
+         .
+         #s(stx-boundary (s3 s4 (s5 s2))))
+        (exit-macro . #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2))))
+        (return . #s(stx-boundary (s0 (s1 s2))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2))))
+        (splice #s(stx-boundary (s0 s1)) #s(stx-boundary (s2 s3 s4)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (enter-local . #s(stx-boundary s0))
+        (local-pre . #s(stx-boundary s0))
+        (start . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (local-post . #s(stx-boundary s0))
+        (exit-local . #s(stx-boundary s0))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1 s2)))
+         .
+         #s(stx-boundary (s3 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2))))
+        (return . #s(stx-boundary (s0 (s1 s2))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2))))
+        (splice #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 () s3) s4))
+         .
+         #s(stx-boundary (s5 s3)))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (visit . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (return . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 () s2) s3)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary ()) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 () s1)))
+        (return . #s(stx-boundary (s0 () s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 (s1 () s2) s3)))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (return . #s(stx-boundary (s0 s1 (s2 () s3) s4)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s5 s9)
              (s7 s10 (s11 () s12) s13))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s0 (s5 s6) (s7 s8 (s3 #f))))
              (s5 s9)
              (s7 s10 (s11 () s12) s13))))
-        (148
+        (rename-one
          .
          #s(stx-boundary
             (s0
@@ -5620,7 +5837,7 @@
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s7 s11)
               (s9 s12 (s13 () s14) s15)))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -5630,7 +5847,7 @@
               (s0 s4 (s5 s6) (s3 (s7 s8) (s9 s10 (s5 #f))))
               (s7 s11)
               (s9 s12 (s13 () s14) s15)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -5642,128 +5859,408 @@
               (s9 s12 (s13 () s14) s15)))))))
       ('quoted
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 (s1 s2))))
-        (2 . #s(stx-boundary (s0 (s1 s2))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2))))
+        (return . #s(stx-boundary (s0 (s1 s2))))))
+      ((let ()
+         (define-syntax (lift stx)
+           (syntax-local-lift-require 'racket/list #'foldl))
+         (lift))
+       .
+       ((start-top . #f)
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
+        (prim-#%expression . #f)
+        (visit
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (macro-post-x
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2)))
+         .
+         #s(stx-boundary (s9 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (exit-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (visit
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
+        (prim-let-values . #f)
+        (let-renames
+         ()
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
+        (next-group . #f)
+        (enter-block
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1)))
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8)))))
+         .
+         #s(stx-boundary (s9 (s1 s3) (s4 (s5 s6) (s7 s8)))))
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 s7))))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6))))
+         .
+         #s(stx-boundary (s7 (s1) (s2 (s3 s4) (s5 s6)))))
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
+        (prim-lambda . #f)
+        (lambda-renames
+         #s(stx-boundary (s0))
+         .
+         #s(stx-boundary ((s1 (s2 s3) (s4 s5)))))
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 s2) (s3 s4))))
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (block->list . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 s5)))
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1)))
+        (macro-pre-x . #s(stx-boundary (s0 s1)))
+        (local-value . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (local-value-result . #f)
+        (macro-post-x #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
+        (exit-macro . #s(stx-boundary (s0 s1)))
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-list . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 s3) (s4 s5)))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s5) (s6 s7)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s5) (s6 s7)))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0)))
+        (visit . #s(stx-boundary (s0)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0)))
+        (macro-pre-x . #s(stx-boundary (s0)))
+        (lift-require
+         #s(stx-boundary (s0 s1))
+         #s(stx-boundary s2)
+         .
+         #s(stx-boundary s2))
+        (macro-post-x #s(stx-boundary s0) . #s(stx-boundary (s1)))
+        (exit-macro . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->letrec
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
+        (visit
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
+         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 s7))))))
+         ()
+         .
+         #s(stx-boundary (s7)))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (tag . #s(stx-boundary (s0 () s1)))
+        (exit-prim . #s(stx-boundary (s0 () s1)))
+        (return . #s(stx-boundary (s0 () s1)))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (return . #s(stx-boundary (s0 () (s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (lift-loop . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
+        (prim-begin . #f)
+        (enter-list . #s(stx-boundary ((s0 s1) (s2 (s3 () (s3 () s4))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s0 () s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 () s1))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 () s1))))
+        (block-renames
+         #s(stx-boundary ((s0 () s1)))
+         .
+         #s(stx-boundary ((s0 () s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 () s1)))
+        (exit-check . #s(stx-boundary (s0 () s1)))
+        (block->list . #s(stx-boundary ((s0 () s1))))
+        (enter-list . #s(stx-boundary ((s0 () s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () s1)))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary (s0)))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 () s1)))
+        (return . #s(stx-boundary (s0 () s1)))
+        (exit-list . #s(stx-boundary ((s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (return . #s(stx-boundary (s0 () (s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (exit-list . #s(stx-boundary ((s0 s1) (s2 (s3 () (s3 () s4))))))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))))
       ((module m '#%kernel 5)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) 5)))
-        (101 . #f)
-        (157 . #f)
-        (148 . #s(stx-boundary 5))
-        (126 . #s(stx-boundary 5))
-        (127 . #s(stx-boundary 5))
-        (142 . #s(stx-boundary (s0 5)))
-        (126 . #s(stx-boundary (s0 5)))
-        (127 . #s(stx-boundary (s0 5)))
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 5)))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (148 . #s(stx-boundary (s0 5)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 5)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 5))))
-        (2 . #s(stx-boundary (s0 (s1 5))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) 5)))
+        (enter-check . #s(stx-boundary (s0 s1 (s2 s3) 5)))
+        (exit-check . #s(stx-boundary (s0 s1 (s2 s3) 5)))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) 5)))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (rename-one . #s(stx-boundary 5))
+        (enter-check . #s(stx-boundary 5))
+        (exit-check . #s(stx-boundary 5))
+        (tag . #s(stx-boundary (s0 5)))
+        (enter-check . #s(stx-boundary (s0 5)))
+        (exit-check . #s(stx-boundary (s0 5)))
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 5)))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (rename-one . #s(stx-boundary (s0 5)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 5)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 5))))
+        (return . #s(stx-boundary (s0 (s1 5))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s2 5)))))))
       ((let-values (((x) __y) ((y z) __w)) __x)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
-        (112 . #f)
-        (16
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (enter-check . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (exit-check . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (visit . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
+        (prim-let-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) s1)) #s(stx-boundary ((s2 s3) s4)))
          .
          #s(stx-boundary (s5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (13 . #f)
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (5 . #s(stx-boundary ((s0 . s1))))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (exit-list . #s(stx-boundary ((s0 . s1))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))))
@@ -5772,24 +6269,41 @@
          (ok)
          (list (ok) (ok)))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 8)) (s4) (s7 (s4) (s4)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 8)) (s4) (s7 (s4) (s4)))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (148 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (126 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (21 . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
-        (22
+        (exit-check
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 8)) (s4) (s7 (s4) (s4)))))
+        (visit
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 8)) (s4) (s7 (s4) (s4)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 s1 s2 (s3 (s4 s5) (s6 8)) (s4) (s7 (s4) (s4)))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1 (s2 s3) (s4 8)) (s2) (s5 (s2) (s2)))))
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4) (s5 s6) (s7 #f))
@@ -5798,7 +6312,7 @@
              (s12 (s9) (s9))))
          .
          #s(stx-boundary (s13 (s8 (s9 s10) (s11 8)) (s9) (s12 (s9) (s9)))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -5806,7 +6320,7 @@
              (s8 (s9 s10) (s11 8))
              (s9)
              (s12 (s9) (s9)))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -5814,7 +6328,7 @@
              (s8 (s9 s10) (s11 8))
              (s9)
              (s12 (s9) (s9)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -5822,8 +6336,8 @@
              (s8 (s9 s10) (s11 8))
              (s9)
              (s12 (s9) (s9)))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -5831,7 +6345,7 @@
              (s8 (s9 s10) (s11 8))
              (s9)
              (s12 (s9) (s9)))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -5839,7 +6353,7 @@
              (s8 (s9 s10) (s11 8))
              (s9)
              (s12 (s9) (s9)))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              (s1 s2 (s3 s4 (s5 s6) (s7 s8) (s9 #f)))
@@ -5853,7 +6367,7 @@
              (s10 (s11 s12) (s13 8))
              (s11)
              (s14 (s11) (s11)))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -5861,7 +6375,7 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -5869,7 +6383,7 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (127
+        (exit-check
          .
          #s(stx-boundary
             (s0
@@ -5877,7 +6391,7 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -5885,8 +6399,8 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -5894,8 +6408,8 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (102 . #f)
-        (148
+        (prim-module-begin . #f)
+        (rename-one
          .
          #s(stx-boundary
             (s0
@@ -5903,1233 +6417,1316 @@
              (s1 s2 (s10 (s11 s12) (s13 8)))
              (s1 s2 (s11))
              (s1 s2 (s14 (s11) (s11))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
-        (130 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (132 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (133 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (131 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 s1 (s2 s3 (s4 s5) (s6 s7) (s8 #f)))))
+        (enter-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-pre . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (local-post . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (exit-local . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f))))
          .
          #s(stx-boundary (s8 s9 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (9 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (0 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (148 . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (visit . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2 (s3 s4) (s5 s6) (s7 #f)))))
+        (splice
          #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f)))
          #s(stx-boundary (s7 s8 (s9 (s10 s11) (s12 8))))
          #s(stx-boundary (s7 s8 (s10)))
          #s(stx-boundary (s7 s8 (s13 (s10) (s10)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (158 . #f)
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
-        (101 . #f)
-        (157 . #f)
-        (142 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (102 . #f)
-        (148 . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (148 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 #f)))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (148 . #s(stx-boundary (s0 #f)))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #f)))
-        (6 . #s(stx-boundary (s0 s1 #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #f))))
-        (135)
-        (13 . #f)
-        (3 . #f)
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
-        (148 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
-        (130 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (132 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (rename-one . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-submodule . #f)
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5) (s6 #f))))
+        (prim-module . #f)
+        (prepare-env . #f)
+        (tag . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (prim-module-begin . #f)
+        (rename-one . #s(stx-boundary (s0 (s1 s2) (s3 #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (rename-one . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-require . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 #f)))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (rename-one . #s(stx-boundary (s0 #f)))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #f)))
+        (enter-prim . #s(stx-boundary (s0 s1 #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 #f))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #f))))
+        (return . #s(stx-boundary (s0 s1 (s2 #f))))
+        (module-lift-end-loop)
+        (next-group . #f)
+        (next . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (return . #s(stx-boundary (s0 (s1 s2) (s3 s4 (s5 #f)))))
+        (rename-one
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s2 s3) (s4 (s5 s6) (s7 s8 (s2 #f))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 s4) (s5 8)))))
+        (enter-local . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (local-pre . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (start . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (133 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (131 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (local-post . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-local . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8)))))
          .
          #s(stx-boundary (s6 s7 (s8 (s2 s4) (s5 8)))))
-        (9 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (0 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (2 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (148 . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
-        (11
+        (exit-macro . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (visit . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (return . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (rename-one . #s(stx-boundary (s0 (s1 (s2) (s3 (s4) (s5 8))))))
+        (splice
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          #s(stx-boundary (s5 s6 (s1)))
          #s(stx-boundary (s5 s6 (s7 (s1) (s1)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (100 . #f)
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (148 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (103 . #f)
-        (157 . #f)
-        (20 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-stop . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (rename-one . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-syntaxes . #f)
+        (prepare-env . #f)
+        (phase-up . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 8)))
          .
          #s(stx-boundary (s3 (s1) (s2 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))))
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))))
       ((let ()
          (define-syntax (ok stx) (quote-syntax 8))
          (define (ident x) x)
          9)
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s6 (s7 s8) s8) 9))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s6 (s7 s8) s8) 9))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (22
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s6 (s7 s8) s8) 9))))
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s6 (s7 s8) s8) 9))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s6 (s7 s8) s8) 9))))
+        (prim-#%expression . #f)
+        (visit
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9))
          .
          #s(stx-boundary (s8 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9)))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9)))
-        (24
+        (exit-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (visit
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s5 (s6 s7) s7) 9)))
+        (prim-let-values . #f)
+        (let-renames
+         ()
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9)))
+        (next-group . #f)
+        (enter-block
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9)))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s4 (s5 s6) s6) 9)))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 8)))
          .
          #s(stx-boundary (s3 (s1) (s2 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary 9))
-        (127 . #s(stx-boundary 9))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary 9))
+        (exit-check . #s(stx-boundary 9))
+        (block->letrec
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8)))) (((s5) (s6 (s7) s7))) 9)))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8)))) (((s5) (s6 (s7) s7))) 9)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8)))) (((s5) (s6 (s7) s7))) 9)))
-        (114 . #f)
-        (19
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
          (#s(stx-boundary ((s4) (s5 (s6) s6))))
          .
          #s(stx-boundary (9)))
-        (157 . #f)
-        (13 . #f)
-        (113 . #f)
-        (16 (#s(stx-boundary ((s0) (s1 (s2) s2)))) . #s(stx-boundary (9)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (13 . #f)
-        (4 . #s(stx-boundary (9)))
-        (3 . #f)
-        (0 . #s(stx-boundary 9))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 9)))
-        (6 . #s(stx-boundary (s0 . 9)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 9)))
-        (2 . #s(stx-boundary (s0 9)))
-        (5 . #s(stx-boundary ((s0 9))))
-        (142 . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
-        (7 . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
-        (2 . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
-        (7 . #s(stx-boundary (s0 () (s0 (((s1) (s2 (s3) s3))) (s4 9)))))
-        (2 . #s(stx-boundary (s0 () (s0 (((s1) (s2 (s3) s3))) (s4 9)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 (((s2) (s3 (s4) s4))) (s5 9))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 (((s2) (s3 (s4) s4))) (s5 9))))))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (prim-letrec-values . #f)
+        (let-renames
+         (#s(stx-boundary ((s0) (s1 (s2) s2))))
+         .
+         #s(stx-boundary (9)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (9)))
+        (next . #f)
+        (visit . #s(stx-boundary 9))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 9)))
+        (enter-prim . #s(stx-boundary (s0 . 9)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 9)))
+        (return . #s(stx-boundary (s0 9)))
+        (exit-list . #s(stx-boundary ((s0 9))))
+        (tag . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
+        (exit-prim . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
+        (return . #s(stx-boundary (s0 (((s1) (s2 (s3) s3))) (s4 9))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 () (s0 (((s1) (s2 (s3) s3))) (s4 9)))))
+        (return . #s(stx-boundary (s0 () (s0 (((s1) (s2 (s3) s3))) (s4 9)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 () (s1 (((s2) (s3 (s4) s4))) (s5 9))))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1 () (s1 (((s2) (s3 (s4) s4))) (s5 9))))))))
       ((set! __x 99)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2 99))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2 99))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 s1 99)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 99)))
-        (123 . #f)
-        (1 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 99))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 99)))
-        (6 . #s(stx-boundary (s0 . 99)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 99)))
-        (2 . #s(stx-boundary (s0 99)))
-        (7 . #s(stx-boundary (s0 s1 (s2 99))))
-        (2 . #s(stx-boundary (s0 s1 (s2 99))))
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 99)))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 99)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2 99))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2 99))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2 99))))
+        (visit . #s(stx-boundary (s0 (s1 s2 99))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2 99))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 s1 99)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 99)))
+        (prim-set! . #f)
+        (resolve . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 99))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 99)))
+        (enter-prim . #s(stx-boundary (s0 . 99)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 99)))
+        (return . #s(stx-boundary (s0 99)))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 99))))
+        (return . #s(stx-boundary (s0 s1 (s2 99))))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 99)))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 99)))))))
       ((let ()
          (define-syntax (lift stx) (syntax-local-lift-expression #'(+ 1 2)))
          (lift))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 1 2)))) (s3)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 1 2)))) (s3)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (22
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 1 2)))) (s3)))))
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 1 2)))) (s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 1 2)))) (s3)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2)))
          .
          #s(stx-boundary (s7 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1))))
-        (24
+        (exit-macro
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 (s6 1 2)))) (s2))))
+        (prim-let-values . #f)
+        (let-renames
+         ()
+         .
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1)))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 1 2)))) (s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 1 2))))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2))))))
          .
          #s(stx-boundary (s7 (s1 s3) (s4 (s5 (s6 1 2))))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 1 2)))))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 1 2)))))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 1 2)))))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2)))))
          .
          #s(stx-boundary (s5 (s1) (s2 (s3 (s4 1 2))))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 (s3 1 2))))))
-        (10 . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 1 2))))))
+        (prim-lambda . #f)
+        (lambda-renames
+         #s(stx-boundary (s0))
+         .
+         #s(stx-boundary ((s1 (s2 (s3 1 2))))))
+        (enter-block . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 (s2 1 2)))))
          .
          #s(stx-boundary ((s0 (s1 (s2 1 2))))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 (s2 1 2)))))
-        (127 . #s(stx-boundary (s0 (s1 (s2 1 2)))))
-        (12 . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
-        (4 . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 1 2)))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 (s2 1 2)))))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2 1 2)))))
+        (block->list . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
+        (enter-list . #s(stx-boundary ((s0 (s1 (s2 1 2))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 1 2)))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3 1 2))))
          .
          #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 (s2 1 2)))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 1 2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 1 2))))
-        (21 . #s(stx-boundary (s0 (s1 1 2))))
-        (153 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (154 . #f)
-        (22 #s(stx-boundary (s0 (s1 1 2))) . #s(stx-boundary (s2 (s1 1 2))))
-        (9 . #s(stx-boundary (s0 (s1 1 2))))
-        (0 . #s(stx-boundary (s0 (s1 1 2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 1 2))))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 (s1 1 2))))
-        (2 . #s(stx-boundary (s0 (s1 1 2))))
-        (5 . #s(stx-boundary (s0 (s1 (s2 1 2)))))
-        (7 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
-        (5 . #s(stx-boundary ((s0 s1 (s2 (s3 1 2))))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 (s5 1 2))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 (s5 1 2))))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0)))
-        (0 . #s(stx-boundary (s0)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0)))
-        (21 . #s(stx-boundary (s0)))
-        (129 (#s(stx-boundary s0)) . #s(stx-boundary (s1 1 2)))
-        (22 #s(stx-boundary s0) . #s(stx-boundary (s1)))
-        (9 . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (14 #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
-        (0 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
-        (114 . #f)
-        (19
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 (s2 1 2)))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 1 2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 1 2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 1 2))))
+        (local-value . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (local-value-result . #f)
+        (macro-post-x
+         #s(stx-boundary (s0 (s1 1 2)))
+         .
+         #s(stx-boundary (s2 (s1 1 2))))
+        (exit-macro . #s(stx-boundary (s0 (s1 1 2))))
+        (visit . #s(stx-boundary (s0 (s1 1 2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 1 2))))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 1 2))))
+        (return . #s(stx-boundary (s0 (s1 1 2))))
+        (exit-list . #s(stx-boundary (s0 (s1 (s2 1 2)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3 1 2)))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 (s3 1 2))))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 (s4 (s5 1 2))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 (s4 (s5 1 2))))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0)))
+        (visit . #s(stx-boundary (s0)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0)))
+        (macro-pre-x . #s(stx-boundary (s0)))
+        (lift-expr (#s(stx-boundary s0)) . #s(stx-boundary (s1 1 2)))
+        (macro-post-x #s(stx-boundary s0) . #s(stx-boundary (s1)))
+        (exit-macro . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->letrec
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
+        (visit
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 (s6 1 2)))))) () s7)))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 1 2)))))))
          ()
          .
          #s(stx-boundary (s6)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (142 . #s(stx-boundary (s0 () s1)))
-        (7 . #s(stx-boundary (s0 () s1)))
-        (2 . #s(stx-boundary (s0 () s1)))
-        (7 . #s(stx-boundary (s0 () (s0 () s1))))
-        (2 . #s(stx-boundary (s0 () (s0 () s1))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (128
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (tag . #s(stx-boundary (s0 () s1)))
+        (exit-prim . #s(stx-boundary (s0 () s1)))
+        (return . #s(stx-boundary (s0 () s1)))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (return . #s(stx-boundary (s0 () (s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (lift-loop
          .
          #s(stx-boundary (s0 (s1 (s2) (s3 1 2)) (s4 (s5 () (s5 () s2))))))
-        (0 . #s(stx-boundary (s0 (s1 (s2) (s3 1 2)) (s4 (s5 () (s5 () s2))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2) (s3 1 2)) (s4 (s5 () (s5 () s2))))))
-        (107 . #f)
-        (4 . #s(stx-boundary ((s0 (s1) (s2 1 2)) (s3 (s4 () (s4 () s1))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 1 2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 1 2))))
-        (104 . #f)
-        (0 . #s(stx-boundary (s0 1 2)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 1 2)))
-        (8 . #s(stx-boundary (s0 s1 1 2)))
-        (21 . #s(stx-boundary (s0 s1 1 2)))
-        (22 #s(stx-boundary (s0 s1 1 2)) . #s(stx-boundary (s0 s1 1 2)))
-        (9 . #s(stx-boundary (s0 s1 1 2)))
-        (0 . #s(stx-boundary (s0 s1 1 2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 1 2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 1 2)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 1))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 1)))
-        (6 . #s(stx-boundary (s0 . 1)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 1)))
-        (2 . #s(stx-boundary (s0 1)))
-        (3 . #f)
-        (0 . #s(stx-boundary 2))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 2)))
-        (6 . #s(stx-boundary (s0 . 2)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 2)))
-        (2 . #s(stx-boundary (s0 2)))
-        (5 . #s(stx-boundary (s0 (s1 1) (s1 2))))
-        (7 . #s(stx-boundary (s0 s1 (s2 1) (s2 2))))
-        (2 . #s(stx-boundary (s0 s1 (s2 1) (s2 2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 1) (s4 2)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 1) (s4 2)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s0 () s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s0 () s1))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 () s1))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 () s1))))
-        (24 #s(stx-boundary ((s0 () s1))) . #s(stx-boundary ((s0 () s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 () s1)))
-        (127 . #s(stx-boundary (s0 () s1)))
-        (12 . #s(stx-boundary ((s0 () s1))))
-        (4 . #s(stx-boundary ((s0 () s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () s1)))
-        (112 . #f)
-        (16 () . #s(stx-boundary (s0)))
-        (13 . #f)
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 () s1)))
-        (2 . #s(stx-boundary (s0 () s1)))
-        (5 . #s(stx-boundary ((s0 () s1))))
-        (7 . #s(stx-boundary (s0 () (s0 () s1))))
-        (2 . #s(stx-boundary (s0 () (s0 () s1))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (5
+        (visit
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 1 2)) (s4 (s5 () (s5 () s2))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 1 2)) (s4 (s5 () (s5 () s2))))))
+        (prim-begin . #f)
+        (enter-list
+         .
+         #s(stx-boundary ((s0 (s1) (s2 1 2)) (s3 (s4 () (s4 () s1))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 1 2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 1 2))))
+        (prim-define-values . #f)
+        (visit . #s(stx-boundary (s0 1 2)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 1 2)))
+        (enter-macro . #s(stx-boundary (s0 s1 1 2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 1 2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 1 2))
+         .
+         #s(stx-boundary (s0 s1 1 2)))
+        (exit-macro . #s(stx-boundary (s0 s1 1 2)))
+        (visit . #s(stx-boundary (s0 s1 1 2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 1 2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 1 2)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 1))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 1)))
+        (enter-prim . #s(stx-boundary (s0 . 1)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 1)))
+        (return . #s(stx-boundary (s0 1)))
+        (next . #f)
+        (visit . #s(stx-boundary 2))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 2)))
+        (enter-prim . #s(stx-boundary (s0 . 2)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 2)))
+        (return . #s(stx-boundary (s0 2)))
+        (exit-list . #s(stx-boundary (s0 (s1 1) (s1 2))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 1) (s2 2))))
+        (return . #s(stx-boundary (s0 s1 (s2 1) (s2 2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 (s4 1) (s4 2)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 (s4 1) (s4 2)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s0 () s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 () s1))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 () s1))))
+        (block-renames
+         #s(stx-boundary ((s0 () s1)))
+         .
+         #s(stx-boundary ((s0 () s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 () s1)))
+        (exit-check . #s(stx-boundary (s0 () s1)))
+        (block->list . #s(stx-boundary ((s0 () s1))))
+        (enter-list . #s(stx-boundary ((s0 () s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 () s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () s1)))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary (s0)))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 () s1)))
+        (return . #s(stx-boundary (s0 () s1)))
+        (exit-list . #s(stx-boundary ((s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () s1))))
+        (return . #s(stx-boundary (s0 () (s0 () s1))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
+        (exit-list
          .
          #s(stx-boundary
             ((s0 (s1) (s2 s3 (s4 1) (s4 2))) (s5 (s6 () (s6 () s1))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0 (s1 (s2) (s3 s4 (s5 1) (s5 2))) (s6 (s7 () (s7 () s2))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (s1 (s2) (s3 s4 (s5 1) (s5 2))) (s6 (s7 () (s7 () s2))))))))
       ((let () (define (ok x) '8) (ok 5))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (exit-check . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (visit . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 8)) (s3 5)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (macro-post-x
          #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5)))
          .
          #s(stx-boundary (s5 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (24
+        (exit-macro . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (visit . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 8)) (s2 5))))
+        (prim-let-values . #f)
+        (let-renames () . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5)))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s1 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 8)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (127 . #s(stx-boundary (s0 5)))
-        (14 #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
-        (0 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
-        (113 . #f)
-        (16
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (exit-check . #s(stx-boundary (s0 5)))
+        (block->letrec #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
+        (visit . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s1 5))))
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
          .
          #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary ((s0 s1 (s2 5)))))
-        (7 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5)))))
-        (2 . #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5)))))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 5))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 5)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5)))))
+        (return
+         .
+         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5)))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0 () (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 () (s0 (((s1) (s2 (s3) (s4 8)))) (s5 s1 (s4 5))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0 (s1 () (s1 (((s2) (s3 (s4) (s5 8)))) (s6 s2 (s5 5)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0 (s1 () (s1 (((s2) (s3 (s4) (s5 8)))) (s6 s2 (s5 5)))))))))
       ((begin0 '3 '5)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 (s1 3) (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 3) (s1 5))))
-        (108 . #f)
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 3)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 3)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 3)))
-        (2 . #s(stx-boundary (s0 3)))
-        (3 . #f)
-        (4 . #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 5)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary ((s0 5))))
-        (7 . #s(stx-boundary (s0 (s1 3) (s1 5))))
-        (2 . #s(stx-boundary (s0 (s1 3) (s1 5))))
-        (7 . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (enter-check . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (visit . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 (s1 3) (s1 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 3) (s1 5))))
+        (prim-begin0 . #f)
+        (next . #f)
+        (visit . #s(stx-boundary (s0 3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 3)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 3)))
+        (return . #s(stx-boundary (s0 3)))
+        (next . #f)
+        (enter-list . #s(stx-boundary ((s0 5))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 5)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary ((s0 5))))
+        (exit-prim . #s(stx-boundary (s0 (s1 3) (s1 5))))
+        (return . #s(stx-boundary (s0 (s1 3) (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 3) (s2 5)))))))
       ((case-lambda ((x) x) ((x y) (+ x y)))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s1 s2)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s1 s2)))))
-        (111 . #f)
-        (3 . #f)
-        (18 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (18 #s(stx-boundary (s0 s1)) . #s(stx-boundary ((s2 s0 s1))))
-        (10 . #s(stx-boundary ((s0 s1 s2))))
-        (24 #s(stx-boundary ((s0 s1 s2))) . #s(stx-boundary ((s0 s1 s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1 s2)))
-        (127 . #s(stx-boundary (s0 s1 s2)))
-        (12 . #s(stx-boundary ((s0 s1 s2))))
-        (4 . #s(stx-boundary ((s0 s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2 s3)))
-        (8 . #s(stx-boundary (s0 s1 s2 s3)))
-        (21 . #s(stx-boundary (s0 s1 s2 s3)))
-        (22 #s(stx-boundary (s0 s1 s2 s3)) . #s(stx-boundary (s0 s1 s2 s3)))
-        (9 . #s(stx-boundary (s0 s1 s2 s3)))
-        (0 . #s(stx-boundary (s0 s1 s2 s3)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 s3)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1 s2)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1 s2)))
-        (7 . #s(stx-boundary (s0 s1 s2 s3)))
-        (2 . #s(stx-boundary (s0 s1 s2 s3)))
-        (5 . #s(stx-boundary ((s0 s1 s2 s3))))
-        (7 . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s4 s1 s2)))))
-        (2 . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s4 s1 s2)))))
-        (7 . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s5 s2 s3))))))
-        (2 . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s5 s2 s3))))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
+        (enter-check
+         .
+         #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
+        (visit . #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s2 s3))))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s1 s2)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s1 s2)))))
+        (prim-case-lambda . #f)
+        (next . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (lambda-renames
+         #s(stx-boundary (s0 s1))
+         .
+         #s(stx-boundary ((s2 s0 s1))))
+        (enter-block . #s(stx-boundary ((s0 s1 s2))))
+        (block-renames
+         #s(stx-boundary ((s0 s1 s2)))
+         .
+         #s(stx-boundary ((s0 s1 s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1 s2)))
+        (exit-check . #s(stx-boundary (s0 s1 s2)))
+        (block->list . #s(stx-boundary ((s0 s1 s2))))
+        (enter-list . #s(stx-boundary ((s0 s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2 s3)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2 s3)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2 s3)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2 s3))
+         .
+         #s(stx-boundary (s0 s1 s2 s3)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2 s3)))
+        (visit . #s(stx-boundary (s0 s1 s2 s3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 s3)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1 s2)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1 s2)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2 s3)))
+        (return . #s(stx-boundary (s0 s1 s2 s3)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s4 s1 s2)))))
+        (return . #s(stx-boundary (s0 ((s1) s1) ((s1 s2) (s3 s4 s1 s2)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s5 s2 s3))))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1 ((s2) s2) ((s2 s3) (s4 s5 s2 s3))))))))
       ((let ()
          (define-syntax (ok stx)
-           (define-values
-            (exp opaque)
-            (syntax-local-expand-expression (cadr (syntax-e stx))))
-           opaque)
-         (#%expression (ok 9)))
+           (local-expand (cadr (syntax-e stx)) 'expression #f))
+         (ok 9))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
-            (s0
-             (s1
-              ()
-              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
-              (s0 (s3 9))))))
-        (1 . #s(stx-boundary s0))
-        (6
+            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
+        (enter-check
          .
          #s(stx-boundary
-            (s0
-             (s1
-              ()
-              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
-              (s0 (s3 9))))))
-        (138 . #f)
-        (0
+            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
+        (exit-check
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (1 . #s(stx-boundary s0))
-        (8
+            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
+        (visit
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (21
+            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (22
-         #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9))))
+            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
-            (s11
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (9
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (0
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (macro-pre-x
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (1 . #s(stx-boundary s0))
-        (6
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (macro-post-x
+         #s(stx-boundary
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9)))
          .
          #s(stx-boundary
-            (s0
-             ()
-             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
-             (s10 (s2 9)))))
-        (112 . #f)
-        (16
+            (s9 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (exit-macro
+         .
+         #s(stx-boundary
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
-         #s(stx-boundary
-            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
-        (13 . #f)
-        (10
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
+        (next-group . #f)
+        (enter-block
          .
-         #s(stx-boundary
-            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
-        (24
-         #s(stx-boundary
-            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9))))
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9)))
          .
-         #s(stx-boundary
-            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
+        (next . #f)
+        (enter-check
          .
-         #s(stx-boundary (s10 (s1 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
-        (9
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
-         #s(stx-boundary
-            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
-        (2
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
+        (macro-pre-x
          .
-         #s(stx-boundary
-            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
-        (127
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f))))
          .
-         #s(stx-boundary
-            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
-        (103 . #f)
-        (148
+         #s(stx-boundary (s9 (s1 s3) (s4 (s5 (s6 s3)) (s7 s8) #f))))
+        (exit-macro
          .
-         #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4))
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
+        (return
          .
-         #s(stx-boundary (s8 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
-        (110 . #f)
-        (17
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
+        (exit-check
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
+        (prim-define-syntaxes . #f)
+        (rename-one
+         .
+         #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 s2)) (s6 s7) #f)))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f)))
+         .
+         #s(stx-boundary (s7 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
+        (prim-lambda . #f)
+        (lambda-renames
          #s(stx-boundary (s0))
          .
-         #s(stx-boundary ((s1 (s2 s3) (s4 (s5 (s6 s0)))) s3)))
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2)))
-        (24
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2))
+         #s(stx-boundary ((s1 (s2 (s3 s0)) (s4 s5) #f))))
+        (enter-block . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f)))
          .
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2)))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s6))))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s6))))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0 s1) (s2 (s3 (s4 s5))))))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (14 #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
-        (0 . #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
-        (113 . #f)
-        (16
-         (#s(stx-boundary ((s0 s1) (s2 (s3 (s4 s5))))))
+         #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (block->list . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
+        (enter-list . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f))
          .
-         #s(stx-boundary (s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (22
-         #s(stx-boundary (s0 s1 (s2 (s3 s4))))
-         .
-         #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 (s2 s3)))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (22
+         #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 s3)))
          .
          #s(stx-boundary (s0 s1 (s2 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)))))
-        (13 . #f)
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (((s1 s2) (s3 s4 (s3 s5 (s3 s6 s7))))) s2)))
-        (2 . #s(stx-boundary (s0 (((s1 s2) (s3 s4 (s3 s5 (s3 s6 s7))))) s2)))
-        (7
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary #f))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #f)))
+        (enter-prim . #s(stx-boundary (s0 . #f)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #f)))
+        (return . #s(stx-boundary (s0 #f)))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) (s5 s6) (s5 #f))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f))))
+        (exit-list
+         .
+         #s(stx-boundary ((s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1) (s2 s3 (s2 s4 (s2 s5 s1)) (s6 s7) (s6 #f)))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1) (s2 s3 (s2 s4 (s2 s5 s1)) (s6 s7) (s6 #f)))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 9)))
+        (visit . #s(stx-boundary (s0 9)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 9)))
+        (macro-pre-x . #s(stx-boundary (s0 9)))
+        (enter-local . #s(stx-boundary 9))
+        (local-pre . #s(stx-boundary 9))
+        (enter-check . #s(stx-boundary 9))
+        (exit-check . #s(stx-boundary 9))
+        (local-post . #s(stx-boundary 9))
+        (exit-local . #s(stx-boundary 9))
+        (macro-post-x #s(stx-boundary 9) . #s(stx-boundary (s0 9)))
+        (exit-macro . #s(stx-boundary 9))
+        (return . #s(stx-boundary 9))
+        (exit-check . #s(stx-boundary 9))
+        (block->letrec
+         #s(stx-boundary
+            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
+        (visit
          .
          #s(stx-boundary
-            (s0 (s1) (s2 (((s3 s4) (s5 s6 (s5 s7 (s5 s8 s1))))) s4))))
-        (2
+            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
-            (s0 (s1) (s2 (((s3 s4) (s5 s6 (s5 s7 (s5 s8 s1))))) s4))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 9))))
-        (127 . #s(stx-boundary (s0 (s1 9))))
-        (14
-         #s(stx-boundary
-            (s0
-             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
-             ()
-             (s10 (s1 9)))))
-        (0
-         .
-         #s(stx-boundary
-            (s0
-             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
-             ()
-             (s10 (s1 9)))))
-        (1 . #s(stx-boundary s0))
-        (6
-         .
-         #s(stx-boundary
-            (s0
-             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
-             ()
-             (s10 (s1 9)))))
-        (114 . #f)
-        (19
-         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5))))
+            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
+         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 s2)) (s6 s7) #f)))))
          ()
          .
-         #s(stx-boundary ((s9 (s0 9)))))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 (s1 9)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 9))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 9))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 9)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 9)))
-        (21 . #s(stx-boundary (s0 9)))
-        (130 . #s(stx-boundary 9))
-        (132 . #s(stx-boundary 9))
-        (141 . #f)
-        (0 . #s(stx-boundary 9))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 9)))
-        (6 . #s(stx-boundary (s0 . 9)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 9)))
-        (2 . #s(stx-boundary (s0 9)))
-        (133 . #s(stx-boundary (s0 9)))
-        (146 . #s(stx-boundary #:opaque))
-        (131 . #s(stx-boundary (s0 9)))
-        (22 #s(stx-boundary #:opaque) . #s(stx-boundary (s0 9)))
-        (9 . #s(stx-boundary #:opaque))
-        (0 . #s(stx-boundary #:opaque))
-        (146 . #s(stx-boundary (s0 9)))
-        (142 . #s(stx-boundary (s0 9)))
-        (7 . #s(stx-boundary (s0 9)))
-        (2 . #s(stx-boundary (s0 9)))
-        (5 . #s(stx-boundary ((s0 9))))
-        (142 . #s(stx-boundary (s0 () (s1 9))))
-        (7 . #s(stx-boundary (s0 () (s1 9))))
-        (2 . #s(stx-boundary (s0 () (s1 9))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 9)))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 9)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))))
+         #s(stx-boundary (9)))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (9)))
+        (next . #f)
+        (visit . #s(stx-boundary 9))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 9)))
+        (enter-prim . #s(stx-boundary (s0 . 9)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 9)))
+        (return . #s(stx-boundary (s0 9)))
+        (exit-list . #s(stx-boundary ((s0 9))))
+        (tag . #s(stx-boundary (s0 () (s1 9))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 9))))
+        (return . #s(stx-boundary (s0 () (s1 9))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 9)))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 9)))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))))
       ((let ()
          (define (first z) z)
          (define (ok x) (second x))
@@ -7137,8 +7734,8 @@
          (define (second y) 8)
          (ok (first 5)))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -7149,8 +7746,7 @@
               (s8 #:opaque)
               (s2 (s7 s9) 8)
               (s5 (s3 5))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -7161,8 +7757,42 @@
               (s8 #:opaque)
               (s2 (s7 s9) 8)
               (s5 (s3 5))))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s8 #:opaque)
+              (s2 (s7 s9) 8)
+              (s5 (s3 5))))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s8 #:opaque)
+              (s2 (s7 s9) 8)
+              (s5 (s3 5))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s8 #:opaque)
+              (s2 (s7 s9) 8)
+              (s5 (s3 5))))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -7172,8 +7802,8 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -7183,7 +7813,7 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -7193,7 +7823,7 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              ()
@@ -7211,7 +7841,7 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -7221,7 +7851,7 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -7231,8 +7861,8 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -7242,8 +7872,8 @@
              (s7 #:opaque)
              (s1 (s6 s8) 8)
              (s4 (s2 5)))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
          #s(stx-boundary
@@ -7252,8 +7882,8 @@
              (s6 #:opaque)
              (s0 (s5 s7) 8)
              (s3 (s1 5)))))
-        (13 . #f)
-        (10
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) s2)
@@ -7261,7 +7891,7 @@
              (s6 #:opaque)
              (s0 (s5 s7) 8)
              (s3 (s1 5)))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 (s1 s2) s2)
              (s0 (s3 s4) (s5 s4))
@@ -7275,88 +7905,88 @@
              (s6 #:opaque)
              (s0 (s5 s7) 8)
              (s3 (s1 5)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 s3)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 #:opaque)))
-        (127 . #s(stx-boundary (s0 #:opaque)))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (0 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (21 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 #:opaque)))
+        (exit-check . #s(stx-boundary (s0 #:opaque)))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) 8)))
+        (visit . #s(stx-boundary (s0 (s1 s2) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) 8)))
          .
          #s(stx-boundary (s0 (s1 s3) 8)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) 8)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 5))))
-        (127 . #s(stx-boundary (s0 (s1 5))))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 5))))
+        (exit-check . #s(stx-boundary (s0 (s1 5))))
+        (block->letrec
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3))
@@ -7364,7 +7994,7 @@
               (() (s7 (s8 #:opaque) (s9)))
               ((s6) (s2 (s10) 8)))
              (s4 (s1 5)))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -7373,8 +8003,8 @@
               (() (s7 (s8 #:opaque) (s9)))
               ((s6) (s2 (s10) 8)))
              (s4 (s1 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -7383,216 +8013,222 @@
               (() (s7 (s8 #:opaque) (s9)))
               ((s6) (s2 (s10) 8)))
              (s4 (s1 5)))))
-        (113 . #f)
-        (16
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) s2)))
           #s(stx-boundary ((s3) (s1 (s4) (s5 s4))))
           #s(stx-boundary (() (s6 (s7 #:opaque) (s8))))
           #s(stx-boundary ((s5) (s1 (s9) 8))))
          .
          #s(stx-boundary ((s3 (s0 5)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 #:opaque) (s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 #:opaque) (s2))))
-        (107 . #f)
-        (4 . #s(stx-boundary ((s0 #:opaque) (s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 #:opaque)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 #:opaque)))
-        (8 . #s(stx-boundary (s0 s1 #:opaque)))
-        (21 . #s(stx-boundary (s0 s1 #:opaque)))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 #:opaque) (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 #:opaque) (s2))))
+        (prim-begin . #f)
+        (enter-list . #s(stx-boundary ((s0 #:opaque) (s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 #:opaque)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 #:opaque)))
+        (enter-macro . #s(stx-boundary (s0 s1 #:opaque)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 #:opaque)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 #:opaque))
          .
          #s(stx-boundary (s0 s1 #:opaque)))
-        (9 . #s(stx-boundary (s0 s1 #:opaque)))
-        (0 . #s(stx-boundary (s0 s1 #:opaque)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 #:opaque)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 #:opaque)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary #:opaque))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #:opaque)))
-        (6 . #s(stx-boundary (s0 . #:opaque)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #:opaque)))
-        (2 . #s(stx-boundary (s0 #:opaque)))
-        (5 . #s(stx-boundary (s0 (s1 #:opaque))))
-        (7 . #s(stx-boundary (s0 s1 (s2 #:opaque))))
-        (2 . #s(stx-boundary (s0 s1 (s2 #:opaque))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1)))
-        (6 . #s(stx-boundary (s0 s1)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (5 . #s(stx-boundary ((s0 s1 (s2 #:opaque)) (s0 s3))))
-        (7 . #s(stx-boundary (s0 (s1 s2 (s3 #:opaque)) (s1 s4))))
-        (2 . #s(stx-boundary (s0 (s1 s2 (s3 #:opaque)) (s1 s4))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) 8)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (8)))
-        (10 . #s(stx-boundary (8)))
-        (24 #s(stx-boundary (8)) . #s(stx-boundary (8)))
-        (3 . #f)
-        (126 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (12 . #s(stx-boundary (8)))
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 (s1 5)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 5))))
-        (8 . #s(stx-boundary (s0 s1 (s2 5))))
-        (21 . #s(stx-boundary (s0 s1 (s2 5))))
-        (22 #s(stx-boundary (s0 s1 (s2 5))) . #s(stx-boundary (s0 s1 (s2 5))))
-        (9 . #s(stx-boundary (s0 s1 (s2 5))))
-        (0 . #s(stx-boundary (s0 s1 (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 5))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (5 . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
-        (7
+        (exit-macro . #s(stx-boundary (s0 s1 #:opaque)))
+        (visit . #s(stx-boundary (s0 s1 #:opaque)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 #:opaque)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 #:opaque)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary #:opaque))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . #:opaque)))
+        (enter-prim . #s(stx-boundary (s0 . #:opaque)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 #:opaque)))
+        (return . #s(stx-boundary (s0 #:opaque)))
+        (exit-list . #s(stx-boundary (s0 (s1 #:opaque))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 #:opaque))))
+        (return . #s(stx-boundary (s0 s1 (s2 #:opaque))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1)))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 #:opaque)) (s0 s3))))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2 (s3 #:opaque)) (s1 s4))))
+        (return . #s(stx-boundary (s0 (s1 s2 (s3 #:opaque)) (s1 s4))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) 8)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (8)))
+        (enter-block . #s(stx-boundary (8)))
+        (block-renames #s(stx-boundary (8)) . #s(stx-boundary (8)))
+        (next . #f)
+        (enter-check . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->list . #s(stx-boundary (8)))
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1 5)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 5))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 5))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 5)))
+         .
+         #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (visit . #s(stx-boundary (s0 s1 (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 5))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -7602,7 +8238,7 @@
                (() (s9 (s7 s10 (s11 #:opaque)) (s7 s12)))
                ((s8) (s2 (s13) (s11 8))))
               (s7 s5 (s7 s1 (s11 5)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -7612,7 +8248,7 @@
                (() (s9 (s7 s10 (s11 #:opaque)) (s7 s12)))
                ((s8) (s2 (s13) (s11 8))))
               (s7 s5 (s7 s1 (s11 5)))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -7624,7 +8260,7 @@
                 (() (s9 (s7 s10 (s11 #:opaque)) (s7 s12)))
                 ((s8) (s2 (s13) (s11 8))))
                (s7 s5 (s7 s1 (s11 5))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -7636,7 +8272,7 @@
                 (() (s9 (s7 s10 (s11 #:opaque)) (s7 s12)))
                 ((s8) (s2 (s13) (s11 8))))
                (s7 s5 (s7 s1 (s11 5))))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -7649,7 +8285,7 @@
                  (() (s10 (s8 s11 (s12 #:opaque)) (s8 s13)))
                  ((s9) (s3 (s14) (s12 8))))
                 (s8 s6 (s8 s2 (s12 5)))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -7664,798 +8300,718 @@
                 (s8 s6 (s8 s2 (s12 5)))))))))))
       ((#%variable-reference __z)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (149 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 (s1 s2))))
-        (2 . #s(stx-boundary (s0 (s1 s2))))))
-      ((let ()
-         (define-syntax (lift stx)
-           (syntax-local-lift-require 'racket/list #'foldl))
-         (lift))
-       .
-       ((141 . #f)
-        (0
-         .
-         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
-        (1 . #s(stx-boundary s0))
-        (6
-         .
-         #s(stx-boundary (s0 (s1 () (s2 (s3 s4) (s5 (s6 s7) (s8 s9))) (s3)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (21 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (22
-         #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2)))
-         .
-         #s(stx-boundary (s9 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (9 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (0 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s1 (s2 s3) (s4 (s5 s6) (s7 s8))) (s2))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
-        (24
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1)))
-         .
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 s5) (s6 s7))) (s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 s7)))))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8)))))
-         .
-         #s(stx-boundary (s9 (s1 s3) (s4 (s5 s6) (s7 s8)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 s7))))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6))))
-         .
-         #s(stx-boundary (s7 (s1) (s2 (s3 s4) (s5 s6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 s6)))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 s3) (s4 s5)))))
-        (10 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (24
-         #s(stx-boundary ((s0 (s1 s2) (s3 s4))))
-         .
-         #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (127 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (12 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (4 . #s(stx-boundary ((s0 (s1 s2) (s3 s4)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (22
-         #s(stx-boundary (s0 s1 (s2 s3) (s4 s5)))
-         .
-         #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (9 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (0 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1)))
-        (21 . #s(stx-boundary (s0 s1)))
-        (153 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (154 . #f)
-        (22 #s(stx-boundary (s0 s1)) . #s(stx-boundary (s2 s1)))
-        (9 . #s(stx-boundary (s0 s1)))
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (5 . #s(stx-boundary (s0 (s1 s2) (s3 s4))))
-        (7 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3) (s4 s5))))
-        (5 . #s(stx-boundary ((s0 s1 (s2 s3) (s4 s5)))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s5) (s6 s7)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s5) (s6 s7)))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0)))
-        (0 . #s(stx-boundary (s0)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0)))
-        (21 . #s(stx-boundary (s0)))
-        (150
-         #s(stx-boundary (s0 s1))
-         #s(stx-boundary s2)
-         .
-         #s(stx-boundary s2))
-        (22 #s(stx-boundary s0) . #s(stx-boundary (s1)))
-        (9 . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (14
-         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
-        (0
-         .
-         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
-        (1 . #s(stx-boundary s0))
-        (6
-         .
-         #s(stx-boundary (s0 (((s1) (s2 (s3) (s4 (s5 s6) (s7 s8))))) () s8)))
-        (114 . #f)
-        (19
-         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 s7))))))
-         ()
-         .
-         #s(stx-boundary (s7)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (142 . #s(stx-boundary (s0 () s1)))
-        (7 . #s(stx-boundary (s0 () s1)))
-        (2 . #s(stx-boundary (s0 () s1)))
-        (7 . #s(stx-boundary (s0 () (s0 () s1))))
-        (2 . #s(stx-boundary (s0 () (s0 () s1))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (128 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
-        (107 . #f)
-        (4 . #s(stx-boundary ((s0 s1) (s2 (s3 () (s3 () s4))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (119 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 () (s0 () s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () (s0 () s1))))
-        (112 . #f)
-        (16 () . #s(stx-boundary ((s0 () s1))))
-        (13 . #f)
-        (10 . #s(stx-boundary ((s0 () s1))))
-        (24 #s(stx-boundary ((s0 () s1))) . #s(stx-boundary ((s0 () s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 () s1)))
-        (127 . #s(stx-boundary (s0 () s1)))
-        (12 . #s(stx-boundary ((s0 () s1))))
-        (4 . #s(stx-boundary ((s0 () s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 () s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 () s1)))
-        (112 . #f)
-        (16 () . #s(stx-boundary (s0)))
-        (13 . #f)
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 () s1)))
-        (2 . #s(stx-boundary (s0 () s1)))
-        (5 . #s(stx-boundary ((s0 () s1))))
-        (7 . #s(stx-boundary (s0 () (s0 () s1))))
-        (2 . #s(stx-boundary (s0 () (s0 () s1))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () s2)))))
-        (5 . #s(stx-boundary ((s0 s1) (s2 (s3 () (s3 () s4))))))
-        (7 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))
-        (2 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 () (s4 () s5))))))))
-      ((letrec-values (((x) __y) ((y z) __w)) __x)
-       .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
-        (113 . #f)
-        (16
-         (#s(stx-boundary ((s0) s1)) #s(stx-boundary ((s2 s3) s4)))
-         .
-         #s(stx-boundary (s5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (13 . #f)
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (5 . #s(stx-boundary ((s0 . s1))))
-        (7
-         .
-         #s(stx-boundary
-            (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
-        (2
-         .
-         #s(stx-boundary
-            (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
-        (7
-         .
-         #s(stx-boundary
-            (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))
-        (2
-         .
-         #s(stx-boundary
-            (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (enter-check . #s(stx-boundary (s0 (s1 s2))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 s2))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1)))
+        (prim-#%variable-reference . #f)
+        (exit-prim . #s(stx-boundary (s0 s1)))
+        (return . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1 s2))))
+        (return . #s(stx-boundary (s0 (s1 s2))))))
       ((let ()
          (define-syntax (ok stx)
-           (local-expand (cadr (syntax-e stx)) 'expression #f))
-         (ok 9))
+           (define-values
+            (exp opaque)
+            (syntax-local-expand-expression (cadr (syntax-e stx))))
+           opaque)
+         (#%expression (ok 9)))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
-            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
-        (1 . #s(stx-boundary s0))
-        (6
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
+              (s0 (s3 9))))))
+        (enter-check
          .
          #s(stx-boundary
-            (s0 (s1 () (s2 (s3 s4) (s5 (s6 (s7 s4)) (s8 s9) #f)) (s3 9)))))
-        (138 . #f)
-        (0
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
+              (s0 (s3 9))))))
+        (exit-check
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (1 . #s(stx-boundary s0))
-        (8
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
+              (s0 (s3 9))))))
+        (visit
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (21
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
+              (s0 (s3 9))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (22
-         #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9)))
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 (s6 s7) (s8 (s9 (s10 s4)))) s7)
+              (s0 (s3 9))))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
-            (s9 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (9
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (0
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (macro-pre-x
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (1 . #s(stx-boundary s0))
-        (6
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (macro-post-x
+         #s(stx-boundary
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9))))
          .
          #s(stx-boundary
-            (s0 () (s1 (s2 s3) (s4 (s5 (s6 s3)) (s7 s8) #f)) (s2 9))))
-        (112 . #f)
-        (16
+            (s11
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (exit-macro
+         .
+         #s(stx-boundary
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             ()
+             (s1 (s2 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)
+             (s10 (s2 9)))))
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
-        (13 . #f)
-        (10
+         #s(stx-boundary
+            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
+        (next-group . #f)
+        (enter-block
          .
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
-        (24
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9)))
+         #s(stx-boundary
+            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
+        (block-renames
+         #s(stx-boundary
+            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9))))
          .
-         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f)) (s1 9))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s2)) (s6 s7) #f))))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f))))
+         #s(stx-boundary
+            ((s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5) (s9 (s1 9)))))
+        (next . #f)
+        (enter-check
          .
-         #s(stx-boundary (s9 (s1 s3) (s4 (s5 (s6 s3)) (s7 s8) #f))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
-        (127
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
+        (visit
          .
-         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 s2)) (s6 s7) #f)))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (22
-         #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f)))
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
-         #s(stx-boundary (s7 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 (s4 s1)) (s5 s6) #f))))
-        (110 . #f)
-        (17
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1 s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5)))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+         .
+         #s(stx-boundary (s10 (s1 s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+        (exit-macro
+         .
+         #s(stx-boundary
+            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
+        (return
+         .
+         #s(stx-boundary
+            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0 (s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6))))
+        (prim-define-syntaxes . #f)
+        (rename-one
+         .
+         #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (macro-pre-x
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (macro-post-x
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4))
+         .
+         #s(stx-boundary (s8 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (exit-macro
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary (s0 (s1) (s2 (s3 s4) (s5 (s6 (s7 s1)))) s4)))
+        (prim-lambda . #f)
+        (lambda-renames
          #s(stx-boundary (s0))
          .
-         #s(stx-boundary ((s1 (s2 (s3 s0)) (s4 s5) #f))))
-        (10 . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
-        (24
-         #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f)))
+         #s(stx-boundary ((s1 (s2 s3) (s4 (s5 (s6 s0)))) s3)))
+        (enter-block . #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2)))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2))
          .
-         #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (127 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (12 . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
-        (4 . #s(stx-boundary ((s0 (s1 (s2 s3)) (s4 s5) #f))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (22
-         #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f))
+         #s(stx-boundary ((s0 (s1 s2) (s3 (s4 (s5 s6)))) s2)))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s6))))))
+        (exit-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 (s5 s6))))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0 s1) (s2 (s3 (s4 s5))))))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->letrec #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
+        (visit . #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1 s2) (s3 (s4 (s5 s6))))) s2)))
+        (prim-letrec-values . #f)
+        (let-renames
+         (#s(stx-boundary ((s0 s1) (s2 (s3 (s4 s5))))))
          .
-         #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 (s3 s4)) (s5 s6) #f)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 (s2 s3)) (s4 s5) #f)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 s2))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (22
+         #s(stx-boundary (s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 (s3 s4))))
+         .
+         #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 (s3 s4)))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 (s2 s3)))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 s2))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 s3))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 s3)))
          .
          #s(stx-boundary (s0 s1 (s2 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 s3))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 s2))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary (s0 (s1 s2 s3))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 s3))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 s1)))
-        (2 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary #f))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . #f)))
-        (6 . #s(stx-boundary (s0 . #f)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 #f)))
-        (2 . #s(stx-boundary (s0 #f)))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)) (s5 s6) (s5 #f))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f))))
-        (5 . #s(stx-boundary ((s0 s1 (s0 s2 (s0 s3 s4)) (s5 s6) (s5 #f)))))
-        (7
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 s3))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 s2))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
          .
-         #s(stx-boundary (s0 (s1) (s2 s3 (s2 s4 (s2 s5 s1)) (s6 s7) (s6 #f)))))
-        (2
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 s3))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 s3))))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s1 s3 s4)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s0 s3 s4)))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim
          .
-         #s(stx-boundary (s0 (s1) (s2 s3 (s2 s4 (s2 s5 s1)) (s6 s7) (s6 #f)))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 9)))
-        (0 . #s(stx-boundary (s0 9)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 9)))
-        (21 . #s(stx-boundary (s0 9)))
-        (130 . #s(stx-boundary 9))
-        (132 . #s(stx-boundary 9))
-        (126 . #s(stx-boundary 9))
-        (127 . #s(stx-boundary 9))
-        (133 . #s(stx-boundary 9))
-        (131 . #s(stx-boundary 9))
-        (22 #s(stx-boundary 9) . #s(stx-boundary (s0 9)))
-        (9 . #s(stx-boundary 9))
-        (2 . #s(stx-boundary 9))
-        (127 . #s(stx-boundary 9))
-        (14
-         #s(stx-boundary
-            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
-        (0
+         #s(stx-boundary (s0 (((s1 s2) (s3 s4 (s3 s5 (s3 s6 s7))))) s2)))
+        (return
+         .
+         #s(stx-boundary (s0 (((s1 s2) (s3 s4 (s3 s5 (s3 s6 s7))))) s2)))
+        (exit-prim
          .
          #s(stx-boundary
-            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
-        (1 . #s(stx-boundary s0))
-        (6
+            (s0 (s1) (s2 (((s3 s4) (s5 s6 (s5 s7 (s5 s8 s1))))) s4))))
+        (return
          .
          #s(stx-boundary
-            (s0 (((s1) (s2 (s3) (s4 (s5 (s6 s3)) (s7 s8) #f)))) () 9)))
-        (114 . #f)
-        (19
-         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 (s5 s2)) (s6 s7) #f)))))
+            (s0 (s1) (s2 (((s3 s4) (s5 s6 (s5 s7 (s5 s8 s1))))) s4))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 9))))
+        (exit-check . #s(stx-boundary (s0 (s1 9))))
+        (block->letrec
+         #s(stx-boundary
+            (s0
+             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+             ()
+             (s10 (s1 9)))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+             ()
+             (s10 (s1 9)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             (((s1) (s2 (s3) (s4 (s5 s6) (s7 (s8 (s9 s3)))) s6)))
+             ()
+             (s10 (s1 9)))))
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
+         (#s(stx-boundary ((s0) (s1 (s2) (s3 (s4 s5) (s6 (s7 (s8 s2)))) s5))))
          ()
          .
-         #s(stx-boundary (9)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (9)))
-        (3 . #f)
-        (0 . #s(stx-boundary 9))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 9)))
-        (6 . #s(stx-boundary (s0 . 9)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 9)))
-        (2 . #s(stx-boundary (s0 9)))
-        (5 . #s(stx-boundary ((s0 9))))
-        (142 . #s(stx-boundary (s0 () (s1 9))))
-        (7 . #s(stx-boundary (s0 () (s1 9))))
-        (2 . #s(stx-boundary (s0 () (s1 9))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 9)))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 9)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))))
+         #s(stx-boundary ((s9 (s0 9)))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1 9)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 9))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 9))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 9)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 9)))
+        (macro-pre-x . #s(stx-boundary (s0 9)))
+        (enter-local . #s(stx-boundary 9))
+        (local-pre . #s(stx-boundary 9))
+        (start . #f)
+        (visit . #s(stx-boundary 9))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 9)))
+        (enter-prim . #s(stx-boundary (s0 . 9)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 9)))
+        (return . #s(stx-boundary (s0 9)))
+        (local-post . #s(stx-boundary (s0 9)))
+        (opaque-expr . #s(stx-boundary #:opaque))
+        (exit-local . #s(stx-boundary (s0 9)))
+        (macro-post-x #s(stx-boundary #:opaque) . #s(stx-boundary (s0 9)))
+        (exit-macro . #s(stx-boundary #:opaque))
+        (visit . #s(stx-boundary #:opaque))
+        (opaque-expr . #s(stx-boundary (s0 9)))
+        (tag . #s(stx-boundary (s0 9)))
+        (exit-prim . #s(stx-boundary (s0 9)))
+        (return . #s(stx-boundary (s0 9)))
+        (exit-list . #s(stx-boundary ((s0 9))))
+        (tag . #s(stx-boundary (s0 () (s1 9))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 9))))
+        (return . #s(stx-boundary (s0 () (s1 9))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 9)))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 9)))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () (s2 9))))))))
+      ((letrec-values (((x) __y) ((y z) __w)) __x)
+       .
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (enter-check . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (exit-check . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (visit . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (((s2) s3) ((s4 s5) s6)) s7))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1) s2) ((s3 s4) s5)) s6)))
+        (prim-letrec-values . #f)
+        (let-renames
+         (#s(stx-boundary ((s0) s1)) #s(stx-boundary ((s2 s3) s4)))
+         .
+         #s(stx-boundary (s5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next-group . #f)
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (exit-list . #s(stx-boundary ((s0 . s1))))
+        (exit-prim
+         .
+         #s(stx-boundary
+            (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
+        (return
+         .
+         #s(stx-boundary
+            (s0 (((s1) (s2 . s3)) ((s4 s5) (s2 . s6))) (s2 . s7))))
+        (exit-prim
+         .
+         #s(stx-boundary
+            (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))
+        (return
+         .
+         #s(stx-boundary
+            (s0 (s1 (((s2) (s3 . s4)) ((s5 s6) (s3 . s7))) (s3 . s8)))))))
       ((lambda (x) (define y (+ x x)) y)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (21 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (22
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
+        (enter-check . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
+        (visit . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2) (s3 s4 (s5 s2 s2)) s4))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3))
          .
          #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (9 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (0 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s2 (s3 s0 s0)) s2)))
-        (10 . #s(stx-boundary ((s0 s1 (s2 s3 s3)) s1)))
-        (24
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (visit . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s3 (s4 s1 s1)) s3)))
+        (prim-lambda . #f)
+        (lambda-renames
+         #s(stx-boundary (s0))
+         .
+         #s(stx-boundary ((s1 s2 (s3 s0 s0)) s2)))
+        (enter-block . #s(stx-boundary ((s0 s1 (s2 s3 s3)) s1)))
+        (block-renames
          #s(stx-boundary ((s0 s1 (s2 s3 s3)) s1))
          .
          #s(stx-boundary ((s0 s1 (s2 s3 s3)) s1)))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 s3 s3)))
          .
          #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 s3 s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 s3 s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 s3 s3)))
          .
          #s(stx-boundary (s4 s1 (s2 s3 s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 s2 s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (14 #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
-        (0 . #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
-        (113 . #f)
-        (16 (#s(stx-boundary ((s0) (s1 s2 s2)))) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2 s2)))
-        (22 #s(stx-boundary (s0 s1 s2 s2)) . #s(stx-boundary (s0 s1 s2 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2 s2)))
-        (13 . #f)
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (((s1) (s2 s3 s4 s4))) s1)))
-        (2 . #s(stx-boundary (s0 (((s1) (s2 s3 s4 s4))) s1)))
-        (7 . #s(stx-boundary (s0 (s1) (s2 (((s3) (s4 s5 s1 s1))) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (((s3) (s4 s5 s1 s1))) s3))))
-        (7 . #s(stx-boundary (s0 (s1 (s2) (s3 (((s4) (s5 s6 s2 s2))) s4)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2) (s3 (((s4) (s5 s6 s2 s2))) s4)))))))
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 s3 s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 s2 s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->letrec #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
+        (visit . #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (((s1) (s2 s3 s3))) s1)))
+        (prim-letrec-values . #f)
+        (let-renames
+         (#s(stx-boundary ((s0) (s1 s2 s2))))
+         .
+         #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2 s2))
+         .
+         #s(stx-boundary (s0 s1 s2 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2 s2)))
+        (return . #s(stx-boundary (s0 s1 s2 s2)))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (((s1) (s2 s3 s4 s4))) s1)))
+        (return . #s(stx-boundary (s0 (((s1) (s2 s3 s4 s4))) s1)))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (((s3) (s4 s5 s1 s1))) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (((s3) (s4 s5 s1 s1))) s3))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (((s4) (s5 s6 s2 s2))) s4)))))
+        (return
+         .
+         #s(stx-boundary (s0 (s1 (s2) (s3 (((s4) (s5 s6 s2 s2))) s4)))))))
       ((if 1 2 3)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 1 2 3))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 1 2 3))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 1 2 3)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 1 2 3)))
-        (105 . #f)
-        (0 . #s(stx-boundary 1))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 1)))
-        (6 . #s(stx-boundary (s0 . 1)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 1)))
-        (2 . #s(stx-boundary (s0 1)))
-        (3 . #f)
-        (0 . #s(stx-boundary 2))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 2)))
-        (6 . #s(stx-boundary (s0 . 2)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 2)))
-        (2 . #s(stx-boundary (s0 2)))
-        (3 . #f)
-        (0 . #s(stx-boundary 3))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 3)))
-        (6 . #s(stx-boundary (s0 . 3)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 3)))
-        (2 . #s(stx-boundary (s0 3)))
-        (7 . #s(stx-boundary (s0 (s1 1) (s1 2) (s1 3))))
-        (2 . #s(stx-boundary (s0 (s1 1) (s1 2) (s1 3))))
-        (7 . #s(stx-boundary (s0 (s1 (s2 1) (s2 2) (s2 3)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 1) (s2 2) (s2 3)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 1 2 3))))
+        (enter-check . #s(stx-boundary (s0 (s1 1 2 3))))
+        (exit-check . #s(stx-boundary (s0 (s1 1 2 3))))
+        (visit . #s(stx-boundary (s0 (s1 1 2 3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 1 2 3))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 1 2 3)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 1 2 3)))
+        (prim-if . #f)
+        (visit . #s(stx-boundary 1))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 1)))
+        (enter-prim . #s(stx-boundary (s0 . 1)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 1)))
+        (return . #s(stx-boundary (s0 1)))
+        (next . #f)
+        (visit . #s(stx-boundary 2))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 2)))
+        (enter-prim . #s(stx-boundary (s0 . 2)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 2)))
+        (return . #s(stx-boundary (s0 2)))
+        (next . #f)
+        (visit . #s(stx-boundary 3))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 3)))
+        (enter-prim . #s(stx-boundary (s0 . 3)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 3)))
+        (return . #s(stx-boundary (s0 3)))
+        (exit-prim . #s(stx-boundary (s0 (s1 1) (s1 2) (s1 3))))
+        (return . #s(stx-boundary (s0 (s1 1) (s1 2) (s1 3))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 1) (s2 2) (s2 3)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 1) (s2 2) (s2 3)))))))
       ((begin 1 __x (+ 3 4))
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 1 s1 (s2 3 4))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 1 s1 (s2 3 4))))
-        (107 . #f)
-        (4 . #s(stx-boundary (1 s0 (s1 3 4))))
-        (3 . #f)
-        (0 . #s(stx-boundary 1))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 1)))
-        (6 . #s(stx-boundary (s0 . 1)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 1)))
-        (2 . #s(stx-boundary (s0 1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . s1)))
-        (6 . #s(stx-boundary (s0 . s1)))
-        (116 . #f)
-        (7 . #s(stx-boundary (s0 . s1)))
-        (2 . #s(stx-boundary (s0 . s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 3 4)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 3 4)))
-        (8 . #s(stx-boundary (s0 s1 3 4)))
-        (21 . #s(stx-boundary (s0 s1 3 4)))
-        (22 #s(stx-boundary (s0 s1 3 4)) . #s(stx-boundary (s0 s1 3 4)))
-        (9 . #s(stx-boundary (s0 s1 3 4)))
-        (0 . #s(stx-boundary (s0 s1 3 4)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 3 4)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 3 4)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 3))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 3)))
-        (6 . #s(stx-boundary (s0 . 3)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 3)))
-        (2 . #s(stx-boundary (s0 3)))
-        (3 . #f)
-        (0 . #s(stx-boundary 4))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 4)))
-        (6 . #s(stx-boundary (s0 . 4)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 4)))
-        (2 . #s(stx-boundary (s0 4)))
-        (5 . #s(stx-boundary (s0 (s1 3) (s1 4))))
-        (7 . #s(stx-boundary (s0 s1 (s2 3) (s2 4))))
-        (2 . #s(stx-boundary (s0 s1 (s2 3) (s2 4))))
-        (5 . #s(stx-boundary ((s0 1) (s1 . s2) (s3 s4 (s0 3) (s0 4)))))
-        (7 . #s(stx-boundary (s0 (s1 1) (s2 . s3) (s4 s5 (s1 3) (s1 4)))))
-        (2 . #s(stx-boundary (s0 (s1 1) (s2 . s3) (s4 s5 (s1 3) (s1 4)))))
-        (7 . #s(stx-boundary (s0 (s1 (s2 1) (s3 . s4) (s5 s6 (s2 3) (s2 4))))))
-        (2
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
+        (enter-check . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
+        (exit-check . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
+        (visit . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 1 s2 (s3 3 4)))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 1 s1 (s2 3 4))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 1 s1 (s2 3 4))))
+        (prim-begin . #f)
+        (enter-list . #s(stx-boundary (1 s0 (s1 3 4))))
+        (next . #f)
+        (visit . #s(stx-boundary 1))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 1)))
+        (enter-prim . #s(stx-boundary (s0 . 1)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 1)))
+        (return . #s(stx-boundary (s0 1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . s1)))
+        (enter-prim . #s(stx-boundary (s0 . s1)))
+        (prim-#%top . #f)
+        (exit-prim . #s(stx-boundary (s0 . s1)))
+        (return . #s(stx-boundary (s0 . s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 3 4)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 3 4)))
+        (enter-macro . #s(stx-boundary (s0 s1 3 4)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 3 4)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 3 4))
+         .
+         #s(stx-boundary (s0 s1 3 4)))
+        (exit-macro . #s(stx-boundary (s0 s1 3 4)))
+        (visit . #s(stx-boundary (s0 s1 3 4)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 3 4)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 3 4)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 3))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 3)))
+        (enter-prim . #s(stx-boundary (s0 . 3)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 3)))
+        (return . #s(stx-boundary (s0 3)))
+        (next . #f)
+        (visit . #s(stx-boundary 4))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 4)))
+        (enter-prim . #s(stx-boundary (s0 . 4)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 4)))
+        (return . #s(stx-boundary (s0 4)))
+        (exit-list . #s(stx-boundary (s0 (s1 3) (s1 4))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 3) (s2 4))))
+        (return . #s(stx-boundary (s0 s1 (s2 3) (s2 4))))
+        (exit-list . #s(stx-boundary ((s0 1) (s1 . s2) (s3 s4 (s0 3) (s0 4)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 1) (s2 . s3) (s4 s5 (s1 3) (s1 4)))))
+        (return . #s(stx-boundary (s0 (s1 1) (s2 . s3) (s4 s5 (s1 3) (s1 4)))))
+        (exit-prim
+         .
+         #s(stx-boundary (s0 (s1 (s2 1) (s3 . s4) (s5 s6 (s2 3) (s2 4))))))
+        (return
          .
          #s(stx-boundary (s0 (s1 (s2 1) (s3 . s4) (s5 s6 (s2 3) (s2 4))))))))
       ((#%stratified-body
@@ -8464,8 +9020,8 @@
         (define (second y) 8)
         (ok (first 5)))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -8474,8 +9030,7 @@
               (s2 (s5 s6) (s7 s6))
               (s2 (s7 s8) 8)
               (s5 (s3 5))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -8484,8 +9039,36 @@
               (s2 (s5 s6) (s7 s6))
               (s2 (s7 s8) 8)
               (s5 (s3 5))))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              (s2 (s3 s4) s4)
+              (s2 (s5 s6) (s7 s6))
+              (s2 (s7 s8) 8)
+              (s5 (s3 5))))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -8493,8 +9076,8 @@
              (s1 (s4 s5) (s6 s5))
              (s1 (s6 s7) 8)
              (s4 (s2 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -8502,279 +9085,288 @@
              (s1 (s4 s5) (s6 s5))
              (s1 (s6 s7) 8)
              (s4 (s2 5)))))
-        (155 . #f)
-        (10
+        (prim-#%stratified . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) s2) (s0 (s3 s4) (s5 s4)) (s0 (s5 s6) 8) (s3 (s1 5)))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 (s1 s2) s2) (s0 (s3 s4) (s5 s4)) (s0 (s5 s6) 8) (s3 (s1 5))))
          .
          #s(stx-boundary
             ((s0 (s1 s2) s2) (s0 (s3 s4) (s5 s4)) (s0 (s5 s6) 8) (s3 (s1 5)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 s3)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (0 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (21 . #s(stx-boundary (s0 (s1 s2) 8)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) 8)))
+        (visit . #s(stx-boundary (s0 (s1 s2) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) 8)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) 8)))
          .
          #s(stx-boundary (s0 (s1 s3) 8)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) 8)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 5))))
-        (127 . #s(stx-boundary (s0 (s1 5))))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) 8))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 5))))
+        (exit-check . #s(stx-boundary (s0 (s1 5))))
+        (block->letrec
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)) ((s4) (s2 (s5) (s6 s5))) ((s6) (s2 (s7) 8)))
              (s8 (s4 (s1 5))))))
-        (113 . #f)
-        (16
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) s2)))
           #s(stx-boundary ((s3) (s1 (s4) (s5 s4))))
           #s(stx-boundary ((s5) (s1 (s6) 8))))
          .
          #s(stx-boundary ((s7 (s3 (s0 5))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) 8)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (8)))
-        (10 . #s(stx-boundary (8)))
-        (24 #s(stx-boundary (8)) . #s(stx-boundary (8)))
-        (3 . #f)
-        (126 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (12 . #s(stx-boundary (8)))
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 (s1 (s2 5))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2 5)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 (s2 5)))))
-        (155 . #f)
-        (10 . #s(stx-boundary ((s0 (s1 5)))))
-        (24 #s(stx-boundary ((s0 (s1 5)))) . #s(stx-boundary ((s0 (s1 5)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 5))))
-        (127 . #s(stx-boundary (s0 (s1 5))))
-        (12 . #s(stx-boundary ((s0 (s1 5)))))
-        (4 . #s(stx-boundary ((s0 (s1 5)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 5))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 5))))
-        (8 . #s(stx-boundary (s0 s1 (s2 5))))
-        (21 . #s(stx-boundary (s0 s1 (s2 5))))
-        (22 #s(stx-boundary (s0 s1 (s2 5))) . #s(stx-boundary (s0 s1 (s2 5))))
-        (9 . #s(stx-boundary (s0 s1 (s2 5))))
-        (0 . #s(stx-boundary (s0 s1 (s2 5))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 5))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (5 . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
-        (5 . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) 8)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (8)))
+        (enter-block . #s(stx-boundary (8)))
+        (block-renames #s(stx-boundary (8)) . #s(stx-boundary (8)))
+        (next . #f)
+        (enter-check . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->list . #s(stx-boundary (8)))
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1 (s2 5))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 (s2 5)))))
+        (prim-#%stratified . #f)
+        (enter-block . #s(stx-boundary ((s0 (s1 5)))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 5))))
+         .
+         #s(stx-boundary ((s0 (s1 5)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 5))))
+        (exit-check . #s(stx-boundary (s0 (s1 5))))
+        (block->list . #s(stx-boundary ((s0 (s1 5)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 5)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 5))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 5))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 5))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2 5)))
+         .
+         #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 5))))
+        (visit . #s(stx-boundary (s0 s1 (s2 5))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 5))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s3 5)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s3 5)))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s0 s2 (s3 5))))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -8782,7 +9374,7 @@
               ((s4) (s2 (s5) (s6 s7 s5)))
               ((s7) (s2 (s8) (s9 8))))
              (s6 s4 (s6 s1 (s9 5))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -8790,7 +9382,7 @@
               ((s4) (s2 (s5) (s6 s7 s5)))
               ((s7) (s2 (s8) (s9 8))))
              (s6 s4 (s6 s1 (s9 5))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -8798,7 +9390,7 @@
               ((s4) (s2 (s5) (s6 s7 s5)))
               ((s7) (s2 (s8) (s9 8))))
              (s6 s4 (s6 s1 (s9 5))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -8806,7 +9398,7 @@
               ((s4) (s2 (s5) (s6 s7 s5)))
               ((s7) (s2 (s8) (s9 8))))
              (s6 s4 (s6 s1 (s9 5))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -8815,7 +9407,7 @@
                ((s5) (s3 (s6) (s7 s8 s6)))
                ((s8) (s3 (s9) (s10 8))))
               (s7 s5 (s7 s2 (s10 5)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -8826,245 +9418,260 @@
               (s7 s5 (s7 s2 (s10 5)))))))))
       ((let () (define (ok x) '8) (define (second y) (ok y)) (second 5))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s7) (s3 s7)) (s6 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s7) (s3 s7)) (s6 5)))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s7) (s3 s7)) (s6 5)))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s7) (s3 s7)) (s6 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s7) (s3 s7)) (s6 5)))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5)))
          .
          #s(stx-boundary
             (s7 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s6) (s2 s6)) (s5 5))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s0 (s4 s5) (s1 s5)) (s4 5))))
-        (13 . #f)
-        (10
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s0 (s4 s5) (s1 s5)) (s4 5))))
-        (24
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s0 (s4 s5) (s1 s5)) (s4 5)))
          .
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s0 (s4 s5) (s1 s5)) (s4 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 8)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 8)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 s2))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s0 (s1 s3) (s4 s3))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) (s4 s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3))))
          .
          #s(stx-boundary (s5 s1 (s2 (s3) (s4 s3)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (127 . #s(stx-boundary (s0 5)))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 s3)))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 s2)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (exit-check . #s(stx-boundary (s0 5)))
+        (block->letrec
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s6) (s1 s6)))) (s5 5))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s6) (s1 s6)))) (s5 5))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s6) (s1 s6)))) (s5 5))))
-        (113 . #f)
-        (16
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8))))
           #s(stx-boundary ((s4) (s1 (s5) (s0 s5)))))
          .
          #s(stx-boundary ((s4 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (117 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 s1))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
-        (10 . #s(stx-boundary ((s0 s1))))
-        (24 #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 s1)))
-        (127 . #s(stx-boundary (s0 s1)))
-        (12 . #s(stx-boundary ((s0 s1))))
-        (4 . #s(stx-boundary ((s0 s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 s1)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 s2)))
-        (8 . #s(stx-boundary (s0 s1 s2)))
-        (21 . #s(stx-boundary (s0 s1 s2)))
-        (22 #s(stx-boundary (s0 s1 s2)) . #s(stx-boundary (s0 s1 s2)))
-        (9 . #s(stx-boundary (s0 s1 s2)))
-        (0 . #s(stx-boundary (s0 s1 s2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 s2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0 s1)))
-        (7 . #s(stx-boundary (s0 s1 s2)))
-        (2 . #s(stx-boundary (s0 s1 s2)))
-        (5 . #s(stx-boundary ((s0 s1 s2))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 5))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 5)))
-        (8 . #s(stx-boundary (s0 s1 5)))
-        (21 . #s(stx-boundary (s0 s1 5)))
-        (22 #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
-        (9 . #s(stx-boundary (s0 s1 5)))
-        (0 . #s(stx-boundary (s0 s1 5)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 5)))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 5)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary 5))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 5)))
-        (6 . #s(stx-boundary (s0 . 5)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 5)))
-        (2 . #s(stx-boundary (s0 5)))
-        (5 . #s(stx-boundary (s0 (s1 5))))
-        (7 . #s(stx-boundary (s0 s1 (s2 5))))
-        (2 . #s(stx-boundary (s0 s1 (s2 5))))
-        (5 . #s(stx-boundary ((s0 s1 (s2 5)))))
-        (7
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 s1))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 s0))))
+        (enter-block . #s(stx-boundary ((s0 s1))))
+        (block-renames #s(stx-boundary ((s0 s1))) . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 s1)))
+        (exit-check . #s(stx-boundary (s0 s1)))
+        (block->list . #s(stx-boundary ((s0 s1))))
+        (enter-list . #s(stx-boundary ((s0 s1))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 s1)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 s2)))
+        (enter-macro . #s(stx-boundary (s0 s1 s2)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 s2)))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 s2))
+         .
+         #s(stx-boundary (s0 s1 s2)))
+        (exit-macro . #s(stx-boundary (s0 s1 s2)))
+        (visit . #s(stx-boundary (s0 s1 s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 s2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 s1)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0 s1)))
+        (exit-prim . #s(stx-boundary (s0 s1 s2)))
+        (return . #s(stx-boundary (s0 s1 s2)))
+        (exit-list . #s(stx-boundary ((s0 s1 s2))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (return . #s(stx-boundary (s0 (s1) (s2 s3 s1))))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 5))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 5)))
+        (enter-macro . #s(stx-boundary (s0 s1 5)))
+        (macro-pre-x . #s(stx-boundary (s0 s1 5)))
+        (macro-post-x #s(stx-boundary (s0 s1 5)) . #s(stx-boundary (s0 s1 5)))
+        (exit-macro . #s(stx-boundary (s0 s1 5)))
+        (visit . #s(stx-boundary (s0 s1 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 5)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 5)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary 5))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 5)))
+        (enter-prim . #s(stx-boundary (s0 . 5)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 5)))
+        (return . #s(stx-boundary (s0 5)))
+        (exit-list . #s(stx-boundary (s0 (s1 5))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 5))))
+        (return . #s(stx-boundary (s0 s1 (s2 5))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s2 5)))))
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 8))))
              (s0 (((s5) (s2 (s6) (s7 s1 s6)))) (s7 s5 (s4 5))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 8))))
              (s0 (((s5) (s2 (s6) (s7 s1 s6)))) (s7 s5 (s4 5))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -9072,7 +9679,7 @@
              (s0
               (((s1) (s2 (s3) (s4 8))))
               (s0 (((s5) (s2 (s6) (s7 s1 s6)))) (s7 s5 (s4 5)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -9080,7 +9687,7 @@
              (s0
               (((s1) (s2 (s3) (s4 8))))
               (s0 (((s5) (s2 (s6) (s7 s1 s6)))) (s7 s5 (s4 5)))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -9089,7 +9696,7 @@
               (s1
                (((s2) (s3 (s4) (s5 8))))
                (s1 (((s6) (s3 (s7) (s8 s2 s7)))) (s8 s6 (s5 5))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -9100,256 +9707,274 @@
                (s1 (((s6) (s3 (s7) (s8 s2 s7)))) (s8 s6 (s5 5))))))))))
       ((#%plain-app 1 2)
        .
-       ((141 . #f)
-        (0 . #s(stx-boundary (s0 (s1 1 2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 1 2))))
-        (138 . #f)
-        (0 . #s(stx-boundary (s0 1 2)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 1 2)))
-        (109 . #f)
-        (4 . #s(stx-boundary (1 2)))
-        (3 . #f)
-        (0 . #s(stx-boundary 1))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 1)))
-        (6 . #s(stx-boundary (s0 . 1)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 1)))
-        (2 . #s(stx-boundary (s0 1)))
-        (3 . #f)
-        (0 . #s(stx-boundary 2))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 2)))
-        (6 . #s(stx-boundary (s0 . 2)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 2)))
-        (2 . #s(stx-boundary (s0 2)))
-        (5 . #s(stx-boundary ((s0 1) (s0 2))))
-        (7 . #s(stx-boundary (s0 (s1 1) (s1 2))))
-        (2 . #s(stx-boundary (s0 (s1 1) (s1 2))))
-        (7 . #s(stx-boundary (s0 (s1 (s2 1) (s2 2)))))
-        (2 . #s(stx-boundary (s0 (s1 (s2 1) (s2 2)))))))
+       ((start-top . #f)
+        (visit . #s(stx-boundary (s0 (s1 1 2))))
+        (enter-check . #s(stx-boundary (s0 (s1 1 2))))
+        (exit-check . #s(stx-boundary (s0 (s1 1 2))))
+        (visit . #s(stx-boundary (s0 (s1 1 2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 1 2))))
+        (prim-#%expression . #f)
+        (visit . #s(stx-boundary (s0 1 2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 1 2)))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (1 2)))
+        (next . #f)
+        (visit . #s(stx-boundary 1))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 1)))
+        (enter-prim . #s(stx-boundary (s0 . 1)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 1)))
+        (return . #s(stx-boundary (s0 1)))
+        (next . #f)
+        (visit . #s(stx-boundary 2))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 2)))
+        (enter-prim . #s(stx-boundary (s0 . 2)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 2)))
+        (return . #s(stx-boundary (s0 2)))
+        (exit-list . #s(stx-boundary ((s0 1) (s0 2))))
+        (exit-prim . #s(stx-boundary (s0 (s1 1) (s1 2))))
+        (return . #s(stx-boundary (s0 (s1 1) (s1 2))))
+        (exit-prim . #s(stx-boundary (s0 (s1 (s2 1) (s2 2)))))
+        (return . #s(stx-boundary (s0 (s1 (s2 1) (s2 2)))))))
       ((let ()
          (define-syntax (ok stx) (quote-syntax 8))
          (define-syntax (second stx) (quote-syntax (ok 6)))
          (second 5))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s4) (s5 (s3 6))) (s6 5)))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s4) (s5 (s3 6))) (s6 5)))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s4) (s5 (s3 6))) (s6 5)))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s4) (s5 (s3 6))) (s6 5)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0 (s1 () (s2 (s3 s4) (s5 8)) (s2 (s6 s4) (s5 (s3 6))) (s6 5)))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5)))
          .
          #s(stx-boundary
             (s6 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 () (s1 (s2 s3) (s4 8)) (s1 (s5 s3) (s4 (s2 6))) (s5 5))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 8)) (s0 (s4 s2) (s3 (s1 6))) (s4 5))))
-        (13 . #f)
-        (10
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 8)) (s0 (s4 s2) (s3 (s1 6))) (s4 5))))
-        (24
+        (block-renames
          #s(stx-boundary ((s0 (s1 s2) (s3 8)) (s0 (s4 s2) (s3 (s1 6))) (s4 5)))
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 8)) (s0 (s4 s2) (s3 (s1 6))) (s4 5))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 8)))
          .
          #s(stx-boundary (s3 (s1) (s2 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6)))))
          .
          #s(stx-boundary (s6 (s1 s3) (s4 (s5 6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 6))))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 6))))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3 6))))
          .
          #s(stx-boundary (s4 (s1) (s2 (s3 6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 6)))))
-        (10 . #s(stx-boundary ((s0 (s1 6)))))
-        (24 #s(stx-boundary ((s0 (s1 6)))) . #s(stx-boundary ((s0 (s1 6)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 6))))
-        (127 . #s(stx-boundary (s0 (s1 6))))
-        (12 . #s(stx-boundary ((s0 (s1 6)))))
-        (4 . #s(stx-boundary ((s0 (s1 6)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 6))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 6))))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 (s1 6))))
-        (2 . #s(stx-boundary (s0 (s1 6))))
-        (5 . #s(stx-boundary ((s0 (s1 6)))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 5)))
-        (0 . #s(stx-boundary (s0 5)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 5)))
-        (21 . #s(stx-boundary (s0 5)))
-        (22 #s(stx-boundary (s0 6)) . #s(stx-boundary (s1 5)))
-        (9 . #s(stx-boundary (s0 6)))
-        (2 . #s(stx-boundary (s0 6)))
-        (0 . #s(stx-boundary (s0 6)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 6)))
-        (21 . #s(stx-boundary (s0 6)))
-        (22 #s(stx-boundary 8) . #s(stx-boundary (s0 6)))
-        (9 . #s(stx-boundary 8))
-        (2 . #s(stx-boundary 8))
-        (127 . #s(stx-boundary 8))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 6)))))
+        (enter-block . #s(stx-boundary ((s0 (s1 6)))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 6))))
+         .
+         #s(stx-boundary ((s0 (s1 6)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 6))))
+        (exit-check . #s(stx-boundary (s0 (s1 6))))
+        (block->list . #s(stx-boundary ((s0 (s1 6)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 6)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 6))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 6))))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 6))))
+        (return . #s(stx-boundary (s0 (s1 6))))
+        (exit-list . #s(stx-boundary ((s0 (s1 6)))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 5)))
+        (visit . #s(stx-boundary (s0 5)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 5)))
+        (macro-pre-x . #s(stx-boundary (s0 5)))
+        (macro-post-x #s(stx-boundary (s0 6)) . #s(stx-boundary (s1 5)))
+        (exit-macro . #s(stx-boundary (s0 6)))
+        (return . #s(stx-boundary (s0 6)))
+        (visit . #s(stx-boundary (s0 6)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 6)))
+        (macro-pre-x . #s(stx-boundary (s0 6)))
+        (macro-post-x #s(stx-boundary 8) . #s(stx-boundary (s0 6)))
+        (exit-macro . #s(stx-boundary 8))
+        (return . #s(stx-boundary 8))
+        (exit-check . #s(stx-boundary 8))
+        (block->letrec
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6))))) () 8)))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6))))) () 8)))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0 (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6))))) () 8)))
-        (114 . #f)
-        (19
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8))))
           #s(stx-boundary ((s4) (s1 (s2) (s3 (s0 6))))))
          ()
          .
          #s(stx-boundary (8)))
-        (157 . #f)
-        (13 . #f)
-        (4 . #s(stx-boundary (8)))
-        (3 . #f)
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (142 . #s(stx-boundary (s0 () (s1 8))))
-        (7 . #s(stx-boundary (s0 () (s1 8))))
-        (2 . #s(stx-boundary (s0 () (s1 8))))
-        (7 . #s(stx-boundary (s0 () (s0 () (s1 8)))))
-        (2 . #s(stx-boundary (s0 () (s0 () (s1 8)))))
-        (7 . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))
-        (2 . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))))
+        (prepare-env . #f)
+        (next-group . #f)
+        (enter-list . #s(stx-boundary (8)))
+        (next . #f)
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (tag . #s(stx-boundary (s0 () (s1 8))))
+        (exit-prim . #s(stx-boundary (s0 () (s1 8))))
+        (return . #s(stx-boundary (s0 () (s1 8))))
+        (exit-prim . #s(stx-boundary (s0 () (s0 () (s1 8)))))
+        (return . #s(stx-boundary (s0 () (s0 () (s1 8)))))
+        (exit-prim . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))
+        (return . #s(stx-boundary (s0 (s1 () (s1 () (s2 8))))))))
       ((let ()
          (define-syntax (ok stx) (quote-syntax 8))
          (define-syntax (second stx) (quote-syntax (ok 6)))
@@ -9357,8 +9982,8 @@
          (define (second-ident y) y)
          (ident (second-ident (second))))
        .
-       ((141 . #f)
-        (0
+       ((start-top . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -9369,8 +9994,7 @@
               (s7 (s8 s9) s9)
               (s7 (s10 s11) s11)
               (s8 (s10 (s6)))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (enter-check
          .
          #s(stx-boundary
             (s0
@@ -9381,8 +10005,42 @@
               (s7 (s8 s9) s9)
               (s7 (s10 s11) s11)
               (s8 (s10 (s6)))))))
-        (138 . #f)
-        (0
+        (exit-check
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 8))
+              (s2 (s6 s4) (s5 (s3 6)))
+              (s7 (s8 s9) s9)
+              (s7 (s10 s11) s11)
+              (s8 (s10 (s6)))))))
+        (visit
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 8))
+              (s2 (s6 s4) (s5 (s3 6)))
+              (s7 (s8 s9) s9)
+              (s7 (s10 s11) s11)
+              (s8 (s10 (s6)))))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
+         .
+         #s(stx-boundary
+            (s0
+             (s1
+              ()
+              (s2 (s3 s4) (s5 8))
+              (s2 (s6 s4) (s5 (s3 6)))
+              (s7 (s8 s9) s9)
+              (s7 (s10 s11) s11)
+              (s8 (s10 (s6)))))))
+        (prim-#%expression . #f)
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -9392,8 +10050,8 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (1 . #s(stx-boundary s0))
-        (8
+        (resolve . #s(stx-boundary s0))
+        (enter-macro
          .
          #s(stx-boundary
             (s0
@@ -9403,7 +10061,7 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (21
+        (macro-pre-x
          .
          #s(stx-boundary
             (s0
@@ -9413,7 +10071,7 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (22
+        (macro-post-x
          #s(stx-boundary
             (s0
              ()
@@ -9431,7 +10089,7 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (9
+        (exit-macro
          .
          #s(stx-boundary
             (s0
@@ -9441,7 +10099,7 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
@@ -9451,8 +10109,8 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
@@ -9462,8 +10120,8 @@
              (s6 (s7 s8) s8)
              (s6 (s9 s10) s10)
              (s7 (s9 (s5))))))
-        (112 . #f)
-        (16
+        (prim-let-values . #f)
+        (let-renames
          ()
          .
          #s(stx-boundary
@@ -9472,8 +10130,8 @@
              (s5 (s6 s7) s7)
              (s5 (s8 s9) s9)
              (s6 (s8 (s4))))))
-        (13 . #f)
-        (10
+        (next-group . #f)
+        (enter-block
          .
          #s(stx-boundary
             ((s0 (s1 s2) (s3 8))
@@ -9481,7 +10139,7 @@
              (s5 (s6 s7) s7)
              (s5 (s8 s9) s9)
              (s6 (s8 (s4))))))
-        (24
+        (block-renames
          #s(stx-boundary
             ((s0 (s1 s2) (s3 8))
              (s0 (s4 s2) (s3 (s1 6)))
@@ -9495,327 +10153,333 @@
              (s5 (s6 s7) s7)
              (s5 (s8 s9) s9)
              (s6 (s8 (s4))))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 8))))
-        (22
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8))))
          .
          #s(stx-boundary (s5 (s1 s3) (s4 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 8)))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 8)))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 8))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 8)))
          .
          #s(stx-boundary (s3 (s1) (s2 8))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
-        (10 . #s(stx-boundary ((s0 8))))
-        (24 #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 8)))
-        (127 . #s(stx-boundary (s0 8)))
-        (12 . #s(stx-boundary ((s0 8))))
-        (4 . #s(stx-boundary ((s0 8))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 8)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 8)))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary ((s0 8))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 8))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (0 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (21 . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 8))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 8))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 8))))
+        (enter-block . #s(stx-boundary ((s0 8))))
+        (block-renames #s(stx-boundary ((s0 8))) . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 8)))
+        (exit-check . #s(stx-boundary (s0 8)))
+        (block->list . #s(stx-boundary ((s0 8))))
+        (enter-list . #s(stx-boundary ((s0 8))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 8)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 8)))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary ((s0 8))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 8))))
+        (return . #s(stx-boundary (s0 (s1) (s2 8))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (visit . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) (s3 (s4 6)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6)))))
          .
          #s(stx-boundary (s6 (s1 s3) (s4 (s5 6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
-        (103 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 6))))))
-        (157 . #f)
-        (144 . #f)
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (21 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) (s4 (s5 6))))))
+        (prim-define-syntaxes . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) (s3 (s4 6))))))
+        (prepare-env . #f)
+        (enter-bind . #f)
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (macro-pre-x . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3 6))))
          .
          #s(stx-boundary (s4 (s1) (s2 (s3 6)))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (0 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 6)))))
-        (10 . #s(stx-boundary ((s0 (s1 6)))))
-        (24 #s(stx-boundary ((s0 (s1 6)))) . #s(stx-boundary ((s0 (s1 6)))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 6))))
-        (127 . #s(stx-boundary (s0 (s1 6))))
-        (12 . #s(stx-boundary ((s0 (s1 6)))))
-        (4 . #s(stx-boundary ((s0 (s1 6)))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 6))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1 6))))
-        (118 . #f)
-        (7 . #s(stx-boundary (s0 (s1 6))))
-        (2 . #s(stx-boundary (s0 (s1 6))))
-        (5 . #s(stx-boundary ((s0 (s1 6)))))
-        (7 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
-        (3 . #f)
-        (145 . #f)
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (visit . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary ((s1 (s2 6)))))
+        (enter-block . #s(stx-boundary ((s0 (s1 6)))))
+        (block-renames
+         #s(stx-boundary ((s0 (s1 6))))
+         .
+         #s(stx-boundary ((s0 (s1 6)))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 6))))
+        (exit-check . #s(stx-boundary (s0 (s1 6))))
+        (block->list . #s(stx-boundary ((s0 (s1 6)))))
+        (enter-list . #s(stx-boundary ((s0 (s1 6)))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 6))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1 6))))
+        (prim-quote-syntax . #f)
+        (exit-prim . #s(stx-boundary (s0 (s1 6))))
+        (return . #s(stx-boundary (s0 (s1 6))))
+        (exit-list . #s(stx-boundary ((s0 (s1 6)))))
+        (exit-prim . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3 6)))))
+        (next . #f)
+        (exit-bind . #f)
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (0 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (21 . #s(stx-boundary (s0 (s1 s2) s2)))
-        (22
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 s2) s2)))
+        (visit . #s(stx-boundary (s0 (s1 s2) s2)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-pre-x . #s(stx-boundary (s0 (s1 s2) s2)))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3) s3)))
          .
          #s(stx-boundary (s0 (s1 s3) s3)))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
-        (22
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3) s3))))
+        (macro-post-x
          #s(stx-boundary (s0 (s1) (s2 (s3) s3)))
          .
          #s(stx-boundary (s4 s1 (s2 (s3) s3))))
-        (9 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (2 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (127 . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
-        (104 . #f)
-        (148 . #s(stx-boundary ((s0) (s1 (s2) s2))))
-        (3 . #f)
-        (126 . #s(stx-boundary (s0 (s1 (s2)))))
-        (127 . #s(stx-boundary (s0 (s1 (s2)))))
-        (14
+        (exit-macro . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (return . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (exit-check . #s(stx-boundary (s0 (s1) (s2 (s3) s3))))
+        (prim-define-values . #f)
+        (rename-one . #s(stx-boundary ((s0) (s1 (s2) s2))))
+        (next . #f)
+        (enter-check . #s(stx-boundary (s0 (s1 (s2)))))
+        (exit-check . #s(stx-boundary (s0 (s1 (s2)))))
+        (block->letrec
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6)))))
              (((s6) (s7 (s8) s8)) ((s9) (s7 (s10) s10)))
              (s6 (s9 (s5))))))
-        (0
+        (visit
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6)))))
              (((s6) (s7 (s8) s8)) ((s9) (s7 (s10) s10)))
              (s6 (s9 (s5))))))
-        (1 . #s(stx-boundary s0))
-        (6
+        (resolve . #s(stx-boundary s0))
+        (enter-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) (s4 8))) ((s5) (s2 (s3) (s4 (s1 6)))))
              (((s6) (s7 (s8) s8)) ((s9) (s7 (s10) s10)))
              (s6 (s9 (s5))))))
-        (114 . #f)
-        (19
+        (prim-letrec-syntaxes+values . #f)
+        (letrec-syntaxes-renames
          (#s(stx-boundary ((s0) (s1 (s2) (s3 8))))
           #s(stx-boundary ((s4) (s1 (s2) (s3 (s0 6))))))
          (#s(stx-boundary ((s5) (s6 (s7) s7)))
           #s(stx-boundary ((s8) (s6 (s9) s9))))
          .
          #s(stx-boundary ((s5 (s8 (s4))))))
-        (157 . #f)
-        (13 . #f)
-        (113 . #f)
-        (16
+        (prepare-env . #f)
+        (next-group . #f)
+        (prim-letrec-values . #f)
+        (let-renames
          (#s(stx-boundary ((s0) (s1 (s2) s2)))
           #s(stx-boundary ((s3) (s1 (s4) s4))))
          .
          #s(stx-boundary ((s0 (s3 (s5))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1) s1)))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 (s1) s1)))
-        (110 . #f)
-        (17 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (10 . #s(stx-boundary (s0)))
-        (24 #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
-        (3 . #f)
-        (126 . #s(stx-boundary s0))
-        (127 . #s(stx-boundary s0))
-        (12 . #s(stx-boundary (s0)))
-        (4 . #s(stx-boundary (s0)))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (5 . #s(stx-boundary (s0)))
-        (7 . #s(stx-boundary (s0 (s1) s1)))
-        (2 . #s(stx-boundary (s0 (s1) s1)))
-        (13 . #f)
-        (4 . #s(stx-boundary ((s0 (s1 (s2))))))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1 (s2)))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (8 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (21 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (22
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1) s1)))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 (s1) s1)))
+        (prim-lambda . #f)
+        (lambda-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (enter-block . #s(stx-boundary (s0)))
+        (block-renames #s(stx-boundary (s0)) . #s(stx-boundary (s0)))
+        (next . #f)
+        (enter-check . #s(stx-boundary s0))
+        (exit-check . #s(stx-boundary s0))
+        (block->list . #s(stx-boundary (s0)))
+        (enter-list . #s(stx-boundary (s0)))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (exit-list . #s(stx-boundary (s0)))
+        (exit-prim . #s(stx-boundary (s0 (s1) s1)))
+        (return . #s(stx-boundary (s0 (s1) s1)))
+        (next-group . #f)
+        (enter-list . #s(stx-boundary ((s0 (s1 (s2))))))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1 (s2)))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (macro-post-x
          #s(stx-boundary (s0 s1 (s2 (s3))))
          .
          #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (9 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (0 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2 (s3)))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1 (s2)))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0 (s1))))
-        (1 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 s1 (s2))))
-        (8 . #s(stx-boundary (s0 s1 (s2))))
-        (21 . #s(stx-boundary (s0 s1 (s2))))
-        (22 #s(stx-boundary (s0 s1 (s2))) . #s(stx-boundary (s0 s1 (s2))))
-        (9 . #s(stx-boundary (s0 s1 (s2))))
-        (0 . #s(stx-boundary (s0 s1 (s2))))
-        (1 . #s(stx-boundary s0))
-        (6 . #s(stx-boundary (s0 s1 (s2))))
-        (109 . #f)
-        (4 . #s(stx-boundary (s0 (s1))))
-        (3 . #f)
-        (0 . #s(stx-boundary s0))
-        (1 . #s(stx-boundary s0))
-        (125 #s(stx-boundary s0) . #s(stx-boundary s0))
-        (2 . #s(stx-boundary s0))
-        (3 . #f)
-        (0 . #s(stx-boundary (s0)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0)))
-        (21 . #s(stx-boundary (s0)))
-        (22 #s(stx-boundary (s0 6)) . #s(stx-boundary (s1)))
-        (9 . #s(stx-boundary (s0 6)))
-        (0 . #s(stx-boundary (s0 6)))
-        (1 . #s(stx-boundary s0))
-        (8 . #s(stx-boundary (s0 6)))
-        (21 . #s(stx-boundary (s0 6)))
-        (22 #s(stx-boundary 8) . #s(stx-boundary (s0 6)))
-        (9 . #s(stx-boundary 8))
-        (0 . #s(stx-boundary 8))
-        (1 . #s(stx-boundary s0))
-        (142 . #s(stx-boundary (s0 . 8)))
-        (6 . #s(stx-boundary (s0 . 8)))
-        (115 . #f)
-        (7 . #s(stx-boundary (s0 8)))
-        (2 . #s(stx-boundary (s0 8)))
-        (5 . #s(stx-boundary (s0 (s1 8))))
-        (7 . #s(stx-boundary (s0 s1 (s2 8))))
-        (2 . #s(stx-boundary (s0 s1 (s2 8))))
-        (5 . #s(stx-boundary (s0 (s1 s2 (s3 8)))))
-        (7 . #s(stx-boundary (s0 s1 (s0 s2 (s3 8)))))
-        (2 . #s(stx-boundary (s0 s1 (s0 s2 (s3 8)))))
-        (5 . #s(stx-boundary ((s0 s1 (s0 s2 (s3 8))))))
-        (142
+        (exit-macro . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (visit . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2 (s3)))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1 (s2)))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0 (s1))))
+        (resolve . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 s1 (s2))))
+        (enter-macro . #s(stx-boundary (s0 s1 (s2))))
+        (macro-pre-x . #s(stx-boundary (s0 s1 (s2))))
+        (macro-post-x
+         #s(stx-boundary (s0 s1 (s2)))
+         .
+         #s(stx-boundary (s0 s1 (s2))))
+        (exit-macro . #s(stx-boundary (s0 s1 (s2))))
+        (visit . #s(stx-boundary (s0 s1 (s2))))
+        (resolve . #s(stx-boundary s0))
+        (enter-prim . #s(stx-boundary (s0 s1 (s2))))
+        (prim-#%app . #f)
+        (enter-list . #s(stx-boundary (s0 (s1))))
+        (next . #f)
+        (visit . #s(stx-boundary s0))
+        (resolve . #s(stx-boundary s0))
+        (variable #s(stx-boundary s0) . #s(stx-boundary s0))
+        (return . #s(stx-boundary s0))
+        (next . #f)
+        (visit . #s(stx-boundary (s0)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0)))
+        (macro-pre-x . #s(stx-boundary (s0)))
+        (macro-post-x #s(stx-boundary (s0 6)) . #s(stx-boundary (s1)))
+        (exit-macro . #s(stx-boundary (s0 6)))
+        (visit . #s(stx-boundary (s0 6)))
+        (resolve . #s(stx-boundary s0))
+        (enter-macro . #s(stx-boundary (s0 6)))
+        (macro-pre-x . #s(stx-boundary (s0 6)))
+        (macro-post-x #s(stx-boundary 8) . #s(stx-boundary (s0 6)))
+        (exit-macro . #s(stx-boundary 8))
+        (visit . #s(stx-boundary 8))
+        (resolve . #s(stx-boundary s0))
+        (tag . #s(stx-boundary (s0 . 8)))
+        (enter-prim . #s(stx-boundary (s0 . 8)))
+        (prim-#%datum . #f)
+        (exit-prim . #s(stx-boundary (s0 8)))
+        (return . #s(stx-boundary (s0 8)))
+        (exit-list . #s(stx-boundary (s0 (s1 8))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s2 8))))
+        (return . #s(stx-boundary (s0 s1 (s2 8))))
+        (exit-list . #s(stx-boundary (s0 (s1 s2 (s3 8)))))
+        (exit-prim . #s(stx-boundary (s0 s1 (s0 s2 (s3 8)))))
+        (return . #s(stx-boundary (s0 s1 (s0 s2 (s3 8)))))
+        (exit-list . #s(stx-boundary ((s0 s1 (s0 s2 (s3 8))))))
+        (tag
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)))
              (s0 (((s4) (s2 (s5) s5))) (s6 s1 (s6 s4 (s7 8)))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)))
              (s0 (((s4) (s2 (s5) s5))) (s6 s1 (s6 s4 (s7 8)))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
              (((s1) (s2 (s3) s3)))
              (s0 (((s4) (s2 (s5) s5))) (s6 s1 (s6 s4 (s7 8)))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -9823,7 +10487,7 @@
              (s0
               (((s1) (s2 (s3) s3)))
               (s0 (((s4) (s2 (s5) s5))) (s6 s1 (s6 s4 (s7 8))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
@@ -9831,7 +10495,7 @@
              (s0
               (((s1) (s2 (s3) s3)))
               (s0 (((s4) (s2 (s5) s5))) (s6 s1 (s6 s4 (s7 8))))))))
-        (7
+        (exit-prim
          .
          #s(stx-boundary
             (s0
@@ -9840,7 +10504,7 @@
               (s1
                (((s2) (s3 (s4) s4)))
                (s1 (((s5) (s3 (s6) s6))) (s7 s2 (s7 s5 (s8 8)))))))))
-        (2
+        (return
          .
          #s(stx-boundary
             (s0
