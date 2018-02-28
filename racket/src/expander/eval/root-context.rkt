@@ -9,9 +9,12 @@
          "../syntax/module-binding.rkt"
          "../common/module-path.rkt"
          "../common/phase.rkt"
+         "../common/struct-star.rkt"
+         "../namespace/namespace.rkt"
          "../host/linklet.rkt")
 
-(provide make-create-root-expand-context-from-module)
+(provide make-create-root-expand-context-from-module
+         shift-to-inside-root-context)
 
 ;; Reconstructs a `root-expand-context` for a module based on its
 ;; metadata, specifically its requires and the exports of its
@@ -22,7 +25,7 @@
 ;; contain information that is inconsistent with this reconstruction.
 (define (make-create-root-expand-context-from-module requires evaled-ld-h)
   (lambda (ns phase-shift original-self self)
-    (define root-ctx (make-root-expand-context))
+    (define root-ctx (make-root-expand-context #:self-mpi (namespace-mpi ns)))
     (define s (add-scopes empty-syntax (root-expand-context-module-scopes root-ctx)))
 
     ;; Add bindings for `require`s
@@ -49,3 +52,25 @@
         (add-defined-sym! defined-syms phase sym id)))
     
     root-ctx))
+
+;; ----------------------------------------
+
+;; Shift `all-scopes-stx` so that the module path index reported for
+;; bindings within the module are relative to a "self" MPI (with #f
+;; for the path and base) instead of the MPI that is suitable for
+;; viewing bindings from outside the module. This shift makes
+;; interactive evaluation better approximate the original expansion of
+;; the module, but it means that that the MPI on syntax objects within
+;; the module is different from the MPI on syntax objects created
+;; interactively (i.e., the interactive ones look more like bindings
+;; before the module has been fully compiled and instantiated).
+(define (shift-to-inside-root-context root-context)
+  (define outside-mpi (root-expand-context-self-mpi root-context))
+  (define inside-mpi (make-self-module-path-index (module-path-index-resolved outside-mpi)))
+  (struct*-copy root-expand-context root-context
+                [self-mpi inside-mpi]
+                [all-scopes-stx
+                 (syntax-module-path-index-shift
+                  (root-expand-context-all-scopes-stx root-context)
+                  outside-mpi
+                  inside-mpi)]))

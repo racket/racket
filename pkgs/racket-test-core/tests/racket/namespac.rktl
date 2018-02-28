@@ -431,4 +431,19 @@
 
 ;; ----------------------------------------
 
+(module check-module-path-index-inside-and-outside racket/base
+  (provide get)
+  (define me 5)
+  (define (get)
+    (define-values (path1 base1) (module-path-index-split (car (identifier-binding #'me))))
+    (define-values (path2 base2)
+      (eval '(module-path-index-split (car (identifier-binding #'me)))
+            (variable-reference->namespace (#%variable-reference))))
+    (list (list path1 base1) (list path2 base2))))
+
+(test '(('check-module-path-index-inside-and-outside #f) (#f #f))
+      (dynamic-require ''check-module-path-index-inside-and-outside 'get))
+
+;; ----------------------------------------
+
 (report-errs)

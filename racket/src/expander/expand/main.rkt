@@ -629,7 +629,7 @@
 ;; ensuring that the number of returned values matches the number of
 ;; target identifiers; return the values
 (define (eval-for-bindings ids p phase ns ctx)
-  (define compiled (if (can-direct-eval? p ns)
+  (define compiled (if (can-direct-eval? p ns (root-expand-context-self-mpi ctx))
                        #f
                        (compile-single p (make-compile-context
                                           #:namespace ns
@@ -641,7 +641,7 @@
                                        [eval-jit-enabled #f])
                           (if compiled
                               (eval-single-top compiled ns)
-                              (direct-eval p ns))))
+                              (direct-eval p ns (root-expand-context-self-mpi ctx)))))
       list))
   (unless (= (length vals) (length ids))
     (error "wrong number of results (" (length vals) "vs." (length ids) ")"

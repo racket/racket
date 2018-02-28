@@ -87,7 +87,7 @@
 
 (define (select-defined-syms-and-bind!/ctx tl-ids ctx)
   (select-defined-syms-and-bind! tl-ids (root-expand-context-defined-syms ctx)
-                                 (namespace-mpi (expand-context-namespace ctx))
+                                 (root-expand-context-self-mpi ctx)
                                  (expand-context-phase ctx)
                                  (root-expand-context-all-scopes-stx ctx)
                                  #:frame-id (root-expand-context-frame-id ctx)

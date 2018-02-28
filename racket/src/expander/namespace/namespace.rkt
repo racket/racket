@@ -19,6 +19,7 @@
          namespace-root-namespace
          namespace-get-root-expand-ctx
          namespace-set-root-expand-ctx!
+         namespace-self-mpi
          namespace->namespace-at-phase
          namespace->module
          namespace-mpi
@@ -85,7 +86,8 @@
   (new-namespace))
                         
 (define (new-namespace [share-from-ns #f]
-                       #:root-expand-ctx [root-expand-ctx (make-root-expand-context)]
+                       #:root-expand-ctx [root-expand-ctx (make-root-expand-context
+                                                           #:self-mpi top-level-module-path-index)]
                        #:register? [register? #t])
   (define phase (if share-from-ns
                     (namespace-phase share-from-ns)
@@ -133,6 +135,9 @@
 
 (define (namespace-set-root-expand-ctx! ns root-ctx)
   (set-box! (namespace-root-expand-ctx ns) root-ctx))
+
+(define (namespace-self-mpi ns)
+  (root-expand-context-self-mpi (namespace-get-root-expand-ctx ns)))
 
 (define (namespace->module ns name)
   (or (small-hash-ref (namespace-submodule-declarations ns) name #f)

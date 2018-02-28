@@ -86,7 +86,8 @@
        (define normal-b (parsed-id-binding id))
        (when (or (not normal-b)
                  (parsed-top-id? id)
-                 (eq? (module-binding-module normal-b) self-mpi))
+                 (and (not (symbol? normal-b))
+                      (eq? (module-binding-module normal-b) self-mpi)))
          (disallow e))
        (check-no-disallowed-expr (parsed-set!-rhs e))]
       [(parsed-with-continuation-mark? e)

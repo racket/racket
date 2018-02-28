@@ -278,16 +278,20 @@
   (cond
    [(eq? get-encoded-root-expand-ctx 'empty)
     ;; A `#:empty-namespace` declaration requested a namespace with no initial bindings
-    (namespace-set-root-expand-ctx! ns (delay (make-root-expand-context)))]
+    (namespace-set-root-expand-ctx! ns (delay (shift-to-inside-root-context
+                                               (make-root-expand-context self))))]
    [(procedure? get-encoded-root-expand-ctx)
     ;; Root expand context has been preserved; deserialize it on demand
-    (namespace-set-root-expand-ctx! ns (delay (root-expand-context-decode-for-module
-                                               (get-encoded-root-expand-ctx))))]
+    (namespace-set-root-expand-ctx! ns (delay (shift-to-inside-root-context
+                                               (root-expand-context-decode-for-module
+                                                (get-encoded-root-expand-ctx)
+                                                self))))]
    [else
     ;; Root expand context has not been preserved, because it can be reconstructed
     ;; from module metadata; do that on demand
-    (namespace-set-root-expand-ctx! ns (delay (create-root-expand-context-from-module
-                                               ns phase-shift original-self self)))]))
+    (namespace-set-root-expand-ctx! ns (delay (shift-to-inside-root-context
+                                               (create-root-expand-context-from-module
+                                                ns phase-shift original-self self))))]))
 
 ;; ----------------------------------------
 

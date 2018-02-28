@@ -87,7 +87,8 @@
                            "module name" name))
   (unless (namespace-get-root-expand-ctx m-ns)
     ;; Instantiating the module didn't install a context, so make one now
-    (namespace-set-root-expand-ctx! m-ns (make-root-expand-context)))
+    (namespace-set-root-expand-ctx! m-ns (make-root-expand-context
+                                          #:self-mpi (namespace-mpi m-ns))))
   ;; Ensure that the module is available
   (namespace-module-make-available! ns (namespace-mpi m-ns) phase)
   m-ns)

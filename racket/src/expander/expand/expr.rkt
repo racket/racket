@@ -573,7 +573,7 @@
      (raise-ambiguous-error id ctx)]
     [(and b
           (module-binding? b)
-          (eq? (module-binding-module b) (namespace-mpi (expand-context-namespace ctx))))
+          (eq? (module-binding-module b) (root-expand-context-self-mpi ctx)))
      ;; Allow `#%top` in a module or top-level where it refers to the same
      ;; thing that the identifier by itself would refer to; in that case
      ;; `#%top` can be stripped within a module
@@ -638,7 +638,7 @@
                     (expand-context-allow-unbound? ctx))))
        (when (and (module-binding? binding)
                   (not (eq? (module-binding-module binding)
-                            (namespace-mpi (expand-context-namespace ctx)))))
+                            (root-expand-context-self-mpi ctx))))
          (raise-syntax-error #f "cannot mutate module-required identifier" s id))
        (log-expand ctx 'next)
        (register-variable-referenced-if-local! binding)

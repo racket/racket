@@ -135,6 +135,7 @@
                             initial-require-s))
 
    (define root-ctx (make-root-expand-context
+                     #:self-mpi self
                      #:initial-scopes (if keep-enclosing-scope-at-phase
                                           (root-expand-context-module-scopes init-ctx)
                                           null)

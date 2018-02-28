@@ -2319,5 +2319,18 @@ case of module-leve bindings; it doesn't cover local bindings.
   (#%expression (check-unique-context)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a namespace can modify a module's mutable variables
+
+(module uses-a-namespace-to-mutate-x racket/base
+  (provide done)
+  (define x 8)
+  (define (inc!) (set! x (add1 x)))
+  (eval '(set! x 0)
+        (variable-reference->namespace (#%variable-reference)))
+  (define done x))
+
+(test 0 dynamic-require ''uses-a-namespace-to-mutate-x 'done)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
