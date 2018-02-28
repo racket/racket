@@ -58,8 +58,14 @@
             (list '#:name k '#:bundle (decompile v #:to-linklets? to-linklets?)))))]
        [else
         (define main (hash-ref (linkl-directory-table top) '() #f))
-        (unless main (error 'decompile "cannot find main module"))
-        (decompile-module-with-submodules top '() main)])]
+        (cond
+          [(and main
+                (hash-ref (linkl-bundle-table main) 'decl #f))
+           (decompile-module-with-submodules top '() main)]
+          [main
+           (decompile-single-top main)]
+          [else
+           (decompile-multi-top top)])])]
     [(linkl-bundle? top)
      (cond
        [to-linklets?
@@ -116,7 +122,7 @@
          (values (instance-variable-value data-i '.mpi-vector)
                  (instance-variable-value decl-i 'requires)
                  (instance-variable-value decl-i 'provides))]
-        [else (values '#() '() '())])))
+        [else (values '#() '() '#hasheqv())])))
   (define (phase-wrap phase l)
     (case phase
       [(0) l]
@@ -176,6 +182,21 @@
                    ....)))
              null))))
 
+(define (decompile-single-top b)
+  (define forms (decompile-linklet (hash-ref (linkl-bundle-table b) 0) #:just-body? #t))
+  (if (= (length forms) 1)
+      (car forms)
+      `(begin ,@forms)))
+
+(define (decompile-multi-top ld)
+  `(begin
+     ,@(let loop ([i 0])
+         (define b (hash-ref (linkl-directory-table ld) (list (string->symbol (format "~a" i))) #f))
+         (define l (and b (hash-ref (linkl-bundle-table b) 0 #f)))
+         (cond
+           [l (append (decompile-linklet l #:just-body? #t)
+                      (loop (add1 i)))]
+           [else null]))))
 
 (define (decompile-linklet l #:just-body? [just-body? #f])
   (match l

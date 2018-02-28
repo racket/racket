@@ -755,25 +755,31 @@
                     len))
         <
         #:key sub-info-start))
+     (define (remove-empty-root ht)
+       ;; A linklet for top-level forms will have '() mapped to #f
+       (if (hash-ref ht '() #f)
+           ht
+           (hash-remove ht '())))
      (linkl-directory
-      (for/hash ([sub-info (in-list sub-infos)])
-        (define pos (file-position port))
-        (unless (= (- pos init-pos) (sub-info-start sub-info))
-          (error 'zo-parse 
-                 "next bundle expected at ~a, currently at ~a"
-                 (+ init-pos (sub-info-start sub-info)) pos))
-        (define tag (read-prefix port #t))
-        (define sub
-          (cond
-           [(not tag) #f]
-           [else
-            (unless (eq? tag #\B)
-              (error 'zo-parse "expected a bundle"))
-            (define sub (and tag (zo-parse-top port #f)))
-            (unless (hash? sub)
-              (error 'zo-parse "expected a bundle hash"))
-            (linkl-bundle sub)]))
-        (values (sub-info-name sub-info) sub)))]
+      (remove-empty-root
+       (for/hash ([sub-info (in-list sub-infos)])
+         (define pos (file-position port))
+         (unless (= (- pos init-pos) (sub-info-start sub-info))
+           (error 'zo-parse 
+                  "next bundle expected at ~a, currently at ~a"
+                  (+ init-pos (sub-info-start sub-info)) pos))
+         (define tag (read-prefix port #t))
+         (define sub
+           (cond
+             [(not tag) #f]
+             [else
+              (unless (eq? tag #\B)
+                (error 'zo-parse "expected a bundle"))
+              (define sub (and tag (zo-parse-top port #f)))
+              (unless (hash? sub)
+                (error 'zo-parse "expected a bundle hash"))
+              (linkl-bundle sub)]))
+         (values (sub-info-name sub-info) sub))))]
     [else
      (error 'zo-parse "bad file format specifier")]))
 
