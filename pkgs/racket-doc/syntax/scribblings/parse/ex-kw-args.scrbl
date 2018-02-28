@@ -27,7 +27,8 @@ Here's one way to do it:
 @interaction[#:eval the-eval
 (define-syntax (mycond stx)
   (syntax-parse stx
-    [(mycond (~or* (~seq #:error-on-fallthrough who:expr) (~seq))
+    [(mycond (~or* (~seq #:error-on-fallthrough who:expr)
+                   (~seq))
              clause ...)
      (with-syntax ([error? (if (attribute who) #'#t #'#f)]
                    [who (or (attribute who) #'#f)])
@@ -43,11 +44,11 @@ Here's one way to do it:
      (void)]))
 ]
 
-We cannot write @racket[#'who] in the macro's right-hand side, because
-the @racket[who] attribute does not receive a value if the keyword
-argument is omitted. Instead we must write @racket[(attribute who)],
-which produces @racket[#f] if matching did not assign a value to the
-attribute.
+We cannot simply write @racket[#'who] in the macro's right-hand side,
+because the @racket[who] attribute does not receive a value if the
+keyword argument is omitted. Instead we must first check the attribute
+using @racket[(attribute who)], which produces @racket[#f] if matching
+did not assign a value to the attribute.
 
 @interaction[#:eval the-eval
 (mycond [(even? 13) 'blue]
@@ -62,8 +63,48 @@ There's a simpler way of writing the @racket[~or*] pattern above:
 (~optional (~seq #:error-on-fallthrough who:expr))
 ]
 
+
+@section{Optional Arguments with @racket[??]}
+
+The @racket[??] template form provides a compact alternative to
+explicitly testing attribute values. Here's one way to do it:
+
+@interaction[#:eval the-eval
+(define-syntax (mycond stx)
+  (syntax-parse stx
+    [(mycond (~optional (~seq #:error-on-fallthrough who:expr))
+             clause ...)
+     #'(mycond* (?? (?@ #t who) (?@ #f #f)) clause ...)]))
+]
+
+If @racket[who] matched, then the @racket[??] subtemplate splices in
+the two terms @racket[#t who] into the enclosing template (@racket[?@]
+is the template splicing form). Otherwise, it splices in @racket[#f #f].
+
+Here's an alternative definition that re-uses Racket's @racket[cond] macro:
+
+@interaction[#:eval the-eval
+(define-syntax (mycond stx)
+  (syntax-parse stx
+    [(mycond (~optional (~seq #:error-on-fallthrough who:expr))
+             clause ...)
+     #'(cond clause ... (?? [else (error 'who "no clause matched")] (?@)))]))
+]
+
+In this version, we optionally insert an @racket[else] clause at the
+end to signal the error; otherwise we use @racket[cond]'s fall-through
+behavior (that is, returning @racket[(void)]).
+
+If the second subtemplate of a @racket[??] template is
+@racket[(?@)]---that is, it produces no terms at all---the second
+subtemplate can be omitted.
+
+
+@section{Optional Arguments with @racket[define-splicing-syntax-class]}
+
 Yet another way is to introduce a @tech{splicing syntax class}, which
 is like an ordinary syntax class but for head patterns.
+
 @interaction[#:eval the-eval
 (define-syntax (mycond stx)
 
@@ -82,9 +123,9 @@ is like an ordinary syntax class but for head patterns.
 Defining a splicing syntax class also makes it easy to eliminate the
 case analysis we did before using @racket[attribute] by defining
 @racket[error?] and @racket[who] as attributes within both of the
-syntax class's variants. (This is possible to do in the inline pattern
-version too, using @racket[~and] and @racket[~parse], just less
-convenient.) Splicing syntax classes also closely parallel the style
-of grammars in macro documentation.
+syntax class's variants. This is possible to do in the inline pattern
+version too, using @racket[~and] and @racket[~parse], but it is less
+convenient. Splicing syntax classes also closely parallel the style of
+grammars in macro documentation.
 
 @(close-eval the-eval)
