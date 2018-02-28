@@ -37,6 +37,7 @@
 
          make-syntax-introducer
          make-syntax-delta-introducer
+         syntax-local-make-delta-introducer
          
          syntax-local-value
          syntax-local-value/immediate
@@ -144,7 +145,13 @@
        [(remove) (remove-scopes s delta-scs)]
        [(flip) (flip-scopes s delta-scs)]
        [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)]))))
-  
+
+(define (syntax-local-make-delta-introducer id-stx)
+  (check 'syntax-local-make-delta-introducer identifier? id-stx)
+  (raise
+   (exn:fail:unsupported "syntax-local-make-delta-introducer: not supported anymore"
+                         (current-continuation-marks))))
+
 ;; ----------------------------------------
 
 (define (do-syntax-local-value who id intdef failure-thunk

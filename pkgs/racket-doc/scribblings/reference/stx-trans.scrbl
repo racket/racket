@@ -886,7 +886,7 @@ This function is intended for the implementation of
 
 @defproc[(syntax-local-make-delta-introducer [id-stx identifier?]) procedure?]{
 
-For (limited) backward compatibility only; raises @racket[exn:fail:supported].
+For (limited) backward compatibility only; raises @racket[exn:fail:unsupported].
 
 @history[#:changed "6.3" @elem{changed to raise @racket[exn:fail:supported].}]}
 

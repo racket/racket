@@ -118,6 +118,7 @@
 
                       make-syntax-introducer
                       make-syntax-delta-introducer
+                      syntax-local-make-delta-introducer
                       
                       syntax-local-value
                       syntax-local-value/immediate
