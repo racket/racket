@@ -339,6 +339,7 @@
         path
         (get-module-code path (path->mode path) compile
                          (lambda (a b) #f) ; extension handler
+                         #:roots (list (car roots))
                          #:source-reader read-src-syntax))))
   (define dest-roots (list (car roots)))
   (define-values (code-dir code-name)
