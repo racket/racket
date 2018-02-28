@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt" (for-label syntax/parse))
 
 @(define lit-ellipsis (racket ...))
 
@@ -270,30 +270,37 @@ the individual @racket[stx-expr].
 (math 3 1 4 1 5 9)
 ]}
 
-@defform/subs[(syntax template)
-              ([template id
-                         (template-elem ...)
-                         (template-elem ...+ . template)
-                         (code:line #,(tt "#")(template-elem ...))
-                         (code:line #,(tt "#&")template)
-                         (code:line #,(tt "#s")(key-datum template-elem ...))
-                         (ellipsis stat-template)
-                         const]
-               [template-elem (code:line template ellipsis ...)]
-               [stat-template id
-                              (stat-template ...)
-                              (stat-template ... . stat-template)
-                              (code:line #,(tt "#")(stat-template ...))
-                              (code:line #,(tt "#&")stat-template)
-                              (code:line #,(tt "#s")(key-datum stat-template ...))
-                              const]
-               [ellipsis #,lit-ellipsis])]{
+@defform[#:literals (?? ?@) (syntax template)
+         #:grammar
+         ([template id
+                    (head-template ...)
+                    (head-template ...+ . template)
+                    (code:line #,(tt "#")(head-template ...))
+                    (code:line #,(tt "#&")template)
+                    (code:line #,(tt "#s")(key-datum head-template ...))
+                    (?? template template)
+                    (ellipsis stat-template)
+                    const]
+          [head-template template
+                         (code:line head-template ellipsis ...+)
+                         (?@ . template)
+                         (?? head-template head-template)
+                         (?? head-template)]
+          [stat-template @#,elem{like @svar{template}, but without @|lit-ellipsis|,
+                                 @racket[??], and @racket[?@]}]
+          [ellipsis #,lit-ellipsis])]{
 
 Constructs a syntax object based on a @racket[template], which can
 include @tech{pattern variables} bound by @racket[syntax-case] or
 @racket[with-syntax].
 
-Template forms produce a syntax object as follows:
+A @svar[template] produces a single syntax object. A
+@svar[head-template] produces a sequence of zero or more syntax
+objects. A @svar[stat-template] is like a @svar[template], except that
+@|lit-ellipsis|, @racket[??], and @racket[?@] are interpreted as
+constants instead of template forms.
+
+A @svar[template] produces a syntax object as follows:
 
  @specsubform[id]{
 
@@ -314,54 +321,21 @@ Template forms produce a syntax object as follows:
  If @racket[id] is not bound as a pattern variable, then @racket[id]
  as a template produces @racket[(quote-syntax id)].}
 
- @specsubform[(template-elem ...)]{
+ @specsubform[(head-template ...)]{
 
  Produces a syntax object whose datum is a list, and where the
  elements of the list correspond to syntax objects produced by the
- @racket[template-elem]s.
+ @racket[head-template]s.}
 
- A @racket[template-elem] is a sub-@racket[template] replicated by any
- number of @racket[ellipsis]es:
-
- @itemize[
-
-  @item{If the sub-@racket[template] is replicated by no
-   @racket[ellipsis]es, then it generates a single syntax object to
-   incorporate into the result syntax object.}
-
-  @item{If the sub-@racket[template] is replicated by one
-   @racket[ellipsis], then it generates a sequence of syntax objects
-   that is ``inlined'' into the resulting syntax object.
-
-   The number of generated elements depends on the values of
-   @tech{pattern variables} referenced within the
-   sub-@racket[template]. There must be at least one @tech{pattern
-   variable} whose value has a @tech{depth marker} less than the
-   number of @racket[ellipsis]es after the pattern variable within the
-   sub-@racket[template].
-
-   If a @tech{pattern variable} is replicated by more
-   @racket[ellipsis]es in a @racket[template] than the @tech{depth
-   marker} of its binding, then the @tech{pattern variable}'s result
-   is determined normally for inner @racket[ellipsis]es (up to the
-   binding's @tech{depth marker}), and then the result is replicated
-   as necessary to satisfy outer @racket[ellipsis]es.}
-
- @item{For each @racket[ellipsis] after the first one, the preceding
-   element (with earlier replicating @racket[ellipsis]es) is
-   conceptually wrapped with parentheses for generating output, and
-   then the wrapping parentheses are removed in the resulting syntax
-   object.}]}
-
- @specsubform[(template-elem ... . template)]{
+ @specsubform[(head-template ... . template)]{
 
   Like the previous form, but the result is not necessarily a list;
   instead, the place of the empty list in the resulting syntax object's
   datum is taken by the syntax object produced by @racket[template].}
 
- @specsubform[(code:line #,(tt "#")(template-elem ...))]{
+ @specsubform[(code:line #,(tt "#")(head-template ...))]{
 
-   Like the @racket[(template-elem ...)] form, but producing a syntax
+   Like the @racket[(head-template ...)] form, but producing a syntax
    object whose datum is a vector instead of a list.}
 
  @specsubform[(code:line #,(tt "#&")template)]{
@@ -369,18 +343,37 @@ Template forms produce a syntax object as follows:
    Produces a syntax object whose datum is a box holding the
    syntax object produced by @racket[template].}
 
- @specsubform[(code:line #,(tt "#s")(key-datum template-elem ...))]{
+ @specsubform[(code:line #,(tt "#s")(key-datum head-template ...))]{
 
-   Like the @racket[(template-elem ...)] form, but producing a syntax
+   Like the @racket[(head-template ...)] form, but producing a syntax
    object whose datum is a @tech{prefab} structure instead of a list.
    The @racket[key-datum] must correspond to a valid first argument of
    @racket[make-prefab-struct].}
 
+ @specsubform[#:literals (??) (?? template1 template2)]{
+
+   Produces the result of @racket[template1] if @racket[template1] has no
+   pattern variables with ``missing values''; otherwise, produces the result of
+   @racket[template2].
+
+   A pattern variable bound by @racket[syntax-case] never has a missing value, but
+   pattern variables bound by @racket[syntax-parse] (for example, @racket[~or] or
+   @racket[~optional] patterns) can.
+
+   @examples[#:eval (let ([ev (syntax-eval)]) (ev '(require syntax/parse/pre)) ev)
+   (syntax-parse #'(m 1 2 3)
+     [(_ (~optional (~seq #:op op:expr)) arg:expr ...)
+      #'((?? op +) arg ...)])
+   (syntax-parse #'(m #:op max 1 2 3)
+     [(_ (~optional (~seq #:op op:expr)) arg:expr ...)
+      #'((?? op +) arg ...)])
+   ]}
+
  @specsubform[(ellipsis stat-template)]{
 
   Produces the same result as @racket[stat-template], which is like a
-  @racket[template], but @racket[...] is treated like an @racket[id]
-  (with no pattern binding).}
+  @racket[template], but @racket[...], @racket[??], and @racket[?@]
+  are treated like an @racket[id] (with no pattern binding).}
 
  @specsubform[const]{
 
@@ -388,11 +381,74 @@ Template forms produce a syntax object as follows:
   preceding cases, and it produces the result @racket[(quote-syntax
   const)].}
 
+A @racket[head-template] produces a sequence of syntax objects; that sequence is
+``inlined'' into the result of the enclosing @racket[template]. The result of a
+@racket[head-template] is defined as follows:
+
+ @specsubform[template]{
+
+   Produces one syntax object, according to the rules for @svar[template]
+   above.}
+
+ @specsubform[(code:line head-template ellipsis ...+)]{
+
+  Generates a sequence of syntax objects by ``@racket[map]ping'' the
+  @racket[head-template] over the values of its pattern variables. The number of
+  iterations depends on the values of the @tech{pattern variables} referenced
+  within the sub-template.
+
+  To be more precise: Let @racket[_outer] be @racket[_inner] followed by one
+  ellipsis. A @tech{pattern variable} is an @deftech{iteration pattern variable}
+  for @racket[_outer] if occurs at a depth equal to its @tech{depth
+  marker}. There must be at least one; otherwise, an error is raised. If there
+  are multiple iteration variables, then all of their values must be lists of
+  the same length. The result for @racket[_outer] is produced by
+  @racket[map]ping the @racket[_inner] template over the @tech{iteration pattern
+  variable} values and decreasing their effective @tech{depth markers} by 1
+  within @racket[_inner]. The @racket[_outer] result is formed by appending the
+  @racket[_inner] results.
+
+  Consequently, if a @tech{pattern variable} occurs at a depth greater than its
+  @tech{depth marker}, it is used as an @tech{iteration pattern variable} for
+  the innermost ellipses but not the outermost. A @tech{pattern variable} must
+  not occur at a depth less than its @tech{depth marker}; otherwise, an error is
+  raised.}
+
+ @specsubform[#:literals (?@) (?@ . template)]{
+
+   Produces the sequence of elements in the syntax list produced by
+   @racket[template]. If @racket[template] does not produce a proper syntax list,
+   an exception is raised.
+
+   @examples[#:eval (syntax-eval)
+   (with-syntax ([(key ...) #'('a 'b 'c)]
+                 [(val ...) #'(1 2 3)])
+     #'(hash (?@ key val) ...))
+   (with-syntax ([xs #'(2 3 4)])
+     #'(list 1 (?@ . xs) 5))
+   ]}
+
+ @specsubform[#:literals (??) (?? head-template1 head-template2)]{
+
+   Produces the result of @racket[head-template1] if none of its pattern
+   variables have ``missing values''; otherwise produces the result of
+   @racket[head-template2]. }
+
+ @specsubform[#:literals (??) (?? head-template)]{
+
+   Produces the result of @racket[head-template] if none of its pattern
+   variables have ``missing values''; otherwise produces nothing.
+
+   Equivalent to @racket[(?? head-template (?@))]. }
+
 A @racket[(#,(racketkeywordfont "syntax") template)] form is normally
 abbreviated as @racket[#'template]; see also
 @secref["parse-quote"]. If @racket[template] contains no pattern
 variables, then @racket[#'template] is equivalent to
-@racket[(quote-syntax template)].}
+@racket[(quote-syntax template)].
+
+@history[#:changed "6.90.0.18" @elem{Added @racket[?@] and @racket[??].}]
+}
 
 
 @defform[(quasisyntax template)]{
@@ -512,6 +568,16 @@ used as an expression. This binding is useful only in syntax patterns,
 where it indicates a pattern that matches any syntax object. See
 @racket[syntax-case].}
 
+@deftogether[[
+@defidform[??]
+@defidform[?@]
+]]{
+
+The @racket[??] and @racket[?@] transformer bindings prohibit these forms from
+being used as an expression. The bindings are useful only in syntax templates.
+See @racket[syntax].
+
+@history[#:added "6.90.0.18"]}
 
 @defproc[(syntax-pattern-variable? [v any/c]) boolean?]{
 
