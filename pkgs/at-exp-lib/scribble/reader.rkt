@@ -354,7 +354,7 @@
                     (maybe-merge (make-stx (read-bytes (cdadr m) inp)) r)))]
         [(*peek #rx#"^$")
          (if end-token
-           (read-error* 'eof "missing closing `~a'" end-token)
+           (read-error* 'eof "missing closing `~a`" end-token)
            (done-items r))]
         [else (internal-error 'get-lines*)])))
 
@@ -563,7 +563,7 @@
     (lambda (char inp source-name line-num col-num position)
       (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])
         (unless m
-          (raise-read-error "unbalanced `|'" source-name
+          (raise-read-error "unbalanced `|`" source-name
                             line-num col-num position #f))
         (datum->syntax
          #f (string->symbol (bytes->string/utf-8 (cadr m)))
