@@ -43186,7 +43186,7 @@ static const char *startup_source =
 " ns126_0"
 " temp127_1"
 " id128_0))"
-"(values variable #f #f))))"
+"(values variable #f #f #f))))"
 "(begin"
 "(if(variable? v_194)"
 "(void)"

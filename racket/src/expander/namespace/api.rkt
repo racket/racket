@@ -183,7 +183,7 @@
          (define-values (v primitive? extra-inspector protected?)
            (if b
                (binding-lookup b empty-env null ns (namespace-phase ns) id)
-               (values variable #f #f)))
+               (values variable #f #f #f)))
          (unless (variable? v)
            (escape
             (or failure-thunk
