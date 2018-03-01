@@ -74,6 +74,8 @@
     (reader-error in config
                   "`~a` not enabled"
                   extend-str))
+
+  (define-values (line col pos) (port-next-location in))
   
   (define accum-str (accum-string-init! config))
   (when init-c
@@ -121,7 +123,7 @@
   (define reader-path (string->symbol (string-append lang-str "/lang/reader")))
   
   (read-extension #:try-first-mod-path submod-path
-                  reader-path read-recur in config
+                  reader-path read-recur in (reading-at config line col pos)
                   #:get-info? get-info?
                   #:who who))
 
@@ -158,7 +160,7 @@
                                             ((read-config-coerce config)
                                              #t
                                              mod-path-datum
-                                             #f)]
+                                             (port+config->srcloc in config))]
                         #:get-info? [get-info? #f]
                         #:who [who '|#reader|])
   (force-parameters! config)
