@@ -85,10 +85,13 @@
   (add-binding-in-scopes! (syntax-scope-set id phase) (syntax-e id) binding
                           #:just-for-nominal? just-for-nominal?))
 
-(define (add-bulk-binding! s binding phase #:in [in-s #f])
+(define (add-bulk-binding! s binding phase
+                           #:in [in-s #f]
+                           #:shadow-except [shadow-except #f])
   (when (syntax-tainted? s)
     (raise-syntax-error #f "cannot bind from tainted syntax" in-s s))
-  (add-bulk-binding-in-scopes! (syntax-scope-set s phase) binding))
+  (add-bulk-binding-in-scopes! (syntax-scope-set s phase) binding
+                               #:shadow-except shadow-except))
 
 ;; Helper for registering a local binding in a set of scopes:
 (define (add-local-binding! id phase counter #:frame-id [frame-id #f] #:in [in-s #f])

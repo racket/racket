@@ -258,6 +258,7 @@
     m
     bind-in-stx phase-shift m-ns interned-mpi module-name
     #:in orig-s
+    #:defines-mpi (and requires+provides (requires+provides-self requires+provides))
     #:only (cond
             [(adjust-only? adjust) (set->list (adjust-only-syms adjust))]
             [(adjust-rename? adjust) (list (adjust-rename-from-sym adjust))]
@@ -271,6 +272,7 @@
                      requires+provides
                      can-bulk-bind?
                      (lambda (provides provide-phase-level)
+                       ;; Returns #t if any binding is already shadowed by a definition:
                        (add-bulk-required-ids! requires+provides
                                                bind-in-stx
                                                (module-self m) mpi phase-shift
@@ -314,28 +316,37 @@
                     (and (eq? sym (adjust-rename-from-sym adjust))
                          (hash-set! done-syms sym #t)
                          (adjust-rename-to-id adjust))]))
-                (when (and adjusted-sym requires+provides)
-                  (define s (datum->syntax bind-in-stx adjusted-sym))
-                  (define bind-phase (phase+ phase-shift provide-phase))
-                  (unless initial-require?
-                    (check-not-defined #:check-not-required? #t
-                                       requires+provides
-                                       s bind-phase
-                                       #:unless-matches binding
-                                       #:in orig-s
-                                       #:remove-shadowed!? #t
-                                       #:who who))
-                  (add-defined-or-required-id! requires+provides
-                                               s bind-phase binding
-                                               #:can-be-shadowed? can-be-shadowed?
-                                               #:as-transformer? as-transformer?))
+                (define skip-bind?
+                  (cond
+                    [(and adjusted-sym requires+provides)
+                     (define s (datum->syntax bind-in-stx adjusted-sym))
+                     (define bind-phase (phase+ phase-shift provide-phase))
+                     (define skip-bind?
+                       (cond
+                         [initial-require? #f]
+                         [else
+                          (check-not-defined #:check-not-required? #t
+                                             #:allow-defined? #t ; `define` shadows `require`
+                                             requires+provides
+                                             s bind-phase
+                                             #:unless-matches binding
+                                             #:in orig-s
+                                             #:remove-shadowed!? #t
+                                             #:who who)]))
+                     (unless skip-bind?
+                       (add-defined-or-required-id! requires+provides
+                                                    s bind-phase binding
+                                                    #:can-be-shadowed? can-be-shadowed?
+                                                    #:as-transformer? as-transformer?))
+                     skip-bind?]
+                    [else #f]))
                 (when (and adjusted-sym
                            copy-variable-phase-level
                            (not as-transformer?)
                            (equal? provide-phase copy-variable-phase-level))
                   (copy-namespace-value m-ns adjusted-sym binding copy-variable-phase-level phase-shift
                                         copy-variable-as-constant?))
-                adjusted-sym)))
+                (and (not skip-bind?) adjusted-sym))))
    ;; Now that a bulk binding is in place, update to merge nominals:
    (when update-nominals-box
      (for ([update! (in-list (unbox update-nominals-box))])
@@ -359,6 +370,7 @@
 
 (define (bind-all-provides! m in-stx phase-shift ns mpi module-name
                             #:in orig-s
+                            #:defines-mpi defines-mpi
                             #:only only-syms
                             #:just-meta just-meta
                             #:bind? bind?
@@ -372,8 +384,9 @@
         #:when (or (eq? just-meta 'all)
                    (eqv? just-meta provide-phase-level)))
     (define phase (phase+ phase-shift provide-phase-level))
-    (when bulk-callback
-      (bulk-callback provides provide-phase-level))
+    (define need-except?
+      (and bulk-callback
+           (bulk-callback provides provide-phase-level)))
     (when bind?
       (when filter
         (for ([sym (in-list (or only-syms (hash-keys provides)))])
@@ -408,7 +421,8 @@
                                          self mpi provide-phase-level phase-shift
                                          bulk-binding-registry)
                            phase
-                           #:in orig-s)))))
+                           #:in orig-s
+                           #:shadow-except (and need-except? defines-mpi))))))
 
 ;; ----------------------------------------
 

@@ -3,7 +3,8 @@
          "../common/set.rkt"
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
-         "syntax.rkt")
+         "syntax.rkt"
+         "module-binding.rkt")
 
 ;; A binding table within a scope maps symbol plus scope set
 ;; combinations (where the scope binding the binding table is always
@@ -105,7 +106,7 @@
                          just-for-nominal?))
     ;; Keep `syms/serialize` in sync with `syms`, except for bindings
     ;; that are just to extend the set of nominal imports. We keep those
-    ;; separate --- and don't serialize them --- because they  interfere
+    ;; separate --- and don't serialize them --- because they interfere
     ;; with bulk representations of binding and they're used only to
     ;; commuincate to `provide`.
     (define new-syms/serialize
@@ -124,18 +125,21 @@
                  [syms/serialize new-syms/serialize])]))
 
 ;; Adding a binding for a computed-on-demand set of symbols
-(define (binding-table-add-bulk bt scopes bulk)
+(define (binding-table-add-bulk bt scopes bulk
+                                #:shadow-except [shadow-except #f])
   (cond
    [(table-with-bulk-bindings? bt)
     (define new-syms (remove-matching-bindings (table-with-bulk-bindings-syms bt)
                                                scopes
-                                               bulk))
+                                               bulk
+                                               #:except shadow-except))
     (define new-syms/serialize (if (eq? (table-with-bulk-bindings-syms bt)
                                         (table-with-bulk-bindings-syms/serialize bt))
                                    new-syms
                                    (remove-matching-bindings (table-with-bulk-bindings-syms/serialize bt)
                                                              scopes
-                                                             bulk)))
+                                                             bulk
+                                                             #:except shadow-except)))
     (table-with-bulk-bindings new-syms
                               new-syms/serialize
                               (cons (bulk-binding-at scopes bulk)
@@ -144,28 +148,36 @@
     (binding-table-add-bulk (table-with-bulk-bindings bt bt null) scopes bulk)]))
 
 ;; The bindings of `bulk` at `scopes` should shadow any existing
-;; mappings in `sym-bindings`
-(define (remove-matching-bindings syms scopes bulk)
+;; mappings in `sym-bindings`, except one for `except`
+(define (remove-matching-bindings syms scopes bulk #:except except)
   (define bulk-symbols (bulk-binding-symbols bulk #f null))
   (cond
    [((hash-count syms) . < . (hash-count bulk-symbols))
-    ;; Faster to consider each sym in `sym-binding`
+    ;; Faster to consider each sym in `syms`
     (for/fold ([syms syms]) ([(sym sym-bindings) (in-immutable-hash syms)])
       (if (hash-ref bulk-symbols sym #f)
-          (remove-matching-binding syms sym sym-bindings scopes)
+          (remove-matching-binding syms sym sym-bindings scopes #:except except)
           syms))]
    [else
     ;; Faster to consider each sym in `bulk-symbols`
     (for/fold ([syms syms]) ([sym (in-immutable-hash-keys bulk-symbols)])
       (define sym-bindings (hash-ref syms sym #f))
       (if sym-bindings
-          (remove-matching-binding syms sym sym-bindings scopes)
+          (remove-matching-binding syms sym sym-bindings scopes #:except except)
           syms))]))
 
 ;; Update an individual symbol's bindings to remove a mapping
 ;; for a given set of scopes
-(define (remove-matching-binding syms sym sym-bindings scopes)
-  (hash-set syms sym (hash-remove sym-bindings scopes)))
+(define (remove-matching-binding syms sym sym-bindings scopes #:except except)
+  (cond
+    [(and except
+          (let ([b (hash-ref sym-bindings scopes #f)])
+            (and (module-binding? b)
+                 (eq? except (module-binding-module b)))))
+     ;; Don't replace a shadowing definition
+     syms]
+    [else
+     (hash-set syms sym (hash-remove sym-bindings scopes))]))
 
 ;; ----------------------------------------
 

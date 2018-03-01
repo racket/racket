@@ -49,6 +49,7 @@
                            requires   ; mpi [interned] -> require-phase -> sym -> list-ish of [bulk-]required
                            provides   ; phase -> sym -> binding or protected
                            phase-to-defined-syms ; phase -> sym -> boolean
+                           also-required ; sym -> binding
                            [can-cross-phase-persistent? #:mutable]
                            [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
   #:authentic)
@@ -82,6 +83,7 @@
                      (make-hasheq)  ; requires
                      (make-hasheqv) ; provides
                      (make-hasheqv) ; phase-to-defined-syms
+                     (make-hasheq)  ; also-required
                      #t
                      #t))
 
@@ -90,7 +92,8 @@
   ;; all previously required modules
   (hash-clear! (requires+provides-requires r+p))
   (hash-clear! (requires+provides-provides r+p))
-  (hash-clear! (requires+provides-phase-to-defined-syms r+p)))
+  (hash-clear! (requires+provides-phase-to-defined-syms r+p))
+  (hash-clear! (requires+provides-also-required r+p)))
 
 ;; ----------------------------------------
 
@@ -150,7 +153,8 @@
                                         (hash-ref sym-to-reqds sym null))))
 
 ;; Like `add-defined-or-required-id!`, but faster for bindings that
-;; all have the same scope, etc.
+;; all have the same scope, etc.<
+;; Return #t if any required id is already defined by a shaodwing definition.
 (define (add-bulk-required-ids! r+p s self nominal-module phase-shift provides provide-phase-level
                                 #:prefix bulk-prefix
                                 #:excepts bulk-excepts
@@ -169,29 +173,38 @@
   (define sym-to-reqds (hash-ref! at-mod phase-shift make-hasheq))
   (define prefix-len (if bulk-prefix (string-length (symbol->string bulk-prefix)) 0))
   (define br (bulk-required provides prefix-len s provide-phase-level can-be-shadowed?))
-  (for ([(out-sym binding/p) (in-hash provides)])
+  (for/or ([(out-sym binding/p) (in-hash provides)])
     (when symbols-accum (hash-set! symbols-accum out-sym #t))
-    (unless (hash-ref bulk-excepts out-sym #f)
-      (define sym (cond
-                   [(not bulk-prefix) out-sym]
-                   [else (string->symbol (format "~a~a" bulk-prefix out-sym))]))
-      (when (and check-and-remove?
+    (cond
+      [(hash-ref bulk-excepts out-sym #f)
+       #f]
+      [else
+       (define sym (cond
+                     [(not bulk-prefix) out-sym]
+                     [else (string->symbol (format "~a~a" bulk-prefix out-sym))]))
+       (define already-defined?
+         (cond
+           [(and check-and-remove?
                  (or (not shortcut-table)
                      (hash-ref shortcut-table sym #f)))
-        (check-not-defined #:check-not-required? #t
-                           r+p (datum->syntax s sym s) phase #:in orig-s
-                           #:unless-matches
-                           (lambda ()
-                             (provide-binding-to-require-binding binding/p
-                                                                 sym
-                                                                 #:self self
-                                                                 #:mpi mpi
-                                                                 #:provide-phase-level provide-phase-level
-                                                                 #:phase-shift phase-shift))
-                           #:remove-shadowed!? #t
-                           #:accum-update-nominals accum-update-nominals
-                           #:who who))
-      (hash-set! sym-to-reqds sym (cons-ish br (hash-ref sym-to-reqds sym null))))))
+            (check-not-defined #:check-not-required? #t
+                               #:allow-defined? #t
+                               r+p (datum->syntax s sym s) phase #:in orig-s
+                               #:unless-matches
+                               (lambda ()
+                                 (provide-binding-to-require-binding binding/p
+                                                                     sym
+                                                                     #:self self
+                                                                     #:mpi mpi
+                                                                     #:provide-phase-level provide-phase-level
+                                                                     #:phase-shift phase-shift))
+                               #:remove-shadowed!? #t
+                               #:accum-update-nominals accum-update-nominals
+                               #:who who)]
+           [else #f]))
+       (unless already-defined?
+         (hash-set! sym-to-reqds sym (cons-ish br (hash-ref sym-to-reqds sym null))))
+       already-defined?])))
 
 ;; Convert a combination of a symbol and `bulk-required` to a
 ;; `required` on demand
@@ -266,8 +279,10 @@
 
 ;; Check whether an identifier has a binding that is from a non-shadowable
 ;; require; if something is found but it will be replaced, then record that
-;; bindings are not simple.
+;; bindings are not simple. Returns a boolean to dincate whether the binding
+;; is defined already, since `allow-defined?` allows the result to be #t.
 (define (check-not-defined #:check-not-required? [check-not-required? #f]
+                           #:allow-defined? [allow-defined? #f]
                            r+p id phase #:in orig-s
                            #:unless-matches [ok-binding/delayed #f] ; binding or (-> binding)
                            #:remove-shadowed!? [remove-shadowed!? #f]
@@ -275,7 +290,7 @@
                            #:who who)
   (define b (resolve+shift id phase #:exactly? #t))
   (cond
-   [(not b) (void)]
+   [(not b) #f]
    [(not (module-binding? b))
     (raise-syntax-error #f "identifier out of context" id)]
    [else
@@ -285,7 +300,11 @@
      [(and (not defined?) (not check-not-required?))
       ;; Not defined, and we're shadowing all requires -- so, it's ok,
       ;; but binding is non-simple
-      (set-requires+provides-all-bindings-simple?! r+p #f)]
+      (set-requires+provides-all-bindings-simple?! r+p #f)
+      ;; Also, record the `require` binding, in case we see another
+      ;; `require` for the same identifier
+      (hash-set! (requires+provides-also-required r+p) (module-binding-sym b) b)
+      #f]
      [(and defined?
            ;; In case `#%module-begin` is expanded multiple times, check
            ;; that the definition has been seen this particular expansion
@@ -295,19 +314,30 @@
                           (module-binding-sym b)
                           #f)))
       ;; Doesn't count as previously defined
-      (void)]
+      #f]
      [else
       (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
       (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
       (define ok-binding (if (procedure? ok-binding/delayed)
                              (ok-binding/delayed)
                              ok-binding/delayed))
+      (define (raise-already-bound defined?)
+        (raise-syntax-error who
+                            (string-append "identifier already "
+                                           (if defined? "defined" "required")
+                                           (cond
+                                             [(zero-phase? phase) ""]
+                                             [(label-phase? phase) " for label"]
+                                             [(= 1 phase) " for syntax"]
+                                             [else (format " for phase ~a" phase)]))
+                            orig-s
+                            id))
       (cond
        [(not at-mod)
         ;; Binding is from an enclosing context; if it's from an
         ;; enclosing module, then we've already marked bindings
         ;; a non-simple --- otherwise, we don't care
-        (void)]
+        #f]
        [(and ok-binding (same-binding? b ok-binding))
         ;; It's the same binding already, so overall binding hasn't
         ;; become non-simple
@@ -327,7 +357,19 @@
             ;; We can't reset now, because the caller is preparing for
             ;; a bulk bind. Record that we need to merge nominals.
             (set-box! accum-update-nominals (cons update! (unbox accum-update-nominals)))]
-           [else (update!)]))]
+           [else (update!)]))
+        defined?]
+       [(and defined? allow-defined?)
+        ;; A `require` doesn't conflict with a definition, even if we
+        ;; saw the definition earlier; but make sure there are not multiple
+        ;; `require`s (any one of which would be shadowed by the definition)
+        (define also-required (requires+provides-also-required r+p))
+        (define prev-b (hash-ref also-required (module-binding-sym b) #f))
+        (when (and prev-b (not (same-binding? ok-binding prev-b)))
+          (raise-already-bound #f))
+        (hash-set! also-required (module-binding-sym b) ok-binding)
+        (set-requires+provides-all-bindings-simple?! r+p #f)
+        #t]
        [else
         (define nominal-phase (module-binding-nominal-require-phase b))
         (define sym-to-reqds (hash-ref at-mod nominal-phase #hasheq()))
@@ -339,21 +381,12 @@
                 (required-can-be-shadowed? r))
             ;; Shadowing --- ok, but non-simple
             (set-requires+provides-all-bindings-simple?! r+p #f)]
-           [else
-            (raise-syntax-error who
-                                (string-append "identifier already "
-                                               (if defined? "defined" "required")
-                                               (cond
-                                                [(zero-phase? phase) ""]
-                                                [(label-phase? phase) " for label"]
-                                                [(= 1 phase) " for syntax"]
-                                                [else (format " for phase ~a" phase)]))
-                                orig-s
-                                id)]))
+           [else (raise-already-bound defined?)]))
         (when (and remove-shadowed!? (not (null? reqds)))
           ;; Same work as in `remove-required-id!`
           (hash-set! sym-to-reqds (syntax-e id)
-                     (remove-non-matching-requireds reqds id phase mpi nominal-phase (syntax-e id))))])])]))
+                     (remove-non-matching-requireds reqds id phase mpi nominal-phase (syntax-e id))))
+        #f])])]))
 
 (define (add-defined-syms! r+p syms phase)
   (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))

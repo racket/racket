@@ -683,6 +683,55 @@
       (let ([n-ns (eval '(module->namespace ''n) ns)])
         (test 5 eval '(lambda (x) x) n-ns)))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check shadowing when `define` precedes `require`
+
+(module definition-shadows-later-require racket/base
+  (provide result)
+  (define first "last")
+  (require racket/list)
+  (define result first))
+
+(test "last" dynamic-require ''definition-shadows-later-require 'result)
+
+(module definition-shadows-later-require/rename racket/base
+  (provide result)
+  (define first "last")
+  (require (rename-in racket/function
+                      [curry first]))
+  (define result first))
+
+(test "last" dynamic-require ''definition-shadows-later-require/rename 'result)
+
+(module definition-shadows-later-require/2 racket/base
+  (provide result)
+  (define first "last")
+  (require racket/list)
+  (require racket/list)
+  (define result first))
+
+(test "last" dynamic-require ''definition-shadows-later-require/2 'result)
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (define first "last")
+     (require racket/list)
+     ;; late `require` collision:
+     (require (rename-in racket/function
+                         [curry first]))))
+ exn:fail:syntax?)
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (require racket/list)
+     (define first "last")
+     ;; late `require` collision:
+     (require (rename-in racket/function
+                         [curry first]))))
+ exn:fail:syntax?)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check printing of resolved module paths
 

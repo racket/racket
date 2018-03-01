@@ -741,9 +741,11 @@
   (set-scope-binding-table! max-sc bt)
   (clear-resolve-cache! sym))
 
-(define (add-bulk-binding-in-scopes! scopes bulk-binding)
+(define (add-bulk-binding-in-scopes! scopes bulk-binding
+                                     #:shadow-except [shadow-except #f])
   (define max-sc (find-max-scope scopes))
-  (define bt (binding-table-add-bulk (scope-binding-table max-sc) scopes bulk-binding))
+  (define bt (binding-table-add-bulk (scope-binding-table max-sc) scopes bulk-binding
+                                     #:shadow-except shadow-except))
   (set-scope-binding-table! max-sc bt)
   (clear-resolve-cache!))
 
