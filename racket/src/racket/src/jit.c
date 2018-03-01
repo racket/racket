@@ -2651,7 +2651,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         finish_branch_with_true(jitter, for_branch);
       else {
         Scheme_Object *dummy;
-        int pos, is_const;
+        int pos, is_const, prefix_ready = 0;
 
         mz_rs_sync();
 
@@ -2660,7 +2660,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         dummy = SCHEME_PTR2_VAL(obj);
         obj = SCHEME_PTR1_VAL(obj);
 
-        if (!SCHEME_SYMBOLP(obj) && !SCHEME_FALSEP(obj)) {
+        if (!SCHEME_SYMBOLP(obj) && !SCHEME_FALSEP(obj) && !SAME_OBJ(obj, scheme_true)) {
           /* Load global array: */
           pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
           jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
@@ -2668,16 +2668,22 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           pos = SCHEME_TOPLEVEL_POS(obj);
           jit_ldxi_p(JIT_R1, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
           CHECK_LIMIT();
+          prefix_ready = 1;
+        } else if (SCHEME_FALSEP(obj)) {
+          (void)jit_movi_p(JIT_R1, scheme_false);
         } else {
           scheme_mz_load_retained(jitter, JIT_R1, obj);
-          pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(dummy));
-          jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
         }
 
         /* Load dummy bucket: */
         if (SCHEME_FALSEP(dummy)) {
           (void)jit_movi_p(JIT_R2, scheme_false);
         } else {
+          if (!prefix_ready) {
+            /* Load global array: */
+            pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(dummy));
+            jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+          }
           pos = SCHEME_TOPLEVEL_POS(dummy);
           jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
           CHECK_LIMIT();
