@@ -60,7 +60,8 @@
               sc-formals)
           exp-body))
 
-(define (make-expand-lambda get-lambda)
+(add-core-form!
+ 'lambda
   (lambda (s ctx)
     (log-expand ctx 'prim-lambda)
     (define disarmed-s (syntax-disarm s))
@@ -72,20 +73,28 @@
         (parsed-lambda rebuild-s formals body)
         (rebuild
          rebuild-s
-         `(,(get-lambda ctx (m 'lambda)) ,formals ,@body)))))
-
-(add-core-form!
- 'lambda
- (make-expand-lambda (lambda (ctx lam-id) lam-id)))
+         `(,(m 'lambda) ,formals ,@body)))))
 
 (add-core-form!
  'λ
- (make-expand-lambda
-  (lambda (ctx lam-id)
-    (datum->syntax (syntax-shift-phase-level core-stx (expand-context-phase ctx))
-                   'lambda
-                   lam-id
-                   lam-id))))
+ ;; A macro:
+ (lambda (s)
+   (define-match m s '(lam-id formals _ ...+))
+   (define ids (parse-and-flatten-formals (m 'formals) #f s))
+   (define ctx (get-current-expand-context #:fail-ok? #t))
+   (define phase (if ctx
+                     (expand-context-phase ctx)
+                     0))
+   (check-no-duplicate-ids ids phase s #:what "argument name")
+   (datum->syntax
+    s
+    (cons (datum->syntax (syntax-shift-phase-level core-stx phase)
+                         'lambda
+                         (m 'lam-id)
+                         (m 'lam-id))
+          (cdr (syntax-e s)))
+    s
+    s)))
 
 (add-core-form!
  'case-lambda
@@ -125,7 +134,9 @@
      [(pair? formals)
       (unless (identifier? (car formals))
         (raise-syntax-error #f "not an identifier" s (car formals)))
-      (cons (add-scope (car formals) sc)
+      (cons (if sc
+                (add-scope (car formals) sc)
+                (car formals))
             (loop (cdr formals)))]
      [(null? formals)
       null]

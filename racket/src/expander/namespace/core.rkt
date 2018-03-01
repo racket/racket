@@ -111,7 +111,11 @@
                      (for ([(sym val) (in-hash core-primitives)])
                        (namespace-set-consistent! ns 0 sym val))
                      (for ([(sym proc) (in-hash core-forms)])
-                       (namespace-set-transformer! ns 0 sym (core-form proc sym)))])))
+                       (namespace-set-transformer! ns 0 sym (if (procedure-arity-includes? proc 2)
+                                                                ;; An actual core form:
+                                                                (core-form proc sym)
+                                                                ;; A macro:
+                                                                proc)))])))
    core-module-name))
 
 ;; Helper for recognizing and dispatching on core forms:
