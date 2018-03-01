@@ -180,7 +180,7 @@
                                                   (namespace-phase ns)
                                                   ns))
          (when b (namespace-visit-available-modules! ns))
-         (define-values (v primitive? extra-inspector)
+         (define-values (v primitive? extra-inspector protected?)
            (if b
                (binding-lookup b empty-env null ns (namespace-phase ns) id)
                (values variable #f #f)))

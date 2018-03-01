@@ -238,6 +238,21 @@
 (define-define-stx stx-with-property)
 (test 'y syntax-property stx-with-property 'x)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that protected references are annotated with a 'protected property
+
+(module exports-macros-that-expand-to-protected-references racket/base
+  (provide emtetpr-m1 emtetpr-m2 (protect-out x1))
+  (define x1 1)
+  (define x2 2)
+  (define-syntax-rule (emtetpr-m1) x1)
+  (define-syntax-rule (emtetpr-m2) x2))
+
+(require 'exports-macros-that-expand-to-protected-references)
+
+(test #t syntax-property (expand #'(emtetpr-m1)) 'protected)
+(test #t syntax-property (expand #'(emtetpr-m2)) 'protected)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check immutability
 

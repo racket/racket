@@ -627,9 +627,9 @@
                                     #:immediate? #t))
      (when (eq? binding 'ambiguous)
        (raise-ambiguous-error id ctx))
-     (define-values (t primitive? insp) (if binding
-                                            (lookup binding ctx s)
-                                            (values #f #f #f)))
+     (define-values (t primitive? insp protected?) (if binding
+                                                       (lookup binding ctx s)
+                                                       (values #f #f #f #f)))
      (log-expand ctx 'resolve id)
      (cond
       [(or (variable? t)
@@ -703,12 +703,12 @@
                  (expand-context-allow-unbound? ctx))
        (raise-unbound-syntax-error #f "unbound identifier" s var-id null
                                    (syntax-debug-info-string var-id ctx)))
-     (define-values (t primitive? insp-of-t)
+     (define-values (t primitive? insp-of-t protected?)
        (if binding
            (lookup binding ctx var-id
                    #:in s
                    #:out-of-context-as-variable? (expand-context-in-local-expand? ctx))
-           (values #f #f #f)))
+           (values #f #f #f #f)))
      (when (and t (not (variable? t)))
        (raise-syntax-error #f "identifier does not refer to a variable" var-id s))
      (if (expand-context-to-parsed? ctx)
