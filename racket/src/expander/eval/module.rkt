@@ -279,7 +279,7 @@
    [(eq? get-encoded-root-expand-ctx 'empty)
     ;; A `#:empty-namespace` declaration requested a namespace with no initial bindings
     (namespace-set-root-expand-ctx! ns (delay (shift-to-inside-root-context
-                                               (make-root-expand-context self))))]
+                                               (make-root-expand-context #:self-mpi self))))]
    [(procedure? get-encoded-root-expand-ctx)
     ;; Root expand context has been preserved; deserialize it on demand
     (namespace-set-root-expand-ctx! ns (delay (shift-to-inside-root-context

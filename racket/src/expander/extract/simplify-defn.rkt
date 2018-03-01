@@ -28,7 +28,9 @@
      (define cl* (map (lambda (c)  (mutated-vars (cadr c))) cl))
      (define binds (apply seteq (apply append (map car cl))))
      (set-union (apply union-all (map mutated-vars cl*)) (set-remove (mutated-vars e) binds))]
-    [`(letrec-values ,cl ,e) 
+    [`(letrec-values ,cl ,e)
+     ;; UNSOUND --- assume that variables are defined before use
+     ;; (i.e., no visible implicit assignment)
      (define cl* (map (lambda (c) (mutated-vars (cadr c))) cl))
      (define binds (apply seteq (apply append (map car cl))))
      (set-remove (set-union (mutated-vars e) (apply union-all (map mutated-vars cl*))) binds)]
@@ -87,11 +89,15 @@
                   (lambda (c)
                     (define vars (car c))
                     (define rhs (simp (cadr c)))
-                    (cond [(and (for/and ([v (in-list vars)]) (not (set-member? body-frees v)))
-                                (not (any-side-effects? rhs (length vars) #:known-defns seen-defns
-                                                        #:ready-variable? safe-ref?)))
-                           #f]
-                          [else (list vars rhs)]))
+                    (cond
+                      [(and (for/and ([v (in-list vars)]) (not (set-member? body-frees v)))
+                            (or
+                             (not (any-side-effects? rhs (length vars) #:known-defns seen-defns
+                                                     #:ready-variable? safe-ref?))
+                             ;; UNSOUND --- assume that variables are defined before use
+                             (symbol? rhs)))
+                       #f]
+                      [else (list vars rhs)]))
                   cl))
      `(let-values ,cl* ,simp-body)]
     [`(letrec-values ,cl ,e) 
@@ -105,6 +111,7 @@
                           (list (car c)
                                 (simp (cadr c)))))]
     [`(variable-reference-constant? (#%variable-reference ,x))
+     ;; UNSOUND --- assume that variables are defined before use
      (not (hash-ref vars x #f))]
     [`(,sym ,e ...)
      #:when (memq sym '(begin begin0 with-continuation-mark set!))
@@ -128,9 +135,10 @@
   (define seen-defns (make-hasheq))
   (register-known-primitives! seen-defns)
 
-  (define (safe-defn? e)
-    (and (defn? e)
-         (not (any-side-effects? (defn-rhs e) (length (defn-syms e)) #:known-defns seen-defns))))
+  (define (safe-defn-or-expr? e)
+    (if (defn? e)
+        (not (any-side-effects? (defn-rhs e) (length (defn-syms e)) #:known-defns seen-defns))
+        (not (any-side-effects? e #f #:known-defns seen-defns))))
 
   (define (safe-ref? s) (hash-ref seen-defns s #f))
   
@@ -139,9 +147,11 @@
       (cond [(null? body) null]
             [(defn? (car body))
              (for* ([d (in-list body)]
-                    #:break (not (safe-defn? d))
-                    [s (in-list (defn-syms d))])
-               (hash-set! seen-defns s (known-defined)))
+                    #:break (and (defn? d)
+                                 (hash-ref seen-defns (car (defn-syms d)) #f))
+                    #:break (not (safe-defn-or-expr? d))
+                    #:when (defn? d))
+               (add-defn-known! seen-defns (defn-syms d) (defn-rhs d)))
              (define e (car body))
              (define new-defn 
                (list 'define-values (defn-syms e) (simplify-expr (defn-rhs e) all-mutated-vars safe-ref? seen-defns)))
