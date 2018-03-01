@@ -300,7 +300,7 @@
            (define new-s (wrap (m 'begin-for-syntax) exp-s l))
            (log-expand tl-ctx 'return new-s)
            new-s]
-          [combine l]
+          [combine (apply append l)]
           [else (void)])]
         [else
          (single exp-s ns as-tail?)])])))
