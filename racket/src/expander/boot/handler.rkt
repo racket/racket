@@ -674,10 +674,15 @@
         (reparameterize 
          (continuation-mark-set-first #f parameterization-key))))
 
+(define (get-original-parameterization)
+  orig-paramz)
+
 ;; ----------------------------------------
 ;; For historical uses of '#%boot
 
 (define boot-primitives
   (hash 'boot boot
         'seal seal
-        'orig-paramz orig-paramz))
+        ;; Historically, exported a `orig-paramz` after place
+        ;; initialization, but we now need an indirection
+        'get-original-parameterization get-original-parameterization))

@@ -58,7 +58,7 @@
               (lambda ()
                 (with-continuation-mark
                     parameterization-key
-                    orig-paramz
+                    (get-original-parameterization)
                   (parameterize ([current-namespace (make-base-namespace)]
                                  [current-custodian cust]
                                  [exit-handler (lambda (v)
