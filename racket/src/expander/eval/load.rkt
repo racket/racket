@@ -11,17 +11,19 @@
 
 (define/who (load s)
   (check who path-string? s)
+  (define p (->path s))
   (call-with-current-load-relative-directory
-   s
+   p
    (lambda ()
-     ((current-load) s #f))))
+     ((current-load) p #f))))
 
 (define/who (load-extension s)
   (check who path-string? s)
+  (define p (->path s))
   (call-with-current-load-relative-directory
-   s
+   p
    (lambda ()
-     ((current-load-extension) s #f))))
+     ((current-load-extension) p #f))))
 
 (define (call-with-current-load-relative-directory p thunk)
   (define-values (base name dir?) (split-path p))
@@ -35,7 +37,8 @@
 
 (define/who (load/use-compiled f)
   (check who path-string? f)
-  ((current-load/use-compiled) f #f))
+  (define p (->path f))
+  ((current-load/use-compiled) p #f))
 
 ;; used for the -k command-line argument:
 (define (embedded-load start end str as-predefined?)
@@ -60,3 +63,8 @@
           (parameterize ([current-module-declare-as-predefined as-predefined?])
             ((current-eval) e))
           (loop))))))
+
+;; ----------------------------------------
+
+(define (->path s)
+  (if (string? s) (string->path s) s))
