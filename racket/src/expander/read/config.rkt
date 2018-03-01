@@ -97,7 +97,9 @@
 
 (define (port+config->srcloc in config)
   (define-values (end-line end-col end-pos) (port-next-location in))
-  (srcloc (read-config-source config)
+  (srcloc (or (read-config-source config)
+              (object-name in)
+              "UNKNOWN")
           (read-config-line config)
           (read-config-col config)
           (read-config-pos config)
