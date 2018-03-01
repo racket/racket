@@ -759,9 +759,6 @@ scheme_checked_vector_star_set(int argc, Scheme_Object *argv[])
   Scheme_Object *vec = argv[0];
   intptr_t i, len;
 
-  if (SCHEME_CHAPERONEP(vec))
-    vec = SCHEME_CHAPERONE_VAL(vec);
-
   if (!SCHEME_MUTABLE_VECTORP(vec))
     scheme_wrong_contract("vector*-set!", "(and/c vector? (not/c immutable?) (not/c impersonator?))", 0, argc, argv);
 
