@@ -2,7 +2,7 @@
 @(require scribble/manual
           scribble/examples
           "guide-utils.rkt"
-          (for-label racket))
+          (for-label racket racket/async-channel))
 
 @(define concurrency-eval (make-base-eval))
 @(concurrency-eval '(require racket/contract racket/math))
