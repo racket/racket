@@ -297,96 +297,104 @@
     (define defined? (and b (eq? (requires+provides-self r+p)
                                  (module-binding-module b))))
     (cond
-     [(and (not defined?) (not check-not-required?))
-      ;; Not defined, and we're shadowing all requires -- so, it's ok,
-      ;; but binding is non-simple
-      (set-requires+provides-all-bindings-simple?! r+p #f)
-      ;; Also, record the `require` binding, in case we see another
-      ;; `require` for the same identifier
-      (hash-set! (requires+provides-also-required r+p) (module-binding-sym b) b)
-      #f]
-     [(and defined?
-           ;; In case `#%module-begin` is expanded multiple times, check
-           ;; that the definition has been seen this particular expansion
-           (not (hash-ref (hash-ref (requires+provides-phase-to-defined-syms r+p)
-                                    phase
-                                    #hasheq())
-                          (module-binding-sym b)
-                          #f)))
-      ;; Doesn't count as previously defined
-      #f]
-     [else
-      (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
-      (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
-      (define ok-binding (if (procedure? ok-binding/delayed)
-                             (ok-binding/delayed)
-                             ok-binding/delayed))
-      (define (raise-already-bound defined?)
-        (raise-syntax-error who
-                            (string-append "identifier already "
-                                           (if defined? "defined" "required")
-                                           (cond
-                                             [(zero-phase? phase) ""]
-                                             [(label-phase? phase) " for label"]
-                                             [(= 1 phase) " for syntax"]
-                                             [else (format " for phase ~a" phase)]))
-                            orig-s
-                            id))
-      (cond
-       [(not at-mod)
-        ;; Binding is from an enclosing context; if it's from an
-        ;; enclosing module, then we've already marked bindings
-        ;; a non-simple --- otherwise, we don't care
-        #f]
-       [(and ok-binding (same-binding? b ok-binding))
-        ;; It's the same binding already, so overall binding hasn't
-        ;; become non-simple
-        (unless (same-binding-nominals? b ok-binding)
-          ;; Need to accumulate nominals
-          (define (update!)
-            (add-binding!
-             #:just-for-nominal? #t
-             id
-             (module-binding-update b
-                                    #:extra-nominal-bindings
-                                    (cons ok-binding
-                                          (module-binding-extra-nominal-bindings b)))
-             phase))
+      [(and defined?
+            ;; In case `#%module-begin` is expanded multiple times, check
+            ;; that the definition has been seen this particular expansion
+            (not (hash-ref (hash-ref (requires+provides-phase-to-defined-syms r+p)
+                                     phase
+                                     #hasheq())
+                           (module-binding-sym b)
+                           #f)))
+       ;; Doesn't count as previously defined
+       #f]
+      [else
+       (define define-shadowing-require? (and (not defined?) (not check-not-required?)))
+       (define mpi (intern-mpi r+p (module-binding-nominal-module b)))
+       (define at-mod (hash-ref (requires+provides-requires r+p) mpi #f))
+       (define ok-binding (and (not define-shadowing-require?)
+                               (if (procedure? ok-binding/delayed)
+                                   (ok-binding/delayed)
+                                   ok-binding/delayed)))
+       (define (raise-already-bound defined?)
+         (raise-syntax-error who
+                             (string-append "identifier already "
+                                            (if defined? "defined" "required")
+                                            (cond
+                                              [(zero-phase? phase) ""]
+                                              [(label-phase? phase) " for label"]
+                                              [(= 1 phase) " for syntax"]
+                                              [else (format " for phase ~a" phase)]))
+                             orig-s
+                             id))
+       (cond
+         [(and (not at-mod)
+               (not define-shadowing-require?))
+          ;; Binding is from an enclosing context; if it's from an
+          ;; enclosing module, then we've already marked bindings
+          ;; a non-simple --- otherwise, we don't care
+          #f]
+         [(and ok-binding (same-binding? b ok-binding))
+          ;; It's the same binding already, so overall binding hasn't
+          ;; become non-simple
+          (unless (same-binding-nominals? b ok-binding)
+            ;; Need to accumulate nominals
+            (define (update!)
+              (add-binding!
+               #:just-for-nominal? #t
+               id
+               (module-binding-update b
+                                      #:extra-nominal-bindings
+                                      (cons ok-binding
+                                            (module-binding-extra-nominal-bindings b)))
+               phase))
+            (cond
+              [accum-update-nominals
+               ;; We can't reset now, because the caller is preparing for
+               ;; a bulk bind. Record that we need to merge nominals.
+               (set-box! accum-update-nominals (cons update! (unbox accum-update-nominals)))]
+              [else (update!)]))
+          defined?]
+         [(and defined? allow-defined?)
+          ;; A `require` doesn't conflict with a definition, even if we
+          ;; saw the definition earlier; but make sure there are not multiple
+          ;; `require`s (any one of which would be shadowed by the definition)
+          (define also-required (requires+provides-also-required r+p))
+          (define prev-b (hash-ref also-required (module-binding-sym b) #f))
+          (when (and prev-b (not (same-binding? ok-binding prev-b)))
+            (raise-already-bound #f))
+          (hash-set! also-required (module-binding-sym b) ok-binding)
+          (set-requires+provides-all-bindings-simple?! r+p #f)
+          #t]
+         [else
+          (define nominal-phase (module-binding-nominal-require-phase b))
+          (define sym-to-reqds (hash-ref at-mod nominal-phase #hasheq()))
+          (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
+          (define only-can-can-shadow-require?
+            (for/fold ([only-can-can-shadow-require? #t]) ([r (in-list-ish reqds)])
+              (cond
+                [(if (bulk-required? r)
+                     (bulk-required-can-be-shadowed? r)
+                     (required-can-be-shadowed? r))
+                 ;; Shadowing --- ok, but non-simple
+                 (set-requires+provides-all-bindings-simple?! r+p #f)
+                 only-can-can-shadow-require?]
+                [define-shadowing-require? #f]
+                [else (raise-already-bound defined?)])))
           (cond
-           [accum-update-nominals
-            ;; We can't reset now, because the caller is preparing for
-            ;; a bulk bind. Record that we need to merge nominals.
-            (set-box! accum-update-nominals (cons update! (unbox accum-update-nominals)))]
-           [else (update!)]))
-        defined?]
-       [(and defined? allow-defined?)
-        ;; A `require` doesn't conflict with a definition, even if we
-        ;; saw the definition earlier; but make sure there are not multiple
-        ;; `require`s (any one of which would be shadowed by the definition)
-        (define also-required (requires+provides-also-required r+p))
-        (define prev-b (hash-ref also-required (module-binding-sym b) #f))
-        (when (and prev-b (not (same-binding? ok-binding prev-b)))
-          (raise-already-bound #f))
-        (hash-set! also-required (module-binding-sym b) ok-binding)
-        (set-requires+provides-all-bindings-simple?! r+p #f)
-        #t]
-       [else
-        (define nominal-phase (module-binding-nominal-require-phase b))
-        (define sym-to-reqds (hash-ref at-mod nominal-phase #hasheq()))
-        (define reqds (hash-ref sym-to-reqds (syntax-e id) null))
-        (for ([r (in-list-ish reqds)])
-          (cond
-           [(if (bulk-required? r)
-                (bulk-required-can-be-shadowed? r)
-                (required-can-be-shadowed? r))
-            ;; Shadowing --- ok, but non-simple
-            (set-requires+provides-all-bindings-simple?! r+p #f)]
-           [else (raise-already-bound defined?)]))
-        (when (and remove-shadowed!? (not (null? reqds)))
-          ;; Same work as in `remove-required-id!`
-          (hash-set! sym-to-reqds (syntax-e id)
-                     (remove-non-matching-requireds reqds id phase mpi nominal-phase (syntax-e id))))
-        #f])])]))
+            [define-shadowing-require?
+              ;; Not defined, but defining now (shadowing all requires);
+              ;; make sure we indicated that the binding is non-simple
+              (set-requires+provides-all-bindings-simple?! r+p #f)
+              (unless only-can-can-shadow-require?
+                ;; Record the `require` binding, if it's non-shadowable,
+                ;; in case we see another `require` for the same identifier
+                (hash-set! (requires+provides-also-required r+p) (module-binding-sym b) b))]
+            [else
+             (when (and remove-shadowed!? (not (null? reqds)))
+               ;; Same work as in `remove-required-id!`
+               (hash-set! sym-to-reqds (syntax-e id)
+                          (remove-non-matching-requireds reqds id phase mpi nominal-phase (syntax-e id))))])
+          #f])])]))
 
 (define (add-defined-syms! r+p syms phase)
   (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))

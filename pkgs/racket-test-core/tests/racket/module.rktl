@@ -712,6 +712,17 @@
 
 (test "last" dynamic-require ''definition-shadows-later-require/2 'result)
 
+(module definition-shadows-require-shadowing-initial-require racket/base
+  (provide result)
+  (define version 42)
+  (module M racket/base
+    (provide (all-defined-out))
+    (define version 42))
+  (require 'M)
+  (define result version))
+
+(test 42 dynamic-require ''definition-shadows-require-shadowing-initial-require 'result)
+
 (err/rt-test
  (eval
   '(module m racket/base
