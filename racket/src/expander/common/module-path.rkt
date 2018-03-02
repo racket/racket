@@ -167,7 +167,7 @@
                                          (eq? 'submod (car v)))
                                     (format-submod (loop (cadr v)) (cddr v))]
                                    [else
-                                    (format "~.s" (module-path-index-path r))]))
+                                    (format "~.s" v)]))
                                 (loop (module-path-index-base r)))]
                          [(module-path-index-resolved r)
                           (list

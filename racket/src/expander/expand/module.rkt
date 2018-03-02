@@ -472,8 +472,8 @@
    
    (define mb-scopes-s
      (if keep-enclosing-scope-at-phase
-         ;; for `(module* name #f)`, use the `(module* ...)` form
-         disarmed-s
+         ;; for `(module* name #f)`, use the `(module* ...)` form:
+         (apply-module-scopes disarmed-s)
          ;; otherwise, use the initial require
          all-scopes-s))
 
