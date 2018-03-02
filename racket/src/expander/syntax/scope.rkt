@@ -106,9 +106,9 @@
           ;; the `bindings` field is handled via `prop:scope-with-bindings`
           (void))
         #:property prop:scope-with-bindings
-        (lambda (s reachable-scopes reach register-trigger)
+        (lambda (s get-reachable-scopes reach register-trigger)
           (binding-table-register-reachable (scope-binding-table s)
-                                            reachable-scopes
+                                            get-reachable-scopes
                                             reach
                                             register-trigger)))
 
@@ -143,10 +143,37 @@
         (lambda (ms ser-push! state)
           (ser-push! 'tag '#:multi-scope)
           (ser-push! (multi-scope-name ms))
-          (ser-push! (multi-scope-scopes ms)))
+          ;; Prune to reachable representative scopes
+          (define multi-scope-tables (serialize-state-multi-scope-tables state))
+          (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
+                         (let ([ht (make-hasheqv)])
+                           (for ([(phase sc) (in-hash (multi-scope-scopes ms))])
+                             (when (set-member? (serialize-state-reachable-scopes state) sc)
+                               (hash-set! ht phase sc)))
+                           (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
+                           ht))))
         #:property prop:reach-scopes
-        (lambda (ms reach)
-          (reach (multi-scope-scopes ms))))
+        (lambda (s reach)
+          ;; the `scopes` field is handled via `prop:scope-with-bindings`
+          (void))
+        #:property prop:scope-with-bindings
+        (lambda (ms get-reachable-scopes reach register-trigger)
+          ;; This scope is reachable via its multi-scope, but it only
+          ;; matters if it's reachable through a binding (otherwise it
+          ;; can be re-generated later). We don't want to keep a scope
+          ;; that can be re-generated, because pruning it makes
+          ;; compilation more deterministic relative to other
+          ;; compilations that involve a shared module. If the scope
+          ;; itself has any bindings, then we count it as reachable
+          ;; through a binding (which is an approxmation, because
+          ;; other scopes in the binding may be unreachable, but it
+          ;; seems good enough for determinism).
+          ;; To make that work, `binding-table-register-reachable`
+          ;; needs to recognize representative scopes and treat
+          ;; them differently, hence `prop:implicitly-reachable`.
+          (for ([sc (in-hash-values (multi-scope-scopes ms))])
+            (unless (binding-table-empty? (scope-binding-table sc))
+              (reach sc)))))
 
 (define (deserialize-multi-scope name scopes)
   (multi-scope (new-deserialize-scope-id!) name scopes (box (hasheqv)) (box (hash))))
@@ -178,7 +205,9 @@
         #:property prop:reach-scopes
         (lambda (s reach)
           ;; the inherited `bindings` field is handled via `prop:scope-with-bindings`
-          (reach (representative-scope-owner s))))
+          (reach (representative-scope-owner s)))
+        ;; Used by `binding-table-register-reachable`:
+        #:property prop:implicitly-reachable #t)
 
 (define (deserialize-representative-scope kind phase)
   (define v (representative-scope (new-deserialize-scope-id!) kind #f #f phase))
@@ -252,6 +281,9 @@
   ;; having a larger id
   (- (new-scope-id!)))
 
+(define (deserialized-scope-id? scope-id)
+  (negative? scope-id))
+
 ;; A shared "outside-edge" scope for all top-level contexts
 (define top-level-common-scope (scope 0 'module empty-binding-table))
 
@@ -264,7 +296,10 @@
 (define (multi-scope-to-scope-at-phase ms phase)
   ;; Get the identity of `ms` at phase`
   (or (hash-ref (multi-scope-scopes ms) phase #f)
-      (let ([s (representative-scope (new-scope-id!) 'module
+      (let ([s (representative-scope (if (deserialized-scope-id? (multi-scope-id ms))
+                                         (new-deserialize-scope-id!)
+                                         (new-scope-id!))
+                                     'module
                                      empty-binding-table
                                      ms phase)])
         (hash-set! (multi-scope-scopes ms) phase s)

@@ -33,6 +33,7 @@
          
          binding-table-prune-to-reachable
          binding-table-register-reachable
+         prop:implicitly-reachable
          
          deserialize-table-with-bulk-bindings
          deserialize-bulk-binding-at)
@@ -123,6 +124,9 @@
     (struct-copy table-with-bulk-bindings bt 
                  [syms new-syms]
                  [syms/serialize new-syms/serialize])]))
+
+(define-values (prop:implicitly-reachable implicitly-reachable? implicitly-reachable-ref)
+  (make-struct-type-property 'implicitly-reachable))
 
 ;; Adding a binding for a computed-on-demand set of symbols
 (define (binding-table-add-bulk bt scopes bulk
@@ -282,21 +286,46 @@
         (hash-set! (serialize-state-bulk-bindings-intern state) bt new-bt)
         new-bt)))
 
-(define (binding-table-register-reachable bt reachable-scopes reach register-trigger)
+(define (binding-table-register-reachable bt get-reachable-scopes reach register-trigger)
+  ;; Check symbol-specific scopes for both `free-id=?` reachability and
+  ;; for implicitly reachable scopes
   (for* ([(sym bindings-for-sym) (in-immutable-hash (if (hash? bt)
                                                         bt
                                                         (table-with-bulk-bindings-syms/serialize bt)))]
          [(scopes binding) (in-immutable-hash bindings-for-sym)])
-    (scopes-register-reachable scopes binding reachable-scopes reach register-trigger)))
+    (define v (and (binding-reach-scopes? binding)
+                   ((binding-reach-scopes-ref binding) binding)))
+    (scopes-register-reachable scopes v get-reachable-scopes reach register-trigger))
+  ;; Need to check bulk-binding scopes for implicitly reachable
+  (when (table-with-bulk-bindings? bt)
+    (for ([bba (in-list (table-with-bulk-bindings-bulk-bindings bt))])
+      (scopes-register-reachable (bulk-binding-at-scopes bba) #f get-reachable-scopes reach register-trigger))))
 
-(define (scopes-register-reachable scopes binding reachable-scopes reach register-trigger)
-  (define v (and (binding-reach-scopes? binding)
-                 ((binding-reach-scopes-ref binding) binding)))
-  (when v
-    (cond
-     [(subset? scopes reachable-scopes)
-      (reach v)]
-     [else
-      (for ([sc (in-set scopes)]
-            #:unless (set-member? reachable-scopes sc))
-        (register-trigger sc v))])))
+(define (scopes-register-reachable scopes v get-reachable-scopes reach register-trigger)
+  (define reachable-scopes (get-reachable-scopes))
+  (cond
+    [(subset? scopes reachable-scopes)
+     (reach v)]
+    [else
+     ;; There may be implicitly reachable scopes (i.e., multi-scope
+     ;; representatives that should only be reachable if they
+     ;; participate in a binding)
+     (define pending-scopes
+       (for/seteq ([sc (in-set scopes)]
+                   #:unless (or (set-member? reachable-scopes sc)
+                                (implicitly-reachable? sc)))
+         sc))
+     (define (check-trigger reach)
+       (when (zero? (hash-count pending-scopes))
+         ;; All scopes became reachable, so make the value reachable,
+         ;; and declare implcitily reachables as explicitly reachable
+         (reach v)
+         (for ([sc (in-set scopes)])
+           (when (implicitly-reachable? sc)
+             (reach sc)))))
+     (for ([sc (in-set pending-scopes)])
+       (register-trigger sc (lambda (reach)
+                              (set! pending-scopes (hash-remove pending-scopes sc))
+                              (check-trigger reach))))
+     ;; In case there were only implicitly reachable scopes:
+     (check-trigger reach)]))

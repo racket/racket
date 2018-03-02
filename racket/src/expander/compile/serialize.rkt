@@ -110,6 +110,10 @@
             pos)))]))
 
 (define (generate-module-path-index-deserialize mpis)
+  (define (unique-list v)
+    (if (pair? v)
+        (for/list ([i (in-list v)]) i) ; avoid non-deterministic sharing
+        v))
   (define positions (module-path-index-table-positions mpis))
   (define gen-order (make-hasheqv))
   (define rev-positions
@@ -135,8 +139,9 @@
        [(top-level-module-path-index? mpi)
         'top]
        [(not path)
-        (box (or (resolved-module-path-name
-                  (module-path-index-resolved mpi))
+        (box (or (unique-list
+                  (resolved-module-path-name
+                   (module-path-index-resolved mpi)))
                  'self))]
        [(not base)
         (vector path)]
@@ -812,8 +817,9 @@
 (define (find-reachable-scopes v)
   (define seen (make-hasheq))
   (define reachable-scopes (seteq))
+  (define (get-reachable-scopes) reachable-scopes)
   (define scope-triggers (make-hasheq))
-  
+
   (let loop ([v v])
     (cond
      [(interned-literal? v) (void)]
@@ -825,10 +831,10 @@
         (set! reachable-scopes (set-add reachable-scopes v))
         
         ((reach-scopes-ref v) v loop)
-        
-        (define l (hash-ref scope-triggers v null))
-        (for ([v (in-list l)])
-          (loop v))
+
+        (for ([proc (in-list (hash-ref scope-triggers v null))])
+          (proc loop))
+        (hash-remove! scope-triggers v)
  
         ;; A binding may have a `free-id=?` equivalence;
         ;; that equivalence is reachable if all the scopes in the
@@ -836,7 +842,7 @@
         ;; record a trigger in case the scope bcomes reachable later
         ((scope-with-bindings-ref v)
          v
-         reachable-scopes
+         get-reachable-scopes
          loop
          (lambda (sc-unreachable b)
            (hash-update! scope-triggers

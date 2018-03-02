@@ -1,4 +1,5 @@
 #lang racket/base
+(require "../common/set.rkt")
          
 (provide (struct-out serialize-state)
          make-serialize-state
@@ -20,7 +21,8 @@
                          bindings-intern        ; to record pruned binding tables
                          bulk-bindings-intern   ; to record pruned bulk-binding lists
                          scopes                 ; interned scope sets
-                         shifted-multi-scopes   ; interned shifted multi-scope lists
+                         shifted-multi-scopes   ; interned shifted multi-scope sets
+                         multi-scope-tables     ; interned phase -> scope tables
                          mpi-shifts             ; interned module path index shifts
                          context-triples        ; combinations of the previous three
                          props                  ; map full props to previously calculated
@@ -29,17 +31,26 @@
                          sharing-syntaxes))     ; record which syntax objects are `datum->syntax` form
 
 (define (make-serialize-state reachable-scopes)
-  (serialize-state reachable-scopes
-                   (make-hasheq)   ; bindings-intern
-                   (make-hasheq)   ; bulk-bindings-intern
-                   (make-hash)     ; scopes
-                   (make-hash)     ; shifted-multi-scopes
-                   (make-hasheq)   ; mpi-shifts
-                   (make-hasheq)   ; context-triples
-                   (make-hasheq)   ; props
-                   (make-hash)     ; interned-props
-                   (box null)      ; syntax-context
-                   (make-hasheq))) ; sharing-syntaxes
+  (define state
+    (serialize-state reachable-scopes
+                     (make-hasheq)   ; bindings-intern
+                     (make-hasheq)   ; bulk-bindings-intern
+                     (make-hash)     ; scopes
+                     (make-hash)     ; shifted-multi-scopes
+                     (make-hasheq)   ; multi-scope-tables
+                     (make-hasheq)   ; mpi-shifts
+                     (make-hasheq)   ; context-triples
+                     (make-hasheq)   ; props
+                     (make-hash)     ; interned-props
+                     (box null)      ; syntax-context
+                     (make-hasheq))) ; sharing-syntaxes
+  ;; Seed intern tables for sets and hashes to use the canonical
+  ;; empty version for consistent sharing:
+  (define empty-seteq (seteq))
+  (hash-set! (serialize-state-scopes state) empty-seteq empty-seteq)
+  (hash-set! (serialize-state-shifted-multi-scopes state) empty-seteq empty-seteq)
+  (hash-set! (serialize-state-interned-props state) empty-seteq empty-seteq)
+  state)
 
 (define (intern-scopes scs state)
   (or (hash-ref (serialize-state-scopes state) scs #f)
