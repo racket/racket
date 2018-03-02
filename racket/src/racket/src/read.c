@@ -1351,7 +1351,7 @@ read_list(Scheme_Object *port,
       ch = skip_whitespace_comments(port, params);
 
     if ((ch == EOF) && (closer != EOF)) {
-      scheme_read_err(port, "read: expected a `%s` to close `%c`", closer, opener);
+      scheme_read_err(port, "read: expected a `%c` to close `%c`", closer, opener);
       return NULL;
     }
 
@@ -3013,6 +3013,14 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       {
         v = read_compact(port, 1);
         if (!SCHEME_VECTORP(v)) scheme_ill_formed_code(port);
+        {
+          int i, c = SCHEME_VEC_SIZE(v);
+          if (c < 1) scheme_ill_formed_code(port);
+          for (i = 1; i < c; i++) {
+            if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(v)[i]), scheme_toplevel_type))
+              scheme_ill_formed_code(port);
+          }
+        }
         v->type = scheme_define_values_type;
         return v;
       }
@@ -3029,6 +3037,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
         v = read_compact(port, 1);
         sb->var = v;
+        if (!SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type))
+          scheme_ill_formed_code(port);
         v = read_compact(port, 1);
         sb->val = v;
 
@@ -3170,8 +3180,17 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
         v = read_compact(port, 1);
         SCHEME_PTR1_VAL(data) = v;
+        if (!SCHEME_SYMBOLP(v)
+            && !SCHEME_FALSEP(v)
+            && !SAME_OBJ(v, scheme_true)
+            && !SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type))
+          scheme_ill_formed_code(port);
+
         v = read_compact(port, 1);
         SCHEME_PTR2_VAL(data) = v;
+        if (!SCHEME_FALSEP(v)
+            && !SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type))
+          scheme_ill_formed_code(port);
 
         return data;
       }
