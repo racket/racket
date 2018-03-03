@@ -3681,9 +3681,19 @@ static void filename_exn(char *name, char *msg, char *filename, int maybe_module
 
   if (maybe_module_errno && scheme_last_error_is_racket(maybe_module_errno)) {
     char buffer[256];
+    int errkind, errid;
+
     scheme_sprintf(buffer, sizeof(buffer)-1, "%R");
     buffer[sizeof(buffer)-1] = 0;
+
+    /* Save errors, in case we don't raise missing-module */
+    errkind = rktio_get_last_error_kind(scheme_rktio);
+    errid = rktio_get_last_error(scheme_rktio);
+
     maybe_raise_missing_module(name, filename, pre, rel, post, buffer);
+
+    /* Restore error, which might have been changed by a scheduler action */
+    rktio_set_last_error(scheme_rktio, errkind, errid);
   }
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
