@@ -1,5 +1,7 @@
 #lang racket/base
-(require "../syntax/scope.rkt"
+(require "../common/struct-star.rkt"
+         "../syntax/syntax.rkt"
+         "../syntax/scope.rkt"
          "../syntax/taint.rkt"
          "../namespace/core.rkt"
          "../syntax/match.rkt"
@@ -13,6 +15,8 @@
          "require.rkt"
          "def-id.rkt"
          "bind-top.rkt"
+         "lift-context.rkt"
+         "lift-key.rkt"
          "log.rkt")
 
 (add-core-form!
@@ -24,7 +28,7 @@
    (define disarmed-s (syntax-disarm s))
    (define-match m s '(define-values (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
-   (define exp-rhs (expand (m 'rhs) (as-named-context ctx ids)))
+   (define exp-rhs (expand (m 'rhs) (as-named-context (as-expression-context ctx) ids)))
    (if (expand-context-to-parsed? ctx)
        (parsed-define-values s ids syms exp-rhs)
        (rebuild
@@ -37,7 +41,7 @@
    (log-expand ctx 'prim-define-syntaxes)
    (log-expand ctx 'prepare-env)
    (unless (eq? (expand-context-context ctx) 'top-level)
-     (raise-syntax-error #f "not allowed in an expression position" s))
+     (raise-syntax-error #f "not in a definition context" s))
    (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(define-syntaxes (id ...) rhs))
    (define-values (ids syms) (as-expand-time-top-level-bindings (m 'id) s ctx))
@@ -51,7 +55,44 @@
 (add-core-form!
  'begin-for-syntax
  (lambda (s ctx)
-   (raise-syntax-error #f "not allowed in an expression position" s)))
+   (unless (eq? (expand-context-context ctx) 'top-level)
+     (raise-syntax-error #f "not in a definition context" s))
+   (define-match m s '(begin-for-syntax form ...))
+   (log-expand ctx 'prim-begin-for-syntax)
+   (log-expand ctx 'prepare-env)
+   (define trans-ctx (context->transformer-context ctx 'top-level #:keep-stops? #t))
+   (define lift-ctx (make-lift-context
+                     (make-top-level-lift trans-ctx)))
+   (define capture-ctx (struct*-copy expand-context trans-ctx
+                                     [lift-key #:parent root-expand-context (generate-lift-key)]
+                                     [lifts lift-ctx]))
+   (define all-exp-forms
+     (let loop ([forms (m 'form)])
+       (log-expand ctx 'enter-list (datum->syntax #f (m 'form) s))
+       (define exp-forms
+         (let loop ([forms forms] [accum null])
+           (cond
+             [(null? forms)
+              (define forms (reverse accum))
+              (log-expand ctx 'exit-list (datum->syntax #f forms s))
+              forms]
+             [else
+              (log-expand ctx 'next)
+              (define exp-form (expand (car forms) capture-ctx))
+              (loop (cdr forms) (cons exp-form accum))])))
+       (define lifts (get-and-clear-lifts! lift-ctx))
+       (cond
+         [(null? lifts)
+          exp-forms]
+         [else
+          (log-expand ctx 'module-lift-loop lifts)
+          (define beg (wrap-lifts-as-begin lifts #f (expand-context-phase trans-ctx)))
+          (define exprs (reverse (cdr (reverse (cdr (syntax-e beg))))))
+          (append (loop exprs) exp-forms)])))
+   ;; We shouldn't be able to get here in to-parsed mode
+   (if (expand-context-to-parsed? ctx)
+       (parsed-begin-for-syntax s all-exp-forms)
+       (rebuild s (cons (m 'begin-for-syntax) all-exp-forms)))))
 
 (add-core-form!
  '#%require

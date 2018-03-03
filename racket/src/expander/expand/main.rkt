@@ -48,6 +48,7 @@
          expand/capture-lifts
          expand-transformer
          expand+eval-for-syntaxes-binding
+         context->transformer-context
          eval-for-syntaxes-binding
          eval-for-bindings
 

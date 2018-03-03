@@ -521,6 +521,29 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module local-expand-begin-for-syntax-test racket/base
+  (require (for-syntax racket/base)
+           (for-meta 2 racket/base))
+
+  (provide result)
+
+  (begin-for-syntax
+    (define-syntax (z stx)
+      (syntax-local-lift-expression #'(+ 1 2))))
+
+  (define-syntax (m stx)
+    #`'#,(local-expand #'(begin-for-syntax (define x 10) (z)) 'top-level null))
+
+  (define result (m)))
+
+(let ([r (dynamic-require ''local-expand-begin-for-syntax-test 'result)])
+  (define lifted-id (and (list? r) (last r)))
+  (test `(begin-for-syntax (define-values (,lifted-id) (#%app + '1 '2)) (define-values (x) '10) ,lifted-id)
+        'local-expand-begin-for-syntax
+        r))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (module rename-transformer-tests racket/base
   (require (for-syntax racket/base))
 
