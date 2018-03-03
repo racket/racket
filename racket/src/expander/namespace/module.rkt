@@ -61,7 +61,7 @@
 (struct module (source-name     ; #f, symbol, or complete path
                 self            ; module path index used for a self reference
                 requires        ; list of (cons phase list-of-module-path-index)
-                provides        ; phase-level -> sym -> binding or (provided binding bool bool)
+                provides        ; phase-level -> sym -> binding or (provided binding bool bool); see [*] below
                 [access #:mutable] ; phase-level -> sym -> 'provided or 'protected; computed on demand from `provides`
                 language-info   ; #f or vector
                 min-phase-level ; phase-level
@@ -78,6 +78,14 @@
                 submodule-names ; associated submodules (i.e, when declared together)
                 supermodule-name ; associated supermodule (i.e, when declared together)
                 get-all-variables)) ; for `module->indirect-exports`
+
+;; [*] Beware that tabels in `provides` may map non-interned symbols
+;;     to provided bindings, in case something like a lifted
+;;     identifier was provided. Since lifting generates a locally
+;;     deterministic unreadable symbol that is intended to be specific
+;;     to a particular module, `require`ing unreadable symbols can
+;;     create collisions. Still, the provided binding is supposed to
+;;     be accessible via `dynamic-require`.
 
 (struct module-linklet-info (linklet-or-instance ; #f, linklet, or instance supplied for cross-linking optimization
                              module-uses         ; #f or vector for linklet's imports

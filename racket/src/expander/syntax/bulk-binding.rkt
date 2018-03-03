@@ -142,7 +142,9 @@
 
 (define (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)
   (for/hash ([(sym val) (in-hash provides)]
-             #:unless (hash-ref excepts sym #f))
+             #:unless (hash-ref excepts sym #f)
+             ;; Don't `require` non-interned
+             #:when (symbol-interned? sym))
     (values (if prefix
                 (string->symbol (format "~a~a" prefix sym))
                 sym)

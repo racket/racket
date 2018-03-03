@@ -295,27 +295,30 @@
                 (define provide-phase (module-binding-nominal-phase binding))
                 (define adjusted-sym
                   (cond
-                   [(and skip-variable-phase-level
-                         (not as-transformer?)
-                         (equal? provide-phase skip-variable-phase-level))
-                    #f]
-                   [(not adjust) sym]
-                   [(adjust-only? adjust)
-                    (and (set-member? (adjust-only-syms adjust) sym)
-                         (hash-set! done-syms sym #t)
-                         sym)]
-                   [(adjust-prefix? adjust)
-                    (string->symbol
-                     (format "~a~a" (adjust-prefix-sym adjust) sym))]
-                   [(adjust-all-except? adjust)
-                    (and (not (and (set-member? (adjust-all-except-syms adjust) sym)
-                                   (hash-set! done-syms sym #t)))
-                         (string->symbol
-                          (format "~a~a" (adjust-all-except-prefix-sym adjust) sym)))]
-                   [(adjust-rename? adjust)
-                    (and (eq? sym (adjust-rename-from-sym adjust))
-                         (hash-set! done-syms sym #t)
-                         (adjust-rename-to-id adjust))]))
+                    [(not (symbol-interned? sym))
+                     ;; Don't `require` non-interned symbols
+                     #f]
+                    [(and skip-variable-phase-level
+                          (not as-transformer?)
+                          (equal? provide-phase skip-variable-phase-level))
+                     #f]
+                    [(not adjust) sym]
+                    [(adjust-only? adjust)
+                     (and (set-member? (adjust-only-syms adjust) sym)
+                          (hash-set! done-syms sym #t)
+                          sym)]
+                    [(adjust-prefix? adjust)
+                     (string->symbol
+                      (format "~a~a" (adjust-prefix-sym adjust) sym))]
+                    [(adjust-all-except? adjust)
+                     (and (not (and (set-member? (adjust-all-except-syms adjust) sym)
+                                    (hash-set! done-syms sym #t)))
+                          (string->symbol
+                           (format "~a~a" (adjust-all-except-prefix-sym adjust) sym)))]
+                    [(adjust-rename? adjust)
+                     (and (eq? sym (adjust-rename-from-sym adjust))
+                          (hash-set! done-syms sym #t)
+                          (adjust-rename-to-id adjust))]))
                 (define skip-bind?
                   (cond
                     [(and adjusted-sym requires+provides)

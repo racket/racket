@@ -222,7 +222,8 @@
             [(binding-id) (cond
                            [(pair? i)
                             (define bulk (bulk-binding-at-bulk (car i)))
-                            (define b-info (hash-ref (bulk-binding-symbols bulk s extra-shifts) sym #f))
+                            (define b-info (and (symbol-interned? sym) ; don't `require` non-interned
+                                                (hash-ref (bulk-binding-symbols bulk s extra-shifts) sym #f)))
                             (and b-info
                                  ((bulk-binding-create bulk) bulk b-info sym))]
                            [else (hash-iterate-value ht i)])])

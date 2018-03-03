@@ -173,7 +173,8 @@
   (define sym-to-reqds (hash-ref! at-mod phase-shift make-hasheq))
   (define prefix-len (if bulk-prefix (string-length (symbol->string bulk-prefix)) 0))
   (define br (bulk-required provides prefix-len s provide-phase-level can-be-shadowed?))
-  (for/or ([(out-sym binding/p) (in-hash provides)])
+  (for/or ([(out-sym binding/p) (in-hash provides)]
+           #:unless (not (symbol-interned? out-sym)))
     (when symbols-accum (hash-set! symbols-accum out-sym #t))
     (cond
       [(hash-ref bulk-excepts out-sym #f)
@@ -504,16 +505,12 @@
               (for/list ([mpi (in-list mpis)])
                 (module-path-index-shift mpi from-mpi to-mpi))))]))
 
-;; Also removes uninterned (uncluding unreadable) symbols from among
-;; provides, just in case something like a lifted identifier was
-;; provided. Since lifting generates a locally deterministic
-;; unreadable symbol that is intended to be specific to a particular
-;; module, exporting unreadable symbols can create collisions.
+;; Note: the provides may include non-interned symbols. Those may be
+;; accessible via` dynamic-require`, but don't import them.
 (define (shift-provides-module-path-index provides from-mpi to-mpi)
   (for/hasheqv ([(phase at-phase) (in-hash provides)])
     (values phase
-            (for/hasheq ([(sym binding) (in-hash at-phase)]
-                         #:when (symbol-interned? sym))
+            (for/hasheq ([(sym binding) (in-hash at-phase)])
               (values sym
                       (cond
                        [(eq? from-mpi to-mpi) binding]
