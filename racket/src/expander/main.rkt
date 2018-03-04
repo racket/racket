@@ -79,6 +79,7 @@
          namespace->instance
          
          namespace-syntax-introduce
+         namespace-datum-introduce
          namespace-require
          dynamic-require         
          module-declared?

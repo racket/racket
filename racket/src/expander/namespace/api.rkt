@@ -26,6 +26,7 @@
 (provide make-empty-namespace
          
          namespace-syntax-introduce
+         namespace-datum-introduce
          namespace-module-identifier
          namespace-symbol->identifier
           
@@ -85,6 +86,10 @@
    [else
     ;; Add scope everywhere:
     (add-ns-scopes s)]))
+
+;; For use by the main Racket entry point:
+(define (namespace-datum-introduce s)
+  (namespace-syntax-introduce (datum->syntax #f s)))
 
 (define (namespace-module-identifier [where (current-namespace)])
   (unless (or (namespace? where)

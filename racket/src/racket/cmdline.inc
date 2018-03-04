@@ -346,17 +346,12 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	save = p->error_buf;
 	p->error_buf = &newbuf;
 	if (!scheme_setjmp(newbuf)) {
-	  Scheme_Object *e, *a[2], *d2s, *nsi, *idb, *b, *cp;
+	  Scheme_Object *e, *a[2], *ndi, *idb, *b, *cp;
 
-          d2s = scheme_builtin_value("datum->syntax");
-          a[0] = scheme_make_false();
+          ndi = scheme_builtin_value("namespace-datum-introduce");
           e = scheme_intern_symbol("main");
-          a[1] = e;
-          e = scheme_apply(d2s, 2, a);
-
-          nsi = scheme_builtin_value("namespace-syntax-introduce");
           a[0] = e;
-          e = scheme_apply(nsi, 1, a);
+          e = scheme_apply(ndi, 1, a);
 
           /* Check that `main' is imported and/or defined: */
           idb = scheme_builtin_value("identifier-binding");
