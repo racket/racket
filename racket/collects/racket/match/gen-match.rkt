@@ -24,9 +24,8 @@
   (with-disappeared-uses
     (syntax-parse clauses
       [([pats . rhs] ...)
-       (parameterize ([orig-stx stx])
-         (unless (syntax->list es)
-           (raise-syntax-error 'match* "expected a sequence of expressions to match" es)))
+       (unless (syntax->list es)
+         (raise-syntax-error 'match* "expected a sequence of expressions to match" es))
        (define/with-syntax form-name
          (syntax-case stx ()
            [(fname . _)
