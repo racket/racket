@@ -76,6 +76,8 @@
      (define-syntax (match-lambda** stx)
        (syntax-parse stx
          [(_ (~and clauses [(pats ...) . rhs]) ...)
+          (when (null? (syntax-e #'(rhs ...)))
+            (raise-syntax-error #f "expected at least one clause to match-lambda**" stx))
           (with-syntax* ([vars (generate-temporaries (car (syntax-e #'((pats ...) ...))))]
                          [body #`(match*/derived vars #,stx clauses ...)])
             (syntax/loc stx (lambda vars body)))]))
