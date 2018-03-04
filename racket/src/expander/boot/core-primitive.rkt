@@ -91,7 +91,7 @@
                       exn:fail:syntax:unbound?
                       
                       current-module-path-for-load
-                      prop:missing-module
+                      prop:exn:missing-module
                       exn:missing-module?
                       exn:missing-module-accessor
                       struct:exn:fail:filesystem:missing-module

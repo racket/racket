@@ -6,7 +6,7 @@
 (provide current-module-path-for-load
          maybe-raise-missing-module
          
-         prop:missing-module
+         prop:exn:missing-module
          exn:missing-module?
          exn:missing-module-accessor
          
@@ -15,12 +15,12 @@
          (struct-out exn:fail:syntax:missing-module)
          make-exn:fail:syntax:missing-module)
 
-(define-values (prop:missing-module exn:missing-module? exn:missing-module-accessor)
+(define-values (prop:exn:missing-module exn:missing-module? exn:missing-module-accessor)
   (make-struct-type-property 'missing-module
                              (lambda (v info)
                                (unless (and (procedure? v)
                                             (procedure-arity-includes? v 1))
-                                 (raise-argument-error 'guard-for-prop:missing-module
+                                 (raise-argument-error 'guard-for-prop:exn:missing-module
                                                        "(procedure-arity-includes/c 1)"
                                                        v))
                                v)))
@@ -28,11 +28,11 @@
 (struct exn:fail:filesystem:missing-module exn:fail:filesystem (path)
         #:extra-constructor-name make-exn:fail:filesystem:missing-module
         #:transparent
-        #:property prop:missing-module (lambda (e) (exn:fail:filesystem:missing-module-path e)))
+        #:property prop:exn:missing-module (lambda (e) (exn:fail:filesystem:missing-module-path e)))
 (struct exn:fail:syntax:missing-module exn:fail:syntax (path)
         #:extra-constructor-name make-exn:fail:syntax:missing-module
         #:transparent
-        #:property prop:missing-module (lambda (e) (exn:fail:syntax:missing-module-path e)))
+        #:property prop:exn:missing-module (lambda (e) (exn:fail:syntax:missing-module-path e)))
 
 (define current-module-path-for-load
   (make-parameter #f
