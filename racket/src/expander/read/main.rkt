@@ -198,11 +198,11 @@
       [(#\#)
        (read-dispatch c in r-config config)]
       [(#\')
-       (read-quote read-one 'quote "quoting '" c in r-config)]
+       (read-quote read-one 'quote "quoting \"'\"" c in r-config)]
       [(#\`)
        (guard-legal
         (check-parameter read-accept-quasiquote config)
-        (read-quote read-one 'quasiquote "quasiquoting `" c in r-config))]
+        (read-quote read-one 'quasiquote "quasiquoting \"`\"" c in r-config))]
       [(#\,)
        (guard-legal
         (check-parameter read-accept-quasiquote config)
@@ -210,8 +210,8 @@
         (if (eqv? c2 #\@)
             (begin
               (consume-char in c2)
-              (read-quote read-one 'unquote-splicing "unquoting ,@" c in r-config))
-            (read-quote read-one 'unquote "unquoting ," c in r-config)))]
+              (read-quote read-one 'unquote-splicing "unquoting `,@`" c in r-config))
+            (read-quote read-one 'unquote "unquoting `,`" c in r-config)))]
       [(#\()
        (wrap (read-unwrapped-sequence read-one ec #\( #\) in r-config #:shape-tag? #t) in r-config ec)]
       [(#\))
@@ -350,7 +350,7 @@
          [(#\i #\I) (read-one #f in (override-parameter read-case-sensitive config #f))]
          [else
           (reader-error in config #:due-to c2
-                        "expected `s', `S`, `i', or `I` after `~a~a`"
+                        "expected `s', `S`, `i`, or `I` after `~a~a`"
                         dispatch-c c)])]
       [(#\h #\H) (read-hash read-one dispatch-c c in config)]
       [(#\r)

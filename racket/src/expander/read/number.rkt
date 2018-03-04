@@ -325,7 +325,7 @@
             [(or @-pos (eq? in-complex '@))
              (fail convert-mode "cannot mix `@` and `i` in `~.a`" (substring s start end))]
             [(or ((add1 i) . < . end) (eq? in-complex 'i))
-             (fail convert-mode "`i' must be at the end in `~.a`" (substring s start end))]
+             (fail convert-mode "`i` must be at the end in `~.a`" (substring s start end))]
             [else
              (loop (add1 i) any-digits? any-hashes? i @-pos
                    sign-pos #f #f #f

@@ -64,7 +64,7 @@
       (when (eof-object? v)
         (reader-error in config
                       #:due-to v
-                      "expected a commented-out element for `~a;', but found end-of-file"
+                      "expected a commented-out element for `~a;`, but found end-of-file"
                       ec))
       (if (read-config-keep-comment? config)
           (result-special-comment)

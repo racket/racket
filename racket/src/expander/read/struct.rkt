@@ -40,12 +40,12 @@
   
   (when (null? seq)
     (reader-error in config
-                  "missing structure description in `~as' form"
+                  "missing structure description in `~as` form"
                   dispatch-c))
 
   (unless (prefab-key? (car seq))
     (reader-error in config
-                  "invalid structure description in `~as' form"
+                  "invalid structure description in `~as` form"
                   dispatch-c))
 
   (define st (with-handlers ([exn:fail? (lambda (exn) #f)])
@@ -53,13 +53,13 @@
   (unless st
     (reader-error in config
                   (string-append "mismatch between structure description"
-                                 " and number of provided field values in `~as' form")
+                                 " and number of provided field values in `~as` form")
                   dispatch-c))
   
   (when (read-config-for-syntax? config)
     (unless (all-fields-immutable? (car seq))
       (reader-error in config
-                    "cannot read mutable `~as' form as syntax"
+                    "cannot read mutable `~as` form as syntax"
                     dispatch-c)))
   
   (wrap (apply make-prefab-struct seq)

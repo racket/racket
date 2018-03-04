@@ -87,7 +87,7 @@
      [(not (char? c))
       (consume-char/special in config c)
       (reader-error in config #:due-to c
-                    "found non-character while reading `#~a'"
+                    "found non-character while reading `#~a`"
                     extend-str)]
      [(char-whitespace? c) (void)]
      [(or (char-lang-nonsep? c)
