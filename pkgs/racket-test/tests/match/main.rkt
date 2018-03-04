@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base)
-         "match-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
+         "match-tests.rkt" "match-exn-tests.rkt" "other-plt-tests.rkt" "other-tests.rkt"
          "examples.rkt"
          rackunit rackunit/text-ui)
 
@@ -378,6 +378,7 @@
   (run-tests (test-suite "Match Tests"
                             plt-match-tests
                             match-tests
+                            match-exn-tests
                             new-tests
                             ;; from bruce
                             other-tests 
