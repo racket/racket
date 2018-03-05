@@ -10,7 +10,9 @@
          syntax-arm
          syntax-disarm
          syntax-rearm
-         syntax-taint)
+         syntax-taint
+
+         struct-copy/t)
 
 (define-syntax struct-copy/t
   (syntax-rules (syntax tamper)

@@ -383,9 +383,9 @@
                                                                             (syntax-scopes sub-s)
                                                                             (syntax-shifted-multi-scopes sub-s)
                                                                             (syntax-mpi-shifts sub-s))])
-                                   (struct-copy syntax sub-s
-                                                [scope-propagations+tamper (tamper-tainted-for-content
-                                                                            (syntax-content sub-s))]))))])
+                                   (struct-copy/t syntax sub-s
+                                                  [tamper (tamper-tainted-for-content
+                                                           (syntax-content sub-s))]))))])
         (set-syntax-content! s new-content)
         (set-syntax-scope-propagations+tamper! s (tamper-propagated (if (propagation? prop)
                                                                         (propagation-tamper prop)
