@@ -1,7 +1,6 @@
 #lang racket/base
 (require "evt.rkt"
-         "semaphore.rkt"
-         "internal-error.rkt")
+         "semaphore.rkt")
 
 (provide (rename-out [get-system-idle-evt system-idle-evt])
 

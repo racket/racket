@@ -8,7 +8,6 @@
          (submod "channel.rkt" for-sync)
          "thread.rkt"
          (only-in (submod "thread.rkt" scheduling)
-                  current-break-enabled-cell
                   thread-descheduled?)
          "schedule-info.rkt")
 

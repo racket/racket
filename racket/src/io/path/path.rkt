@@ -13,21 +13,21 @@
          ->path)
 
 (struct path (bytes convention)
-        #:property prop:custom-write
-        (lambda (p port mode)
-          (when mode
-            (write-string "#<path:" port))
-          (write-string (bytes->string/locale (path-bytes p)) port)
-          (when mode
-            (write-string ">" port)))
-        #:property prop:equal+hash
-        (list
-         (lambda (p1 p2 eql?)
-           (eql? (path-bytes p1) (path-bytes p2)))
-         (lambda (p hc)
-           (hc (path-bytes p)))
-         (lambda (p hc)
-           (hc (path-bytes p)))))
+  #:property prop:custom-write
+  (lambda (p port mode)
+    (when mode
+      (write-string "#<path:" port))
+    (write-string (bytes->string/locale (path-bytes p)) port)
+    (when mode
+      (write-string ">" port)))
+  #:property prop:equal+hash
+  (list
+   (lambda (p1 p2 eql?)
+     (eql? (path-bytes p1) (path-bytes p2)))
+   (lambda (p hc)
+     (hc (path-bytes p)))
+   (lambda (p hc)
+     (hc (path-bytes p)))))
 
 (define is-path?
   (let ([path? (lambda (p)

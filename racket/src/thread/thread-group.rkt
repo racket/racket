@@ -1,6 +1,5 @@
 #lang racket/base
-(require "engine.rkt"
-         "check.rkt"
+(require "check.rkt"
          "internal-error.rkt"
          "atomic.rkt")
 

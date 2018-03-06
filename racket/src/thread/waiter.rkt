@@ -36,7 +36,7 @@
 ;; Used for semaphores and channels to run a "just selected" callback
 ;; when synchronized:
 (struct select-waiter (proc)
-        #:property prop:waiter
-        (make-waiter-methods #:suspend! (lambda args (internal-error "should not suspend a select-waiter"))
-                             #:resume! (lambda (w s)
-                                         ((select-waiter-proc w)))))
+  #:property prop:waiter
+  (make-waiter-methods #:suspend! (lambda args (internal-error "should not suspend a select-waiter"))
+                       #:resume! (lambda (w s)
+                                   ((select-waiter-proc w)))))

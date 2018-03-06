@@ -2,11 +2,9 @@
 (require "../common/check.rkt"
          "../host/thread.rkt"
          "input-port.rkt"
-         "output-port.rkt"
          "custom-port.rkt"
          "pipe.rkt"
-         "peek-via-read-port.rkt"
-         "buffer-mode.rkt")
+         "peek-via-read-port.rkt")
 
 (provide make-input-port)
 

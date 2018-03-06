@@ -3,7 +3,6 @@
          "../host/thread.rkt"
          "parameter.rkt"
          "read-and-peek.rkt"
-         "port.rkt"
          "input-port.rkt"
          (submod "bytes-input.rkt" internal)
          "../string/utf-8-decode.rkt"

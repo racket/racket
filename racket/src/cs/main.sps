@@ -433,14 +433,14 @@
    (or stderr-logging-arg
        (let ([spec (getenv "PLTSTDERR")])
          (if spec
-             (parse-logging-spec spec "in PLTSTDERR environment variable" #f)
+             (parse-logging-spec "stderr" spec "in PLTSTDERR environment variable" #f)
              '(error)))))
 
  (define stdout-logging
    (or stdout-logging-arg
        (let ([spec (getenv "PLTSTDOUT")])
          (if spec
-             (parse-logging-spec spec "in PLTSTDOUT environment variable" #f)
+             (parse-logging-spec "stdout" spec "in PLTSTDOUT environment variable" #f)
              '()))))
 
  (when (getenv "PLT_STATS_ON_BREAK")

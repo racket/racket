@@ -26,20 +26,20 @@
 
 (struct channel (get-queue
                  put-queue)
-        #:property
-        prop:evt
-        (poller (lambda (ch poll-ctx)
-                  (channel-get/poll ch poll-ctx))))
+  #:property
+  prop:evt
+  (poller (lambda (ch poll-ctx)
+            (channel-get/poll ch poll-ctx))))
 
 (struct channel-put-evt* (ch v)
-        #:property
-        prop:evt
-        (poller (lambda (cp poll-ctx)
-                  (channel-put/poll (channel-put-evt*-ch cp)
-                                    (channel-put-evt*-v cp)
-                                    cp
-                                    poll-ctx)))
-        #:reflection-name 'channel-put-evt)
+  #:property
+  prop:evt
+  (poller (lambda (cp poll-ctx)
+            (channel-put/poll (channel-put-evt*-ch cp)
+                              (channel-put-evt*-v cp)
+                              cp
+                              poll-ctx)))
+  #:reflection-name 'channel-put-evt)
 
 ;; A channel must not match get and put from the same thread, which is
 ;; a danger when `sync` queues up multiple events at a time:
@@ -209,6 +209,7 @@
 (define (set-sync-on-channel! sync)
   (set! sync-on-channel sync))
 
-;; 
+;; ----------------------------------------
+
 (define-values (impersonator-prop:channel-put channel-put-impersonator? channel-put-impersonator-ref)
   (make-impersonator-property 'channel-put-impersonator))

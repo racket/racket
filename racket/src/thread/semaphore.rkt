@@ -24,19 +24,19 @@
 
 (struct semaphore ([count #:mutable]
                    queue)
-        #:property
-        prop:evt
-        (poller (lambda (s poll-ctx)
-                  (semaphore-wait/poll s poll-ctx))))
+  #:property
+  prop:evt
+  (poller (lambda (s poll-ctx)
+            (semaphore-wait/poll s poll-ctx))))
 
 (struct semaphore-peek-evt (sema)
-        #:property
-        prop:evt
-        (poller (lambda (sp poll-ctx)
-                  (semaphore-wait/poll (semaphore-peek-evt-sema sp)
-                                       poll-ctx
-                                       #:peek? #t
-                                       #:result sp))))
+  #:property
+  prop:evt
+  (poller (lambda (sp poll-ctx)
+            (semaphore-wait/poll (semaphore-peek-evt-sema sp)
+                                 poll-ctx
+                                 #:peek? #t
+                                 #:result sp))))
 
 (struct semaphore-peek-select-waiter select-waiter ())
 

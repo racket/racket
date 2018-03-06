@@ -1,10 +1,8 @@
 #lang racket/base
 (require "../common/check.rkt"
-         "../host/thread.rkt"
          "parameter.rkt"
          "read-and-peek.rkt"
          "input-port.rkt"
-         "count.rkt"
          "progress-evt.rkt"
          "flush-output.rkt")
 

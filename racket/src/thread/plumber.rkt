@@ -11,7 +11,7 @@
 
 (struct plumber (callbacks ; hash table of handles -> callbacks
                  weak-callbacks) ; same, but weak references
-  #:property prop:authentic #t)
+  #:authentic)
 
 (define (make-plumber)
   (plumber (make-hasheq)

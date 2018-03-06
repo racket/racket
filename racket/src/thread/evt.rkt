@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/unsafe/ops
-         "atomic.rkt")
+(require "atomic.rkt")
 
 (provide prop:evt
          evt?

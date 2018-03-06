@@ -117,12 +117,12 @@
                      [cpu-time #:mutable] ; accumulates CPU time in milliseconds
                      
                      [condition-wakeup #:mutable])
-        #:property prop:waiter
-        (make-waiter-methods 
-         #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))
-         #:resume! (lambda (t v) (thread-reschedule! t) v))
-        #:property prop:evt (lambda (t) (wrap-evt (get-thread-dead-evt t)
-                                                  (lambda (v) t))))
+  #:property prop:waiter
+  (make-waiter-methods 
+   #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))
+   #:resume! (lambda (t v) (thread-reschedule! t) v))
+  #:property prop:evt (lambda (t) (wrap-evt (get-thread-dead-evt t)
+                                            (lambda (v) t))))
 
 (define root-thread #f)
 
