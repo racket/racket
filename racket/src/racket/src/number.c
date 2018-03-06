@@ -1796,6 +1796,7 @@ double scheme_real_to_double(Scheme_Object *r)
 }
 
 XFORM_NONGCING static MZ_INLINE int minus_zero_p(double d)
+  XFORM_SKIP_PROC
 {
 #ifdef MZ_IS_NEG_ZERO
   return MZ_IS_NEG_ZERO(d);
@@ -1809,7 +1810,9 @@ int scheme_minus_zero_p(double d)
   return minus_zero_p(d);
 }
 
-static int rational_dbl_p(double f) {
+XFORM_NONGCING static int rational_dbl_p(double f)
+  XFORM_SKIP_PROC
+{
   return !(MZ_IS_NAN(f)
            || MZ_IS_INFINITY(f));
 }
@@ -1955,7 +1958,7 @@ real_p(int argc, Scheme_Object *argv[])
   return (SCHEME_REALP(o) ? scheme_true : scheme_false);
 }
 
-static int is_rational(const Scheme_Object *o)
+XFORM_NONGCING static int is_rational(const Scheme_Object *o)
 {
   if (SCHEME_FLOATP(o))
     return rational_dbl_p(SCHEME_FLOAT_VAL(o));
