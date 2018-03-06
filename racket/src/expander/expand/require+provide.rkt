@@ -343,7 +343,7 @@
               (add-binding!
                #:just-for-nominal? #t
                id
-               (module-binding-update b
+               (module-binding-update ok-binding
                                       #:extra-nominal-bindings
                                       (cons ok-binding
                                             (module-binding-extra-nominal-bindings b)))
