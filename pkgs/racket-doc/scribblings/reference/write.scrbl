@@ -239,7 +239,7 @@ A @tech{parameter} that controls printing vectors; defaults to
 @defboolparam[print-hash-table on?]{
 
 A @tech{parameter} that controls printing hash tables; defaults to
-@racket[#f]. See @secref["print-hashtable"] for more information.}
+@racket[#t]. See @secref["print-hashtable"] for more information.}
 
 
 @defboolparam[print-boolean-long-form on?]{
