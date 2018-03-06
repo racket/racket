@@ -12064,7 +12064,7 @@ static const char *startup_source =
 "(lambda()"
 "(if(box-cas! lock-box_0 v_31 lock_0)"
 "(let-values()(begin(proc_2) void))"
-"(let-values()(loop_74))))"
+"(let-values()(lambda()(loop_74)))))"
 "(lambda()(semaphore-post sema_0)))))))"
 "(if(eq?(current-thread)(cdr v_31))"
 "(let-values()(proc_2))"
