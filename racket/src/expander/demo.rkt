@@ -725,11 +725,9 @@
                                        'definition-shadows-initial-require)))
  #rx"already required")
 
-(check-error
- (eval-module-declaration '(module m '#%kernel
+(eval-module-declaration '(module m '#%kernel
                             (define-values (list) 5)
                             (#%require '#%kernel)))
- #rx"already defined")
 
 ;; ----------------------------------------
 

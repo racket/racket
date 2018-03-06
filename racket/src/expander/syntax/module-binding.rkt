@@ -1,7 +1,5 @@
 #lang racket/base
-(require "../common/set.rkt"
-         "../compile/serialize-property.rkt"
-         "../compile/serialize-state.rkt"
+(require "../compile/serialize-property.rkt"
          "full-binding.rkt")
 
 (provide make-module-binding
@@ -84,43 +82,43 @@
                                            nominal-require-phase
                                            extra-inspector ; preserves access to protected definitions
                                            extra-nominal-bindings)
-        #:authentic
-        #:transparent
-        #:property prop:serialize
-        (lambda (b ser-push! state)
-          ;; Dropping the frame id may simplify the representation:
-          (define simplified-b
-            (if (full-binding-frame-id b)
-                (module-binding-update b #:frame-id #f)
-                b))
-          (cond
-           [(full-module-binding? simplified-b)
-            (ser-push! 'tag '#:module-binding)
-            (ser-push! (full-module-binding-module b))
-            (ser-push! (full-module-binding-sym b))
-              (ser-push! (full-module-binding-phase b))
-              (ser-push! (full-module-binding-nominal-module b))
-              (ser-push! (full-module-binding-nominal-phase b))
-              (ser-push! (full-module-binding-nominal-sym b))
-              (ser-push! (full-module-binding-nominal-require-phase b))
-              (ser-push! (full-binding-free=id b))
-              (if (full-module-binding-extra-inspector b)
-                  (ser-push! 'tag '#:inspector)
-                  (ser-push! #f))
-              (ser-push! (full-module-binding-extra-nominal-bindings b))]
-           [else
-            (ser-push! simplified-b)])))
+  #:authentic
+  #:transparent
+  #:property prop:serialize
+  (lambda (b ser-push! state)
+    ;; Dropping the frame id may simplify the representation:
+    (define simplified-b
+      (if (full-binding-frame-id b)
+          (module-binding-update b #:frame-id #f)
+          b))
+    (cond
+      [(full-module-binding? simplified-b)
+       (ser-push! 'tag '#:module-binding)
+       (ser-push! (full-module-binding-module b))
+       (ser-push! (full-module-binding-sym b))
+       (ser-push! (full-module-binding-phase b))
+       (ser-push! (full-module-binding-nominal-module b))
+       (ser-push! (full-module-binding-nominal-phase b))
+       (ser-push! (full-module-binding-nominal-sym b))
+       (ser-push! (full-module-binding-nominal-require-phase b))
+       (ser-push! (full-binding-free=id b))
+       (if (full-module-binding-extra-inspector b)
+           (ser-push! 'tag '#:inspector)
+           (ser-push! #f))
+       (ser-push! (full-module-binding-extra-nominal-bindings b))]
+      [else
+       (ser-push! simplified-b)])))
 
 (struct simple-module-binding (module phase sym nominal-module)
-        #:authentic
-        #:transparent
-        #:property prop:serialize
-        (lambda (b ser-push! state)
-          (ser-push! 'tag '#:simple-module-binding)
-          (ser-push! (simple-module-binding-module b))
-          (ser-push! (simple-module-binding-sym b))
-          (ser-push! (simple-module-binding-phase b))
-          (ser-push! (simple-module-binding-nominal-module b))))
+  #:authentic
+  #:transparent
+  #:property prop:serialize
+  (lambda (b ser-push! state)
+    (ser-push! 'tag '#:simple-module-binding)
+    (ser-push! (simple-module-binding-module b))
+    (ser-push! (simple-module-binding-sym b))
+    (ser-push! (simple-module-binding-phase b))
+    (ser-push! (simple-module-binding-nominal-module b))))
 
 (define (deserialize-full-module-binding module sym phase
                                          nominal-module

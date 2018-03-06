@@ -2,7 +2,6 @@
 (require racket/promise
          "../common/phase.rkt"
          "../common/small-hash.rkt"
-         "../syntax/scope.rkt"
          "../syntax/bulk-binding.rkt"
          "../common/module-path.rkt"
          "../expand/root-expand-context.rkt"
@@ -62,22 +61,22 @@
                    [inspector #:mutable] ; instantiation-time inspector
                    available-module-instances  ; phase -> list of module-instance [shared among modules]
                    module-instances)   ; union resolved-module-path -> module-instance        [shared among modules]
-        ;;                             ;       0-phase -> resolved-module-path -> module-instance
-        ;;                             ; where the first option is for cross phase persistent modules
-        #:property prop:custom-write
-        (lambda (ns port mode)
-          (write-string "#<namespace" port)
-          (define n (namespace-source-name ns))
-          (when n
-            (fprintf port ":~a" (namespace->name ns)))
-          (define 0-phase (namespace-0-phase ns))
-          (define phase-level (phase- (namespace-phase ns)
-                                      0-phase))
-          (unless (zero-phase? phase-level)
-            (fprintf port ":~s" phase-level))
-          (unless (zero-phase? 0-phase)
-            (fprintf port "~a~s" (if (positive? 0-phase) "+" "") 0-phase))
-          (write-string ">" port)))
+  ;;                                   ;       0-phase -> resolved-module-path -> module-instance
+  ;;                                   ; where the first option is for cross phase persistent modules
+  #:property prop:custom-write
+  (lambda (ns port mode)
+    (write-string "#<namespace" port)
+    (define n (namespace-source-name ns))
+    (when n
+      (fprintf port ":~a" (namespace->name ns)))
+    (define 0-phase (namespace-0-phase ns))
+    (define phase-level (phase- (namespace-phase ns)
+                                0-phase))
+    (unless (zero-phase? phase-level)
+      (fprintf port ":~s" phase-level))
+    (unless (zero-phase? 0-phase)
+      (fprintf port "~a~s" (if (positive? 0-phase) "+" "") 0-phase))
+    (write-string ">" port)))
 
 (struct definitions (variables      ; linklet instance
                      transformers)) ; sym -> val

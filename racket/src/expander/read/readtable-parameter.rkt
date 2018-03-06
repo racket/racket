@@ -1,4 +1,5 @@
 #lang racket/base
+(require "../common/contract.rkt")
 
 (provide current-readtable
          prop:readtable prop:readtable?)
@@ -6,11 +7,7 @@
 (define-values (prop:readtable prop:readtable? prop:readtable-ref)
   (make-struct-type-property 'readtable))
 
-(define current-readtable (make-parameter #f
-                                          (lambda (v)
-                                            (unless (or (not v)
-                                                        (prop:readtable? v))
-                                              (raise-argument-error 'current-readtable
-                                                                    "(or/c readtable? #f)"
-                                                                    v))
-                                            v)))
+(define/who current-readtable (make-parameter #f
+                                              (lambda (v)
+                                                (check who prop:readtable? #:or-false v)
+                                                v)))

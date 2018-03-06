@@ -41,18 +41,18 @@
            (hash-ref (linklet-bundle->hash ld) 'decl #f)
            #t)))
 
-(define module-compiled-name
+(define/who module-compiled-name
   (case-lambda
     [(c)
-     (check 'module-compiled-name compiled-module-expression? c)
+     (check who compiled-module-expression? c)
      (module-compiled-current-name c)]
     [(c name)
-     (check 'module-compiled-name compiled-module-expression? c)
+     (check who compiled-module-expression? c)
      (unless (or (symbol? name)
                  (and (pair? name)
                       (list? name)
                       (andmap symbol? name)))
-       (raise-argument-error 'module-compiled-name
+       (raise-argument-error who
                              "(or/c symbol? (cons/c symbol? (non-empty-listof symbol?)))"
                              name))
      (define-values (i-name prefix) 
@@ -62,10 +62,10 @@
              (values (car r) (reverse (cdr r))))))
      (change-module-name c i-name prefix)]))
 
-(define module-compiled-submodules
+(define/who module-compiled-submodules
   (case-lambda
     [(c non-star?)
-     (check 'module-compiled-submodules compiled-module-expression? c)
+     (check who compiled-module-expression? c)
      (cond
       [(compiled-in-memory? c)
        ;; We have a convenient `compiled-in-memory` structure
@@ -86,10 +86,10 @@
          ;; a linklet bundle represents a module with no submodules
          null])])]
     [(c non-star? submods)
-     (check 'module-compiled-submodules compiled-module-expression? c)
+     (check who compiled-module-expression? c)
      (unless (and (list? submods)
                   (andmap compiled-module-expression? submods))
-       (raise-argument-error 'module-compiled-submodules "(listof compiled-module-expression?)" submods))
+       (raise-argument-error who "(listof compiled-module-expression?)" submods))
      (cond
       [(and (null? submods)
             (or (linklet-bundle? (compiled->linklet-directory-or-bundle c))
@@ -134,24 +134,24 @@
               (append (if non-star? submods (module-compiled-submodules c #t))
                       (if non-star? (module-compiled-submodules c #f) submods)))))])]))
 
-(define (module-compiled-language-info c)
-  (check 'module-compiled-language-info compiled-module-expression? c)  
+(define/who (module-compiled-language-info c)
+  (check who compiled-module-expression? c)  
   (define h (compiled-module->h c))
   (hash-ref h 'language-info #f))
 
-(define (module-compiled-imports c)
-  (check 'module-compiled-imports compiled-module-expression? c)
+(define/who (module-compiled-imports c)
+  (check who compiled-module-expression? c)
   (define inst (compiled-module->declaration-instance c))
   (instance-variable-value inst 'requires))
 
-(define (module-compiled-exports c)
-  (check 'module-compiled-imports compiled-module-expression? c)
+(define/who (module-compiled-exports c)
+  (check who compiled-module-expression? c)
   (define inst (compiled-module->declaration-instance c))
   (provides->api-provides (instance-variable-value inst 'provides)
                           (instance-variable-value inst 'self-mpi)))
 
-(define (module-compiled-indirect-exports c)
-  (check 'module-compiled-indirect-imports compiled-module-expression? c)
+(define/who (module-compiled-indirect-exports c)
+  (check who compiled-module-expression? c)
   (define-values (h inst) (compiled-module->h+declaration-instance c))
   (define min-phase (hash-ref h 'min-phase 0))
   (define max-phase (hash-ref h 'max-phase 0))
@@ -163,8 +163,8 @@
                                             (linklet-export-variables linklet)
                                             null)))))
 
-(define (module-compiled-cross-phase-persistent? c)
-  (check 'module-compiled-cross-phase-persistent?  compiled-module-expression? c)
+(define/who (module-compiled-cross-phase-persistent? c)
+  (check who compiled-module-expression? c)
   (define h (compiled-module->h c))
   (hash-ref h 'cross-phase-persistent? #f))
 

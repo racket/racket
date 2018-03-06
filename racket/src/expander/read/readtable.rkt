@@ -30,7 +30,7 @@
                    ;; 'no-delimit, or a character whose default to use;
                    ;; absence of a mapping is the default for that character
                    delimiter-ht)
-        #:property prop:readtable #t)
+  #:property prop:readtable #t)
 
 (define (make-readtable rt . args)
   (unless (or (not rt) (readtable? rt))

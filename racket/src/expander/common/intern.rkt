@@ -74,11 +74,11 @@
   (define P 100) ; number of values to intern and discard
   
   (struct val (key other)
-          #:transparent
-          #:property prop:equal+hash (list
-                                      (lambda (v1 v2 eql?) (eql? (val-key v1) (val-key v2)))
-                                      (lambda (v1 code) (code (val-key v1)))
-                                      (lambda (v1 code) (code (val-key v1)))))
+    #:transparent
+    #:property prop:equal+hash (list
+                                (lambda (v1 v2 eql?) (eql? (val-key v1) (val-key v2)))
+                                (lambda (v1 code) (code (val-key v1)))
+                                (lambda (v1 code) (code (val-key v1)))))
   
   (define tt (make-weak-intern-table))
 

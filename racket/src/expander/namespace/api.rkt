@@ -54,9 +54,9 @@
   (namespace-primitive-module-visit! ns '#%kernel)
   ns)
 
-(define (namespace-syntax-introduce s [ns (current-namespace)])
-  (check 'namespace-syntax-introduce syntax? s)
-  (check 'namespace-syntax-introduce namespace? ns)
+(define/who (namespace-syntax-introduce s [ns (current-namespace)])
+  (check who syntax? s)
+  (check who namespace? ns)
   (define root-ctx (namespace-get-root-expand-ctx ns))
   (define post-scope (root-expand-context-post-expansion-scope root-ctx))
   (define other-namespace-scopes (for/list ([sc (in-set
@@ -91,10 +91,10 @@
 (define (namespace-datum-introduce s)
   (namespace-syntax-introduce (datum->syntax #f s)))
 
-(define (namespace-module-identifier [where (current-namespace)])
+(define/who (namespace-module-identifier [where (current-namespace)])
   (unless (or (namespace? where)
               (phase? where))
-    (raise-argument-error 'namespace-module-identifier
+    (raise-argument-error who
                           (string-append "(or/c namespace? " phase?-string ")")
                           where))
   (datum->syntax (syntax-shift-phase-level core-stx
@@ -103,8 +103,8 @@
                                                where))
                  'module))
 
-(define (namespace-symbol->identifier sym)
-  (check 'namespace-symbol->identifier symbol? sym)
+(define/who (namespace-symbol->identifier sym)
+  (check who symbol? sym)
   (namespace-syntax-introduce (datum->syntax #f sym)))
 
 ;; ----------------------------------------
@@ -146,36 +146,36 @@
                                  #:skip-variable-phase-level skip-variable-phase-level
                                  #:who who)]))
 
-(define (namespace-require req [ns (current-namespace)])
-  (do-namespace-require 'namespace-require req ns))
+(define/who (namespace-require req [ns (current-namespace)])
+  (do-namespace-require who req ns))
 
-(define (namespace-require/expansion-time req [ns (current-namespace)])
-  (do-namespace-require #:run? #f #:visit? #t 'namespace-require/expansion-time req ns))
+(define/who (namespace-require/expansion-time req [ns (current-namespace)])
+  (do-namespace-require #:run? #f #:visit? #t who req ns))
   
-(define (namespace-require/constant req [ns (current-namespace)])
-  (do-namespace-require 'namespace-require/constant req ns
+(define/who (namespace-require/constant req [ns (current-namespace)])
+  (do-namespace-require who req ns
                         #:copy-variable-phase-level 0
                         #:copy-variable-as-constant? #t))
 
-(define (namespace-require/copy req [ns (current-namespace)])
-  (do-namespace-require 'namespace-require/copy req ns
+(define/who (namespace-require/copy req [ns (current-namespace)])
+  (do-namespace-require who req ns
                         #:copy-variable-phase-level 0
                         #:skip-variable-phase-level 0))
 
 ;; ----------------------------------------
 
-(define (namespace-variable-value sym
-                                  [use-mapping? #t]
-                                  [failure-thunk #f]
-                                  [ns (current-namespace)])
-  (check 'namespace-variable-value symbol? sym)
+(define/who (namespace-variable-value sym
+                                      [use-mapping? #t]
+                                      [failure-thunk #f]
+                                      [ns (current-namespace)])
+  (check who symbol? sym)
   (unless (or (not failure-thunk)
               (and (procedure? failure-thunk)
                    (procedure-arity-includes? failure-thunk 0)))
-    (raise-argument-error 'namespace-variable-value
+    (raise-argument-error who
                           "(or/c #f (procedure-arity-includes/c 0))"
                           failure-thunk))
-  (check 'namespace-variable-value namespace? ns)
+  (check who namespace? ns)
   ((let/ec escape
      (define-values (var-ns var-phase-level var-sym)
        (cond
@@ -221,13 +221,13 @@
                                                   sym)))))))
      (lambda () val))))
 
-(define (namespace-set-variable-value! sym	 	 	 	 
-                                       val
-                                       [map? #f]
-                                       [ns (current-namespace)]
-                                       [as-constant? #f])
-  (check 'namespace-variable-value symbol? sym)
-  (check 'namespace-variable-value namespace? ns)
+(define/who (namespace-set-variable-value! sym	 	 	 	 
+                                           val
+                                           [map? #f]
+                                           [ns (current-namespace)]
+                                           [as-constant? #f])
+  (check who symbol? sym)
+  (check who namespace? ns)
   (namespace-set-variable! ns (namespace-phase ns) sym val as-constant?)
   (when map?
     (namespace-unset-transformer! ns (namespace-phase ns) sym)
@@ -238,14 +238,14 @@
                                        sym)
                   (namespace-phase ns))))
 
-(define (namespace-undefine-variable! sym	 	 	 	 
-                                      [ns (current-namespace)])
-  (check 'namespace-variable-value symbol? sym)
-  (check 'namespace-variable-value namespace? ns)
+(define/who (namespace-undefine-variable! sym	 	 	 	 
+                                          [ns (current-namespace)])
+  (check who symbol? sym)
+  (check who namespace? ns)
   (namespace-unset-variable! ns (namespace-phase ns) sym))
 
-(define (namespace-mapped-symbols [ns (current-namespace)])
-  (check 'namespace-mapped-symbols namespace? ns)
+(define/who (namespace-mapped-symbols [ns (current-namespace)])
+  (check who namespace? ns)
   (set->list
    (set-union
     (syntax-mapped-names (root-expand-context-all-scopes-stx (namespace-get-root-expand-ctx ns))
@@ -253,6 +253,6 @@
     (list->set
      (instance-variable-names (namespace->instance ns 0))))))
 
-(define (namespace-base-phase [ns (current-namespace)])
-  (check 'namespace-base-phase namespace? ns)
+(define/who (namespace-base-phase [ns (current-namespace)])
+  (check who namespace? ns)
   (namespace-phase ns))

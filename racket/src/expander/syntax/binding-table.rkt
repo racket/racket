@@ -43,11 +43,11 @@
 (struct table-with-bulk-bindings (syms
                                   syms/serialize ; copy of `syms`, but maybe with less nominal info
                                   bulk-bindings)
-        #:property prop:serialize
-        (lambda (twbb ser-push! state)
-          (ser-push! 'tag '#:table-with-bulk-bindings)
-          (ser-push! (table-with-bulk-bindings-syms/serialize twbb))
-          (ser-push! (table-with-bulk-bindings-bulk-bindings twbb))))
+  #:property prop:serialize
+  (lambda (twbb ser-push! state)
+    (ser-push! 'tag '#:table-with-bulk-bindings)
+    (ser-push! (table-with-bulk-bindings-syms/serialize twbb))
+    (ser-push! (table-with-bulk-bindings-bulk-bindings twbb))))
 
 (define (deserialize-table-with-bulk-bindings syms bulk-bindings)
   (table-with-bulk-bindings syms syms bulk-bindings))
@@ -56,18 +56,18 @@
 
 (struct bulk-binding-at (scopes ; scope set
                          bulk)  ; bulk-binding
-        #:property prop:serialize
-        (lambda (bba ser-push! state)
-          ;; Data that is interpreted by the deserializer:
-          (ser-push! 'tag '#:bulk-binding-at)
-          (ser-push! (bulk-binding-at-scopes bba))
-          (ser-push! (bulk-binding-at-bulk bba)))
-        #:property prop:reach-scopes
-        (lambda (sms reach)
-          ;; bulk bindings are pruned dependong on whether all scopes
-          ;; in `scopes` are reachable, and we shouldn't get here
-          ;; when looking for scopes
-          (error "shouldn't get here")))
+  #:property prop:serialize
+  (lambda (bba ser-push! state)
+    ;; Data that is interpreted by the deserializer:
+    (ser-push! 'tag '#:bulk-binding-at)
+    (ser-push! (bulk-binding-at-scopes bba))
+    (ser-push! (bulk-binding-at-bulk bba)))
+  #:property prop:reach-scopes
+  (lambda (sms reach)
+    ;; bulk bindings are pruned dependong on whether all scopes
+    ;; in `scopes` are reachable, and we shouldn't get here
+    ;; when looking for scopes
+    (error "shouldn't get here")))
 
 (define (deserialize-bulk-binding-at scopes bulk)
   (bulk-binding-at scopes bulk))

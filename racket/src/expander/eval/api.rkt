@@ -24,51 +24,51 @@
          expand-once
          expand-syntax-once)
 
-(define eval
+(define/who eval
   (case-lambda
     [(s) ((current-eval) (intro s))]
     [(s ns)
-     (check 'eval namespace? ns)
+     (check who namespace? ns)
      (parameterize ([current-namespace ns])
        ((current-eval) (intro s ns)))]))
 
-(define eval-syntax
+(define/who eval-syntax
   (case-lambda
     [(s)
-     (check 'eval-syntax syntax? s)
+     (check who syntax? s)
      ((current-eval) s)]
     [(s ns)
-     (check 'eval-syntax syntax? s)
-     (check 'eval-syntax namespace? ns)
+     (check who syntax? s)
+     (check who namespace? ns)
      (parameterize ([current-namespace ns])
        ((current-eval) s))]))
 
 (define (compile s)
   ((current-compile) (intro s) #f))
 
-(define (compile-syntax s)
-  (check 'compile-syntax syntax? s)
+(define/who (compile-syntax s)
+  (check who syntax? s)
   ((current-compile) s #f))
 
 (define (expand s)
   (direct:expand (intro s) (current-namespace) #t))
 
-(define (expand-syntax s)
-  (check 'expand-syntax syntax? s)
+(define/who (expand-syntax s)
+  (check who syntax? s)
   (direct:expand s (current-namespace) #t))
 
 (define (expand-once s)
   (direct:expand-once (intro s)))
 
-(define (expand-syntax-once s)
-  (check 'expand-syntax-once syntax? s)
+(define/who (expand-syntax-once s)
+  (check who syntax? s)
   (direct:expand-once s))
 
 (define (expand-to-top-form s)
   (direct:expand-to-top-form (intro s)))
 
-(define (expand-syntax-to-top-form s)
-  (check 'expand-syntax-to-top-form syntax? s)
+(define/who (expand-syntax-to-top-form s)
+  (check who syntax? s)
   (direct:expand-to-top-form s))
 
 

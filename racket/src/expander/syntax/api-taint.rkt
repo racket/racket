@@ -22,15 +22,15 @@
          syntax-rearm
          syntax-taint)
 
-(define (syntax-tainted? s)
-  (check 'syntax-tainted? syntax? s)
+(define/who (syntax-tainted? s)
+  (check who syntax? s)
   (raw:syntax-tainted? s))
 
-(define (syntax-arm s [maybe-insp #f] [use-mode? #f])
-  (check 'syntax-arm syntax? s)
+(define/who (syntax-arm s [maybe-insp #f] [use-mode? #f])
+  (check who syntax? s)
   (unless (or (not maybe-insp)
               (inspector? maybe-insp))
-    (raise-argument-error 'syntax-arm "(or/c inspector? #f)" maybe-insp))
+    (raise-argument-error who "(or/c inspector? #f)" maybe-insp))
   (define insp (inspector-for-taint maybe-insp))
   (cond
    [use-mode?
@@ -41,17 +41,17 @@
    [else
     (raw:syntax-arm s insp)]))
 
-(define (syntax-disarm s maybe-insp)
-  (check 'syntax-disarm syntax? s)
+(define/who (syntax-disarm s maybe-insp)
+  (check who syntax? s)
   (unless (or (not maybe-insp)
               (inspector? maybe-insp))
-    (raise-argument-error 'syntax-disarm "(or/c inspector? #f)" maybe-insp))
+    (raise-argument-error who "(or/c inspector? #f)" maybe-insp))
   (define insp (inspector-for-taint maybe-insp))
   (raw:syntax-disarm s insp))
   
-(define (syntax-rearm s from-s [use-mode? #f])
-  (check 'syntax-disarm syntax? s)
-  (check 'syntax-disarm syntax? from-s)
+(define/who (syntax-rearm s from-s [use-mode? #f])
+  (check who syntax? s)
+  (check who syntax? from-s)
   (cond
    [use-mode? (taint-dispatch
                s
@@ -60,8 +60,8 @@
    [else
     (raw:syntax-rearm s from-s)]))
 
-(define (syntax-taint s)
-  (check 'syntax-taint syntax? s)
+(define/who (syntax-taint s)
+  (check who syntax? s)
   (raw:syntax-taint s))
 
 ;; ----------------------------------------
@@ -70,5 +70,3 @@
   (or maybe-insp
       (current-module-code-inspector)
       (current-code-inspector)))
-
-;; ----------------------------------------

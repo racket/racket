@@ -10,13 +10,13 @@
 
 ;; Wrapper for provides that are protected or syntax
 (struct provided (binding protected? syntax?)
-        #:transparent
-        #:property prop:serialize
-        (lambda (p ser-push! state)
-          (ser-push! 'tag '#:provided)
-          (ser-push! (provided-binding p))
-          (ser-push! (provided-protected? p))
-          (ser-push! (provided-syntax? p))))
+  #:transparent
+  #:property prop:serialize
+  (lambda (p ser-push! state)
+    (ser-push! 'tag '#:provided)
+    (ser-push! (provided-binding p))
+    (ser-push! (provided-protected? p))
+    (ser-push! (provided-syntax? p))))
 
 (define (provided-as-binding v)
   (if (provided? v) (provided-binding v) v))

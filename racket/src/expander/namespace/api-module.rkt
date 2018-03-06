@@ -21,34 +21,31 @@
 
 ;; ----------------------------------------
 
-(define (module-declared? mod [load? #f])
-  (unless (module-reference? mod)
-    (raise-argument-error 'module-declared? module-reference-str mod))
+(define/who (module-declared? mod [load? #f])
+  (check who module-reference? #:contract module-reference-str mod)
   (define ns (current-namespace))
   (define name (reference->resolved-module-path mod #:load? load?))
   (and (namespace->module ns name) #t))
 
-(define (module-predefined? mod)
-  (unless (module-reference? mod)
-    (raise-argument-error 'module-predefined? module-reference-str mod))
+(define/who (module-predefined? mod)
+  (check who module-reference? #:contract module-reference-str mod)
   (define ns (current-namespace))
   (define name (reference->resolved-module-path mod #:load? #f))
   (define m (namespace->module ns name))
   (and m (module-is-predefined? m)))
 
 (define (module-> extract who mod [load? #f])
-  (unless (module-reference? mod)
-    (raise-argument-error who module-reference-str mod))
+  (check who module-reference? #:contract module-reference-str mod)
   (define m (namespace->module/complain who
                                         (current-namespace)
                                         (reference->resolved-module-path mod #:load? load?)))
   (extract m))
 
-(define (module->language-info mod [load? #f])
-  (module-> module-language-info 'module->language-info mod load?))
+(define/who (module->language-info mod [load? #f])
+  (module-> module-language-info who mod load?))
 
-(define (module->imports mod)
-  (module-> module-requires 'module->imports mod))
+(define/who (module->imports mod)
+  (module-> module-requires who mod))
 
 (define (module->exports mod)
   (define-values (provides self)
@@ -67,10 +64,9 @@
               (or (not b/p) (provided-as-protected? b/p)))
             'module-provide-protected? mod))
 
-(define (module->namespace mod [ns (current-namespace)])
-  (unless (module-reference? mod)
-    (raise-argument-error 'module->namespace module-reference-str mod))
-  (check 'module->namespace namespace? ns)
+(define/who (module->namespace mod [ns (current-namespace)])
+  (check who module-reference? #:contract module-reference-str mod)
+  (check who namespace? ns)
   (define name (reference->resolved-module-path mod #:load? #t))
   (define phase (namespace-phase ns))
   (define m-ns (namespace->module-namespace ns name phase))
@@ -78,11 +74,11 @@
     ;; Check for declaration:
     (namespace->module/complain 'module->namespace ns name)
     ;; Must be declared, but not instantiated
-    (raise-arguments-error 'module->namespace
+    (raise-arguments-error who
                            "module not instantiated in the current namespace"
                            "name" name))
   (unless (inspector-superior? (current-code-inspector) (namespace-inspector m-ns))
-    (raise-arguments-error 'module->namespace
+    (raise-arguments-error who
                            "current code inspector cannot access namespace of module"
                            "module name" name))
   (unless (namespace-get-root-expand-ctx m-ns)
@@ -93,15 +89,15 @@
   (namespace-module-make-available! ns (namespace-mpi m-ns) phase)
   m-ns)
 
-(define (namespace-unprotect-module insp mod [ns (current-namespace)])
-  (check 'namespace-unprotect-module inspector? insp)
-  (check 'namespace-unprotect-module module-path? mod)
-  (check 'namespace-unprotect-module namespace? ns)
+(define/who (namespace-unprotect-module insp mod [ns (current-namespace)])
+  (check who inspector? insp)
+  (check who module-path? mod)
+  (check who namespace? ns)
   (define name (reference->resolved-module-path mod #:load? #f))
   (define phase (namespace-phase ns))
   (define m-ns (namespace->module-namespace ns name phase))
   (unless m-ns
-    (raise-arguments-error 'namespace-unprotect-module
+    (raise-arguments-error who
                            "module not instantiated"
                            "module name" name))
   (when (inspector-superior? insp (namespace-inspector m-ns))

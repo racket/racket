@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/private/config
-         racket/private/executable-path
          "../common/reflect-hash.rkt"
          (only-in "../eval/load.rkt" load/use-compiled)
          "../eval/collection.rkt")

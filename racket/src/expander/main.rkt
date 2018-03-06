@@ -11,7 +11,6 @@
          "read/api.rkt"
          "read/primitive-parameter.rkt"
          "namespace/api.rkt"
-         (prefix-in wrapper: "eval/api.rkt")
          "namespace/attach.rkt"
          "namespace/api-module.rkt"
          "namespace/core.rkt"

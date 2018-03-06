@@ -8,9 +8,9 @@
   (make-struct-type-property 'liberal-define-context))
 
 (struct liberal-define-context ()
-        #:transparent
-        #:property prop:liberal-define-context #t
-        #:constructor-name make-liberal-define-context)
+  #:transparent
+  #:property prop:liberal-define-context #t
+  #:constructor-name make-liberal-define-context)
 
 
 

@@ -26,13 +26,13 @@
                                v)))
 
 (struct exn:fail:filesystem:missing-module exn:fail:filesystem (path)
-        #:extra-constructor-name make-exn:fail:filesystem:missing-module
-        #:transparent
-        #:property prop:exn:missing-module (lambda (e) (exn:fail:filesystem:missing-module-path e)))
+  #:extra-constructor-name make-exn:fail:filesystem:missing-module
+  #:transparent
+  #:property prop:exn:missing-module (lambda (e) (exn:fail:filesystem:missing-module-path e)))
 (struct exn:fail:syntax:missing-module exn:fail:syntax (path)
-        #:extra-constructor-name make-exn:fail:syntax:missing-module
-        #:transparent
-        #:property prop:exn:missing-module (lambda (e) (exn:fail:syntax:missing-module-path e)))
+  #:extra-constructor-name make-exn:fail:syntax:missing-module
+  #:transparent
+  #:property prop:exn:missing-module (lambda (e) (exn:fail:syntax:missing-module-path e)))
 
 (define current-module-path-for-load
   (make-parameter #f

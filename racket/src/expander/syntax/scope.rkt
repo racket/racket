@@ -74,43 +74,43 @@
 (struct scope (id             ; internal scope identity; used for sorting
                kind           ; debug info
                [binding-table #:mutable]) ; see "binding-table.rkt"
-        #:authentic
-        ;; Custom printer:
-        #:property prop:custom-write
-        (lambda (sc port mode)
-          (write-string "#<scope:" port)
-          (display (scope-id sc) port)
-          (write-string ":" port)
-          (display (scope-kind sc) port)
-          (write-string ">" port))
-        #:property prop:serialize
-        (lambda (s ser-push! state)
-          (unless (set-member? (serialize-state-reachable-scopes state) s)
-            (error "internal error: found supposedly unreachable scope"))
-          (cond
-           [(eq? s top-level-common-scope)
-            (ser-push! 'tag '#:scope)]
-           [else
-            (ser-push! 'tag '#:scope+kind)
-            (ser-push! (scope-kind s))]))
-        #:property prop:serialize-fill!
-        (lambda (s ser-push! state)
-          (cond
-           [(binding-table-empty? (scope-binding-table s))
-            (ser-push! 'tag #f)]
-           [else
-            (ser-push! 'tag '#:scope-fill!)
-            (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))]))
-        #:property prop:reach-scopes
-        (lambda (s reach)
-          ;; the `bindings` field is handled via `prop:scope-with-bindings`
-          (void))
-        #:property prop:scope-with-bindings
-        (lambda (s get-reachable-scopes reach register-trigger)
-          (binding-table-register-reachable (scope-binding-table s)
-                                            get-reachable-scopes
-                                            reach
-                                            register-trigger)))
+  #:authentic
+  ;; Custom printer:
+  #:property prop:custom-write
+  (lambda (sc port mode)
+    (write-string "#<scope:" port)
+    (display (scope-id sc) port)
+    (write-string ":" port)
+    (display (scope-kind sc) port)
+    (write-string ">" port))
+  #:property prop:serialize
+  (lambda (s ser-push! state)
+    (unless (set-member? (serialize-state-reachable-scopes state) s)
+      (error "internal error: found supposedly unreachable scope"))
+    (cond
+      [(eq? s top-level-common-scope)
+       (ser-push! 'tag '#:scope)]
+      [else
+       (ser-push! 'tag '#:scope+kind)
+       (ser-push! (scope-kind s))]))
+  #:property prop:serialize-fill!
+  (lambda (s ser-push! state)
+    (cond
+      [(binding-table-empty? (scope-binding-table s))
+       (ser-push! 'tag #f)]
+      [else
+       (ser-push! 'tag '#:scope-fill!)
+       (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))]))
+  #:property prop:reach-scopes
+  (lambda (s reach)
+    ;; the `bindings` field is handled via `prop:scope-with-bindings`
+    (void))
+  #:property prop:scope-with-bindings
+  (lambda (s get-reachable-scopes reach register-trigger)
+    (binding-table-register-reachable (scope-binding-table s)
+                                      get-reachable-scopes
+                                      reach
+                                      register-trigger)))
 
 (define deserialize-scope
   (case-lambda
@@ -138,76 +138,76 @@
                      scopes   ; phase -> representative-scope
                      shifted  ; box of table: interned shifted-multi-scopes for non-label phases
                      label-shifted) ; box of table: interned shifted-multi-scopes for label phases
-        #:authentic
-        #:property prop:serialize
-        (lambda (ms ser-push! state)
-          (ser-push! 'tag '#:multi-scope)
-          (ser-push! (multi-scope-name ms))
-          ;; Prune to reachable representative scopes
-          (define multi-scope-tables (serialize-state-multi-scope-tables state))
-          (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
-                         (let ([ht (make-hasheqv)])
-                           (for ([(phase sc) (in-hash (multi-scope-scopes ms))])
-                             (when (set-member? (serialize-state-reachable-scopes state) sc)
-                               (hash-set! ht phase sc)))
-                           (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
-                           ht))))
-        #:property prop:reach-scopes
-        (lambda (s reach)
-          ;; the `scopes` field is handled via `prop:scope-with-bindings`
-          (void))
-        #:property prop:scope-with-bindings
-        (lambda (ms get-reachable-scopes reach register-trigger)
-          ;; This scope is reachable via its multi-scope, but it only
-          ;; matters if it's reachable through a binding (otherwise it
-          ;; can be re-generated later). We don't want to keep a scope
-          ;; that can be re-generated, because pruning it makes
-          ;; compilation more deterministic relative to other
-          ;; compilations that involve a shared module. If the scope
-          ;; itself has any bindings, then we count it as reachable
-          ;; through a binding (which is an approxmation, because
-          ;; other scopes in the binding may be unreachable, but it
-          ;; seems good enough for determinism).
-          ;; To make that work, `binding-table-register-reachable`
-          ;; needs to recognize representative scopes and treat
-          ;; them differently, hence `prop:implicitly-reachable`.
-          (for ([sc (in-hash-values (multi-scope-scopes ms))])
-            (unless (binding-table-empty? (scope-binding-table sc))
-              (reach sc)))))
+  #:authentic
+  #:property prop:serialize
+  (lambda (ms ser-push! state)
+    (ser-push! 'tag '#:multi-scope)
+    (ser-push! (multi-scope-name ms))
+    ;; Prune to reachable representative scopes
+    (define multi-scope-tables (serialize-state-multi-scope-tables state))
+    (ser-push! (or (hash-ref multi-scope-tables (multi-scope-scopes ms) #f)
+                   (let ([ht (make-hasheqv)])
+                     (for ([(phase sc) (in-hash (multi-scope-scopes ms))])
+                       (when (set-member? (serialize-state-reachable-scopes state) sc)
+                         (hash-set! ht phase sc)))
+                     (hash-set! multi-scope-tables (multi-scope-scopes ms) ht)
+                     ht))))
+  #:property prop:reach-scopes
+  (lambda (s reach)
+    ;; the `scopes` field is handled via `prop:scope-with-bindings`
+    (void))
+  #:property prop:scope-with-bindings
+  (lambda (ms get-reachable-scopes reach register-trigger)
+    ;; This scope is reachable via its multi-scope, but it only
+    ;; matters if it's reachable through a binding (otherwise it
+    ;; can be re-generated later). We don't want to keep a scope
+    ;; that can be re-generated, because pruning it makes
+    ;; compilation more deterministic relative to other
+    ;; compilations that involve a shared module. If the scope
+    ;; itself has any bindings, then we count it as reachable
+    ;; through a binding (which is an approxmation, because
+    ;; other scopes in the binding may be unreachable, but it
+    ;; seems good enough for determinism).
+    ;; To make that work, `binding-table-register-reachable`
+    ;; needs to recognize representative scopes and treat
+    ;; them differently, hence `prop:implicitly-reachable`.
+    (for ([sc (in-hash-values (multi-scope-scopes ms))])
+      (unless (binding-table-empty? (scope-binding-table sc))
+        (reach sc)))))
 
 (define (deserialize-multi-scope name scopes)
   (multi-scope (new-deserialize-scope-id!) name scopes (box (hasheqv)) (box (hash))))
 
 (struct representative-scope scope (owner   ; a multi-scope for which this one is a phase-specific identity
                                     phase)  ; phase of this scope
-        #:authentic
-        #:mutable ; to support serialization
-        #:property prop:custom-write
-        (lambda (sc port mode)
-          (write-string "#<scope:" port)
-          (display (scope-id sc) port)
-          (when (representative-scope-owner sc)
-            (write-string "=" port)
-            (display (multi-scope-id (representative-scope-owner sc)) port))
-          (write-string "@" port)
-          (display (representative-scope-phase sc) port)
-          (write-string ">" port))
-        #:property prop:serialize
-        (lambda (s ser-push! state)
-          (ser-push! 'tag '#:representative-scope)
-          (ser-push! (scope-kind s))
-          (ser-push! (representative-scope-phase s)))
-        #:property prop:serialize-fill!
-        (lambda (s ser-push! state)
-          (ser-push! 'tag '#:representative-scope-fill!)
-          (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
-          (ser-push! (representative-scope-owner s)))
-        #:property prop:reach-scopes
-        (lambda (s reach)
-          ;; the inherited `bindings` field is handled via `prop:scope-with-bindings`
-          (reach (representative-scope-owner s)))
-        ;; Used by `binding-table-register-reachable`:
-        #:property prop:implicitly-reachable #t)
+  #:authentic
+  #:mutable ; to support serialization
+  #:property prop:custom-write
+  (lambda (sc port mode)
+    (write-string "#<scope:" port)
+    (display (scope-id sc) port)
+    (when (representative-scope-owner sc)
+      (write-string "=" port)
+      (display (multi-scope-id (representative-scope-owner sc)) port))
+    (write-string "@" port)
+    (display (representative-scope-phase sc) port)
+    (write-string ">" port))
+  #:property prop:serialize
+  (lambda (s ser-push! state)
+    (ser-push! 'tag '#:representative-scope)
+    (ser-push! (scope-kind s))
+    (ser-push! (representative-scope-phase s)))
+  #:property prop:serialize-fill!
+  (lambda (s ser-push! state)
+    (ser-push! 'tag '#:representative-scope-fill!)
+    (ser-push! (binding-table-prune-to-reachable (scope-binding-table s) state))
+    (ser-push! (representative-scope-owner s)))
+  #:property prop:reach-scopes
+  (lambda (s reach)
+    ;; the inherited `bindings` field is handled via `prop:scope-with-bindings`
+    (reach (representative-scope-owner s)))
+  ;; Used by `binding-table-register-reachable`:
+  #:property prop:implicitly-reachable #t)
 
 (define (deserialize-representative-scope kind phase)
   (define v (representative-scope (new-deserialize-scope-id!) kind #f #f phase))
@@ -219,22 +219,22 @@
 
 (struct shifted-multi-scope (phase        ; non-label phase shift or shifted-to-label-phase
                              multi-scope) ; a multi-scope
-        #:authentic
-        #:property prop:custom-write
-        (lambda (sms port mode)
-          (write-string "#<scope:" port)
-          (display (multi-scope-id (shifted-multi-scope-multi-scope sms)) port)
-          (write-string "@" port)
-          (display (shifted-multi-scope-phase sms) port)
-          (write-string ">" port))
-        #:property prop:serialize
-        (lambda (sms ser-push! state)
-          (ser-push! 'tag '#:shifted-multi-scope)
-          (ser-push! (shifted-multi-scope-phase sms))
-          (ser-push! (shifted-multi-scope-multi-scope sms)))
-        #:property prop:reach-scopes
-        (lambda (sms reach)
-          (reach (shifted-multi-scope-multi-scope sms))))
+  #:authentic
+  #:property prop:custom-write
+  (lambda (sms port mode)
+    (write-string "#<scope:" port)
+    (display (multi-scope-id (shifted-multi-scope-multi-scope sms)) port)
+    (write-string "@" port)
+    (display (shifted-multi-scope-phase sms) port)
+    (write-string ">" port))
+  #:property prop:serialize
+  (lambda (sms ser-push! state)
+    (ser-push! 'tag '#:shifted-multi-scope)
+    (ser-push! (shifted-multi-scope-phase sms))
+    (ser-push! (shifted-multi-scope-multi-scope sms)))
+  #:property prop:reach-scopes
+  (lambda (sms reach)
+    (reach (shifted-multi-scope-multi-scope sms))))
 
 (define (deserialize-shifted-multi-scope phase multi-scope)
   (intern-shifted-multi-scope phase multi-scope))
@@ -466,10 +466,10 @@
                      add-mpi-shifts ; #f or (mpi-shifts -> mpi-shifts)
                      inspector  ; #f or inspector
                      tamper)    ; see "tamper.rkt"
-        #:authentic
-        #:property prop:propagation syntax-e
-        #:property prop:propagation-tamper (lambda (p) (propagation-tamper p))
-        #:property prop:propagation-set-tamper (lambda (p v) (propagation-set-tamper p v)))
+  #:authentic
+  #:property prop:propagation syntax-e
+  #:property prop:propagation-tamper (lambda (p) (propagation-tamper p))
+  #:property prop:propagation-set-tamper (lambda (p v) (propagation-set-tamper p v)))
 
 (define (propagation-add prop sc prev-scs prev-smss prev-mss)
   (if (propagation? prop)

@@ -18,12 +18,12 @@
          variable-reference->module-base-phase
          variable-reference->module-declaration-inspector)
 
-(define (variable-reference->empty-namespace vr)
-  (check 'variable-reference->empty-namespace variable-reference? vr)
+(define/who (variable-reference->empty-namespace vr)
+  (check who variable-reference? vr)
   (new-namespace (variable-reference->namespace vr)))
 
-(define (variable-reference->namespace vr)
-  (check 'variable-reference->namespace variable-reference? vr)
+(define/who (variable-reference->namespace vr)
+  (check who variable-reference? vr)
   (define inst (variable-reference->instance vr))
   (cond
     [(symbol? inst)
@@ -40,37 +40,37 @@
      ;; Get the defining namespace for the referenced variable
      (instance-data inst)]))
 
-(define (variable-reference->module-path-index vr)
-  (check 'variable-reference->module-path-index variable-reference? vr)
+(define/who (variable-reference->module-path-index vr)
+  (check who variable-reference? vr)
   (define mpi (namespace-mpi (variable-reference->namespace vr)))
   (if (top-level-module-path-index? mpi)
       #f
       mpi))
 
-(define (variable-reference->resolved-module-path vr)
-  (check 'variable-reference->resolved-module-path variable-reference? vr)
+(define/who (variable-reference->resolved-module-path vr)
+  (check who variable-reference? vr)
   (define mpi (variable-reference->module-path-index vr))
   (and mpi (module-path-index-resolve mpi)))
 
-(define (variable-reference->module-source vr)
-  (check 'variable-reference->module-source variable-reference? vr)
+(define/who (variable-reference->module-source vr)
+  (check who variable-reference? vr)
   (define ns (variable-reference->namespace vr))
   (namespace-source-name ns))
 
-(define (variable-reference->phase vr)
- (check 'variable-reference->phase variable-reference? vr)
+(define/who (variable-reference->phase vr)
+ (check who variable-reference? vr)
  (namespace-phase (variable-reference->namespace vr)))
 
-(define (variable-reference->module-base-phase vr)
-  (check 'variable-reference->module-base-phase variable-reference? vr)
+(define/who (variable-reference->module-base-phase vr)
+  (check who variable-reference? vr)
   (namespace-0-phase (variable-reference->namespace vr)))
 
-(define (variable-reference->module-declaration-inspector vr)
-  (check 'variable-reference->module-declaration-inspector variable-reference? vr)
+(define/who (variable-reference->module-declaration-inspector vr)
+  (check who variable-reference? vr)
   (when (variable-reference->instance vr)
-    (raise-arguments-error 'variable-reference->module-declaration-inspector
+    (raise-arguments-error who
                            "variable reference does not refer to an anonymous module variable"
                            "variable reference" vr))
   (or (namespace-declaration-inspector (variable-reference->namespace vr))
-      (raise-arguments-error 'variable-reference->module-declaration-inspector
+      (raise-arguments-error who
                              "given variable reference is not from a module")))

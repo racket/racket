@@ -41,7 +41,7 @@
 (define make-set!-transformer
   (let ()
     (struct set!-transformer (proc)
-            #:property prop:set!-transformer 0)
+      #:property prop:set!-transformer 0)
     (lambda (proc)
       (unless (and (procedure? proc)
                    (procedure-arity-includes? proc 1))

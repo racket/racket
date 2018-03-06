@@ -1,10 +1,8 @@
 #lang racket/base
 (require "../compile/serialize-property.rkt"
-         "syntax.rkt"
          "binding-table.rkt" ; defines `prop:bulk-binding`
          "binding.rkt"
          "../common/module-path.rkt"
-         (only-in "../compile/reserved-symbol.rkt" bulk-binding-registry-id)
          "../namespace/provided.rkt")
 
 (provide provide-binding-to-require-binding
@@ -81,61 +79,61 @@
                       provide-phase-level  ; providing module's import phase
                       phase-shift          ; providing module's instantiation phase
                       bulk-binding-registry) ; a registry for finding bulk bindings lazily
-        #:property prop:bulk-binding
-        (bulk-binding-class
-         (lambda (b mpi-shifts)
-           (or (bulk-binding-provides b)
-               ;; Here's where we find provided bindings for unmarshaled syntax
-               (let ([mod-name (module-path-index-resolve
-                                (apply-syntax-shifts
-                                 (bulk-binding-mpi b)
-                                 mpi-shifts))])
-                 (unless (bulk-binding-bulk-binding-registry b)
-                   (error "namespace mismatch: no bulk-binding registry available:"
-                          mod-name))
-                 (define table (bulk-binding-registry-table (bulk-binding-bulk-binding-registry b)))
-                 (define bulk-provide (hash-ref table mod-name #f))
-                 (unless bulk-provide
-                   (error "namespace mismatch: bulk bindings not found in registry for module:"
-                          mod-name))
-                 ;; Reset `provide` and `self` to the discovered information
-                 (set-bulk-binding-self! b (bulk-provide-self bulk-provide))
-                 (define provides (hash-ref (bulk-provide-provides bulk-provide)
-                                            (bulk-binding-provide-phase-level b)))
-                 ;; Remove exceptions and add prefix
-                 (define excepts (bulk-binding-excepts b))
-                 (define prefix (bulk-binding-prefix b))
-                 (define adjusted-provides
-                   (cond
-                     [(or prefix (positive? (hash-count excepts)))
-                      (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)]
-                     [else provides]))
-                 ;; Record the adjusted `provides` table for quick future access:
-                 (set-bulk-binding-provides! b adjusted-provides)
-                 adjusted-provides)))
-         (lambda (b binding sym)
-           ;; Convert the provided binding to a required binding on
-           ;; demand during binding resolution
-           (provide-binding-to-require-binding
-            binding (if (bulk-binding-prefix b)
-                        (string->symbol
-                         (substring (symbol->string sym)
-                                    (string-length (symbol->string (bulk-binding-prefix b)))))
-                        sym)
-            #:self (bulk-binding-self b)
-            #:mpi (bulk-binding-mpi b)
-            #:provide-phase-level (bulk-binding-provide-phase-level b)
-            #:phase-shift (bulk-binding-phase-shift b))))
-        #:property prop:serialize
-        ;; Serialization drops the `provides` table and the providing module's `self`
-        (lambda (b ser-push! reachable-scopes)
-          (ser-push! 'tag '#:bulk-binding)
-          (ser-push! (bulk-binding-prefix b))
-          (ser-push! (bulk-binding-excepts b))
-          (ser-push! (bulk-binding-mpi b))
-          (ser-push! (bulk-binding-provide-phase-level b))
-          (ser-push! (bulk-binding-phase-shift b))
-          (ser-push! 'tag '#:bulk-binding-registry)))
+  #:property prop:bulk-binding
+  (bulk-binding-class
+   (lambda (b mpi-shifts)
+     (or (bulk-binding-provides b)
+         ;; Here's where we find provided bindings for unmarshaled syntax
+         (let ([mod-name (module-path-index-resolve
+                          (apply-syntax-shifts
+                           (bulk-binding-mpi b)
+                           mpi-shifts))])
+           (unless (bulk-binding-bulk-binding-registry b)
+             (error "namespace mismatch: no bulk-binding registry available:"
+                    mod-name))
+           (define table (bulk-binding-registry-table (bulk-binding-bulk-binding-registry b)))
+           (define bulk-provide (hash-ref table mod-name #f))
+           (unless bulk-provide
+             (error "namespace mismatch: bulk bindings not found in registry for module:"
+                    mod-name))
+           ;; Reset `provide` and `self` to the discovered information
+           (set-bulk-binding-self! b (bulk-provide-self bulk-provide))
+           (define provides (hash-ref (bulk-provide-provides bulk-provide)
+                                      (bulk-binding-provide-phase-level b)))
+           ;; Remove exceptions and add prefix
+           (define excepts (bulk-binding-excepts b))
+           (define prefix (bulk-binding-prefix b))
+           (define adjusted-provides
+             (cond
+               [(or prefix (positive? (hash-count excepts)))
+                (bulk-provides-add-prefix-remove-exceptions provides prefix excepts)]
+               [else provides]))
+           ;; Record the adjusted `provides` table for quick future access:
+           (set-bulk-binding-provides! b adjusted-provides)
+           adjusted-provides)))
+   (lambda (b binding sym)
+     ;; Convert the provided binding to a required binding on
+     ;; demand during binding resolution
+     (provide-binding-to-require-binding
+      binding (if (bulk-binding-prefix b)
+                  (string->symbol
+                   (substring (symbol->string sym)
+                              (string-length (symbol->string (bulk-binding-prefix b)))))
+                  sym)
+      #:self (bulk-binding-self b)
+      #:mpi (bulk-binding-mpi b)
+      #:provide-phase-level (bulk-binding-provide-phase-level b)
+      #:phase-shift (bulk-binding-phase-shift b))))
+  #:property prop:serialize
+  ;; Serialization drops the `provides` table and the providing module's `self`
+  (lambda (b ser-push! reachable-scopes)
+    (ser-push! 'tag '#:bulk-binding)
+    (ser-push! (bulk-binding-prefix b))
+    (ser-push! (bulk-binding-excepts b))
+    (ser-push! (bulk-binding-mpi b))
+    (ser-push! (bulk-binding-provide-phase-level b))
+    (ser-push! (bulk-binding-phase-shift b))
+    (ser-push! 'tag '#:bulk-binding-registry)))
 
 (define (deserialize-bulk-binding prefix excepts mpi provide-phase-level phase-shift bulk-binding-registry)
   (bulk-binding #f prefix excepts #f mpi provide-phase-level phase-shift bulk-binding-registry))

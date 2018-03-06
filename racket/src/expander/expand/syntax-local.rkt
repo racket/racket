@@ -88,13 +88,13 @@
   (define ctx (get-current-expand-context 'syntax-local-context))
   (expand-context-context ctx))
 
-(define (syntax-local-introduce s)
-  (check 'syntax-local-introduce syntax? s)
+(define/who (syntax-local-introduce s)
+  (check who syntax? s)
   (define ctx (get-current-expand-context 'syntax-local-introduce))
   (flip-introduction-scopes s ctx))
 
-(define (syntax-local-identifier-as-binding id)
-  (check syntax-local-identifier-as-binding identifier? id)
+(define/who (syntax-local-identifier-as-binding id)
+  (check who identifier? id)
   (define ctx (get-current-expand-context 'syntax-local-identifier-as-binding))
   (remove-use-site-scopes id ctx))
 
@@ -104,8 +104,8 @@
       (expand-context-phase ctx)
       0))
 
-(define (syntax-local-name)
-  (define ctx (get-current-expand-context 'syntax-local-name))
+(define/who (syntax-local-name)
+  (define ctx (get-current-expand-context who))
   (define id (expand-context-name ctx))
   (and id
        ;; Strip lexical context, but keep source-location information
@@ -123,12 +123,10 @@
       [(flip) (flip-scope s sc)]
       [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)])))
 
-(define (make-syntax-delta-introducer ext-s base-s [phase (syntax-local-phase-level)])
-  (check 'make-syntax-delta-introducer syntax? ext-s)
-  (unless (or (syntax? base-s) (not base-s))
-    (raise-argument-error 'make-syntax-delta-introducer "(or/c syntax? #f)" base-s))
-  (unless (phase? phase)
-    (raise-argument-error 'make-syntax-delta-introducer phase?-string phase))
+(define/who (make-syntax-delta-introducer ext-s base-s [phase (syntax-local-phase-level)])
+  (check who syntax? ext-s)
+  (check who syntax? #:or-false base-s)
+  (check who phase? #:contract phase?-string phase)
   (define ext-scs (syntax-scope-set ext-s phase))
   (define base-scs (syntax-scope-set (or base-s empty-syntax) phase))
   (define use-base-scs (if (subset? base-scs ext-scs)
@@ -146,8 +144,8 @@
        [(flip) (flip-scopes s delta-scs)]
        [else (raise-argument-error 'syntax-introducer "(or/c 'add 'remove 'flip)" mode)]))))
 
-(define (syntax-local-make-delta-introducer id-stx)
-  (check 'syntax-local-make-delta-introducer identifier? id-stx)
+(define/who (syntax-local-make-delta-introducer id-stx)
+  (check who identifier? id-stx)
   (raise
    (exn:fail:unsupported "syntax-local-make-delta-introducer: not supported anymore"
                          (current-continuation-marks))))
@@ -157,17 +155,8 @@
 (define (do-syntax-local-value who id intdef failure-thunk
                                #:immediate? immediate?)
   (check who identifier? id)
-  (unless (or (not failure-thunk)
-              (and (procedure? failure-thunk)
-                   (procedure-arity-includes? failure-thunk 0)))
-    (raise-argument-error who
-                          "(or #f (procedure-arity-includes/c 0))" 
-                          failure-thunk))
-  (unless (or (not intdef)
-              (internal-definition-context? intdef))
-    (raise-argument-error who
-                          "(or #f internal-definition-context?)" 
-                          failure-thunk))
+  (check who #:or-false (procedure-arity-includes/c 0) failure-thunk)
+  (check who #:or-false internal-definition-context? intdef)
   (define current-ctx (get-current-expand-context who))
   (define ctx (if intdef
                   (struct*-copy expand-context current-ctx
@@ -186,7 +175,7 @@
       (log-expand ctx 'local-value-result #f)
       (if failure-thunk
           (failure-thunk)
-          (error 'syntax-local-value "unbound identifier: ~v" id))]
+          (error who "unbound identifier: ~v" id))]
      [else
       (define-values (v primitive? insp protected?)
         (lookup b ctx id #:out-of-context-as-variable? #t))
@@ -195,7 +184,7 @@
         (log-expand ctx 'local-value-result #f)
         (if failure-thunk
             (failure-thunk)
-            (error 'syntax-local-value "identifier is not bound to syntax: ~v" id))]
+            (error who "identifier is not bound to syntax: ~v" id))]
        [else
         (log-expand* ctx #:unless (and (rename-transformer? v) (not immediate?))
                      ['local-value-result #t])
@@ -234,32 +223,32 @@
                     (flip-introduction-scopes s ctx)
                     (expand-context-phase ctx))))
 
-(define (syntax-local-lift-expression s)
-  (car (do-lift-values-expression 'syntax-local-lift-expression 1 s)))
+(define/who (syntax-local-lift-expression s)
+  (car (do-lift-values-expression who 1 s)))
 
-(define (syntax-local-lift-values-expression n s)
-  (do-lift-values-expression 'syntax-local-lift-values-expression n s))
+(define/who (syntax-local-lift-values-expression n s)
+  (do-lift-values-expression who n s))
 
-(define (syntax-local-lift-context)
-  (define ctx (get-current-expand-context 'syntax-local-lift-context))
+(define/who (syntax-local-lift-context)
+  (define ctx (get-current-expand-context who))
   (root-expand-context-lift-key ctx))
 
 ;; ----------------------------------------
 
-(define (syntax-local-lift-module s)
-  (check 'syntax-local-lift-module syntax? s)
-  (define ctx (get-current-expand-context 'syntax-local-lift-module))
+(define/who (syntax-local-lift-module s)
+  (check who syntax? s)
+  (define ctx (get-current-expand-context who))
   (define phase (expand-context-phase ctx))
   (case (core-form-sym s phase)
     [(module module*)
      (define lifts (expand-context-module-lifts ctx))
      (unless lifts
-       (raise-arguments-error 'syntax-local-lift-module
+       (raise-arguments-error who
                               "not currently transforming within a module declaration or top level"
                               "form to lift" s))
      (add-lifted-module! lifts (flip-introduction-scopes s ctx) phase)]
     [else
-     (raise-arguments-error 'syntax-local-lift-module "not a module form"
+     (raise-arguments-error who "not a module form"
                             "given form" s)])
   (log-expand ctx 'lift-statement s))
 
@@ -291,18 +280,16 @@
   (add-lifted! lift-ctx post-s wrt-phase) ; record lift for the target phase
   (values ctx post-s))
 
-(define (syntax-local-lift-require s use-s)
+(define/who (syntax-local-lift-require s use-s)
   (define sc (new-scope 'macro))
   (define-values (ctx added-s)
-    (do-local-lift-to-module 'syntax-local-lift-require
+    (do-local-lift-to-module who
                              (datum->syntax #f s)
                              #:no-target-msg "could not find target context"
                              #:intro? #f
                              #:more-checks
                              (lambda ()
-                               (check 'syntax-local-lift-require
-                                      syntax?
-                                      use-s))
+                               (check who syntax? use-s))
                              #:get-lift-ctx expand-context-require-lifts
                              #:get-wrt-phase require-lift-context-wrt-phase
                              #:add-lifted! add-lifted-require!
@@ -318,9 +305,9 @@
   (log-expand ctx 'lift-require added-s use-s result-s)
   result-s)
 
-(define (syntax-local-lift-provide s)
+(define/who (syntax-local-lift-provide s)
   (define-values (ctx result-s)
-    (do-local-lift-to-module 'syntax-local-lift-provide
+    (do-local-lift-to-module who
                              s
                              #:no-target-msg "not expanding in a module run-time body"
                              #:get-lift-ctx expand-context-to-module-lifts
@@ -334,9 +321,9 @@
                                (wrap-form '#%provide s phase))))
   (log-expand ctx 'lift-provide result-s))
 
-(define (syntax-local-lift-module-end-declaration s)
+(define/who (syntax-local-lift-module-end-declaration s)
   (define-values (ctx also-s)
-    (do-local-lift-to-module 'syntax-local-lift-module-end-declaration
+    (do-local-lift-to-module who
                              s
                              #:no-target-msg "not currently transforming an expression within a module declaration"
                              #:get-lift-ctx expand-context-to-module-lifts
@@ -364,20 +351,20 @@
 
 ;; ----------------------------------------
 
-(define (syntax-local-module-defined-identifiers)
+(define/who (syntax-local-module-defined-identifiers)
   (unless (syntax-local-transforming-module-provides?)
-    (raise-arguments-error 'syntax-local-module-defined-identifiers "not currently transforming module provides"))
+    (raise-arguments-error who "not currently transforming module provides"))
   (define ctx (get-current-expand-context 'syntax-local-module-defined-identifiers))
   (requireds->phase-ht (extract-module-definitions (expand-context-requires+provides ctx))))
   
   
-(define (syntax-local-module-required-identifiers mod-path phase-level)
+(define/who (syntax-local-module-required-identifiers mod-path phase-level)
   (unless (or (not mod-path) (module-path? mod-path))
-    (raise-argument-error 'syntax-local-module-required-identifiers "(or/c module-path? #f)" mod-path))
+    (raise-argument-error who "(or/c module-path? #f)" mod-path))
   (unless (or (eq? phase-level #t) (phase? phase-level))
-    (raise-argument-error 'syntax-local-module-required-identifiers (format "(or/c ~a #t)" phase?-string) phase-level))
+    (raise-argument-error who (format "(or/c ~a #t)" phase?-string) phase-level))
   (unless (syntax-local-transforming-module-provides?)
-    (raise-arguments-error 'syntax-local-module-required-identifiers "not currently transforming module provides"))
+    (raise-arguments-error who "not currently transforming module provides"))
   (define ctx (get-current-expand-context 'syntax-local-module-required-identifiers))
   (define requires+provides (expand-context-requires+provides ctx))
   (define mpi (and mod-path
@@ -399,11 +386,11 @@
 
 ;; ----------------------------------------
 
-(define (syntax-local-module-exports mod-path)
+(define/who (syntax-local-module-exports mod-path)
   (unless (or (module-path? mod-path)
               (and (syntax? mod-path)
                    (module-path? (syntax->datum mod-path))))
-    (raise-argument-error 'syntax-local-module-exports
+    (raise-argument-error who
                           (string-append
                            "(or/c module-path?\n"
                            "      (and/c syntax?\n"
@@ -425,8 +412,8 @@
           (for/list ([sym (in-hash-keys syms)])
             sym))))
 
-(define (syntax-local-submodules)
-  (define ctx (get-current-expand-context 'syntax-local-submodules))
+(define/who (syntax-local-submodules)
+  (define ctx (get-current-expand-context who))
   (define submods (expand-context-declared-submodule-names ctx))
   (for/list ([(name kind) (in-hash submods)]
              #:when (eq? kind 'module))
@@ -435,9 +422,9 @@
 ;; ----------------------------------------
 
 ;; Works well enough for some backward compatibility:
-(define (syntax-local-get-shadower id [only-generated? #f])
-  (check 'syntax-local-get-shadower identifier? id)
-  (define ctx (get-current-expand-context 'syntax-local-get-shadower))
+(define/who (syntax-local-get-shadower id [only-generated? #f])
+  (check who identifier? id)
+  (define ctx (get-current-expand-context who))
   (define new-id (add-scopes id (expand-context-scopes ctx)))
   (if (syntax-clean? id)
       new-id

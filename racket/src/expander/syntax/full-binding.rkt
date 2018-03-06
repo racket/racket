@@ -9,10 +9,10 @@
 ;; `free-identifier=?` equivalence
 (struct full-binding (frame-id   ; used to trigger use-site scopes
                       free=id)   ; `free-identifier=?` equivalence via a rename-transformer binding
-        #:authentic
-        #:property prop:binding-reach-scopes
-        (lambda (b)
-          (binding-free=id b)))
+  #:authentic
+  #:property prop:binding-reach-scopes
+  (lambda (b)
+    (binding-free=id b)))
 
 (define (binding-frame-id b)
   (and (full-binding? b)

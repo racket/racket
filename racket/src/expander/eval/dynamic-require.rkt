@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/phase.rkt"
+         "../common/contract.rkt"
          "../syntax/module-binding.rkt"
          "../syntax/api.rkt"
          "../namespace/namespace.rkt"
@@ -119,11 +120,11 @@
 (define (default-dynamic-require-fail-thunk)
   (error "failed"))
 
-(define (dynamic-require mod-path sym [fail-k default-dynamic-require-fail-thunk])
-  (do-dynamic-require 'dynamic-require mod-path sym fail-k))
+(define/who (dynamic-require mod-path sym [fail-k default-dynamic-require-fail-thunk])
+  (do-dynamic-require who mod-path sym fail-k))
 
-(define (dynamic-require-for-syntax mod-path sym [fail-k default-dynamic-require-fail-thunk])
+(define/who (dynamic-require-for-syntax mod-path sym [fail-k default-dynamic-require-fail-thunk])
   (parameterize ([current-namespace
                   (let ([ns (current-namespace)])
                     (namespace->namespace-at-phase ns (add1 (namespace-phase ns))))])
-    (do-dynamic-require 'dynamic-require-for-syntax mod-path sym fail-k)))
+    (do-dynamic-require who mod-path sym fail-k)))

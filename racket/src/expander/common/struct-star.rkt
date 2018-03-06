@@ -33,13 +33,13 @@
                          outer-name inner-name outer-name-inner
                          all-fields ; including parent fields
                          outer-fields inner-fields mutators)
-          #:property prop:procedure (lambda (shape stx)
-                                      (with-syntax ([make-id (struct*-shape-constructor shape)])
-                                        (syntax-case stx ()
-                                          [(id arg ...)
-                                           (syntax/loc stx (make-id arg ...))]
-                                          [else
-                                           (syntax/loc stx make-id)])))))
+    #:property prop:procedure (lambda (shape stx)
+                                (with-syntax ([make-id (struct*-shape-constructor shape)])
+                                  (syntax-case stx ()
+                                    [(id arg ...)
+                                     (syntax/loc stx (make-id arg ...))]
+                                    [else
+                                     (syntax/loc stx make-id)])))))
 
 (define-syntax (struct* stx)
   (let-values ([(name parent-name fields options)
@@ -99,10 +99,10 @@
         #`(begin
             (struct outer-name outer-parent-name ... (chain-field ... outer-field ...)
                     option ...
-                    #:reflection-name 'name
-                    #:authentic)
+              #:reflection-name 'name
+              #:authentic)
             (struct inner-name inner-parent-name ... (inner-field ...)
-                    #:authentic)
+              #:authentic)
             (define-syntax name (struct*-shape
                                  (quote-syntax make-name)
                                  (quote-parent-syntax parent-name)

@@ -34,6 +34,6 @@
                             namespace-scopes
                             ;; To track whether a form in a top-level sequence can be discarded:
                             purely-functional?)
-        #:property prop:custom-write
-        (lambda (cim port mode)
-          (write (compiled-in-memory-linklet-directory cim) port)))
+  #:property prop:custom-write
+  (lambda (cim port mode)
+    (write (compiled-in-memory-linklet-directory cim) port)))

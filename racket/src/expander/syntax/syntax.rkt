@@ -37,107 +37,107 @@
                 srcloc  ; source location
                 props   ; properties
                 inspector) ; inspector for access to protected bindings
-        #:authentic
-        ;; Custom printer:
-        #:property prop:custom-write
-        (lambda (s port mode)
-          (write-string "#<syntax" port)
-          (define srcloc (syntax-srcloc s))
-          (when srcloc
-            (define srcloc-str (srcloc->string srcloc))
-            (when srcloc-str
-              (fprintf port ":~a" srcloc-str)))
-          (fprintf port " ~.s" (syntax->datum s))
-          (write-string ">" port))
-        #:property prop:serialize
-        (lambda (s ser-push! state)
-          (define prop (syntax-scope-propagations+tamper s))
-          (define content
-            (if (propagation? prop)
-                ((propagation-ref prop) s)
-                (syntax-content s)))
-          (define properties
-            (intern-properties
-             (syntax-props s)
-             (lambda ()
-               (for/hasheq ([(k v) (in-hash (syntax-props s))]
-                            #:when (preserved-property-value? v))
-                 (values k (check-value-to-preserve (plain-property-value v) syntax?))))
-             state))
-          (define tamper
-            (serialize-tamper (syntax-tamper s)))
-          (define context-triple
-            (intern-context-triple (intern-scopes (syntax-scopes s) state)
-                                   (intern-shifted-multi-scopes (syntax-shifted-multi-scopes s) state)
-                                   (intern-mpi-shifts (syntax-mpi-shifts s) state)
-                                   state))
-          (define stx-state (get-syntax-context state))
-          (cond
-           [(or properties tamper)
-            (ser-push! 'tag '#:syntax+props)
-            (push-syntax-context! state #f)
-            (ser-push! content)
-            (pop-syntax-context! state)
-            (ser-push! 'reference context-triple)
-            (ser-push! 'reference (syntax-srcloc s))
-            (ser-push! properties)
-            (ser-push! tamper)
-            (when stx-state (set-syntax-state-all-sharing?! stx-state #f))]
-           [else
-            ;; We rely on two passes to reach a fixpoint on sharing:
-            (define sharing-mode (hash-ref (serialize-state-sharing-syntaxes state) s 'unknown))
-            (cond
-             [(eq? sharing-mode 'share)
-              (ser-push! 'tag '#:datum->syntax)
-              (ser-push! (syntax->datum s))]
-             [(eq? sharing-mode 'unknown)
-              (ser-push! 'tag '#:syntax)
-              ;; Communicate to nested syntax objects the info that they might share
-              (define this-state (and (no-pair-syntax-in-cdr? content)
-                                      (syntax-state #t context-triple (syntax-srcloc s))))
-              (push-syntax-context! state this-state)
-              ;; Serialize content
-              (ser-push! content)
-              ;; Check whether we're sharing for all nested syntax objects
-              (pop-syntax-context! state)
-              (define new-sharing-mode
-                (if (and this-state
-                         (syntax-state-all-sharing? this-state))
-                    'share
-                    'none))
-              (hash-set! (serialize-state-sharing-syntaxes state)
-                         s
-                         ;; If the syntax object has only simple content,
-                         ;; it doesn't need any sharing support by itself
-                         (if (datum-has-elements? content)
-                             new-sharing-mode
-                             'none))
-              (when (and stx-state (eq? new-sharing-mode 'none))
-                (set-syntax-state-all-sharing?! stx-state #f))]
-             [else
-              (ser-push! 'tag '#:syntax)
-              (push-syntax-context! state #f)
-              (ser-push! content)
-              (pop-syntax-context! state)])
-            ;; Finish up
-            (ser-push! 'reference context-triple)
-            (ser-push! 'reference (syntax-srcloc s))
-            (when stx-state
-              (unless (and (eq? context-triple (syntax-state-context-triple stx-state))
-                           (equal? (syntax-srcloc s) (syntax-state-srcloc stx-state)))
-                (set-syntax-state-all-sharing?! stx-state #f)))]))
-        #:property prop:reach-scopes
-        (lambda (s reach)
-          (define prop (syntax-scope-propagations+tamper s))
-          (reach (if (propagation? prop)
-                     ((propagation-ref prop) s)
-                     (syntax-content s)))
-          (reach (syntax-scopes s))
-          (reach (syntax-shifted-multi-scopes s))
-          (for ([(k v) (in-immutable-hash (syntax-props s))]
-                #:when (preserved-property-value? v))
-            (reach (plain-property-value v)))
-          (reach (syntax-srcloc s))))
+  #:authentic
+  ;; Custom printer:
+  #:property prop:custom-write
+  (lambda (s port mode)
+    (write-string "#<syntax" port)
+    (define srcloc (syntax-srcloc s))
+    (when srcloc
+      (define srcloc-str (srcloc->string srcloc))
+      (when srcloc-str
+        (fprintf port ":~a" srcloc-str)))
+    (fprintf port " ~.s" (syntax->datum s))
+    (write-string ">" port))
+  #:property prop:serialize
+  (lambda (s ser-push! state)
+    (define prop (syntax-scope-propagations+tamper s))
+    (define content
+      (if (propagation? prop)
+          ((propagation-ref prop) s)
+          (syntax-content s)))
+    (define properties
+      (intern-properties
+       (syntax-props s)
+       (lambda ()
+         (for/hasheq ([(k v) (in-hash (syntax-props s))]
+                      #:when (preserved-property-value? v))
+           (values k (check-value-to-preserve (plain-property-value v) syntax?))))
+       state))
+    (define tamper
+      (serialize-tamper (syntax-tamper s)))
+    (define context-triple
+      (intern-context-triple (intern-scopes (syntax-scopes s) state)
+                             (intern-shifted-multi-scopes (syntax-shifted-multi-scopes s) state)
+                             (intern-mpi-shifts (syntax-mpi-shifts s) state)
+                             state))
+    (define stx-state (get-syntax-context state))
+    (cond
+      [(or properties tamper)
+       (ser-push! 'tag '#:syntax+props)
+       (push-syntax-context! state #f)
+       (ser-push! content)
+       (pop-syntax-context! state)
+       (ser-push! 'reference context-triple)
+       (ser-push! 'reference (syntax-srcloc s))
+       (ser-push! properties)
+       (ser-push! tamper)
+       (when stx-state (set-syntax-state-all-sharing?! stx-state #f))]
+      [else
+       ;; We rely on two passes to reach a fixpoint on sharing:
+       (define sharing-mode (hash-ref (serialize-state-sharing-syntaxes state) s 'unknown))
+       (cond
+         [(eq? sharing-mode 'share)
+          (ser-push! 'tag '#:datum->syntax)
+          (ser-push! (syntax->datum s))]
+         [(eq? sharing-mode 'unknown)
+          (ser-push! 'tag '#:syntax)
+          ;; Communicate to nested syntax objects the info that they might share
+          (define this-state (and (no-pair-syntax-in-cdr? content)
+                                  (syntax-state #t context-triple (syntax-srcloc s))))
+          (push-syntax-context! state this-state)
+          ;; Serialize content
+          (ser-push! content)
+          ;; Check whether we're sharing for all nested syntax objects
+          (pop-syntax-context! state)
+          (define new-sharing-mode
+            (if (and this-state
+                     (syntax-state-all-sharing? this-state))
+                'share
+                'none))
+          (hash-set! (serialize-state-sharing-syntaxes state)
+                     s
+                     ;; If the syntax object has only simple content,
+                     ;; it doesn't need any sharing support by itself
+                     (if (datum-has-elements? content)
+                         new-sharing-mode
+                         'none))
+          (when (and stx-state (eq? new-sharing-mode 'none))
+            (set-syntax-state-all-sharing?! stx-state #f))]
+         [else
+          (ser-push! 'tag '#:syntax)
+          (push-syntax-context! state #f)
+          (ser-push! content)
+          (pop-syntax-context! state)])
+       ;; Finish up
+       (ser-push! 'reference context-triple)
+       (ser-push! 'reference (syntax-srcloc s))
+       (when stx-state
+         (unless (and (eq? context-triple (syntax-state-context-triple stx-state))
+                      (equal? (syntax-srcloc s) (syntax-state-srcloc stx-state)))
+           (set-syntax-state-all-sharing?! stx-state #f)))]))
+  #:property prop:reach-scopes
+  (lambda (s reach)
+    (define prop (syntax-scope-propagations+tamper s))
+    (reach (if (propagation? prop)
+               ((propagation-ref prop) s)
+               (syntax-content s)))
+    (reach (syntax-scopes s))
+    (reach (syntax-shifted-multi-scopes s))
+    (for ([(k v) (in-immutable-hash (syntax-props s))]
+          #:when (preserved-property-value? v))
+      (reach (plain-property-value v)))
+    (reach (syntax-srcloc s))))
 
 ;; Property to abstract over handling of propagation for
 ;; serialization; property value takes a syntax object and

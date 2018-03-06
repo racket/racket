@@ -13,47 +13,46 @@
          raise-unbound-syntax-error)
 
 (struct exn:fail:syntax exn:fail (exprs)
-        #:extra-constructor-name make-exn:fail:syntax
-        #:transparent
-        #:property prop:exn:srclocs (lambda (e) (filter values (map syntax-srcloc (exn:fail:syntax-exprs e))))
-        #:guard (lambda (str cm exprs info)
-                  (unless (and (list? exprs)
-                               (andmap syntax? exprs))
-                    (raise-argument-error 'exn:fail:syntax "(listof syntax?)" exprs))
-                  (values str cm exprs)))
+  #:extra-constructor-name make-exn:fail:syntax
+  #:transparent
+  #:property prop:exn:srclocs (lambda (e) (filter values (map syntax-srcloc (exn:fail:syntax-exprs e))))
+  #:guard (lambda (str cm exprs info)
+            (unless (and (list? exprs)
+                         (andmap syntax? exprs))
+              (raise-argument-error 'exn:fail:syntax "(listof syntax?)" exprs))
+            (values str cm exprs)))
 (struct exn:fail:syntax:unbound exn:fail:syntax ()
-        #:extra-constructor-name make-exn:fail:syntax:unbound
-        #:transparent)
+  #:extra-constructor-name make-exn:fail:syntax:unbound
+  #:transparent)
 
-(define (raise-syntax-error given-name message
-                            [expr #f] [sub-expr #f]
-                            [extra-sources null]
-                            [message-suffix ""])
-  (do-raise-syntax-error exn:fail:syntax given-name message
+(define/who (raise-syntax-error given-name message
+                                [expr #f] [sub-expr #f]
+                                [extra-sources null]
+                                [message-suffix ""])
+  (do-raise-syntax-error who exn:fail:syntax given-name message
                          expr sub-expr
                          extra-sources
                          message-suffix))
 
-(define (raise-unbound-syntax-error given-name message
-                                    [expr #f] [sub-expr #f]
-                                    [extra-sources null]
-                                    [message-suffix ""])
-  (do-raise-syntax-error exn:fail:syntax:unbound given-name message
+(define/who (raise-unbound-syntax-error given-name message
+                                        [expr #f] [sub-expr #f]
+                                        [extra-sources null]
+                                        [message-suffix ""])
+  (do-raise-syntax-error who exn:fail:syntax:unbound given-name message
                          expr sub-expr
                          extra-sources
                          message-suffix))
 
-(define (do-raise-syntax-error exn:fail:syntax given-name message
+(define (do-raise-syntax-error who exn:fail:syntax given-name message
                                expr sub-expr
                                extra-sources
                                message-suffix)
-  (unless (or (not given-name) (symbol? given-name))
-    (raise-argument-error 'raise-syntax-error "(or/c symbol? #f)" given-name))
-  (check 'raise-syntax-error string? message)
+  (check who symbol? #:or-false given-name)
+  (check who string? message)
   (unless (and (list? extra-sources)
                (andmap syntax? extra-sources))
-    (raise-argument-error 'raise-syntax-error "(listof syntax?)" extra-sources))
-  (check 'raise-syntax-error string? message-suffix)
+    (raise-argument-error who "(listof syntax?)" extra-sources))
+  (check who string? message-suffix)
   (define name
     (format "~a" (or given-name
                      (extract-form-name expr)

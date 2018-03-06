@@ -43,29 +43,29 @@
 ;; ----------------------------------------
 
 (struct resolved-module-path (name)
-        #:authentic
-        #:property prop:equal+hash
-        ;; Although equal resolved module paths are `eq?` externally,
-        ;; we need this equality predicate to hash them for the
-        ;; interning table
-        (list (lambda (a b eql?)
-                (eql? (resolved-module-path-name a)
-                      (resolved-module-path-name b)))
-              (lambda (a hash-code)
-                (hash-code (resolved-module-path-name a)))
-              (lambda (a hash-code)
-                (hash-code (resolved-module-path-name a))))
-        #:property prop:custom-write
-        (lambda (r port mode)
-          (when mode
-            (write-string "#<resolved-module-path:" port))
-          (fprintf port "~a" (format-resolved-module-path-name (resolved-module-path-name r)))
-          (when mode
-            (write-string ">" port)))
-        #:property prop:serialize
-        (lambda (r ser-push! state)
-          (ser-push! 'tag '#:resolved-module-path)
-          (ser-push! (resolved-module-path-name r))))
+  #:authentic
+  #:property prop:equal+hash
+  ;; Although equal resolved module paths are `eq?` externally,
+  ;; we need this equality predicate to hash them for the
+  ;; interning table
+  (list (lambda (a b eql?)
+          (eql? (resolved-module-path-name a)
+                (resolved-module-path-name b)))
+        (lambda (a hash-code)
+          (hash-code (resolved-module-path-name a)))
+        (lambda (a hash-code)
+          (hash-code (resolved-module-path-name a))))
+  #:property prop:custom-write
+  (lambda (r port mode)
+    (when mode
+      (write-string "#<resolved-module-path:" port))
+    (fprintf port "~a" (format-resolved-module-path-name (resolved-module-path-name r)))
+    (when mode
+      (write-string ">" port)))
+  #:property prop:serialize
+  (lambda (r ser-push! state)
+    (ser-push! 'tag '#:resolved-module-path)
+    (ser-push! (resolved-module-path-name r))))
 
 (define (deserialize-resolved-module-path n)
   (make-resolved-module-path n))
@@ -129,58 +129,58 @@
 ;; ----------------------------------------
 
 (struct module-path-index (path base [resolved #:mutable] [shift-cache #:mutable])
-        #:authentic
-        #:property prop:equal+hash
-        (list (lambda (a b eql?)
-                (and (eql? (module-path-index-path a)
-                           (module-path-index-path b))
-                     (eql? (module-path-index-base a)
-                           (module-path-index-base b))))
-              (lambda (a hash-code)
-                (and (+ (hash-code (module-path-index-path a))
-                        (hash-code (module-path-index-base a)))))
-              (lambda (a hash-code)
-                (and (+ (hash-code (module-path-index-path a))
-                        (hash-code (module-path-index-base a))))))
-        #:property prop:custom-write
-        (lambda (r port mode)
-          (write-string "#<module-path-index" port)
-          (cond
-           [(top-level-module-path-index? r)
-            (fprintf port ":top-level")]
-           [(module-path-index-path r)
-            (define l (let loop ([r r])
-                        (cond
-                         [(not r) null]
-                         [(resolved-module-path? r)
-                          (list
-                           "+"
-                           (format "~a" r))]
-                         [(module-path-index-path r)
-                          (cons (let loop ([v (module-path-index-path r)])
-                                  (cond
-                                   [(and (pair? v)
-                                         (eq? 'quote (car v))
-                                         (null? (cddr v)))
-                                    (format-symbol (cadr v))]
-                                   [(and (pair? v)
-                                         (eq? 'submod (car v)))
-                                    (format-submod (loop (cadr v)) (cddr v))]
-                                   [else
-                                    (format "~.s" v)]))
-                                (loop (module-path-index-base r)))]
-                         [(module-path-index-resolved r)
-                          (list
-                           "+"
-                           (format "~a" (module-path-index-resolved r)))]
-                         [else null])))
-            (fprintf port ":~.a" (apply string-append
-                                        (car l)
-                                        (for/list ([i (in-list (cdr l))])
-                                          (format " ~a" i))))]
-           [(module-path-index-resolved r)
-            (fprintf port "=~a" (module-path-index-resolved r))])
-          (write-string ">" port)))
+  #:authentic
+  #:property prop:equal+hash
+  (list (lambda (a b eql?)
+          (and (eql? (module-path-index-path a)
+                     (module-path-index-path b))
+               (eql? (module-path-index-base a)
+                     (module-path-index-base b))))
+        (lambda (a hash-code)
+          (and (+ (hash-code (module-path-index-path a))
+                  (hash-code (module-path-index-base a)))))
+        (lambda (a hash-code)
+          (and (+ (hash-code (module-path-index-path a))
+                  (hash-code (module-path-index-base a))))))
+  #:property prop:custom-write
+  (lambda (r port mode)
+    (write-string "#<module-path-index" port)
+    (cond
+      [(top-level-module-path-index? r)
+       (fprintf port ":top-level")]
+      [(module-path-index-path r)
+       (define l (let loop ([r r])
+                   (cond
+                     [(not r) null]
+                     [(resolved-module-path? r)
+                      (list
+                       "+"
+                       (format "~a" r))]
+                     [(module-path-index-path r)
+                      (cons (let loop ([v (module-path-index-path r)])
+                              (cond
+                                [(and (pair? v)
+                                      (eq? 'quote (car v))
+                                      (null? (cddr v)))
+                                 (format-symbol (cadr v))]
+                                [(and (pair? v)
+                                      (eq? 'submod (car v)))
+                                 (format-submod (loop (cadr v)) (cddr v))]
+                                [else
+                                 (format "~.s" v)]))
+                            (loop (module-path-index-base r)))]
+                     [(module-path-index-resolved r)
+                      (list
+                       "+"
+                       (format "~a" (module-path-index-resolved r)))]
+                     [else null])))
+       (fprintf port ":~.a" (apply string-append
+                                   (car l)
+                                   (for/list ([i (in-list (cdr l))])
+                                     (format " ~a" i))))]
+      [(module-path-index-resolved r)
+       (fprintf port "=~a" (module-path-index-resolved r))])
+    (write-string ">" port)))
 
 ;; Serialization of a module path index is handled specially, because they
 ;; must be shared across phases of a module
@@ -190,8 +190,8 @@
     [(name) (make-self-module-path-index (make-resolved-module-path name))]
     [() top-level-module-path-index]))
 
-(define (module-path-index-resolve mpi [load? #f])
-  (check 'module-path-index-resolve module-path-index? mpi)
+(define/who (module-path-index-resolve mpi [load? #f])
+  (check who module-path-index? mpi)
   (or (module-path-index-resolved mpi)
       (let ([mod-name ((current-module-name-resolver)
                        (module-path-index-path mpi)
@@ -214,26 +214,24 @@
     (module-path-index-join path base)]
    [else mpi]))
 
-(define (module-path-index-join mod-path base [submod #f])
-  (unless (or (not mod-path)
-              (module-path? mod-path))
-    (raise-argument-error 'module-path-index-join "(or/c #f module-path?)" mod-path))
+(define/who (module-path-index-join mod-path base [submod #f])
+  (check who #:or-false module-path? mod-path)
   (unless (or (not base)
               (resolved-module-path? base)
               (module-path-index? base))
-    (raise-argument-error 'module-path-index-join "(or/c #f resolved-module-path? module-path-index?)" base))
+    (raise-argument-error who "(or/c #f resolved-module-path? module-path-index?)" base))
   (unless (or (not submod)
               (and (pair? submod)
                    (list? submod)
                    (andmap symbol? submod)))
-    (raise-argument-error 'module-path-index-join "(or/c #f (non-empty-listof symbol?))" submod))
+    (raise-argument-error who "(or/c #f (non-empty-listof symbol?))" submod))
   (when (and (not mod-path)
              base)
-    (raise-arguments-error 'module-path-index-join
+    (raise-arguments-error who
                            "cannot combine #f path with non-#f base"
                            "given base" base))
   (when (and submod mod-path)
-    (raise-arguments-error 'module-path-index-join
+    (raise-arguments-error who
                            "cannot combine #f submodule list with non-#f module path"
                            "given module path" mod-path
                            "given submodule list" submod))
@@ -258,13 +256,13 @@
       (module-path-index-resolve base load?)
       base))
 
-(define (module-path-index-split mpi)
-  (check 'module-path-index-split module-path-index? mpi)
+(define/who (module-path-index-split mpi)
+  (check who module-path-index? mpi)
   (values (module-path-index-path mpi)
           (module-path-index-base mpi)))
 
-(define (module-path-index-submodule mpi)
-  (check 'module-path-index-submodule module-path-index? mpi)
+(define/who (module-path-index-submodule mpi)
+  (check who module-path-index? mpi)
   (and (not (module-path-index-path mpi))
        (let ([r (module-path-index-resolved mpi)])
          (and r
