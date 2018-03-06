@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "utils.rkt"
-          (for-label ffi/unsafe/port))
+          (for-label ffi/unsafe/port
+                     racket/tcp))
 
 @title{Ports}
 
@@ -26,9 +27,10 @@ objects.}
 
 Returns an input port and/or output port for the given file descriptor
 or socket. On Windows, a ``file descriptor'' corresponds to a file
-@tt{HANDLE}, while a socket corresponds to a @tt{SOCKET}. One Unix, a
-socket is a file descriptor, but using socket-specific functions may
-enable socket-specific functionality.
+@tt{HANDLE}, while a socket corresponds to a @tt{SOCKET}. On Unix, a
+socket is a file descriptor, but using the socket-specific
+@racket[unsafe-socket->port] may enable socket-specific functionality,
+such as address reporting via @racket[tcp-addresses].
 
 The @racket[name] argument determines the port's name as reported by
 @racket[object-name]. The @racket[name] must be a UTF-8 encoding that
