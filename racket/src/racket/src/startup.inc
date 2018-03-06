@@ -22269,7 +22269,7 @@ static const char *startup_source =
 " ok-binding_0)"
 "((temp160_0)"
 "(cons"
-" ok-binding_0"
+" b_64"
 "(module-binding-extra-nominal-bindings"
 " b_64))))"
 "(module-binding-update48.1"

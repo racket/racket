@@ -2415,4 +2415,25 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module export-of-force-has-three-different-nominals racket/base
+  (require racket
+           racket/promise
+           racket/private/promise)
+  (provide force result)
+
+  (define-values (result other)
+    (module->exports (variable-reference->resolved-module-path
+                      (#%variable-reference)))))
+
+(let ([l (dynamic-require ''export-of-force-has-three-different-nominals 'result)])
+  (define (same-mod? a b) (equal? (module-path-index-resolve a)
+                                  (module-path-index-resolve b)))
+  (define b (cadr (assoc 'force (cdr (assoc 0 l)))))
+  (test 3 length b)
+  (test #f same-mod? (car b) (cadr b))
+  (test #f same-mod? (cadr b) (caddr b))
+  (test #f same-mod? (car b) (caddr b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

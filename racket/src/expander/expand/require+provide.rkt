@@ -345,7 +345,7 @@
                id
                (module-binding-update ok-binding
                                       #:extra-nominal-bindings
-                                      (cons ok-binding
+                                      (cons b
                                             (module-binding-extra-nominal-bindings b)))
                phase))
             (cond
