@@ -94,7 +94,7 @@
      [else
       (define (add-top-interaction s)
         (namespace-syntax-introduce
-         (datum->syntax s (cons '#%top-interaction s))))
+         (datum->syntax #f (cons '#%top-interaction s) s)))
       (call-with-input-file*
        path
        (lambda (i)

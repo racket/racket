@@ -19,16 +19,18 @@
   (define unbound? (and trigger-id (not (resolve trigger-id phase))))
   (raise-syntax-error #f
                       (format (if unbound?
-                                  "unbound identifier;\n also, no ~a transformer is bound~a"
+                                  "unbound identifier;\n also, no ~a syntax transformer is bound~a"
                                   (string-append what " is not allowed;\n no ~a syntax transformer is bound~a"))
                               sym
                               (case phase
                                 [(0) ""]
                                 [(1) " in the transformer phase"]
                                 [else (format " at phase ~a" phase)]))
-                      (and unbound? trigger-id)
                       (and unbound?
                            (not (eq? (syntax-e s) (syntax-e trigger-id)))
                            s)
+                      (if unbound?
+                          trigger-id
+                          s)
                       null
                       (if unbound? (syntax-debug-info-string trigger-id ctx) "")))
