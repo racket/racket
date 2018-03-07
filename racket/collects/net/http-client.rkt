@@ -54,8 +54,10 @@
   (http-conn #f #f #f #f #f #f #f #f #f))
 
 (define (http-conn-live? hc)
-  (and (http-conn-to hc)
-       (http-conn-from hc)
+  (define to (http-conn-to hc))
+  (define from (http-conn-from hc))
+  (and to (not (port-closed? to))
+       from (not (port-closed? from))
        #t))
 
 (define (http-conn-liveable? hc)
@@ -70,9 +72,13 @@
 
   (define-values (from to)
     (cond [(list? ssl?)
-           ;; At this point, we have a tunneled socket to the remote host/port: we do not need to
-           ;; address it; ignore host-bs, only use port for conn-port-usual?
-           (match-define (list ssl-ctx? (? input-port? t:from) (? output-port? t:to) abandon-p) ssl?)
+           ;; At this point, we have a tunneled socket to the remote
+           ;; host/port: we do not need to address it; ignore host-bs,
+           ;; only use port for conn-port-usual?
+           (match-define (list ssl-ctx?
+                               (? input-port? t:from)
+                               (? output-port? t:to)
+                               abandon-p) ssl?)
            (set-http-conn-abandon-p! hc abandon-p)
            (set-http-conn-port-usual?! hc (or (and ssl-ctx? (= 443 port))
                                               (and (not ssl-ctx?) (= 80 port))))
@@ -119,7 +125,9 @@
   (when from
     (close-input-port from)
     (set-http-conn-from! hc #f))
-  (set-http-conn-abandon-p! hc #f))
+  ;; Doesn't seem necessary because on a reconnect, the same abandon
+  ;; will be discovered.
+  #;(set-http-conn-abandon-p! hc #f))
 
 (define (http-conn-abandon! hc)
   (match-define (http-conn host port port-usual? to from abandon
@@ -130,8 +138,10 @@
 
 (define (http-conn-enliven! hc)
   (when (and (not (http-conn-live? hc)) (http-conn-auto-reconnect? hc))
-    (http-conn-open! hc (http-conn-auto-reconnect-host hc) #:ssl? (http-conn-auto-reconnect-ssl? hc)
-                     #:port (http-conn-port hc) #:auto-reconnect? (http-conn-auto-reconnect? hc))))
+    (http-conn-open! hc (http-conn-auto-reconnect-host hc)
+                     #:ssl? (http-conn-auto-reconnect-ssl? hc)
+                     #:port (http-conn-port hc)
+                     #:auto-reconnect? (http-conn-auto-reconnect? hc))))
 
 (define (write-chunk out data)
   (let ([bytes (->bytes data)])
@@ -268,7 +278,6 @@
 (define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port #:ssl? [ssl? #f])
   (define hc (http-conn-open proxy-host #:port proxy-port #:ssl? #f))
   (define connect-string (format "~a:~a" target-host target-port))
-  ; (log-net/url-info "http-conn-CONNECT-tunnel tunnel to ~s for ~s" connect-string (url->string url))
   (http-conn-send! hc #:method "CONNECT" connect-string #:headers
                    (list (format "Host: ~a" connect-string)
                          "Proxy-Connection: Keep-Alive"
@@ -289,7 +298,8 @@
         [else ; ssl
           (define ssl-version (if (boolean? ssl?) 'auto ssl?))
           (set-http-conn-port-usual?! hc (= 443 target-port))
-          ;; choose between win32 or non-win32 openssl here, then keep code common afterwards
+          ;; choose between win32 or non-win32 openssl here, then keep
+          ;; code common afterwards
           (define-values (p->ssl-ps ssl-abndn-p)
             (if (or ssl-available? (not win32-ssl-available?))
               (values ports->ssl-ports ssl-abandon-port)
@@ -306,9 +316,10 @@
                                                   #:close-original? #t
                                                   #:hostname target-host))
 
-          ;; The user of the tunnel relies on ports->ssl-ports' #:close-original? to close/abandon the
-          ;; underlying ports of the tunnel itself. Therefore the abandon-p sent back to caller is the
-          ;; ssl-abandon of the wrapped ports.
+          ;; The user of the tunnel relies on ports->ssl-ports'
+          ;; #:close-original? to close/abandon the underlying ports
+          ;; of the tunnel itself. Therefore the abandon-p sent back
+          ;; to caller is the ssl-abandon of the wrapped ports.
           (define abandon-p ssl-abndn-p)
           (values clt-ctx r:from r:to abandon-p)]))
 
@@ -363,8 +374,8 @@
         (λ ()
           (thread-wait gunzip-t)
           (when wait-for-close?
-            ;; Wait for an EOF from the raw port before we
-            ;; send an output on the decoding pipe:
+            ;; Wait for an EOF from the raw port before we send an
+            ;; output on the decoding pipe:
             (copy-port raw-response-port (open-output-nowhere)))
           (close-output-port out)))
        in]
@@ -440,8 +451,8 @@
   [http-conn-open!
    (->* (http-conn? (or/c bytes? string?))
         (#:ssl? base-ssl?-tnl/c
-                #:port (between/c 1 65535)
-                #:auto-reconnect? boolean?)
+         #:port (between/c 1 65535)
+         #:auto-reconnect? boolean?)
         void?)]
   [http-conn-close!
    (-> http-conn? void?)]
@@ -453,18 +464,18 @@
    (->*
     (http-conn-liveable? (or/c bytes? string?))
     (#:version (or/c bytes? string?)
-               #:method (or/c bytes? string? symbol?)
-               #:close? boolean?
-               #:headers (listof (or/c bytes? string?))
-               #:content-decode (listof symbol?)                           
-               #:data (or/c false/c bytes? string? data-procedure/c))
+     #:method (or/c bytes? string? symbol?)
+     #:close? boolean?
+     #:headers (listof (or/c bytes? string?))
+     #:content-decode (listof symbol?)                           
+     #:data (or/c false/c bytes? string? data-procedure/c))
     void)]
   ;; Derived
   [http-conn-open
    (->* ((or/c bytes? string?))
         (#:ssl? base-ssl?-tnl/c
-                #:port (between/c 1 65535)
-                #:auto-reconnect? boolean?)
+         #:port (between/c 1 65535)
+         #:auto-reconnect? boolean?)
         http-conn?)]
   [http-conn-CONNECT-tunnel
     (->* ((or/c bytes? string?)
@@ -476,25 +487,25 @@
   [http-conn-recv!
    (->* (http-conn-liveable?)
         (#:content-decode (listof symbol?)
-                          #:method (or/c bytes? string? symbol?)
-                          #:close? boolean?)
+         #:method (or/c bytes? string? symbol?)
+         #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-conn-sendrecv!
    (->* (http-conn-liveable? (or/c bytes? string?))
         (#:version (or/c bytes? string?)
-                   #:method (or/c bytes? string? symbol?)
-                   #:headers (listof (or/c bytes? string?))
-                   #:data (or/c false/c bytes? string? data-procedure/c)
-                   #:content-decode (listof symbol?) 
-                   #:close? boolean?)
+         #:method (or/c bytes? string? symbol?)
+         #:headers (listof (or/c bytes? string?))
+         #:data (or/c false/c bytes? string? data-procedure/c)
+         #:content-decode (listof symbol?) 
+         #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-sendrecv
    (->* ((or/c bytes? string?) (or/c bytes? string?))
         (#:ssl? base-ssl?-tnl/c
-                #:port (between/c 1 65535)
-                #:version (or/c bytes? string?)
-                #:method (or/c bytes? string? symbol?)
-                #:headers (listof (or/c bytes? string?))
-                #:data (or/c false/c bytes? string? data-procedure/c)
-                #:content-decode (listof symbol?))
+         #:port (between/c 1 65535)
+         #:version (or/c bytes? string?)
+         #:method (or/c bytes? string? symbol?)
+         #:headers (listof (or/c bytes? string?))
+         #:data (or/c false/c bytes? string? data-procedure/c)
+         #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))
