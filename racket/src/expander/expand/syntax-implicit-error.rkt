@@ -17,6 +17,9 @@
            "reference to a top-level identifier"
            "reference to an unbound identifier")]))
   (define unbound? (and trigger-id (not (resolve trigger-id phase))))
+  (define unbound-form (and unbound?
+                            (not (eq? (syntax-e s) (syntax-e trigger-id)))
+                            s))
   (raise-syntax-error #f
                       (format (if unbound?
                                   "unbound identifier;\n also, no ~a syntax transformer is bound~a"
@@ -27,10 +30,10 @@
                                 [(1) " in the transformer phase"]
                                 [else (format " at phase ~a" phase)]))
                       (and unbound?
-                           (not (eq? (syntax-e s) (syntax-e trigger-id)))
-                           s)
+                           (or unbound-form
+                               trigger-id))
                       (if unbound?
-                          trigger-id
+                          (and unbound-form trigger-id)
                           s)
                       null
                       (if unbound? (syntax-debug-info-string trigger-id ctx) "")))
