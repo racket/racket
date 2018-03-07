@@ -3354,13 +3354,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_SMALL_APPLICATION_START:
       {
-	int c, i, start;
+	int c, i;
 	Scheme_App_Rec *a;
 
 	c = (ch - CPT_SMALL_APPLICATION_START) + 1;
 
 	a = scheme_malloc_application(c);
-        start = port->start[port->pos];
 	for (i = 0; i < c; i++) {
 	  v = read_compact(port, 1);
 	  a->args[i] = v;
