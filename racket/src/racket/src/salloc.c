@@ -710,7 +710,7 @@ intptr_t scheme_check_overflow(intptr_t n, intptr_t m, intptr_t a)
 {
   intptr_t v;
 
-  v = (n * m) + a;
+  v = (intptr_t)(((uintptr_t)n * (uintptr_t)m) + (uintptr_t)a);
   if ((v < n) || (v < m) || (v < a) || (((v - a) / n) != m))
     scheme_signal_error("allocation size overflow");
 

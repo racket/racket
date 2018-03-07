@@ -1233,11 +1233,26 @@ static Scheme_Object *begin0_compile (Scheme_Object *form, Scheme_Comp_Env *env)
   return do_begin_compile("begin0", form, env, 1);
 }
 
-Scheme_Sequence *scheme_malloc_sequence(int count)
+static Scheme_Sequence *malloc_big_sequence(int count)
 {
-  return (Scheme_Sequence *)scheme_malloc_tagged(sizeof(Scheme_Sequence)
-						 + (count - mzFLEX_DELTA) 
-						 * sizeof(Scheme_Object *));
+  intptr_t sz;
+  Scheme_Sequence *seq;
+
+  sz = scheme_check_overflow((count - mzFLEX_DELTA), sizeof(Scheme_Object *), sizeof(Scheme_Sequence));
+  seq = (Scheme_Sequence *)scheme_malloc_fail_ok(scheme_malloc_tagged, sz);
+  if (!seq) scheme_signal_error("out of memory allocating sequence bytecode");
+
+  return seq;
+}
+
+Scheme_Sequence *scheme_malloc_sequence(int count) XFORM_ASSERT_NO_CONVERSION
+{
+  if (count < 4096)
+    return (Scheme_Sequence *)scheme_malloc_tagged(sizeof(Scheme_Sequence)
+                                                   + (count - mzFLEX_DELTA) 
+                                                   * sizeof(Scheme_Object *));
+  else
+    return malloc_big_sequence(count);
 }
 
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt, int resolved)

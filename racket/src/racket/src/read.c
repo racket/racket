@@ -2810,7 +2810,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         if ((depth < 0) || (pos < 0))
           scheme_ill_formed_code(port);
 
-        return scheme_make_toplevel(depth, pos, flags);
+        return scheme_make_toplevel(depth, pos, flags & SCHEME_TOPLEVEL_FLAGS_MASK);
       }
       break;
     case CPT_LOCAL:
@@ -3101,10 +3101,17 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
             count = read_compact_number(port);
             if (count < 0) scheme_ill_formed_code(port);
-        
-            cl = (Scheme_Case_Lambda *)
-              scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
-                                   + (count - mzFLEX_DELTA) * sizeof(Scheme_Object *));
+
+            if (count < 4096)
+              cl = (Scheme_Case_Lambda *)scheme_malloc_tagged(sizeof(Scheme_Case_Lambda)
+                                                              + (count - mzFLEX_DELTA) * sizeof(Scheme_Object *));
+            else {
+              intptr_t sz;
+              sz = scheme_check_overflow((count - mzFLEX_DELTA), sizeof(Scheme_Object *), sizeof(Scheme_Case_Lambda));
+              cl = (Scheme_Case_Lambda *)scheme_malloc_fail_ok(scheme_malloc_tagged, sz);
+              if (!cl) scheme_signal_error("out of memory allocating procedure bytecode");
+            }
+
             cl->so.type = scheme_case_lambda_sequence_type;
             cl->count = count;
 
@@ -3347,12 +3354,13 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_SMALL_APPLICATION_START:
       {
-	int c, i;
+	int c, i, start;
 	Scheme_App_Rec *a;
 
 	c = (ch - CPT_SMALL_APPLICATION_START) + 1;
 
 	a = scheme_malloc_application(c);
+        start = port->start[port->pos];
 	for (i = 0; i < c; i++) {
 	  v = read_compact(port, 1);
 	  a->args[i] = v;
