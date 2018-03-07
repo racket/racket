@@ -928,10 +928,14 @@
            (evt 'write-spec-evt (list v)))))
       (values in out))))
 
+(define unspecified (gensym))
+
 (define input-port-append
-  (lambda (close-orig? . ports)
+  (lambda (close-orig? #:name [name unspecified] . ports)
     (make-input-port
-     (map object-name ports)
+     (if (eq? name unspecified)
+         (map object-name ports)
+         name)
      (lambda (str)
        ;; Reading is easy -- read from the first port,
        ;;  and get rid of it if the result is eof

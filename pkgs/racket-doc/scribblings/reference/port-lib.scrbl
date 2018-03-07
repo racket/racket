@@ -157,7 +157,10 @@ Equivalent to
 
 @section{Creating Ports}
 
-@defproc[(input-port-append [close-at-eof? any/c] [in input-port?] ...) input-port?]{
+@defproc[(input-port-append [close-at-eof? any/c]
+                            [in input-port?] ...
+                            [#:name name any/c (map object-name in)])
+         input-port?]{
 
 Takes any number of input ports and returns an input port. Reading
 from the input port draws bytes (and special non-byte values) from the
@@ -167,8 +170,13 @@ or when the result input port is closed. Otherwise, data not read from
 the returned input port remains available for reading in its original
 input port.
 
+The @racket[name] argument determines the name as reported by
+@racket[object-name] for the returned input port.
+
 See also @racket[merge-input], which interleaves data from multiple
-input ports as it becomes available.}
+input ports as it becomes available.
+
+@history[#:changed "6.90.0.19" @elem{Added the @racket[name] argument.}]}
 
 
 @defproc[(make-input-port/read-to-peek 
