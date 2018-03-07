@@ -390,6 +390,17 @@
       (syntax-property se 'origin))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `let-syntax` (which involves a rename transformer)
+;; attaches the right 'origin
+
+(test #t
+      syntax-original?
+      (let ([stx (expand #'(let-syntax ([m (lambda (stx) #''m)])
+                             m))])
+        (syntax-case stx ()
+          [(_ () (_ () e)) (car (syntax-property #'e 'origin))])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #%app, etc.
 
 (define s (syntax-property (quote-syntax (add1 5)) 'testing 10))
