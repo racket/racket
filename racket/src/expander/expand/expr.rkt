@@ -631,8 +631,8 @@
    (log-expand ctx 'prim-set!)
    (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(set! id rhs))
-   (define id (m 'id))
-   (let rename-loop ([id id] [from-rename? #f])
+   (define orig-id (m 'id))
+   (let rename-loop ([id orig-id] [from-rename? #f])
      (define binding (resolve+shift id (expand-context-phase ctx)
                                     #:ambiguous-value 'ambiguous
                                     #:immediate? #t))
@@ -672,7 +672,7 @@
                  ctx)]
         [else
          (define-values (exp-s re-ctx)
-           (apply-transformer t insp s id ctx binding))
+           (apply-transformer t insp s orig-id ctx binding #:origin-id orig-id))
          (cond
           [(expand-context-just-once? ctx) exp-s]
           [else (expand exp-s re-ctx)])])]
@@ -681,7 +681,7 @@
         [(not-in-this-expand-context? t ctx)
          (expand (avoid-current-expand-context (substitute-set!-rename s disarmed-s (m 'set!) (m 'rhs) id from-rename? ctx t) t ctx)
                  ctx)]
-        [else (rename-loop (rename-transformer-target-in-context t ctx) #t)])]
+        [else (rename-loop (syntax-track-origin (rename-transformer-target-in-context t ctx) id id) #t)])]
       [else
        (raise-syntax-error #f "cannot mutate syntax identifier" s id)]))))
 

@@ -337,7 +337,8 @@
 ;; scopes to represent the expansion step; the `insp-of-t` inspector
 ;; is the inspector of the module that defines `t`, which gives it
 ;; priviledge for `syntax-arm` and similar
-(define (apply-transformer t insp-of-t s id ctx binding)
+(define (apply-transformer t insp-of-t s id ctx binding
+                           #:origin-id [origin-id #f])
   (performance-region
    ['expand '_ 'macro]
 
@@ -366,7 +367,7 @@
    ;; any expansion result
    (define post-s (maybe-add-post-expansion-scope result-s ctx))
    ;; Track expansion:
-   (define tracked-s (syntax-track-origin post-s cleaned-s (if (identifier? s) s (car (syntax-e s)))))
+   (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (identifier? s) s (car (syntax-e s))))))
    (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
    (log-expand ctx 'exit-macro rearmed-s)
    (values rearmed-s

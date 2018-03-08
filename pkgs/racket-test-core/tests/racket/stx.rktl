@@ -401,6 +401,25 @@
           [(_ () (_ () e)) (car (syntax-property #'e 'origin))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check 'origin tracing for a set!-transformer
+
+(test #t
+      'has-do-not-forget-me-origin?
+      (let ([stx (expand #'(let-syntax ([do-not-forget-me (make-set!-transformer
+                                                           (lambda (stx)
+                                                             #'10))])
+                             (set! do-not-forget-me 5)))])
+        (let loop ([v stx])
+          (cond
+            [(syntax? v)
+             (or (loop (syntax-property v 'origin))
+                 (loop (syntax-e v)))]
+            [(pair? v) (or (loop (car v))
+                           (loop (cdr v)))]
+            [(eq? v 'do-not-forget-me) #t]
+            [else #f]))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure a language name via `#lang` is original
 
 (parameterize ([read-accept-reader #t])
