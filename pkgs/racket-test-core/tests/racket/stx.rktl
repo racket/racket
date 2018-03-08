@@ -401,6 +401,14 @@
           [(_ () (_ () e)) (car (syntax-property #'e 'origin))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a language name via `#lang` is original
+
+(parameterize ([read-accept-reader #t])
+  (syntax-case (read-syntax 'hi (open-input-string "#lang racket/base 10")) ()
+    [(_ _ lang . _)
+     (test #t syntax-original? #'lang)]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #%app, etc.
 
 (define s (syntax-property (quote-syntax (add1 5)) 'testing 10))

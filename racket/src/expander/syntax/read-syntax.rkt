@@ -117,8 +117,14 @@
     (cond
      [(syntax? v) (syntax->datum v)]
      [else v])]
+   [(syntax? v) v]
+   [(pair? v)
+    (read-to-syntax (cons (read-coerce #t (car v) srcloc)
+                          (read-coerce #t (cdr v) srcloc))
+                    srcloc
+                    #f)]
    [else
-    (datum->syntax #f v (and srcloc (to-srcloc-stx srcloc)))]))
+    (read-to-syntax v srcloc #f)]))
 
 (define (read-coerce-key for-syntax? k)
   (cond

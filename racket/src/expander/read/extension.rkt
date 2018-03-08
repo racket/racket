@@ -121,7 +121,7 @@
   
   (define submod-path `(submod ,(string->symbol lang-str) reader))
   (define reader-path (string->symbol (string-append lang-str "/lang/reader")))
-  
+
   (read-extension #:try-first-mod-path submod-path
                   reader-path read-recur in (reading-at config line col pos)
                   #:get-info? get-info?
