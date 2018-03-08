@@ -9,7 +9,7 @@
          module-cache-set!
          module-cache-ref)
 
-(define module-cache (make-weak-hash))
+(define module-cache (make-weak-hasheq))
 
 (define (make-module-cache-key hash-code)
   ;; The result is preserved to retain the cache entry, and
@@ -20,7 +20,10 @@
   ;; relative to the enclosing module, and that part of
   ;; the syntax object is unmarshaled once and used for
   ;; all instances of the module.
-  (and hash-code (list hash-code (current-load-relative-directory))))
+  (and hash-code
+       ;; Encode as a symbol so we can use an eq?-based hash table
+       ;; (i.e., explot the low-level lock on the symbol table)
+       (string->symbol (format "~s" (list hash-code (current-load-relative-directory))))))
 
 (define (module-cache-set! key proc)
   (hash-set! module-cache key (make-ephemeron key proc)))
