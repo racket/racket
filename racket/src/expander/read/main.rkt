@@ -365,8 +365,8 @@
          [(#\e) (read-extension-reader read-one read-undotted dispatch-c in config)]
          [else
           (bad-syntax-error in config
-                                 #:due-to c2
-                                 (accum-string-get! accum-str config))])]
+                            #:due-to c2
+                            (accum-string-get! accum-str config))])]
       [(#\p)
        ;; Maybe pregexp
        (define accum-str (accum-string-init! config))

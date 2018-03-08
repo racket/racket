@@ -13,11 +13,12 @@
 
 (define (read-string in config #:mode [mode 'string])
   (define source (read-config-source config))
+  (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
   (define accum-str (accum-string-init! config))
   (define (bad-end c)
     (cond
      [(eof-object? c)
-      (reader-error in config #:due-to c "expected a closing `\"`")]
+      (reader-error in config #:due-to c #:end-pos open-end-pos "expected a closing `\"`")]
      [else
       (reader-error in config #:due-to c
                     "found non-character while reading a ~a"
@@ -167,6 +168,7 @@
 
 (define (read-here-string in config)
   (define source (read-config-source config))
+  (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
   (define accum-str (accum-string-init! config))
   
   ;; Parse terminator
@@ -193,7 +195,7 @@
     (cond
      [(eof-object? c)
       (unless (null? terminator)
-        (reader-error in config #:due-to c
+        (reader-error in config #:due-to c #:end-pos open-end-pos
                       "found end-of-file before terminating `~a`"
                       (list->string (cdr full-terminator))))]
      [(not (char? c))

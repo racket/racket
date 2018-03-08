@@ -27,13 +27,14 @@
   (define config (struct*-copy read-config elem-config
                                [indentations (cons indentation
                                                    (read-config-indentations seq-config))]))
-  
+  (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
+
   (define config/keep-comment (keep-comment config))
 
   (define (read-one/not-eof init-c read-one config)
     (define e (read-one init-c in config))
     (when (eof-object? e)
-      (reader-error in config #:due-to e
+      (reader-error in seq-config #:due-to e #:end-pos open-end-pos
                     "expected a ~a to close `~a`~a"
                     (closer-name closer config)
                     opener-c

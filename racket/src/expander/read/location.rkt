@@ -3,7 +3,7 @@
 (provide port-next-location*)
 
 (define (port-next-location* in init-c)
-  ;; If weve already read `init-c`, then back up by one column and
+  ;; If we've already read `init-c`, then back up by one column and
   ;; position; we assume that `init-c` is not a newline character
   (cond
    [(not init-c) (port-next-location in)]

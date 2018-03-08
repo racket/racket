@@ -95,8 +95,12 @@
                         (read-config-state #f #f)
                         (read-config-st config))]))
 
-(define (port+config->srcloc in config)
-  (define-values (end-line end-col end-pos) (port-next-location in))
+(define (port+config->srcloc in config
+                             #:end-pos [given-end-pos #f])
+  (define end-pos
+    (or given-end-pos
+        (let-values ([(end-line end-col end-pos) (port-next-location in)])
+          end-pos)))
   (srcloc (or (read-config-source config)
               (object-name in)
               "UNKNOWN")

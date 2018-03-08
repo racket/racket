@@ -11,9 +11,11 @@
                       #:who [who (if (read-config-for-syntax? config)
                                      'read-syntax
                                      'read)]
+                      #:end-pos [end-pos #f]
                       str . args)
   (define msg (format "~a: ~a" who (apply format str args)))
-  (define srcloc (and in (port+config->srcloc in config)))
+  (define srcloc (and in (port+config->srcloc in config
+                                              #:end-pos end-pos)))
   (raise
    ((cond
      [(eof-object? due-to) exn:fail:read:eof]

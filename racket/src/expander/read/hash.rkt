@@ -35,14 +35,15 @@
   (get-next! #\a #\A)
   (get-next! #\s #\S)
   (get-next! #\h #\H)
-  
+
   (define-values (content opener mode)
     (let loop ([mode 'equal])
       (define c (read-char/special in config))
       (define ec (effective-char c config))
       (case ec
         [(#\()
-         (define read-one-key+value (make-read-one-key+value read-one c #\)))
+         (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
+         (define read-one-key+value (make-read-one-key+value read-one c #\) open-end-pos))
          (values (read-unwrapped-sequence read-one-key+value c #\( #\) in config
                                           #:elem-config config
                                           #:dot-mode #f)
@@ -50,26 +51,28 @@
                  mode)]
         [(#\[)
          (cond
-          [(check-parameter read-square-bracket-as-paren config)
-           (define read-one-key+value (make-read-one-key+value read-one c #\]))
-           (values (read-unwrapped-sequence read-one-key+value c #\[ #\] in config
-                                            #:elem-config config
-                                            #:dot-mode #f)
-                   ec
-                   mode)]
-          [else
-           (reader-error in config "illegal use of `~a`" c)])]
+           [(check-parameter read-square-bracket-as-paren config)
+            (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
+            (define read-one-key+value (make-read-one-key+value read-one c #\] open-end-pos))
+            (values (read-unwrapped-sequence read-one-key+value c #\[ #\] in config
+                                             #:elem-config config
+                                             #:dot-mode #f)
+                    ec
+                    mode)]
+           [else
+            (reader-error in config "illegal use of `~a`" c)])]
         [(#\{)
          (cond
-          [(check-parameter read-curly-brace-as-paren config)
-           (define read-one-key+value (make-read-one-key+value read-one c #\}))
-           (values (read-unwrapped-sequence read-one-key+value c #\{ #\} in config
-                                            #:elem-config config
-                                            #:dot-mode #f)
-                   ec
-                   mode)]
-          [else
-           (reader-error in config "illegal use of `~a`" c)])]
+           [(check-parameter read-curly-brace-as-paren config)
+            (define-values (open-end-line open-end-col open-end-pos) (port-next-location in))
+            (define read-one-key+value (make-read-one-key+value read-one c #\} open-end-pos))
+            (values (read-unwrapped-sequence read-one-key+value c #\{ #\} in config
+                                             #:elem-config config
+                                             #:dot-mode #f)
+                    ec
+                    mode)]
+           [else
+            (reader-error in config "illegal use of `~a`" c)])]
         [(#\e #\E)
          (accum-string-add! accum-str c)
          (get-next! #\q #\Q)
@@ -111,7 +114,7 @@
 
 ;; ----------------------------------------
 
-(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec) init-c in config)
+(define ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) init-c in config)
   (define c (read-char/skip-whitespace-and-comments init-c read-one in config))
   (define-values (open-line open-col open-pos) (port-next-location* in c))
   (define ec (effective-char c config))
@@ -130,8 +133,8 @@
    [(not closer)
     (cond
      [(eof-object? c)
-      (reader-error in (reading-at config open-line open-col open-pos)
-                    #:due-to c
+      (reader-error in config
+                    #:due-to c #:end-pos prefix-end-pos
                     "expected ~a to close `~a`"
                     (closer-name overall-closer-ec config) overall-opener-c)]
      [(char-closer? ec config)
@@ -146,7 +149,7 @@
       (cond
        [(special-comment? v)
         ;; Try again
-        ((make-read-one-key+value read-one overall-opener-c overall-closer-ec) #f in config)]
+        ((make-read-one-key+value read-one overall-opener-c overall-closer-ec prefix-end-pos) #f in config)]
        [else
         (reader-error in (reading-at config open-line open-col open-pos)
                       "expected ~a to start a hash pair"
