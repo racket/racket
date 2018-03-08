@@ -118,6 +118,11 @@
      [(syntax? v) (syntax->datum v)]
      [else v])]
    [(syntax? v) v]
+   [(list? v)
+    (read-to-syntax (for/list ([e (in-list v)])
+                      (read-coerce #t e srcloc))
+                    srcloc
+                    #f)]
    [(pair? v)
     (read-to-syntax (cons (read-coerce #t (car v) srcloc)
                           (read-coerce #t (cdr v) srcloc))
