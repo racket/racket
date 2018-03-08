@@ -2372,7 +2372,7 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     offset = 0;
   
   if (offset + size > SCHEME_BYTE_STRLEN_VAL(s)) {
-    scheme_contract_error("integer-bytes->integer",
+    scheme_contract_error("integer->integer-bytes",
                           "byte string length is shorter than starting position plus size",
                           "byte string length", 1, scheme_make_integer(SCHEME_BYTE_STRLEN_VAL(s)),
                           "starting position", 1, scheme_make_integer(offset),
