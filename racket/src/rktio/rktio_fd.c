@@ -1498,7 +1498,6 @@ static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
       csi(rfd->oth->thread);
     }
     CloseHandle(rfd->oth->thread);
-    printf("done\n"); fflush();
     rfd->oth->done = 1;
     ReleaseSemaphore(rfd->oth->work_sema, 1, NULL);
 
@@ -1585,7 +1584,6 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 {
-  printf("clean up %p\n", oth); fflush(NULL);
   CloseHandle(oth->lock_sema);
   CloseHandle(oth->work_sema);
 
