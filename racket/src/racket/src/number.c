@@ -450,11 +450,10 @@ scheme_init_number (Scheme_Startup_Env *env)
 #ifdef ZERO_LONG_MINUS_ZERO_IS_LONG_POS_ZERO
   scheme_long_floating_point_nzero = long_double_div(long_double_neq(long_double_1(), scheme_long_infinity_val));
 #else
-  scheme_long_floating_point_nzero = long_double_neg(scheme_long_floating_point_nzero);
+  scheme_long_floating_point_nzero = long_double_neg(scheme_long_floating_point_zero);
 #endif
 
   scheme_long_minus_infinity_val = long_double_neg(scheme_long_infinity_val);
-  long_not_a_number_val = long_double_plus(scheme_long_infinity_val, scheme_long_minus_infinity_val);
   long_not_a_number_val = long_double_sqrt(long_double_neg(get_long_double_1()));
   
   scheme_zerol = scheme_make_long_double(get_long_double_1());

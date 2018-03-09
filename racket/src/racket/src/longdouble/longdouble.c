@@ -611,6 +611,100 @@ static long_double fail_long_double() {
   return d;
 }
 
+static long_double fail_long_double_infinity() {
+  long_double d;
+  memset(&d, 0, sizeof(d));
+  memcpy(&d, &scheme_infinity_val, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_minus_infinity() {
+  long_double d;
+  memset(&d, 0, sizeof(d));
+  memcpy(&d, &scheme_minus_infinity_val, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_nzero() {
+  long_double d;
+  memset(&d, 0, sizeof(d));
+  memcpy(&d, &scheme_floating_point_nzero, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_nan() {
+  long_double d;
+  memset(&d, 0, sizeof(d));
+  memcpy(&d, &SCHEME_DBL_VAL(scheme_nan_object), sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_1() {
+  long_double d;
+  double one = 1.0;
+  memset(&d, 0, sizeof(d));
+  memcpy(&d, &one, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_div(long_double ld1, long_double ld2) {
+  double d1, d2;
+  long_double d;
+  memcpy(&d1, &ld1, sizeof(double));
+  memcpy(&d2, &ld2, sizeof(double));
+  if (d2 == 0.0) {
+    d1 = scheme_infinity_val;
+  } else {
+    memset(&d, 0, sizeof(d));
+    d1 = d1 / d2;
+  }
+  memcpy(&d, &d1, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_neg(long_double ld1) {
+  double d1;
+  long_double d;
+  memcpy(&d1, &ld1, sizeof(double));
+  d1 = 0.0 - d1;
+  memcpy(&d, &d1, sizeof(double));
+  return d;
+}
+
+static long_double fail_long_double_sqrt(long_double ld1) {
+  double d1;
+  long_double d;
+  memcpy(&d1, &ld1, sizeof(double));
+  if (d1 < 0)
+    d1 = SCHEME_DBL_VAL(scheme_nan_object);
+  memcpy(&d, &d1, sizeof(double));
+  return d;
+}
+
+static int fail_is_pos_infinity(long_double ld) {
+  double d;
+  memcpy(&d, &ld, sizeof(double));
+  return MZ_IS_POS_INFINITY(d);
+}
+
+static int fail_is_neg_infinity(long_double ld) {
+  double d;
+  memcpy(&d, &ld, sizeof(double));
+  return MZ_IS_NEG_INFINITY(d);
+}
+
+static int fail_is_infinity(long_double ld) {
+  double d;
+  memcpy(&d, &ld, sizeof(double));
+  return MZ_IS_POS_INFINITY(d) || MZ_IS_NEG_INFINITY(d);
+}
+
+static int fail_is_nan(long_double ld) {
+  double d;
+  memcpy(&d, &ld, sizeof(double));
+  return MZ_IS_NAN(d);
+}
+
 static int fail_int() { return 0; }
 static void fail_void() {  }
 static double fail_double() { return 0.0; }
@@ -651,12 +745,12 @@ void scheme_load_long_double_dll()
   _imp_ ## name = (name ##_t)(m ? GetProcAddress(m, # name) : NULL);  \
   if (!(_imp_ ## name)) _imp_ ## name = (name ##_t)fail;
 
-  EXTRACT_LDBL(get_long_double_infinity_val, fail_long_double);
-  EXTRACT_LDBL(get_long_double_minus_infinity_val, fail_long_double);
+  EXTRACT_LDBL(get_long_double_infinity_val, fail_long_double_infinity);
+  EXTRACT_LDBL(get_long_double_minus_infinity_val, fail_long_double_minus_infinity);
   EXTRACT_LDBL(get_long_double_zero, fail_long_double);
-  EXTRACT_LDBL(get_long_double_nzero, fail_long_double);
-  EXTRACT_LDBL(get_long_double_nan, fail_long_double);
-  EXTRACT_LDBL(get_long_double_1, fail_long_double);
+  EXTRACT_LDBL(get_long_double_nzero, fail_long_double_nzero);
+  EXTRACT_LDBL(get_long_double_nan, fail_long_double_nan);
+  EXTRACT_LDBL(get_long_double_1, fail_long_double_1);
   EXTRACT_LDBL(get_long_double_minus_1, fail_long_double);
   EXTRACT_LDBL(get_long_double_2, fail_long_double);
   EXTRACT_LDBL(get_long_double_one_half, fail_long_double);
@@ -676,8 +770,8 @@ void scheme_load_long_double_dll()
   EXTRACT_LDBL(long_double_minus, fail_long_double);
   EXTRACT_LDBL(long_double_mult, fail_long_double);
   EXTRACT_LDBL(long_double_mult_i, fail_long_double);
-  EXTRACT_LDBL(long_double_div, fail_long_double);
-  EXTRACT_LDBL(long_double_neg, fail_long_double);
+  EXTRACT_LDBL(long_double_div, fail_long_double_div);
+  EXTRACT_LDBL(long_double_neg, fail_long_double_neg);
   EXTRACT_LDBL(long_double_eqv, fail_int);
   EXTRACT_LDBL(long_double_less, fail_int);
   EXTRACT_LDBL(long_double_less_or_eqv, fail_int);
@@ -687,10 +781,10 @@ void scheme_load_long_double_dll()
   EXTRACT_LDBL(long_double_is_zero, fail_int);
   EXTRACT_LDBL(long_double_is_1, fail_int);
   EXTRACT_LDBL(long_double_minus_zero_p, fail_int);
-  EXTRACT_LDBL(long_double_is_nan, fail_int);
-  EXTRACT_LDBL(long_double_is_pos_infinity, fail_int);
-  EXTRACT_LDBL(long_double_is_neg_infinity, fail_int);
-  EXTRACT_LDBL(long_double_is_infinity, fail_int);
+  EXTRACT_LDBL(long_double_is_nan, fail_is_nan);
+  EXTRACT_LDBL(long_double_is_pos_infinity, fail_is_pos_infinity);
+  EXTRACT_LDBL(long_double_is_neg_infinity, fail_is_neg_infinity);
+  EXTRACT_LDBL(long_double_is_infinity, fail_is_infinity);
   EXTRACT_LDBL(long_double_fabs, fail_long_double);
   EXTRACT_LDBL(long_double_modf, fail_long_double);
   EXTRACT_LDBL(long_double_fmod, fail_long_double);
@@ -707,7 +801,7 @@ void scheme_load_long_double_dll()
   EXTRACT_LDBL(long_double_exp, fail_long_double);
   EXTRACT_LDBL(long_double_ldexp, fail_long_double);
   EXTRACT_LDBL(long_double_pow, fail_long_double);
-  EXTRACT_LDBL(long_double_sqrt, fail_long_double);
+  EXTRACT_LDBL(long_double_sqrt, fail_long_double_sqrt);
   EXTRACT_LDBL(long_double_frexp, fail_long_double);
   EXTRACT_LDBL(long_double_sprint, fail_sprint);
   EXTRACT_LDBL(long_double_array_ref, fail_long_double);
