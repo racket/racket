@@ -89,7 +89,8 @@ Returns a namespace corresponding to the source of the anchor.
 If the anchor is from a @racket[define-namespace-anchor] form in a
 module context, then the result is a namespace for the module's body
 in the anchor's phase. The result is the same as a namespace obtained
-via @racket[module->namespace].
+via @racket[module->namespace], and the module is similarly made
+@tech{available} if it is not available already.
 
 If the anchor is from a @racket[define-namespace-anchor] form in a
 top-level content, then the result is the namespace in which the
@@ -439,7 +440,8 @@ and with the same phase as @racket[varref].}
 If @racket[varref] refers to a @tech{module-level variable}, then the
 result is a namespace for the module's body in the referenced
 variable's @tech{phase}; the result is the same as a namespace
-obtained via @racket[module->namespace].
+obtained via @racket[module->namespace], and the module is similarly made
+@tech{available} if it is not available already.
 
 If @racket[varref] refers to a @tech{top-level variable}, then the
 result is the namespace in which the referenced variable is defined.}

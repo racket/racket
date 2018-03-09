@@ -26,6 +26,7 @@
 
          top-level-module-path-index
          top-level-module-path-index?
+         non-self-module-path-index?
 
          resolve-module-path
          current-module-name-resolver
@@ -357,6 +358,9 @@
 
 (define (top-level-module-path-index? mpi)
   (eq? top-level-module-path-index mpi))
+
+(define (non-self-module-path-index? mpi)
+  (and (module-path-index-path mpi) #t))
 
 ;; ----------------------------------------
 
