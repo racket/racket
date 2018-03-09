@@ -419,6 +419,24 @@
             [(eq? v 'do-not-forget-me) #t]
             [else #f]))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check property tracking on `let[rec]-values` binding clauses
+
+(let ([mk-e (lambda (bind)
+              #`(let-syntax ([m (lambda (stx)
+                                  (syntax-case stx ()
+                                    [(_ e) (local-expand #'e 'expression '())]))])
+                  (m (#,bind (#,(syntax-property #'[(x) 0] 'keep-me #t)) 1))))])
+  (define (find-keep-me? s)
+    (cond
+      [(syntax? s) (or (syntax-property s 'keep-me)
+                       (find-keep-me? (syntax-e s)))]
+      [(pair? s) (or (find-keep-me? (car s))
+                     (find-keep-me? (cdr s)))]
+      [else #f]))
+  (test #t find-keep-me? (expand (mk-e #'let-values)))
+  (test #t find-keep-me? (expand (mk-e #'letrec-values))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure a language name via `#lang` is original
 

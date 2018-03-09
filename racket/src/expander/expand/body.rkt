@@ -190,7 +190,7 @@
                val-rhss
                track-stxs
                (cons ids trans-idss)
-               (cons (datum->syntax #f (list ids (m 'rhs)) (m 'rhs)) stx-clauses)
+               (cons (datum->syntax #f (list ids (m 'rhs)) exp-body) stx-clauses)
                new-dups)]
         [else
          (cond

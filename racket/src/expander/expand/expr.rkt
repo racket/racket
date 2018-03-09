@@ -185,6 +185,14 @@
                          (for/list ([rhs (in-list (if syntaxes? (stx-m 'val-rhs) (val-m 'val-rhs)))])
                            (add-scope rhs sc))
                          (if syntaxes? (stx-m 'val-rhs) (val-m 'val-rhs))))
+    (define val-clauses ; for syntax tracking
+      (cond
+        [syntaxes?
+         (define-match m disarmed-s '(_ _ (clause ...) . _))
+         (m 'clause)]
+        [else
+         (define-match m disarmed-s '(_ (clause ...) . _))
+         (m 'clause)]))
     (check-no-duplicate-ids (list trans-idss val-idss) phase s)
     ;; Bind each left-hand identifier and generate a corresponding key
     ;; fo the expand-time environment:
@@ -268,14 +276,15 @@
          (define clauses
            (for/list ([ids (in-list val-name-idss)]
                       [keys (in-list val-keyss)]
-                      [rhs (in-list val-rhss)])
+                      [rhs (in-list val-rhss)]
+                      [clause (in-list val-clauses)])
              (log-expand ctx 'next)
              (define exp-rhs (expand rhs (if rec?                               
                                              (as-named-context rec-ctx ids)
                                              (as-named-context expr-ctx ids))))
              (if (expand-context-to-parsed? ctx)
                  (list keys exp-rhs)
-                 `[,ids ,exp-rhs])))
+                 (datum->syntax #f `[,ids ,exp-rhs] clause clause))))
          (define exp-body (get-body))
          (when frame-id
            (reference-record-clear! frame-id))
@@ -288,8 +297,7 @@
               `(,letrec-values-id ,clauses ,@exp-body)))]
         [else
          (expand-and-split-bindings-by-reference
-          val-idss val-keyss val-rhss (for/list ([rhs (in-list val-idss)])
-                                        #f)
+          val-idss val-keyss val-rhss val-clauses
           #:split? #t
           #:frame-id frame-id #:ctx rec-ctx
           #:source rebuild-s #:had-stxes? syntaxes?
