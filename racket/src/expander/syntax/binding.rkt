@@ -43,13 +43,19 @@
 ;; ----------------------------------------
 
 (define (free-identifier=? a b a-phase b-phase)
-  (define ab (resolve+shift a a-phase #:unbound-sym? #t))
-  (define bb (resolve+shift b b-phase #:unbound-sym? #t))
+  (define ab (toplevel-as-symbol (resolve+shift a a-phase #:unbound-sym? #t)))
+  (define bb (toplevel-as-symbol (resolve+shift b b-phase #:unbound-sym? #t)))
   (cond
    [(or (symbol? ab) (symbol? bb))
     (eq? ab bb)]
    [else
     (same-binding? ab bb)]))
+
+(define (toplevel-as-symbol b)
+  (if (and (module-binding? b)
+           (top-level-module-path-index? (module-binding-module b)))
+      (module-binding-sym b)
+      b))
 
 (define (same-binding? ab bb)
   (cond

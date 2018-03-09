@@ -1693,6 +1693,20 @@
 (test #t free-identifier=? #'lambda #'lambda 0 4)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Unbound and bound at toplevel are equivalent by `free-identifier=?`
+
+(test #t free-identifier=? #'defined-at-the-top-level (datum->syntax #f 'defined-at-the-top-level))
+(define defined-at-the-top-level 'yep)
+(test #t free-identifier=? #'defined-at-the-top-level (datum->syntax #f 'defined-at-the-top-level))
+
+(define-syntax-rule (define-defined-at-the-top-level)
+  (begin
+    (define defined-at-the-top-level 10)
+    (test #f free-identifier=? #'defined-at-the-top-level (datum->syntax #f 'defined-at-the-top-level))))
+(define-defined-at-the-top-level)
+(test #t free-identifier=? #'defined-at-the-top-level (datum->syntax #f 'defined-at-the-top-level))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  certification example from the manual
 
 (module @-m racket/base
