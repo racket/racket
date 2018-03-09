@@ -343,11 +343,10 @@
                                                     #:as-transformer? as-transformer?))
                      skip-bind?]
                     [else #f]))
-                (when (and adjusted-sym
-                           copy-variable-phase-level
+                (when (and copy-variable-phase-level
                            (not as-transformer?)
                            (equal? provide-phase copy-variable-phase-level))
-                  (copy-namespace-value m-ns adjusted-sym binding copy-variable-phase-level phase-shift
+                  (copy-namespace-value m-ns sym binding copy-variable-phase-level phase-shift
                                         copy-variable-as-constant?))
                 (and (not skip-bind?) adjusted-sym))))
    ;; Now that a bulk binding is in place, update to merge nominals:

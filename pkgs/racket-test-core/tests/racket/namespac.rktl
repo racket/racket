@@ -308,6 +308,16 @@
   (err/rt-test (eval '(define + -)) #rx"cannot change constant"))
 
 ;; ----------------------------------------
+;; Check that `namespace-require/copy` does define variables
+;; but doesn't bind as required
+
+(parameterize ([current-namespace (make-base-empty-namespace)])
+  (namespace-require/copy 'racket/base)
+  (test (void) eval '(void))
+  (test #f identifier-binding (namespace-syntax-introduce (datum->syntax #f 'void)))
+  (test #t list? (identifier-binding (namespace-syntax-introduce (datum->syntax #f 'lambda)))))
+
+;; ----------------------------------------
 ;; Check that bulk `require` replaces individual bindings
 
 (let ([ns (make-base-empty-namespace)])
