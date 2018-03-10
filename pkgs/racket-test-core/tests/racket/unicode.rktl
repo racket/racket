@@ -1662,5 +1662,32 @@
 (test "\u039A\u03b1\u03BF\u03C3\u03C2" string-titlecase "\u039A\u0391\u039F\u03A3\u03A3")
 (test "\u039A\u03b1\u03BF\u03C2 X" string-titlecase "\u039A\u0391\u039F\u03A3 x")
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Bytes converters and custodians - check that built-in conversions are
+;; not registered
+
+(let ([c (make-custodian)])
+  (parameterize ([current-custodian c])
+    (define converters
+      (append
+       (list
+        (bytes-open-converter "UTF-8" "UTF-8")
+        (bytes-open-converter "UTF-8-permissive" "UTF-8"))
+       (if (eq? 'unix (system-type))
+           null
+           (list
+            (bytes-open-converter "" "UTF-8")
+            (bytes-open-converter "UTF-8" "")))
+       (list
+        (bytes-open-converter "platform-UTF-8" "platform-UTF-16")
+        (bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")
+        (bytes-open-converter "platform-UTF-16" "platform-UTF-8") )))
+    (custodian-shutdown-all c)
+    ;; Make sure the convertes all still work --- not shut down by
+    ;; the custodian
+    (for ([cvt (in-list converters)])
+      (bytes-convert cvt #"hello"))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

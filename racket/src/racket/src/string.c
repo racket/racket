@@ -4206,7 +4206,7 @@ Scheme_Object *scheme_open_converter(const char *from_e, const char *to_e)
     else
       permissive = 0;
     cd = NULL;
-    need_regis = (*to_e && *from_e);
+    need_regis = 0;
   } else if ((!strcmp(from_e, "platform-UTF-8")
 	      || !strcmp(from_e, "platform-UTF-8-permissive"))
 	     && !strcmp(to_e, "platform-UTF-16")) {
