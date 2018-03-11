@@ -157,6 +157,16 @@ attempt to marshal the owning syntax object to bytecode form.
 @history[#:changed "6.4.0.14" @elem{Added the @racket[preserved?] argument.}]}
 
 
+@defproc[(syntax-property-remove [stx syntax?]
+                                 [key any/c])
+         syntax?]{
+
+Returns a syntax object like @racket[stx], but without a property (if
+any) for @racket[key].
+
+@history[#:added "6.90.0.20"]}
+
+
 @defproc[(syntax-property-preserved? [stx syntax?] [key (and/c symbol? symbol-interned?)])
          boolean?]{
 

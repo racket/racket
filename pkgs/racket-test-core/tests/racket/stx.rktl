@@ -49,6 +49,10 @@
       (datum->syntax #f '(a) #f (syntax-property #'x 'ok 'value))
       'ok)
 
+(let ([s (syntax-property #'s 'key 'val)])
+  (test 'val syntax-property s 'key)
+  (test #f syntax-property (syntax-property-remove s 'key) 'key))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some syntax-case patterns
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

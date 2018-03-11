@@ -31,6 +31,7 @@
 (provide syntax?
          syntax-e
          syntax-property
+         syntax-property-remove
          syntax-property-preserved?
          syntax-property-symbol-keys
          syntax-original?

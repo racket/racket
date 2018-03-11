@@ -50,7 +50,8 @@
              #:when (and (symbol? k) (symbol-interned? k)))
     k))
 
-(define (syntax-property-remove s key)
+(define/who (syntax-property-remove s key)
+  (check who syntax? s)
   (if (hash-ref (syntax-props s) key #f)
       (struct-copy syntax s
                    [props (hash-remove (syntax-props s) key)])
