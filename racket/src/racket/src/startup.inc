@@ -6078,7 +6078,7 @@ static const char *startup_source =
 "(disallow-cycles)"
 "(hasheq"
 " 'cycle-fail"
-"   (lambda (s_64) (raise-arguments-error 'datum->syntax \"cannot create syntax from cyclic datum\" s_64))))"
+"   (lambda (s_64) (raise-arguments-error 'datum->syntax \"cannot create syntax from cyclic datum\" \"datum\" s_64))))"
 "(define-values"
 "(struct:syntax-state"
 " syntax-state19.1"

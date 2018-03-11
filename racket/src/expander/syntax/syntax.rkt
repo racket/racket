@@ -252,7 +252,7 @@
           (lambda (s)
             (raise-arguments-error 'datum->syntax
                                    "cannot create syntax from cyclic datum"
-                                   s))))
+                                   "datum" s))))
 
 ;; ----------------------------------------
 
