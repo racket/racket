@@ -741,8 +741,8 @@ the given @nonterm{pkg-source}s.
                                    when no arguments are provided.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
                                    the @DFlag{deps} default to depend only on interactive mode.}
-         #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}]
-         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}}
+         #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}
+         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
