@@ -7,7 +7,7 @@
   (define val (bytes-ref bs byte))
   (bytes-set! bs byte (bitwise-xor (expt 2 bit) val)))
 
-(define (run-bytes bs)
+(define (read-bytes bs)
   (sync
    (parameterize ([current-custodian (make-custodian)])
      (thread
@@ -15,8 +15,8 @@
         (custodian-limit-memory (current-custodian)
                                 (* 512 (expt 2 20)))
         (with-handlers ([void void])
-          (eval (parameterize ([read-accept-compiled #t])
-                  (with-input-from-bytes bs read)))))))))
+          (parameterize ([read-accept-compiled #t])
+            (with-input-from-bytes bs read))))))))
 
 (define (run-file fname seed0 #:write? [out-fname? #f])
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))
@@ -33,7 +33,7 @@
           (call-with-output-file (build-path (current-directory) out-fname?)
             (lambda (o)
               (write-bytes bs o))))
-        (run-bytes bs))))
+        (read-bytes bs))))
 
 (define (go)
   (let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
