@@ -30,7 +30,7 @@ After you commit, watch for and read(!)
  parts: @tt{success} and @tt{failure}. The former is for tests that should
  succeed now, and the latter is for tests that are currently expected to
  fail. See the
- @hyperlink["https://github.com/racket/racket/tree/master/collects/tests/typed-scheme"]{Typed
+ @hyperlink["https://github.com/racket/typed-racket/tree/master/typed-racket-test"]{Typed
  Racket testing arrangement} for an example. When you create such
  @tt{failure} tests, you may wish to disable DrDr's checking like this:
 @verbatim[#:indent 2]{
