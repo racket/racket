@@ -1883,5 +1883,27 @@
   (module* b #f (bind-and-expand x (list x))))
 
 ;; ----------------------------------------
+;; Make sure it's ok to produce an already-expanded
+;; expression in a definition context
+
+(module macro-with-syntax-local-expand-expression-in-a-definition-context racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ e)
+       (let ()
+         (define-values (new-stx new-exp)
+           (syntax-local-expand-expression #'e #t))
+         new-exp)]))
+
+  (m 5)
+
+  (let ()
+    (define whatever 10)
+    (m (+ 1 2))
+    'ok))
+
+;; ----------------------------------------
 
 (report-errs)

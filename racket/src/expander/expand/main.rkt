@@ -209,6 +209,8 @@
                                        " extra bindings or scopes in the current context")
                         (and (not (parsed? exp-s)) exp-s)))
   (cond
+    [(expand-context-only-immediate? ctx)
+     s]
     [(parsed? exp-s) exp-s]
     [else
      (define result-s (syntax-track-origin exp-s s))
