@@ -3093,7 +3093,7 @@ static const char *startup_source =
 "(lambda(i_26 prev-was-slash?_0 saw-slash?_0 saw-dot?_0)"
 "(begin"
 " 'loop"
-"(if(not(zero? i_26))"
+"(if(not(negative? i_26))"
 "(let-values()"
 "(let-values(((c_6)(string-ref v_36 i_26)))"
 "(if(char=? c_6 '#\\/)"

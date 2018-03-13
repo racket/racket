@@ -128,7 +128,7 @@
                      [saw-slash? (not file-end-ok?)]
                      [saw-dot? #f])
             (cond
-             [(not (zero? i))
+             [(not (negative? i))
               ;; check next character
               (define c (string-ref v i))
               (cond
@@ -314,7 +314,7 @@
   (define (test ok? v)
     (unless (equal? ok? (module-path? v))
       (error 'module-path?-test "failed ~s; expected ~a" v ok?)))
-  
+
   (test #t "hello")
   (test #t "hello.rkt")
   (test #f "hello*ss")
@@ -341,6 +341,13 @@
   (test #t "x/./foo.rkt")
   (test #t "x/.")
   (test #t "x/..")
+
+  (test #f "@")
+  (test #f "\0")
+  (test #f "x@")
+  (test #f "x\0")
+  (test #f "@x")
+  (test #f "\0x")
 
   (test #t (collection-file-path "module.rktl" "tests" "racket"))
   (test #t (string->path "x"))

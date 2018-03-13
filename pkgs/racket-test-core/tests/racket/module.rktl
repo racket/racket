@@ -498,6 +498,13 @@
 (test #t module-path? "x/./foo.rkt")
 (test #t module-path? "x/.")
 (test #t module-path? "x/..")
+(test #f module-path? "@")
+(test #f module-path? "\0")
+(test #f module-path? "x@")
+(test #f module-path? "x\0")
+(test #f module-path? "@x")
+(test #f module-path? "\0x")
+
 
 (test #t module-path? (collection-file-path "module.rktl" "tests" "racket"))
 (test #t module-path? (string->path "x"))
