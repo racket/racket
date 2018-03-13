@@ -463,7 +463,7 @@ Scheme_Object *scheme_read_lambda(int flags, int closure_size, int num_params, i
                                   Scheme_Object *closure_map,
                                   Scheme_Object *tl_map);
 Scheme_Object *scheme_write_linklet(Scheme_Object *obj);
-Scheme_Object *scheme_read_linklet(Scheme_Object *obj);
+Scheme_Object *scheme_read_linklet(Scheme_Object *obj, int unsafe_ok);
 
 extern Scheme_Equal_Proc *scheme_type_equals;
 extern Scheme_Primary_Hash_Proc *scheme_type_hash1s;
@@ -3271,7 +3271,8 @@ struct Scheme_Linklet
   int max_let_depth;
   int need_instance_access; /* whether the instance-access toplevel is needed */
 
-  int jit_ready; /* true if the linklet is in has been prepared for the JIT */
+  char jit_ready; /* true if the linklet is in has been prepared for the JIT */
+  char reject_eval; /* true when loaded without the root inspector, for example */
 
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
 };

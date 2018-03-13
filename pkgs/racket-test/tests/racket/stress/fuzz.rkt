@@ -15,8 +15,9 @@
         (custodian-limit-memory (current-custodian)
                                 (* 512 (expt 2 20)))
         (with-handlers ([void void])
-          (parameterize ([read-accept-compiled #t])
-            (with-input-from-bytes bs read))))))))
+          (eval (parameterize ([read-accept-compiled #t]
+                               [current-code-inspector (make-inspector)])
+                  (with-input-from-bytes bs read)))))))))
 
 (define (run-file fname seed0 #:write? [out-fname? #f])
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))

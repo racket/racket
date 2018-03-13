@@ -57,5 +57,9 @@ requires control over the old one).
 
 @defparam[current-code-inspector insp inspector?]{
 
-A @tech{parameter} that determines an inspector to control access to module
-bindings and redefinitions.}
+A @tech{parameter} that determines an inspector to control access to
+module bindings and redefinitions.
+
+If the code inspector is changed from its original value, then
+bytecode loaded by the default @tech{compiled-load handler} is marked
+as non-runnable.}

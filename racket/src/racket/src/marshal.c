@@ -422,7 +422,7 @@ static Scheme_Object *vector_to_hash_tree(Scheme_Object *vec)
   return (Scheme_Object *)ht;
 }
 
-Scheme_Object *scheme_read_linklet(Scheme_Object *obj)
+Scheme_Object *scheme_read_linklet(Scheme_Object *obj, int unsafe_ok)
 {
   Scheme_Linklet *linklet = (Scheme_Linklet *)obj;
   Scheme_Object *e, *a;
@@ -502,6 +502,9 @@ Scheme_Object *scheme_read_linklet(Scheme_Object *obj)
     if (linklet->num_total_imports != SCHEME_VEC_SIZE(linklet->import_shapes))
       return_NULL();
   }
+
+  if (!unsafe_ok)
+    linklet->reject_eval = 1;
 
   return (Scheme_Object *)linklet;
 }

@@ -1,4 +1,4 @@
- /*
+/*
   Racket
   Copyright (c) 2004-2018 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
@@ -61,6 +61,7 @@ SHARED_OK int scheme_square_brackets_are_parens = 1;
 SHARED_OK int scheme_curly_braces_are_parens = 1;
 /* global flag set from environment variable */
 SHARED_OK static int use_perma_cache = 1;
+SHARED_OK static int validate_loaded_linklet = 0;
 
 THREAD_LOCAL_DECL(int scheme_num_read_syntax_objects = 0);
 
@@ -296,9 +297,10 @@ void scheme_init_read(Scheme_Startup_Env *env)
 
   ADD_NONCM_PRIM("datum-intern-literal", read_intern, 1, 1, env);
 
-  if (getenv("PLT_DELAY_FROM_ZO")) {
+  if (getenv("PLT_DELAY_FROM_ZO"))
     use_perma_cache = 0;
-  }
+  if (getenv("PLT_VALIDATE_LOAD"))
+    validate_loaded_linklet = 0;
 }
 
 void scheme_init_variable_references_constants()
@@ -2783,7 +2785,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_LINKLET:
       {
         v = read_compact(port, 1);
-        v = scheme_read_linklet(v);
+        v = scheme_read_linklet(v, port->unsafe_ok);
         if (!v) scheme_ill_formed_code(port);
         return v;
       }
@@ -2794,9 +2796,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_REFERENCE:
       l = read_compact_number(port);
       RANGE_CHECK(l, < EXPECTED_PRIM_COUNT);
-      if ((l >= unsafe_variable_references_start)
-          && !port->unsafe_ok)
-        unsafe_disallowed(port);
       return variable_references[l];
       break;
     case CPT_TOPLEVEL:
@@ -3979,7 +3978,9 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
           i = scheme_hash_tree_next(t, -1);
           while (i != -1) {
             scheme_hash_tree_index(t, i, &key, &val);
-            if (SAME_TYPE(SCHEME_TYPE(val), scheme_linklet_type))
+            if (validate_loaded_linklet
+                && SAME_TYPE(SCHEME_TYPE(val), scheme_linklet_type)
+                && !((Scheme_Linklet *)val)->reject_eval)
               scheme_validate_linklet(rp, (Scheme_Linklet *)val);
             i = scheme_hash_tree_next(t, i);
           }

@@ -222,11 +222,7 @@
 (define (xeval e)
   (eval
    (if (bytes? e)
-       (parameterize ([read-accept-compiled #t]
-                      ;; The read-time inspector is supposed to
-                      ;; be irrelevant; only the declaration-time
-                      ;; inspector should matter
-                      [current-code-inspector (make-inspector)])
+       (parameterize ([read-accept-compiled #t])
          (read (open-input-bytes e)))
        e)))
 
@@ -366,30 +362,7 @@
             three/nabbed-c three/pnabbed-c three/snabbed-c three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
             three/normal-c
             current-code-inspector make-inspector #f #f #f #f #f)
-(unsafe-try unsafe-c make-inspector #f #f #t)
-
-;; zo and source; changing inspector affects access in various ways-----------------
-
-(displayln "zo and source:")
-(mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
-            three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
-            three/normal-zo
-            make-inspector current-code-inspector #t #f #f #f #t)
-(unsafe-try unsafe-zo make-inspector #f #f #t)
-
-(displayln "source and zo, change inspector:")
-(mp-try-all zero one two/no-protect two/protect 
-            three/nabbed three/pnabbed three/snabbed-zo three/nfnabbed three/nfpnabbed three/nfsnabbed-zo 
-            three/normal
-            current-code-inspector make-inspector #t #t #t #t #t
-            #:early-ok? #t)
-(unsafe-try unsafe make-inspector #t #t #f)
-
-(displayln "zo, change inspector:")
-(mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
-            three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
-            three/normal-zo
-            make-inspector make-inspector #t #t #f #f #f #:via-2-ok? #t)
+(unsafe-try unsafe-c make-inspector #f #f #f)
 
 (displayln "just source, weaken inspector:")
 (mp-try-all zero one two/no-protect two/protect 

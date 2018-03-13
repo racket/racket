@@ -323,6 +323,15 @@ static Scheme_Object *linklet_p(int argc, Scheme_Object **argv)
           : scheme_false);
 }
 
+static void check_linklet_allowed(const char *who, Scheme_Linklet *linklet)
+{
+  if (linklet->reject_eval) {
+    scheme_raise_exn(MZEXN_FAIL,
+                     "%s: cannot use linklet loaded with non-original code inspector",
+                     who);
+  }
+}
+
 void extract_import_info(const char *who, int argc, Scheme_Object **argv,
                          Scheme_Object **_import_keys, Scheme_Object **_get_import)
 {
@@ -395,6 +404,8 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 
   linklet = (Scheme_Linklet *)argv[0];
 
+  check_linklet_allowed("recompile-linklet", linklet);
+
   extract_import_info("recompile-linklet", argc, argv, &import_keys, &get_import);
 
   if ((argc > 1) && SCHEME_TRUEP(argv[1]))
@@ -434,6 +445,9 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv)
     scheme_wrong_contract("eval-linklet", "linklet?", 0, argc, argv);
 
   linklet = (Scheme_Linklet *)argv[0];
+
+  check_linklet_allowed("eval-linklet", linklet);
+  
   if (!linklet->jit_ready) {
     Scheme_Object *b;
     b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
@@ -476,6 +490,7 @@ static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv)
     scheme_wrong_contract("instantiate-linklet", "(listof instance?)", 1, argc, argv);
 
   linklet = (Scheme_Linklet *)argv[0];
+  check_linklet_allowed("instantiate-linklet", linklet);
   num_importss = SCHEME_VEC_SIZE(linklet->importss);
   if (len != num_importss)
     scheme_contract_error("instantiate-linklet",

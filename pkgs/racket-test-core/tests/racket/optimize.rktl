@@ -4975,8 +4975,8 @@
 (err/rt-test (do-test-of-lift-fixpoint) exn:fail?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; generate byecode with a lifted function that has
-;; a boxed argument and rest args, to test that case
+;; generate bytecode with a lifted function that has
+;; a boxed argument and rest args, originally to test that case
 ;; of the validator
 
 (parameterize ([current-namespace (make-base-namespace)])
@@ -5023,65 +5023,6 @@
 
 (test #t (dynamic-require ''check-tail-call-by-jit-for-struct-predicate 'go))
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Test bytecode validator's checking of constantness
-
-(let ()
-  (define c1
-    '(module c1 racket/kernel
-       ((if (zero? (random 1))
-            (lambda (f) (display (f)))
-            #f)
-        (lambda ()
-          ;; This access of i should raise an exception:
-          i))
-       (define-values (i) (random 1))))
-
-  (define o (open-output-bytes))
-
-  (parameterize ([current-namespace (make-base-namespace)])
-    (write (compile c1) o))
-
-  (define m (zo-parse (open-input-bytes (get-output-bytes o))))
-
-  (define o2 (open-output-bytes))
-
-  ;; construct bytecode that is broken by claiming that `i' is constant
-  ;; in the too-early reference:
-  (void
-   (write-bytes
-    (zo-marshal
-     (match m
-       [(linkl-bundle t)
-        (linkl-bundle
-         (hash-set t
-                   0
-                   (let* ([l (hash-ref t 0)]
-                          [body (linkl-body l)])
-                     (struct-copy linkl l [body
-                                           (match body 
-                                             [(list a b c)
-                                              (list (match a
-                                                      [(application rator (list rand))
-                                                       (application
-                                                        rator
-                                                        (list
-                                                         (struct-copy 
-                                                          lam rand
-                                                          [body
-                                                           (match (lam-body rand)
-                                                             [(toplevel depth pos const? ready?)
-                                                              (toplevel depth pos #t #t)])])))])
-                                                    b
-                                                    c)])]))))]))
-    o2))
-
-  ;; validator should reject this at read or eval time (depending on how lazy validation is):
-  (err/rt-test (parameterize ([current-namespace (make-base-namespace)]
-                              [read-accept-compiled #t])
-                 (eval (read (open-input-bytes (get-output-bytes o2)))))
-               exn:fail:read?))
-
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make sure sfs pass doesn't add a nested begin0
 ;; to clear the variables used in the first expression
@@ -5123,8 +5064,8 @@
                    list)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure compiler isn't too agressive for the validator
-;;  in terms of typed arguments:
+;; Originally: make sure compiler isn't too agressive for the
+;; validator in terms of typed arguments:
 
 (let ([m '(module m racket/base
             (require racket/flonum)
@@ -5140,7 +5081,7 @@
   (define o (open-output-bytes))
   (write (compile m) o)
   (parameterize ([read-accept-compiled #t])
-    ;; too-aggressive compilation produces a validator failure here
+    ;; too-aggressive compilation produced a validator failure here
     (read (open-input-bytes (get-output-bytes o)))))
 
 (when (extflonum-available?)
@@ -5158,7 +5099,7 @@
     (define o (open-output-bytes))
     (write (compile m) o)
     (parameterize ([read-accept-compiled #t])
-      ;; too-aggressive compilation produces a validator failure here
+      ;; too-aggressive compilation produced a validator failure here
       (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5368,7 +5309,7 @@
     (test #t toplevel-const? v)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; The validator should understand that a structure
+;; Originally: The validator should understand that a structure
 ;; constructor always succeeds:
 
 (let ()
@@ -5473,7 +5414,7 @@
                          (define n (fxmax (length l) 1))
                          (lambda _ n))))
            o)
-    ;; Should succeed, as opposed to a validation error:
+    ;; Should succeed; once produced a validation error:
     (eval (read (open-input-bytes (get-output-bytes o))))))
 
 (parameterize ([current-namespace (make-base-namespace)]
@@ -5489,7 +5430,7 @@
                        (let ([n (fxmax (length '()) 1)])
                          (app (lambda _ (ident n))))))
            o)
-    ;; Should succeed, as opposed to a validation error:
+    ;; Should succeed; once produced a validation error:
     (eval (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5608,8 +5549,8 @@
                    (void)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that bytecode validator is consistent with respect to the
-;; optimizer and special-casing of bitwise operators:
+;; Originally: Check that bytecode validator is consistent with
+;; respect to the optimizer and special-casing of bitwise operators:
 
 (let ([o (open-output-bytes)])
   (write (compile
@@ -5877,8 +5818,8 @@
     (void proc proc)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure validation doesn't fail for importing a setter of a
-;; structure type that has auto fields:
+;; Originally: Make sure validation doesn't fail for importing a
+;; setter of a structure type that has auto fields:
 
 (module provides-a-mutator-for-a-struct-with-an-auto-field racket/base
   (provide foo set-foo-y!)
@@ -5955,9 +5896,8 @@
   bar)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that `string-append` on a known-string argument
-;; is not treated consistently by the optimzier and
-;; validator
+;; Originally: Check that `string-append` on a known-string argument
+;; is not treated consistently by the optimzier and validator
 
 (let ([c (compile
           '(module m racket/base
