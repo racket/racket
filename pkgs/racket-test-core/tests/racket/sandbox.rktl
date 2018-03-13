@@ -462,10 +462,7 @@
         ;; loading test gets 'list module declaration via ".zo", thanks
         ;; to delayed parsing of the bytecode (so this test doesn't work
         ;; if delay-loading is disabled):
-        (load/use-compiled ,test-lib) => (void)
-        ;; but the module declaration can't execute due to the inspector:
-        (require 'list) =err> "access disallowed by code inspector"
-        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
+        (load/use-compiled ,test-lib) =err> "cannot use linklet loaded with non-original code inspector"
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
         --top--
@@ -482,9 +479,7 @@
         (cp ,list-lib ,test-lib)  (cp ,list-zo ,test-zo)
         (cp ,list-lib ,test2-lib) (cp ,list-zo   ,test2-zo)
         ;; bytecode from test-lib is bad, even when we can read/write to it
-        (load/use-compiled ,test-zo)
-        (require 'list) =err> "access disallowed by code inspector"
-        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
+        (load/use-compiled ,test-zo) =err> "cannot use linklet loaded with non-original code inspector"
         ;; bytecode from test2-lib is explicitly allowed
         (load/use-compiled ,test2-lib)
         (require 'list) => (void))
