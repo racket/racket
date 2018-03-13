@@ -6250,5 +6250,116 @@
         (lambda (x228) (lambda (x229) (x228 (lambda (x230) x230)))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test based on a program from Eric Dobson: at the time of
+;; writing provoked a compiler crash by setting up an unused
+;; self-reference in a `letrec`-bound function, where the compiler
+;; determined that the binding could be turned to a `let` because
+;; the self-reference is not reachable --- but for various reasons left
+;; the self-reference in bound `lambda`s set of free variables
+
+(letrec ([list-cmp348
+          (lambda ()
+            (let ((val (l1393 #f))
+                  (temp443
+                   (lambda ()
+                     (let ((val (cmp392 #f))
+                           (temp408
+                            (lambda ()
+                              (list-cmp348)))
+                           (temp409 (lambda (val401 success402 fail403) #f)))
+                       (temp409
+                        val
+                        temp407
+                        (lambda ()
+                          temp408)))))
+                  (temp446 (lambda () #f))
+                  (temp447
+                   (lambda (val415 success416 fail417)
+                     (list (variant-val-variant-name val415)
+                           (list (vector-ref (variant-val-fields val415) '1)
+                                 (if (equal? (variant-val-variant-name field421) #f)
+                                     (let ((field423
+                                            (list (variant-val-fields field421) '1)))
+                                       (let ((l2411 field423))
+                                         (let ((field422
+                                                (list (variant-val-fields field421) #f)))
+                                           (let ((e2412 field422))
+                                             (let ((field418
+                                                    (list
+                                                     (variant-val-fields val415)
+                                                     #f)))
+                                               (list
+                                                (list
+                                                 (variant-val-variant-name field418)
+                                                 'cons)
+                                                (let ((field420
+                                                       (list
+                                                        (variant-val-fields field418)
+                                                        '1)))
+                                                  (let ((l1413 field420))
+                                                    (let ((field419
+                                                           (list
+                                                            (variant-val-fields field418)
+                                                            #f)))
+                                                      (let ((e1414 field419))
+                                                        (success416
+                                                         l2411
+                                                         e2412
+                                                         l1413
+                                                         e1414)))))
+                                                (fail417)))))))
+                                     (fail417)))
+                           (fail417))))
+                  (temp448
+                   (lambda (val424 success425 fail426)
+                     (list (variant-val-variant-name val424)
+                           (list (list (variant-val-fields val424) '1)
+                                 (list (variant-val-variant-name field428)
+                                       (list
+                                        (list (variant-val-fields field428) '1)
+                                        (list
+                                         (list (variant-val-fields field428) #f)
+                                         (let ((field427
+                                                (list (variant-val-fields val424) #f)))
+                                           (list (variant-val-variant-name field427)
+                                                 (fail426)))))
+                                       (fail426)))
+                           (fail426))))
+                  (temp449
+                   (lambda (val431 success432 fail433)
+                     (list (variant-val-variant-name val431)
+                           (list (list (variant-val-fields val431) '1)
+                                 (list
+                                  (variant-val-variant-name field437)
+                                  (list
+                                   (list (variant-val-fields val431) #f)
+                                   (list (variant-val-variant-name field434)
+                                         (list
+                                          (list (variant-val-fields field434) '1)
+                                          (list (variant-val-fields field434)
+                                                (success432)))
+                                         (fail433)))
+                                  (fail433)))
+                           (fail433))))
+                  (temp450
+                   (lambda (val438 fail440)
+                     (list (variant-val-variant-name val438)
+                           (list (list (variant-val-fields val438) '1)
+                                 (fail440))
+                           (fail440)))))
+              (list
+               temp447
+               temp443
+               temp448
+               (list
+                temp449
+                (list
+                 (list
+                  temp450
+                  temp446))))))])
+  (lambda ()
+    (list-cmp348)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

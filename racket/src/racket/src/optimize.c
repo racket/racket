@@ -8377,7 +8377,7 @@ static Scheme_Object *
 optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
 {
   Scheme_Lambda *lam;
-  Scheme_Object *code, *ctx;
+  Scheme_Object *code, *ctx, *to_remove;
   Scheme_IR_Lambda_Info *cl;
   int i, init_vclock, init_aclock, init_kclock, init_sclock;
   Scheme_Hash_Table *ht;
@@ -8447,6 +8447,30 @@ optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
     SCHEME_LAMBDA_FLAGS(lam) -= LAMBDA_RESULT_TENTATIVE;
 
   lam->body = code;
+
+  /* Double check that variables registered for the closure are marked
+     as used. Although the resolve pass double-checks use flags, we
+     need to remove any variable that was tentaively marked as used,
+     because it's non-use may turn a `letrec` into a `let`, and the
+     `let`-bound variable may be later used after all --- after the
+     `letrec`->`let` conversion is decided. In other words, ensure
+     that the closure's free variables are consistent with any
+     `letrec`->`let` decisions when the `lambda` appear on the
+     right-hand side of a binding. */
+  to_remove = scheme_null;
+  for (i = 0; i < ht->size; i++) {
+    if (ht->vals[i]) {
+      Scheme_IR_Local *var = SCHEME_VAR(ht->keys[i]);
+      if (!var->optimize_used) {
+        /* Must have been tentively used, but not used after all. */
+        to_remove = scheme_make_pair((Scheme_Object *)var, to_remove);
+      }
+    }
+  }
+  while (SCHEME_PAIRP(to_remove)) {
+    scheme_hash_set(ht, SCHEME_CAR(to_remove), NULL);
+    to_remove = SCHEME_CDR(to_remove);
+  }
 
   /* Remembers positions of used vars (and unsets usage for this level) */
   cl->base_closure = info->uses;

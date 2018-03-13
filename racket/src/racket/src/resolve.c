@@ -1725,6 +1725,7 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
       Scheme_IR_Local *var = (Scheme_IR_Local *)SCHEME_VEC_ELS(vec)[j+1];
       if (!scheme_hash_get(captured, (Scheme_Object *)var)) {
         /* Need to capture an extra binding: */
+        MZ_ASSERT(!var->resolve.lifted);
         scheme_hash_set(captured, (Scheme_Object *)var, scheme_make_integer(captured->count));
         if (HAS_UNBOXABLE_TYPE(var))
           need_type_map = 1;
