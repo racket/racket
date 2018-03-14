@@ -705,21 +705,25 @@ no extension, @racket[#f] is returned.}
 @defproc[(find-relative-path [base (or/c path-string? path-for-some-system?)]
                              [path (or/c path-string?  path-for-some-system?)]
                              [#:more-than-root? more-than-root? any/c #f]
+                             [#:more-than-same? more-than-same? any/c #t]
                              [#:normalize-case? normalize-case? any/c #t])
          (or/c path-for-some-system? path-string?)]{
 
 Finds a relative pathname with respect to @racket[base] that names the
 same file or directory as @racket[path]. Both @racket[base] and
 @racket[path] must be simplified in the sense of
-@racket[simple-form-path].  If @racket[path] shares no subpath in
+@racket[simple-form-path]. If @racket[path] shares no subpath in
 common with @racket[base], @racket[path] is returned.
 
 If @racket[more-than-root?] is true, if @racket[base] and
 @racket[path] share only a Unix root in common, and if neither
 @racket[base] nor @racket[path] is just a root path, then
-@racket[path] is returned. The case when @racket[path] is returned
-and is a string is the only case when @racket[find-relative-path]
-returns a string result.
+@racket[path] is returned.
+
+If @racket[path] is the same as @racket[base], then
+@racket[(build-path 'same)] is returned only if
+@racket[more-than-same?] is true. Otherwise, @racket[path] is
+returned when @racket[path] is the same as @racket[base].
 
 If @racket[normalize-case?] is true (the default), then pairs of path
 elements to be compared are first converted via
@@ -728,10 +732,17 @@ comparsed case-insentively on Windows. If @racket[normalize-case?] is
 @racket[#f], then path elements and the path roots match only if they
 have the same case.
 
+The result is normally a @tech{path} in the sense of @racket[path?].
+The result is a string only if @racket[path] is provided a string and
+also returned as the result.
+
 @history[#:changed "6.8.0.3" @elem{Made path elements case-normalized
                                    for comparison by default, and
                                    added the @racket[#:normalize-case?]
-                                   argument.}]}
+                                   argument.}
+         #:changed "6.90.0.21" @elem{Added the @racket[#:more-than-same?]
+                                     argument.}]}
+
 
 @defproc[(normalize-path [path path-string?]
                          [wrt (and/c path-string? complete-path?)

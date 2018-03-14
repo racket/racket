@@ -124,6 +124,7 @@
 
 ;; Arguments must be in simple form
 (define (find-relative-path directory filename
+                            #:more-than-same? [more-than-same? #t]
                             #:more-than-root? [more-than-root? #f]
                             #:normalize-case? [normalize-case? #t])
   (let ([dir (do-explode-path 'find-relative-path directory)]
@@ -142,7 +143,11 @@
                  (equal? (normalize (cadr dir)) (normalize (cadr file)))))
         (let loop ([dir (cdr dir)]
                    [file (cdr file)])
-          (cond [(null? dir) (if (null? file) filename (apply build-path file))]
+          (cond [(null? dir) (if (null? file)
+                                 (if more-than-same?
+                                     filename
+                                     (build-path 'same))
+                                 (apply build-path file))]
                 [(null? file) (apply build-path/convention-type
                                      (if (string? filename)
                                          (system-path-convention-type)
