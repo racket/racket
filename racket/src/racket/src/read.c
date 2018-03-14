@@ -2346,12 +2346,6 @@ void scheme_ill_formed(struct CPort *port
 		  );
 }
 
-static void unsafe_disallowed(struct CPort *port)
-{
-  scheme_read_err(port ? port->orig_port : NULL,
-		  "read (compiled): unsafe values disallowed");
-}
-
 static void make_ut(CPort *port)
 {
   Scheme_Unmarshal_Tables *ut;
