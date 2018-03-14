@@ -907,6 +907,14 @@
   (test (void) sync p)
   (test (list (void)) sync (wrap-evt p list)))
 
+(let ()
+  (define pr (delay/sync 'done))
+  (test #f promise-forced? pr)
+  (test #f sync/timeout 0 pr)
+  (test 'done force pr)
+  (test #t promise-forced? pr)
+  (test (void) sync/timeout 0 pr))
+
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
 (test '(a 3 4 5 6 b) 'quasiquote `(a ,(+ 1 2) ,@(map abs '(4 -5 6)) b))

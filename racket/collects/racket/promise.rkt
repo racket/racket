@@ -26,7 +26,11 @@
 (define-struct (running-thread running) (thread))
 
 ;; used in promise/sync until it's forced
-(define-struct syncinfo ([thunk #:mutable] done-evt done-sema access-sema))
+(define-struct syncinfo ([thunk #:mutable] done-evt done-sema access-sema)
+  ;; We don't want to apply a `syncinfo`, but declaring the `syncinfo`
+  ;; as a procedure tells `promise-forced?` when the promise is not
+  ;; yet forced
+  #:property prop:procedure (case-lambda))
 
 (define-struct (promise/sync promise) ()
   #:property prop:custom-write
