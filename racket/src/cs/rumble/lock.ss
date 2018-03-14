@@ -76,12 +76,14 @@
     (case-lambda
      [(lock)
       (cond
+       [(not lock) (void)]
        [(spinlock? lock)
 	(spinlock-acquire lock)]
        [else
 	(scheduler-lock-acquire lock)])]
      [(lock block?)
       (cond
+       [(not lock) (void)]
        [(spinlock? lock)
 	(spinlock-acquire lock block?)]
        [else
@@ -89,6 +91,7 @@
   
   (define (lock-release lock)
     (cond
+     [(not lock) (void)]
      [(spinlock? lock)
       (spinlock-release lock)]
      [else

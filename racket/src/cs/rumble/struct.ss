@@ -547,10 +547,14 @@
     (record-type-uid
      (prefab-key+count->rtd (cons prefab-key total*-count)))))
 
+(define (prefab-ref prefab-key+count)
+  (with-interrupts-disabled ; atomic access of `prefabs`
+   (and prefabs
+        (hash-ref prefabs prefab-key+count #f))))
+
 (define (prefab-key+count->rtd prefab-key+count)
   (cond
-   [(and prefabs
-         (hash-ref prefabs prefab-key+count #f))
+   [(prefab-ref prefab-key+count)
     => (lambda (rtd) rtd)]
    [else
     (let* ([prefab-key (car prefab-key+count)]
@@ -573,14 +577,14 @@
            [mutables (prefab-key-mutables prefab-key)])
       (with-interrupts-disabled
        (cond
-        [(and prefabs
-              (hash-ref prefabs prefab-key+count #f))
+        [(prefab-ref prefab-key+count)
          ;; rtd was created concurrently
          => (lambda (rtd) rtd)]
         [else
          (putprop uid 'prefab-key+count prefab-key+count)
-         (unless prefabs (set! prefabs (make-weak-hash)))
-         (hash-set! prefabs prefab-key+count rtd)
+         (with-interrupts-disabled ; atomic use of `prefabs` table
+          (unless prefabs (set! prefabs (make-weak-hash)))
+          (hash-set! prefabs prefab-key+count rtd))
          (unless parent-rtd
            (record-type-equal-procedure rtd default-struct-equal?)
            (record-type-hash-procedure rtd default-struct-hash))

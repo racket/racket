@@ -2269,8 +2269,14 @@
           (lambda (a hc)
             (hc (a-v a)))))
 
-  (for ([i 1000])
-    (hash-set! ht (a i) i))
+  (define all-save-keys (make-hasheq))
+
+  (hash-set! all-save-keys
+             #f
+             (for/list ([i 1000])
+               (define k (a i))
+               (hash-set! ht k i)
+               k))
 
   (define cht (chaperone-hash ht
                               (lambda (ht k) (values k (lambda (ht k v) v)))
@@ -2295,7 +2301,7 @@
            (unless (equal? (hash-ref cht k #f) v)
              (error "oops")))
          (semaphore-post done)
-         save-keys))))
+         (hash-set! all-save-keys j save-keys)))))
 
   (for-each sync ths)
 
