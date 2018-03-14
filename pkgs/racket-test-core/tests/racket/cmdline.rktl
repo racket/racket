@@ -204,6 +204,16 @@
 (syntax-test #'(command-line #:program "hello" #:argv #("ok") #:args 'done #:once-any [("-ok") a 7]))
 (syntax-test #'(command-line #:program "hello" #:argv #("ok") #:args (ok) 'done #:once-any [("-ok") a "the ok flag" 7]))
 
+;; Make sure that `command-line` check flag syntax itself
+(syntax-test #'(command-line #:once-any [("-1") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("+5") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("-") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("++") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("-+") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("-xx") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("-h") "oops" (void)]))
+(syntax-test #'(command-line #:once-any [("--help") "oops" (void)]))
+
 (err/rt-test (parse-command-line "test" #("x") null (lambda () 'too-few) '("arg")))
 (err/rt-test (parse-command-line "test" #("x") null (lambda (x) 'still-too-few) '("arg")))
 (err/rt-test (parse-command-line "test" #("x") null (lambda (x y z) 'too-many) '("arg")))
