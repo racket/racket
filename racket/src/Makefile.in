@@ -109,11 +109,10 @@ plain-install:
 	$(MAKE) plain-install-@MAIN_VARIANT@
 
 install-common-first:
-	if [ "$(DESTDIR)" != "" ]; then \
-          if [[ "$(DESTDIR)" != /* ]]; then \
-            echo "expected an absolute path for DESTDIR; given: $(DESTDIR)"; exit 1; \
-          fi; \
-        fi
+	case "$(DESTDIR)" in \
+	  "" | /*) ;; \
+	  *) echo "expected an absolute path for DESTDIR; given: $(DESTDIR)"; exit 1;; \
+        esac
 	mkdir -p $(ALLDIRINFO)
 
 install-common-middle:
