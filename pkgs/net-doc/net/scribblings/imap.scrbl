@@ -247,7 +247,7 @@ empty list, @racket[#t] otherwise.}
          (listof (cons/c exact-nonnegative-integer?
                          (listof pair?)))]{
 
-Returns information must like @racket[imap-get-messages], but includes
+Returns information much like @racket[imap-get-messages], but includes
 information reported asynchronously by the server (e.g., to notify a
 client with some other client changes a message attribute).  Instead
 of reporting specific requested information for specific messages, the
