@@ -27,6 +27,10 @@
 #include "nummacs.h"
 #include <math.h>
 
+READ_ONLY Scheme_Object *scheme_unsafe_fx_plus_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_minus_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_times_proc;
+
 static Scheme_Object *plus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *mult (int argc, Scheme_Object *argv[]);
@@ -184,17 +188,20 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
 
   p = scheme_make_folding_prim(fx_plus, "fx+", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx+", p, env);
 
   p = scheme_make_folding_prim(fx_minus, "fx-", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx-", p, env);
 
   p = scheme_make_folding_prim(fx_mult, "fx*", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_FIXNUM);
+                                                            | SCHEME_PRIM_PRODUCES_FIXNUM
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx*", p, env);
 
   p = scheme_make_folding_prim(fx_div, "fxquotient", 2, 2, 1);
@@ -350,19 +357,25 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
   Scheme_Object *p;
   int flags;
 
+  REGISTER_SO(scheme_unsafe_fx_plus_proc);
   p = scheme_make_folding_prim(unsafe_fx_plus, "unsafe-fx+", 2, 2, 1);
+  scheme_unsafe_fx_plus_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx+", p, env);
 
+  REGISTER_SO(scheme_unsafe_fx_minus_proc);
   p = scheme_make_folding_prim(unsafe_fx_minus, "unsafe-fx-", 2, 2, 1);
+  scheme_unsafe_fx_minus_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx-", p, env);
 
+  REGISTER_SO(scheme_unsafe_fx_times_proc);
   p = scheme_make_folding_prim(unsafe_fx_mult, "unsafe-fx*", 2, 2, 1);
+  scheme_unsafe_fx_times_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);

@@ -3437,7 +3437,9 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
     else
       want_v = ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_STRUCT
-                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                   ? STRUCT_PROC_SHAPE_AUTHENTIC
+                   : 0));
   } else if (!SCHEME_PRIMP(e)) {
     want_v = -1;
   } else {
@@ -3450,7 +3452,9 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_PRED) {
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = (STRUCT_PROC_SHAPE_PRED
-                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                   ? STRUCT_PROC_SHAPE_AUTHENTIC
+                   : 0));
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER) {
       int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
       int parent_slots;
@@ -3464,13 +3468,17 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
         pos = 0; /* => unknown, since simple struct info can't track it */
       want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT)
                 | STRUCT_PROC_SHAPE_SETTER
-                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                   ? STRUCT_PROC_SHAPE_AUTHENTIC
+                   : 0));
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER) {
       int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = ((pos << STRUCT_PROC_SHAPE_SHIFT) 
                 | STRUCT_PROC_SHAPE_GETTER
-                | (st->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
+                | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
+                   ? STRUCT_PROC_SHAPE_AUTHENTIC
+                   : 0));
     } else if ((i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
                || (i == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
                || (i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER)) {

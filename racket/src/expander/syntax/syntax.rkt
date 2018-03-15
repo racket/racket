@@ -229,6 +229,7 @@
 (define-inline (syntax-map s f d->s s-e [seen #f])
   (let loop ([s s])
     (datum-map s
+               f
                (lambda (tail? v)
                  (cond
                   [(syntax? v) (d->s v (loop (s-e v)))]
@@ -236,11 +237,12 @@
                seen)))
 
 ;; `(non-syntax-map s f s->)` is like `(syntax-map s f d->s)`, except that
-;;  when a syntax object is found, it is just passed to `d` --- so there's
+;;  when a syntax object is found, it is just passed to `s->` --- so there's
 ;;  no `d->s` or `s-e`, since they would not be called
 
 (define-inline (non-syntax-map s f [s-> (lambda (x) x)] [seen #f])
   (datum-map s
+             f
              (lambda (tail? v)
                (cond
                 [(syntax? v) (s-> v)]

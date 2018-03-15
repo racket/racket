@@ -10,6 +10,7 @@
 
 ;; Wrapper for provides that are protected or syntax
 (struct provided (binding protected? syntax?)
+  #:authentic
   #:transparent
   #:property prop:serialize
   (lambda (p ser-push! state)

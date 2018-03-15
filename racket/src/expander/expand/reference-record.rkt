@@ -18,7 +18,8 @@
 (struct reference-record ([already-bound #:mutable]
                           [reference-before-bound #:mutable]
                           [all-referenced? #:mutable])
-        #:transparent)
+  #:authentic
+  #:transparent)
 
 (define (make-reference-record)
   (reference-record (seteq) (seteq) #f))

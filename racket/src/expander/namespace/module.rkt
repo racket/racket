@@ -77,7 +77,8 @@
                 inspector       ; declaration-time inspector
                 submodule-names ; associated submodules (i.e, when declared together)
                 supermodule-name ; associated supermodule (i.e, when declared together)
-                get-all-variables)) ; for `module->indirect-exports`
+                get-all-variables) ; for `module->indirect-exports`
+  #:authentic)
 
 ;; [*] Beware that tabels in `provides` may map non-interned symbols
 ;;     to provided bindings, in case something like a lifted
@@ -93,7 +94,8 @@
                              inspector           ; declaration-time inspector
                              extra-inspector     ; optional extra inspector
                              extra-inspectorsss) ; optional extra inspector sets per variable per import
-        #:transparent)
+  #:authentic
+  #:transparent)
 
 (define (make-module #:source-name [source-name #f]
                      #:self self
@@ -140,7 +142,8 @@
                          phase-level-to-state          ; phase-level -> #f, 'available, or 'started
                          [made-available? #:mutable]   ; no #f in `phase-level-to-state`?
                          [attached? #:mutable]         ; whether the instance has been attached elsewhere
-                         data-box))                    ; for use by module implementation
+                         data-box)                     ; for use by module implementation
+  #:authentic)
 
 (define (make-module-instance m-ns m)
   (module-instance m-ns           ; namespace

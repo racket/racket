@@ -51,6 +51,7 @@
    [else
     (same-binding? ab bb)]))
 
+;; By tradition, equate "unbound" with "bound at the top level"
 (define (toplevel-as-symbol b)
   (if (and (module-binding? b)
            (top-level-module-path-index? (module-binding-module b)))

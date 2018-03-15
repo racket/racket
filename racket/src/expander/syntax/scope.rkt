@@ -395,8 +395,10 @@
 
 (define (syntax-e s)
   (define content (syntax-e/no-taint s))
+  ;; Since we just called `syntax-e/no-taint`, we know that
+  ;; `(syntax-scope-propagations+tamper s)` is not a propagation
   (cond
-   [(not (tamper-armed? (syntax-tamper s))) content]
+   [(not (tamper-armed? (syntax-scope-propagations+tamper s))) content]
    [(datum-has-elements? content) (taint-content content)]
    [else content]))
 

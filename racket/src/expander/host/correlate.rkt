@@ -88,10 +88,10 @@
      [else (error 'correlated->list "not a list")])))
 
 (define (correlated->datum e)
-  (datum-map e (lambda (tail? d)
-                 (if (syntax? d)
-                     (syntax->datum d)
-                     d))))
+  (datum-map e (lambda (tail? d) d) (lambda (tail? d)
+                                      (if (syntax? d)
+                                          (syntax->datum d)
+                                          d))))
 
 (define (correlated-property-symbol-keys e)
   (syntax-property-symbol-keys e))

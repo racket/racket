@@ -55,7 +55,7 @@
   #:authentic)
 
 ;; A `required` represents an identifier required into a module
-(struct required (id phase can-be-shadowed? as-transformer?))
+(struct required (id phase can-be-shadowed? as-transformer?) #:authentic)
 
 ;; A `nominal` supports a reverse mapping of bindings to nominal info
 (struct nominal (module provide-phase require-phase sym) #:transparent #:authentic)

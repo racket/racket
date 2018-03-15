@@ -63,6 +63,7 @@
                    module-instances)   ; union resolved-module-path -> module-instance        [shared among modules]
   ;;                                   ;       0-phase -> resolved-module-path -> module-instance
   ;;                                   ; where the first option is for cross phase persistent modules
+  #:authentic
   #:property prop:custom-write
   (lambda (ns port mode)
     (write-string "#<namespace" port)
@@ -79,7 +80,8 @@
     (write-string ">" port)))
 
 (struct definitions (variables      ; linklet instance
-                     transformers)) ; sym -> val
+                     transformers)  ; sym -> val
+  #:authentic)
 
 (define (make-namespace)
   (new-namespace))

@@ -56,8 +56,9 @@
 
 (struct lift-context (convert       ; takes a list of ids and rhs to produce a lifted-bind
                       lifts         ; box of list of lifted-binds and maybe other forms
-                      module*-ok?)) ; if used to capture module lifts, allow `module*`?
-(struct lifted-bind (ids keys rhs))
+                      module*-ok?)  ; if used to capture module lifts, allow `module*`?
+  #:authentic)
+(struct lifted-bind (ids keys rhs) #:authentic)
 
 (define (make-lift-context convert #:module*-ok? [module*-ok? #f])
   (lift-context convert (box null) module*-ok?))
@@ -137,9 +138,10 @@
 
 ;; ----------------------------------------
 
-(struct module-lift-context (wrt-phase   ; phase of target for lifts
-                             lifts         ; box of list of lifted
-                             module*-ok?)) ; whether `module*` is allowed
+(struct module-lift-context (wrt-phase    ; phase of target for lifts
+                             lifts        ; box of list of lifted
+                             module*-ok?) ; whether `module*` is allowed
+  #:authentic)
 
 (define (make-module-lift-context phase module*-ok?)
   (module-lift-context phase (box null) module*-ok?))
@@ -176,7 +178,8 @@
 
 (struct require-lift-context (do-require  ; callback to process a lifted require
                               wrt-phase   ; phase of target for lifts
-                              requires))  ; records lifted requires
+                              requires)   ; records lifted requires
+  #:authentic)
 
 (define (make-require-lift-context wrt-phase do-require)
   (require-lift-context do-require wrt-phase (box null)))
@@ -194,7 +197,8 @@
 (struct to-module-lift-context (wrt-phase   ; phase of target for lifts
                                 provides
                                 end-as-expressions?
-                                ends))
+                                ends)
+  #:authentic)
 
 (define (make-to-module-lift-context phase
                                      #:shared-module-ends ends

@@ -9,10 +9,12 @@
 ;; the table after failing to find an entry (and if the transaction
 ;; fails, we look again for an entry).
 
-(struct weak-intern-table (box))
+(struct weak-intern-table (box)
+  #:authentic)
 (struct table (ht         ; integer[hash code] -> list of weak boxes
                count      ; number of items in the table (= sum of list lengths)
-               prune-at)) ; count at which we should try to prune empty weak boxes
+               prune-at)  ; count at which we should try to prune empty weak boxes
+  #:authentic)
 
 (define (make-weak-intern-table)
   (weak-intern-table (box (table (hasheqv) 0 128))))

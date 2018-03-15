@@ -47,7 +47,8 @@
   (lambda (twbb ser-push! state)
     (ser-push! 'tag '#:table-with-bulk-bindings)
     (ser-push! (table-with-bulk-bindings-syms/serialize twbb))
-    (ser-push! (table-with-bulk-bindings-bulk-bindings twbb))))
+    (ser-push! (table-with-bulk-bindings-bulk-bindings twbb)))
+  #:authentic)
 
 (define (deserialize-table-with-bulk-bindings syms bulk-bindings)
   (table-with-bulk-bindings syms syms bulk-bindings))
@@ -67,7 +68,8 @@
     ;; bulk bindings are pruned dependong on whether all scopes
     ;; in `scopes` are reachable, and we shouldn't get here
     ;; when looking for scopes
-    (error "shouldn't get here")))
+    (error "shouldn't get here"))
+  #:authentic)
 
 (define (deserialize-bulk-binding-at scopes bulk)
   (bulk-binding-at scopes bulk))

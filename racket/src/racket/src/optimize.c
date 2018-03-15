@@ -540,6 +540,25 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     }
   }
 
+  /* check for struct-type declaration: */
+  if (!(flags & OMITTABLE_IGNORE_MAKE_STRUCT_TYPE)) {
+    Scheme_Object *auto_e;
+    int auto_e_depth;
+    auto_e = scheme_is_simple_make_struct_type(o, vals,
+                                               (((flags & OMITTABLE_RESOLVED) ? CHECK_STRUCT_TYPE_RESOLVED : 0)
+                                                | CHECK_STRUCT_TYPE_ALWAYS_SUCCEED
+                                                | CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK),
+                                               &auto_e_depth, 
+                                               NULL, NULL,
+                                               opt_info,
+                                               NULL, NULL, 0, NULL, NULL,
+                                               5);
+    if (auto_e) {
+      if (scheme_omittable_expr(auto_e, 1, fuel - 1, flags, opt_info, warn_info))
+        return 1;
+    }
+  }
+
   if (vtype == scheme_branch_type) {
     Scheme_Branch_Rec *b;
     b = (Scheme_Branch_Rec *)o;
@@ -685,25 +704,6 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     else if (SAME_TYPE(scheme_ir_local_type, SCHEME_TYPE(sb->var))
              && SAME_OBJ(sb->var, sb->val))
       return 1;
-  }
-
-  /* check for struct-type declaration: */
-  if (!(flags & OMITTABLE_IGNORE_MAKE_STRUCT_TYPE)) {
-    Scheme_Object *auto_e;
-    int auto_e_depth;
-    auto_e = scheme_is_simple_make_struct_type(o, vals,
-                                               (((flags & OMITTABLE_RESOLVED) ? CHECK_STRUCT_TYPE_RESOLVED : 0)
-                                                | CHECK_STRUCT_TYPE_ALWAYS_SUCCEED
-                                                | CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK),
-                                               &auto_e_depth, 
-                                               NULL, NULL,
-                                               opt_info,
-                                               NULL, NULL, 0, NULL, NULL,
-                                               5);
-    if (auto_e) {
-      if (scheme_omittable_expr(auto_e, 1, fuel - 1, flags, opt_info, warn_info))
-        return 1;
-    }
   }
 
   /* check for struct-type property declaration: */
@@ -1389,7 +1389,8 @@ static int is_ok_value(Ok_Value_Callback ok_value, void *data,
         return ok_value(data, v, OK_CONSTANT_VALIDATE_SHAPE);
       }
     }
-  }
+  } else if (SCHEME_TYPE(arg) > _scheme_ir_values_types_)
+    return ok_value(data, arg, OK_CONSTANT_VALUE);
   
   return 0;
 }
@@ -1459,7 +1460,7 @@ static int is_constant_super(Scheme_Object *arg,
                      enclosing_linklet);
 }
 
-static int ok_constant_property_with_guard(void *data, Scheme_Object *v, int mode)
+static int ok_constant_property_without_guard(void *data, Scheme_Object *v, int mode)
 {
   intptr_t k = 0;
 
@@ -1499,7 +1500,7 @@ static int is_struct_type_property_without_guard(Scheme_Object *arg,
                                                  Scheme_Linklet *enclosing_linklet)
 /* Does `arg` produce a structure type property that has no guard (so that any value is ok)? */
 {
-  return is_ok_value(ok_constant_property_with_guard, NULL,
+  return is_ok_value(ok_constant_property_without_guard, NULL,
                      arg,
                      info,
                      top_level_table,
@@ -1517,7 +1518,7 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
 {
   Scheme_Object *arg;
   int i, count;
-  
+
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
     if (!SAME_OBJ(((Scheme_App_Rec *)a)->args[0], scheme_list_proc))
       return 0;
@@ -1571,7 +1572,7 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
         return 0;
     }
   }
-  
+
   return 1;
 }
 
@@ -4661,6 +4662,11 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
           SCHEME_APPN_FLAGS(new) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
           return finish_optimize_application3(new, info, context);
         }
+      } else if ((mode == STRUCT_PROC_SHAPE_PRED) && pred && predicate_implies_not(pred, alt)) {
+         /* We know that the predicate will fail */
+        return replace_tail_inside(make_discarding_sequence(rand, scheme_false, info),
+                                   inside,
+                                   app->rand);
       }
 
       /* Register type based on getter succeeding: */
@@ -5064,6 +5070,10 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       check_known_both_try(info, app_o, rator, rand1, rand2, "fxmin", scheme_fixnum_p_proc, scheme_unsafe_fx_min_proc, info->unsafe_mode);
       check_known_both_try(info, app_o, rator, rand1, rand2, "fxmax", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc, info->unsafe_mode);
 
+      check_known_both_try(info, app_o, rator, rand1, rand2, "fx+", scheme_fixnum_p_proc, scheme_unsafe_fx_plus_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "fx-", scheme_fixnum_p_proc, scheme_unsafe_fx_minus_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "fx*", scheme_fixnum_p_proc, scheme_unsafe_fx_times_proc, info->unsafe_mode);
+
       rator = app->rator; /* in case it was updated */
 
       check_known_both(info, app_o, rator, rand1, rand2, "string-append", scheme_string_p_proc, scheme_true, info->unsafe_mode);
@@ -5159,13 +5169,13 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
           SCHEME_APPN_FLAGS(new_app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
           return finish_optimize_application(new_app, info, context);
         }
-      }
 
-      /* Register type based on setter succeeding: */
-      if (!SCHEME_NULLP(SCHEME_PROC_SHAPE_IDENTITY(alt))
-          && SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type))
-        add_type(info, app->rand1, scheme_make_struct_proc_shape(STRUCT_PROC_SHAPE_PRED,
-                                                                 SCHEME_PROC_SHAPE_IDENTITY(alt)));
+        /* Register type based on setter succeeding: */
+        if (!SCHEME_NULLP(SCHEME_PROC_SHAPE_IDENTITY(alt))
+            && SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type))
+          add_type(info, app->rand1, scheme_make_struct_proc_shape(STRUCT_PROC_SHAPE_PRED,
+                                                                   SCHEME_PROC_SHAPE_IDENTITY(alt)));
+      }
     }
   }
   
@@ -5754,12 +5764,15 @@ static int predicate_implies_not(Scheme_Object *pred1, Scheme_Object *pred2)
     return 0;
 
   /* we don't track structure-type identity precisely enough to know
-     that structures don't rule out other structures --- or even other
-     prdicates (such as `procedure?`) */
-  if (SAME_TYPE(SCHEME_TYPE(pred1), scheme_struct_proc_shape_type)
-      || SAME_TYPE(SCHEME_TYPE(pred2), scheme_struct_proc_shape_type))
+     that structures don't rule out other structures; among the
+     tracked predicates, only `procedure?` is compatible with
+     structures */
+  if ((SAME_TYPE(SCHEME_TYPE(pred1), scheme_struct_proc_shape_type)
+       || SAME_OBJ(pred1, scheme_procedure_p_proc))
+      && (SAME_TYPE(SCHEME_TYPE(pred2), scheme_struct_proc_shape_type)
+          || SAME_OBJ(pred2, scheme_procedure_p_proc)))
     return 0;
-  
+
   /* Otherwise, with our current set of predicates, overlapping matches happen
      only when one implies the other: */
   return (!predicate_implies(pred1, pred2) && !predicate_implies(pred2, pred1));
@@ -8882,6 +8895,9 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
   Optimize_Info *limited_info;
   Optimize_Info_Sequence info_seq;
   Scheme_Hash_Tree **iu;
+  /* For now, treat unsafe mode as a hint that cooperation with the validator
+     is not needed. We may eventually give up on the validator completely. */
+  int support_validation = !unsafe_mode;
 
   info = optimize_info_create(linklet, enforce_const, can_inline, unsafe_mode);
   info->context = (Scheme_Object *)linklet;
@@ -9051,23 +9067,27 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
         n = SCHEME_DEFN_VAR_COUNT(defn);
 	e = SCHEME_DEFN_RHS(defn);
 
-        limited_info->cross = info->cross;
+        if (support_validation)
+          limited_info->cross = info->cross;
 	cont = scheme_omittable_expr(e, n, -1,
-                                     /* ignore APPN_FLAG_OMITTABLE, because the
-                                        validator won't be able to reconstruct it
-                                        in general; also, don't recognize struct-type
-                                        functions, since they weren't recognized
-                                        as immediate calls */
-                                     (OMITTABLE_IGNORE_APPN_OMIT
-                                      | OMITTABLE_IGNORE_MAKE_STRUCT_TYPE),
+                                     (support_validation
+                                      /* ignore APPN_FLAG_OMITTABLE, because the
+                                         validator won't be able to reconstruct it
+                                         in general; also, don't recognize struct-type
+                                         functions, since they weren't recognized
+                                         as immediate calls */
+                                      ? (OMITTABLE_IGNORE_APPN_OMIT
+                                         | OMITTABLE_IGNORE_MAKE_STRUCT_TYPE)
+                                      : 0),
                                      /* similarly, use `limited_info` instead of `info'
                                         here, because the decision
                                         of omittable should not depend on
                                         information that's only available at
                                         optimization time: */
-                                     limited_info, 
+                                     (support_validation ? limited_info : info), 
                                      info);
-        info->cross = limited_info->cross;
+        if (support_validation)
+          info->cross = limited_info->cross;
 
         if (n == 1) {
           if (ir_propagate_ok(e, info, 0, NULL))
@@ -9094,7 +9114,7 @@ Scheme_Linklet *scheme_optimize_linklet(Scheme_Linklet *linklet,
         } else
           sstruct = NULL;
 
-        if ((sstruct || sprop) && !cont) {
+        if (support_validation && (sstruct || sprop) && !cont) {
           /* Since the `make-struct-type` or `make-struct-tye-property` form is immediate
              enough that the validator can see it, re-check whether we can continue
              a group of simultaneously defined variables. */
