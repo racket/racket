@@ -442,7 +442,9 @@ int scheme_is_struct_functional(Scheme_Object *rator, int num_args, Optimize_Inf
         int mode = (SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK);
         int field_count = (SCHEME_PROC_SHAPE_MODE(c) >> STRUCT_PROC_SHAPE_SHIFT);
         if (((num_args == 1) && (mode == STRUCT_PROC_SHAPE_PRED))
-            || ((num_args == field_count) && (mode == STRUCT_PROC_SHAPE_CONSTR))) {
+            || ((num_args == field_count)
+                && (mode == STRUCT_PROC_SHAPE_CONSTR)
+                && (SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_NONFAIL_CONSTR))) {
           return 1;
         }
       } else if (SAME_TYPE(SCHEME_TYPE(c), scheme_struct_prop_proc_shape_type)) {
@@ -1398,7 +1400,8 @@ static int is_ok_value(Ok_Value_Callback ok_value, void *data,
 static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
 /* Is `v` a structure type (which can serve as a supertype)? */
 {
-  Scheme_Object **_parent_identity = (Scheme_Object **)data;
+  Scheme_Object **_parent_identity = (Scheme_Object **)((void **)data)[0];
+  int *_nonfail_constr = (int *)((void **)data)[1];
 
   if (mode == OK_CONSTANT_SHAPE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
@@ -1407,20 +1410,28 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       if (mode == STRUCT_PROC_SHAPE_STRUCT) {
         if (_parent_identity)
           *_parent_identity = SCHEME_PROC_SHAPE_IDENTITY(v);
+        if (_nonfail_constr)
+          *_nonfail_constr = SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
         return field_count + 1;
       }
     }
   } else if (mode == OK_CONSTANT_ENCODED_SHAPE) {
     intptr_t k;
     if (scheme_decode_struct_shape(v, &k)) {
-      if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+      if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT) {
+        if (_nonfail_constr)
+          *_nonfail_constr = k & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
         return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+      }
     }
   } else if (mode == OK_CONSTANT_VALIDATE_SHAPE) {
     int k = SCHEME_INT_VAL(v);
     if ((k >= 0)
-        && (k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+        && (k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT) {
+      if (_nonfail_constr)
+        *_nonfail_constr = k & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
       return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+    }
   } else if (mode == OK_CONSTANT_VARIANT) {
     if (SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 3)) {
       if (_parent_identity)
@@ -1429,15 +1440,21 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       if (v && SCHEME_INTP(v)) {
         int mode = (SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_MASK);
         int field_count = (SCHEME_INT_VAL(v) >> STRUCT_PROC_SHAPE_SHIFT);
-        if (mode == STRUCT_PROC_SHAPE_STRUCT)
+        if (mode == STRUCT_PROC_SHAPE_STRUCT) {
+          if (_nonfail_constr)
+            *_nonfail_constr = SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
           return field_count + 1;
+        }
       }
     }
   } else if (mode == OK_CONSTANT_VALUE) {
     if (SCHEME_STRUCT_TYPEP(v)) {
       Scheme_Struct_Type *st = (Scheme_Struct_Type *)v;
-      if (st->num_slots == st->num_islots)
+      if (st->num_slots == st->num_islots) {
+        if (_nonfail_constr)
+          *_nonfail_constr = st->nonfail_constructor;
         return st->num_slots + 1;
+      }
     }
   }
 
@@ -1449,10 +1466,16 @@ static int is_constant_super(Scheme_Object *arg,
                              Scheme_Hash_Table *top_level_table,
                              Scheme_Object **runstack, int rs_delta,
                              Scheme_Linklet *enclosing_linklet,
-                             Scheme_Object **_parent_identity)
+                             Scheme_Object **_parent_identity,
+                             int *_nonfail_constr)
 /* Does `arg` produce another structure type (which can serve as a supertype)? */
 {
-  return is_ok_value(ok_constant_super_value, _parent_identity,
+  void *data[2];
+
+  data[0] = _parent_identity;
+  data[1] = _nonfail_constr;
+  
+  return is_ok_value(ok_constant_super_value, data,
                      arg,
                      info,
                      top_level_table,
@@ -1591,7 +1614,6 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
    pending a check of the auto-value argument if `flags` includes `CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK`.
    The expression itself must have no side-effects except for errors (but the possibility
    of errors means that the expression is not necessarily omittable).
-   The resulting *constructor* must always succeed (i.e., no guards).
    The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
    The first result of `e` will be a struct type, the second a constructor, and the third a predicate;
    the rest are selectors and mutators. */
@@ -1606,7 +1628,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
 
       if ((app->num_args >= 4) && (app->num_args <= 11)
           && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
-        int super_count_plus_one;
+        int super_count_plus_one, super_nonfail_constr = 1;
 
         if (_parent_identity)
           *_parent_identity = scheme_null;
@@ -1614,7 +1636,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           super_count_plus_one = is_constant_super(app->args[2], 
                                                    info, top_level_table, runstack,
                                                    rs_delta + app->num_args,
-                                                   enclosing_linklet, _parent_identity);
+                                                   enclosing_linklet, _parent_identity,
+                                                   &super_nonfail_constr);
         else
           super_count_plus_one = 0;
 
@@ -1663,7 +1686,9 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                SCHEME_INT_VAL(app->args[3])))
             && ((app->num_args < 10)
                 /* guard: */
-                || SCHEME_FALSEP(app->args[10]))
+                || SCHEME_FALSEP(app->args[10])
+                /* Could try to check for procedure with correct arity: */
+                || !(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED))
             && ((app->num_args < 11)
                 /* constructor name: */
                 || SCHEME_FALSEP(app->args[11])
@@ -1694,6 +1719,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                            enclosing_linklet,
                                            1, &authentic))
               _stinfo->authentic = authentic;
+            _stinfo->nonfail_constructor = (super_nonfail_constr
+                                            && ((app->num_args < 10) || SCHEME_FALSEP(app->args[10])));
             _stinfo->num_gets = 1;
             _stinfo->num_sets = 1;
           }
@@ -1822,12 +1849,15 @@ intptr_t scheme_get_struct_proc_shape(int k, Simple_Struct_Type_Info *stinfo)
     if (stinfo->field_count == stinfo->init_field_count)
       return (STRUCT_PROC_SHAPE_STRUCT
               | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)
+              | (stinfo->nonfail_constructor ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR : 0)
               | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT));
     else
       return STRUCT_PROC_SHAPE_OTHER;
     break;
   case 1:
-    return STRUCT_PROC_SHAPE_CONSTR | (stinfo->init_field_count << STRUCT_PROC_SHAPE_SHIFT);
+    return (STRUCT_PROC_SHAPE_CONSTR
+            | (stinfo->init_field_count << STRUCT_PROC_SHAPE_SHIFT)
+            | (stinfo->nonfail_constructor ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR : 0));
     break;
   case 2:
     return (STRUCT_PROC_SHAPE_PRED
@@ -3845,10 +3875,11 @@ static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
     if (SAME_TYPE(SCHEME_TYPE(rator), scheme_proc_shape_type)) {
       return APPN_FLAG_SFS_TAIL;
     } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_struct_proc_shape_type)) {
-      int ps = SCHEME_PROC_SHAPE_MODE(rator);
+      int ps = SCHEME_PROC_SHAPE_MODE(rator) & STRUCT_PROC_SHAPE_MASK;
       if ((ps == STRUCT_PROC_SHAPE_PRED)
           || (ps == STRUCT_PROC_SHAPE_GETTER)
-          || (ps == STRUCT_PROC_SHAPE_SETTER))
+          || (ps == STRUCT_PROC_SHAPE_SETTER)
+          || (ps == STRUCT_PROC_SHAPE_CONSTR))
         return (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
       return 0;
     }

@@ -1079,6 +1079,7 @@ typedef struct Scheme_Struct_Type {
   mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
   char authentic; /* 1 => chaperones/impersonators disallowed */
+  char nonfail_constructor; /* 1 => constructor never fails */
 
   Scheme_Object *name;
 
@@ -3042,6 +3043,7 @@ typedef struct {
   int normal_ops;  /* are selectors and predicates in the usual order? */
   int indexed_ops; /* do selectors have the index built in (as opposed to taking an index argument)? */
   int authentic; /* conservatively 0 is ok */
+  int nonfail_constructor;
   int num_gets, num_sets;
   int setter_fields; /* if indexed, bitmap for first 32 fields to indicate which have setters */
 } Simple_Struct_Type_Info;
@@ -3077,8 +3079,9 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 #define STRUCT_PROC_SHAPE_SETTER  4
 #define STRUCT_PROC_SHAPE_OTHER   5
 #define STRUCT_PROC_SHAPE_MASK    0xF
-#define STRUCT_PROC_SHAPE_AUTHENTIC 0x10
-#define STRUCT_PROC_SHAPE_SHIFT   5
+#define STRUCT_PROC_SHAPE_AUTHENTIC       0x10
+#define STRUCT_PROC_SHAPE_NONFAIL_CONSTR  0x20
+#define STRUCT_PROC_SHAPE_SHIFT   6
 
 typedef struct Scheme_Struct_Proc_Shape {
   Scheme_Object so;

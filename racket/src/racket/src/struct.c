@@ -3439,6 +3439,10 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
                 | STRUCT_PROC_SHAPE_STRUCT
                 | ((st->authentic && (!expected || (v & STRUCT_PROC_SHAPE_AUTHENTIC)))
                    ? STRUCT_PROC_SHAPE_AUTHENTIC
+                   : 0)
+                | ((st->nonfail_constructor
+                    && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
+                   ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
                    : 0));
   } else if (!SCHEME_PRIMP(e)) {
     want_v = -1;
@@ -3447,8 +3451,12 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
     if ((i == SCHEME_PRIM_STRUCT_TYPE_CONSTR)
         || (i == SCHEME_PRIM_STRUCT_TYPE_SIMPLE_CONSTR)) {
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-      want_v = ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT) 
-                | STRUCT_PROC_SHAPE_CONSTR);
+      want_v = ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT)
+                | STRUCT_PROC_SHAPE_CONSTR
+                | ((st->nonfail_constructor
+                    && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
+                   ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
+                   : 0));
     } else if (i == SCHEME_PRIM_STRUCT_TYPE_PRED) {
       st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
       want_v = (STRUCT_PROC_SHAPE_PRED
@@ -4737,6 +4745,7 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
   struct_type->name_pos = depth;
   struct_type->authentic = 0;
+  struct_type->nonfail_constructor = 1;
   struct_type->inspector = scheme_false;
   struct_type->uninit_val = uninit_val;
   struct_type->props = NULL;
@@ -4803,6 +4812,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   }
 
   struct_type->name = base;
+  struct_type->nonfail_constructor = (parent_type ? parent_type->nonfail_constructor : 1);
 
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
   struct_type->num_islots = num_fields + (parent_type ? parent_type->num_islots : 0);
@@ -5066,6 +5076,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
     }
     
     struct_type->guard = guard;
+    struct_type->nonfail_constructor = 0;
   } else if (chaperone_undefined) {
     struct_type->guard = scheme_undefined;
   }
@@ -5073,6 +5084,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   if (parent && SCHEME_NP_CHAPERONEP(parent)) {
     guard = add_struct_type_chaperone_guards(parent, struct_type->guard);
     struct_type->guard = guard;
+    struct_type->nonfail_constructor = 0;
   }
 
   if (checked_proc)

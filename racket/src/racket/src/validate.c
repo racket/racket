@@ -1092,7 +1092,8 @@ static int is_functional_nonfailing_rator(Scheme_Object *rator, int num_args, in
       v = scheme_hash_get(*_st_ht, scheme_make_integer(pos));
       if (v) {
         int k = SCHEME_INT_VAL(v);
-        if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_CONSTR) {
+        if (((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_CONSTR)
+            && (k & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)) {
           if (num_args == (k >> STRUCT_PROC_SHAPE_SHIFT))
             return 1;
         } else if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED) {
