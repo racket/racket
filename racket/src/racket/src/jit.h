@@ -1530,7 +1530,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
                               int result_ignored,
                               int check_proc, int check_arg_fixnum,
                               int type_pos, int field_pos,
-                              int authentic,
+                              int authentic, int type_unpacked,
                               int pop_and_jump,
                               jit_insn *refslow, jit_insn *refslow2,
                               jit_insn *bref_false, jit_insn *bref_true);

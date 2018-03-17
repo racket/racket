@@ -640,8 +640,21 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *refslow;
   Scheme_Object *inline_rator;
+  int type_unpacked = 0;
 
   LOG_IT(("inlined struct op\n"));
+
+  if ((kind == INLINE_STRUCT_PROC_PRED)
+      && SAME_TYPE(SCHEME_TYPE(rator), scheme_static_toplevel_type)) {
+    /* If a static toplevel has a predicate, then we can extract the
+       structure type eagerly */
+    inline_rator = extract_struct_constant(jitter, rator);
+    if (inline_rator) {
+      rator = ((Scheme_Primitive_Closure *)inline_rator)->val[0];
+      type_unpacked = 1;
+    }
+  } else
+    inline_rator = NULL;
 
   if (!rand2) {
     scheme_generate_two_args(rator, rand, jitter, 1, 1); /* sync'd below */
@@ -667,7 +680,8 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   if ((kind == INLINE_STRUCT_PROC_PRED)
       || (kind == INLINE_STRUCT_PROC_GET)
       || (kind == INLINE_STRUCT_PROC_SET)) {
-    inline_rator = extract_struct_constant(jitter, rator);
+    if (!inline_rator)
+      inline_rator = extract_struct_constant(jitter, rator);
     if (inline_rator && (kind != INLINE_STRUCT_PROC_PRED)) {
       __START_SHORT_JUMPS__(1);
       ref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
@@ -794,7 +808,7 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
                               result_ignored,
                               0, 0,
                               tpos, pos,
-                              authentic,
+                              authentic, type_unpacked,
                               0, refslow, refslow, NULL, NULL);
     CHECK_LIMIT();
 

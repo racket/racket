@@ -1595,7 +1595,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
                               int result_ignored,
                               int check_proc, int check_arg_fixnum,
                               int type_pos, int field_pos,
-                              int authentic,
+                              int authentic, int type_unpacked,
                               int pop_and_jump,
                               GC_CAN_IGNORE jit_insn *refslow, GC_CAN_IGNORE jit_insn *refslow2,
                               GC_CAN_IGNORE jit_insn *bref_false, GC_CAN_IGNORE jit_insn *bref_true)
@@ -1661,9 +1661,11 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
   CHECK_LIMIT();
 
   if (type_pos != 0) {
-    /* Put argument struct type in R2, target struct type in V1 */
+    /* Put argument struct type in R2, target struct type in V1 if not unpacked */
+    
     jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
     if (type_pos < 0) {
+      MZ_ASSERT(!type_unpacked);
       jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
     }
     CHECK_LIMIT();
@@ -1719,10 +1721,11 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
   CHECK_LIMIT();
 
   /* (Re-)load target type into V1: */
-  jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
+  if (!type_unpacked)
+    jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Primitive_Closure *)0x0)->val);
 
   if (kind == 1) {
-    bref4 = jit_bner_p(jit_forward(), JIT_R2, JIT_V1);
+    bref4 = jit_bner_p(jit_forward(), JIT_R2, (type_unpacked ? JIT_R0 : JIT_V1));
 
     /* True branch: */
     if (!for_branch) {
@@ -1783,6 +1786,7 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
       }
     }
   } else {
+    MZ_ASSERT(!type_unpacked);
     (void)jit_bner_p(refslow2, JIT_R2, JIT_V1);
     bref4 = NULL;
     if (bref8) {
@@ -2024,7 +2028,7 @@ static int common4(mz_jit_state *jitter, void *_data)
       __END_SHORT_JUMPS__(1);
 
       scheme_generate_struct_op(jitter, kind, for_branch, NULL, 1, 0,
-                                1, 1, -1, -1, 0,
+                                1, 1, -1, -1, 0, 0,
                                 1, refslow, refslow2, bref5, bref6);
       CHECK_LIMIT();
 
