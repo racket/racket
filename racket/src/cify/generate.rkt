@@ -121,7 +121,9 @@
          (out-open "~aif (c_argc ~a ~a) {" (if (zero? i) "" "else ") (if (list? ids) "==" ">=") (args-length ids))
          (generate-lambda-case lam leaf? `(lambda ,ids . ,body) free-var-refs closure-offset)
          (out-close "}"))
-       (out "else return c_wrong_arity(~s, c_argc, c_argv);" (format "~a" id))])
+       (out "~areturn c_wrong_arity(~s, c_argc, c_argv);"
+            (if (null? idss) "" "else ")
+            (format "~a" id))])
     (when bracket? (out-close "}")))
 
   ;; Returns a boolean indicating whether the functon can be a leaf

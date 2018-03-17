@@ -27,6 +27,10 @@
      (if (list? ids)
          (values min-a min-a)
          (values min-a -1))]
+    [`(case-lambda)
+     (if precise-cases?
+         (values -1 "\"\"")
+         (values 0 0))]
     [`(case-lambda [,unsorted-idss . ,_] ...)
      (cond
        [precise-cases?
