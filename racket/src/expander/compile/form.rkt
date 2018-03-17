@@ -252,7 +252,7 @@
          ((if to-source?
               (lambda (l name keys getter) (values l keys))
               (lambda (l name keys getter)
-                (compile-linklet l name keys getter serializable?)))
+                (compile-linklet l name keys getter (if serializable? '(serializable) '()))))
           `(linklet
             ;; imports
             (,@body-imports

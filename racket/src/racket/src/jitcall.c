@@ -1856,26 +1856,33 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	  }
 	}
       }
-    } else if (t == scheme_toplevel_type) {
-      if ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
+    } else if ((t == scheme_toplevel_type) || (t == scheme_static_toplevel_type)) {
+      int flags = SCHEME_TOPLEVEL_FLAGS(rator);
+
+      if ((flags & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
         /* We can re-order evaluation of the rator. */
         reorder_ok = 1;
-
+        
         if (jitter->nc
-            && ((SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
+            && ((flags & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST)) {
           Scheme_Object *p;
 
-          p = scheme_extract_global(rator, jitter->nc, 0);
+          if (t == scheme_toplevel_type)
+            p = scheme_extract_global(rator, jitter->nc, 0);
+          else
+            p = SCHEME_STATIC_TOPLEVEL_PREFIX(rator)->a[SCHEME_TOPLEVEL_POS(rator)];
           if (p) {
             p = ((Scheme_Bucket *)p)->val;
             if (can_direct_native(p, num_rands, &extract_case)) {
+              int pos = SCHEME_TOPLEVEL_POS(rator);
+
               direct_native = 1;
-            
-              if ((SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
+
+              if ((pos == jitter->self_toplevel_pos)
                   && (num_rands < MAX_SHARED_CALL_RANDS)) {
-                if (is_tail)
+                if (is_tail) {
                   direct_self = 1;
-                else if (jitter->self_nontail_code)
+                } else if (jitter->self_nontail_code)
                   nontail_self = 1;
               }
             }

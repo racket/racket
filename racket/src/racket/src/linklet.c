@@ -34,6 +34,9 @@ SHARED_OK Scheme_Hash_Tree *empty_hash_tree;
 SHARED_OK static int validate_compile_result = 0;
 SHARED_OK static int recompile_every_compile = 0;
 
+static Scheme_Object *serializable_symbol;
+static Scheme_Object *unsafe_symbol;
+static Scheme_Object *static_symbol;
 static Scheme_Object *constant_symbol;
 static Scheme_Object *consistent_symbol;
 static Scheme_Object *noncm_symbol;
@@ -83,7 +86,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
                                                        Scheme_Object *name,
                                                        Scheme_Object **_import_keys,
                                                        Scheme_Object *get_import,
-                                                       int unsafe_mode);
+                                                       int unsafe_mode, int static_mode);
 
 static Scheme_Object *_instantiate_linklet_multi(Scheme_Linklet *linklet, Scheme_Instance *instance,
                                                  int num_instances, Scheme_Instance **instances,
@@ -117,6 +120,13 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   register_traversers();
 #endif
 
+  REGISTER_SO(serializable_symbol);
+  REGISTER_SO(unsafe_symbol);
+  REGISTER_SO(static_symbol);
+  serializable_symbol = scheme_intern_symbol("serializable");
+  unsafe_symbol = scheme_intern_symbol("unsafe");
+  static_symbol = scheme_intern_symbol("static");
+
   REGISTER_SO(constant_symbol);
   REGISTER_SO(consistent_symbol);
   constant_symbol = scheme_intern_symbol("constant");
@@ -138,7 +148,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_IMMED_PRIM("primitive-in-category?", primitive_in_category_p, 2, 2, env);
 
   ADD_FOLDING_PRIM("linklet?", linklet_p, 1, 1, 1, env);
-  ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 6, 2, 2, env);
+  ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 5, 2, 2, env);
   ADD_PRIM_W_ARITY2("recompile-linklet", recompile_linklet, 1, 4, 2, 2, env);
   ADD_IMMED_PRIM("eval-linklet", eval_linklet, 1, 1, env);
   ADD_PRIM_W_ARITY("read-compiled-linklet", read_compiled_linklet, 1, 1, env);
@@ -365,7 +375,7 @@ void extract_import_info(const char *who, int argc, Scheme_Object **argv,
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *e, *import_keys, *get_import, *a[2];
-  int unsafe;
+  int unsafe = 0, static_mode = 0;
 
   /* Last argument, `serializable?`, is ignored */
 
@@ -380,11 +390,40 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
   if (!SCHEME_STXP(e))
     e = scheme_datum_to_syntax(e, scheme_false, DTS_CAN_GRAPH);
 
-  /* We don't care about `serializable?` at this layer. */
+  if (argc > 4) {
+    Scheme_Object *flags, *redundant = NULL, *flag;
+    int serializable = 0;
+      
+    flags = argv[4];
+    while (SCHEME_PAIRP(flags)) {
+      flag = SCHEME_CAR(flags);
+      if (SAME_OBJ(flag, serializable_symbol)) {
+        if (serializable && !redundant)
+          redundant = flag;
+        serializable = 1;
+      } else if (SAME_OBJ(flag, unsafe_symbol)) {
+        if (unsafe && !redundant)
+          redundant = flag;
+        unsafe = 1;
+      } else if (SAME_OBJ(flag, static_symbol)) {
+        if (static_mode && !redundant)
+          redundant = flag;
+        static_mode = 1;
+      } else
+        break;
+      flags = SCHEME_CDR(flags);
+    }
+    if (!SCHEME_NULLP(flags))
+      scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe)", 4, argc, argv);
+    if (redundant)
+      scheme_contract_error("compile-linklet", "redundant option",
+                            "redundant option", 1, redundant,
+                            "supplied options", 1, argv[4],
+                            NULL);
+  }
 
-  unsafe = ((argc > 5) && SCHEME_TRUEP(argv[5]));
-
-  e = (Scheme_Object *)compile_and_or_optimize_linklet(e, NULL, name, &import_keys, get_import, unsafe);
+  e = (Scheme_Object *)compile_and_or_optimize_linklet(e, NULL, name, &import_keys, get_import,
+                                                       unsafe, static_mode);
 
   if (import_keys) {
     a[0] = e;
@@ -422,7 +461,7 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
                           NULL);
   }
   
-  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import, 0);
+  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import, 0, 0);
 
   if (import_keys) {
     a[0] = (Scheme_Object *)linklet;
@@ -1123,7 +1162,7 @@ static Scheme_Hash_Tree *update_source_names(Scheme_Hash_Tree *source_names,
 static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Scheme_Linklet *linklet,
                                                        Scheme_Object *name,
                                                        Scheme_Object **_import_keys, Scheme_Object *get_import,
-                                                       int unsafe_mode)
+                                                       int unsafe_mode, int static_mode)
 {
   Scheme_Config *config;
   int enforce_const, set_undef, can_inline;
@@ -1146,7 +1185,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
   linklet = scheme_optimize_linklet(linklet, enforce_const, can_inline, unsafe_mode,
                                     _import_keys, get_import);
 
-  linklet = scheme_resolve_linklet(linklet, enforce_const);
+  linklet = scheme_resolve_linklet(linklet, enforce_const, static_mode);
   linklet = scheme_sfs_linklet(linklet);
   
   if (recompile_every_compile) {
@@ -1155,7 +1194,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
       linklet = scheme_unresolve_linklet(linklet, (set_undef ? COMP_ALLOW_SET_UNDEFINED : 0));
       linklet = scheme_optimize_linklet(linklet, enforce_const, can_inline, unsafe_mode,
                                         _import_keys, get_import);
-      linklet = scheme_resolve_linklet(linklet, enforce_const);
+      linklet = scheme_resolve_linklet(linklet, enforce_const, static_mode);
       linklet = scheme_sfs_linklet(linklet);
     }
   }
@@ -1168,7 +1207,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
 
 Scheme_Linklet *scheme_compile_and_optimize_linklet(Scheme_Object *form, Scheme_Object *name)
 {
-  return compile_and_or_optimize_linklet(form, NULL, name, NULL, NULL, 0);
+  return compile_and_or_optimize_linklet(form, NULL, name, NULL, NULL, 0, 1);
 }
 
 /*========================================================================*/
@@ -1405,13 +1444,40 @@ Scheme_Object *scheme_instantiate_linklet_multi(Scheme_Linklet *linklet, Scheme_
 /*        creating/pushing prefix for top-levels and syntax objects       */
 /*========================================================================*/
 
+Scheme_Prefix *scheme_allocate_linklet_prefix(Scheme_Linklet *linklet, int extra)
+{
+  int num_defns, n;
+  
+  num_defns = SCHEME_VEC_SIZE(linklet->defns);
+
+  n = 1 + linklet->num_total_imports + num_defns + extra;
+
+  return scheme_allocate_prefix(n);
+}
+
+Scheme_Prefix *scheme_allocate_prefix(intptr_t n)
+{
+  Scheme_Prefix *pf;
+  int tl_map_len;
+
+  tl_map_len = (n + 31) / 32;
+
+  pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
+                            + ((n-mzFLEX_DELTA) * sizeof(Scheme_Object *))
+                            + (tl_map_len * sizeof(int)));
+  pf->iso.so.type = scheme_prefix_type;
+  pf->num_slots = n;
+
+  return pf;
+}
+
 static Scheme_Hash_Tree *push_prefix(Scheme_Linklet *linklet, Scheme_Instance *instance,
                                      int num_instances, Scheme_Instance **instances,
                                      Scheme_Hash_Tree *source_names)
 {
   Scheme_Object **rs, *v;
   Scheme_Prefix *pf;
-  int i, j, pos, tl_map_len, num_importss, num_defns, starts_empty;
+  int i, j, pos, num_importss, num_defns, starts_empty;
   GC_CAN_IGNORE const char *bad_reason = NULL;
 
   rs = MZ_RUNSTACK;
@@ -1419,14 +1485,10 @@ static Scheme_Hash_Tree *push_prefix(Scheme_Linklet *linklet, Scheme_Instance *i
   num_importss = SCHEME_VEC_SIZE(linklet->importss);
   num_defns = SCHEME_VEC_SIZE(linklet->defns);
 
-  i = 1 + linklet->num_total_imports + num_defns;
-  tl_map_len = (i + 31) / 32;
+  pf = linklet->static_prefix;
+  if (!pf)
+    pf = scheme_allocate_linklet_prefix(linklet, 0);
 
-  pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
-                            + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
-                            + (tl_map_len * sizeof(int)));
-  pf->iso.so.type = scheme_prefix_type;
-  pf->num_slots = i;
   --rs;
   MZ_RUNSTACK = rs;
   rs[0] = (Scheme_Object *)pf;

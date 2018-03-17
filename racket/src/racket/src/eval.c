@@ -1659,8 +1659,11 @@ static Scheme_Object *define_values_execute(Scheme_Object *vec)
 	Scheme_Prefix *toplevels;
 
         var = SCHEME_VEC_ELS(vec)[i+delta];
-        toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
-        b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
+        if (SAME_TYPE(SCHEME_TYPE(var), scheme_toplevel_type)) {
+          toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
+          b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
+        } else
+          b = (Scheme_Bucket *)SCHEME_STATIC_TOPLEVEL_PREFIX(var)->a[SCHEME_TOPLEVEL_POS(var)];
 
         scheme_set_global_bucket("define-values", b, values[i], 1);
         
@@ -1681,8 +1684,11 @@ static Scheme_Object *define_values_execute(Scheme_Object *vec)
     Scheme_Prefix *toplevels;
 
     var = SCHEME_VEC_ELS(vec)[delta];
-    toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
-    b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
+    if (SAME_TYPE(SCHEME_TYPE(var), scheme_toplevel_type)) {
+      toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(var)];
+      b = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(var)];
+    } else
+      b = (Scheme_Bucket *)SCHEME_STATIC_TOPLEVEL_PREFIX(var)->a[SCHEME_TOPLEVEL_POS(var)];
 
     scheme_set_global_bucket("define-values", b, vals, 1);
       
@@ -1737,9 +1743,12 @@ static Scheme_Object *set_execute (Scheme_Object *data)
 
   val = _scheme_eval_linked_expr(sb->val);
 
-  toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(sb->var)];
-  var = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(sb->var)];
-  
+  if (SAME_TYPE(SCHEME_TYPE(sb->var), scheme_toplevel_type)) {
+    toplevels = (Scheme_Prefix *)MZ_RUNSTACK[SCHEME_TOPLEVEL_DEPTH(sb->var)];
+    var = (Scheme_Bucket *)toplevels->a[SCHEME_TOPLEVEL_POS(sb->var)];
+  } else
+    var = (Scheme_Bucket *)SCHEME_STATIC_TOPLEVEL_PREFIX(sb->var)->a[SCHEME_TOPLEVEL_POS(sb->var)];
+
   scheme_set_global_bucket("set!", var, val, sb->set_undef);
 
   return scheme_void;
@@ -2719,6 +2728,17 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  prefix tmp
 
 	  global_lookup(v = , obj, v);  
+	  goto returnv_never_multi;
+	}
+      case scheme_static_toplevel_type:
+	{
+          obj = SCHEME_STATIC_TOPLEVEL_PREFIX(obj)->a[SCHEME_TOPLEVEL_POS(obj)];
+	  v = (Scheme_Object *)(SCHEME_VAR_BUCKET(obj))->val;
+	  if (!v) {
+            UPDATE_THREAD_RSPTR_FOR_ERROR();
+            scheme_unbound_global((Scheme_Bucket *)obj);
+            return NULL;
+	  }
 	  goto returnv_never_multi;
 	}
       case scheme_local_type:

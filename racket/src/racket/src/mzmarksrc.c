@@ -36,6 +36,13 @@ toplevel_obj {
   gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 }
 
+static_toplevel_obj {
+ mark:
+  gcMARK2(SCHEME_STATIC_TOPLEVEL_PREFIX(p), gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
+}
+
 cpointer_obj {
  mark:
   if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
@@ -984,6 +991,7 @@ linklet_val {
   gcMARK2(l->source_names, gc);
   gcMARK2(l->bodies, gc);
   gcMARK2(l->constants, gc);
+  gcMARK2(l->static_prefix, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Linklet));
 }
@@ -1127,6 +1135,7 @@ mark_resolve_info {
   gcMARK2(i->toplevel_starts, gc);
   gcMARK2(i->toplevel_deltas, gc);
   gcMARK2(i->toplevel_defns, gc);
+  gcMARK2(i->static_mode, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Info));

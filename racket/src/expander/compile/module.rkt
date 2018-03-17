@@ -227,7 +227,7 @@
                                                                empty-syntax-literals-data-instance
                                                                empty-instance-instance)
                                                        (lambda (inst) (values inst #f))
-                                                       serializable?))
+                                                       (if serializable? '(serializable) '())))
                                     linklet)))
            `(linklet
              ;; imports

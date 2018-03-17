@@ -158,6 +158,42 @@ static int toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
 #define toplevel_obj_IS_CONST_SIZE 1
 
 
+static int static_toplevel_obj_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+#else
+  return 0;
+#endif
+}
+
+static int static_toplevel_obj_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+  gcMARK2(SCHEME_STATIC_TOPLEVEL_PREFIX(p), gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+# endif
+#endif
+}
+
+static int static_toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+  gcFIXUP2(SCHEME_STATIC_TOPLEVEL_PREFIX(p), gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+# endif
+#endif
+}
+
+#define static_toplevel_obj_IS_ATOMIC 0
+#define static_toplevel_obj_IS_CONST_SIZE 1
+
+
 static int cpointer_obj_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
    (SCHEME_CPTR_HAS_OFFSET(p)
@@ -3470,6 +3506,7 @@ static int linklet_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->source_names, gc);
   gcMARK2(l->bodies, gc);
   gcMARK2(l->constants, gc);
+  gcMARK2(l->static_prefix, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -3490,6 +3527,7 @@ static int linklet_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->source_names, gc);
   gcFIXUP2(l->bodies, gc);
   gcFIXUP2(l->constants, gc);
+  gcFIXUP2(l->static_prefix, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

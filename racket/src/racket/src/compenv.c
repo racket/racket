@@ -36,7 +36,6 @@ READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TO
 
 ROSYM static Scheme_Object *undefined_error_name_symbol;
 
-/* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
 
@@ -107,7 +106,7 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int flags)
 
   tl = (Scheme_Toplevel *)scheme_malloc_atomic_tagged(sizeof(Scheme_Toplevel));
   tl->iso.so.type = scheme_toplevel_type;
-  tl->depth = depth;
+  tl->u.depth = depth;
   tl->position = position;
   SCHEME_TOPLEVEL_FLAGS(tl) = flags | HIGH_BIT_TO_DISABLE_HASHING;
 
@@ -121,8 +120,13 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int flags)
 
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *_tl, int flags)
 {
-  Scheme_Toplevel *tl = (Scheme_Toplevel *)_tl;
-  return scheme_make_toplevel(tl->depth, tl->position, flags);
+  if (SAME_TYPE(SCHEME_TYPE(_tl), scheme_static_toplevel_type)) {
+    SCHEME_TOPLEVEL_FLAGS(_tl) |= flags;
+    return _tl;
+  } else {
+    Scheme_Toplevel *tl = (Scheme_Toplevel *)_tl;
+    return scheme_make_toplevel(tl->u.depth, tl->position, flags);
+  }
 }
 
 Scheme_IR_Toplevel *scheme_make_ir_toplevel(int instance_pos, int variable_pos, int flags)
@@ -220,7 +224,7 @@ static void init_toplevels()
         v = (Scheme_Toplevel *)scheme_malloc_eternal_tagged(sizeof(Scheme_Toplevel));
 #endif
         v->iso.so.type = scheme_toplevel_type;
-        v->depth = i;
+        v->u.depth = i;
         v->position = k;
         SCHEME_TOPLEVEL_FLAGS(v) = cnst | HIGH_BIT_TO_DISABLE_HASHING;
 

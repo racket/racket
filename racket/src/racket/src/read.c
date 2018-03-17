@@ -2327,7 +2327,10 @@ typedef struct CPort {
   mzlonglong bytecode_hash;
 } CPort;
 #define CP_GETC(cp) ((int)(cp->start[cp->pos++]))
+#define CP_UNGETC(cp) --cp->pos
 #define CP_TELL(port) (port->pos + port->base)
+
+typedef void *(*GC_Alloc_Proc)(size_t);
 
 static Scheme_Object *read_compact_list(int c, int proper, int use_stack, CPort *port);
 static Scheme_Object *read_compact_quote(CPort *port, int embedded);
@@ -2778,9 +2781,21 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_LINKLET:
       {
+        int has_prefix;
+        Scheme_Prefix *pf;
+
+        has_prefix = read_compact_number(port);
+        if (has_prefix)
+          pf = (Scheme_Prefix *)read_compact(port, 0);
+        else
+          pf = NULL;
+
         v = read_compact(port, 1);
         v = scheme_read_linklet(v, port->unsafe_ok);
         if (!v) scheme_ill_formed_code(port);
+
+        ((Scheme_Linklet *)v)->static_prefix = pf;
+
         return v;
       }
       break;
@@ -3010,7 +3025,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
           int i, c = SCHEME_VEC_SIZE(v);
           if (c < 1) scheme_ill_formed_code(port);
           for (i = 1; i < c; i++) {
-            if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(v)[i]), scheme_toplevel_type))
+            if (!SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(v)[i]), scheme_toplevel_type)
+                && !SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(v)[i]), scheme_static_toplevel_type))
               scheme_ill_formed_code(port);
           }
         }
@@ -3030,7 +3046,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
         v = read_compact(port, 1);
         sb->var = v;
-        if (!SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type))
+        if (!SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type)
+            && !SAME_TYPE(SCHEME_TYPE(v), scheme_static_toplevel_type))
           scheme_ill_formed_code(port);
         v = read_compact(port, 1);
         sb->val = v;
@@ -3041,6 +3058,63 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_OTHER_FORM:
       {
         switch (read_compact_number(port)) {
+        case scheme_static_toplevel_type:
+          {
+            Scheme_Object *tl = scheme_false;
+            Scheme_Prefix *pf;
+            intptr_t flags, pos, i;
+
+            flags = read_compact_number(port);
+            pos = read_compact_number(port);
+
+            /* Avoid recur on very common case of a reference to the prefix: */
+            ch = CP_GETC(port);
+            if (ch == CPT_SYMREF) {
+              l = read_compact_number(port);
+              RANGE_POS_CHECK(l, < port->symtab_size);
+              pf = (Scheme_Prefix *)port->symtab[l];
+            } else {
+              CP_UNGETC(port);
+              pf = (Scheme_Prefix *)read_compact(port, 0);
+            }
+
+            if ((pos < 0) || (pos >= pf->num_slots))
+              scheme_ill_formed_code(port);
+
+            flags &= SCHEME_TOPLEVEL_FLAGS_MASK;
+            i = ((pos << SCHEME_LOG_TOPLEVEL_FLAG_MASK) | flags);
+
+            tl = ((Scheme_Object **)pf->a[pf->num_slots-1])[i];
+            if (!tl) {
+              tl = (Scheme_Object *)MALLOC_ONE_TAGGED(Scheme_Toplevel);
+              tl->type = scheme_static_toplevel_type;
+              SCHEME_STATIC_TOPLEVEL_PREFIX(tl) = pf;
+              SCHEME_TOPLEVEL_POS(tl) = pos;
+              SCHEME_TOPLEVEL_FLAGS(tl) |= flags;
+              ((Scheme_Object **)pf->a[pf->num_slots-1])[i] = tl;
+            }
+        
+            return tl;
+          }
+          break;
+        case scheme_prefix_type:
+          {
+            intptr_t prefix_size;
+            Scheme_Object **a;
+
+            prefix_size = read_compact_number(port);
+            if (prefix_size <= 0) scheme_ill_formed_code(port);
+            if (prefix_size < 4096)
+              v = (Scheme_Object *)scheme_allocate_prefix(prefix_size);
+            else
+              v = scheme_malloc_fail_ok((GC_Alloc_Proc)scheme_allocate_prefix, prefix_size);
+
+            /* Last prefix slot is a cache of Scheme_Toplevel values */
+            a = MALLOC_N(Scheme_Object *, prefix_size * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
+            ((Scheme_Prefix *)v)->a[prefix_size-1] = (Scheme_Object *)a;
+
+            return v;
+          }
         case scheme_boxenv_type:
           {
             Scheme_Object *data;
@@ -3953,9 +4027,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       /* Read main body: */
       result = read_compact(rp, 1);
 
-      if (delay_info)
+      if (delay_info) {
         if (delay_info->ut)
           delay_info->ut->rp = NULL; /* clean up */
+      }
 
       if (*local_ht)
         scheme_read_err(port, "read (compiled): unexpected graph structure");

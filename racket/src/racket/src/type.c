@@ -101,6 +101,7 @@ scheme_init_type ()
   set_name(scheme_local_unbox_type, "<local-unbox-code>");
   set_name(scheme_variable_type, "<global-variable-code>");
   set_name(scheme_toplevel_type, "<variable-code>");
+  set_name(scheme_static_toplevel_type, "<variable-code>");
   set_name(scheme_application_type, "<application-code>");
   set_name(scheme_application2_type, "<unary-application-code>");
   set_name(scheme_application3_type, "<binary-application-code>");
@@ -529,6 +530,7 @@ static void FIXUP_jmpup(Scheme_Jumpup_Buf *buf, struct NewGC *gc)
 void scheme_register_traversers(void)
 {
   GC_REG_TRAV(scheme_toplevel_type, toplevel_obj);
+  GC_REG_TRAV(scheme_static_toplevel_type, static_toplevel_obj);
   GC_REG_TRAV(scheme_variable_type, variable_obj);
   GC_REG_TRAV(scheme_local_type, local_obj);
   GC_REG_TRAV(scheme_local_unbox_type, local_obj);

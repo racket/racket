@@ -1609,11 +1609,15 @@ typedef struct Scheme_Local {
 
 typedef struct Scheme_Toplevel {
   Scheme_Inclhash_Object iso; /* keyex used for flags (and can't be hashed) */
-  mzshort depth;
+  union {
+    mzshort depth;                /* normal mode */
+    struct Scheme_Prefix *prefix; /* for a linklet that is only instantiated once */
+  } u;
   int position;
 } Scheme_Toplevel;
 
-#define SCHEME_TOPLEVEL_DEPTH(obj)    (((Scheme_Toplevel *)(obj))->depth)
+#define SCHEME_TOPLEVEL_DEPTH(obj)    (((Scheme_Toplevel *)(obj))->u.depth)
+#define SCHEME_STATIC_TOPLEVEL_PREFIX(obj)  (((Scheme_Toplevel *)(obj))->u.prefix)
 #define SCHEME_TOPLEVEL_POS(obj)    (((Scheme_Toplevel *)(obj))->position)
 #define SCHEME_TOPLEVEL_FLAGS(obj)  MZ_OPT_HASH_KEY(&((Scheme_Toplevel *)(obj))->iso)
 
@@ -1621,6 +1625,7 @@ typedef struct Scheme_Toplevel {
    FIXED, READY, or UNKNOWN) or one of the two levels for a
    definition (SEAL or not) */
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
+#define SCHEME_LOG_TOPLEVEL_FLAG_MASK 2
 
 /* CONST means that a toplevel is READY and always has the "same" value,
    even for different instantiations or phases. "Same" means that the result
@@ -2559,6 +2564,9 @@ typedef struct Scheme_Prefix
 #define PREFIX_TO_USE_BITS(pf) \
   (int *)((char *)pf + sizeof(Scheme_Prefix) + ((pf->num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *)))
 
+Scheme_Prefix *scheme_allocate_prefix(intptr_t n);
+Scheme_Prefix *scheme_allocate_linklet_prefix(Scheme_Linklet *linklet, int extra);
+
 #define LOAD_ON_DEMAND
 void scheme_clear_delayed_load_cache();
 
@@ -2945,7 +2953,7 @@ XFORM_NONGCING int scheme_predicate_to_local_type(Scheme_Object *pred);
 Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2);
 
-Scheme_Linklet *scheme_resolve_linklet(Scheme_Linklet *, int enforce_const);
+Scheme_Linklet *scheme_resolve_linklet(Scheme_Linklet *, int enforce_const, int static_mode);
 Scheme_Object *scheme_unresolve(Scheme_Object *, int argv, int *_has_cases,
                                 Scheme_Linklet *linklet, Scheme_Object *linklet_key,
                                 Optimize_Info *opt_info);
@@ -3281,6 +3289,8 @@ struct Scheme_Linklet
   char reject_eval; /* true when loaded without the root inspector, for example */
 
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
+
+  Scheme_Prefix *static_prefix; /* non-NULL for a linklet compiled in static mode */
 };
 
 #define SCHEME_DEFN_VAR_COUNT(d) (SCHEME_VEC_SIZE(d)-1)

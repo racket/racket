@@ -519,10 +519,11 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     return ((vals == 1) || (vals < 0));
   }
 
-  if (vtype == scheme_toplevel_type) {
+  if ((vtype == scheme_toplevel_type) || (vtype == scheme_static_toplevel_type)) {
     note_match(1, vals, warn_info);
     if (!(flags & OMITTABLE_KEEP_VARS) && (flags & OMITTABLE_RESOLVED) && ((vals == 1) || (vals < 0))) {
-      if (SCHEME_TOPLEVEL_FLAGS(o) & SCHEME_TOPLEVEL_FLAGS_MASK)
+      int tl_flags = SCHEME_TOPLEVEL_FLAGS(o);
+      if (tl_flags & SCHEME_TOPLEVEL_FLAGS_MASK)
         return 1;
       else
         return 0;
@@ -1356,14 +1357,18 @@ static int is_ok_value(Ok_Value_Callback ok_value, void *data,
       if (v)
         return ok_value(data, v, OK_CONSTANT_SHAPE);
     }
-  } else if (SAME_TYPE(SCHEME_TYPE(arg), scheme_toplevel_type)) {
+  } else if (SAME_TYPE(SCHEME_TYPE(arg), scheme_toplevel_type)
+             || SAME_TYPE(SCHEME_TYPE(arg), scheme_static_toplevel_type)) {
     pos = SCHEME_TOPLEVEL_POS(arg);
     if (runstack) {
       /* This is eval mode; conceptually, this code belongs in 
          define_execute_with_dynamic_state() */
       Scheme_Bucket *b;
       Scheme_Prefix *toplevels;
-      toplevels = (Scheme_Prefix *)runstack[SCHEME_TOPLEVEL_DEPTH(arg) - rs_delta];
+      if (SAME_TYPE(SCHEME_TYPE(arg), scheme_toplevel_type))
+        toplevels = (Scheme_Prefix *)runstack[SCHEME_TOPLEVEL_DEPTH(arg) - rs_delta];
+      else
+        toplevels = SCHEME_STATIC_TOPLEVEL_PREFIX(arg);
       b = (Scheme_Bucket *)toplevels->a[pos];
       if (b->val && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONSISTENT))
         return ok_value(data, b->val, OK_CONSTANT_VALUE);
@@ -2134,6 +2139,7 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
 
   switch (SCHEME_TYPE(expr)) {
   case scheme_toplevel_type:
+  case scheme_static_toplevel_type:
     return ((SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED);
   case scheme_ir_local_type:
     {

@@ -85,9 +85,8 @@
   (define-values (correlated-property) (hash-ref (primitive-table '#%kernel) 'syntax-property))
 
   (define-values (linklet) (compile-linklet (rename-functions (get-linklet src))
-                                            #f #f #f #f
-                                            ;; Unsafe mode:
-                                            #t))
+                                            #f #f #f
+                                            '(serializable unsafe static)))
 
   (define-values (DIGS-PER-LINE) 20)
 

@@ -85,6 +85,8 @@ struct Resolve_Info
                                                         #t - enqueued
                                                         list - resolved with lifts
                                                         NULL - used or has side effect */
+
+  Scheme_Hash_Table *static_mode; /* defn pos or ref (cons pos flags) -> static-toplevel */
 };
 
 #define cons(a,b) scheme_make_pair(a,b)
@@ -101,9 +103,9 @@ static Scheme_Object *resolve_info_lift_added(Resolve_Info *resolve, Scheme_Obje
 static void resolve_info_set_toplevel_pos(Resolve_Info *info, int pos);
 static void merge_resolve(Resolve_Info *info, Resolve_Info *new_info);
 static void merge_resolve_tl_map(Resolve_Info *info, Resolve_Info *new_info);
-static Scheme_Object *resolve_generate_stub_lift(void);
+static Scheme_Object *resolve_generate_stub_lift(Resolve_Info *info);
 static int resolve_toplevel_pos(Resolve_Info *info);
-static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready);
+static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int as_reference);
 static Scheme_Object *resolve_invent_toplevel(Resolve_Info *info);
 static Scheme_Object *resolve_invented_toplevel_to_defn(Resolve_Info *info, Scheme_Object *tl);
 static Scheme_Object *shift_lifted_reference(Scheme_Object *tl, Resolve_Info *info, int delta);
@@ -112,13 +114,14 @@ static int is_nonconstant_procedure(Scheme_Object *lam, Resolve_Info *info, Sche
 static int resolve_is_inside_proc(Resolve_Info *info);
 static int resolve_has_toplevel(Resolve_Info *info);
 static void set_tl_pos_used(Resolve_Info *info, int pos);
+static void install_static_prefix(Scheme_Linklet *linket, Resolve_Info *ri);
 static Scheme_Object *generate_lifted_name(Scheme_Hash_Table *used_names, int search_start);
 static void enable_expression_resolve_lifts(Resolve_Info *ri);
 static void extend_linklet_defns(Scheme_Linklet *linklet, int num_lifts);
 static void prune_unused_imports(Scheme_Linklet *linklet);
 static void prepare_definition_queue(Scheme_Linklet *linklet, Resolve_Info *rslv);
 static void remove_definition_names(Scheme_Object *defn, Scheme_Linklet *linklet);
-static Resolve_Info *resolve_info_create(Scheme_Linklet *rp, int enforce_const);
+static Resolve_Info *resolve_info_create(Scheme_Linklet *rp, int enforce_const, int static_mode);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -815,9 +818,12 @@ static int is_lifted_reference(Scheme_Object *v)
   if (SCHEME_RPAIRP(v))
     return 1;
 
-  return (SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type)
-          && ((SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_FLAGS_MASK)
-              >= SCHEME_TOPLEVEL_CONST));
+  if (SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type)
+      || SAME_TYPE(SCHEME_TYPE(v), scheme_static_toplevel_type))
+    return ((SCHEME_TOPLEVEL_FLAGS(v) & SCHEME_TOPLEVEL_FLAGS_MASK)
+            >= SCHEME_TOPLEVEL_CONST);
+
+  return 0;
 }
 
 static int is_closed_reference(Scheme_Object *v)
@@ -1131,7 +1137,7 @@ static Resolve_Info *compute_possible_lifts(Scheme_IR_Let_Header *head, Resolve_
             if (resolve_phase == 0)
               lift = scheme_resolve_generate_stub_closure();
             else if (resolve_phase == 1)
-              lift = resolve_generate_stub_lift();
+              lift = resolve_generate_stub_lift(info);
             else
               lift = NULL;
             MZ_ASSERT(!info->no_lift || !lift);
@@ -1605,7 +1611,9 @@ static int is_nonconstant_procedure(Scheme_Object *_lam, Resolve_Info *info, Sch
           if (!lifted)
             return 1;
           if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
-              || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type))
+              || SAME_TYPE(SCHEME_TYPE(lifted), scheme_static_toplevel_type)
+              || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type)
+              || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_static_toplevel_type))
             return 1;
         }
       }
@@ -1667,7 +1675,7 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
       cl->arg_types = NULL;
   }
 
-  has_tl = cl->has_tl;
+  has_tl = (info->static_mode ? 0 : cl->has_tl);
   
   /* Add original closure content to `captured`, pruning variables
      that are lifted (so the closure might get smaller). The
@@ -1688,7 +1696,8 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
         if (lifted) {
           /* Drop lifted binding from closure. */
           if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
-              || SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type)) {
+              || (SCHEME_RPAIRP(lifted)
+                  && SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(lifted)), scheme_toplevel_type))) {
             /* Former local variable is now a top-level variable. */
             has_tl = 1;
           }
@@ -1948,7 +1957,7 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
       if (just_compute_lift > 1)
         result = resolve_invent_toplevel(info);
       else
-        result = resolve_generate_stub_lift();
+        result = resolve_generate_stub_lift(info);
     } else {
       Scheme_Object *tl, *defn_tl;
       if (precomputed_lift) {
@@ -2005,13 +2014,13 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
 /*                                linklet                                 */
 /*========================================================================*/
 
-Scheme_Linklet *scheme_resolve_linklet(Scheme_Linklet *linklet, int enforce_const)
+Scheme_Linklet *scheme_resolve_linklet(Scheme_Linklet *linklet, int enforce_const, int static_mode)
 {
   Scheme_Object *lift_vec, *body = scheme_null, *new_bodies;
   Resolve_Info *rslv;
   int i, cnt, num_lifts;
 
-  rslv = resolve_info_create(linklet, enforce_const);
+  rslv = resolve_info_create(linklet, enforce_const, static_mode);
   enable_expression_resolve_lifts(rslv);
 
   if (linklet->num_exports < SCHEME_VEC_SIZE(linklet->defns)) {
@@ -2103,6 +2112,9 @@ Scheme_Linklet *scheme_resolve_linklet(Scheme_Linklet *linklet, int enforce_cons
   /* Adjust the imports vector of vectors to drop unused imports at
      the level of variables */
   prune_unused_imports(linklet);
+
+  if (static_mode)
+    install_static_prefix(linklet, rslv);
 
   return linklet;
 }
@@ -2401,6 +2413,8 @@ static Scheme_Object *shift_lifted_reference(Scheme_Object *tl, Resolve_Info *in
   int pos = SCHEME_TOPLEVEL_POS(tl);
   int depth;
 
+  MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(tl), scheme_toplevel_type));
+
   depth = resolve_toplevel_pos(info);
   tl = scheme_make_toplevel(depth + delta,
                             pos,
@@ -2417,7 +2431,7 @@ static Scheme_Object *shift_lifted_reference(Scheme_Object *tl, Resolve_Info *in
 /*                    compile-time env for resolve                        */
 /*========================================================================*/
 
-static Resolve_Info *resolve_info_create(Scheme_Linklet *linklet, int enforce_const)
+static Resolve_Info *resolve_info_create(Scheme_Linklet *linklet, int enforce_const, int static_mode)
 {
   Resolve_Info *naya;
   int *toplevel_starts, pos, dpos, i, j;
@@ -2433,6 +2447,12 @@ static Resolve_Info *resolve_info_create(Scheme_Linklet *linklet, int enforce_co
   naya->next = NULL;
   naya->enforce_const = enforce_const;
   naya->linklet = linklet;
+
+  if (static_mode) {
+    Scheme_Hash_Table *ht;
+    ht = scheme_make_hash_table_equal();
+    naya->static_mode = ht;
+  }
 
   toplevel_starts = MALLOC_N_ATOMIC(int, SCHEME_VEC_SIZE(linklet->importss) + 1);
   toplevel_deltas = MALLOC_N_ATOMIC(int, (linklet->num_total_imports + SCHEME_LINKLET_PREFIX_PREFIX));
@@ -2488,6 +2508,7 @@ static Resolve_Info *resolve_info_extend(Resolve_Info *info, int size, int lambd
   naya->linklet = info->linklet;
   naya->next = (lambda ? NULL : info);
   naya->enforce_const = info->enforce_const;
+  naya->static_mode = info->static_mode;
   naya->current_depth = (lambda ? 0 : info->current_depth) + size;
   naya->current_lex_depth = info->current_lex_depth + size;
   naya->toplevel_pos = (lambda
@@ -2551,19 +2572,21 @@ static void set_tl_pos_used(Resolve_Info *info, int tl_pos)
 {
   void *tl_map;
 
-  /* Fixnum-like bit packing avoids allocation in the common case of a
-     small prefix. We use 31 fixnum-like bits (even on a 64-bit
-     platform, and even though fixnums are only 30 bits). There's one
-     bit for each normal top-level, one bit for all syntax objects,
-     and one bit for each lifted top-level. */
+  if (!info->static_mode) {
+    /* Fixnum-like bit packing avoids allocation in the common case of a
+       small prefix. We use 31 fixnum-like bits (even on a 64-bit
+       platform, and even though fixnums are only 30 bits). There's one
+       bit for each normal top-level, one bit for all syntax objects,
+       and one bit for each lifted top-level. */
 
-  tl_map = ensure_tl_map_len(info->tl_map, tl_pos + 1);
-  info->tl_map = tl_map;
+    tl_map = ensure_tl_map_len(info->tl_map, tl_pos + 1);
+    info->tl_map = tl_map;
 
-  if ((uintptr_t)info->tl_map & 0x1)
-    info->tl_map = (void *)((uintptr_t)tl_map | ((uintptr_t)1 << (tl_pos + 1)));
-  else
-    ((int *)tl_map)[1 + (tl_pos / 32)] |= ((unsigned)1 << (tl_pos & 31));
+    if ((uintptr_t)info->tl_map & 0x1)
+      info->tl_map = (void *)((uintptr_t)tl_map | ((uintptr_t)1 << (tl_pos + 1)));
+    else
+      ((int *)tl_map)[1 + (tl_pos / 32)] |= ((unsigned)1 << (tl_pos & 31));
+  }
 
   /* If we're pruning unused definitions, then ensure a newly referenced definition */
   if (info->toplevel_defns
@@ -2685,9 +2708,51 @@ static int resolve_info_lookup(Resolve_Info *info, Scheme_IR_Local *var, Scheme_
   return info->current_depth - depth + convert_shift;
 }
 
-static Scheme_Object *resolve_generate_stub_lift()
+static Scheme_Object *make_static_toplevel(Scheme_Hash_Table *static_mode, int pos, int flags, int as_ref)
 {
-  return scheme_make_toplevel(0, 0, SCHEME_TOPLEVEL_CONST);
+  Scheme_Object *key, *tl;
+
+  if (as_ref)
+    key = scheme_make_pair(scheme_make_integer(pos), scheme_make_integer(flags));
+  else
+    key = scheme_make_integer(pos);
+
+  tl = scheme_hash_get(static_mode, key);
+  if (!tl) {
+    tl = (Scheme_Object *)MALLOC_ONE_TAGGED(Scheme_Toplevel);
+    tl->type = scheme_static_toplevel_type;
+    SCHEME_TOPLEVEL_POS(tl) = pos;
+    SCHEME_TOPLEVEL_FLAGS(tl) |= flags;
+    scheme_hash_set(static_mode, key, tl);
+  }
+
+  return tl;
+}
+
+static void install_static_prefix(Scheme_Linklet *linklet, Resolve_Info *ri)
+{
+  Scheme_Prefix *pf;
+  int i;
+  Scheme_Hash_Table *ht = ri->static_mode;
+
+  /* Allocate prefix with one extra slot, which is used when
+     reading bytecode to cache Scheme_Toplevel values */
+  pf = scheme_allocate_linklet_prefix(linklet, 1);
+  linklet->static_prefix = pf;
+
+  for (i = 0; i < ht->size; i++) {
+    if (ht->vals[i]) {
+      SCHEME_STATIC_TOPLEVEL_PREFIX(ht->vals[i]) = pf;
+    }
+  }
+}
+
+static Scheme_Object *resolve_generate_stub_lift(Resolve_Info *info)
+{
+  if (info->static_mode)
+    return make_static_toplevel(info->static_mode, 0, SCHEME_TOPLEVEL_CONST, 0);
+  else
+    return scheme_make_toplevel(0, 0, SCHEME_TOPLEVEL_CONST);
 }
 
 static int resolve_toplevel_pos(Resolve_Info *info)
@@ -2703,14 +2768,17 @@ static int resolve_is_inside_proc(Resolve_Info *info)
 
 static int resolve_has_toplevel(Resolve_Info *info)
 {
-  return info->toplevel_pos >= 0;
+  return (info->toplevel_pos >= 0) || info->static_mode;
 }
  
 static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int as_reference)
 {
   int skip, pos;
 
-  skip = resolve_toplevel_pos(info);
+  if (info->static_mode)
+    skip = 0;
+  else
+    skip = resolve_toplevel_pos(info);
 
   if (SCHEME_IR_TOPLEVEL_INSTANCE(expr) == -1) {
     if (SCHEME_IR_TOPLEVEL_POS(expr) == -1) {
@@ -2727,8 +2795,13 @@ static Scheme_Object *resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, 
   if (as_reference)
     set_tl_pos_used(info, pos);
 
-  return scheme_make_toplevel(skip, pos,
-                              SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
+  if (info->static_mode)
+    return make_static_toplevel(info->static_mode, pos,
+                                SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)expr) & SCHEME_TOPLEVEL_FLAGS_MASK,
+                                as_reference);
+  else  
+    return scheme_make_toplevel(skip, pos,
+                                SCHEME_IR_TOPLEVEL_FLAGS((Scheme_IR_Toplevel *)expr) & SCHEME_TOPLEVEL_FLAGS_MASK);
 }
 
 static Scheme_Object *shift_toplevel(Scheme_Object *expr, int delta)
@@ -2752,16 +2825,22 @@ static Scheme_Object *resolve_invent_toplevel(Resolve_Info *info)
 
   set_tl_pos_used(info, pos);
 
-  return scheme_make_toplevel(skip,
-                              pos,
-                              SCHEME_TOPLEVEL_CONST);
+  if (info->static_mode)
+    return make_static_toplevel(info->static_mode, pos, SCHEME_TOPLEVEL_CONST, 0);
+  else
+    return scheme_make_toplevel(skip,
+                                pos,
+                                SCHEME_TOPLEVEL_CONST);
 }
 
 static Scheme_Object *resolve_invented_toplevel_to_defn(Resolve_Info *info, Scheme_Object *tl)
 {
-  return scheme_make_toplevel(0,
-                              SCHEME_TOPLEVEL_POS(tl),
-                              SCHEME_TOPLEVEL_CONST);
+  if (SAME_TYPE(SCHEME_TYPE(tl), scheme_toplevel_type))
+    return scheme_make_toplevel(0,
+                                SCHEME_TOPLEVEL_POS(tl),
+                                SCHEME_TOPLEVEL_CONST);
+  else
+    return tl;
 }
 
 /*========================================================================*/
@@ -3396,7 +3475,8 @@ static Scheme_Object *maybe_unresolve_app_refs(Scheme_Object *rator,
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_closure_type)
       && (SCHEME_LAMBDA_FLAGS((SCHEME_CLOSURE_CODE(rator))) & LAMBDA_HAS_TYPED_ARGS)) {
     lam = SCHEME_CLOSURE_CODE(rator);
-  } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)) {
+  } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)
+             || SAME_TYPE(SCHEME_TYPE(rator), scheme_static_toplevel_type)) {
     lam = (Scheme_Lambda *)scheme_hash_get(ui->ref_lifts, scheme_make_integer(SCHEME_TOPLEVEL_POS(rator)));
   }
 
@@ -3851,8 +3931,11 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
       }
 
       b = SCHEME_PTR2_VAL(e);
-      MZ_ASSERT(SCHEME_FALSEP(b) || (SAME_TYPE(SCHEME_TYPE(b), scheme_toplevel_type)
-                                     && !SCHEME_TOPLEVEL_POS(b)));
+      MZ_ASSERT(SCHEME_FALSEP(b)
+                || (SAME_TYPE(SCHEME_TYPE(b), scheme_toplevel_type)
+                    && !SCHEME_TOPLEVEL_POS(b))
+                || (SAME_TYPE(SCHEME_TYPE(b), scheme_static_toplevel_type)
+                    && !SCHEME_TOPLEVEL_POS(b)));
       b = unresolve_expr(b, ui, 0);
       if (!b) return_NULL;
       MZ_ASSERT(SCHEME_FALSEP(b) || (SAME_TYPE(SCHEME_TYPE(b), scheme_ir_toplevel_type)
@@ -3875,6 +3958,7 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
       return unresolve_expr(SCHEME_PTR2_VAL(e), ui, 0);
     }
   case scheme_toplevel_type:
+  case scheme_static_toplevel_type:
     {
       return unresolve_toplevel(e, ui);
     }

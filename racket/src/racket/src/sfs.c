@@ -789,7 +789,8 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
       if (scheme_omittable_expr(rhs, 1, -1, OMITTABLE_RESOLVED, NULL, NULL)) {
         rhs = scheme_false;
       } else if ((ip < info->max_calls[pos])
-                 && SAME_TYPE(SCHEME_TYPE(rhs), scheme_toplevel_type)) {
+                 && (SAME_TYPE(SCHEME_TYPE(rhs), scheme_toplevel_type)
+                     || SAME_TYPE(SCHEME_TYPE(rhs), scheme_static_toplevel_type))) {
         /* Unusual case: we can't just drop the global-variable access,
            because it might be undefined, but we don't need the value,
            and we want to avoid an SFS clear in the interpreter loop.
@@ -1425,6 +1426,8 @@ static Scheme_Object *sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
       if (info->stackpos + c != info->tlpos)
         scheme_signal_error("toplevel access not at expected place");
     }
+    break;
+  case scheme_static_toplevel_type:
     break;
   case scheme_case_closure_type:
     {

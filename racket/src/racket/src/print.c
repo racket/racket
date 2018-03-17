@@ -2844,6 +2844,40 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       print_compact_number(pp, pos);
       print_compact_number(pp, depth);
     }
+  else if (compact && (SAME_TYPE(SCHEME_TYPE(obj), scheme_static_toplevel_type)))
+    {
+      int flags, pos;
+
+      print_compact(pp, CPT_OTHER_FORM);
+      print_compact_number(pp, scheme_static_toplevel_type);
+
+      flags = (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK);
+      pos = SCHEME_TOPLEVEL_POS(obj);
+
+      print_compact_number(pp, flags);
+      print_compact_number(pp, pos);
+
+      closed = print((Scheme_Object *)SCHEME_STATIC_TOPLEVEL_PREFIX(obj), notdisplay, 1, NULL, mt, pp);
+    }
+  else if (compact && (SAME_TYPE(SCHEME_TYPE(obj), scheme_prefix_type)))
+    {
+      /* Should only get here for a prefix referenced by a linklet or static toplevel */
+      Scheme_Object *idx;
+      if (compact)
+	idx = get_symtab_idx(mt, obj);
+      else
+	idx = NULL;
+
+      if (idx) {
+        print_symtab_ref(pp, idx);
+      } else if (compact) {
+        print_compact(pp, CPT_OTHER_FORM);
+        print_compact_number(pp, scheme_prefix_type);
+        print_compact_number(pp, ((Scheme_Prefix *)obj)->num_slots);
+
+        symtab_set(pp, mt, obj);
+      }
+    }
   else if (compact 
 	   && (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)
 	       || SAME_TYPE(SCHEME_TYPE(obj), scheme_local_unbox_type)))
@@ -3280,6 +3314,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         Scheme_Object *v;
 
         print_compact(pp, CPT_LINKLET);
+
+        if (((Scheme_Linklet *)obj)->static_prefix) {
+          print_compact_number(pp, 1);
+          print((Scheme_Object *)((Scheme_Linklet *)obj)->static_prefix, notdisplay, 1, NULL, mt, pp);
+        } else
+          print_compact_number(pp, 0);
+
 	v = scheme_write_linklet(obj);
         
 	closed = print(v, notdisplay, 1, NULL, mt, pp);

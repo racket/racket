@@ -181,6 +181,11 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
       p = scheme_extract_global(o, jitter->nc, 0);
       p = ((Scheme_Bucket *)p)->val;
       return check_val_struct_prim(p, arity);
+    } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_static_toplevel_type)) {
+      Scheme_Object *p;
+      p = SCHEME_STATIC_TOPLEVEL_PREFIX(o)->a[SCHEME_TOPLEVEL_POS(o)];
+      p = ((Scheme_Bucket *)p)->val;
+      return check_val_struct_prim(p, arity);
     } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_local_type)) {
       Scheme_Object *p;
       p = scheme_extract_closure_local(o, jitter, extra_push, 0);
@@ -542,7 +547,7 @@ static int generate_inlined_char_category_test(mz_jit_state *jitter, Scheme_App2
 {
   GC_CAN_IGNORE jit_insn *reffail = NULL, *ref, *pref;
 
-  LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+  LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)app->rator)->name));
 
   mz_runstack_skipped(jitter, 1);
 
@@ -617,6 +622,10 @@ static Scheme_Object *extract_struct_constant(mz_jit_state *jitter, Scheme_Objec
     rator = scheme_extract_global(rator, jitter->nc, 0);
     if (rator)
       return ((Scheme_Bucket *)rator)->val;
+  } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_static_toplevel_type)
+             && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
+    rator = SCHEME_STATIC_TOPLEVEL_PREFIX(rator)->a[SCHEME_TOPLEVEL_POS(rator)];
+    return ((Scheme_Bucket *)rator)->val;
   }
 
   return NULL;
@@ -1700,7 +1709,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "syntax-e")) {
       GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
 
-      LOG_IT("inlined syntax-e\n");
+      LOG_IT(("inlined syntax-e\n"));
 
       mz_runstack_skipped(jitter, 1);
 

@@ -190,22 +190,24 @@
 (define (int->type i)
   (case i
     [(0) 'toplevel-type]
-    [(6) 'sequence-type]
-    [(8) 'unclosed-procedure-type]
-    [(9) 'let-value-type]
-    [(10) 'let-void-type]
-    [(11) 'letrec-type]
-    [(13) 'with-cont-mark-type]
-    [(14) 'define-values-type]
-    [(15) 'set-bang-type]
-    [(16) 'boxenv-type]
-    [(17) 'begin0-sequence-type]
-    [(18) 'varref-form-type]
-    [(19) 'apply-values-type]
-    [(20) 'with-immed-mark-type]
-    [(21) 'case-lambda-sequence-type]
-    [(22) 'inline-variant-type]
-    [(24) 'linklet-type]
+    [(1) 'static-toplevel-type]
+    [(7) 'sequence-type]
+    [(9) 'unclosed-procedure-type]
+    [(10) 'let-value-type]
+    [(11) 'let-void-type]
+    [(12) 'letrec-type]
+    [(14) 'with-cont-mark-type]
+    [(15) 'define-values-type]
+    [(16) 'set-bang-type]
+    [(17) 'boxenv-type]
+    [(18) 'begin0-sequence-type]
+    [(19) 'varref-form-type]
+    [(20) 'apply-values-type]
+    [(21) 'with-immed-mark-type]
+    [(22) 'case-lambda-sequence-type]
+    [(23) 'inline-variant-type]
+    [(25) 'linklet-type]
+    [(89) 'prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 ;; ----------------------------------------
@@ -477,8 +479,8 @@
            (vector->immutable-vector (list->vector lst)))]
         [(pair)
          (let* ([a (read-compact cp)]
-                [d (read-compact cp)])
-           (cons a d))]
+                [d (read-compact cp)]) 
+          (cons a d))]
         [(list)
          (let ([len (read-compact-number cp)])
            (let loop ([i len])
@@ -503,6 +505,9 @@
               (cons (read-compact cp)
                     (read-compact cp)))))]
         [(linklet)
+         (unless (zero? (read-compact-number cp))
+           ;; read and ignore the static-prefix placeholder
+           (read-compact cp))
          (read-linklet (read-compact cp))]
         [(local local-unbox)
          (let ([c (read-compact-number cp)]
@@ -642,6 +647,13 @@
         [(other-form)
          (define type (read-compact-number cp))
          (case (int->type type)
+           [(static-toplevel-type)
+            (begin0
+              (read-toplevel (read-compact-number cp) (read-compact-number cp) 0)
+              ;; read and discard the prefix identity:
+              (read-compact cp))]
+           [(prefix-type)
+            (read-compact-number cp)]
            [(boxenv-type)
             (make-boxenv (read-compact cp) (read-compact cp))]
            [(with-immed-mark-type)
