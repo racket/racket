@@ -95,6 +95,8 @@ THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
 THREAD_LOCAL_DECL(int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(static int scheme_prompt_capture_count);
 
+#define MARK_CACHE_THRESHOLD 16
+
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *apply (int argc, Scheme_Object *argv[]);
@@ -8098,6 +8100,16 @@ extract_cc_proc_marks(int argc, Scheme_Object *argv[])
   return scheme_get_stack_trace(argv[0]);
 }
 
+XFORM_NONGCING static Scheme_Object *default_mark_value(Scheme_Object *key)
+{
+  if (key == scheme_parameterization_key)
+    return (Scheme_Object *)scheme_current_thread->init_config;
+  else if (key == scheme_break_enabled_key)
+    return scheme_current_thread->init_break_cell;
+  
+  return NULL;
+}
+
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key_arg, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
@@ -8196,7 +8208,7 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
         val = scheme_chaperone_do_continuation_mark("continuation-mark-set-first", 1, key_arg, val);
 
       pos = startpos - findpos;
-      if (pos > 16) {
+      if (pos > MARK_CACHE_THRESHOLD) {
         pos >>= 1;
         findpos = findpos + pos;
         if (mc) {
@@ -8285,68 +8297,95 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
       }
     } while (mc);
   }
-  
-  if (key == scheme_parameterization_key) {
-    return (Scheme_Object *)scheme_current_thread->init_config;
-  }
-  if (key == scheme_break_enabled_key) {
-    return scheme_current_thread->init_break_cell;
-  }
-  
-  return NULL;
+
+  return default_mark_value(key);
 }
 
 XFORM_NONGCING static Scheme_Object *
-extract_one_cc_mark_fast(Scheme_Object *key)
+extract_one_cc_mark_fast(Scheme_Object *key, int *_conclusive)
 /* A non-GCing fast path for scheme_extract_one_cc_mark_with_meta()
    where there are no complications. */
 {
-  intptr_t findpos, bottom, startpos, minbottom;
+  intptr_t findpos, bottom, startpos;
   intptr_t pos;
   Scheme_Object *val = NULL;
   Scheme_Object *cache;
   Scheme_Cont_Mark *seg;
   Scheme_Thread *p = scheme_current_thread;
-
-  startpos = (intptr_t)MZ_CONT_MARK_STACK;
+  Scheme_Meta_Continuation *mc = NULL;
  
-  bottom = p->cont_mark_stack_bottom;
-  minbottom = startpos - 32;
-  if (bottom < minbottom) 
-    bottom = minbottom;
+  do {
+    if (mc) {
+      startpos = mc->cont_mark_total;
+      bottom = 0;
+    } else {
+      startpos = (intptr_t)MZ_CONT_MARK_STACK;
+      bottom = p->cont_mark_stack_bottom;
+    }
   
-  findpos = startpos;
+    findpos = startpos;
   
-  /* Search mark stack, checking caches along the way: */
-  while (findpos-- > bottom) {
-    seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
-    pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+    /* Search mark stack, checking caches along the way: */
+    while (findpos-- > bottom) {
+      if ((startpos - findpos) > MARK_CACHE_THRESHOLD) {
+        /* Use full search to trigger caching */
+        return NULL;
+      }
 
-    if (SAME_OBJ(seg[pos].key, key))
-      return seg[pos].val;
-    else {
-      cache = seg[pos].cache;
-      if (cache && SCHEME_HASHTP(cache))
-        cache = scheme_eq_hash_get((Scheme_Hash_Table *)cache, scheme_false);
-      if (cache && SCHEME_VECTORP(cache)) {
-        /* If slot 1 has a key, this cache has just one key--value
-           pair. Otherwise, slot 2 is a hash table. */
-        if (SCHEME_VEC_ELS(cache)[1]) {
-          if (SAME_OBJ(SCHEME_VEC_ELS(cache)[1], key))
-            return SCHEME_VEC_ELS(cache)[2];
-        } else {
-          Scheme_Hash_Table *ht;
-          ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
-          val = scheme_eq_hash_get(ht, key);
-          if (val) {
-            return SCHEME_CAR(val);
+      if (mc) {
+        seg = mc->cont_mark_stack_copied;
+        pos = findpos;
+      } else {
+        seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+        pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+      }
+
+      if (SAME_OBJ(seg[pos].key, key)) {
+        *_conclusive = 1;
+        return seg[pos].val;
+      } else {
+        cache = seg[pos].cache;
+        if (cache && SCHEME_HASHTP(cache))
+          cache = scheme_eq_hash_get((Scheme_Hash_Table *)cache, scheme_false);
+        if (cache && SCHEME_VECTORP(cache)) {
+          /* If slot 1 has a key, this cache has just one key--value
+             pair. Otherwise, slot 2 is a hash table. */
+          if (SCHEME_VEC_ELS(cache)[1]) {
+            if (SAME_OBJ(SCHEME_VEC_ELS(cache)[1], key)) {
+              val = SCHEME_VEC_ELS(cache)[2];
+              if (val) {
+                *_conclusive = 1;
+                return val;
+              } else
+                break; /* cached absence of a value */
+            }
+          } else {
+            Scheme_Hash_Table *ht;
+            ht = (Scheme_Hash_Table *)SCHEME_VEC_ELS(cache)[2];
+            val = scheme_eq_hash_get(ht, key);
+            if (val) {
+              val = SCHEME_CAR(val);
+              if (val) {
+                *_conclusive = 1;
+                return val;
+              } else
+                break; /* cached absence of a value */
+            }
           }
         }
       }
     }
-  }
-  
-  return NULL;
+
+    if (mc)
+      mc = mc->next;
+    else
+      mc = p->meta_continuation;
+  } while (mc);
+
+  /* Since we searched the metacontinuation chain, 
+     the absence of a value is conclusive */
+  *_conclusive = 1;
+  return default_mark_value(key);
 }
 
 static Scheme_Object *get_set_cont_mark_by_pos(Scheme_Object *key,
@@ -8418,8 +8457,9 @@ scheme_extract_one_cc_mark(Scheme_Object *mark_set, Scheme_Object *key)
   Scheme_Object *v;
   
   if (!mark_set) {
-    v = extract_one_cc_mark_fast(key);
-    if (v) return v;
+    int conclusive = 0;
+    v = extract_one_cc_mark_fast(key, &conclusive);
+    if (conclusive) return v;
   }
 
   return scheme_extract_one_cc_mark_with_meta(mark_set, key, NULL, NULL, NULL);
