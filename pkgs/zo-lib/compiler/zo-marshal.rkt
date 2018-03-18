@@ -804,6 +804,7 @@
 
 (define (out-linklet linklet-form out)
   (out-byte CPT_LINKLET out)
+  (out-number 0 out) ; no static prefix
   (out-anything (convert-linklet linklet-form) out))
 
 (define (convert-linklet linklet-form)
