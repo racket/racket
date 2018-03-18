@@ -509,7 +509,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish_lwe(ts_scheme_unbox_star, ref);
+  (void)mz_finish_lwe(ts_scheme_unbox_star, ref); /* doesn't return */
   CHECK_LIMIT();
   scheme_jit_register_sub_func(jitter, sjc.unbox_star_fail_code, scheme_false);
 
@@ -521,7 +521,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   jit_prepare(2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish_lwe(ts_scheme_set_box_star, ref);
+  (void)mz_finish_lwe(ts_scheme_set_box_star, ref); /* doesn't return */
   CHECK_LIMIT();
   scheme_jit_register_sub_func(jitter, sjc.set_box_star_fail_code, scheme_false);
 

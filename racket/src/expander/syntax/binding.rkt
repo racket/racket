@@ -12,7 +12,8 @@
          "local-binding.rkt"
          "datum-map.rkt"
          "../expand/rename-trans.rkt"
-         "../common/module-path.rkt")
+         "../common/module-path.rkt"
+         "cache.rkt")
 
 (provide
  binding-frame-id
@@ -169,7 +170,7 @@
                                                                        (syntax-mpi-shifts s))
                                                 (syntax-scope-propagations+tamper s))])]))
 
-;; Use `resolve` instead of `resolve+shift` when the module of a
+;; Use `resolve+shift` instead of `resolve` when the module of a
 ;; module binding is relevant or when `free-identifier=?` equivalences
 ;; (as installed by a binding to a rename transfomer) are relevant;
 ;; module path index shifts attached to `s` are taken into account in
@@ -181,48 +182,64 @@
                        #:unbound-sym? [unbound-sym? #f]
                        ;; For resolving bulk bindings in `free-identifier=?` chains:
                        #:extra-shifts [extra-shifts null])
-  (define immediate-b (resolve s phase
-                               #:ambiguous-value ambiguous-value
-                               #:exactly? exactly?
-                               #:extra-shifts extra-shifts))
-  (define b (if (and immediate-b
-                     (not immediate?)
-                     (binding-free=id immediate-b))
-                (resolve+shift (binding-free=id immediate-b) phase
-                               #:extra-shifts (append extra-shifts (syntax-mpi-shifts s))
-                               #:ambiguous-value ambiguous-value
-                               #:exactly? exactly?
-                               #:unbound-sym? unbound-sym?)
-                immediate-b))
+  (define can-cache? (and (not exactly?) (not immediate?) (null? extra-shifts)))
   (cond
-   [(module-binding? b)
-    (define mpi-shifts (syntax-mpi-shifts s))
-    (cond
-     [(null? mpi-shifts)
-      b]
-     [else
-      (define mod (module-binding-module b))
-      (define shifted-mod (apply-syntax-shifts mod mpi-shifts))
-      (define nominal-mod (module-binding-nominal-module b))
-      (define shifted-nominal-mod (if (eq? mod nominal-mod)
-                                      shifted-mod
-                                      (apply-syntax-shifts nominal-mod mpi-shifts)))
-      (if (and (eq? mod shifted-mod)
-               (eq? nominal-mod shifted-nominal-mod)
-               (not (binding-free=id b))
-               (null? (module-binding-extra-nominal-bindings b)))
-          b
-          (module-binding-update b
-                                 #:module shifted-mod
-                                 #:nominal-module shifted-nominal-mod
-                                 #:free=id (and (binding-free=id b)
-                                                (syntax-transfer-shifts (binding-free=id b) s))
-                                 #:extra-nominal-bindings
-                                 (for/list ([b (in-list (module-binding-extra-nominal-bindings b))])
-                                   (apply-syntax-shifts-to-binding b mpi-shifts))))])]
-   [(and (not b) unbound-sym?)
-    (syntax-e s)]
-   [else b]))
+    [(and can-cache?
+          (resolve+shift-cache-get s phase))
+     => (lambda (b)
+          (if (eq? b '#:none)
+              (and unbound-sym? (syntax-content s))
+              b))]
+    [else
+     (define immediate-b (resolve s phase
+                                  #:ambiguous-value ambiguous-value
+                                  #:exactly? exactly?
+                                  #:extra-shifts extra-shifts))
+     (define b (if (and immediate-b
+                        (not immediate?)
+                        (binding-free=id immediate-b))
+                   (resolve+shift (binding-free=id immediate-b) phase
+                                  #:extra-shifts (append extra-shifts (syntax-mpi-shifts s))
+                                  #:ambiguous-value ambiguous-value
+                                  #:exactly? exactly?
+                                  #:unbound-sym? unbound-sym?)
+                   immediate-b))
+     (cond
+       [(module-binding? b)
+        (define mpi-shifts (syntax-mpi-shifts s))
+        (cond
+          [(null? mpi-shifts)
+           b]
+          [else
+           (define mod (module-binding-module b))
+           (define shifted-mod (apply-syntax-shifts mod mpi-shifts))
+           (define nominal-mod (module-binding-nominal-module b))
+           (define shifted-nominal-mod (if (eq? mod nominal-mod)
+                                           shifted-mod
+                                           (apply-syntax-shifts nominal-mod mpi-shifts)))
+           (define result-b
+             (if (and (eq? mod shifted-mod)
+                      (eq? nominal-mod shifted-nominal-mod)
+                      (not (binding-free=id b))
+                      (null? (module-binding-extra-nominal-bindings b)))
+                 b
+                 (module-binding-update b
+                                        #:module shifted-mod
+                                        #:nominal-module shifted-nominal-mod
+                                        #:free=id (and (binding-free=id b)
+                                                       (syntax-transfer-shifts (binding-free=id b) s))
+                                        #:extra-nominal-bindings
+                                        (for/list ([b (in-list (module-binding-extra-nominal-bindings b))])
+                                          (apply-syntax-shifts-to-binding b mpi-shifts)))))
+           (when can-cache?
+             (resolve+shift-cache-set! s phase result-b))
+           result-b])]
+       [else
+        (when can-cache?
+          (resolve+shift-cache-set! s phase (or b '#:none)))
+        (or b
+            (and unbound-sym?
+                 (syntax-content s)))])]))
 
 ;; Apply accumulated module path index shifts
 (define (apply-syntax-shifts mpi shifts)

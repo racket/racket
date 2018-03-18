@@ -4137,11 +4137,11 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         (void)jit_calli(sjc.set_box_code);
       else
         (void)jit_calli(sjc.set_box_star_fail_code);
-      if (!for_star) {
+      if (!for_star)
         ref2 = jit_jmpi(jit_forward());
-        mz_patch_branch(ref);
-      } else
+      else
         ref2 = NULL;
+      mz_patch_branch(ref);
       if (!unsafe) {
         jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)0x0));
         (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);

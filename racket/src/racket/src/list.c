@@ -937,17 +937,17 @@ scheme_init_unsafe_list (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("unsafe-unbox*", p, env);
   scheme_unsafe_unbox_star_proc = p;
 
-  REGISTER_SO(scheme_unsafe_set_box_star_proc);
   p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("unsafe-set-box!", p, env);
-  scheme_unsafe_set_box_star_proc = p;
 
+  REGISTER_SO(scheme_unsafe_set_box_star_proc);
   p = scheme_make_immed_prim(unsafe_set_box_star, "unsafe-set-box*!", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("unsafe-set-box*!", p, env);
+  scheme_unsafe_set_box_star_proc = p;
 
   p = scheme_make_prim_w_arity(scheme_box_cas, "unsafe-box*-cas!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
@@ -1915,6 +1915,11 @@ Scheme_Object *scheme_unbox_star(Scheme_Object *obj)
   return SCHEME_BOX_VAL(obj);
 }
 
+static void bad_cas_box(Scheme_Object *box)
+{
+  scheme_wrong_contract("box-cas!", "(and/c box? (not/c immutable?) (not/c impersonator?))", 0, 1, &box);
+}
+
 Scheme_Object *scheme_box_cas(int argc, Scheme_Object *argv[])
 XFORM_SKIP_PROC
 {
@@ -1923,11 +1928,11 @@ XFORM_SKIP_PROC
   Scheme_Object *nv = argv[2];
 
   /* This procedure is used for both the safe and unsafe version, but
-   * the JIT elides the checking for the unsafe version.
-   */
+     the JIT elides the checking for the unsafe version. */
 
   if (!SCHEME_MUTABLE_BOXP(box)) {
-    scheme_wrong_contract("box-cas!", "(and/c box? (not/c immutable?) (not/c impersonator?))", 0, 1, &box);
+    bad_cas_box(box);
+    return NULL;
   }
 
 #ifdef MZ_USE_FUTURES
