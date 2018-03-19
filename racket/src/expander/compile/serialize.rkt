@@ -16,8 +16,7 @@
          "module-use.rkt"
          "../host/linklet.rkt"
          "built-in-symbol.rkt"
-         "reserved-symbol.rkt"
-         "vector-ref.rkt")
+         "reserved-symbol.rkt")
 
 ;; Serializaiton is mostly for syntax object and module path indexes.
 ;;
@@ -96,7 +95,7 @@
   (define pos
     (add-module-path-index!/pos mpis mpi))
   (and pos
-       `(,unsafe-vector-ref-id ,mpi-vector-id ,pos)))
+       `(unsafe-vector*-ref ,mpi-vector-id ,pos)))
 
 (define (add-module-path-index!/pos mpis mpi)
   (cond
