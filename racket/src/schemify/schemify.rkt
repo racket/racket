@@ -534,7 +534,12 @@
                                             inline-fuel
                                             `(let-values ,(reverse binds) . ,bodys)))]
                      [(null? args) #f]
-                     [(not (wrap-pair? formal-args)) #f]
+                     [(not (wrap-pair? formal-args))
+                      (loop '() '() (cons (list (list formal-args)
+                                                (if (wrap-null? args)
+                                                    ''()
+                                                    (cons 'list args)))
+                                          binds))]
                      [else
                       (loop (wrap-cdr formal-args)
                             (wrap-cdr args)

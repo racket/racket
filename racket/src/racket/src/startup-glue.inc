@@ -328,6 +328,28 @@ static MZ_INLINE Scheme_Object *c_int_add(Scheme_Object *a, Scheme_Object *b)
   return scheme_make_integer(SCHEME_INT_VAL(a) + SCHEME_INT_VAL(b));
 }
 
+static MZ_INLINE Scheme_Object *c_int_sub(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_integer(SCHEME_INT_VAL(a) - SCHEME_INT_VAL(b));
+}
+
+#if 0
+static MZ_INLINE Scheme_Object *c_int_mult(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_integer(SCHEME_INT_VAL(a) * SCHEME_INT_VAL(b));
+}
+#endif
+
+static MZ_INLINE Scheme_Object *c_int_and(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_integer(SCHEME_INT_VAL(a) & SCHEME_INT_VAL(b));
+}
+
+static MZ_INLINE Scheme_Object *c_int_rshift(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_integer(SCHEME_INT_VAL(a) >> SCHEME_INT_VAL(b));
+}
+
 /* Can GC if not in fixnum range */
 static Scheme_Object *c_number_add1(Scheme_Object *a)
 {
