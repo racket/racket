@@ -5,13 +5,26 @@
 (module map '#%kernel
   (#%require "small-scheme.rkt" "define.rkt"
              "performance-hint.rkt"
-             '#%paramz)
+             '#%paramz
+             (for-syntax '#%kernel))
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
              (rename andmap2 andmap)
              (rename ormap2 ormap))
-  
+
+  (define-syntaxes (or-unsafe)
+    (lambda (stx)
+      (let-values ([(es) (cdr (syntax-e stx))])
+        (let-values ([(e) (car (if (syntax? es)
+                                   (syntax-e es)
+                                   es))])
+          (datum->syntax #f
+                         (list (quote-syntax if)
+                               (quote-syntax (variable-reference-from-unsafe? (#%variable-reference)))
+                               (quote-syntax #t)
+                               e))))))
+
   ;; -------------------------------------------------------------------------
 
   (begin-encourage-inline
@@ -20,9 +33,9 @@
       (let ([map
              (case-lambda
               [(f l)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 1)
-                        (list? l))
+               (if (or-unsafe (and (procedure? f)
+                                   (procedure-arity-includes? f 1)
+                                   (list? l)))
                    (let loop ([l l])
                      (cond
                       [(null? l) null]
@@ -31,11 +44,12 @@
                          (cons (f (car l)) (loop r)))]))
                    (gen-map f (list l)))]
               [(f l1 l2)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 2)
-                        (list? l1)
-                        (list? l2)
-                        (= (length l1) (length l2)))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 2)
+                         (list? l1)
+                         (list? l2)
+                         (= (length l1) (length l2))))
                    (let loop ([l1 l1] [l2 l2])
                      (cond
                       [(null? l1) null]
@@ -52,9 +66,10 @@
       (let ([for-each
              (case-lambda
               [(f l)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 1)
-                        (list? l))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 1)
+                         (list? l)))
                    (let loop ([l l])
                      (cond
                       [(null? l) (void)]
@@ -63,11 +78,12 @@
                          (begin (f (car l)) (loop r)))]))
                    (gen-for-each f (list l)))]
               [(f l1 l2)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 2)
-                        (list? l1)
-                        (list? l2)
-                        (= (length l1) (length l2)))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 2)
+                         (list? l1)
+                         (list? l2)
+                         (= (length l1) (length l2))))
                    (let loop ([l1 l1] [l2 l2])
                      (cond
                       [(null? l1) (void)]
@@ -84,9 +100,10 @@
       (let ([andmap
              (case-lambda
               [(f l)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 1)
-                        (list? l))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 1)
+                         (list? l)))
                    (if (null? l)
                        #t
                        (let loop ([l l])
@@ -98,11 +115,12 @@
                                   (loop r)))])))
                    (gen-andmap f (list l)))]
               [(f l1 l2)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 2)
-                        (list? l1)
-                        (list? l2)
-                        (= (length l1) (length l2)))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 2)
+                         (list? l1)
+                         (list? l2)
+                         (= (length l1) (length l2))))
                    (if (null? l1)
                        #t
                        (let loop ([l1 l1] [l2 l2])
@@ -121,9 +139,10 @@
       (let ([ormap
              (case-lambda
               [(f l)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 1)
-                        (list? l))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 1)
+                         (list? l)))
                    (if (null? l)
                        #f
                        (let loop ([l l])
@@ -134,11 +153,12 @@
                              (or (f (car l)) (loop r)))])))
                    (gen-ormap f (list l)))]
               [(f l1 l2)
-               (if (and (procedure? f)
-                        (procedure-arity-includes? f 2)
-                        (list? l1)
-                        (list? l2)
-                        (= (length l1) (length l2)))
+               (if (or-unsafe
+                    (and (procedure? f)
+                         (procedure-arity-includes? f 2)
+                         (list? l1)
+                         (list? l2)
+                         (= (length l1) (length l2))))
                    (if (null? l1)
                        #f
                        (let loop ([l1 l1] [l2 l2])
@@ -209,7 +229,7 @@
                     null))))))
   
   (define (gen-map f ls)
-    (check-args 'map f ls)
+    (or-unsafe (check-args 'map f ls))
     (let loop ([ls ls])
       (cond
         [(null? (car ls)) null]
@@ -219,7 +239,7 @@
                  (loop next-ls)))])))
 
   (define (gen-for-each f ls)
-    (check-args 'for-each f ls)
+    (or-unsafe (check-args 'for-each f ls))
     (let loop ([ls ls])
       (unless (null? (car ls))
         (let ([next-ls (map2 cdr ls)])
@@ -227,7 +247,7 @@
           (loop next-ls)))))
 
   (define (gen-andmap f ls)
-    (check-args 'andmap f ls)
+    (or-unsafe (check-args 'andmap f ls))
     (let loop ([ls ls])
       (cond
         [(null? (car ls)) #t]
@@ -237,7 +257,7 @@
                      (loop next-ls)))])))
 
   (define (gen-ormap f ls)
-    (check-args 'ormap f ls)
+    (or-unsafe (check-args 'ormap f ls))
     (let loop ([ls ls])
       (cond
         [(null? (car ls)) #f]

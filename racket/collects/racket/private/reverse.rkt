@@ -3,9 +3,11 @@
 
   (define-values (reverse)
     (lambda (l)
-      (if (list? l) 
+      (if (variable-reference-from-unsafe? (#%variable-reference))
           (void)
-          (raise-argument-error 'reverse "list?" l))
+          (if (list? l) 
+              (void)
+              (raise-argument-error 'reverse "list?" l)))
       (letrec-values ([(loop)
                        (lambda (a l)
                          (if (null? l)

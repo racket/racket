@@ -12,6 +12,7 @@
  syntax-tamper
  empty-syntax
  identifier?
+ syntax-identifier?
  
  syntax->datum
  datum->syntax
@@ -176,6 +177,9 @@
 
 (define (identifier? s)
   (and (syntax? s) (symbol? (syntax-content s))))
+
+(define (syntax-identifier? s) ; assumes that `s` is syntax
+  (symbol? (syntax-content s)))
 
 (define (syntax->datum s)
   (syntax-map s (lambda (tail? x) x) (lambda (s d) d) syntax-content))

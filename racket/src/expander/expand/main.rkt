@@ -72,10 +72,10 @@
                 #:skip-log? [skip-log? #f])
   (log-expand* ctx #:unless skip-log? [(if (expand-context-only-immediate? ctx) 'enter-check 'visit) s])
   (cond
-   [(identifier? s)
+   [(syntax-identifier? s)
     (expand-identifier s ctx alternate-id)]
    [(and (pair? (syntax-content s))
-         (identifier? (car (syntax-content s))))
+         (syntax-identifier? (car (syntax-content s))))
     (expand-id-application-form s ctx alternate-id)]
    [(or (pair? (syntax-content s))
         (null? (syntax-content s)))
@@ -369,7 +369,7 @@
    ;; any expansion result
    (define post-s (maybe-add-post-expansion-scope result-s ctx))
    ;; Track expansion:
-   (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (identifier? s) s (car (syntax-e s))))))
+   (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
    (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
    (log-expand ctx 'exit-macro rearmed-s)
    (values rearmed-s
@@ -476,19 +476,20 @@
 
 (define-syntax-rule (guard-stop id ctx s otherwise ...)
   (cond
-   [(free-id-set-member? (expand-context-stops ctx)
-                         (expand-context-phase ctx)
-                         id)
-    (log-expand* ctx #:unless (expand-context-only-immediate? ctx)
-                 ['resolve id] ['enter-prim s] ['prim-stop] ['exit-prim s] ['return s])
-    s]
-   [else
-    otherwise ...]))
+    [(and (not (free-id-set-empty? (expand-context-stops ctx)))
+          (free-id-set-member? (expand-context-stops ctx)
+                               (expand-context-phase ctx)
+                               id))
+     (log-expand* ctx #:unless (expand-context-only-immediate? ctx)
+                  ['resolve id] ['enter-prim s] ['prim-stop] ['exit-prim s] ['return s])
+     s]
+    [else
+     otherwise ...]))
 
 (define (substitute-alternate-id s alternate-id)
   (cond
    [(not alternate-id) s]
-   [(identifier? s) (syntax-rearm (syntax-track-origin alternate-id s) s)]
+   [(syntax-identifier? s) (syntax-rearm (syntax-track-origin alternate-id s) s)]
    [else
     (define disarmed-s (syntax-disarm s))
     (syntax-rearm (syntax-track-origin (datum->syntax
@@ -686,7 +687,7 @@
   (define d (syntax-e s))
   (define keep-e (cond
                   [(symbol? d) d]
-                  [(and (pair? d) (identifier? (car d))) (syntax-e (car d))]
+                  [(and (pair? d) (syntax-identifier? (car d))) (syntax-e (car d))]
                   [else #f]))
   (cond
    [(expand-context-to-parsed? ctx)

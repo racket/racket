@@ -22,7 +22,7 @@
   (eq? fs empty-free-id-set))
 
 (define (free-id-set-member? fs phase given-id)
-  (if (zero? (hash-count fs))
+  (if (free-id-set-empty? fs)
       #f
       (for/or ([id (in-list-ish (hash-ref fs
                                           (identifier-binding-symbol given-id phase)
