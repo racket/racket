@@ -337,50 +337,52 @@
 	    (printf "cpu time: ~s real time: ~s gc time: ~s\n" cpu user gc)
 	    (apply values v)))])))
 
-  (define-values (hash-update hash-update! hash-has-key? hash-ref!)
-    (let* ([not-there (gensym)]
-           [up (lambda (who mut? set ht key xform default)
-                 (unless (and (hash? ht)
-                              (if mut?
-                                  (not (immutable? ht))
-                                  (immutable? ht)))
-                   (raise-argument-error who (if mut? "(and/c hash? (not/c immutable?))" "(and/c hash? immutable?)") ht))
-                 (unless (and (procedure? xform)
-                              (procedure-arity-includes? xform 1))
-                   (raise-argument-error who "(any/c . -> . any/c)" xform))
-                 (let ([v (hash-ref ht key default)])
-                   (if (eq? v not-there)
-                       (raise-mismatch-error who "no value found for key: " key)
-                       (set ht key (xform v)))))])
-      (let ([hash-update
-             (case-lambda
-              [(ht key xform default)
-               (up 'hash-update #f hash-set ht key xform default)]
-              [(ht key xform)
-               (hash-update ht key xform not-there)])]
-            [hash-update!
-             (case-lambda
-              [(ht key xform default)
-               (up 'hash-update! #t hash-set! ht key xform default)]
-              [(ht key xform)
-               (hash-update! ht key xform not-there)])]
-            [hash-has-key?
-             (lambda (ht key)
-               (unless (hash? ht)
-                 (raise-argument-error 'hash-has-key? "hash?" 0 ht key))
-               (not (eq? not-there (hash-ref ht key not-there))))]
-            [hash-ref!
-             (lambda (ht key new)
-               (unless (and (hash? ht)
-                            (not (immutable? ht)))
-                 (raise-argument-error 'hash-ref! "(and/c hash? (not/c immutable?))" 0 ht key new))
-               (let ([v (hash-ref ht key not-there)])
-                 (if (eq? not-there v)
-                   (let ([n (if (procedure? new) (new) new)])
-                     (hash-set! ht key n)
-                     n)
-                   v)))])
-        (values hash-update hash-update! hash-has-key? hash-ref!))))
+  (define not-there (gensym))
+
+  (define (do-hash-update who mut? set ht key xform default)
+    (unless (variable-reference-from-unsafe? (#%variable-reference))
+      (unless (and (hash? ht)
+                   (if mut?
+                       (not (immutable? ht))
+                       (immutable? ht)))
+        (raise-argument-error who (if mut? "(and/c hash? (not/c immutable?))" "(and/c hash? immutable?)") ht))
+      (unless (and (procedure? xform)
+                   (procedure-arity-includes? xform 1))
+        (raise-argument-error who "(any/c . -> . any/c)" xform)))
+    (let ([v (hash-ref ht key default)])
+      (if (eq? v not-there)
+          (raise-mismatch-error who "no value found for key: " key)
+          (set ht key (xform v)))))
+
+  (define hash-update
+    (case-lambda
+      [(ht key xform default)
+       (do-hash-update 'hash-update #f hash-set ht key xform default)]
+      [(ht key xform)
+       (hash-update ht key xform not-there)]))
+
+  (define hash-update!
+    (case-lambda
+      [(ht key xform default)
+       (do-hash-update 'hash-update! #t hash-set! ht key xform default)]
+      [(ht key xform)
+       (hash-update! ht key xform not-there)]))
+
+  (define (hash-has-key? ht key)
+    (unless (hash? ht)
+      (raise-argument-error 'hash-has-key? "hash?" 0 ht key))
+    (not (eq? not-there (hash-ref ht key not-there))))
+
+  (define (hash-ref! ht key new)
+    (unless (and (hash? ht)
+                 (not (immutable? ht)))
+      (raise-argument-error 'hash-ref! "(and/c hash? (not/c immutable?))" 0 ht key new))
+    (let ([v (hash-ref ht key not-there)])
+      (if (eq? not-there v)
+          (let ([n (if (procedure? new) (new) new)])
+            (hash-set! ht key n)
+            n)
+          v)))
 
   (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
