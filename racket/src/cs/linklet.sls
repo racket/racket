@@ -353,11 +353,12 @@
 
   (define compile-linklet
     (case-lambda
-     [(c) (compile-linklet c #f #f (lambda (key) (values #f #f)) #t)]
-     [(c name) (compile-linklet c name #f (lambda (key) (values #f #f)) #t)]
-     [(c name import-keys) (compile-linklet c name import-keys (lambda (key) (values #f #f)) #t)]
-     [(c name import-keys get-import) (compile-linklet c name import-keys get-import #t)]
-     [(c name import-keys get-import serializable?)
+     [(c) (compile-linklet c #f #f (lambda (key) (values #f #f)) '(serializable))]
+     [(c name) (compile-linklet c name #f (lambda (key) (values #f #f)) '(serializable))]
+     [(c name import-keys) (compile-linklet c name import-keys (lambda (key) (values #f #f)) '(serializable))]
+     [(c name import-keys get-import) (compile-linklet c name import-keys get-import '(serializable))]
+     [(c name import-keys get-import options)
+      (define serializable? (#%memq 'serializable options))
       (performance-region
        'schemify
        (define jitify-mode?
