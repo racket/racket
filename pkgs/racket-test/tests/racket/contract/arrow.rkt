@@ -683,4 +683,15 @@
      (regexp-match? "a procedure that accepts the #:x keyword argument"
                     (exn-message e))))
 
+  (contract-syntax-error-test
+   '->-duplicate-keywords.1
+   #'(->* [] [#:a any/c #:a any/c] void?))
+  (contract-syntax-error-test
+   '->-duplicate-keywords.2
+   #'(->* [#:a any/c #:a any/c] [] void?))
+  (contract-error-test
+   '->-duplicate-keywords.3
+   #'(eval '(->* [#:a any/c] [#:a any/c] void?))
+   (λ (x) (and (exn:fail:syntax? x) (regexp-match #rx"->[*]: duplicate keyword" (exn-message x)))))
+
   )

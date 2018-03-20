@@ -588,6 +588,13 @@
          (sort (map cons kwds kwd-args)
                keyword<?
                #:key (compose syntax-e car)))
+       (when (pair? sorted)
+         (for ([pr1 (in-list sorted)]
+               [pr2 (in-list (cdr sorted))])
+           (when (equal? (syntax-e (car pr1)) (syntax-e (car pr2)))
+             (raise-syntax-error #f "duplicate keyword" stx
+                                 (car pr1)
+                                 (list (car pr2))))))
        (values (reverse regular-args)
                (map car sorted)
                (map cdr sorted)
@@ -811,6 +818,8 @@
                        opt-dom-kwds
                        opt-lets)
                       (:split-doms stx '->* raw-optional-doms this->*)])
+         ;; call sort-keywords for the duplicate variable check
+         (sort-keywords stx (append (syntax->list #'man-dom-kwds) (syntax->list #'opt-dom-kwds)))
          (values
           #'man-dom
           #'man-dom-kwds

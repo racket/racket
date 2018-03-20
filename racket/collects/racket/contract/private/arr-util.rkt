@@ -94,17 +94,20 @@
     (cond
       [(null? lst) (list x)]
       [else
-       (let ([fst-kwd (syntax-e (car (syntax-e (car lst))))]
-             [x-kwd (syntax-e (car (syntax-e x)))])
-         (cond
-           [(equal? x-kwd fst-kwd)
-            (raise-syntax-error #f 
-                                "duplicate keyword"
-                                stx
-                                (car x))]
-           [(keyword<? x-kwd fst-kwd)
-            (cons x lst)]
-           [else (cons (car lst) (insert x (cdr lst)))]))]))
+       (define fst-kwd-stx (car (syntax-e (car lst))))
+       (define fst-kwd (syntax-e fst-kwd-stx))
+       (define x-kwd-stx (car (syntax-e x)))
+       (define x-kwd (syntax-e x-kwd-stx))
+       (cond
+         [(equal? x-kwd fst-kwd)
+          (raise-syntax-error #f
+                              "duplicate keyword"
+                              stx
+                              x-kwd-stx
+                              (list fst-kwd-stx))]
+         [(keyword<? x-kwd fst-kwd)
+          (cons x lst)]
+         [else (cons (car lst) (insert x (cdr lst)))])]))
   
   (let loop ([pairs kwd/ctc-pairs])
     (cond
