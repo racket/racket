@@ -10385,7 +10385,7 @@ static Scheme_Object *get_linklet_or_instance_for_import_key(Optimize_Info *info
   if (!cross || !cross->get_import)
     return NULL;
 
-  v = scheme_hash_tree_get(cross->linklets, key);
+  v = scheme_eq_hash_tree_get(cross->linklets, key);
   if (!v) {
     a[0] = key;
     v = scheme_apply_multi(cross->get_import, 1, a);
@@ -10455,7 +10455,7 @@ static Scheme_Object *get_import_inline_or_shape(Optimize_Info *info, Scheme_IR_
   if (!info->cross || (var->instance_pos < 0))
     return NULL;
 
-  key = scheme_hash_tree_get(info->cross->import_keys, scheme_make_integer(var->instance_pos));
+  key = scheme_eq_hash_tree_get(info->cross->import_keys, scheme_make_integer(var->instance_pos));
   if (!key)
     return NULL;
 
@@ -10606,10 +10606,10 @@ Scheme_Object *scheme_optimize_add_import_variable(Optimize_Info *info, Scheme_O
   if (SCHEME_FALSEP(linklet_key))
     return NULL;
 
-  pos = scheme_hash_tree_get(info->cross->rev_import_keys, linklet_key);
+  pos = scheme_eq_hash_tree_get(info->cross->rev_import_keys, linklet_key);
   MZ_ASSERT(pos);
 
-  syms = (Scheme_Hash_Tree *)scheme_hash_tree_get(info->cross->import_syms, pos);
+  syms = (Scheme_Hash_Tree *)scheme_eq_hash_tree_get(info->cross->import_syms, pos);
   if (!syms) {
     syms = empty_eq_hash_tree;
     if (SCHEME_INT_VAL(pos) < SCHEME_VEC_SIZE(info->linklet->importss)) {
@@ -10626,7 +10626,7 @@ Scheme_Object *scheme_optimize_add_import_variable(Optimize_Info *info, Scheme_O
     info->cross->import_syms = ht;
   }
 
-  var_pos = scheme_hash_tree_get(syms, symbol);
+  var_pos = scheme_eq_hash_tree_get(syms, symbol);
   if (!var_pos) {
     var_pos = scheme_make_integer(syms->count >> 1);
     syms = scheme_hash_tree_set(syms, symbol, var_pos);
@@ -10646,7 +10646,7 @@ Scheme_Object *scheme_optimize_get_import_key(Optimize_Info *info, Scheme_Object
   Scheme_Object *next_keys, *key, *pos;
   Scheme_Hash_Tree *ht;
 
-  next_keys = scheme_hash_tree_get(info->cross->import_next_keys, linklet_key);
+  next_keys = scheme_eq_hash_tree_get(info->cross->import_next_keys, linklet_key);
   if (!next_keys) {
     /* chaining is not supported by the compilation client */
     return NULL;
@@ -10655,7 +10655,7 @@ Scheme_Object *scheme_optimize_get_import_key(Optimize_Info *info, Scheme_Object
   MZ_ASSERT(instance_pos < SCHEME_VEC_SIZE(next_keys));
 
   key = SCHEME_VEC_ELS(next_keys)[instance_pos];
-  pos = scheme_hash_tree_get(info->cross->rev_import_keys, key);
+  pos = scheme_eq_hash_tree_get(info->cross->rev_import_keys, key);
   if (!pos) {
     /* Add this linklet as an import */
     pos = scheme_make_integer(info->cross->import_keys->count);
@@ -10720,7 +10720,7 @@ static void record_optimize_shapes(Optimize_Info *info, Scheme_Linklet *linklet,
 
     /* Add imported variables for each instance */
     for (i = 0; i < SCHEME_VEC_SIZE(linklet->importss); i++) {
-      ht = (Scheme_Hash_Tree *)scheme_hash_tree_get(info->cross->import_syms, scheme_make_integer(i));
+      ht = (Scheme_Hash_Tree *)scheme_eq_hash_tree_get(info->cross->import_syms, scheme_make_integer(i));
       if (ht && ((ht->count >> 1) > SCHEME_VEC_SIZE(SCHEME_VEC_ELS(linklet->importss)[i]))) {
         Scheme_Object *sym;
         v = scheme_make_vector((ht->count >> 1), NULL);
@@ -10776,7 +10776,7 @@ static void record_optimize_shapes(Optimize_Info *info, Scheme_Linklet *linklet,
     used = 0;
     for (i = 0; i < SCHEME_VEC_SIZE(linklet->importss); i++) {
       if (!SCHEME_INTP(SCHEME_VEC_ELS(linklet->importss)[i])) {
-        v = scheme_hash_tree_get(info->cross->import_keys, scheme_make_integer(i));
+        v = scheme_eq_hash_tree_get(info->cross->import_keys, scheme_make_integer(i));
         MZ_ASSERT(v);
         SCHEME_VEC_ELS((*_import_keys))[used++] = v;
       }
@@ -10791,9 +10791,9 @@ static void record_optimize_shapes(Optimize_Info *info, Scheme_Linklet *linklet,
     k = 0;
     for (i = 0; i < SCHEME_VEC_SIZE(linklet->importss); i++) {
       if (!SCHEME_INTP(SCHEME_VEC_ELS(linklet->importss)[i])) {
-        v = scheme_hash_tree_get(info->cross->import_keys, scheme_make_integer(i));
+        v = scheme_eq_hash_tree_get(info->cross->import_keys, scheme_make_integer(i));
         if (v)
-          v = scheme_hash_tree_get(info->cross->linklets, v);
+          v = scheme_eq_hash_tree_get(info->cross->linklets, v);
         in_linklet = ((v && SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_type)) ? (Scheme_Linklet *)v : NULL);
         in_instance = ((v && SAME_TYPE(SCHEME_TYPE(v), scheme_instance_type)) ? (Scheme_Instance *)v : NULL);
         MZ_ASSERT(!in_linklet || SAME_TYPE(in_linklet->so.type, scheme_linklet_type));
