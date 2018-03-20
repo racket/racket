@@ -2443,4 +2443,19 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([check
+       (lambda (later rx)
+         (err/rt-test (expand `(module m racket/base
+                                 (require (for-syntax racket/base))
+                                 (begin-for-syntax
+                                   (define (foo) (bar)))
+                                 ,later))
+                      (lambda (exn)
+                        (regexp-match? rx (exn-message exn)))))])
+  (check '(void) "unbound identifier")
+  (check '(begin-for-syntax (struct bar ())) #rx"later defined as syntax")
+  (check '(require (for-syntax (only-in racket/base [car bar]))) #rx"later bound differently"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

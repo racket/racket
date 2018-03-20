@@ -25,7 +25,7 @@
           all-scopes-stx  ; scopes like the initial import, which correspond to original forms
           * use-site-scopes ; #f or boxed list: scopes that should be pruned from binders
           defined-syms    ; phase -> sym -> id; symbols picked for bindings
-          * frame-id        ; #f or a gensym to identify a binding frame; 'all matches any for use-site scopes
+          * frame-id      ; #f or a gensym to identify a binding frame; 'all matches any for use-site scopes
           counter         ; box of an integer; used for generating names deterministically
           lift-key        ; identifies (via `syntax-local-lift-context`) a target for lifts
           )) ; after adding a field, update `copy-module-context` in "context.rkt"

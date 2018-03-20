@@ -369,7 +369,7 @@
                                            #:mpis-to-reset mpis-to-reset)))
 
      ;; Check that any tentatively allowed reference at phase >= 1 is ok
-     (check-defined-by-now need-eventually-defined self ctx)
+     (check-defined-by-now need-eventually-defined self ctx requires+provides)
      
      ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
      ;; Pass 3: resolve provides at all phases
@@ -790,7 +790,7 @@
                                                       #:requires+provides requires+provides
                                                       #:in exp-body
                                                       #:as-transformer? #t))
-          (add-defined-syms! requires+provides syms phase)
+          (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
           ;; Expand and evaluate RHS:
           (define-values (exp-rhs parsed-rhs vals)
             (expand+eval-for-syntaxes-binding (m 'rhs) ids
@@ -1019,17 +1019,27 @@
        (cons exp-body
              (loop tail? rest-bodys)))])))
 
-(define (check-defined-by-now need-eventually-defined self ctx)
+(define (check-defined-by-now need-eventually-defined self ctx requires+provides)
   ;; If `need-eventually-defined` is not empty, report an error
   (for ([(phase l) (in-hash need-eventually-defined)])
     (for ([id (in-list l)])
       (define b (resolve+shift id phase))
-      ;; FIXME: check that the binding is for a variable
-      (unless (and b
-                   (module-binding? b)
-                   (eq? (module-binding-sym b) (syntax-e id))
-                   (eq? (module-binding-module b) self))
-        (raise-syntax-error #f "reference to an unbound identifier"
+      (define bound-here? (and b
+                               (module-binding? b)
+                               (eq? (module-binding-sym b) (syntax-e id))
+                               (eq? (module-binding-module b) self)))
+      (define bound-kind (and bound-here?
+                              (defined-sym-kind requires+provides (module-binding-sym b) phase)))
+      (unless (eq? bound-kind 'variable)
+        (raise-syntax-error #f
+                            (string-append
+                             (cond
+                               [(not b) "reference to an unbound identifier"]
+                               [(eq? bound-kind 'transformer) "identifier treated as a variable, but later defined as syntax"]
+                               [else "identifier treated as a variable, but later bound differently"])
+                             (format "\n  at phase: ~a" (case phase
+                                                          [(1) "1; the transformer environment"]
+                                                          [else phase])))
                             id #f null
                             (syntax-debug-info-string id ctx))))))
 

@@ -30,6 +30,7 @@
          remove-required-id!
          check-not-defined
          add-defined-syms!
+         defined-sym-kind
          extract-module-requires
          extract-module-definitions
          extract-all-module-requires
@@ -48,7 +49,7 @@
                            require-mpis-in-order ; require-phase -> list of module-path-index
                            requires   ; mpi [interned] -> require-phase -> sym -> list-ish of [bulk-]required
                            provides   ; phase -> sym -> binding or protected
-                           phase-to-defined-syms ; phase -> sym -> boolean
+                           phase-to-defined-syms ; phase -> sym -> (or/c 'variable 'transformer)
                            also-required ; sym -> binding
                            [can-cross-phase-persistent? #:mutable]
                            [all-bindings-simple? #:mutable]) ; tracks whether bindings are easily reconstructed
@@ -397,13 +398,19 @@
                           (remove-non-matching-requireds reqds id phase mpi nominal-phase (syntax-e id))))])
           #f])])]))
 
-(define (add-defined-syms! r+p syms phase)
+(define (add-defined-syms! r+p syms phase #:as-transformer? [as-transformer? #f])
   (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))
   (define defined-syms (hash-ref phase-to-defined-syms phase #hasheq()))
   (define new-defined-syms
     (for/fold ([defined-syms defined-syms]) ([sym (in-list syms)])
-      (hash-set defined-syms sym #t)))
+      (hash-set defined-syms sym (if as-transformer? 'transformer 'variable))))
   (hash-set! phase-to-defined-syms phase new-defined-syms))
+
+;; Returns 'variable, 'transformer, or #f
+(define (defined-sym-kind r+p sym phase)
+  (define phase-to-defined-syms (requires+provides-phase-to-defined-syms r+p))
+  (define defined-syms (hash-ref phase-to-defined-syms phase #hasheq()))
+  (hash-ref defined-syms sym #f))
 
 ;; Get all the bindings imported from a given module
 (define (extract-module-requires r+p mod-name phase)
