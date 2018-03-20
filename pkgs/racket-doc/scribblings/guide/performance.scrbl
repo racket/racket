@@ -618,7 +618,7 @@ full collection with @racket[(collect-garbage)] just before an initial
 @racket[(collect-garbage 'incremental)] to initiate incremental mode
 from an optimal state.
 
-To check whether incremental mode is use and how it affects pause
+To check whether incremental mode is in use and how it affects pause
 times, enable @tt{debug}-level logging output for the
 @racketidfont{GC} topic. For example,
 
