@@ -72,7 +72,6 @@ READ_ONLY Scheme_Object *scheme_keyword_p_proc;
 static Scheme_Object *symbol_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_unreadable_p_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *symbol_interned_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[]);
@@ -343,8 +342,10 @@ scheme_init_symbol (Scheme_Startup_Env *env)
 
   p = scheme_make_folding_prim(symbol_unreadable_p_prim, "symbol-unreadable?", 1, 1, 1);
   scheme_addto_prim_instance("symbol-unreadable?", p, env);
-  
-  p = scheme_make_folding_prim(symbol_interned_p_prim, "symbol-interned?", 1, 1, 1);
+
+  p = scheme_make_folding_prim(scheme_checked_symbol_interned_p, "symbol-interned?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("symbol-interned?", p, env);
 
   ADD_FOLDING_PRIM("symbol<?",                 symbol_lt,                       2, -1, 1, env);  
@@ -778,8 +779,8 @@ symbol_p_prim (int argc, Scheme_Object *argv[])
   return SCHEME_SYMBOLP(argv[0]) ? scheme_true : scheme_false;
 }
 
-static Scheme_Object *
-symbol_interned_p_prim (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_symbol_interned_p (int argc, Scheme_Object *argv[])
 {
   if (SCHEME_SYMBOLP(argv[0]))
     return (SCHEME_SYM_WEIRDP(argv[0]) ? scheme_false : scheme_true);

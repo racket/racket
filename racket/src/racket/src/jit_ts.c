@@ -116,6 +116,7 @@ define_ts__v(chaperone_set_mark, FSRC_MARKS)
 define_ts_ss_s(scheme_chaperone_get_immediate_cc_mark, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_char_to_integer, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_integer_to_char, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_symbol_interned_p, FSRC_MARKS)
 # ifndef CAN_INLINE_ALLOC
 define_ts_iSi_s(scheme_build_list_offset, FSRC_OTHER)
 # endif
@@ -272,6 +273,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_struct_setter scheme_struct_setter
 # define ts_scheme_checked_char_to_integer scheme_checked_char_to_integer
 # define ts_scheme_checked_integer_to_char scheme_checked_integer_to_char
+# define ts_scheme_checked_symbol_interned_p scheme_checked_symbol_interned_p
 # define ts_scheme_check_not_undefined scheme_check_not_undefined
 # define ts_scheme_check_assign_not_undefined scheme_check_assign_not_undefined
 # define ts_scheme_foreign_ptr_ref scheme_foreign_ptr_ref

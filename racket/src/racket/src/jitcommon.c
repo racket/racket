@@ -3446,6 +3446,29 @@ static int common11(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
   }
 
+  /* symbol_interned_p_code */
+  /* R0 has non-symbol argument */
+  {
+    GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
+    
+    sjc.symbol_interned_p_code = jit_get_ip();
+
+    mz_prolog(JIT_R2);
+
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    CHECK_LIMIT();
+    jit_movi_i(JIT_R0, 1);
+    mz_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R0);
+    mz_finish_prim_lwe(ts_scheme_checked_symbol_interned_p, refr); /* doesn't return */
+
+    scheme_jit_register_sub_func(jitter, sjc.symbol_interned_p_code, scheme_false);
+    CHECK_LIMIT();
+  }
+
   return 1;
 }
 

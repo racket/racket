@@ -1424,6 +1424,47 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "char-whitespace?")) {
     generate_inlined_char_category_test(jitter, app, SCHEME_ISSPACE_BIT, for_branch, branch_short, dest);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "symbol-interned?")) {
+    GC_CAN_IGNORE jit_insn *ref1, *reffail, *ref_no;
+        
+    mz_runstack_skipped(jitter, 1);
+    scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+    CHECK_LIMIT();
+    mz_runstack_unskipped(jitter, 1);
+
+    mz_rs_sync();
+
+    __START_SHORT_JUMPS__(branch_short);
+
+    __START_INNER_TINY__(branch_short);
+    ref1 = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    __END_INNER_TINY__(branch_short);
+    reffail = jit_get_ip();
+    (void)jit_calli(sjc.symbol_interned_p_code);
+
+    __START_INNER_TINY__(branch_short);
+    mz_patch_branch(ref1);
+    (void)mz_bnei_t(reffail, JIT_R0, scheme_symbol_type, JIT_R2);
+    __END_INNER_TINY__(branch_short);
+
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Symbol *)0x0)->iso));
+    
+    if (for_branch) {
+      ref_no = jit_bmsi_ul(jit_forward(), JIT_R2, 0x3);
+      scheme_add_branch_false(for_branch, ref_no);
+      scheme_branch_for_true(jitter, for_branch);
+    } else {
+      (void)jit_movi_p(dest, scheme_false);
+      __START_INNER_TINY__(branch_short);
+      ref_no = jit_bmsi_ul(jit_forward(), JIT_R2, 0x3);
+      (void)jit_movi_p(dest, scheme_true);
+      mz_patch_branch(ref_no);
+      __END_INNER_TINY__(branch_short);
+    }    
+    
+    __END_SHORT_JUMPS__(branch_short);
+
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "list?")
              || IS_NAMED_PRIM(rator, "list-pair?")) {
     int for_list_pair = 0;
