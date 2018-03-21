@@ -88,9 +88,11 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
 # define mzPDC_DIRECT_UNCOPY 3
 # define mzPDC_DESER 4
 # define mzPDC_CLEAN 5
+
+static Scheme_Object *strip_chaperones(Scheme_Object *so);
 #endif
 
-static void places_prepare_direct(Scheme_Object *so);
+static Scheme_Object *places_prepare_direct(Scheme_Object *so);
 static void log_place_event(const char *what, const char *tag, int has_amount, intptr_t amount);
 
 # ifdef MZ_PRECISE_GC
@@ -485,13 +487,22 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       place_data->err = rw[5];
     }
   }
-
-  places_prepare_direct(place_data->current_library_collection_paths);
-  places_prepare_direct(place_data->current_library_collection_links);
-  places_prepare_direct(place_data->compiled_roots);
-  places_prepare_direct(place_data->channel);
-  places_prepare_direct(place_data->module);
-  places_prepare_direct(place_data->function);
+  
+  {
+    Scheme_Object *tmp;
+    tmp = places_prepare_direct(place_data->current_library_collection_paths);
+    place_data->current_library_collection_paths = tmp;
+    tmp = places_prepare_direct(place_data->current_library_collection_links);
+    place_data->current_library_collection_links = tmp;
+    tmp = places_prepare_direct(place_data->compiled_roots);
+    place_data->compiled_roots = tmp;
+    tmp = places_prepare_direct(place_data->channel);
+    place_data->channel = tmp;
+    tmp = places_prepare_direct(place_data->module);
+    place_data->module = tmp;
+    tmp = places_prepare_direct(place_data->function);
+    place_data->function = tmp;
+  }
   
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
@@ -775,8 +786,10 @@ static Scheme_Object *do_places_deep_copy(Scheme_Object *so, int mode, int gcabl
 #endif
 }
 
-static void places_prepare_direct(Scheme_Object *so) {
+static Scheme_Object *places_prepare_direct(Scheme_Object *so) {
+  so = strip_chaperones(so);
   (void)do_places_deep_copy(so, mzPDC_CHECK, 1, NULL, NULL);
+  return so;
 }
 
 static Scheme_Object *places_deep_direct_uncopy(Scheme_Object *so) {
@@ -1931,6 +1944,79 @@ DEEP_DONE_L:
 
 }
 
+static Scheme_Object *strip_chaperones_k(void);
+
+/* Recognizes the same shapes as places_deep_copy_worker, but also
+   allows chaperones and impersonators. The result is an
+   impersonator-free copy of `so`. */
+static Scheme_Object *strip_chaperones(Scheme_Object *so)
+{
+  Scheme_Object *o;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      p->ku.k.p1 = (void *)so;
+      return scheme_handle_stack_overflow(strip_chaperones_k);
+    }
+  }
+#endif
+
+  if (SCHEME_CHAPERONEP(so))
+    o = SCHEME_CHAPERONE_VAL(so);
+  else
+    o = so;
+
+  if (SCHEME_PAIRP(o)) {
+    return scheme_make_pair(strip_chaperones(SCHEME_CAR(o)),
+                            strip_chaperones(SCHEME_CDR(o)));
+  } else if (SCHEME_VECTORP(o)) {
+    Scheme_Object *v, *e;
+    intptr_t len = SCHEME_VEC_SIZE(o), i;
+    v = scheme_make_vector(len, NULL);
+    for (i = 0; i < len; i++) {
+      if (SAME_OBJ(o, so))
+        e = SCHEME_VEC_ELS(so)[i];
+      else
+        e = scheme_chaperone_vector_ref(so, i);
+      e = strip_chaperones(e);
+      SCHEME_VEC_ELS(v)[i] = e;
+    }
+    return v;
+  } else if (SCHEME_HASHTP(o) || SCHEME_HASHTRP(o)) {
+    return scheme_chaperone_hash_table_filtered_copy(so, strip_chaperones);
+  } else if (SCHEME_STRUCTP(o)) {
+    Scheme_Structure *s = (Scheme_Structure *)(o), *s2;
+    Scheme_Object *e;
+    intptr_t i, len = s->stype->num_slots;
+    if (!s->stype->prefab_key)
+      return NULL;
+    s2 = (Scheme_Structure *)scheme_make_blank_prefab_struct_instance(s->stype);
+    for (i = 0; i < len; i++) {
+      if (SAME_OBJ(o, so))
+        e = s->slots[i];
+      else
+        e = scheme_struct_ref(so, i);
+      e = strip_chaperones(e);
+      s2->slots[i] = e;
+    }
+    return (Scheme_Object *)s2;
+  } else
+    return so;
+}
+
+static Scheme_Object *strip_chaperones_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *so = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return strip_chaperones(so);
+}
+
 #if 0
 /* unused code, may be useful when/if we revive shared symbol and prefab key tables */
 Scheme_Struct_Type *scheme_make_prefab_struct_type_in_master(Scheme_Object *base,
@@ -2393,10 +2479,21 @@ static Scheme_Object *places_serialize(Scheme_Object *so, void **msg_memory, Sch
   new_so = trivial_copy(so, NULL);
   if (new_so) return new_so;
 
-  GC_create_message_allocator();
-  new_so = do_places_deep_copy(so, mzPDC_COPY, 0, master_chain, invalid_object);
-  tmp = GC_finish_message_allocator();
-  (*msg_memory) = tmp;
+  while (1) {
+    GC_create_message_allocator();
+    new_so = do_places_deep_copy(so, mzPDC_COPY, 0, master_chain, invalid_object);
+    tmp = GC_finish_message_allocator();
+    (*msg_memory) = tmp;
+
+    if (!new_so && SCHEME_CHAPERONEP(*invalid_object)) {
+      /* try again after removing chaperones */
+      so = strip_chaperones(so);
+      if (!so)
+        break;
+    } else
+      break;
+  }
+  
   return new_so;
 #else
   return so;
@@ -2477,11 +2574,20 @@ Scheme_Object *place_receive(int argc, Scheme_Object *args[]) {
 static Scheme_Object* place_allowed_p(int argc, Scheme_Object *args[])
 {
   Scheme_Hash_Table *ht = NULL;
-  
-  if (places_deep_copy_worker(args[0], &ht, mzPDC_CHECK, 1, 0, NULL, NULL))
+  Scheme_Object *v, *invalid_object = NULL;
+
+  v = args[0];
+
+  if (places_deep_copy_worker(v, &ht, mzPDC_CHECK, 1, 0, NULL, &invalid_object))
     return scheme_true;
-  else
+  else {
+    if (invalid_object && SCHEME_CHAPERONEP(invalid_object)) {
+      v = strip_chaperones(v);
+      if (v && places_deep_copy_worker(v, &ht, mzPDC_CHECK, 1, 0, NULL, NULL))
+        return scheme_true;
+    }
     return scheme_false;
+  }
 }
 
 # ifdef MZ_PRECISE_GC

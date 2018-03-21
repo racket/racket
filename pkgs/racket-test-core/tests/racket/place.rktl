@@ -102,6 +102,63 @@
   (test (not (place-enabled?)) place-message-allowed? (cons v 1))
   (test (not (place-enabled?)) place-message-allowed? (vector v)))
 
+;; ----------------------------------------
+;; Place messages and chaperones
+
+(test #t place-message-allowed? (chaperone-vector (vector 1 2) (lambda (v i e) e) (lambda (v i e) e)))
+(test #t place-message-allowed? (chaperone-hash (hasheq 1 2 3 4)
+                                                (lambda (ht k) (values k (lambda (ht k v) v)))
+                                                (lambda (ht k v) (values k v))
+                                                (lambda (ht k) k)
+                                                (lambda (ht k) k)))
+(test #t place-message-allowed? (chaperone-hash (make-hash)
+                                                (lambda (ht k) (values k (lambda (ht k v) v)))
+                                                (lambda (ht k v) (values k v))
+                                                (lambda (ht k) k)
+                                                (lambda (ht k) k)))
+(let ()
+  (struct posn (x y) #:prefab)
+  (test #t place-message-allowed? (chaperone-struct '#s(posn 1 2)
+                                                    posn-x (lambda (p x) x))))
+
+(let ()
+  (define-values (in out) (place-channel))
+
+  (place-channel-put out (impersonate-vector (vector 1 2) (lambda (v i e) (add1 e)) (lambda (v i e) e)))
+  (test '#(2 3) place-channel-get in)
+
+  (let ([ht (make-hash)])
+    (hash-set! ht 1 2)
+    (hash-set! ht 3 4)
+    (place-channel-put out (impersonate-hash ht
+                                             (lambda (ht k) (values k (lambda (ht k v) (add1 v))))
+                                             (lambda (ht k v) (values k v))
+                                             (lambda (ht k) k)
+                                             (lambda (ht k) k)))
+    (test '#hash((1 . 3) (3 . 5))
+          place-channel-get in))
+
+  (let ()
+    (struct posn (x y) #:prefab)
+    (place-channel-put out (chaperone-struct (posn 1 2)
+                                             posn-x (lambda (p x) x)))
+    (test (posn 1 2) place-channel-get in))
+
+  ;; MAke sure large values are handled correctly
+  (let ([v (for/list ([i 10000])
+             (impersonate-vector (vector i
+                                         (impersonate-vector (vector (- i))
+                                                             (lambda (v i e) (sub1 e))
+                                                             (lambda (v i e) e)))
+                                 (lambda (v i e) (list e))
+                                 (lambda (v i e) e)))])
+    (test #t 'allowed? (place-message-allowed? v))
+    (place-channel-put out v)
+    (test #t 'equal? (equal? v (place-channel-get in))))
+
+  (void))
+
+;; ----------------------------------------
 
 (require (submod "place-utils.rkt" place-test-submod))
 (test 0 p 0)

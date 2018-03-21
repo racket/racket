@@ -3633,7 +3633,9 @@ Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_
   return chaperone_hash_op("hash-ref", table, key, NULL, 0, scheme_null);
 }
 
-Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
+
+Scheme_Object *scheme_chaperone_hash_table_filtered_copy(Scheme_Object *obj,
+                                                         Hash_Table_Element_Filter_Proc filter)
 {
   Scheme_Object *a[3], *v, *v2, *idx, *key, *val;
   int is_eq, is_eqv;
@@ -3644,14 +3646,14 @@ Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
   is_eq = SCHEME_TRUEP(scheme_hash_eq_p(1, a));
   is_eqv = SCHEME_TRUEP(scheme_hash_eqv_p(1, a));
   
-  if (SCHEME_HASHTP(obj)) {
+  if (SCHEME_HASHTP(v)) {
     if (is_eq)
       v2 = make_hasheq(0, NULL);
     else if (is_eqv)
       v2 = make_hasheqv(0, NULL);
     else
       v2 = make_hash(0, NULL);
-  } else if (SCHEME_HASHTRP(obj)) {
+  } else if (SCHEME_HASHTRP(v)) {
     if (is_eq)
       v2 = scheme_make_immutable_hasheq(0, NULL);
     else if (is_eqv)
@@ -3674,6 +3676,7 @@ Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
     key = scheme_hash_table_iterate_key(2, a);
 
     val = scheme_chaperone_hash_get(obj, key);
+    if (filter && val) val = filter(val);
     if (val) {
       a[0] = v2;
       a[1] = key;
@@ -3690,6 +3693,11 @@ Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
   }
 
   return v2;
+}
+
+Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)
+{
+  return scheme_chaperone_hash_table_filtered_copy(obj, NULL);
 }
 
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[])

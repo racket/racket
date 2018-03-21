@@ -372,10 +372,12 @@ messages:
  @item{@tech{pairs}, @tech{lists}, @tech{vectors}, and immutable
        @tech{prefab} structures containing message-allowed values,
        where a mutable vector is automatically replaced by an
-       immutable vector;}
+       immutable vector and where @tech{impersonators} or vectors and
+       @tech{prefab} structures are copied;}
 
  @item{@tech{hash tables} where mutable hash tables are automatically
-       replaced by immutable variants;}
+       replaced by immutable variants, and where an
+       hash table @tech{impersonator} is copied;}
 
  @item{@tech{place channels}, where a @tech{place descriptor} is
        automatically replaced by a plain place channel;}

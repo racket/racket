@@ -3746,6 +3746,10 @@ Scheme_Object *scheme_check_assign_not_undefined (int argc, Scheme_Object *argv[
 Scheme_Object *scheme_chaperone_vector_copy(Scheme_Object *obj);
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj);
 
+typedef Scheme_Object *(*Hash_Table_Element_Filter_Proc)(Scheme_Object *);
+Scheme_Object *scheme_chaperone_hash_table_filtered_copy(Scheme_Object *obj,
+                                                         Hash_Table_Element_Filter_Proc filter);
+
 void scheme_bad_vec_index(char *name, Scheme_Object *i, 
                           const char *what, Scheme_Object *vec, 
                           intptr_t bottom, intptr_t len);
