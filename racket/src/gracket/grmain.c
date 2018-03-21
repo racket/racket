@@ -32,8 +32,7 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #endif
 
 #define UNIX_INIT_FILENAME "~/.gracketrc"
-#define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktl"
-#define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktl"
+#define WINDOWS_INIT_FILENAME "<home-dir>\\gracketrc.rktl"
 #define INIT_FILENAME_CONF_SYM "gui-interactive-file"
 #define DEFAULT_INIT_MODULE "racket/gui/interactive"
 #define USER_INIT_MODULE "gui-interactive.rkt"

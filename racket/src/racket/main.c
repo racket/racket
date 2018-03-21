@@ -172,8 +172,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 
 #ifndef UNIX_INIT_FILENAME
 # define UNIX_INIT_FILENAME "~/.racketrc"
-# define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktl"
-# define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
+# define WINDOWS_INIT_FILENAME "<home-dir>\\racketrc.rktl"
 # define INIT_FILENAME_CONF_SYM "interactive-file"
 # define DEFAULT_INIT_MODULE "racket/interactive"
 # define USER_INIT_MODULE "interactive.rkt"
