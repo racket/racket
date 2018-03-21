@@ -565,48 +565,8 @@ static Scheme_Object *make_protected_path(char *chars)
 Scheme_Object *make_exposed_sized_offset_path(int *optional, int already_protected, 
 					      char *chars, intptr_t d, intptr_t len, int copy,
                                               int kind)
-  /* Called to make a directory path where the end has been removed.
-     We may need to remove a redundant separator.
-     Under Windows, if the resulting last element has spaces or is a 
-     special file, then we need to protect it with "\\?\". */
+  /* Called to make a directory path where the end has been removed. */
 {
-  if (kind == SCHEME_WINDOWS_PATH_KIND) {
-    if (!already_protected) {
-      int i, name_end;
-      int non_dot = 0, trailing_dots = 0, protect = 0;
-      /* Skip trailing seps: */
-      for (i = d + len - 1; (i > d) && IS_A_DOS_SEP(chars[i]); --i) {
-      }
-      name_end = i+1;
-      for (; (i > d) && !IS_A_DOS_SEP(chars[i]); --i) {
-        if ((chars[i] != ' ') && (chars[i] != '.'))
-          non_dot = 1;
-        else if (!non_dot)
-          trailing_dots = 1;
-      }
-      if (non_dot && trailing_dots)
-        protect = 1;
-      else if (name_end == (d + len))
-        protect = is_special_filename(chars, i+1, name_end, 0, 1);
-
-      if (protect) {
-        Scheme_Object *first, *last, *a[2];
-        char *s2;
-        int l;
-        l = name_end - (i+1);
-        s2 = (char *)scheme_malloc_atomic(l + 9 + 1);
-        memcpy(s2, "\\\\?\\REL\\\\", 9);
-        memcpy(s2+9, chars + i + 1, l);
-        s2[l + 9] = 0;
-        last = scheme_make_sized_offset_kind_path(s2, 0, l+9, 0, SCHEME_WINDOWS_PATH_KIND);
-        first = make_exposed_sized_offset_path(NULL, 0, chars, d, i-d+1, 1, SCHEME_WINDOWS_PATH_KIND);
-        a[0] = first;
-        a[1] = last;
-        return scheme_build_path(2, a);
-      }
-    }
-  }
-
   /* We may need to remove a redundant separator from the directory
      path. Try removing it, and see if anyone would care: */
   if (do_path_to_directory_path(chars, d, len - 1, scheme_true, 1, kind)) {
@@ -1443,9 +1403,9 @@ char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
   else
     len = strlen(s);
 
-  /* Keep separators that are at the very end: */
+  /* Don't strip before a separator: */
   if ((len - skip_end > delta) && IS_A_DOS_SEP(s[len - 1 - skip_end])) {
-    skip_end++;
+    return (char *)s;
   }
 
   if ((len - skip_end > delta) 

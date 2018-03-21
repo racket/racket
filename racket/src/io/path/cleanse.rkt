@@ -41,29 +41,35 @@
                   (eqv? (bytes-ref bstr (- literal-start 2)) (char->integer #\\))))
            (cond
              [has-extra-backslash? (return new-bstr)]
+             [(= literal-start (bytes-length new-bstr)) (return new-bstr)]
              [else
               (return (bytes-append (subbytes new-bstr 0 literal-start)
                                     #"\\"
                                     (subbytes new-bstr literal-start)))])])]
        [(parse-unc bstr 0)
         => (lambda (drive-len)
-             (return (clean-double-slashes bstr 'windows drive-len)))]
+             (return (clean-double-slashes bstr 'windows (sub1 drive-len)
+                                           #:to-backslash-from 0)))]
        [(letter-drive-start? bstr (bytes-length bstr))
         (cond
           [(and ((bytes-length bstr) . > . 2)
                 (is-sep? (bytes-ref bstr 2) 'windows))
-           (return (clean-double-slashes bstr 'windows 2))]
+           (return (clean-double-slashes bstr 'windows 2
+                                         #:to-backslash-from 2))]
           [else
            (return (bytes-append (subbytes bstr 0 2)
                                  #"\\"
-                                 (clean-double-slashes (subbytes bstr 2) 'windows 0)))])]
+                                 (clean-double-slashes (subbytes bstr 2) 'windows 0
+                                                       #:to-backslash-from 0)))])]
        [else
-        (return (clean-double-slashes bstr 'windows 0))])]))
+        (return (clean-double-slashes bstr 'windows 0
+                                      #:to-backslash-from 0))])]))
 
 ;; ----------------------------------------
 
 (define (clean-double-slashes bstr convention allow-double-before
-                              #:only-backslash? [only-backslash? #f])
+                              #:only-backslash? [only-backslash? #f]
+                              #:to-backslash-from [to-backslash-from #f])
   (define (is-a-sep? b)
     (if only-backslash?
         (eqv? b (char->integer #\\))
@@ -77,18 +83,36 @@
         (add1 (loop (sub1 i)))]
        [else (loop (sub1 i))])))
   (cond
-   [(zero? extra-count)
-    bstr]
-   [else
-    (define new-bstr (make-bytes (- (bytes-length bstr) extra-count)))
-    (let loop ([i (sub1 (bytes-length bstr))] [j (sub1 (bytes-length new-bstr))])
-      (unless (i . <= . allow-double-before)
-        (cond
-         [(and (is-a-sep? (bytes-ref bstr i))
-               (is-a-sep? (bytes-ref bstr (sub1 i))))
-          (loop (sub1 i) j)]
-         [else
-          (bytes-set! new-bstr j (bytes-ref bstr i))
-          (loop (sub1 i) (sub1 j))])))
-    (bytes-copy! new-bstr 0 bstr 0 (add1 allow-double-before))
-    new-bstr]))
+    [(and (zero? extra-count)
+          (or (not to-backslash-from)
+              (not (for/or ([b (in-bytes bstr to-backslash-from)])
+                     (eq? b (char->integer #\/))))))
+     bstr]
+    [else
+     (define new-bstr (make-bytes (- (bytes-length bstr) extra-count)))
+     (let loop ([i (sub1 (bytes-length bstr))] [j (sub1 (bytes-length new-bstr))])
+       (unless (i . <= . allow-double-before)
+         (cond
+           [(is-a-sep? (bytes-ref bstr i))
+            (cond
+              [(is-a-sep? (bytes-ref bstr (sub1 i)))
+               (loop (sub1 i) j)]
+              [else
+               (if to-backslash-from
+                   (bytes-set! new-bstr j (char->integer #\\))
+                   (bytes-set! new-bstr j (bytes-ref bstr i)))
+               (loop (sub1 i) (sub1 j))])]
+           [else
+            (bytes-set! new-bstr j (bytes-ref bstr i))
+            (loop (sub1 i) (sub1 j))])))
+     (cond
+       [to-backslash-from
+        (bytes-copy! new-bstr 0 bstr 0 to-backslash-from)
+        (for ([i (in-range to-backslash-from (add1 allow-double-before))])
+          (define b (bytes-ref bstr i))
+          (if (eqv? b (char->integer #\/))
+              (bytes-set! new-bstr i (char->integer #\\))
+              (bytes-set! new-bstr i b)))]
+       [else
+        (bytes-copy! new-bstr 0 bstr 0 (add1 allow-double-before))])
+     new-bstr]))

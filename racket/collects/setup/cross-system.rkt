@@ -13,6 +13,7 @@
   (unless cross-system-table
     (define lib-dir (find-lib-dir))    
     (define ht (and lib-dir
+                    (eq? (system-type 'vm) 'racket) ; only the Racket VM supports cross-compilation, for now
                     (let ([f (build-path lib-dir "system.rktd")])
                       (and (file-exists? f)
                            (let ([ht (call-with-default-reading-parameterization

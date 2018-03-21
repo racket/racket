@@ -16,7 +16,12 @@
   #:property prop:custom-write
   (lambda (p port mode)
     (when mode
-      (write-string "#<path:" port))
+      (if (eq? (path-convention p) (system-path-convention-type))
+          (write-string "#<path:" port)
+          (begin
+            (write-string "#<" port)
+            (write-string (symbol->string (path-convention p)) port)
+            (write-string "-path:" port))))
     (write-string (bytes->string/locale (path-bytes p)) port)
     (when mode
       (write-string ">" port)))

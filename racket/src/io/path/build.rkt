@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../locale/string.rkt"
+         "../format/main.rkt"
          "check.rkt"
          "path.rkt"
          "sep.rkt"
@@ -26,8 +27,9 @@
         (check-build-path-arg who sub)
         (loop (argument->convention sub convention who #:first? #f)
               (cdr subs))])))
-  (path (append-path-parts convention who base subs)
-        convention))
+  (define final-convention (or convention (system-path-convention-type)))
+  (path (append-path-parts final-convention who base subs)
+        final-convention))
 
 ;; ----------------------------------------
 
@@ -58,7 +60,7 @@
   (cond
    [(path? p) (check (path-convention p))]
    [(string? p) (check (system-path-convention-type))]
-   [else (or convention (system-path-convention-type))]))
+   [else convention]))
 
 ;; ----------------------------------------
 
@@ -75,16 +77,20 @@
              (convert-to-initial-backslash-backslash-questionmark bstr)
              (list (strip-trailing-spaces bstr)))]
         [else (list bstr)])))
+  (define unc-result?
+    (and (eq? convention 'windows)
+         (not result-is-backslash-backslash-questionmark?)
+         (parse-unc (car base-accum) 0)))
   ;; The `accum` list accumulates byte strings in reverse order to be
   ;; appended. On Windows in \\?\ mode, each byte string corresponds
   ;; to a single path element with a leading backslash, except that
-  ;; the last item is a arting-point`; otherwise, the byte strings can
+  ;; the last item is a starting-point; otherwise, the byte strings can
   ;; be a mixture of compound path elements and separators
   (let loop ([accum base-accum] [subs subs] [first? #t])
     (cond
       [(null? subs)
        (define elems (reverse accum))
-       (combine-build-elements elems)]
+       (combine-build-elements elems unc-result?)]
       [else
        (define sub (car subs))
        (define bstr (as-bytes sub))
@@ -116,7 +122,7 @@
               (raise-arguments-error who
                                      (string-append what " cannot be added to a base path")
                                      what sub
-                                     "base path" (path (combine-build-elements (reverse accum))
+                                     "base path" (path (combine-build-elements (reverse accum) unc-result?)
                                                        'windows)))
             (loop (combine-windows-path (if (and (null? subs)
                                                  ;; because \\?\ mode does its own stripping:
@@ -124,7 +130,8 @@
                                             bstr
                                             (strip-trailing-spaces bstr))
                                         accum
-                                        result-is-backslash-backslash-questionmark?)
+                                        result-is-backslash-backslash-questionmark?
+                                        (null? (cdr subs)))
                   (cdr subs)
                   #f))
           (cond
@@ -133,9 +140,10 @@
                [(backslash-backslash-questionmark? bstr)
                 (define-values (kind drive-len orig-drive-len clean-start-pos add-sep-pos)
                   (parse-backslash-backslash-questionmark bstr))
+                (define abs? (or (eq? kind 'abs) (eq? kind 'unc)))
                 (combine (eq? kind 'rel)
-                         (eq? kind 'abs)
-                         (and (eq? kind 'abs)
+                         abs?
+                         (and abs?
                               (just-backslashes-after? bstr drive-len)))]
                [(parse-unc bstr 0)
                 => (lambda (drive-len)
@@ -147,27 +155,31 @@
             [else
              (combine #t #f #f)])])])))
 
-(define (combine-windows-path bstr accum result-is-backslash-backslash-questionmark?)
+(define (combine-windows-path bstr accum result-is-backslash-backslash-questionmark? is-last?)
   (cond
     [result-is-backslash-backslash-questionmark?
      ;; Split `bstr` into pieces, and handle the pieces one-by-one
-     (let loop ([elems (windows-split-into-path-elements bstr)] [accum accum])
+     (let loop ([elems (windows-split-into-path-elements bstr is-last?)] [accum accum] [to-dir? #f])
        (cond
-         [(null? elems) accum]
+         [(null? elems)
+          (if (and is-last? to-dir? (pair? (cdr accum)))
+              (cons (bytes-append (car accum) #"\\") (cdr accum))
+              accum)]
          [else
           (define sub (car elems))
           (cond
             [(eq? 'same sub)
              ;; Ignore 'same for \\?\ mode
-             (loop (cdr elems) accum)]
+             (loop (cdr elems) accum #t)]
             [(eq? 'up sub)
              ;; Drop previous element for 'up in \\?\ mode
              (loop (cdr elems)
                    (if (null? (cdr accum))
                        (list (starting-point-add-up (car accum)))
-                       (cdr accum)))]
+                       (cdr accum))
+                   #t)]
             [else
-             (loop (cdr elems) (cons sub accum))])]))]
+             (loop (cdr elems) (cons sub accum) #f)])]))]
     [else
      ;; Not in \\?\ mode, so `bstr` must not be a \\?\ path.
      ;; In case `accum` is drive-relative, start by dropping any
@@ -189,16 +201,18 @@
          new-accum
          (cons sub new-accum))]))
 
-(define (windows-split-into-path-elements bstr)
+(define (windows-split-into-path-elements bstr keep-trailing-separator?)
   (cond
     [(backslash-backslash-questionmark? bstr)
      ;; It must be REL or RED (with only a drive to build on)
      (define-values (dots-end literal-start)
        (backslash-backslash-questionmark-dot-ups-end bstr (bytes-length bstr)))
      (append (extract-dot-ups bstr 8 (or dots-end 8))
-             (extract-separate-parts bstr literal-start #:bbq-mode? #t))]
+             (extract-separate-parts bstr literal-start
+                                     #:bbq-mode? #t
+                                     #:keep-trailing-separator? keep-trailing-separator?))]
     [else
-     (extract-separate-parts bstr 0)]))
+     (extract-separate-parts bstr 0 #:keep-trailing-separator? keep-trailing-separator?)]))
 
 (define (as-bytes p)
   (cond
@@ -227,23 +241,25 @@
     [(letter-drive-start? s (bytes-length s))
      (just-separators-after? s 2)]))
 
-(struct starting-point (bstr        ; byte string that contains the starting path
+(struct starting-point (kind        ; 'rel, 'red, 'unc, or 'abs
+                        bstr        ; byte string that contains the starting path
                         len         ; number of bytes to use when adding more element
                         orig-len    ; number of bytes to use when not adding more elements
                         extra-sep   ; extra separator before first added element
                         add-ups?    ; whether to add `up`s to the base string, as opposed to dropping them
                         drive?))    ; is bstr an absolute root?
 
-(define (make-starting-point bstr
+(define (make-starting-point kind
+                             bstr
                              len
                              #:orig-len [orig-len len]
                              #:extra-sep [extra-sep #""]
                              #:add-ups? [add-ups? #f]
                              #:drive? [drive? #t])
   (list
-   (starting-point bstr len orig-len extra-sep add-ups? drive?)))
+   (starting-point kind bstr len orig-len extra-sep add-ups? drive?)))
 
-(define (combine-build-elements elems)
+(define (combine-build-elements elems unc-result?)
   (cond
     [(starting-point? (car elems))
      ;; in \\?\ mode for Windows
@@ -258,23 +274,38 @@
              #"."]
             [(equal? bstr #"\\\\?\\RED")
              #"\\"]
-            [else bstr]))]
+            [else
+             (case (starting-point-kind s)
+               [(rel unc)
+                ;; Canonical form of \\?\REL\..[\..[etc.]] or \\?\UNC\[etc.] ends in slash:
+                (if (eqv? (bytes-ref bstr (sub1 (bytes-length bstr))) (char->integer #\\))
+                    bstr
+                    (bytes-append bstr #"\\"))]
+               [else bstr])]))]
        [else
         (define init-bstr (subbytes (starting-point-bstr s)
                                     0
                                     (starting-point-len s)))
-        (define rel-..-special-case? (and (bytes=? init-bstr #"\\\\?\\REL")
-                                          (bytes=? (cadr elems) #"\\..")))
         (apply bytes-append
                init-bstr
-               (if rel-..-special-case? ; => need extra `\` to indicate that ".." is not 'up
-                   #"\\"
-                   #"")
+               (case (starting-point-kind s)
+                 [(rel red) #"\\"]
+                 [else #""])
                (starting-point-extra-sep s)
                (cdr elems))])]
     [else
-     ;; simple case
-     (apply bytes-append elems)]))
+     ;; simple case...
+     (define bstr (apply bytes-append elems))
+     ;; ... unless we've accidentally constructed something that
+     ;; looks like a \\?\ path or a UNC path, in which case we can
+     ;; correct by dropping a leading [back]slash
+     (cond
+       [(backslash-backslash-questionmark? bstr)
+        (subbytes bstr 1)]
+       [(and (not unc-result?)
+             (parse-unc bstr 0))
+        (subbytes bstr 1)]
+       [else bstr])]))
 
 (define (convert-to-initial-backslash-backslash-questionmark bstr)
   (cond
@@ -282,19 +313,19 @@
      (define-values (kind drive-len orig-drive-len clean-start-pos add-sep)
        (parse-backslash-backslash-questionmark bstr))
      (case kind
-       [(abs)
+       [(abs unc)
         (append (reverse (extract-separate-parts bstr drive-len #:bbq-mode? #t))
                 (if (equal? add-sep #"")
                     ;; drop implicit terminator in drive:
-                    (make-starting-point bstr (sub1 drive-len) #:orig-len orig-drive-len)
-                    (make-starting-point bstr drive-len #:orig-len orig-drive-len #:extra-sep (subbytes add-sep 1))))]
+                    (make-starting-point kind bstr (sub1 drive-len) #:orig-len orig-drive-len)
+                    (make-starting-point kind bstr drive-len #:orig-len orig-drive-len #:extra-sep (subbytes add-sep 1))))]
        [else
         ;; We can't back up over any dots before `dots-end`,
         ;; so keep those toegether with \\?\REL
         (define-values (dots-end literal-start)
           (backslash-backslash-questionmark-dot-ups-end bstr (bytes-length bstr)))
         (append (reverse (extract-separate-parts bstr literal-start #:bbq-mode? #t))
-                (make-starting-point bstr (or dots-end 7) #:add-ups? (eq? kind 'rel) #:drive? #f))])]
+                (make-starting-point kind bstr (or dots-end 7) #:add-ups? (eq? kind 'rel) #:drive? #f))])]
     [(parse-unc bstr 0)
      => (lambda (root-len)
           (define-values (machine volume)
@@ -303,23 +334,23 @@
           (append (reverse (simplify-dots (extract-separate-parts bstr root-len) #:drop-leading? #t))
                   (let* ([unc-bstr (bytes-append #"\\\\?\\UNC" machine volume)]
                          [unc-len (bytes-length unc-bstr)])
-                    (make-starting-point unc-bstr unc-len))))]
+                    (make-starting-point 'unc unc-bstr unc-len))))]
     [(bytes=? #"." bstr)
-     (make-starting-point #"\\\\?\\REL" 7 #:add-ups? #t #:drive? #f)]
+     (make-starting-point 'rel #"\\\\?\\REL" 7 #:add-ups? #t #:drive? #f)]
     [(bytes=? #".." bstr)
-     (make-starting-point #"\\\\?\\REL\\.." 10  #:add-ups? #t #:drive? #f)]
+     (make-starting-point 'rel #"\\\\?\\REL\\.." 10  #:add-ups? #t #:drive? #f)]
     [(is-sep? (bytes-ref bstr 0) 'windows)
      (append (reverse (extract-separate-parts bstr 0))
-             (make-starting-point #"\\\\?\\RED" 7 #:drive? #f))]
+             (make-starting-point 'red #"\\\\?\\RED" 7 #:drive? #f))]
     [(and ((bytes-length bstr) . >= . 2)
           (drive-letter? (bytes-ref bstr 0))
           (eqv? (bytes-ref bstr 1) (char->integer #\:)))
      (append (reverse (simplify-dots (extract-separate-parts bstr 2) #:drop-leading? #t))
              (let ([drive-bstr (bytes-append #"\\\\?\\" (subbytes bstr 0 2) #"\\")])
-               (make-starting-point drive-bstr 6 #:orig-len 7)))]
+               (make-starting-point 'abs drive-bstr 6 #:orig-len 7)))]
     [else
      ;; Create \\?\REL, combinding any leading dots into the \\?\REL part:
-     (define elems (simplify-dots (extract-separate-parts bstr 2) #:drop-leading? #f))
+     (define elems (simplify-dots (extract-separate-parts bstr 0) #:drop-leading? #f))
      (let loop ([dots null] [elems elems])
        (cond
          [(or (null? elems)
@@ -327,13 +358,15 @@
           (append (reverse elems)
                   (let* ([rel-bstr (apply bytes-append #"\\\\?\\REL" dots)]
                          [rel-len (bytes-length rel-bstr)])
-                    (make-starting-point rel-bstr rel-len #:add-ups? #t #:drive? #f)))]
+                    (make-starting-point 'rel rel-bstr rel-len #:add-ups? #t #:drive? #f)))]
          [else
           (loop (cons (car elems) dots) (cdr elems))]))]))
 
 ;; Split on separators, removing trailing whitespace from the last
 ;; element, and prefix each extracted element with a backslash:
-(define (extract-separate-parts bstr pos #:bbq-mode? [bbq-mode? #f])
+(define (extract-separate-parts bstr pos
+                                #:bbq-mode? [bbq-mode? #f]
+                                #:keep-trailing-separator? [keep-trailing-separator? #f])
   (define (is-a-sep? b)
     (if bbq-mode?
         (eqv? b (char->integer #\\))
@@ -363,7 +396,11 @@
                                     (bytes=? new-bstr #".."))
                                'up]
                               [else
-                               (bytes-append #"\\" new-bstr)]))
+                               (if (and keep-trailing-separator?
+                                        (null? rest)
+                                        (end-pos . < . len))
+                                   (bytes-append #"\\" new-bstr #"\\")
+                                   (bytes-append #"\\" new-bstr))]))
             (cons new-sub rest)]
            [else (e-loop (add1 end-pos))]))])))
 
@@ -399,10 +436,10 @@
   (let loop ([bstrs bstrs] [accum null])
     (cond
       [(null? bstrs) (reverse accum)]
-      [(eq? 'up (car bstrs)) (loop (cdr bstrs) accum)]
-      [(eq? 'same (car bstrs)) (if (null? accum)
-                                   (if drop-leading?
-                                       (loop (cdr bstrs) accum)
-                                       (loop (cdr bstrs) (cons (car bstrs) accum)))
-                                   (loop (cdr bstrs) (cdr accum)))]
+      [(eq? 'same (car bstrs)) (loop (cdr bstrs) accum)]
+      [(eq? 'up (car bstrs)) (if (null? accum)
+                                 (if drop-leading?
+                                     (loop (cdr bstrs) accum)
+                                     (loop (cdr bstrs) (cons (car bstrs) accum)))
+                                 (loop (cdr bstrs) (cdr accum)))]
       [else (loop (cdr bstrs) (cons (car bstrs) accum))])))

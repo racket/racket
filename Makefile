@@ -86,7 +86,10 @@ in-place-setup:
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkgs-catalog SRC_CATALOG="$(SRC_CATALOG)"
+	$(MAKE) win32-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+
+win32-in-place-after-base:
+	$(MAKE) win32-pkgs-catalog SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(WIN32_RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(WIN32_RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(WIN32_RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
@@ -283,6 +286,24 @@ racket/src/build/ChezScheme:
 
 update-ChezScheme:
 	cd racket/src/build/ChezScheme && git pull && git submodule update
+
+WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
+WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+
+win32-cs:
+	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_CS_COPY_ARGS)
+	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+
+win32-racket-then-cs:
+	$(MAKE) win32-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+
+win32-just-cs:
+	cmd /c $(RACKET) racket\src\worksp\csbuild.rkt --scheme-dir "$(SCHEME_SRC)"
+	IF NOT EXIST build\config cmd /c mkdir build\config
+	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
+	racket\racketcs -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(MAKE) win32-in-place-after-base WIN32_PLAIN_RACKET=racket\racketcs $(WIN32_CS_COPY_ARGS)
 
 # ------------------------------------------------------------
 # Configuration options for building installers

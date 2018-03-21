@@ -2,24 +2,33 @@
 (require racket/cmdline
 	 racket/path
 	 racket/file
+         racket/runtime-path
 	 compiler/find-exe
 	 racket/system
 	 "cs/prep.rkt")
 
-(define scheme-dir "..\\build\\ChezScheme")
+(define-runtime-path here ".")
+
+(define abs-scheme-dir (build-path here 'up "build" "ChezScheme"))
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
 
 (command-line
  #:once-each
- [("--scheme-dir") dir "Select the Chez Scheme build directory"
-  (set! scheme-dir dir)]
+ [("--scheme-dir") dir "Select the Chez Scheme build directory, unless <dir> is \"\""
+  (unless (equal? dir "")
+    (set! abs-scheme-dir (path->complete-path dir)))]
  [("--machine") mach "Select the Chez Scheme machine name"
   (set! machine mach)]
  #:args
  ()
  (void))
+
+(current-directory here)
+
+(define scheme-dir (find-relative-path (current-directory)
+                                       (simplify-path abs-scheme-dir)))
 
 (define (system*! prog . args)
   (printf "{in ~a}\n" (current-directory))
@@ -81,7 +90,7 @@
       (system*! "nmake"
 		(format "~a-src-generate" name)
 		(format "BUILDDIR=~a" build-dir)
-		(format "RACKET=~a ~a ~a" chain-racket "ignored" "ignored.d")))))
+		(format "RACKET=~a ~a ~a" chain-racket "ignored" (build-path build-dir "compiled/ignored.d"))))))
 
 (build-layer "expander")
 (build-layer "thread")

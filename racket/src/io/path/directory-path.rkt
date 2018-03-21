@@ -48,7 +48,9 @@
         (or (eqv? (bytes-ref bstr (sub1 len)) (char->integer #\\))
             (and (not require-sep?)
                  (eq? 'rel (backslash-backslash-questionmark-kind bstr))
-                 (eqv? len (backslash-backslash-questionmark-dot-ups-end bstr len))))]
+                 (eqv? len
+                       (let-values ([(dots-end literal-start) (backslash-backslash-questionmark-dot-ups-end bstr len)])
+                         dots-end))))]
        [else (unixish-path-directory-path?)])]))
 
 (define (path->path-without-trailing-separator p)

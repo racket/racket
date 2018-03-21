@@ -177,12 +177,13 @@ Instructions: Building Racket Pieces" further below.
 More Instructions: Building Racket-on-Chez
 ==========================================
 
-The `make cs` target (or `make cs-as-is` for a rebuild) builds an
-experimental variant of Racket that runs on Chez Scheme. The
-executables for the Racket-on-Chez variant all have a "cs" or "CS"
-suffix, so they coexist with a traditional Racket build. (One day, if
-the experiment goes well, there will be an option or default to build
-Racket-on-Chez as `racket` instead of `racketcs`.)
+The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
+win32-cs` on Windows with Visual Studio) builds an experimental
+variant of Racket that runs on Chez Scheme. The executables for the
+Racket-on-Chez variant all have a "cs" or "CS" suffix, so they coexist
+with a traditional Racket build. (One day, if the experiment goes
+well, there will be an option or default to build Racket-on-Chez as
+`racket` instead of `racketcs`.)
 
 Building Racket-on-Chez requires an existing Racket and Chez Scheme.
 If you use `make cs` with no further arguments, then the build process
@@ -192,11 +193,14 @@ downloading and building Chez Scheme.
 If you have a sufficiently recent Racket installation already with at
 least the "compiler-lib" and "parser-tools-libs" packages installed,
 you can supply `RACKET=...` with `make cs` to skip that part of the
-bootstrap. And if you have a Chez Scheme source directory already, you
-can supply that with `SCHEME_SRC=...` instead of downloading a new
+bootstrap. And if you have a Chez Scheme source directory already[*],
+you can supply that with `SCHEME_SRC=...` instead of downloading a new
 copy.
 
   make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme
+
+[*] For now, RacketCS requires the variant of Chez Scheme at
+       https://github.com/mflatt/ChezScheme
 
 
 Even More Instructions: Building Racket Pieces

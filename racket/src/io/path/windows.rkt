@@ -10,7 +10,8 @@
          parse-unc
          backslash-backslash-questionmark-dot-ups-end
          split-drive
-         strip-trailing-spaces)
+         strip-trailing-spaces
+         strip-backslash-backslash-rel)
 
 (define special-filenames
   ;; and "CLOCK$" on NT --- but not traditionally detected by Racket
@@ -76,7 +77,7 @@
        (eqv? (bytes-ref bstr 2) (char->integer #\?))
        (eqv? (bytes-ref bstr 3) (char->integer #\\))))
 
-;; Returns #f, 'rel, 'red, or 'abs
+;; Returns #f, 'rel, 'red, 'unc, or 'abs
 (define (backslash-backslash-questionmark-kind bstr)
   (define-values (kind drive-end-pos orig-drive-end-pos clean-start-pos add-sep-pos)
     (parse-backslash-backslash-questionmark bstr))
@@ -94,7 +95,8 @@
 ;;
 ;; The `orig-drive-len` result is almost the same as `drive-len`,
 ;; but maybe longer. It preserves an artifact of the given specification:
-;; a backslash after a \\?\UNC\<mahine>\<volume> drive.
+;; a backslash after a \\?\UNC\<mahine>\<volume> drive, an extra
+;; backslash after a \\?\<letter>:\ drive, etc.
 ;;
 ;; For 'abs, `clean-start-pos` is the position where it's ok to start
 ;; removing extra slashes. It's usually the same as `drive-len`. In
@@ -156,18 +158,19 @@
                       (loop i))])))
         => (lambda (i)
              (define i+1 (add1 i))
-             (values 'abs i+1 i+1 i+1 #""))]
+             (values 'abs i i+1 i+1 #""))]
        ;; Check for drive-letter case
        [(and (len . > . 6)
              (drive-letter? (bytes-ref bstr base))
              (eqv? (bytes-ref bstr (add1 base)) (char->integer #\:))
              (len . > . (+ 2 base))
              (eqv? (bytes-ref bstr (+ 2 base)) (char->integer #\\)))
-        (define drive-len (if (and (len . > . (+ 3 base))
-                                   (eqv? (bytes-ref bstr (+ 3 base)) (char->integer #\\)))
-                              (+ base 4)
-                              (+ base 3)))
-        (values 'abs drive-len drive-len (+ base 2) #"")]
+        (define drive-len (+ base 3))
+        (define orig-drive-len (if (and (len . > . drive-len)
+                                        (eqv? (bytes-ref bstr drive-len) (char->integer #\\)))
+                                   (add1 drive-len)
+                                   drive-len))
+        (values 'abs drive-len orig-drive-len (+ base 2) #"")]
        ;; Check for UNC
        [(and (len . > . (+ base 3))
              (let ([b (bytes-ref bstr base)])
@@ -188,7 +191,7 @@
                         (eqv? (bytes-ref bstr drive-len) (char->integer #\\)))
                    (add1 drive-len)
                    drive-len))
-             (values 'abs drive-len orig-drive-len (+ base 3) #"\\"))]
+             (values 'unc drive-len orig-drive-len (+ base 3) #"\\"))]
        ;; Check for REL and RED
        [(and (= base 4)
              (len . > . 8)
@@ -209,6 +212,14 @@
                 #f)]
        ;; Otherwise, \\?\ is the (non-existent) drive
        [else
+        ;; Can have up to two separators between the drive and first element
+        (define orig-drive-len (if (and (len . > . 4)
+                                        (eqv? (bytes-ref bstr 4) (char->integer #\\)))
+                                   (if (and (len . > . 5)
+                                            (eqv? (bytes-ref bstr 5) (char->integer #\\)))
+                                       6
+                                       5)
+                                   4))
         (define clean-start-pos
           (if (or (and (= len 5)
                        (eqv? (bytes-ref bstr 4) (char->integer #\\)))
@@ -216,8 +227,8 @@
                        (eqv? (bytes-ref bstr 4) (char->integer #\\))
                        (eqv? (bytes-ref bstr 5) (char->integer #\\))))
               3
-              4))
-        (values 'abs 4 4 clean-start-pos #"\\\\")])]))
+              orig-drive-len))
+        (values 'abs 4 orig-drive-len clean-start-pos #"\\\\")])]))
 
 ;; Returns an integer if this path is a UNC path, #f otherwise.
 ;; If `delta` is non-0, then `delta` is after a leading \\.
@@ -285,6 +296,11 @@
                      (eqv? (bytes-ref bstr (- j 2)) (char->integer #\?)))
                 ;; We have //?/, with up to 2 backslashes.
                 ;; This doesn't count as UNC, to avoid confusion with \\?\.
+                #f]
+               [(and (not no-forward-slash?)
+                     (j . < . len)
+                     (is-a-sep? (bytes-ref bstr j)))
+                ;; Extra backslash not allowed after //<machine>/<drive> when not in \\?\ mode
                 #f]
                [else
                 (let loop ([j j])
@@ -356,7 +372,6 @@
     [else
      (values #f 8)]))
 
-
 (define (split-drive bstr)
   (cond
     [(backslash-backslash-questionmark? bstr)
@@ -382,7 +397,9 @@
          (define i (sub1 i+1))
          (cond
            [(is-sep? (bytes-ref bstr i) 'windows)
-            (loop i)]
+            (if (zero? i)
+                0
+                (loop i))]
            [else i+1])))
      (let loop ([i+1 len-before-seps])
        (cond
@@ -406,3 +423,12 @@
              ;; Trim
              (bytes-append (subbytes bstr 0 i+1)
                            (subbytes bstr len-before-seps len))])]))]))
+
+(define (strip-backslash-backslash-rel bstr)
+  (define-values (kind drive-end-pos orig-drive-end-pos clean-start-pos add-sep-pos)
+    (parse-backslash-backslash-questionmark bstr))
+  (case kind
+    [(rel) (subbytes bstr (if (eqv? (bytes-ref bstr 8) (char->integer #\\))
+                              9
+                              8))]
+    [else bstr]))

@@ -1,7 +1,7 @@
-This package implements the port, path, encoding, printing, and
-formatting layer. It can be run in a host Racket with `make demo`, but
-it's meant to be compiled for use in Racket on Chez Scheme; see
-"../cs/README.txt".
+This directory implements the port, path, encoding, printing, and
+formatting layer. It can be run in a host Racket with `make demo`,
+which is useful for development and debugging, but it's meant to be
+compiled for use in Racket on Chez Scheme; see "../cs/README.txt".
 
 Core error support must be provided as a more primitive layer,
 including the exception structures and error functions that do not

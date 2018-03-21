@@ -14,7 +14,8 @@
          "directory-path.rkt"
          "system.rkt"
          "api.rkt"
-         "ffi.rkt")
+         "ffi.rkt"
+         "windows.rkt")
 
 (provide (rename-out [is-path? path?])
          path-for-some-system?
@@ -87,22 +88,31 @@
   (check-path-bytes who bstr)
   (do-bytes->path-element bstr convention who bstr))
 
-(define (path-element? p)
+(define (path-element-clean p)
   (cond
    [(path? p)
     (define bstr (path-bytes p))
     (define convention (path-convention p))
     (and
-     ;; Quick pre-check: any separators?
+     ;; Quick pre-check: any separators that are not at the end?
      (or (not (eq? convention 'unix))
-         (not (for/or ([c (in-bytes bstr)]
+         (not (for/or ([c (in-bytes bstr 0 (let loop ([end (bytes-length bstr)])
+                                             (cond
+                                               [(zero? end) 0]
+                                               [(is-sep? (bytes-ref bstr (sub1 end)) convention)
+                                                (loop (sub1 end))]
+                                               [else end])))]
                        [i (in-naturals)])
                 (and (is-sep? c convention)
                      i))))
      (let-values ([(base name dir?) (split-path p)])
        (and (symbol? base)
-            (path? name))))]
+            (path? name)
+            name)))]
    [else #f]))
+
+(define (path-element? p)
+  (and (path-element-clean p) #t))
 
 (define (do-bytes->path-element bstr convention who orig-arg)
   (define (bad-element)
@@ -124,12 +134,23 @@
   p)
 
 (define/who (path-element->string p)
-  (check who path-element? p)
-  (bytes->string/locale (path-bytes p) #\?))
+  (define clean-p (path-element-clean p))
+  (unless clean-p
+    (check who path-element? p))
+  (bytes->string/locale (strip-//?/rel clean-p) #\?))
 
 (define/who (path-element->bytes p)
-  (check who path-element? p)
-  (bytes-copy (path-bytes p)))
+  (define clean-p (path-element-clean p))
+  (unless clean-p
+    (check who path-element? p))
+  (bytes-copy (strip-//?/rel clean-p)))
+
+(define (strip-//?/rel elem-p)
+  (define bstr (path-bytes elem-p))
+  (cond
+    [(eq? (path-convention elem-p) 'windows)
+     (strip-backslash-backslash-rel bstr)]
+    [else bstr]))
 
 (define/who path<?
   (case-lambda
