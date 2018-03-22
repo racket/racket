@@ -1304,13 +1304,11 @@ Returns @racket[#t] if @racket[x] is @racket[+inf.0], @racket[-inf.0], @racket[+
  @history[#:added "6.8.0.2"]}
 
 @defproc[(negative-integer? [x any/c]) boolean?]{
- Like @racket[exact-negative-integer?], but also returns
- @racket[#t] for negative @racket[inexact?] integers.
+ The same as @racket[(and (integer? x) (negative? x))].
  @history[#:added "6.8.0.2"]}
 
 @defproc[(nonpositive-integer? [x any/c]) boolean?]{
- Like @racket[exact-nonpositive-integer?], but also returns
- @racket[#t] for non-positive @racket[inexact?] integers.
+ The same as @racket[(and (integer? x) (not (positive? x)))].
  @history[#:added "6.8.0.2"]}
 
 @defproc[(nonnegative-integer? [x any/c]) boolean?]{
