@@ -547,9 +547,9 @@ result will not call @racket[proc] with @racket['unlock].)
             compilations of the same Racket source files in multiple places.
 }
 
-@defproc[(install-module-hashes! [bstr btyes?]
-                                 [start exact-nonnegatve-integer? 0]
-                                 [end exact-nonnegatve-integer? (bytes-length bstr)])
+@defproc[(install-module-hashes! [bstr bytes?]
+                                 [start exact-nonnegative-integer? 0]
+                                 [end exact-nonnegative-integer? (bytes-length bstr)])
          void?]{
 
 Adjusts the bytecode representation in @racket[bstr] (from bytes

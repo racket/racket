@@ -22,8 +22,8 @@ The @racketmodname[compiler/zo-parse] module re-exports
   represent the bytecode are subject to frequent changes across Racket
   versons.
 
-  The parsed bytecode is returned in a @racket[link-directory] or
-  @racket[link-bundle] structure---the latter only for the compilation
+  The parsed bytecode is returned in a @racket[linkl-directory] or
+  @racket[linkl-bundle] structure---the latter only for the compilation
   of a module that contains no submodules.
 
   Within a linklet, the bytecode representation of an expression is closer to an
@@ -67,11 +67,3 @@ The @racketmodname[compiler/zo-parse] module re-exports
   variables, but individual boxes are referenced from the stack and
   closures.}
 
-
-@defproc[(decode-module-binding [binding module-binding?]
-                                [name symbol?])
-         decoded-module-binding?]{
-
-Given a compact-form representation of a module binding and the name
-from which the binding is mapped, returns a normalized form of the
-binding.}
