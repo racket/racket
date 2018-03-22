@@ -83,6 +83,7 @@
 
 (define fasl-lowest-small-integer -10)
 (define fasl-highest-small-integer (- 255 (- fasl-small-integer-start fasl-lowest-small-integer) 1))
+(define fasl-prefix #"racket/fasl:")
 
 (define-constants
   (fasl-hash-eq-variant    0)
@@ -124,7 +125,7 @@
   (define exploded-wrt-dir 'not-ready)
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   ;; The fasl formal prefix:
-  (write-bytes #"rkt:" o)
+  (write-bytes fasl-prefix o)
   ;; Write content to a string, so we can measure it
   (define bstr
     (let ([o (open-output-bytes)])
@@ -303,7 +304,7 @@
                    [(bytes? orig-i) (mcons orig-i 0)]
                    [(input-port? orig-i) orig-i]
                    [else (raise-argument-error 'fasl->s-exp "(or/c bytes? input-port?)" orig-i)]))
-  (unless (bytes=? (read-bytes/exactly 4 init-i) #"rkt:")
+  (unless (bytes=? (read-bytes/exactly 4 init-i) fasl-prefix)
     (read-error "unrecognized prefix"))
   (define shared-count (read-fasl-integer init-i))
   (define shared (make-vector shared-count))
