@@ -154,9 +154,6 @@ returns.}
 Represents the shape of an expected import as a structure-type
 binding, constructor, etc.}
 
-@defstruct+[(stx zo) ([content stx-obj?])]{
-  Wraps a syntax object as it appears in a @racket[prefix].}
-
 
 @; --------------------------------------------------
 @section{Forms and Inline Variants}
