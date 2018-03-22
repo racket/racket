@@ -103,7 +103,7 @@ Two numbers are @racket[equal?] when they are @racket[eqv?].
 @defproc[(number? [v any/c]) boolean?]{Returns @racket[#t] if @racket[v]
  is a number, @racket[#f] otherwise.
 
-@mz-examples[(number? 1) (number? 2+3i) (number? "hello")]}
+@mz-examples[(number? 1) (number? 2+3i) (number? "hello") (number? +nan.0)]}
 
 
 @defproc[(complex? [v any/c]) boolean?]{ Returns @racket[(number? v)],
