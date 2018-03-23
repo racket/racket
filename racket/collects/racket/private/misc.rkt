@@ -101,7 +101,7 @@
                                              (datum->syntax #f w v))
                                             w))))))
                (lambda results (for-each (current-print) results)))
-             ;; Abort to loop. (Calling `repl-loop' directory would not be a tail call.)
+             ;; Abort to loop. (Calling 'repl-loop' directly would not be a tail call.)
              (abort-current-continuation (default-continuation-prompt-tag)))))
        (default-continuation-prompt-tag)
        (lambda args (repl-loop)))))
