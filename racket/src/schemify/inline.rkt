@@ -99,7 +99,7 @@
                (loop (wrap-cdr args)))]
         [else
          (define u (unwrap args))
-         (list (cons u (gensym u)))])))
+         (cons (cons u (gensym u)) base-env)])))
   (values (let loop ([args args] [env env])
             (cond
               [(wrap-null? args) '()]
