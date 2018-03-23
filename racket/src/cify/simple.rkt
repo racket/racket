@@ -19,7 +19,7 @@
 ;; trigger a GC. The "reordered" consideration can ignore whether a
 ;; reference is the final reference to a variable (which may imply
 ;; clearing), and `call-with-simple-shared` is always used around
-;; `generate-shared` to take care up that detail.
+;; `generate-shared` to take care of that detail.
 
 (define (simple? e in-lam state knowns)
   (define (simple? e)
