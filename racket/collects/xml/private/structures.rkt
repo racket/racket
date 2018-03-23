@@ -50,7 +50,7 @@
          v
          (raise-blame-error
           blame #:missing-party neg-party
-          v "not in permissive mode"))))
+          v '("not in permissive mode" given: "~e") v))))
    #:first-order
    (lambda (v) #t)))
 
