@@ -276,8 +276,8 @@
 
   ;; To stream communication during protocol set-up:
   (define buffer-size 4096)
-  (define buffer (make-sized-byte-string (malloc buffer-size 'atomic-interior)
-                                         buffer-size))
+  (define buffer (malloc buffer-size 'atomic-interior))
+  (define tmp-buffer (make-bytes buffer-size))
 
   (call-as-atomic
    (lambda ()
@@ -355,8 +355,8 @@
            (call-as-nonatomic
             (lambda ()
               (log-win32-ssl-debug "init context: write ~a" (SecBuffer-cbBuffer out-sb0))
-              (write-bytes (make-sized-byte-string (SecBuffer-pvBuffer out-sb0)
-                                                   (SecBuffer-cbBuffer out-sb0))
+              (write-bytes (pointer->bytes (SecBuffer-pvBuffer out-sb0)
+					   (SecBuffer-cbBuffer out-sb0))
                            o)
               (flush-output o)))
            (FreeContextBuffer (SecBuffer-pvBuffer out-sb0))))
@@ -376,7 +376,7 @@
          (log-win32-ssl-debug "init context: done")
          (values ctx
                  (let ([n (get-leftover-bytes)])
-                   (subbytes buffer 0 n)))]
+                   (pointer->bytes buffer n)))]
         [(or (= r SEC_I_CONTINUE_NEEDED)
              (= r SEC_E_INCOMPLETE_MESSAGE))
          ;; Pull more data from the server
@@ -389,13 +389,15 @@
            (define new-buffer (malloc (* 2 buffer-size) 'atomic-interior))
            (memcpy new-buffer buffer buffer-size)
            (set! buffer-size (* 2 buffer-size))
-           (set! buffer (make-sized-byte-string new-buffer buffer-size)))
+           (set! buffer new-buffer)
+	   (set! tmp-buffer (make-bytes buffer-size)))
          ;; Go back to non-atomic mode for a potentially blocking read:
          (define n (call-as-nonatomic
                     (lambda ()
-                      (read-bytes-avail! buffer i new-data-len buffer-size))))
+                      (read-bytes-avail! tmp-buffer i 0 (- buffer-size new-data-len)))))
          (log-win32-ssl-debug "init context: read ~a" n)
          (when (eof-object? n) (network-error "unexpected EOF"))
+	 (memcpy buffer new-data-len tmp-buffer n)
          (loop (+ new-data-len n) (if (= r SEC_I_CONTINUE_NEEDED)
                                       #f
                                       init?))]
@@ -441,8 +443,8 @@
                sb)))
       (unless sb
         (network-error "expected decrypted data"))
-      (write-bytes (make-sized-byte-string (SecBuffer-pvBuffer sb)
-                                           (SecBuffer-cbBuffer sb))
+      (write-bytes (pointer->bytes (SecBuffer-pvBuffer sb)
+				   (SecBuffer-cbBuffer sb))
                    in-post-w)
       (define remain (or (for/or ([i (in-range 1 4)])
                            (define sb (ptr-ref out-sb _SecBuffer i))
@@ -709,6 +711,13 @@
 
 (define (win32-ssl-port? p)
   (hash-ref win32-ssl-ports p #f))
+
+;; ----------------------------------------
+
+(define (pointer->bytes p len)
+  (define bstr (make-bytes len))
+  (memcpy bstr p len)
+  bstr)
 
 ;; ----------------------------------------
 ;; Initialization

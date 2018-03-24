@@ -377,9 +377,9 @@
 (define-ctype _uint64 'unsigned-64 'uint64 (integer-checker who unsigned 64 exact-integer?))
 (define-ctype _scheme 'scheme-object 'scheme)
 (define-ctype _string/ucs-4 (if (system-big-endian?) 'utf-32be 'utf-32le) 'string/ucs-4
-   (checker who string?))
+  (checker who (lambda (x) (or (not x) (string? x)))))
 (define-ctype _string/utf-16 (if (system-big-endian?) 'utf-16be 'utf-16le) 'string/utf-16
-  (checker who string?))
+  (checker who (lambda (x) (or (not x) (string? x)))))
 (define-ctype _void 'void 'void (checker who void))
 
 (define (bad-ctype-value type-name v)
