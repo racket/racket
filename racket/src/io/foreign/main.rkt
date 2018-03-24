@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
+         "../host/error.rkt"
          "../path/path.rkt"
          "../file/host.rkt"
          "../file/error.rkt"
@@ -36,7 +37,7 @@
            (raise
             (exn:fail:filesystem
              (string-append (symbol->string who) ": " msg
-                            "\n  system error: " (bytes->string/utf-8 err-str #\?))
+                            "\n  system error: " (->string err-str))
              (current-continuation-marks)))]
           [else
            (raise-filesystem-error who dll msg)])])]
@@ -60,7 +61,7 @@
         (raise
          (exn:fail:filesystem
           (string-append (symbol->string who) ": " msg
-                         "\n  system error: " (bytes->string/utf-8 err-str #\?))
+                         "\n  system error: " (->string err-str))
           (current-continuation-marks)))]
        [else
         (raise-filesystem-error who dll msg)])]
@@ -70,10 +71,18 @@
 (define (dll-get-error v)
   (and (rktio-error? v)
        (let ([p (rktio_dll_get_error rktio)])
-         (and p
-              (begin0
-                (rktio_to_bytes p)
-                (rktio_free p))))))
+         (cond
+           [(rktio-error? p)
+            (format-rktio-system-error-message v)]
+           [else
+            (begin0
+              (rktio_to_bytes p)
+              (rktio_free p))]))))
+
+(define (->string s)
+  (if (bytes? s)
+      (bytes->string/utf-8 s #\?)
+      s))
 
 ; ----------------------------------------
 
