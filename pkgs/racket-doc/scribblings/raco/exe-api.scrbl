@@ -251,6 +251,13 @@ currently supported keys are as follows:
         original executable's path to DLLs is converted to an absolute
         path if it was relative.}
 
+  @item{@racket['embed-dlls?] (Windows) : A boolean indicating whether
+        to copy DLLs into the executable, where the default value is
+        @racket[#f]. Embedded DLLs are instantiated by an internal
+        linking step that bypasses some operating system facilities,
+        so it will not work for all Windows DLLs, but typical DLLs
+        will work as embedded.}
+
   @item{@racket['subsystem] (Windows) : A symbol, either
         @racket['console] for a console application or
         @racket['windows] for a consoleless application; the default
@@ -368,7 +375,10 @@ reader extensions needed to parse a module that will be included as
 source, as long as the reader is referenced through an absolute module
 path. Each path given to @racket[extras-proc] corresponds to the
 actual file name (e.g., @filepath{.ss}/@filepath{.rkt} conversions
-have been applied as needed to refer to the existing file).}
+have been applied as needed to refer to the existing file).
+
+@history[#:changed "6.90.0.23" @elem{Added @racket[embed-dlls?] as an
+                                     @racket[#:aux] key.}]}
 
 
 @defproc[(make-embedding-executable [dest path-string?]

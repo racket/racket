@@ -74,6 +74,8 @@ uintptr_t scheme_tls_delta;
 int scheme_tls_index;
 # elif defined(IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS_FUNC)
 DWORD scheme_thread_local_key;
+# elif defined(IMPLEMENT_THREAD_LOCAL_VIA_OFFSET)
+SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals_space;
 # else
 SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # endif
@@ -193,6 +195,8 @@ int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char
   return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d);
 }
 
+extern int _tls_index;
+
 static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data) 
 {
   void *stack_start;
@@ -231,6 +235,19 @@ void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
 Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_PROC
 {
   return scheme_get_thread_local_variables();
+}
+#elif defined(IMPLEMENT_THREAD_LOCAL_VIA_OFFSET)
+int scheme_tls_delta;
+extern int _tls_index;
+void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
+{
+  if (_tls_index == 0) {
+    /* The Racket DLL didn't get its own index, which means that it's
+       being instantiated in-memory instead of loaded from a ".dll" file.
+       Use space reserved by the application for thread-local variables. */
+    scheme_tls_delta = ((char *)tls_space - (char *)&scheme_thread_locals_space);
+  } else
+    scheme_tls_delta = 0;
 }
 #else
 void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC

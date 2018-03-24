@@ -5098,6 +5098,9 @@ void scheme_set_addon_dir(Scheme_Object *p)
 
 #ifdef DOS_FILE_SYSTEM
 
+static scheme_dll_open_proc alt_dll_open;
+static scheme_dll_find_object_proc alt_find_obj;
+
 void scheme_set_dll_path(wchar_t *p)
 {
   rktio_set_dll_path(p);
@@ -5115,6 +5118,36 @@ wchar_t *scheme_get_dll_path(wchar_t *p)
   memcpy(r2, r, sizeof(wchar_t) * len);
   free(r);
   return r2;
+}
+
+void scheme_set_dll_procs(scheme_dll_open_proc dll_open, scheme_dll_find_object_proc find_obj)
+{
+  rktio_set_dll_procs(dll_open, find_obj);
+  alt_dll_open = dll_open;
+  alt_find_obj = find_obj;
+}
+
+HANDLE scheme_dll_load_library(const char *s, const wchar_t *ws, int *_mode)
+{
+  if (alt_dll_open) {
+    void *h;
+    h = alt_dll_open(s, 0);
+    if (h) {
+      *_mode = 1;
+      return (HANDLE)h;
+    }
+  }
+
+  *_mode = 0;
+  return LoadLibraryW(ws);
+}
+
+void *scheme_dll_get_proc_address(HANDLE m, const char *name, int dll_mode)
+{
+  if (dll_mode)
+    return alt_find_obj((void *)m, name);
+  else
+    return GetProcAddress(m, name);
 }
 
 #endif

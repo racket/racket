@@ -473,6 +473,10 @@
 				RelativePath="..\..\gracket\grmain.c"
 				>
 			</File>
+			<File
+				RelativePath="..\..\start\MemoryModule.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

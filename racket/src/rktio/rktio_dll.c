@@ -20,10 +20,15 @@ typedef void *dll_handle_t;
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 typedef HANDLE dll_handle_t;
+static dll_open_proc LoadLibraryHook;
+static dll_find_object_proc GetProcAddressHook;
 #endif
 
 struct rktio_dll_t {
   void *handle;
+#ifdef RKTIO_SYSTEM_WINDOWS
+  int hook_handle;
+#endif
   char *name;
   rktio_hash_t *objects_by_name;
   rktio_dll_object_t *all_objects;
@@ -38,7 +43,10 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
   intptr_t key;
   dll_handle_t handle;
   int null_ok = 0;
-
+#ifdef RKTIO_SYSTEM_WINDOWS
+  int hook_handle = 0;
+#endif
+  
   if (!rktio->dlls_by_name)
     rktio->dlls_by_name = rktio_hash_new();
   
@@ -76,13 +84,21 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
   
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (!name) {
-    /* openning the executable is marked by a NULL handle */
+    /* opening the executable is marked by a NULL handle */
     handle = NULL;
     null_ok = 1;
   } else {
-    handle = LoadLibraryW(WIDE_PATH_temp(name));
-    if (!handle)
-      get_windows_error();
+    if (LoadLibraryHook)
+      handle = LoadLibraryHook(name, as_global);
+    else
+      handle = NULL;
+    if (handle) {
+      hook_handle = 1;
+    } else {
+      handle = LoadLibraryW(WIDE_PATH_temp(name));
+      if (!handle)
+	get_windows_error();
+    }
   }
 #endif
 
@@ -91,6 +107,9 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
 
   dll = malloc(sizeof(rktio_dll_t));
   dll->handle = handle;
+#ifdef RKTIO_SYSTEM_WINDOWS
+  dll->hook_handle = hook_handle;
+#endif
   dll->name = (name ? MSC_IZE(strdup)(name) : NULL);
   dll->objects_by_name = rktio_hash_new();
   dll->all_objects = NULL;
@@ -236,9 +255,12 @@ void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string
 #endif
   
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (dll->handle)
-    address = GetProcAddress(dll->handle, name);
-  else {
+  if (dll->handle) {
+    if (dll->hook_handle)
+      address = GetProcAddressHook(dll->handle, name);
+    else
+      address = GetProcAddress(dll->handle, name);
+  } else {
     /* this is for the executable-open case, which was marked by a NULL
      * handle; deal with it by searching all current modules */
 #   define NUM_QUICK_MODS 16
@@ -266,6 +288,8 @@ void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string
       address = NULL;
     if (mods != quick_mods)
       free(mods);
+    if (!address && GetProcAddressHook) 
+      address = GetProcAddressHook(NULL, name);
   }
 
   if (!address) {
@@ -318,6 +342,34 @@ RKTIO_EXTERN char *rktio_dll_get_error(rktio_t *rktio)
   return NULL;
 #endif
 }
+
+/*========================================================================*/
+/* Windows hooks                                                          */
+/*========================================================================*/
+
+/* Support in-memory DLLs and similar by allowing the application to
+   install replacements for LoadLibrary and GetProcAddress. */
+
+void rktio_set_dll_procs(dll_open_proc dll_open, dll_find_object_proc dll_find_object)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  LoadLibraryHook = dll_open;
+  GetProcAddressHook = dll_find_object;
+#endif
+}
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+HANDLE rktio_load_library(rktio_const_string_t name)
+{
+  if (!LoadLibraryHook) return NULL;
+  return (HANDLE)LoadLibraryHook(name, 1);
+}
+
+void *rktio_get_proc_address(HANDLE m, rktio_const_string_t name)
+{
+  return GetProcAddressHook((void *)m, name);
+}
+#endif
 
 /*========================================================================*/
 /* Clean up                                                               */

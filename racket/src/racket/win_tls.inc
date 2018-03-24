@@ -35,5 +35,18 @@ static void register_win_tls()
 }
 
 #else
-static void register_win_tls() {}
+
+/* For emebdded-DLL mode, make sure there's a thread-local space to
+   be taken ovver by the Racket DLL */
+# ifdef USE_THREAD_LOCAL
+
+static __declspec(thread) Thread_Local_Variables tls_space;
+static void register_win_tls() {
+  scheme_register_tls_space(&tls_space, 0);
+}
+
+# else
+static void register_win_tls() { }
+# endif
+
 #endif

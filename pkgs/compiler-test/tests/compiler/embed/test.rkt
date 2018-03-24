@@ -297,6 +297,27 @@
      `("-l" "tests/compiler/embed/embed-me5.rkt"))
     (try-exe mr-dest "This is 5: #<class:button%>\n" #t)))
 
+(define (try-embedded-dlls)
+  (prepare mz-dest "embed-me1.rkt")
+  (make-embedding-executable 
+   mz-dest #f #f
+   `((#t (lib "embed-me1.rkt" "tests" "compiler" "embed")))
+   '()
+   #f
+   `("-l" "tests/compiler/embed/embed-me1.rkt")
+   '((embed-dlls? . #t)))
+  (try-exe mz-dest "This is 1\n" #t)
+  
+  (prepare mr-dest "embed-me5.rkt")
+  (make-embedding-executable 
+   mr-dest #t #f
+   `((#t (lib "embed-me5.rkt" "tests" "compiler" "embed")))
+   '()
+   #f
+   `("-l" "tests/compiler/embed/embed-me5.rkt")
+   '((embed-dlls? . #t)))
+  (try-exe mr-dest "This is 5: #<class:button%>\n" #t))
+
 ;; Try the raco interface:
 (require setup/dirs
 	 mzlib/file)
@@ -309,7 +330,8 @@
 
 (define (system+ . args)
   (printf "> ~a\n" (car (reverse args)))
-  (apply system* args))
+  (unless (apply system* args)
+    (error 'system+ "command failed ~s" args)))
 
 (define (short-mzc-tests mred?)
   (parameterize ([current-directory (find-system-path 'temp-dir)])
@@ -399,6 +421,7 @@
     (try-exe (mk-dest mred?) "Hello from a place!\n" mred?)
 
     ;; raco exe --launcher
+    (printf ">>launcher\n")
     (system+ raco
              "exe"
              "--launcher"
@@ -409,6 +432,7 @@
 
     ;; the rest use mzc...
 
+    (printf ">>mzc\n")
     (system+ mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
@@ -470,7 +494,7 @@
       (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
       (delete-directory/files "cts")
       (parameterize ([current-error-port (open-output-nowhere)])
-        (test #f system+ (mk-dest mred?))))
+        (test #f system* (mk-dest mred?))))
     (check-collection-path "embed-me6b.rkt" "racket/fixnum.rkt" #t)
     (check-collection-path "embed-me6.rkt" "mzlib/etc.rkt"
                            ;; "mzlib" is found via the "collects" path
@@ -702,12 +726,15 @@
 
 (try-basic)
 (try-mzc)
-(try-extension)
+(unless (eq? 'windows (system-type))
+  (try-extension))
 (try-gracket)
 (try-reader)
 (try-planet)
 (try-*sl)
 (try-source)
+(when (eq? 'windows (system-type))
+  (try-embedded-dlls))
 
 ;; ----------------------------------------
 ;; Make sure that embedding does not break future module declarations

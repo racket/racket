@@ -363,7 +363,8 @@
 
 (link-exe (list
            "racket.res"
-           "xsrc/main.obj")
+           "xsrc/main.obj"
+	   (find-build-file "racket" "MemoryModule.obj"))
           null
           exe
           "")
@@ -394,7 +395,8 @@
 
 (link-exe (list
            "gracket.res"
-           "xsrc/grmain.obj")
+           "xsrc/grmain.obj"
+	   (find-build-file "racket" "MemoryModule.obj"))
           '("advapi32.lib")
           "../../../lib/GRacket.exe"
           " /subsystem:windows")

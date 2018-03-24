@@ -3987,4 +3987,9 @@ void scheme_process_global_unlock(void);
 Scheme_Object *scheme_expander_syntax_to_datum(Scheme_Object *v);
 int scheme_is_syntax(Scheme_Object *v);
 
+#ifdef DOS_FILE_SYSTEM
+HANDLE scheme_dll_load_library(const char *s, const wchar_t *ws, int *_mode);
+void *scheme_dll_get_proc_address(HANDLE m, const char *name, int dll_mode);
+#endif
+
 #endif /* __mzscheme_private__ */

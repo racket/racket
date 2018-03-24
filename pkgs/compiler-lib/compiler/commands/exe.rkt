@@ -41,6 +41,8 @@
         (list "-A" (path->string (find-system-path 'addon-dir)))
         (remove "-U" (exe-embedded-flags)))))
     (launcher #t)]
+   [("--embed-dlls") "On Windows, embed DLLs in the executable"
+    (exe-aux (cons (cons 'embed-dlls? #t) (exe-aux)))]
    [("--config-path") path "Set <path> as configuration directory for executable"
     (exe-embedded-config-path path)]
    [("--collects-path") path "Set <path> as main collects for executable"

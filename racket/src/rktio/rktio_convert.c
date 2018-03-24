@@ -70,16 +70,24 @@ static int iconv_ready = 0;
 
 static void init_iconv()
 {
-  HMODULE m;
+  HMODULE m = NULL;
   wchar_t *p;
-  
-  p = rktio_get_dll_path(L"iconv.dll");
-  if (p) {
-    m = LoadLibraryW(p);
-    free(p);
-  } else
-    m = NULL;
-  
+  int hook_handle = 0;
+
+  /* Try embedded "libiconv-2.dll", first: */
+  m = rktio_load_library("libiconv-2.dll");
+  if (m)
+    hook_handle = 1;
+
+  if (!m) {
+    p = rktio_get_dll_path(L"iconv.dll");
+    if (p) {
+      m = LoadLibraryW(p);
+      free(p);
+    } else
+      m = NULL;
+  }
+
   if (!m) {
     p = rktio_get_dll_path(L"libiconv.dll");
     if (p) {
@@ -106,10 +114,17 @@ static void init_iconv()
     m = LoadLibraryW(L"libiconv-2.dll");
   
   if (m) {
-    iconv = (iconv_proc_t)GetProcAddress(m, "libiconv");
-    iconv_open = (iconv_open_proc_t)GetProcAddress(m, "libiconv_open");
-    iconv_close = (iconv_close_proc_t)GetProcAddress(m, "libiconv_close");
-    locale_charset = (locale_charset_proc_t)GetProcAddress(m, "locale_charset");
+    if (hook_handle) {
+      iconv = (iconv_proc_t)rktio_get_proc_address(m, "libiconv");
+      iconv_open = (iconv_open_proc_t)rktio_get_proc_address(m, "libiconv_open");
+      iconv_close = (iconv_close_proc_t)rktio_get_proc_address(m, "libiconv_close");
+      locale_charset = (locale_charset_proc_t)rktio_get_proc_address(m, "locale_charset");
+    } else {
+      iconv = (iconv_proc_t)GetProcAddress(m, "libiconv");
+      iconv_open = (iconv_open_proc_t)GetProcAddress(m, "libiconv_open");
+      iconv_close = (iconv_close_proc_t)GetProcAddress(m, "libiconv_close");
+      locale_charset = (locale_charset_proc_t)GetProcAddress(m, "locale_charset");
+    }
     /* Make sure we have all of them or none: */
     if (!iconv || !iconv_open || !iconv_close) {
       iconv = NULL;
@@ -119,7 +134,10 @@ static void init_iconv()
   }
   
   if (iconv) {
-    iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
+    if (hook_handle)
+      iconv_errno = (errno_proc_t)rktio_get_proc_address(m, "_errno");
+    else
+      iconv_errno = (errno_proc_t)GetProcAddress(m, "_errno");
     if (!iconv_errno) {
       /* The iconv.dll distributed with Racket links to msvcrt.dll.
 	 It's a slighly dangerous assumption that whatever iconv we
@@ -349,7 +367,7 @@ char *rktio_system_language_country(rktio_t *rktio)
 
   llen = GetLocaleInfoW(l, LOCALE_SENGLANGUAGE, NULL, 0);
   lang = malloc(llen * sizeof(wchar_t));
-  GetLocaleInfo(l, LOCALE_SENGLANGUAGE, lang, llen);
+  GetLocaleInfoW(l, LOCALE_SENGLANGUAGE, lang, llen);
   if (llen)
     llen -= 1; /* drop nul terminator */
 

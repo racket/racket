@@ -1167,6 +1167,12 @@ RKTIO_EXTERN char *rktio_dll_get_error(rktio_t *rktio);
    if no error string is available or has already been returned.
    See `rktio_dll_open` for more information. */
 
+typedef void *(*dll_open_proc)(rktio_const_string_t name, rktio_bool_t as_global);
+typedef void *(*dll_find_object_proc)(void *h, rktio_const_string_t name);
+RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open, dll_find_object_proc dll_find_object);
+/* Installs procedures that are tried before native mechanisms,
+   currently only supported for Windows. */
+
 /*************************************************/
 /* Errors                                        */
 

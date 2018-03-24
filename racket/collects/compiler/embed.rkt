@@ -22,8 +22,8 @@
          "private/collects-path.rkt"
          "private/configdir.rkt"
          "private/write-perm.rkt"
+	 "private/win-dll-list.rkt"
          "find-exe.rkt")
-
 
 (provide/contract [make-embedding-executable
                    (->* (path-string?
@@ -558,7 +558,7 @@
                                   [_else (error 'create-empbedding-executable
                                                 "expansion mismatch when getting external paths: ~e"
                                                 (syntax->datum e))]))))]
-                       
+
                        [extra-runtime-paths (filter
                                              values
                                              (map (lambda (p)
@@ -1116,7 +1116,8 @@
                                 early-literal-expressions config? literal-files literal-expressions 
                                 collects-dest
                                 on-extension program-name compiler expand-namespace 
-                                src-filter get-extra-imports on-decls-done)
+                                src-filter get-extra-imports on-decls-done
+				embedded-dlls-box)
   (let* ([program-name-bytes (if program-name
                                  (path->bytes program-name)
                                  #"?")]
@@ -1248,7 +1249,15 @@
                                                                          p)))
                                                            (let ([p (cond
                                                                      [(bytes? p) (bytes->path p)]
-                                                                     [(so-spec? p) (so-find p)]
+                                                                     [(so-spec? p)
+								      (define path (so-find p))
+								      (cond
+									[(and path embedded-dlls-box)
+									 (set-box! embedded-dlls-box (cons path (unbox embedded-dlls-box)))
+									 ;; Don't record the path in the executable since we'll
+									 ;; record the whole DLL in the executable
+									 #f]
+									[else path])]
                                                                      [(and (list? p)
                                                                            (eq? 'lib (car p)))
                                                                       (let ([p (if (null? (cddr p))
@@ -1356,7 +1365,8 @@
                           #f ; program-name 
                           compiler expand-namespace 
                           src-filter get-extra-imports
-                          void))
+                          void
+			  #f)) ; don't accumulate embedded DLLs
 
 
 ;; The old interface:
@@ -1501,20 +1511,28 @@
                                             "/")
                                            dest
                                            mred?))))))
+	(define embed-dlls? (and (eq? 'windows (cross-system-type))
+				 (let ([m (assq 'embed-dlls? aux)])
+				   (and m (cdr m)))))
+	(define embedded-dlls-box (and embed-dlls? (box null)))
         (when (eq? 'windows (cross-system-type))
-          (let ([m (or (assq 'dll-dir aux)
-                       (and relative? '(dll-dir . #f)))])
-            (if m
-                (if (cdr m)
-                    (update-dll-dir dest (cdr m))
-                    ;; adjust relative path, since exe directory can change:
-		    (update-dll-dir dest (find-relative-path* dest (find-cross-dll-dir))))
-                ;; Check whether we need an absolute path to DLLs:
-                (let ([dir (get-current-dll-dir dest)])
-                  (when (relative-path? dir)
-                    (let-values ([(orig-dir name dir?) (split-path 
-                                                        (path->complete-path orig-exe))])
-                      (update-dll-dir dest (build-path orig-dir dir))))))))
+	  (cond
+	    [embed-dlls?
+	     (update-dll-dir dest #t)]
+	    [else
+	     (let ([m (or (assq 'dll-dir aux)
+			  (and relative? '(dll-dir . #f)))])
+	       (if m
+		   (if (cdr m)
+		       (update-dll-dir dest (cdr m))
+		       ;; adjust relative path, since exe directory can change:
+		       (update-dll-dir dest (find-relative-path* dest (find-cross-dll-dir))))
+		   ;; Check whether we need an absolute path to DLLs:
+		   (let ([dir (get-current-dll-dir dest)])
+		     (when (relative-path? dir)
+		       (let-values ([(orig-dir name dir?) (split-path 
+							   (path->complete-path orig-exe))])
+			 (update-dll-dir dest (build-path orig-dir dir)))))))]))
         (define (adjust-config-dir)
           (let ([m (or (assq 'config-dir aux)
                        (and relative? '(config-dir . #f)))]
@@ -1567,7 +1585,8 @@
                                          expand-namespace
                                          src-filter
                                          get-extra-imports
-                                         (lambda (outp) (set! pos (file-position outp))))
+                                         (lambda (outp) (set! pos (file-position outp)))
+					 embedded-dlls-box)
                  pos)]
 		  [make-full-cmdline
 		   (lambda (start decl-end end)
@@ -1638,7 +1657,24 @@
                                                           1
                                                           1033 ; U.S. English
                                                           bstr))
-                          (update-resources dest-exe pe new-rsrcs)
+                          (define new+dll-rsrcs
+			    (if embed-dlls?
+				(resource-set new-rsrcs
+					      ;; Racket's "user-defined" type for embedded DLLs:
+					      258
+					      1
+					      1033 ; U.S. English
+					      (pack-embedded-dlls
+					       (append
+						(get-racket-dlls
+						 (list
+						  (case (cross-system-type 'gc)
+						    [(3m) (if mred? 'gracket3m 'racket3m)]
+						    [(cgc) (if mred? 'gracketcgc 'racketcgc)]
+						    [(cs) (if mred? 'gracketcs 'racketcs)])))
+						(unbox embedded-dlls-box))))
+				new-rsrcs))
+			  (update-resources dest-exe pe new+dll-rsrcs)
                           (values 0 decl-len init-len (+ init-len cmdline-len))]
                          [(and (eq? (cross-system-type) 'macosx)
                                (not unix-starter?))
@@ -1828,3 +1864,36 @@
 (define (find-relative-path* wrt-exe p)
   (define-values (wrt base name) (split-path (path->complete-path wrt-exe)))
   (find-relative-path (simplify-path wrt) (simplify-path p)))
+
+;; To embed DLLs in the executable as resource ID 258:
+(define (pack-embedded-dlls name-or-paths)
+  (define bstrs (for/list ([p (in-list name-or-paths)])
+		  (file->bytes (if (string? p)
+				   (search-dll p)
+				   p))))
+  (define names (for/list ([p (in-list name-or-paths)])
+		  (if (string? p)
+		      p
+		      (let-values ([(base name dir) (split-path p)])
+			(path-element->string name)))))
+  (define start-pos (+ 4 ; count
+		       ;; name array:
+		       (for/sum ([p (in-list names)])
+			 (+ 2 (bytes-length (string->bytes/utf-8 p))))
+		       ;; starting-position array:
+		       (* 4 (add1 (length names)))))
+  (define-values (rev-offsets total)
+    (for/fold ([rev-offsets null] [total start-pos]) ([bstr (in-list bstrs)])
+      (values (cons total rev-offsets)
+	      (+ total (bytes-length bstr)))))
+  (apply
+   bytes-append
+   (integer->integer-bytes (length names) 4 #t #f)
+   (append
+    (for/list ([p (in-list names)])
+      (define bstr (string->bytes/utf-8 p))
+      (bytes-append (integer->integer-bytes (bytes-length bstr) 2 #t #f) bstr))
+    (for/list ([offset (in-list (reverse rev-offsets))])
+      (integer->integer-bytes offset 4 #t #f))
+    (list (integer->integer-bytes total 4 #t #f))
+    bstrs)))

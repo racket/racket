@@ -35,6 +35,7 @@ extern "C" {
 #   else
 #     define THREAD_LOCAL __declspec(thread)
 #     define MZ_THREAD_EXTERN extern
+#     define IMPLEMENT_THREAD_LOCAL_VIA_OFFSET
 #     define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #   endif
 #  else
@@ -485,6 +486,13 @@ static __inline Thread_Local_Variables *scheme_get_thread_local_variables(void) 
 #  ifdef MZ_XFORM
 END_XFORM_SKIP;
 XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
+#  endif
+# elif defined (IMPLEMENT_THREAD_LOCAL_VIA_OFFSET)
+MZ_THREAD_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals_space;
+extern int scheme_tls_delta;
+#  define scheme_get_thread_local_variables() ((Thread_Local_Variables *)((char *)&scheme_thread_locals_space + scheme_tls_delta))
+#  ifdef MZ_XFORM
+XFORM_GC_VARIABLE_STACK_THROUGH_DELTA;
 #  endif
 # else
 MZ_THREAD_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;

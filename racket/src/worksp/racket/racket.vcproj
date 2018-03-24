@@ -467,6 +467,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\start\MemoryModule.c"
+				>
+			</File>
+			<File
 				RelativePath=".\racket.rc"
 				>
 			</File>

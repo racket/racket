@@ -311,12 +311,21 @@ START_XFORM_SKIP;
 
 #ifdef DOS_FILE_SYSTEM
 # include "win_tls.inc"
+# include "../start/embedded_dll.inc"
 #endif
 
 #ifdef DOS_FILE_SYSTEM
+static int load_delayed_done;
+
 void load_delayed()
 {
+  if (load_delayed_done)
+    return;
+  load_delayed_done = 1;
+  
   (void)SetErrorMode(SEM_FAILCRITICALERRORS);
+
+  parse_embedded_dlls();
 
 # ifndef MZ_NO_LIBRACKET_DLL
   /* Order matters: load dependencies first */
@@ -326,6 +335,8 @@ void load_delayed()
   load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
 # endif
   record_dll_path();
+
+  register_embedded_dll_hooks();
 
   register_win_tls();
 }

@@ -133,7 +133,7 @@ static long get_segment_offset()
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-wchar_t *get_self_executable_path()
+wchar_t *get_self_executable_path() XFORM_SKIP_PROC
 {
   wchar_t *path;
   DWORD r, sz = 1024;
@@ -152,7 +152,7 @@ wchar_t *get_self_executable_path()
   return path;
 }
 
-static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id)
+static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id) XFORM_SKIP_PROC
 {
   DWORD got, val;
   WORD name_count, id_count;
@@ -175,9 +175,9 @@ static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id)
   return 0;
 }
 
-static long get_segment_offset()
+static long find_resource_offset(int id) XFORM_SKIP_PROC
 {
-  /* Find the resource of type 257 */
+  /* Find the resource of type `id` */
   wchar_t *path;
   HANDLE fd;
 
@@ -221,7 +221,7 @@ static long get_segment_offset()
         SetFilePointer(fd, rsrcs, 0, FILE_BEGIN);
         
         /* We're at the resource table; step through 3 layers */
-        pos = find_by_id(fd, rsrcs, rsrcs, 257);
+        pos = find_by_id(fd, rsrcs, rsrcs, id);
 	if (pos) {
 	  pos = find_by_id(fd, rsrcs, pos, 1);
 	  if (pos) {
@@ -250,6 +250,12 @@ static long get_segment_offset()
     return 0;
   }
 }
+
+static long get_segment_offset() XFORM_SKIP_PROC
+{
+  return find_resource_offset(257);
+}
+
 #endif
 
 static void extract_built_in_arguments(char **_prog, char **_sprog, int *_argc, char ***_argv)

@@ -737,12 +737,14 @@ static void fail_sprint(char* buffer, int digits, long_double ld)
 void scheme_load_long_double_dll()
 {
   HANDLE m;
-  m = LoadLibraryW(scheme_get_dll_path(L"longdouble.dll"));
+  int dll_mode;
+
+  m = scheme_dll_load_library("longdouble.dll", L"longdouble.dll", &dll_mode);
 
   if (m) long_double_dll_available = 1;
 
 # define EXTRACT_LDBL(name, fail)                      \
-  _imp_ ## name = (name ##_t)(m ? GetProcAddress(m, # name) : NULL);  \
+  _imp_ ## name = (name ##_t)(m ? scheme_dll_get_proc_address(m, # name, dll_mode) : NULL); \
   if (!(_imp_ ## name)) _imp_ ## name = (name ##_t)fail;
 
   EXTRACT_LDBL(get_long_double_infinity_val, fail_long_double_infinity);

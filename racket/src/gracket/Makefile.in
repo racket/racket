@@ -69,8 +69,8 @@ GRACKETLDFLAGS = $(LDFLAGS) -L../racket
 
 GRACKETRES@NOT_MINGW@ =
 GRACKETRESDEP@NOT_MINGW@ =
-GRACKETRES@MINGW@ = -mwindows gres.o
-GRACKETRESDEP@MINGW@ = gres.o
+GRACKETRES@MINGW@ = -mwindows gres.o ../racket/MemoryModule.@LTO@
+GRACKETRESDEP@MINGW@ = gres.o ../racket/MemoryModule.@LTO@
 
 LOCALFLAGS_wx_xt = @WX_MMD_FLAG@
 LOCALFLAGS_wx_mac = -I$(srcdir)/../mac/racket -MMD -DWX_CARBON

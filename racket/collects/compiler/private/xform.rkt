@@ -621,6 +621,9 @@
                             (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION))
                        'function]
                       [(and (tok? e)
+                            (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_DELTA))
+                       'delta]
+                      [(and (tok? e)
                             (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION))
                        'direct-function]
                       [(braces? e) (loop (seq->list (seq-in e)))]
@@ -643,6 +646,8 @@
                     "#define GC_VARIABLE_STACK ((scheme_get_thread_local_variables())->GC_variable_stack_)\n"]
                    [(thread-local)
                     "#define GC_VARIABLE_STACK ((&scheme_thread_locals)->GC_variable_stack_)\n"]
+		   [(delta)
+		    "#define GC_VARIABLE_STACK (((Thread_Local_Variables *)((char *)&scheme_thread_locals_space + scheme_tls_delta))->GC_variable_stack_)\n"]
                    [else "#define GC_VARIABLE_STACK GC_variable_stack\n"]))
 
           (if (or gc-variable-stack-through-funcs?
@@ -1713,6 +1718,7 @@
                (or (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION (tok-n (car e)))
+                   (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_DELTA (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL (tok-n (car e))))))
         
         (define (access-modifier? e)

@@ -186,6 +186,7 @@ addman.bat
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\gracket\grmain.c" />
+    <ClCompile Include="..\..\start\MemoryModule.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BULLSEYE.CUR" />

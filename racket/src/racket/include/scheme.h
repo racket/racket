@@ -1921,6 +1921,9 @@ MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
 MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);
 #ifdef DOS_FILE_SYSTEM
 MZ_EXTERN void scheme_set_dll_path(wchar_t *s);
+typedef void *(*scheme_dll_open_proc)(const char *name, int as_global);
+typedef void *(*scheme_dll_find_object_proc)(void *h, const char *name);
+MZ_EXTERN void scheme_set_dll_procs(scheme_dll_open_proc, scheme_dll_find_object_proc);
 #endif
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);

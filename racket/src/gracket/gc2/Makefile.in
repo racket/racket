@@ -56,7 +56,7 @@ MZMMM_wx_xt = @RUN_RACKET_MMM@
 MZMMM_wx_mac = @RUN_RACKET_MMM@
 MZMMM = $(MZMMM_@WXVARIANT@)
 
-SETUP_BOOT = -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
+SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../../setup-go.rkt ../../compiled
 
 XFORM_CMD = $(MZMMM) $(SELF_RACKET_FLAGS) $(SETUP_BOOT) --tag ++out $(srcdir)/../../racket/gc2/xform-mod.rkt
 XFORM_CPP_ARGS = -I$(srcdir)/../../racket/gc2 $(NOGCINC) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@)
@@ -105,8 +105,8 @@ GRACKETMZOBJS_la =
 ../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(LIBRKTIO_@LIBSFX@)
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
 
-../gracket@MMM@@MINGW@: grmain.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o
-	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp -static-libgcc
+../gracket@MMM@@MINGW@: grmain.@LTO@ ../../racket/MemoryModule.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o
+	$(GRACKETLINKER) -mwindows $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/MemoryModule.@LTO@ ../gres.o ../../racket/gc2/libracket3m.dll.a $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@) -l delayimp -static-libgcc
 
 MZFW = ../../racket/Racket.framework/Versions/$(FWVERSION)_3m/Racket
 MRAPPSKEL = ../GRacket@MMM@.app/Contents/Info.plist

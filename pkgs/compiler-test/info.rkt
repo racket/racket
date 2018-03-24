@@ -16,5 +16,7 @@
                      "gui-lib"
                      "htdp-lib"
                      "plai-lib"
-                     "rackunit-lib"))
+                     "rackunit-lib"
+		     "dynext-lib"
+		     "mzscheme-lib"))
 (define update-implies '("compiler-lib"))

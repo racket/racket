@@ -298,6 +298,10 @@ void rktio_set_windows_error(rktio_t *rktio, int errid);
 void rktio_error_clean(rktio_t *rktio);
 
 void rktio_dll_clean(rktio_t *rktio);
+#ifdef RKTIO_SYSTEM_WINDOWS
+HANDLE rktio_load_library(rktio_const_string_t name);
+void *rktio_get_proc_address(HANDLE m, rktio_const_string_t name);
+#endif
 
 #if defined(USE_FNDELAY_O_NONBLOCK)
 # define RKTIO_NONBLOCKING FNDELAY

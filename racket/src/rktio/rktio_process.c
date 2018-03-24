@@ -820,7 +820,8 @@ rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp)
       get_windows_error();
       return NULL;
     }
-  }
+  } else
+    status = -1;
 # endif
 #endif
 
@@ -986,7 +987,7 @@ void rktio_process_deinit(rktio_t *rktio)
 /*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-static char *cmdline_protect(char *s)
+static char *cmdline_protect(const char *s)
 {
   char *naya;
   int ds;
@@ -1292,7 +1293,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       for (i = 0; i < argc; i++) {
 	new_argv[i] = cmdline_protect(argv[i]);
       }
-      argv = new_argv;
+      argv = (rktio_const_string_t *)new_argv;
     }
 
     pid = 0;
@@ -1310,7 +1311,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
     if (!windows_exact_cmdline) {
       for (i = 0; i < argc; i++) {
-        free(argv[i]);
+        free((char *)argv[i]);
       }
       free(argv);
     }

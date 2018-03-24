@@ -191,6 +191,7 @@ addman.bat
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\racket\main.c" />
+    <ClCompile Include="..\..\start\MemoryModule.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="racket.rc" />

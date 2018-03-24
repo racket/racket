@@ -617,8 +617,8 @@ libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 
 MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
-../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
-	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
+../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../MemoryModule.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
+	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ MemoryModule.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
 
 ../mzcom@MMM@@NOT_MINGW@:
 	$(NOOP)
