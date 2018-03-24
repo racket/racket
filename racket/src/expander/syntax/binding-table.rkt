@@ -65,7 +65,7 @@
     (ser-push! (bulk-binding-at-bulk bba)))
   #:property prop:reach-scopes
   (lambda (sms reach)
-    ;; bulk bindings are pruned dependong on whether all scopes
+    ;; bulk bindings are pruned depending on whether all scopes
     ;; in `scopes` are reachable, and we shouldn't get here
     ;; when looking for scopes
     (error "shouldn't get here"))
