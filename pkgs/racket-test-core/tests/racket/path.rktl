@@ -736,6 +736,7 @@
   (test (list (string->path "../aux/") (string->path "z")) get-base (coerce "../aux/z"))
   (test (list (string->path "../aux.m/") (string->path "z")) get-base (coerce "../aux.m/z"))
   (test (list (string->path "../") (string->path "\\\\?\\REL\\\\aux.m")) get-base (coerce "../aux.m/"))
+  (test (list (string->path "../") (string->path "auxy.m")) get-base (coerce "../auxy.m/"))
   (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux.m")) get-base (coerce "c:/aux.m/"))
   (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux.m.p")) get-base (coerce "c:/aux.m.p/"))
   (test (list (string->path "c:/") (string->path "\\\\?\\REL\\\\aux:m")) get-base (coerce "c:/aux:m/"))

@@ -56,7 +56,7 @@
             (or (= len fn-len)
                 (eqv? (bytes-ref bstr fn-len) (char->integer #\.))
                 (eqv? (bytes-ref bstr fn-len) (char->integer #\:))
-                (for/and ([b (in-bytes bstr len)])
+                (for/and ([b (in-bytes bstr fn-len)])
                   (or (eqv? b (char->integer #\space))
                       (eqv? b (char->integer #\.)))))))]))
 
