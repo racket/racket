@@ -454,7 +454,7 @@
 
     (define new-virtual-addr
       (same-alignment
-       (section-virtual-addr s)
+       (pe-section-alignment pe)
        (for/fold ([pos 0]) ([s2 (in-list (pe-sections pe))]
                             #:unless (eq? s s2))
          (max pos
