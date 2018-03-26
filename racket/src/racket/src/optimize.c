@@ -4002,7 +4002,7 @@ static void check_known_both_try(Optimize_Info *info, Scheme_Object *app,
   if (!who || IS_NAMED_PRIM(rator, who)) {
     Scheme_Object *pred1, *pred2;
 
-    if (info->unsafe_mode) {
+    if (unsafe_mode) {
       reset_rator(app, unsafe);
     } else {
       pred1 = expr_implies_predicate(rand1, info); 
