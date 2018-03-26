@@ -249,6 +249,7 @@
 # define USE_IEEE_FP_PREDS
 
 # define USE_MAP_ANON
+# define IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
 
 # if defined(__x86_64__)
 #  define MZ_USE_JIT_X86_64

@@ -972,6 +972,10 @@ static void *mmap_sector(int count, int executable)
     fd = open("/dev/zero", O_RDWR);
 #endif
 
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+  executable = 0;
+#endif
+
   p = mmap(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE, 
            PROT_READ | PROT_WRITE | (executable ? PROT_EXEC : 0), 
            MAP_PRIVATE | flags, fd, 0);

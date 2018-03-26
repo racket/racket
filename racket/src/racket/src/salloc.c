@@ -109,6 +109,10 @@ extern MZGC_DLLIMPORT void GC_register_indirect_disappearing_link(void **link, v
 static void init_allocation_callback(void);
 #endif
 
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+static void install_w_xor_x_handler();
+#endif
+
 SHARED_OK static int use_registered_statics;
 
 /************************************************************************/
@@ -154,6 +158,10 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 # ifdef MZ_GC_BACKTRACE
   init_allocation_callback();
 # endif
+#endif
+
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+  install_w_xor_x_handler();
 #endif
 }
 
@@ -936,6 +944,12 @@ THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
 static int fd, fd_created;
 #endif
 
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+# define MAYBE_PROT_EXEC 0
+#else
+# define MAYBE_PROT_EXEC PROT_EXEC
+#endif
+
 #define LOG_CODE_MALLOC(lvl, s) /* if (lvl > 1) s */
 #define CODE_PAGE_OF(p) ((void *)(((uintptr_t)p) & ~(page_size - 1)))
 
@@ -1010,13 +1024,13 @@ static void *malloc_page(intptr_t size)
   }
 #else
 # ifdef MAP_ANON
-  r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
 # else
   if (!fd_created) {
     fd_created = 1;
     fd = open("/dev/zero", O_RDWR);
   }
-  r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd, 0);
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC, MAP_PRIVATE, fd, 0);
 # endif
   if (r  == (void *)-1)
     r = NULL;
@@ -1379,7 +1393,7 @@ void *scheme_malloc_gcable_code(intptr_t size)
 #  else
       {
         int r;
-        r = mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
+        r = mprotect ((void *) page, length, PROT_READ | PROT_WRITE | MAYBE_PROT_EXEC);
         if (r == -1) {
           scheme_log_abort("mprotect for generate-code page failed; aborting");
         }
@@ -1415,6 +1429,77 @@ void scheme_notify_code_gc()
   jit_prev_length = 0;
 #endif
 }
+#endif
+
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+
+/* We abide by W^X by following the letter of the law, but not the
+   sprirt. Pages are mapped without execute mode. When the process
+   crashes by trying to execute code from those pages, we switch the
+   page from writable to executable --- or vice versa if the process
+   changes back to writing. */
+
+# include <signal.h>
+# include <sys/param.h>
+static intptr_t wx_page_size;
+static int try_x = 0;
+static void (*previous_fault_handler)(int sn, siginfo_t *si, void *ctx);
+
+static void fault_handler(int sn, siginfo_t *si, void *ctx)
+{
+  void *addr = si->si_addr;
+  int fail = 0;
+
+#ifdef MZ_PRECISE_GC
+  /* For precise GC, defer to its handler for GC-managed pages, which
+     are never intended to be executable pages */
+  if (GC_is_on_allocated_page(addr)) {
+    previous_fault_handler(sn, si, ctx);
+    return;
+  }
+#endif
+
+  addr = (char *)addr - ((intptr_t)addr & (wx_page_size - 1));
+
+  if (!addr) {
+    /* Always fail on the first page, such as for a NULL pointer
+       misuse */
+    fail = 1;
+  } else if (try_x) {
+    /* Maybe switching to execute mode will help. If not, we'll
+       get called again, and we'll try allowing writes */
+    if (mprotect(addr, wx_page_size, PROT_READ | PROT_EXEC))
+      fail = 1;
+    try_x = 0;
+  } else {
+    /* Maybe switching to write mode will help... */
+    if (mprotect(addr, wx_page_size, PROT_READ | PROT_WRITE))
+      fail = 1;
+    try_x = 1;
+  }
+
+  if (fail) {
+    fprintf(stderr, "SIGSEGV at %p\n", si->si_addr);
+    abort();
+  }
+}
+
+static void install_w_xor_x_handler()
+{
+  wx_page_size = sysconf (_SC_PAGESIZE);
+  {
+    struct sigaction act, oact;
+    memset(&act, 0, sizeof(act));
+    act.sa_sigaction = fault_handler;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGINT);
+    sigaddset(&act.sa_mask, SIGCHLD);
+    act.sa_flags = SA_SIGINFO;
+    sigaction(SIGSEGV, &act, &oact);
+    previous_fault_handler = oact.sa_sigaction;
+  }
+}
+
 #endif
 
 #ifdef MZ_PRECISE_GC
