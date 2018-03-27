@@ -54,6 +54,9 @@ typedef void (*GC_collect_end_callback_Proc)(void);
 SGC_EXTERN GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc);
 SGC_EXTERN GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
 
+typedef void (*GC_register_as_executable_callback_Proc)(void *p, size_t sz, int can_exec);
+SGC_EXTERN GC_register_as_executable_callback_Proc GC_register_as_executable_callback;
+
 SGC_EXTERN void GC_free(void *); /* ... but only if it's turned on in sgc.c. */
 
 struct GC_Set;

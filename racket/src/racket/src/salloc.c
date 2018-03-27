@@ -111,6 +111,7 @@ static void init_allocation_callback(void);
 
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
 static void install_w_xor_x_handler();
+static void register_as_executable(void *p, size_t len, int can_exec);
 #endif
 
 SHARED_OK static int use_registered_statics;
@@ -162,6 +163,9 @@ void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
   install_w_xor_x_handler();
+# if defined(USE_SENORA_GC) && !defined(MZ_PRECISE_GC)
+  GC_register_as_executable_callback = register_as_executable;
+# endif
 #endif
 }
 
@@ -1039,6 +1043,10 @@ static void *malloc_page(intptr_t size)
   if (!r)
     scheme_raise_out_of_memory(NULL, NULL);
 
+#ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+  register_as_executable(r, size, 1);
+#endif
+
   return r;
 }
 
@@ -1051,6 +1059,9 @@ static void free_page(void *p, intptr_t size)
   VirtualFree(p, 0, MEM_RELEASE);
 #else
   munmap(p, size);
+# ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+  register_as_executable(p, size, 0);
+# endif
 #endif
 }
 
@@ -1433,21 +1444,116 @@ void scheme_notify_code_gc()
 
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
 
-/* We abide by W^X by following the letter of the law, but not the
-   sprirt. Pages are mapped without execute mode. When the process
-   crashes by trying to execute code from those pages, we switch the
-   page from writable to executable --- or vice versa if the process
-   changes back to writing. */
+/* We abide by W^X for generated code by following the letter of the
+   law, but not the sprirt. Pages are mapped without execute mode.
+   When the process crashes by trying to execute code from those
+   pages, we switch the page from writable to executable --- or vice
+   versa if the process changes back to writing. */
 
 # include <signal.h>
 # include <sys/param.h>
 static intptr_t wx_page_size;
-static int try_x = 0;
+static int wx_log_page_size;
 static void (*previous_fault_handler)(int sn, siginfo_t *si, void *ctx);
+
+typedef char exec_state_t;
+#define EXEC_STATE_NONE  0
+#define EXEC_STATE_WRITE 1
+#define EXEC_STATE_EXEC  2
+static exec_state_t ***exec_page_map;
+
+#ifdef MZ_USE_MZRT
+static mzrt_mutex *exec_page_mutex = NULL;
+#endif
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define EXEC_PAGEMAP_LEVEL_BITS 22
+#else
+# define EXEC_PAGEMAP_LEVEL_BITS 8
+#endif
+
+static void exec_state_lock()
+{
+  /* We assume that allocation functions that manipulate the
+     executable-state table will not themselves trip into
+     execute--write mismatches that would deadlock via the signal
+     handler. */
+#ifdef MZ_USE_MZRT
+  mzrt_mutex_lock(exec_page_mutex);
+#endif
+}
+
+static void exec_state_unlock()
+{
+#ifdef MZ_USE_MZRT
+  mzrt_mutex_unlock(exec_page_mutex);
+#endif
+}
+
+/* Call with lock: */
+static void exec_pagemap_set(void *p, exec_state_t es) {
+  uintptr_t addr, pos;
+  exec_state_t **p1, *p2;
+
+  addr = ((uintptr_t)p) >> wx_log_page_size;
+
+  if (!exec_page_map)
+    exec_page_map = calloc(sizeof(exec_state_t**), ((sizeof(void*) << 3) - wx_log_page_size - (2 * EXEC_PAGEMAP_LEVEL_BITS)));
+
+  pos = addr >> (2 * EXEC_PAGEMAP_LEVEL_BITS);
+  p1 = exec_page_map[pos];
+  if (!p1) {
+    p1 = calloc(sizeof(exec_state_t*), (1 << EXEC_PAGEMAP_LEVEL_BITS));
+    exec_page_map[pos] = p1;
+  }
+
+  pos = (addr >> EXEC_PAGEMAP_LEVEL_BITS) & ((1 << EXEC_PAGEMAP_LEVEL_BITS) - 1);
+  p2 = p1[pos];
+  if (!p2) {
+    p2 = calloc(sizeof(exec_state_t), (1 << EXEC_PAGEMAP_LEVEL_BITS));
+    p1[pos] = p2;
+  }
+
+  pos = addr & ((1 << EXEC_PAGEMAP_LEVEL_BITS) - 1);
+  p2[pos] = es;
+}
+
+/* Call with lock: */
+static exec_state_t exec_pagemap_get(void *p) {
+  uintptr_t addr, pos;
+  exec_state_t **p1, *p2;
+
+  addr = ((uintptr_t)p) >> wx_log_page_size;
+
+  if (!exec_page_map) return EXEC_STATE_NONE;
+
+  pos = addr >> (2 * EXEC_PAGEMAP_LEVEL_BITS);
+  p1 = exec_page_map[pos];
+  if (!p1) return EXEC_STATE_NONE;
+
+  pos = (addr >> EXEC_PAGEMAP_LEVEL_BITS) & ((1 << EXEC_PAGEMAP_LEVEL_BITS) - 1);
+  p2 = p1[pos];
+  if (!p2) return EXEC_STATE_NONE;
+
+  pos = addr & ((1 << EXEC_PAGEMAP_LEVEL_BITS) - 1);
+  return p2[pos];
+}
+
+static void register_as_executable(void *p, size_t len, int can_exec)
+{
+  exec_state_lock();
+  while (len > 0) {
+    exec_pagemap_set(p, (can_exec ? EXEC_STATE_WRITE : EXEC_STATE_NONE));
+    p = ((char *)p) + wx_page_size;
+    len -= wx_page_size;
+  }
+  exec_state_unlock();
+}
 
 static void fault_handler(int sn, siginfo_t *si, void *ctx)
 {
   void *addr = si->si_addr;
+  exec_state_t es;
   int fail = 0;
 
 #ifdef MZ_PRECISE_GC
@@ -1461,22 +1567,21 @@ static void fault_handler(int sn, siginfo_t *si, void *ctx)
 
   addr = (char *)addr - ((intptr_t)addr & (wx_page_size - 1));
 
-  if (!addr) {
-    /* Always fail on the first page, such as for a NULL pointer
-       misuse */
+  exec_state_lock();
+  es = exec_pagemap_get(addr);
+
+  if (es == EXEC_STATE_NONE) {
     fail = 1;
-  } else if (try_x) {
-    /* Maybe switching to execute mode will help. If not, we'll
-       get called again, and we'll try allowing writes */
+  } else if (es == EXEC_STATE_WRITE) {
+    exec_pagemap_set(addr, EXEC_STATE_EXEC);
     if (mprotect(addr, wx_page_size, PROT_READ | PROT_EXEC))
       fail = 1;
-    try_x = 0;
   } else {
-    /* Maybe switching to write mode will help... */
+    exec_pagemap_set(addr, EXEC_STATE_WRITE);
     if (mprotect(addr, wx_page_size, PROT_READ | PROT_WRITE))
       fail = 1;
-    try_x = 1;
   }
+  exec_state_unlock();
 
   if (fail) {
     fprintf(stderr, "SIGSEGV at %p\n", si->si_addr);
@@ -1484,9 +1589,22 @@ static void fault_handler(int sn, siginfo_t *si, void *ctx)
   }
 }
 
+#ifdef OS_X
+# define SIG_W_XOR_X SIGBUS
+#else
+# define SIG_W_XOR_X SIGSEGV
+#endif
+
 static void install_w_xor_x_handler()
 {
   wx_page_size = sysconf (_SC_PAGESIZE);
+  while (1 << wx_log_page_size < wx_page_size)
+    wx_log_page_size++;
+
+#ifdef MZ_USE_MZRT
+  mzrt_mutex_create(&exec_page_mutex);
+#endif
+
   {
     struct sigaction act, oact;
     memset(&act, 0, sizeof(act));
@@ -1495,9 +1613,10 @@ static void install_w_xor_x_handler()
     sigaddset(&act.sa_mask, SIGINT);
     sigaddset(&act.sa_mask, SIGCHLD);
     act.sa_flags = SA_SIGINFO;
-    sigaction(SIGSEGV, &act, &oact);
+    sigaction(SIG_W_XOR_X, &act, &oact);
     previous_fault_handler = oact.sa_sigaction;
   }
+
 }
 
 #endif

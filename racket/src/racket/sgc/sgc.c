@@ -832,6 +832,7 @@ GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback
   return old;
 }
 
+GC_register_as_executable_callback_Proc GC_register_as_executable_callback;
 
 static intptr_t roots_count;
 static intptr_t roots_size;
@@ -961,6 +962,7 @@ static void *mmap_sector(int count, int executable)
 {
   uintptr_t pre_extra;
   void *p;
+  int prot;
 #ifdef MAP_ANON
   int fd = -1;
   int flags = MAP_ANON;
@@ -972,14 +974,16 @@ static void *mmap_sector(int count, int executable)
     fd = open("/dev/zero", O_RDWR);
 #endif
 
+  prot = PROT_READ | PROT_WRITE | (executable ? PROT_EXEC : 0);
+
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
-  executable = 0;
+  if (executable)
+    prot -= PROT_EXEC;
 #endif
 
-  p = mmap(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE, 
-           PROT_READ | PROT_WRITE | (executable ? PROT_EXEC : 0), 
+  p = mmap(NULL, (count + 1) << LOG_SECTOR_SEGMENT_SIZE, prot,
            MAP_PRIVATE | flags, fd, 0);
-  
+
   pre_extra = (uintptr_t)p & (SECTOR_SEGMENT_SIZE - 1);
   if (pre_extra)
     pre_extra = SECTOR_SEGMENT_SIZE - pre_extra;
@@ -989,12 +993,17 @@ static void *mmap_sector(int count, int executable)
     munmap((char *)p + pre_extra + (count << LOG_SECTOR_SEGMENT_SIZE),
            SECTOR_SEGMENT_SIZE - pre_extra);
 
+  if (executable && GC_register_as_executable_callback)
+    GC_register_as_executable_callback((char *)p + pre_extra, count << LOG_SECTOR_SEGMENT_SIZE, 1);
+
   return (char *)p + pre_extra;
 }
 
 static void munmap_sector(void *p, int count)
 {
   munmap(p, count << LOG_SECTOR_SEGMENT_SIZE);
+  if (GC_register_as_executable_callback)
+    GC_register_as_executable_callback((char *)p, count << LOG_SECTOR_SEGMENT_SIZE, 0);
 }
 
 static void *os_alloc_pages(size_t len)

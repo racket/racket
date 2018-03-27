@@ -36,7 +36,8 @@ test: $(OBJS) test.@LTO@
 gcobjects: $(OBJS)
 
 EXTRA_DEPS = $(srcdir)/autostat.inc $(srcdir)/collect.inc \
-             $(srcdir)/../utils/splay.c $(srcdir)/../utils/schiptr.h
+             $(srcdir)/../utils/splay.c $(srcdir)/../utils/schiptr.h \
+             $(srcdir)/../sconfig.h
 
 sgc.@LTO@: $(srcdir)/sgc.c $(EXTRA_DEPS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) @OPTIONS@ -DSGC_EXPORTS -I.. -c $(srcdir)/sgc.c -o sgc.@LTO@
