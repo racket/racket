@@ -211,6 +211,7 @@
                                          #:splicing? #f
                                          #:decls (new-declenv null)
                                          #:context stx)])
+        (define no-fail? (patterns-cannot-fail? (list pattern)))
         (let ([expr
                (syntax-case rest ()
                  [( expr ) #'expr]
@@ -219,14 +220,18 @@
           (with-syntax ([(a ...) attrs]
                         [(#s(attr name _ _) ...) attrs]
                         [pattern pattern]
+                        [es0 (if no-fail? #'#f #'#t)]
                         [(def ...) defs]
                         [expr expr])
             #'(defattrs/unpack (a ...)
                 (let* ([x (datum->syntax #f expr)]
                        [cx x]
                        [pr (ps-empty x x)]
-                       [es #f]
-                       [fh0 (syntax-patterns-fail x)])
+                       [es es0]
+                       [fh0 (syntax-patterns-fail
+                             (normalize-context 'define/syntax-parse
+                                                '|define/syntax-parse pattern|
+                                                x))])
                   (parameterize ((current-syntax-context x))
                     def ...
                     (#%expression
