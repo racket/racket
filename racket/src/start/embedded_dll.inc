@@ -10,7 +10,7 @@ typedef struct embedded_dll_entry_t {
 
 static embedded_dll_entry_t *embedded_dlls;
 
-extern void *__pfnDliNotifyHook2;
+void *__pfnDliNotifyHook2 = NULL;
 static FARPROC WINAPI delayHook(unsigned dliNotify, void *pdli);
 static HCUSTOMMODULE LoadLibraryHook(LPCSTR, void *);
 static FARPROC GetProcAddressHook(HCUSTOMMODULE, LPCSTR, void *);
