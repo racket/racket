@@ -70,6 +70,14 @@
         [(make-struct-type-property)
          (and (ok-make-struct-type-property? e defns)
               3)]
+        [(gensym)
+         (define-correlated-match m e #:try '(gs (quot datum)))
+         (and (or (and (m)
+                       (eq? 'quote (m 'quot))
+                       (or (symbol? (m 'datum))
+                           (string? (m 'datum))))
+                  (null? (cdr (correlated-e e))))
+              1)]
         [(if)
          (define-correlated-match m e #:try '(_ (id:rator id:arg) thn els))
          (cond
