@@ -447,7 +447,7 @@ abbreviated as @racket[#'template]; see also
 variables, then @racket[#'template] is equivalent to
 @racket[(quote-syntax template)].
 
-@history[#:changed "6.90.0.18" @elem{Added @racket[?@] and @racket[??].}]
+@history[#:changed "6.90.0.24" @elem{Added @racket[?@] and @racket[??].}]
 }
 
 
@@ -577,7 +577,7 @@ The @racket[??] and @racket[?@] transformer bindings prohibit these forms from
 being used as an expression. The bindings are useful only in syntax templates.
 See @racket[syntax].
 
-@history[#:added "6.90.0.18"]}
+@history[#:added "6.90.0.24"]}
 
 @defproc[(syntax-pattern-variable? [v any/c]) boolean?]{
 
