@@ -2558,12 +2558,14 @@ static void add_address_range(struct addrs_callback_data *cb_data,
     unw_word_t *n;
 
     n = (unw_word_t *)malloc(sizeof(unw_word_t) * size);
-    memcpy(n, cb_data->starts, sizeof(unw_word_t) * cb_data->size);
+    if (cb_data->size != 0)
+      memcpy(n, cb_data->starts, sizeof(unw_word_t) * cb_data->size);
     if (cb_data->starts) free(cb_data->starts);
     cb_data->starts = n;
 
     n = (unw_word_t *)malloc(sizeof(unw_word_t) * size);
-    memcpy(n, cb_data->ends, sizeof(unw_word_t) * cb_data->size);
+    if (cb_data->size != 0)
+      memcpy(n, cb_data->ends, sizeof(unw_word_t) * cb_data->size);
     if (cb_data->ends) free(cb_data->ends);
     cb_data->ends = n;
 
