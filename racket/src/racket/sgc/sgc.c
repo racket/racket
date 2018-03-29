@@ -1388,7 +1388,7 @@ static void *realloc_collect_temp(void *v, intptr_t oldsize, intptr_t newsize)
   if (oldsize)
     memcpy(naya, v, oldsize);
   if (v)
-    munmap(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE);
+    free_plain_sector(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE, 0);
 
   return naya;
 #elif GET_MEM_VIA_VIRTUAL_ALLOC
@@ -1421,7 +1421,7 @@ static void free_collect_temp(void *v, intptr_t oldsize)
     brk(save_brk);
   }
 #elif GET_MEM_VIA_MMAP
-  munmap(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE);
+  free_plain_sector(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE, 0);
 #elif GET_MEM_VIA_VIRTUAL_ALLOC
   VirtualFree(v, 0, MEM_RELEASE);
 #else
