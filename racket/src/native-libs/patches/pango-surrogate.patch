@@ -1,0 +1,25 @@
+diff -r -u orig/pango-1.42.0/pango/pangocoretext-shape.c next/pango-1.42.0/pango/pangocoretext-shape.c
+--- orig/pango-1.42.0/pango/pangocoretext-shape.c	2016-10-22 00:00:41.000000000 -0500
++++ next/pango-1.42.0/pango/pangocoretext-shape.c	2018-04-04 20:07:01.000000000 -0500
+@@ -132,6 +132,21 @@
+   return accumulator;
+ }
+ 
++static gunichar CFStringGetLongCharacterForSurrogatePair(UniChar c, UniChar c2)
++{
++  return 0x10000 + (((c & 0x3FF) << 10) | (c2 & 0x3FF));
++}
++
++static int CFStringIsSurrogateHighCharacter(UniChar c)
++{
++  return ((c >= 0xD800) && (c <= 0xDBFF));
++}
++
++static int CFStringIsSurrogateLowCharacter(UniChar c)
++{
++  return ((c >= 0xDC00) && (c <= 0xDFFF));
++}
++
+ /* This function generates a lookup table to match string indices of glyphs to
+  * actual unicode character indices. This also takes unicode characters into
+  * account that are encoded using 2 UTF16 code points in CFStrings. We use the

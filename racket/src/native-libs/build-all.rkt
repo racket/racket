@@ -41,6 +41,9 @@
        "libXrender"
        "freefont")]
     [else null])
+   (cond
+     [win? null]
+     [else '("libuuid")])
    '("libffi"
      "glib"
      "libpng"
@@ -49,6 +52,7 @@
      "pixman"
      "cairo"
      "harfbuzz"
+     "fribidi"
      "pango"
      "gmp"
      "mpfr"

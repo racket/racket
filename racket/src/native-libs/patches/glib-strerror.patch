@@ -1,0 +1,50 @@
+diff -r -u orig/glib-2.56.0/glib/gstrfuncs.c next/glib-2.56.0/glib/gstrfuncs.c
+--- orig/glib-2.56.0/glib/gstrfuncs.c	2018-01-08 13:34:19.000000000 -0800
++++ next/glib-2.56.0/glib/gstrfuncs.c	2018-03-31 08:48:02.000000000 -0700
+@@ -1233,6 +1233,13 @@
+ #endif
+ }
+ 
++#if defined(G_OS_WIN32)
++# ifdef _WIN64
++#  define RKT_G_OS_WIN32
++errno_t strerror_s(char *buffer, size_t numberOfElements, int errnum);  
++# endif
++#endif
++
+ /**
+  * g_strerror:
+  * @errnum: the system error number. See the standard C %errno
+@@ -1282,7 +1289,7 @@
+       gchar buf[1024];
+       GError *error = NULL;
+ 
+-#if defined(G_OS_WIN32)
++#if defined(RKT_G_OS_WIN32)
+       strerror_s (buf, sizeof (buf), errnum);
+       msg = buf;
+ #elif defined(HAVE_STRERROR_R)
+diff -r -u orig/glib-2.56.0/gmodule/gmodule-win32.c next/glib-2.56.0/gmodule/gmodule-win32.c
+--- orig/glib-2.56.0/gmodule/gmodule-win32.c	2018-01-08 13:34:19.000000000 -0800
++++ next/glib-2.56.0/gmodule/gmodule-win32.c	2018-03-31 08:57:49.000000000 -0700
+@@ -62,6 +62,20 @@
+   g_free (error);
+ }
+ 
++#ifdef _WIN64
++BOOL SetThreadErrorMode(DWORD dwNewMode, LPDWORD lpOldMode);
++#else
++/* SetThreadErrorMode is not in XP */
++# define SetThreadErrorMode rktSetThreadErrorMode
++static BOOL rktSetThreadErrorMode(DWORD dwNewMode, LPDWORD lpOldMode)
++{
++  if (lpOldMode)
++    *lpOldMode = GetErrorMode();
++  return SetErrorMode(dwNewMode);
++}
++#endif
++
++
+ /* --- functions --- */
+ static gpointer
+ _g_module_open (const gchar *file_name,

@@ -57,8 +57,8 @@
   (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "libeay32")]
     [(macosx)
-     ;; Version "1.0.0" is bundled with Racket
-     '(so "libcrypto" ("1.0.0" #f))]
+     ;; Version "1.1" is bundled with Racket
+     '(so "libcrypto" ("1.1" #f))]
     [else '(so "libcrypto")]))
 
 (define libcrypto

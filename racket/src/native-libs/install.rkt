@@ -13,8 +13,9 @@
     "libgthread-2.0.0"
     "libglib-2.0.0"
     "libgobject-2.0.0"
-    "libintl.8"
+    "libintl.9"
     "libharfbuzz.0"
+    "libfribidi.0"
     "libpango-1.0.0"
     "libpangocairo-1.0.0"
     "libpangoft2-1.0.0"
@@ -40,8 +41,9 @@
     "libpangowin32-1.0.0"))
 
 (define nonwin-libs
-  '("libcrypto.1.0.0"
-    "libssl.1.0.0"))
+  '("libcrypto.1.1"
+    "libssl.1.1"
+    "libuuid.1"))
 
 (define linux-libs
   (append
@@ -60,11 +62,11 @@
      "libatk-1.0.0"
      "libgdk_pixbuf-2.0.0")))
 (define linux-remove-libs
-  '("libintl.8"))
+  '("libintl.9"))
 
 (define package-mapping
   `(["draw"        ; pkg name
-     "-2"          ; pkg suffix (increment after "-" when library versions change)
+     "-3"          ; pkg suffix (increment after "-" when library versions change)
      "racket/draw" ; subdir
      "" ; extra for "LICENSE.txt"
      #t ; dynamic libraries (as opposed to shared files)
@@ -77,11 +79,13 @@
       "libgthread"
       ["libintl" "libintl is released under the GNU Library General Public License (GNU LGPL)."]
       ["libharfbuzz" "HarfBuzz is relased under a MIT license."]
+      ["libfribidi" "FriBidi is released under the GNU Library General Public License (GNU LGPL)."]
       ["libpango" "Pango is released under the GNU Library General Public License (GNU LGPL)."]
       "libpangocairo"
       "libpangoft2"
       "libpangowin32"
       "libexpat"
+      ["libuuid" "libuuid is relased under a Modified BSD license."]
       ["libfontconfig" ,(~a "FontConfig:\n"
                             " Copyright © 2000,2001,2002,2003,2004,2006,2007 Keith Packard\n"
                             " Copyright © 2005 Patrick Lam\n"
@@ -97,7 +101,7 @@
       ["zlib1" "zlib is by Jean-loup Gailly and Mark Adler."]
       ["libz" "zlib is by Jean-loup Gailly and Mark Adler."])]
     ["racket"
-     "-2"
+     "-3"
      "racket"
      ""
      #t
@@ -293,7 +297,8 @@
                             (~a pkg "-" platform suffix)
                             subdir))
     (define dest (build-path dir p))
-    (make-directory* dir)
+    (let-values ([(base name dir?) (split-path dest)])
+      (make-directory* base))
     (cond
      [(file-exists? dest) (delete-file dest)]
      [(directory-exists? dest) (delete-directory/files dest)])
@@ -356,8 +361,8 @@
                   (environment-variables-copy
                    (current-environment-variables))])
     (putenv "PATH" (~a (if m32?
-                           "/usr/mw32/bin:"
-                           "/usr/mw64/bin:")
+                           "/usr/local/mw32/bin:/usr/mw32/bin:"
+                           "/usr/local/mw64/bin:/usr/mw64/bin:")
                        (getenv "PATH")))
 
     (install (~a "win32-" (if m32? "i386" "x86_64"))

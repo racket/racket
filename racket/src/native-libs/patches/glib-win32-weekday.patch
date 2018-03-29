@@ -1,0 +1,12 @@
+diff --git x/a/glib/gdatetime.c y/b/glib/gdatetime.c
+index 2eda466..ba85038 100644
+--- x/a/glib/gdatetime.c
++++ y/b/glib/gdatetime.c
+@@ -224,6 +224,7 @@ static const gint month_item[2][12] =
+ #define WEEKDAY_ABBR(d)       (get_weekday_name_abbr (g_date_time_get_day_of_week (d)))
+ #define WEEKDAY_ABBR_IS_LOCALE FALSE
+ #define WEEKDAY_FULL(d)       (get_weekday_name (g_date_time_get_day_of_week (d)))
++#define WEEKDAY_FULL_IS_LOCALE FALSE
+ /* We don't yet know if nl_langinfo (MON_n) returns standalone or complete-date
+  * format forms but if nl_langinfo (ALTMON_n) is not supported then we will
+  * have to use MONTH_FULL as standalone.  The same if nl_langinfo () does not

@@ -1,6 +1,6 @@
-diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
---- old/poppler-0.24.5/libtool	2014-04-04 16:45:38.000000000 -0600
-+++ new/poppler-0.24.5/libtool	2014-04-04 16:46:07.000000000 -0600
+diff -r -u orig/poppler-0.24.5/libtool next/poppler-0.24.5/libtool
+--- orig/poppler-0.24.5/libtool	2018-04-04 09:51:15.000000000 -0600
++++ next/poppler-0.24.5/libtool	2018-04-04 09:53:17.000000000 -0600
 @@ -10167,14 +10167,14 @@
  old_archive_from_expsyms_cmds=""
  
@@ -22,8 +22,8 @@ diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
  
  # Dependencies to place before and after the objects being linked to
  # create a shared library.
--predep_objects="/usr/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/dllcrt2.o /usr/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/crtbegin.o"
--postdep_objects="/usr/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/crtend.o"
+-predep_objects="/usr/local/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/dllcrt2.o /usr/local/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/crtbegin.o"
+-postdep_objects="/usr/local/mw64/bin/../lib/gcc/x86_64-w64-mingw32/4.9.0/../../../../x86_64-w64-mingw32/lib/../lib/crtend.o"
 +predep_objects=""
 +postdep_objects=""
  predeps=""

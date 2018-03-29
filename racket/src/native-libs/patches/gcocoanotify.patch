@@ -1,0 +1,65 @@
+diff -u -r old/glib-2.56.0/gio/gcocoanotificationbackend.c new/glib-2.56.0/gio/gcocoanotificationbackend.c
+--- old/glib-2.56.0/gio/gcocoanotificationbackend.c	2017-07-13 17:03:38.000000000 -0600
++++ new/glib-2.56.0/gio/gcocoanotificationbackend.c	2018-03-28 18:57:37.000000000 -0600
+@@ -104,6 +104,7 @@
+     }
+ }
+ 
++#if 0
+ @interface GNotificationCenterDelegate : NSObject<NSUserNotificationCenterDelegate> @end
+ @implementation GNotificationCenterDelegate
+ 
+@@ -130,6 +131,7 @@
+ @end
+ 
+ static GNotificationCenterDelegate *cocoa_notification_delegate;
++#endif
+ 
+ static gboolean
+ g_cocoa_notification_backend_is_supported (void)
+@@ -143,6 +145,7 @@
+   return TRUE;
+ }
+ 
++#if 0
+ static void
+ add_actions_to_notification (NSUserNotification   *userNotification,
+                              GNotification        *notification)
+@@ -196,12 +199,14 @@
+     userNotification.userInfo = user_info;
+     [user_info release];
+ }
++#endif
+ 
+ static void
+ g_cocoa_notification_backend_send_notification (GNotificationBackend *backend,
+                                                 const gchar          *cstr_id,
+                                                 GNotification        *notification)
+ {
++#if 0
+   NSString *str_title = nil, *str_text = nil, *str_id = nil;
+   NSImage *content = nil;
+   const char *cstr;
+@@ -239,12 +244,14 @@
+   [str_id release];
+   [content release];
+   [userNotification release];
++#endif
+ }
+ 
+ static void
+ g_cocoa_notification_backend_withdraw_notification (GNotificationBackend *backend,
+                                                     const gchar          *cstr_id)
+ {
++#if 0
+   NSUserNotificationCenter *center = [NSUserNotificationCenter defaultUserNotificationCenter];
+   NSArray *notifications = [center deliveredNotifications];
+   NSString *str_id = nsstring_from_cstr (cstr_id);
+@@ -260,6 +267,7 @@
+ 
+   [notifications release];
+   [str_id release];
++#endif
+ }
+ 
+ static void

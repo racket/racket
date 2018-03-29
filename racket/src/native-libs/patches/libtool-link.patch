@@ -22,8 +22,8 @@ diff -r -u old/poppler-0.24.5/libtool new/poppler-0.24.5/libtool
  
  # Dependencies to place before and after the objects being linked to
  # create a shared library.
--predep_objects="/usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/../../../../i686-w64-mingw32/lib/../lib/dllcrt2.o /usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtbegin.o"
--postdep_objects="/usr/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtend.o"
+-predep_objects="/usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/../../../../i686-w64-mingw32/lib/../lib/dllcrt2.o /usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtbegin.o"
+-postdep_objects="/usr/local/mw32/bin/../lib/gcc/i686-w64-mingw32/4.9.0/crtend.o"
 +predep_objects=""
 +postdep_objects=""
  predeps=""

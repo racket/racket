@@ -1,6 +1,6 @@
-diff -r -u old/pango-1.36.3/modules/basic/basic-win32.c new/pango-1.36.3/modules/basic/basic-win32.c
---- old/pango-1.36.3/modules/basic/basic-win32.c	2014-04-01 09:45:50.000000000 -0600
-+++ new/pango-1.36.3/modules/basic/basic-win32.c	2014-04-01 09:49:32.000000000 -0600
+diff -r -u old/pango-1.36.3/pango/pangowin32-shape.c new/pango-1.36.3/pango/pangowin32-shape.c
+--- old/pango-1.36.3/pango/pangowin32-shape.c	2014-04-01 09:45:50.000000000 -0600
++++ new/pango-1.36.3/pango/pangowin32-shape.c	2014-04-01 09:49:32.000000000 -0600
 @@ -468,7 +468,7 @@
      g_print (G_STRLOC ": ScriptItemize: uDefaultLanguage:%04x uBidiLevel:%d\n",
  	     control.uDefaultLanguage, state.uBidiLevel);

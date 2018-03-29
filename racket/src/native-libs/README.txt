@@ -1,4 +1,4 @@
-The core `racket' executable has minimal library dependencies. In
+The core `racket` executable has minimal library dependencies. In
 contrast, libraries implemented in various packages, such as the
 "draw" or "math" packages, rely on additional C-implemented libraries,
 such as Cairo, GMP, etc., all of which are loaded dynamically. On Unix
@@ -16,26 +16,27 @@ script and patches are fragile, so we upgrade libraries infrequently.
 Currently, we use the following external packages and versions:
 
  pkg-config-0.28
- sed-4.2 (Windows only, to avoid non-GNU `sed')
- sqlite[-autoconf]-3210000 (Windows and Linux only)
- openssl-1.0.2k (current PPC binaries are 1.0.1g)
- libiconv-1.14 (Windows only)
- zlib-1.2.8 (Windows and Linux only)
- libffi-3.0.13
- expat-2.1.0
- gettext-0.18.3.2
- glib-2.39.92
- libpng-1.6.10
- pixman-0.32.4
- cairo-1.12.16
- jpegsrc.v9a
- harfbuzz-0.9.27
- fontconfig-2.11.1
- freetype-2.5.3
- pango-1.36.6 (current PPC binaries are 1.36.3)
+ sed-4.2 (Windows only, to avoid non-GNU `sed`)
+ sqlite[-autoconf]-3220000 (Windows and Linux only)
+ openssl-1.1.0h (current PPC binaries are 1.0.1g)
+ libiconv-1.15 (Windows only)
+ zlib-1.2.11 (Windows and Linux only)
+ libffi-3.2.1
+ expat-2.2.5
+ gettext-0.19.8
+ glib-2.56.0
+ libpng-1.6.34
+ pixman-0.34.0
+ cairo-1.14.12
+ jpegsrc.v9c
+ harfbuzz-1.7.6
+ fribidi-1.0.2
+ fontconfig-2.13.0
+ freetype-2.9
+ pango-1.42.0 (current PPC binaries are 1.36.3)
  poppler-0.24.5
- mpfr-3.1.2
- gmp-5.1.3
+ mpfr-3.1.6
+ gmp-6.1.2
 
 (Linux only:)
  xtrans-1.3.5
@@ -110,8 +111,8 @@ Build Steps (assuming no version changes)
         --archives <archive-dir>
 
     where <here-dir> is the deirectory containing this file,
-    `--win' versus `--mac' selects a Windows versus Mac OS build,
-    and `--m32' versus `--m64' selects a 32-bit versus 64-bit build.
+    `--win` versus `--mac` selects a Windows versus Mac OS build,
+    and `--m32` versus `--m64` selects a 32-bit versus 64-bit build.
 
  * Run
 
@@ -136,14 +137,14 @@ The first build step is "pkg-config", which is built for the current
 build platform, as opposed to the target platform. The resulting
 `pkg-config` is installed into "<build-dir>/dest/bin", which is
 included in the PATH environment variable when all other configuration
-steps are run. If you used an installed `pkg-config', then you'd end
+steps are run. If you used an installed `pkg-config`, then you'd end
 up linking to installed packages on the build machine, which would be
 confusing at best.
 
 More details for Windows:
 
- * GNU `sed' is built to run on the build platform, just in case the
-   build platform's `sed' is BSD-style (as on Mac OS).
+ * GNU `sed` is built to run on the build platform, just in case the
+   build platform's `sed` is BSD-style (as on Mac OS).
 
  * The generated ".dll"s go to "dest/bin".
 
@@ -151,7 +152,7 @@ More details for Windows:
    symbols.
 
  * Beware of dynamic linking to libgcc or libstdc++. The build script
-   uses `-static-libgcc' and `-static-libstdc++' to statically link
+   uses `-static-libgcc` and `-static-libstdc++` to statically link
    those libraries. Use "depends.exe" to check DLL dependencies.
 
 More details for Mac OS:
@@ -167,7 +168,7 @@ More details for Mac OS:
 
    During the build, ".dylib"s in "<build-dir>/dest/lib" will contain
    full paths when they depend on other ".dylibs" in the same
-   directory. The "install.rkt" script uses `install_name_tool' to
+   directory. The "install.rkt" script uses `install_name_tool` to
    rewrite those paths to relative form using "@loader_path".
 
    You can use
@@ -179,7 +180,7 @@ More details for Mac OS:
    out for "/usr/opt/local" paths, which means that you have
    accidentally links to MacPorts libraries.
 
- * All ".dylib"s should use two-level namespaces. Use `otool -vh' and
+ * All ".dylib"s should use two-level namespaces. Use `otool -vh` and
    look for "TWOLEVEL" in the output to double check that a library
    build uses two-level namespaces.
 
@@ -203,7 +204,7 @@ several places:
 
  * Update the library version in "install.rkt".
 
- * Update the `ffi-lib' reference in the corresponding Racket wrapper
+ * Update the `ffi-lib` reference in the corresponding Racket wrapper
    libraries.
 
  * Update the "info.rkt" dependencies in the Racket packages that
@@ -233,7 +234,8 @@ so delete that file to make "build-all.rkt" try again for
 If You Have to Start Over Completely
 ------------------------------------
 
-See 
+The "build.rkt" script automates most everything we learned, but
+for old build notes, see also
 
  * "racket/src/mac/README.txt" in a Racket v5.x source distirbution
 
@@ -243,6 +245,3 @@ See
 
  * Pre-built packages from www.gtk.org, specifically the "dev"
    archives.
-
-for old build notes. The "build.rkt" script automates most everything
-we learned.

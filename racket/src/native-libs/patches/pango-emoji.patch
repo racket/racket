@@ -1,0 +1,12 @@
+diff -u -r orig/pango-1.42.0/pango/pango-context.c next/pango-1.42.0/pango/pango-context.c
+--- orig/pango-1.42.0/pango/pango-context.c	2017-08-12 17:40:19.000000000 -0500
++++ next/pango-1.42.0/pango/pango-context.c	2018-04-04 19:24:05.000000000 -0500
+@@ -1388,7 +1388,7 @@
+ 
+   if (!state->current_fonts)
+     {
+-      gboolean is_emoji = state->emoji_iter.is_emoji;
++      gboolean is_emoji = 0; // state->emoji_iter.is_emoji;
+       if (is_emoji && !state->emoji_font_desc)
+       {
+         state->emoji_font_desc = pango_font_description_copy_static (state->font_desc);
