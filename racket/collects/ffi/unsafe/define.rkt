@@ -95,7 +95,7 @@
                  (raise-type-error 'define-ffi-definer
                                    "ffi-lib or #f"
                                    v))))
-         (define the-default-make-fail default-make-fail)
+         (define (the-default-make-fail sym) (default-make-fail sym))
          (define-syntax define-
            (make-ffi-definer-transformer
             (quote-syntax the-ffi-lib)
