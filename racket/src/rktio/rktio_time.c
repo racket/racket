@@ -258,6 +258,28 @@ static int is_day_before(SYSTEMTIME *a, SYSTEMTIME *b)
   return 0;
 }
 # undef dtxCOMP
+
+int rktio_system_time_is_dst(SYSTEMTIME *st, TIME_ZONE_INFORMATION *_tz)
+{
+  TIME_ZONE_INFORMATION tz;
+  if (GetTimeZoneInformationForYearProc)
+    GetTimeZoneInformationForYearProc(st->wYear, NULL, &tz);
+  else
+    (void)GetTimeZoneInformation(&tz);
+  if (_tz) *_tz = tz;
+  if (tz.StandardDate.wMonth) {
+    if (is_start_day_before(&tz.DaylightDate, &tz.StandardDate)) {
+      /* northern hemisphere */
+      return (!is_day_before(st, &tz.DaylightDate)
+	      && is_day_before(st, &tz.StandardDate));
+    } else {
+      /* southern hemisphere */
+      return (is_day_before(st, &tz.StandardDate)
+	      || !is_day_before(st, &tz.DaylightDate));
+    }
+  }
+  return 0;
+}
 #endif
 
 #if defined(OS_X) && defined(__x86_64__)
@@ -378,23 +400,8 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
 	tzoffset = 0;
 	tzn = MSC_IZE(strdup)("UTC");
       } else {
-	TIME_ZONE_INFORMATION tz;
-	if (GetTimeZoneInformationForYearProc)
-	  GetTimeZoneInformationForYearProc(localTime.wYear, NULL, &tz);
-	else
-	  (void)GetTimeZoneInformation(&tz);
-	if (tz.StandardDate.wMonth) {
-	  if (is_start_day_before(&tz.DaylightDate, &tz.StandardDate)) {
-	    /* northern hemisphere */
-	    dst = (!is_day_before(&localTime, &tz.DaylightDate)
-		   && is_day_before(&localTime, &tz.StandardDate));
-	  } else {
-	    /* southern hemisphere */
-	    dst = (is_day_before(&localTime, &tz.StandardDate)
-		   || !is_day_before(&localTime, &tz.DaylightDate));
-	  }
-	}
-	if (dst) {
+	  TIME_ZONE_INFORMATION tz;
+	if (rktio_system_time_is_dst(&localTime, &tz)) {
 	  tzoffset = (tz.Bias + tz.DaylightBias) * -60;
 	  tzn = NARROW_PATH_copy(tz.DaylightName);
 	} else {

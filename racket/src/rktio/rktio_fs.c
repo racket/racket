@@ -129,12 +129,12 @@ static time_t convert_date(const FILETIME *ft)
   SYSTEMTIME st;
   TIME_ZONE_INFORMATION tz;
 
-  /* FindFirstFile incorrectly shifts for daylight saving. It
+  /* GetFileAttributes incorrectly shifts for daylight saving. It
      subtracts an hour to get to UTC when daylight saving is in effect
      now, even when daylight saving was not in effect when the file
      was saved.  Counteract the difference. There's a race condition
      here, because we might cross the daylight-saving boundary between
-     the time that FindFirstFile runs and GetTimeZoneInformation
+     the time that GetFileAttributes runs and GetTimeZoneInformation
      runs. Cross your fingers... */
   FileTimeToLocalFileTime(ft, &ft2);
   FileTimeToSystemTime(&ft2, &st);
@@ -143,47 +143,8 @@ static time_t convert_date(const FILETIME *ft)
   if (GetTimeZoneInformation(&tz) == TIME_ZONE_ID_DAYLIGHT) {
     /* Daylight saving is in effect now, so there may be a bad
        shift. Check the file's date. */
-    int start_day_of_month, end_day_of_month, first_day_of_week, diff, end_shift;
-
-    /* Valid only when the months match: */
-    first_day_of_week = (st.wDayOfWeek - (st.wDay - 1 - (((st.wDay - 1) / 7) * 7)));
-    if (first_day_of_week < 0)
-      first_day_of_week += 7;
-
-    diff = (tz.DaylightDate.wDayOfWeek - first_day_of_week);
-    if (diff < 0)
-      diff += 7;
-    start_day_of_month = 1 + (((tz.DaylightDate.wDay - 1) * 7)
-			      + diff);
-	
-    diff = (tz.StandardDate.wDayOfWeek - first_day_of_week);
-    if (diff < 0)
-      diff += 7;
-    end_day_of_month = 1 + (((tz.StandardDate.wDay - 1) * 7)
-			    + diff);
-
-    /* Count ambigious range (when the clock goes back) as
-       in standard time. We assume that subtracting the 
-       ambiguous range does not go back into the previous day,
-       and that the shift is a multiple of an hour. */
-    end_shift = ((tz.StandardBias - tz.DaylightBias) / 60);
-
-    if ((st.wMonth < tz.DaylightDate.wMonth)
-	|| ((st.wMonth == tz.DaylightDate.wMonth)
-	    && ((st.wDay < start_day_of_month)
-		|| ((st.wDay == start_day_of_month)
-		    && (st.wHour < tz.DaylightDate.wHour))))) {
-      /* Daylight saving had not yet started. */
+    if (!rktio_system_time_is_dst(&st, NULL))
       delta = ((tz.StandardBias - tz.DaylightBias) * 60);
-    } else if ((st.wMonth > tz.StandardDate.wMonth)
-	       || ((st.wMonth == tz.StandardDate.wMonth)
-		   && ((st.wDay > end_day_of_month)
-		       || ((st.wDay == end_day_of_month)
-			   && (st.wHour >= (tz.StandardDate.wHour
-					    - end_shift)))))) {
-      /* Daylight saving was already over. */
-      delta = ((tz.StandardBias - tz.DaylightBias) * 60);
-    }
   }
 
   l = ((((LONGLONG)ft->dwHighDateTime << 32) | ft->dwLowDateTime)

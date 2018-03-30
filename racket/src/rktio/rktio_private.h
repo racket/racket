@@ -360,3 +360,8 @@ char *rktio_strndup(char *s, intptr_t len);
 void rktio_set_signal_handler(int sig_id, void (*proc)(int));
 #endif
 void rktio_forget_os_signal_handler(rktio_t *rktio);
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+int rktio_system_time_is_dst(SYSTEMTIME *st, TIME_ZONE_INFORMATION *_tz);
+#endif
+
