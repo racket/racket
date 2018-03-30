@@ -171,7 +171,7 @@
       #rx"too many ellipses in template")
 
 (terx (syntax aa)
-      #rx"missing ellipses with pattern variable in template")
+      #rx"missing ellipsis with pattern variable in template")
 
 (terx (syntax (?@))
       #rx"illegal use")

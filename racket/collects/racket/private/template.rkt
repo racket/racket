@@ -361,8 +361,10 @@
                (pvar var var check #f)]
               [(>= depth pvar-depth)
                (pvar var (gentemp) check (- depth pvar-depth))]
+              [(zero? depth)
+               (wrong-syntax id "missing ellipsis with pattern variable in template")]
               [else
-               (wrong-syntax id "missing ellipses with pattern variable in template")]))
+               (wrong-syntax id "too few ellipses for pattern variable in template")]))
       (define (hash-ref! h k proc)
         (let ([v (hash-ref h k #f)]) (if v v (let ([v* (proc)]) (hash-set! h k v*) v*))))
       (let ([v (syntax-local-value id (lambda () #f))])
