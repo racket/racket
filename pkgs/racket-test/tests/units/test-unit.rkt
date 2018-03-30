@@ -1700,12 +1700,12 @@
  (compound-unit/infer (import) (export) (link (((A : b)) c))))
 (test-syntax-error
 "compound-unit/infer: unknown signature"
- (compound-unit/infer (import ??) (export) (link)))
+ (compound-unit/infer (import ???) (export) (link)))
 (test-syntax-error "compound-unit/infer: unknown sig"
-                   (compound-unit/infer (import) (export ??) (link)))
+                   (compound-unit/infer (import) (export ???) (link)))
 (test-syntax-error 
  "compound-unit/infer: unknown linking identifier"
- (compound-unit/infer (import) (export) (link (() u ??))))
+ (compound-unit/infer (import) (export) (link (() u ???))))
 
 
 (define-unit x
