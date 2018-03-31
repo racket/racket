@@ -96,24 +96,28 @@
         [(eq? source 'unknown)
          #'(quote "unknown")]
         [(eq? source 'from-macro)
-         (if (syntax? ctx)
-             (get-source-expr (extract-source ctx) #f)
-             (get-source-expr 'unknown #f))]
+         (get-source-expr (extract-source ctx) #f)]
         [(string? source) #`(quote #,source)]
         [(syntax? source) #`(quote #,(source-location->string source))]
         [(module-path-index? source)
-         ;; FIXME: extend collapse-module-path-index to accept #f, return rel mod path
-         (let* ([here (current-load-relative-directory)]
-                [collapsed
-                 (collapse-module-path-index source (or here (build-path 'same)))])
-           (cond [(and (path? collapsed) here)
-                  #`(quote #,collapsed)]
-                 [(path? collapsed)
-                  (let-values ([(rel base) (module-path-index-split source)])
-                    #`(quote #,rel))]
-                 [else
-                  #`(quote #,(format "~s" collapsed))]))]))
+         ;; FIXME: This assumes that if source is relative, it is relative to
+         ;; the current self-index (the module currently being compiled). That
+         ;; should usually be the case, but it's not necessarily true.
+         (define collapsed (collapse-module-path-index source))
+         (cond [(eq? collapsed #f)
+                #'(quote-module-path)]
+               [(relative-module-path? collapsed)
+                #`(relative-source (variable-reference->module-path-index
+                                    (#%variable-reference))
+                                   '#,collapsed)]
+               [else #`(quote #,collapsed)])]))
 
+(define (relative-module-path? mp)
+  (or (string? mp) (path? mp)
+      (and (pair? mp) (eq? (car mp) 'submod)
+           (let ([base (cadr mp)]) (or (string? base) (path? base))))))
+
+;; extract-source : (U Syntax #f) -> (U ModulePathIndex 'use-site 'unknown)
 (define (extract-source stx)
   (let ([id (syntax-case stx ()
               [(x . _) (identifier? #'x) #'x]
@@ -124,3 +128,17 @@
           (cond [(list? b) (car b)] ;; module-path-index
                 [else 'use-site]))
         'unknown)))
+
+(module source racket/base
+  (provide relative-source)
+  (define (relative-source base-mpi rel-mod-path)
+    (define r
+      (resolved-module-path-name
+       (module-path-index-resolve
+        (module-path-index-join rel-mod-path base-mpi))))
+    (cond [(pair? r)
+           (cons 'submod r)]
+          [(symbol? r)
+           (list 'quote r)]
+          [else r])))
+(require (for-template (submod "." source)))
