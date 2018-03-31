@@ -631,10 +631,13 @@
                `(apply append (map (lambda ,lvars ,head) . ,lvars)))))
      (datum->syntax here-stx code stx)]))
 
-(define-syntax (t-orelse stx)
-  (define s (syntax->list stx))
-  (datum->syntax here-stx `(t-orelse* (lambda () ,(cadr s)) (lambda () ,(caddr s)))))
-(define-syntax h-orelse (make-rename-transformer (quote-syntax t-orelse)))
+(define-syntaxes (t-orelse h-orelse)
+  (let ()
+    (define (orelse-transformer stx)
+      (define s (syntax->list stx))
+      (datum->syntax here-stx
+                     `(t-orelse* (lambda () ,(cadr s)) (lambda () ,(caddr s)))))
+    (values orelse-transformer orelse-transformer)))
 
 (#%require (rename '#%kernel t-const    #%expression)
            (rename '#%kernel t-var      #%expression)
