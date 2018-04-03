@@ -57,3 +57,8 @@
 (define SQLITE_OPEN_FULLMUTEX        #x00010000)
 (define SQLITE_OPEN_SHAREDCACHE      #x00020000)
 (define SQLITE_OPEN_PRIVATECACHE     #x00040000)
+
+;; Create function
+
+(define SQLITE_UTF8           1)
+(define SQLITE_DETERMINISTIC  #x800)

@@ -238,3 +238,129 @@
   ;; FIXME: handle error string?
   (_fun _sqlite3_database _path (_pointer = #f) (_pointer = #f)
         -> _int))
+
+;; ----------------------------------------
+
+(define-cpointer-type _sqlite3_context)
+(define-cpointer-type _sqlite3_value)
+
+(define-sqlite sqlite3_value_type (_fun _sqlite3_value -> _int))
+(define-sqlite sqlite3_value_double (_fun _sqlite3_value -> _double))
+(define-sqlite sqlite3_value_int64 (_fun _sqlite3_value -> _int64))
+(define-sqlite sqlite3_value_bytes (_fun _sqlite3_value -> _int))
+(define-sqlite sqlite3_value_blob (_fun _sqlite3_value -> _pointer))
+(define-sqlite sqlite3_value_text (_fun _sqlite3_value -> _pointer))
+
+(define-ffi-definer define-rkt #f)
+(define-rkt scheme_make_sized_utf8_string (_fun _pointer _intptr -> _racket))
+(define-rkt scheme_make_sized_byte_string (_fun _pointer _intptr -> _racket))
+
+(define _sqlite3_value*
+  (make-ctype _sqlite3_value
+              #f
+              (lambda (v)
+                (define type (sqlite3_value_type v))
+                (cond [(= type SQLITE_INTEGER) (sqlite3_value_int64 v)]
+                      [(= type SQLITE_FLOAT)   (sqlite3_value_double v)]
+                      [(= type SQLITE_TEXT)
+                       (scheme_make_sized_utf8_string (sqlite3_value_text v)
+                                                      (sqlite3_value_bytes v))]
+                      [(= type SQLITE_BLOB)
+                       (scheme_make_sized_byte_string (sqlite3_value_blob v)
+                                                      (sqlite3_value_bytes v))]
+                      [else (error '_sqlite3_value* "cannot convert: ~e (type = ~s)" v type)]))))
+
+(define-sqlite sqlite3_create_function_v2
+  (_fun _sqlite3_database
+        _string/utf-8
+        _int
+        (_int = (+ SQLITE_UTF8 SQLITE_DETERMINISTIC))
+        (_pointer = #f)
+        (_fun _sqlite3_context _int _pointer -> _void)
+        (_fpointer = #f)
+        (_fpointer = #f)
+        (_fpointer = #f)
+        -> _int))
+
+(define-sqlite sqlite3_create_aggregate
+  (_fun _sqlite3_database
+        _string/utf-8
+        _int
+        (_int = (+ SQLITE_UTF8 SQLITE_DETERMINISTIC))
+        (_pointer = #f)
+        (_fpointer = #f)
+        (_fun _sqlite3_context _int _pointer -> _void)
+        (_fun _sqlite3_context -> _void)
+        (_fpointer = #f)
+        -> _int)
+  #:c-id sqlite3_create_function_v2)
+
+(define-sqlite sqlite3_aggregate_context
+  (_fun _sqlite3_context _int -> _pointer))
+
+(define-sqlite sqlite3_result_null (_fun _sqlite3_context -> _void))
+(define-sqlite sqlite3_result_int64 (_fun _sqlite3_context _int64 -> _void))
+(define-sqlite sqlite3_result_double (_fun _sqlite3_context _double* -> _void))
+(define-sqlite sqlite3_result_blob
+  (_fun _sqlite3_context
+        (buf : _bytes)
+        (_int = (bytes-length buf))
+        (_intptr = SQLITE_TRANSIENT)
+        -> _void))
+(define-sqlite sqlite3_result_text
+  (_fun _sqlite3_context
+        (buf : _string/utf-8)
+        (_int = (string-utf-8-length buf))
+        (_intptr = SQLITE_TRANSIENT)
+        -> _void))
+(define-sqlite sqlite3_result_error
+  (_fun _sqlite3_context (s : _string/utf-8) (_int = (string-utf-8-length s)) -> _void))
+
+(define ((wrap-fun who proc) ctx argc argp)
+  (define args (get-args argc argp))
+  (call/wrap who ctx (lambda () (sqlite3_result* ctx (apply proc args)))))
+
+;; sqlite3 supports an "aggregate context" for storing aggregate
+;; state, but it's hidden from Racket's GC. So instead we make a
+;; closure with Racket-visible state and use sqlite's aggregate
+;; context just to tell us whether we need to reset the Racket-level
+;; state. The connection object is responsible for preventing the
+;; closure from being prematurely collected.
+
+(define ((wrap-agg-step who proc aggbox agginit) ctx argc argp)
+  (define args (get-args argc argp))
+  (define aggctx (sqlite3_aggregate_context ctx 1))
+  (when (zero? (ptr-ref aggctx _byte))
+    (set-box! aggbox agginit)
+    (ptr-set! aggctx _byte 1))
+  (set-box! aggbox (call/wrap who ctx (lambda () (apply proc (unbox aggbox) args))))
+  (sqlite3_result* ctx 0))
+
+(define ((wrap-agg-final who proc aggbox agginit) ctx)
+  (define aggctx (sqlite3_aggregate_context ctx 1))
+  (define r (call/wrap who ctx (lambda () (proc (unbox aggbox)))))
+  (set-box! aggbox agginit)
+  (sqlite3_result* ctx r))
+
+(define (call/wrap who ctx proc)
+  (with-handlers
+    ([(lambda (e) #t)
+      (lambda (e)
+        (define err
+          (format "[racket:~a] ~a"
+                  who
+                  (cond [(exn? e) (exn-message e)]
+                        [else (format "caught non-exception\n  caught: ~e" e)])))
+        (sqlite3_result_error ctx err))])
+    (call-with-continuation-barrier proc)))
+
+(define (get-args argc argp)
+  (for/list ([i (in-range argc)])
+    (ptr-ref argp _sqlite3_value* i)))
+
+(define (sqlite3_result* ctx r)
+  (cond [(fixnum? r) (sqlite3_result_int64 ctx r)] ;; FIXME: fixnum -> int64
+        [(real? r) (sqlite3_result_double ctx r)]
+        [(string? r) (sqlite3_result_text ctx r)]
+        [(bytes? r) (sqlite3_result_blob ctx r)]
+        [else (sqlite3_result_error ctx (format "bad result: ~e" r))]))
