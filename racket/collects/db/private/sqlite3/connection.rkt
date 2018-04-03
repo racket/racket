@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         ffi/file
          ffi/unsafe
          ffi/unsafe/atomic
          ffi/unsafe/custodian
@@ -10,7 +11,10 @@
          "ffi.rkt"
          "dbsystem.rkt")
 (provide connection%
-         handle-status*)
+         handle-status*
+         (protect-out unsafe-load-extension))
+
+(define-local-member-name unsafe-load-extension)
 
 ;; == Connection
 
@@ -356,6 +360,18 @@
         (let ([result (call-with-lock fsym (lambda () (internal-query1 fsym stmt)))])
           (for/list ([row (in-list (rows-result-rows result))])
             (vector-ref row 0)))))
+
+    ;; ----
+
+    (define/public (unsafe-load-extension who lib)
+      (define lib-path (cleanse-path (path->complete-path lib)))
+      (security-guard-check-file who lib-path '(read execute))
+      (call-with-lock who
+        (lambda ()
+          (HANDLE who (A (sqlite3_enable_load_extension -db 1)))
+          (HANDLE who (A (sqlite3_load_extension -db lib-path)))
+          (HANDLE who (A (sqlite3_enable_load_extension -db 0)))
+          (void))))
 
     ;; ----
 
