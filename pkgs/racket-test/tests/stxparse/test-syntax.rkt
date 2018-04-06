@@ -6,7 +6,7 @@
          racket/syntax
          syntax/parse)
 
-;; Additional tests for syntax w/ ??, ?@, etc
+;; Additional tests for syntax w/ ~?, ~@, etc
 
 (define-syntax (tc stx)
   (syntax-case stx ()
@@ -70,16 +70,16 @@
 (tc (syntax (aa ... ((yy ok) ...) ...))
     '(a b c ((1 ok) (2 ok) (3 ok)) ((4 ok) (5 ok) (6 ok)) ((7 ok) (8 ok) (9 ok))))
 
-(tc (syntax ((?@ 1 2) 3))
+(tc (syntax ((~@ 1 2) 3))
     '(1 2 3))
 (tc (with-syntax ([w '(1 2 3)])
-      (syntax ((?@ 0 . w) 4)))
+      (syntax ((~@ 0 . w) 4)))
     '(0 1 2 3 4))
-(tc (syntax ((?@ aa ok) ...))
+(tc (syntax ((~@ aa ok) ...))
     '(a ok b ok c ok))
-(tc (syntax ((?@ aa nn) ...))
+(tc (syntax ((~@ aa nn) ...))
     '(a 1 b 2 c 3))
-(tc (syntax (aa ... (?@ nn xx) ...))
+(tc (syntax (aa ... (~@ nn xx) ...))
     '(a b c 1 x 2 y 3 z))
 
 ;; escape
@@ -92,10 +92,10 @@
 (tc (syntax (yy ... ...))
     '(1 2 3 4 5 6 7 8 9))
 
-;; ??
-(tc (syntax (?? (ok oo go) nah))
+;; ~?
+(tc (syntax (~? (ok oo go) nah))
     'nah)
-(tc (syntax ((?? (ready oo)) done))
+(tc (syntax ((~? (ready oo)) done))
     '(done))
 
 ;; liberal depth rules
@@ -118,26 +118,26 @@
 (tc (syntax ((aa yy) ... ...))
     (syntax->datum #'((aa yy) ... ...)))
 
-;; head ??
+;; head ~?
 
-(tc (syntax ((?? (?@ #:yes uu) (?@ #:no)) done))
+(tc (syntax ((~? (~@ #:yes uu) (~@ #:no)) done))
     '(#:yes abc done))
-(tc (syntax ((?? (?@ #:yes oo) (?@ #:no)) done))
+(tc (syntax ((~? (~@ #:yes oo) (~@ #:no)) done))
     '(#:no done))
 
-(tc (syntax ((?? (?@ #:yes pp) (?@ #:no)) ...))
+(tc (syntax ((~? (~@ #:yes pp) (~@ #:no)) ...))
     '(#:no #:yes 1 #:no #:yes 2 #:yes 3))
 
 ;; ----------------------------------------
 
-;; combined ?? ?@
+;; combined ~? ~@
 (tc (syntax-parse #'(a b c 1 2 3)
       [(a:id ... (~optional s:str) n:nat ...)
-       (syntax (a ... n ... (?@ . (?? (string: s) ()))))])
+       (syntax (a ... n ... (~@ . (~? (string: s) ()))))])
     '(a b c 1 2 3))
 (tc (syntax-parse #'(a b c "hello!" 1 2 3)
       [(a:id ... (~optional s:str) n:nat ...)
-       (syntax (a ... n ... (?@ . (?? (string: s) ()))))])
+       (syntax (a ... n ... (~@ . (~? (string: s) ()))))])
     '(a b c 1 2 3 string: "hello!"))
 
 ;; ----------------------------------------
@@ -173,10 +173,10 @@
 (terx (syntax aa)
       #rx"missing ellipsis with pattern variable in template")
 
-(terx (syntax (?@))
+(terx (syntax (~@))
       #rx"illegal use")
 
-(terx (syntax ((?@ . uu)))
+(terx (syntax ((~@ . uu)))
       #rx"splicing template did not produce a syntax list")
 
 (terx (with-syntax ([(bb ...) #'(y z)]) (syntax ((aa bb) ...)))
@@ -202,14 +202,14 @@
 (tloc syntax/loc (aa ... . 1) #t)
 (with-syntax ([(z ...) '()])
   (tloc syntax/loc (z ... . 2) #f)) ;; zero iters + syntax tail => no relocation
-(tloc syntax/loc ((?@ aa ...) 2) #t)
-(tloc syntax/loc ((?@ aa ...) . 2) #t)
+(tloc syntax/loc ((~@ aa ...) 2) #t)
+(tloc syntax/loc ((~@ aa ...) . 2) #t)
 (with-syntax ([lst #'(a b c)] [nil #'()])
-  (tloc syntax/loc ((?@ . lst) 2) #t)
-  (tloc syntax/loc ((?@ . lst) . 2) #t)
-  (tloc syntax/loc ((?@ . nil) 2) #t)
-  (tloc syntax/loc ((?@ . nil) . 2) #f)) ;; empty + syntax tail => no relocation
-(tloc syntax/loc (?? 1 2) #t)
+  (tloc syntax/loc ((~@ . lst) 2) #t)
+  (tloc syntax/loc ((~@ . lst) . 2) #t)
+  (tloc syntax/loc ((~@ . nil) 2) #t)
+  (tloc syntax/loc ((~@ . nil) . 2) #f)) ;; empty + syntax tail => no relocation
+(tloc syntax/loc (~? 1 2) #t)
 
 (tloc quasisyntax/loc uu #f)
 (tloc quasisyntax/loc lambda #t)
@@ -271,7 +271,7 @@
        (check-equal? counter 5)
        (void)])))
 
-(test-case "lazy syntax-valued attributes, ??, ?@"
+(test-case "lazy syntax-valued attributes, ~?, ~@"
   (let ()
     (define-syntax-class foo
       (pattern n:nat
@@ -294,41 +294,41 @@
                        '(() () () (2) () (2 3) ())))
        (check-exn #rx"attribute contains non-syntax value"
                   (lambda () (syntax (n.half ...))))
-       (let ([halves (syntax ((?? n.half) ...))])
+       (let ([halves (syntax ((~? n.half) ...))])
          (check-pred syntax? halves)
          (check-equal? (syntax->datum halves)
                        '(1 2 3)))
        (void)])))
 
 ;; ----------------------------------------
-;; Testing raise/handlers-based ?? (used to be based on drivers check)
+;; Testing raise/handlers-based ~? (used to be based on drivers check)
 
 (tc (syntax-parse #'()
       [((~optional abs))
-       (syntax (?? (?? abs inner) outer))])
+       (syntax (~? (~? abs inner) outer))])
     'inner)
 
 ;; test from ianj, 11/18/2013
 (tc (syntax-parse #'(a)
       [(a:expr (~optional b:expr))
-       (syntax (?? '(a (?? b 0)) 0))])
+       (syntax (~? '(a (~? b 0)) 0))])
     ''(a 0))
 
 (define/syntax-parse ((~or* i:id n:nat) ...) '(a b 1 2 3 4))
 
 ;; note: i,n both 6 elts long
-(tc (syntax ((?? i X) ...))
+(tc (syntax ((~? i X) ...))
     '(a b X X X X))
-(tc (syntax ((?? i n) ...))
+(tc (syntax ((~? i n) ...))
     '(a b 1 2 3 4))
 
-(tc (syntax ((?? i) ...)) '(a b))
-(tc (syntax ((?? n) ...)) '(1 2 3 4))
-(tc (syntax (?? (i ...) no)) 'no)
-(tc (syntax (?? (n ...) no)) 'no)
+(tc (syntax ((~? i) ...)) '(a b))
+(tc (syntax ((~? n) ...)) '(1 2 3 4))
+(tc (syntax (~? (i ...) no)) 'no)
+(tc (syntax (~? (n ...) no)) 'no)
 
 ;; test from ianj, 5/14/2014
 (tc (syntax-parse #'(A)
       [(x:id (~optional (~seq #:a [a b] ...)))
-       (syntax (?? (hash (?@ a b) ...) x))])
+       (syntax (~? (hash (~@ a b) ...) x))])
     'A)

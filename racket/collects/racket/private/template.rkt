@@ -10,8 +10,8 @@
 (#%provide syntax
            syntax/loc
            datum
-           ?? ?@
-           ?@! signal-absent-pvar
+           ~? ~@
+           ~@! signal-absent-pvar
            (protect
             (for-syntax attribute-mapping
                         attribute-mapping?
@@ -30,18 +30,18 @@
 ;;   - (metafunction . T)
 ;;   - (H . T)
 ;;   - (H ... . T), (H ... ... . T), etc
-;;   - (... T)          -- escapes inner ..., ??, ?@
-;;   - (?? T T)
+;;   - (... T)          -- escapes inner ..., ~?, ~@
+;;   - (~? T T)
 ;;   - #(T*)            -- actually, vector->list interpreted as T
 ;;   - #s(prefab-struct-key T*) -- likewise
 
 ;; A HeadTemplate (H) is one of:
 ;;   - T
-;;   - (?? H)
-;;   - (?? H H)
-;;   - (?@ . T)
+;;   - (~? H)
+;;   - (~? H H)
+;;   - (~@ . T)
 
-(define-syntax ?@! #f) ;; private, escape-ignoring version of ?@, used by unsyntax-splicing
+(define-syntax ~@! #f) ;; private, escape-ignoring version of ~@, used by unsyntax-splicing
 
 ;; ============================================================
 ;; Compile-time
@@ -205,7 +205,7 @@
                   (define-values (drivers guide) (parse-t (cadr t) depth #t))
                   ;; Preserve t-escaped so that (t-escaped (t-const _)) != (t-const _)
                   (values drivers `(t-escaped ,guide)))]
-            [(parse-form t (quote-syntax ??) 2)
+            [(parse-form t (quote-syntax ~?) 2)
              => (lambda (t)
                   (disappeared! (car t))
                   (define t1 (cadr t))
@@ -293,8 +293,8 @@
       (cond [(identifier? t)
              (cond [(and (not esc?)
                          (or (free-identifier=? t (quote-syntax ...))
-                             (free-identifier=? t (quote-syntax ??))
-                             (free-identifier=? t (quote-syntax ?@))))
+                             (free-identifier=? t (quote-syntax ~?))
+                             (free-identifier=? t (quote-syntax ~@))))
                     (wrong-syntax t "illegal use")]
                    [(lookup-metafun t)
                     (wrong-syntax t "illegal use of syntax metafunction")]
@@ -328,12 +328,12 @@
 
     ;; parse-h : Syntax Nat Boolean -> (values (dsetof PVar) HeadGuide)
     (define (parse-h h depth esc?)
-      (cond [(and (not esc?) (parse-form h (quote-syntax ??) 1))
+      (cond [(and (not esc?) (parse-form h (quote-syntax ~?) 1))
              => (lambda (h)
                   (disappeared! (car h))
                   (define-values (drivers guide) (parse-h (cadr h) depth esc?))
                   (values drivers `(h-orelse ,guide null)))]
-            [(and (not esc?) (parse-form h (quote-syntax ??) 2))
+            [(and (not esc?) (parse-form h (quote-syntax ~?) 2))
              => (lambda (h)
                   (disappeared! (car h))
                   (define-values (drivers1 guide1) (parse-h (cadr h) depth esc?))
@@ -345,8 +345,8 @@
             [(and (stx-pair? h)
                   (let ([h-head (stx-car h)])
                     (and (identifier? h-head)
-                         (or (and (free-identifier=? h-head (quote-syntax ?@)) (not esc?))
-                             (free-identifier=? h-head (quote-syntax ?@!))))))
+                         (or (and (free-identifier=? h-head (quote-syntax ~@)) (not esc?))
+                             (free-identifier=? h-head (quote-syntax ~@!))))))
              (disappeared! (stx-car h))
              (define-values (drivers guide) (parse-t (stx-cdr h) depth esc?))
              (values drivers `(h-splice ,guide (quote ,h) (quote-syntax ,(stx-car h))))]
@@ -690,7 +690,7 @@
 (define absent-pvar-escape-key (gensym 'absent-pvar-escape))
 
 ;; signal-absent-pvar : -> escapes or #f
-;; Note: Only escapes if in ?? form.
+;; Note: Only escapes if in ~? form.
 (define (signal-absent-pvar)
   (let ([escape (continuation-mark-set-first #f absent-pvar-escape-key)])
     (if escape (escape) #f)))
