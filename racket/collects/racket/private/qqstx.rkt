@@ -105,7 +105,7 @@
                                                     [ctx (datum->syntax #'x 'ctx #'x)])
                                         (convert-k (datum->syntax
                                                     stx
-                                                    (cons #'(?@! . temp) rest-v)
+                                                    (cons #'(~@! . temp) rest-v)
                                                     stx
                                                     stx)
                                                    (with-syntax ([check check-splicing-list-id])

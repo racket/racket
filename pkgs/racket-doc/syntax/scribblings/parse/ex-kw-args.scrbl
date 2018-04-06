@@ -64,9 +64,9 @@ There's a simpler way of writing the @racket[~or*] pattern above:
 ]
 
 
-@section{Optional Arguments with @racket[??]}
+@section{Optional Arguments with @racket[~?]}
 
-The @racket[??] template form provides a compact alternative to
+The @racket[~?] template form provides a compact alternative to
 explicitly testing attribute values. Here's one way to do it:
 
 @interaction[#:eval the-eval
@@ -74,11 +74,11 @@ explicitly testing attribute values. Here's one way to do it:
   (syntax-parse stx
     [(mycond (~optional (~seq #:error-on-fallthrough who:expr))
              clause ...)
-     #'(mycond* (?? (?@ #t who) (?@ #f #f)) clause ...)]))
+     #'(mycond* (~? (~@ #t who) (~@ #f #f)) clause ...)]))
 ]
 
-If @racket[who] matched, then the @racket[??] subtemplate splices in
-the two terms @racket[#t who] into the enclosing template (@racket[?@]
+If @racket[who] matched, then the @racket[~?] subtemplate splices in
+the two terms @racket[#t who] into the enclosing template (@racket[~@]
 is the template splicing form). Otherwise, it splices in @racket[#f #f].
 
 Here's an alternative definition that re-uses Racket's @racket[cond] macro:
@@ -88,15 +88,15 @@ Here's an alternative definition that re-uses Racket's @racket[cond] macro:
   (syntax-parse stx
     [(mycond (~optional (~seq #:error-on-fallthrough who:expr))
              clause ...)
-     #'(cond clause ... (?? [else (error 'who "no clause matched")] (?@)))]))
+     #'(cond clause ... (~? [else (error 'who "no clause matched")] (~@)))]))
 ]
 
 In this version, we optionally insert an @racket[else] clause at the
 end to signal the error; otherwise we use @racket[cond]'s fall-through
 behavior (that is, returning @racket[(void)]).
 
-If the second subtemplate of a @racket[??] template is
-@racket[(?@)]---that is, it produces no terms at all---the second
+If the second subtemplate of a @racket[~?] template is
+@racket[(~@)]---that is, it produces no terms at all---the second
 subtemplate can be omitted.
 
 

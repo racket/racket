@@ -2623,28 +2623,28 @@
            (equal? (syntax-line #'cons) (syntax-line #'one))])))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Minimal tests for syntax and ?@, ??
+;; Minimal tests for syntax and ~@, ~?
 ;; More tests in pkgs/racket-test/tests/stxparse/test-syntax.rkt
 
 (test '(a 1 b 2 c 3)
       'syntax
       (with-syntax ([(x ...) #'(a b c)] [(y ...) #'(1 2 3)])
-        (syntax->datum #'((?@ x y) ...))))
+        (syntax->datum #'((~@ x y) ...))))
 
 (test '(1 2 3 4)
       'syntax
       (with-syntax ([xs #'(2 3)])
-        (syntax->datum #'(1 (?@ . xs) 4))))
+        (syntax->datum #'(1 (~@ . xs) 4))))
 
 (test '(1 2 3)
       'syntax
       (with-syntax ([x #'(1 2 3)])
-        (syntax->datum #'(?? x "missing"))))
+        (syntax->datum #'(~? x "missing"))))
 
 (test '(4 5 6)
       'syntax
       (with-syntax ([(x ...) #'(4 5 6)])
-        (syntax->datum #'((?? x) ...))))
+        (syntax->datum #'((~? x) ...))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
