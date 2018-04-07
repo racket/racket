@@ -486,16 +486,28 @@ Illegal as an expression form. The @racket[unsyntax-splicing] form is
 for use only with a @racket[quasisyntax] template.}
 
 
-@defform[(syntax/loc stx-expr template)]{
+@defform[(syntax/loc stx-expr template)
+         #:contracts ([stx-expr syntax?])]{
 
 Like @racket[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
-@racket[stx-expr] (which must produce a syntax object), unless the
-@racket[template] is just a pattern variable, or both the source and
-position of @racket[stx-expr] are @racket[#f].}
+@racket[stx-expr] (which must produce a syntax object).
 
+Only the source location of the immediate result---the ``outermost''
+syntax object---is adjusted. The source location is @emph{not}
+adjusted if both the source and position of @racket[stx-expr] are
+@racket[#f]. The source location is adjusted only if the resulting
+syntax object comes from the template itself rather than the value of
+a syntax pattern variable. For example, if @racket[_x] is a syntax
+pattern variable, then @racket[(syntax/loc stx-expr _x)] does not use
+the location of @racket[stx-expr].
 
-@defform[(quasisyntax/loc stx-expr template)]{
+@history[#:changed "6.90.0.25" @elem{Previously, @racket[syntax/loc]
+did not enforce the contract on @racket[stx-expr] if @racket[template]
+was just a pattern variable.}]}
+
+@defform[(quasisyntax/loc stx-expr template)
+         #:contracts ([stx-expr syntax?])]{
 
 Like @racket[quasisyntax], but with source-location assignment like
 @racket[syntax/loc].}

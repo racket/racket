@@ -2647,5 +2647,25 @@
         (syntax->datum #'((~? x) ...))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Tests for syntax/loc
+
+(let ()
+  (define (f stx) (list (syntax-source stx) (syntax-position stx)))
+  (define (same-src? x y) (equal? (syntax-source x) (syntax-source y)))
+  (define good1 (datum->syntax #f 'good '(source #f #f 1 4)))
+  (define good3 (datum->syntax #f 'good '(source #f #f #f #f)))
+  (define good4 (datum->syntax #f 'good '(#f #f #f 1 4)))
+  (define bad1  (datum->syntax #f 'bad #f))
+  (test '(source 1)  'syntax/loc (f (syntax/loc good1 (x))))
+  (test '(source #f) 'syntax/loc (f (syntax/loc good3 (x))))
+  (test '(#f 1)      'syntax/loc (f (syntax/loc good4 (x))))
+  (test #t 'syntax/loc (same-src? (syntax/loc bad1 (x)) (syntax (x))))
+  ;; syntax/loc only applies loc to *new* syntax
+  (with-syntax ([x #'here])
+    (test #t 'syntax/loc (same-src? (syntax/loc good1 x) (syntax x))))
+  (with-syntax ([(x ...) #'()] [y #'(here)])
+    (test #t 'syntax/loc (same-src? (syntax/loc good1 (x ... . y)) (syntax y)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

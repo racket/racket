@@ -596,9 +596,15 @@
       (do-template stx (cadr s) #f #f)
       (raise-syntax-error #f "bad syntax" stx)))
 
+;; check-loc : Symbol Any -> (U Syntax #f)
+;; Raise exn if not syntax. Returns same syntax if suitable for srcloc
+;; (ie, if at least syntax-source or syntax-position set), #f otherwise.
 (define (check-loc who x)
-  (if (syntax? x) x (raise-argument-error who "syntax?" x)))
-
+  (if (syntax? x)
+      (if (or (syntax-source x) (syntax-position x))
+          x
+          #f)
+      (raise-argument-error who "syntax?" x)))
 
 ;; ============================================================
 ;; Run-time support
@@ -653,7 +659,7 @@
 
 (define (t-append xs ys) (if (null? ys) xs (append xs ys)))
 (define (t-resyntax loc stx g) (datum->syntax stx g (or loc stx) stx))
-(define (t-relocate g loc) (datum->syntax g (syntax-e g) loc g))
+(define (t-relocate g loc) (datum->syntax g (syntax-e g) (or loc g) g))
 (define (t-orelse* g1 g2)
   ((let/ec escape
      (with-continuation-mark
