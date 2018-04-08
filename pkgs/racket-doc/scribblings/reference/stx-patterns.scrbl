@@ -490,10 +490,12 @@ for use only with a @racket[quasisyntax] template.}
 
 Like @racket[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
-@racket[stx-expr] (which must produce a syntax object), unless the
-@racket[template] is just a pattern variable, or both the source and
-position of @racket[stx-expr] are @racket[#f].}
+@racket[stx-expr] (which must produce a syntax object).
 
+@history[#:changed "6.90.0.24" @elem{Removed case where
+           @racket[stx-expr] does not need to be a syntax object if
+           @racket[template] is just a pattern variable, or both the
+           source and position of @racket[stx-expr] are @racket[#f].}]}
 
 @defform[(quasisyntax/loc stx-expr template)]{
 
