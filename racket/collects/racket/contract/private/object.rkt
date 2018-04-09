@@ -59,11 +59,15 @@
   (build-contract-property
    #:late-neg-projection
    (λ (ctc)
+     (define flds (object-contract-fields ctc))
+     (define fld-ctcs (object-contract-field-ctcs ctc))
+     (define mtds (object-contract-methods ctc))
+     (define mtd-ctcs (object-contract-method-ctcs ctc))
      (λ (blame)
+       (define p-app
+         (make-wrapper-object blame mtds mtd-ctcs))
        (λ (val neg-party)
-         (make-wrapper-object ctc val blame neg-party
-                              (object-contract-methods ctc) (object-contract-method-ctcs ctc)
-                              (object-contract-fields ctc) (object-contract-field-ctcs ctc)))))
+         (p-app ctc val neg-party flds fld-ctcs))))
    #:name
    (λ (ctc) `(object-contract ,@(map (λ (fld ctc) (build-compound-type-name 'field fld ctc))
                                      (object-contract-fields ctc)

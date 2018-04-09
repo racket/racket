@@ -1458,10 +1458,9 @@
   (define fields (base-object/c-fields ctc))
   (define field-contracts (base-object/c-field-contracts ctc))
   (λ (blame)
+    (define p-app (make-wrapper-class blame methods method-contracts))
     (λ (val neg-party)
-      (make-wrapper-class
-       val blame neg-party
-       methods method-contracts fields field-contracts))))
+      (p-app val neg-party fields field-contracts))))
 
 (define (check-object-contract obj methods fields fail)
   (unless (object? obj)
@@ -1579,18 +1578,32 @@
 ;; make-wrapper-object: contract object blame neg-party
 ;;                      (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 ;;                   -> wrapped object
-(define (make-wrapper-object ctc obj blame neg-party methods method-contracts fields field-contracts)
-  (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
-  (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
-        [new-cls (make-wrapper-class (object-ref obj)  ;; TODO: object-ref audit
-                                     blame neg-party
-                                     methods method-contracts fields field-contracts)])
-    (impersonate-struct obj object-ref (λ (o c) new-cls) ;; TODO: object-ref audit
-                        impersonator-prop:contracted ctc
-                        impersonator-prop:original-object original-obj)))
+(define (make-wrapper-object blame methods method-contracts)
+  (define p-app
+    (make-wrapper-class blame methods method-contracts))
+  (λ (ctc obj neg-party fields field-contracts)
+    (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
+    (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
+          [new-cls (p-app (object-ref obj)  ;; TODO: object-ref audit
+                          neg-party
+                          fields field-contracts)])
+      (impersonate-struct obj object-ref (λ (o c) new-cls) ;; TODO: object-ref audit
+                          impersonator-prop:contracted ctc
+                          impersonator-prop:original-object original-obj))))
 
 
-(define (make-wrapper-class cls blame neg-party methods method-contracts fields field-contracts)
+(define (make-wrapper-class blame methods method-contracts)
+  (define method-projs
+    (for/list ([c (in-list method-contracts)]
+               [m (in-list methods)])
+      (cond
+        [(and c (not (just-check-existence? c)))
+         (define blame* (blame-add-context blame (format "the ~a method in" m)
+                                           #:important m))
+         ((contract-late-neg-projection c) blame*)]
+        [else #f])))
+
+  (λ (cls neg-party fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
          [method-ht (class-method-ht cls)]
@@ -1683,14 +1696,15 @@
       (vector-copy! meths 0 (class-methods cls))
       ;; Now apply projections
       (for ([m (in-list methods)]
-            [c (in-list method-contracts)])
+            [c (in-list method-contracts)]
+            [method-proj (in-list method-projs)])
         (when c
           (unless (just-check-existence? c)
             (define i (hash-ref method-ht m))
             (define p ((contract-late-neg-projection c)
                        (blame-add-context blame (format "the ~a method in" m)
                                           #:important m)))
-            (vector-set! meths i (make-method (p (vector-ref meths i) neg-party) m))))))
+            (vector-set! meths i (make-method (method-proj (vector-ref meths i) neg-party) m))))))
     
     ;; Handle external field contracts
     (unless (null? fields)
@@ -1712,4 +1726,4 @@
                                                                (apply p-neg args)))
                                                             neg-party)))))
     
-    (copy-seals cls c)))
+    (copy-seals cls c))))
