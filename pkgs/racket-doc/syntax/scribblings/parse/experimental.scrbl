@@ -293,6 +293,14 @@ Equivalent to @racket[syntax], @racket[syntax/loc],
 Equivalent to @racket[datum].
 }
 
+@deftogether[[
+@defidform[??]
+@defidform[?@]
+]]{
+
+Equivalent to @racket[~?] and @racket[~@], respectively.
+}
+
 @defform*[[(define-template-metafunction metafunction-id expr)
            (define-template-metafunction (metafunction-id . formals) body ...+)]]{
 

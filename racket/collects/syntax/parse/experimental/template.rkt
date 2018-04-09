@@ -5,8 +5,9 @@
 (provide (rename-out [syntax template]
                      [syntax/loc template/loc]
                      [quasisyntax quasitemplate]
-                     [quasisyntax/loc quasitemplate/loc])
-         ?? ?@
+                     [quasisyntax/loc quasitemplate/loc]
+                     [~? ??]
+                     [~@ ?@])
          define-template-metafunction)
 
 ;; ============================================================
