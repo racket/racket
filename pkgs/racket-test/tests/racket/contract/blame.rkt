@@ -320,4 +320,13 @@
    '(has-complete-blame? (contract (vectorof integer?) (vector 1 2 3) 'pos 'neg))
    #t)
 
+  (test/spec-passed/result
+   'blame-equality
+   '(let ([b
+           (make-blame (srcloc "src.rkt" #f #f #f #f)
+                       'whatever (λ () 'the-name) 'pos 'neg #t)])
+      (equal? (blame-add-context b "thing" #:important 'yes!)
+              (blame-add-context b "thing" #:important 'yes!)))
+   #t)
+
   )

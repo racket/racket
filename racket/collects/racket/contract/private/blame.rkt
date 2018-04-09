@@ -103,7 +103,7 @@
    [context new-context]
    [top-known? #t]))
 
-(struct important (name sense-swapped?))
+(struct important (name sense-swapped?) #:transparent)
 
 (define (blame-add-unknown-context b)
   (define old (blame-context b))
