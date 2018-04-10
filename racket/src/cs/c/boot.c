@@ -9,6 +9,14 @@
 #include "rktio.h"
 #include "boot.h"
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+# define BOOT_O_BINARY O_BINARY
+#endif
+
+#ifndef BOOT_O_BINARY
+# define BOOT_O_BINARY 0
+#endif
+
 #if defined(OS_X) && !defined(RACKET_XONX)
 
 # include <mach-o/dyld.h>
@@ -80,7 +88,7 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
   Sregister_boot_file(path_append(fw_path, "petite.boot"));
   Sregister_boot_file(path_append(fw_path, "scheme.boot"));
 #else
-  fd = open(self, O_RDONLY | O_BINARY);
+  fd = open(self, O_RDONLY | BOOT_O_BINARY);
 
   {
     int fd1, fd2;
