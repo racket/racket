@@ -441,7 +441,7 @@ context}, @racket[#f] otherwise.}
 
 @defproc[(syntax-local-make-definition-context
           [intdef-ctx (or/c internal-definition-context? #f) #f]
-          [add-scope? any/c #f])
+          [add-scope? any/c #t])
          internal-definition-context?]{
 
 Creates an opaque @tech{internal-definition context} value to be used
