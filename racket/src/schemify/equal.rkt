@@ -15,18 +15,19 @@
      (let ([val (unwrap val)])
        (or (symbol? val)
            (keyword? val)
+           (null? val)
            (boolean-or-fixnum? val)))]
     [`,val
      (let ([val (unwrap val)])
-       ;; Booleans and numbers don't have to be quuted
+       ;; Booleans and numbers don't have to be quoted
        (boolean-or-fixnum? val))]))
 
 (define (boolean-or-fixnum? val)
-  (boolean? val)
-  (and (integer? val)
-       (exact? val)
-       ;; Always fixnum? Conversatively...
-       (<= (- (expt 2 16)) val (expt 2 16))))
+  (or (boolean? val)
+      (and (integer? val)
+           (exact? val)
+           ;; Always fixnum? conservatively...
+           (<= (- (expt 2 24)) val (- (expt 2 24) 1)))))
 
 (define (equal-implies-eqv? e)
   (match e
