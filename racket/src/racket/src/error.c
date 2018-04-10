@@ -105,6 +105,7 @@ static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arguments_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_value_string_handler(int, Scheme_Object *[]);
@@ -816,6 +817,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_addto_prim_instance("raise-arity-error",  scheme_raise_arity_error_proc, env);
+  ESCAPING_NONCM_PRIM("raise-result-arity-error",   raise_result_arity_error, 2, -1, env);
 
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
   ADD_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
@@ -2517,16 +2519,14 @@ void scheme_wrong_return_arity(const char *where,
 			"%s%sresult arity mismatch;\n"
                         " expected number of values not received\n"
                         "  expected: %d\n"
-			"  received: %d\n"
-                        "%s%t%s"
+			"  received: %d"
+                        "%t\n"
                         "  values...:%t",
 			where ? where : "",
 			where ? ": " : "",
 			expected,
 			got,
-                        slen ? "  from: " : "",
 			s, slen,
-                        slen ? "\n" : "",
 			v, vlen);
 
   scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
@@ -2981,7 +2981,7 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
   if (!scheme_nonneg_exact_p(argv[1]) 
       && !is_arity_at_least(argv[1])
       && !is_arity_list(argv[1]))
-    scheme_wrong_contract("raise-mismatch-error", 
+    scheme_wrong_contract("raise-arity-error", 
                           "(or/c exact-nonnegative-integer? arity-at-least? (listof (or/c exact-nonnegative-integer? arity-at-least?)))", 
                           1, argc, argv);
 
@@ -3015,6 +3015,50 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
   scheme_wrong_count_m(name, minc, maxc, argc - 2, args, 0);
 
   return NULL;
+}
+
+static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
+{
+  const char *where, *detail;
+  Scheme_Object **got_argv;
+  int i, expected;
+  
+  if (SCHEME_FALSEP(argv[0]))
+    where = NULL;
+  else if (SCHEME_SYMBOLP(argv[0]))
+    where = scheme_symbol_val(argv[0]);
+  else
+    scheme_wrong_contract("raise-result-arity-error", "(or/c symbol? #f)", 0, argc, argv);
+
+  if (SCHEME_INTP(argv[1])) {
+    expected = SCHEME_INT_VAL(argv[1]);
+  } else if (SCHEME_BIGNUMP(argv[1]) && SCHEME_BIGPOS(argv[1]))
+    expected = (int)(((unsigned)-1) >> 1); /* not right, but as big as we can report */
+  else
+    expected = -1;
+  if (expected < 0)
+    scheme_wrong_contract("raise-result-arity-error", "exact-nonnegative-integer?", 1, argc, argv);
+
+  if (SCHEME_FALSEP(argv[2]))
+    detail = NULL;
+  else if (SCHEME_CHAR_STRINGP(argv[2])) {
+    Scheme_Object *bstr;
+    bstr = scheme_char_string_to_byte_string(argv[2]);
+    detail = SCHEME_BYTE_STR_VAL(bstr);
+  } else
+    scheme_wrong_contract("raise-result-arity-error", "(or/c string? #f)", 2, argc, argv);
+
+  got_argv = MALLOC_N(Scheme_Object*, argc-3);
+  for (i = 3; i < argc; i++) {
+    got_argv[i-3] = argv[i];
+  }
+
+  scheme_wrong_return_arity(where, expected,
+                            argc-3, got_argv,
+                            detail,
+                            NULL);
+
+  return scheme_void;
 }
 
 static Scheme_Object *good_print_width(int c, Scheme_Object **argv)

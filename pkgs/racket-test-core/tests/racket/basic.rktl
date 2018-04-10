@@ -2121,6 +2121,12 @@
 (err/rt-test (raise-arity-error + (make-arity-at-least 5)) exn:fail:contract:arity?)
 (err/rt-test (raise-arity-error + (list 1 (make-arity-at-least 5))) exn:fail:contract:arity?)
 
+(err/rt-test (raise-result-arity-error 'f 5 #f) exn:fail:contract:arity?)
+(err/rt-test (raise-result-arity-error #f 5 #f) exn:fail:contract:arity?)
+(err/rt-test (raise-result-arity-error #f (expt 2 100) #f) exn:fail:contract:arity?)
+(err/rt-test (raise-result-arity-error #f (expt 2 100) "\n  in: extra") exn:fail:contract:arity?)
+(err/rt-test (raise-result-arity-error #f (expt 2 100) "\n  in: extra" 1 2 3 4 5) exn:fail:contract:arity?)
+
 (define (exn:fail:contract:arity?/#f e) (not (exn:fail:contract:arity? e)))
 
 (err/rt-test (raise-arity-error 'f -5) exn:fail:contract:arity?/#f)
@@ -2130,7 +2136,9 @@
 (err/rt-test (raise-arity-error 1 1) exn:fail:contract:arity?/#f)
 (err/rt-test (raise-arity-error 1 1) exn:fail:contract?)
 
-
+(err/rt-test (raise-result-arity-error "f" 7 #f) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-result-arity-error 'f -7 #f) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-result-arity-error 'f 7 #"oops") exn:fail:contract:arity?/#f)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations

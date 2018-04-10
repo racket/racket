@@ -181,6 +181,7 @@
           raise-mismatch-error
           raise-range-error
           raise-arity-error
+          raise-result-arity-error
           raise-type-error
           raise-binding-result-arity-error ; not exported to Racket
 

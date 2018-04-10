@@ -793,7 +793,8 @@
           (add-defined-syms! requires+provides syms phase #:as-transformer? #t)
           ;; Expand and evaluate RHS:
           (define-values (exp-rhs parsed-rhs vals)
-            (expand+eval-for-syntaxes-binding (m 'rhs) ids
+            (expand+eval-for-syntaxes-binding 'define-syntaxes
+                                              (m 'rhs) ids
                                               (struct*-copy expand-context partial-body-ctx
                                                             [lifts #f]
                                                             ;; require lifts ok, others disallowed
@@ -1273,7 +1274,7 @@
     (cond
      [(parsed-define-values? p)
       (define ids (parsed-define-values-ids p))
-      (define vals (eval-for-bindings ids (parsed-define-values-rhs p) phase m-ns ctx))
+      (define vals (eval-for-bindings 'define-values ids (parsed-define-values-rhs p) phase m-ns ctx))
       (for ([id (in-list ids)]
             [sym (in-list (parsed-define-values-syms p))]
             [val (in-list vals)])

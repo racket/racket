@@ -339,20 +339,21 @@
                                               (number->string (arity-at-least-value arity))))]
      [else ""])))
 
-(define (raise-result-arity-error where num-expected-args args)
+(define (raise-result-arity-error who num-expected-args where args)
   (raise
    (|#%app|
     exn:fail:contract:arity
     (string-append
+     (if who (string-append (symbol->string who) ": ") "")
      "result arity mismatch;\n"
      " expected number of values not received\n"
      "  received: " (number->string (length args)) "\n" 
-     "  expected: " (number->string num-expected-args) "\n" 
-     "  in: " where)
+     "  expected: " (number->string num-expected-args)
+     where)
     (current-continuation-marks))))
 
 (define (raise-binding-result-arity-error expected-args args)
-  (raise-result-arity-error "local-binding form" (length expected-args) args))
+  (raise-result-arity-error #f (length expected-args) "\n  at: local-binding form" args))
 
 (define raise-unsupported-error
   (case-lambda

@@ -173,7 +173,7 @@
          (log-expand body-ctx 'prepare-env)
          (prepare-next-phase-namespace ctx)
          (log-expand body-ctx 'enter-bind)
-         (define vals (eval-for-syntaxes-binding (m 'rhs) ids body-ctx))
+         (define vals (eval-for-syntaxes-binding 'define-syntaxes (m 'rhs) ids body-ctx))
          (define extended-env (for/fold ([env (expand-context-env body-ctx)]) ([key (in-list keys)]
                                                                                [val (in-list vals)]
                                                                                [id (in-list ids)])

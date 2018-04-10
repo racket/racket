@@ -695,6 +695,7 @@
   [raise-mismatch-error (known-procedure -8)]
   [raise-range-error (known-procedure 384)]
   [raise-result-error (known-procedure -8)]
+  [raise-result-arity-error (known-procedure -16)]
   [raise-type-error (known-procedure -8)]
   [raise-user-error (known-procedure -2)]
   [random (known-procedure 7)]

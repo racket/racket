@@ -612,7 +612,7 @@
 ;; Expand and evaluate `s` as a compile-time expression, ensuring that
 ;; the number of returned values matches the number of target
 ;; identifiers; return the expanded form as well as its values
-(define (expand+eval-for-syntaxes-binding rhs ids ctx
+(define (expand+eval-for-syntaxes-binding who rhs ids ctx
                                           #:log-next? [log-next? #t])
   (define exp-rhs (expand-transformer rhs (as-named-context ctx ids)))
   (define phase (add1 (expand-context-phase ctx)))
@@ -623,7 +623,8 @@
   (when log-next? (log-expand ctx 'next))
   (values exp-rhs
           parsed-rhs
-          (eval-for-bindings ids
+          (eval-for-bindings who
+                             ids
                              parsed-rhs
                              phase
                              (namespace->namespace-at-phase
@@ -633,15 +634,15 @@
 
 ;; Expand and evaluate `s` as a compile-time expression, returning
 ;; only the compile-time values
-(define (eval-for-syntaxes-binding rhs ids ctx)
+(define (eval-for-syntaxes-binding who rhs ids ctx)
   (define-values (exp-rhs parsed-rhs vals)
-    (expand+eval-for-syntaxes-binding rhs ids ctx))
+    (expand+eval-for-syntaxes-binding who rhs ids ctx))
   vals)
 
 ;; Expand and evaluate `s` as an expression in the given phase;
 ;; ensuring that the number of returned values matches the number of
 ;; target identifiers; return the values
-(define (eval-for-bindings ids p phase ns ctx)
+(define (eval-for-bindings who ids p phase ns ctx)
   (define compiled (if (can-direct-eval? p ns (root-expand-context-self-mpi ctx))
                        #f
                        (compile-single p (make-compile-context
@@ -657,8 +658,13 @@
                               (direct-eval p ns (root-expand-context-self-mpi ctx)))))
       list))
   (unless (= (length vals) (length ids))
-    (error "wrong number of results (" (length vals) "vs." (length ids) ")"
-           "from" p))
+    (apply raise-result-arity-error
+           who
+           (length ids)
+           (cond
+             [(null? ids) ""]
+             [else (format "\n  in: definition of ~a~a" (syntax-e (car ids)) (if (pair? (cdr ids)) " ..." ""))])
+           vals))
   vals)
 
 ;; ----------------------------------------

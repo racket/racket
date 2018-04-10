@@ -1511,7 +1511,7 @@
   (call-with-values (lambda () (apply wrapper args))
     (lambda new-args
       (unless (= (length args) (length new-args))
-        (raise-result-arity-error at-when (length args) new-args))
+        (raise-result-arity-error #f (length args) (string-append "\n  at: " at-when) new-args))
       (when chaperone?
         (for-each (lambda (arg new-arg)
                     (unless (chaperone-of? new-arg arg)

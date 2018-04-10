@@ -216,7 +216,8 @@
     (define trans-valss (for/list ([rhs (in-list (if syntaxes? (stx-m 'trans-rhs) '()))]
                                    [ids (in-list trans-idss)])
                           (log-expand* ctx ['next] ['enter-bind])
-                          (define trans-val (eval-for-syntaxes-binding (add-scope rhs sc) ids ctx))
+                          (define trans-val (eval-for-syntaxes-binding 'letrec-syntaxes+values
+                                                                       (add-scope rhs sc) ids ctx))
                           (log-expand ctx 'exit-bind)
                           trans-val))
     ;; Fill expansion-time environment:

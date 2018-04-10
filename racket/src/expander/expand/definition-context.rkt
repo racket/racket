@@ -84,7 +84,8 @@
                         (hash-set env sym variable)))
       (log-expand ctx 'enter-bind)
       (define vals
-        (eval-for-syntaxes-binding input-s ids
+        (eval-for-syntaxes-binding 'syntax-local-bind-syntaxes
+                                   input-s ids
                                    (make-local-expand-context (struct*-copy expand-context ctx
                                                                             [env tmp-env])
                                                               #:context 'expression
