@@ -155,7 +155,13 @@ In more detail, patterns match as follows:
        #:eval match-eval
        (match '(1 2 3)
          [(list-no-order 3 2 x) x])
-       ]}
+       ]
+
+       @margin-note{
+         Unlike other patterns, @racketidfont{list-no-order} doesn't
+         allow duplicate identifiers between subpatterns. For example
+         the patterns @racket[(list-no-order x 1 x)] and
+         @racket[(list-no-order x 1 x ...)] both produce syntax errors.}}
 
  @item{@racket[(#,(racketidfont "list-no-order") _pat ... _lvp)] ---
        generalizes @racketidfont{list-no-order} to allow a pattern

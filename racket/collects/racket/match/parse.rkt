@@ -117,15 +117,21 @@
      (ddk? #'dd)
      (let* ([count (ddk? #'dd)]
             [min (if (number? count) count #f)]
-            [ps (syntax->list #'(p ...))])
-       (GSeq (cons (list (rearm+parse #'lp))
-                        (for/list ([p ps]) (list (parse p))))
-                  (cons min (map (lambda _ 1) ps))
-                  (cons #f (map (lambda _ 1) ps))
-                  ;; vars in lp are lists, vars elsewhere are not
-                  (cons #f (map (lambda _ #t) ps))
-                  (Null (Dummy (syntax/loc stx _)))
-                  #f))]
+            [ps (syntax->list #'(p ...))]
+            ;; parsed versions of ps and lp
+            [parsed-ps (map parse ps)]
+            [parsed-lp (rearm+parse #'lp)])
+       ;; duplicates within *one* of the ps is fine, but duplicates
+       ;; *accross multiple* of the ps is an error, at least for now
+       (check-list-no-order-duplicates (cons parsed-lp parsed-ps))
+       (GSeq (cons (list parsed-lp)
+                   (for/list ([p parsed-ps]) (list p)))
+             (cons min (map (lambda _ 1) ps))
+             (cons #f (map (lambda _ 1) ps))
+             ;; vars in lp are lists, vars elsewhere are not
+             (cons #f (map (lambda _ #t) ps))
+             (Null (Dummy (syntax/loc stx _)))
+             #f))]
     [(list-no-order p ...)
      (ormap ddk? (syntax->list #'(p ...)))
      (raise-syntax-error
@@ -133,14 +139,19 @@
       stx
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
     [(list-no-order p ...)
-     (let ([ps (syntax->list #'(p ...))])
-       (GSeq (for/list ([p ps]) (list (rearm+parse p)))
-                  (map (lambda _ 1) ps)
-                  (map (lambda _ 1) ps)
-                  ;; all of these patterns get bound to only one thing
-                  (map (lambda _ #t) ps)
-                  (Null (Dummy (syntax/loc stx _)))
-                  #f))]
+     (let* ([ps (syntax->list #'(p ...))]
+            ;; parsed versions of ps
+            [parsed-ps (map rearm+parse ps)])
+       ;; duplicates within *one* of the ps is fine, but duplicates
+       ;; *accross multiple* of the ps is an error, at least for now
+       (check-list-no-order-duplicates parsed-ps)
+       (GSeq (for/list ([p parsed-ps]) (list p))
+             (map (lambda _ 1) ps)
+             (map (lambda _ 1) ps)
+             ;; all of these patterns get bound to only one thing
+             (map (lambda _ #t) ps)
+             (Null (Dummy (syntax/loc stx _)))
+             #f))]
     [(list) (Null (Dummy (syntax/loc stx _)))]
     [(mlist) (Null (Dummy (syntax/loc stx _)))]
     [(list ..)
@@ -195,5 +206,22 @@
     [v
      (or (parse-literal (syntax-e #'v))
          (raise-syntax-error 'match "syntax error in pattern" disarmed-stx))]))
+
+;; --------------------------------------------------------------
+
+;; check-list-no-order-duplicates : [Listof Pat] -> Void
+(define (check-list-no-order-duplicates pats)
+  ;; Duplicate identifiers within *one* pat is fine, but
+  ;; duplicate identifiers across multiple pats is an error.
+  ;; Using the `bound-vars` function on each pat separately
+  ;; should merge duplicate identifiers within each *one*.
+  ;; So, duplicate identifiers in the appended list must be
+  ;; duplicates across multiple.
+  (define vars (apply append (map bound-vars pats)))
+  (define dup (check-duplicate-identifier vars))
+  (when dup
+    (raise-syntax-error 'list-no-order "unexpected duplicate identifier" dup)))
+
+;; --------------------------------------------------------------
 
 ;; (trace parse)
