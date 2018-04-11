@@ -2457,5 +2457,28 @@ case of module-leve bindings; it doesn't cover local bindings.
   (check '(require (for-syntax (only-in racket/base [car bar]))) #rx"later bound differently"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that dynamic-require with a symbol argument
+;; does not make the required module available for visits
+
+(module shouldntvisit racket/base
+  (define x 5)
+  (provide x)
+  (require (for-syntax racket/base))
+  (define-for-syntax v #f)
+  (define-syntax (m stx)
+    (set! v #t)
+    #'(void))
+  (m)
+  (begin-for-syntax
+    (when (not v)
+      (error 'shouldntvisit "visited"))))
+
+(module visitor racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+    (dynamic-require ''shouldntvisit 'x))
+  (begin-for-syntax))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

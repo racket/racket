@@ -70,7 +70,8 @@
       (define binding (provided-as-binding binding/p))
       (define ex-sym (module-binding-sym binding))
       (define ex-phase (module-binding-phase binding))
-      (namespace-module-instantiate! ns mpi phase #:run-phase phase)
+      (namespace-module-instantiate! ns mpi phase #:run-phase phase
+                                     #:otherwise-available? #f)
       (define ex-mod-name (module-path-index-resolve
                            (module-path-index-shift
                             (module-binding-module binding)
