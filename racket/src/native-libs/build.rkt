@@ -493,6 +493,9 @@
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append
                                   '("--enable-shared" "--disable-static")
+                                  (if mac?
+                                      '("--build=corei-apple-darwin")
+                                      null)
                                   (if (and m32? mac?)
                                       (list "ABI=32")
                                       null)))]
