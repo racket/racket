@@ -248,44 +248,44 @@ information on the form of the list is below. If @racket[stx] is not
 already a @tech{syntax object}, it is coerced with
 @racket[(datum->syntax #f stx)] before expansion.
 
-When an identifier in @racket[stop-ids] is encountered by the expander
-in a sub-expression, expansions stops for the sub-expression. If
-@racket[stop-ids] is a non-empty list and does not contain just @racket[module*], then
-@racket[begin], @racket[quote], @racket[set!], @racket[lambda],
-@racket[case-lambda], @racket[let-values], @racket[letrec-values],
-@racket[if], @racket[begin0], @racket[with-continuation-mark],
-@racket[letrec-syntaxes+values], @racket[#%app],
-@racket[#%expression], @racket[#%top], and
-@racket[#%variable-reference] are added to @racket[stop-ids].  If
-@racket[#%app] or @racket[#%datum] appears in
-@racket[stop-ids], then application and
-literal data expressions without the respective explicit form are not
-wrapped with the explicit form, and @racket[#%top] wrappers are
-never added (even with an empty @racket[stop-ids] list).
+The @racket[stop-ids] argument controls how far @racket[local-expand] expands @racket[stx]:
 
-If @racket[stop-ids] is an empty list, then @racket[stx] is expanded
-recursively (i.e., expansion proceeds to sub-expressions).
+@itemlist[
+ @item{If @racket[stop-ids] is an empty list, then @racket[stx] is recursively expanded (i.e.
+       expansion proceeds to sub-expressions). The result is guaranteed to be a fully-expanded form,
+       which can include the bindings listed in @secref["fully-expanded"], plus @racket[#%expression]
+       in any expression position.}
 
-If @racket[stop-ids] is @racket[#f]
-instead of a list, then @racket[stx] is expanded only as long as the
-outermost form of @racket[stx] is a macro (i.e., expansion does not
-proceed to sub-expressions). Independent of @racket[stop-ids], when
-@racket[local-expand] encounters an identifier that has a local binding
-but no binding in the current expansion context, the variable is left
-as-is (as opposed to triggering an ``out of context'' syntax error).
+ @item{If @racket[stop-ids] is a list containing just @racket[module*], then expansion proceeds as if
+       @racket[stop-ids] were an empty list, except that expansion does not recur to @tech{submodules}
+       defined with @racket[module*] (which are left unexpanded in the result).}
 
-A fully expanded form can include the
-bindings listed in @secref["fully-expanded"] plus the
-@racket[letrec-syntaxes+values] form and @racket[#%expression]
-in any expression position.
+ @item{If @racket[stop-ids] is any other list, then @racket[begin], @racket[quote], @racket[set!],
+       @racket[#%plain-lambda], @racket[case-lambda], @racket[let-values], @racket[letrec-values],
+       @racket[if], @racket[begin0], @racket[with-continuation-mark], @racket[letrec-syntaxes+values],
+       @racket[#%plain-app], @racket[#%expression], @racket[#%top], and @racket[#%variable-reference]
+       are implicitly added to @racket[stop-ids]. Expansion stops when the expander encounters any of
+       the forms in @racket[stop-ids], and the result is the partially-expanded form.
 
-When @racket[#%plain-module-begin] is not itself in @racket[stop-ids]
-and @racket[module*] is in @racket[stop-ids], then the
-@racket[#%plain-module-begin] transformer refrains from expanding
-@racket[module*] sub-forms. Otherwise, the
-@racket[#%plain-module-begin] transformer detects and expands sub-forms
-(such as @racket[define-values]) independent of the corresponding
-identifier's presence in @racket[stop-ids].
+       When the expander would normally implicitly introduce a @racketid[#%app], @racketid[#%datum],
+       or @racketid[#%top] identifier as described in @secref["expand-steps"], it checks to see if an
+       identifier with the same @tech{binding} as the one to be introduced appears in
+       @racket[stop-ids]. If so, the identifier is @emph{not} introduced; the result of expansion is
+       the bare application, literal data expression, or unbound identifier rather than one wrapped in
+       the respective explicit form.
+
+       When @racket[#%plain-module-begin] is not in @racket[stop-ids], the
+       @racket[#%plain-module-begin] transformer detects and expands sub-forms (such as
+       @racket[define-values]) regardless of the identifiers presence in @racket[stop-ids].}
+
+ @item{If @racket[stop-ids] is @racket[#f] instead of a list, then @racket[stx] is expanded only as
+       long as the outermost form of @racket[stx] is a macro (i.e. expansion does @emph{not} proceed
+       to sub-expressions). @racketid[#%app], @racketid[#%datum], and @racketid[#%top] identifiers are
+       never introduced.}]
+
+Independent of @racket[stop-ids], when @racket[local-expand] encounters an identifier that has a local
+binding but no binding in the current expansion context, the variable is left as-is (as opposed to
+triggering an ``out of context'' syntax error).
 
 When @racket[context-v] is @racket['module-begin], and the result of
 expansion is a @racket[#%plain-module-begin] form, then a
