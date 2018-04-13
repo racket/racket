@@ -2126,6 +2126,7 @@
 (err/rt-test (raise-result-arity-error #f (expt 2 100) #f) exn:fail:contract:arity?)
 (err/rt-test (raise-result-arity-error #f (expt 2 100) "\n  in: extra") exn:fail:contract:arity?)
 (err/rt-test (raise-result-arity-error #f (expt 2 100) "\n  in: extra" 1 2 3 4 5) exn:fail:contract:arity?)
+(err/rt-test (raise-result-arity-error 'oops 5 "%") exn:fail:contract:arity?)
 
 (define (exn:fail:contract:arity?/#f e) (not (exn:fail:contract:arity? e)))
 

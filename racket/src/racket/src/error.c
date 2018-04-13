@@ -3055,7 +3055,7 @@ static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
 
   scheme_wrong_return_arity(where, expected,
                             argc-3, got_argv,
-                            detail,
+                            (detail ? "%s" : NULL), detail,
                             NULL);
 
   return scheme_void;
