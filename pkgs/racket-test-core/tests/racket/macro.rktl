@@ -1905,5 +1905,23 @@
     'ok))
 
 ;; ----------------------------------------
+;; Error (instead of looping) when an implicit is not bound as syntax
+
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (let-syntax ([#%app (make-rename-transformer #'unbound)])
+                   (+ 1 2))))
+
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (let-syntax ([#%app (make-rename-transformer #'cons)])
+                   (+ 1 2))))
+
+(syntax-test #'(module m racket/base
+                 (require (for-syntax racket/base))
+                 (let-syntax ([#%datum (make-rename-transformer #'unbound)])
+                   (+ 1 2))))
+
+;; ----------------------------------------
 
 (report-errs)

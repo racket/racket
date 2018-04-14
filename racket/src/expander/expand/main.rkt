@@ -69,14 +69,17 @@
                 ;; Aplying a rename transformer substitutes
                 ;; an id without changing `s`
                 #:alternate-id [alternate-id #f]
-                #:skip-log? [skip-log? #f])
+                #:skip-log? [skip-log? #f]
+                ;; For expanding an implicit implemented by a rename transformer:
+                #:fail-non-transformer [fail-non-transformer #f])
   (log-expand* ctx #:unless skip-log? [(if (expand-context-only-immediate? ctx) 'enter-check 'visit) s])
   (cond
    [(syntax-identifier? s)
     (expand-identifier s ctx alternate-id)]
    [(and (pair? (syntax-content s))
          (syntax-identifier? (car (syntax-content s))))
-    (expand-id-application-form s ctx alternate-id)]
+    (expand-id-application-form s ctx alternate-id
+                                #:fail-non-transformer fail-non-transformer)]
    [(or (pair? (syntax-content s))
         (null? (syntax-content s)))
     ;; An "application" form that doesn't start with an identifier, so
@@ -113,7 +116,8 @@
      (dispatch t insp-of-t s id ctx binding primitive? protected?)])))
 
 ;; An "application" form that starts with an identifier
-(define (expand-id-application-form s ctx alternate-id)
+(define (expand-id-application-form s ctx alternate-id
+                                    #:fail-non-transformer fail-non-transformer)
   (define id (or alternate-id (car (syntax-e/no-taint s))))
   (guard-stop
    id ctx s
@@ -122,11 +126,13 @@
                                   #:immediate? #t))
    (log-expand* ctx #:unless (expand-context-only-immediate? ctx) ['resolve id])
    (cond
-    [(eq? binding 'ambiguous)
+     [(eq? binding 'ambiguous)
+      (when fail-non-transformer (fail-non-transformer))
      (raise-ambiguous-error id ctx)]
-    [(not binding)
+     [(not binding)
+      (when fail-non-transformer (fail-non-transformer))
      ;; The `#%app` binding might do something with unbound ids
-     (expand-implicit '#%app (substitute-alternate-id s alternate-id) ctx id)]
+      (expand-implicit '#%app (substitute-alternate-id s alternate-id) ctx id)]
     [else
      ;; Find out whether it's bound as a variable, syntax, or core form
      (define-values (t primitive? insp-of-t protected?)
@@ -134,12 +140,14 @@
                #:in (and alternate-id (car (syntax-e/no-taint s)))
                #:out-of-context-as-variable? (expand-context-in-local-expand? ctx)))
      (cond
-      [(variable? t)
-       ;; Not as syntax or core form, so use implicit `#%app`
-       (expand-implicit '#%app (substitute-alternate-id s alternate-id) ctx id)]
-      [else
-       ;; Syntax or core form as "application"
-       (dispatch t insp-of-t s id ctx binding primitive? protected?)])])))
+       [(variable? t)
+        (when fail-non-transformer (fail-non-transformer))
+        ;; Not as syntax or core form, so use implicit `#%app`
+        (expand-implicit '#%app (substitute-alternate-id s alternate-id) ctx id)]
+       [else
+        ;; Syntax or core form as "application"
+        (dispatch t insp-of-t s id ctx binding primitive? protected?
+                  #:fail-non-transformer fail-non-transformer)])])))
 
 ;; Handle an implicit: `#%app`, `#%top`, or `#%datum`; this is similar
 ;; to handling an id-application form, but there are several little
@@ -167,7 +175,13 @@
            (if b (lookup b ctx id) (values #f #f #f #f)))
          (cond
            [(transformer? t)
-            (dispatch-transformer t insp-of-t (make-explicit ctx sym s disarmed-s) id ctx b)]
+            (define fail-non-transformer
+              ;; Make sure a rename transformer eventualy leads to syntax
+              (and (rename-transformer? t)
+                   (lambda ()
+                     (raise-syntax-implicit-error s sym trigger-id ctx))))
+            (dispatch-transformer t insp-of-t (make-explicit ctx sym s disarmed-s) id ctx b
+                                  #:fail-non-transformer fail-non-transformer)]
            [(core-form? t)
             (cond
               [(and (eq? sym '#%top)
@@ -232,12 +246,14 @@
 ;; other compile-time value (which is an error), or a token
 ;; indicating that the binding is a run-time variable; note that
 ;; `s` is not disarmed
-(define (dispatch t insp-of-t s id ctx binding primitive? protected?)
+(define (dispatch t insp-of-t s id ctx binding primitive? protected?
+                  #:fail-non-transformer [fail-non-transformer #f])
   (cond
    [(core-form? t)
     (dispatch-core-form t s ctx)]
    [(transformer? t)
-    (dispatch-transformer t insp-of-t s id ctx binding)]
+    (dispatch-transformer t insp-of-t s id ctx binding
+                          #:fail-non-transformer fail-non-transformer)]
    [(variable? t)
     (dispatch-variable t s id ctx binding primitive? protected?)]
    [else
@@ -269,7 +285,8 @@
 
 ;; Call a macro expander, taking into account whether it works
 ;; in the current context, whether to expand just once, etc.
-(define (dispatch-transformer t insp-of-t s id ctx binding)
+(define (dispatch-transformer t insp-of-t s id ctx binding
+                              #:fail-non-transformer fail-non-transformer)
   (cond
    [(not-in-this-expand-context? t ctx)
     (log-expand ctx 'enter-macro s)
@@ -304,7 +321,8 @@
                                                             id
                                                             id))
                    #:skip-log? (or (expand-context-only-immediate? ctx)
-                                   (rename-transformer? t)))])]))
+                                   (rename-transformer? t))
+                   #:fail-non-transformer fail-non-transformer)])]))
 
 ;; Handle the expansion of a variable to itself
 (define (dispatch-variable t s id ctx binding primitive? protected?)
