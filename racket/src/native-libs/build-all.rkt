@@ -57,11 +57,11 @@
      "gmp"
      "mpfr"
      "jpeg"
+     "atk"
      "poppler")
    (cond
     [linux?
      '("gdk-pixbuf"
-       "atk"
        "gtk+")]
     [else null])))
 

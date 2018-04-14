@@ -385,8 +385,9 @@
 	     #:env (append path-flags
 			   ld-library-path-flags))]
     [("atk")
-     (linux-only)
-     (config #:depends '("libX11")
+     (config #:depends (if linux?
+                           '("libX11")
+                           '())
 	     #:env (append path-flags
 			   ld-library-path-flags))]
     [("gtk+")

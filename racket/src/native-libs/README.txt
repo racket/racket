@@ -37,6 +37,7 @@ Currently, we use the following external packages and versions:
  poppler-0.24.5
  mpfr-3.1.6
  gmp-6.1.2
+ atk-2.28.1
 
 (Linux only:)
  xtrans-1.3.5
@@ -53,7 +54,6 @@ Currently, we use the following external packages and versions:
  libXext-1.3.3
  libXrender-0.9.8
  freefont[-ttf]-20100919
- atk-2.12.0
  gdk-pixbuf-2.30.8
  gtk+-2.24.24
 

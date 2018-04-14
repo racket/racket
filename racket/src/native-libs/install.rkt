@@ -19,6 +19,7 @@
     "libpango-1.0.0"
     "libpangocairo-1.0.0"
     "libpangoft2-1.0.0"
+    "libatk-1.0.0"
     "libexpat.1"
     "libfontconfig.1"
     "libfreetype.6"
@@ -59,7 +60,6 @@
      "libsqlite3.0")
    '("libgtk-x11-2.0.0"
      "libgdk-x11-2.0.0"
-     "libatk-1.0.0"
      "libgdk_pixbuf-2.0.0")))
 (define linux-remove-libs
   '("libintl.9"))
@@ -161,7 +161,7 @@
      #t
      #f
      (["libgtk-x11-2.0.0" "GTK+ is released under the GNU Library General Public License (GNU LGPL)."]
-      ["libatk-1.0.0" "ATK is released under the GNU Library General Public License (GNU LGPL)."]
+      ["libatk" "ATK is released under the GNU Library General Public License (GNU LGPL)."]
       "libgdk-x11-2.0.0"
       "libgdk_pixbuf-2.0.0")]
 
