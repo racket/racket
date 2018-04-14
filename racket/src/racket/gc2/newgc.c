@@ -802,8 +802,8 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
 
   if (!inheritgc) {
     register_weak_traversers(gc);
+    initialize_signal_handler(gc);
   }
-  initialize_signal_handler(gc);
   GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
   GC_add_roots(&gc->park_fsave, (char *)&gc->park_fsave + sizeof(gc->park_fsave) + 1);
   GC_add_roots(&gc->park_isave, (char *)&gc->park_isave + sizeof(gc->park_isave) + 1);
