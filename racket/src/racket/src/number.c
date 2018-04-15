@@ -5424,6 +5424,35 @@ SAFE_EXTFL(log)
 
 SAFE_BIN_EXTFL(expt)
 
+static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
+{
+  intptr_t v, base, amt, kept;
+
+  /* Unlike folding for other fixnum operations, even if the arguments
+     are fixnums, we must specifically ensure that the result is a
+     fixnum. It's up to the programmer to ensure that fixnums passed
+     in are ok for all platforms, but we have to bail out of folding
+     if the result is not going to be consistent for all platforms. */
+  if (!SCHEME_INTP(argv[0]) || !SCHEME_INTP(argv[1]))
+    scheme_signal_error("unsafe-fxlshift: arguments are not both fixnums");
+
+  amt = SCHEME_INT_VAL(argv[1]);
+  kept = (sizeof(intptr_t) * 8) - amt - 2; /* bits that are definitely kept */
+  if ((amt >= 29) || (kept <= 1))
+    scheme_signal_error("unsafe-fxlshift: shift is too large");
+
+  base = SCHEME_INT_VAL(argv[0]);
+  /* Consistent if potentially unkept bits are all 0 or 1 */
+  if (!(base - (base & ((1 << kept) - 1)))
+      || !(~(base | ((1 << kept) - 1)))) {
+    v = base << amt;
+    
+    return scheme_make_integer(v);
+  } else {
+    scheme_signal_error("unsafe-fxlshift: result is not clearly consistent across platforms");
+    return NULL;
+  }
+}
 
 #define UNSAFE_FX(name, op, fold, type)                           \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
@@ -5437,8 +5466,7 @@ SAFE_BIN_EXTFL(expt)
 UNSAFE_FX(unsafe_fx_and, &, scheme_bitwise_and, intptr_t)
 UNSAFE_FX(unsafe_fx_or, |, bitwise_or, intptr_t)
 UNSAFE_FX(unsafe_fx_xor, ^, bitwise_xor, intptr_t)
-UNSAFE_FX(unsafe_fx_lshift, <<, scheme_bitwise_shift, uintptr_t)
-
+UNSAFE_FX(unsafe_fx_lshift, <<, fold_fixnum_bitwise_shift, uintptr_t)
 UNSAFE_FX(unsafe_fx_rshift, >>, neg_bitwise_shift, intptr_t)
 
 static Scheme_Object *unsafe_fx_not (int argc, Scheme_Object *argv[])

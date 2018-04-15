@@ -77,7 +77,7 @@ the result is always a @tech{fixnum}. The @racket[unsafe-fxlshift] and
 @racket[arithmetic-shift], but require non-negative arguments;
 @racket[unsafe-fxlshift] is a positive (i.e., left) shift, and
 @racket[unsafe-fxrshift] is a negative (i.e., right) shift, where the
-number of bits to shift must be less than the number of bits used to
+number of bits to shift must be no more than the number of bits used to
 represent a @tech{fixnum}. In the case of @racket[unsafe-fxlshift],
 bits in the result beyond the number of bits used to represent a
 @tech{fixnum} are effectively replaced with a copy of the high bit.}

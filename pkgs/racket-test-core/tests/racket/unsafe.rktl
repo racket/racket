@@ -719,5 +719,15 @@
       #:key cdr)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that constant folding doesn't go wrong for `unsafe-fxlshift`:
+
+(test #t fixnum? (if (eqv? 64 (system-type 'word))
+                     (unsafe-fxlshift 1 62)
+                     (unsafe-fxlshift 1 30)))
+(test #t zero? (if (eqv? 64 (system-type 'word))
+                   (unsafe-fxlshift 1 63)
+                   (unsafe-fxlshift 1 31)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
