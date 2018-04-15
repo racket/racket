@@ -97,7 +97,7 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     lseek(fd1, pos1, SEEK_SET);    
     Sregister_boot_file_fd("petite", fd1);
     
-    fd2 = open(self, O_RDONLY | O_BINARY);
+    fd2 = open(self, O_RDONLY | BOOT_O_BINARY);
     lseek(fd2, pos2, SEEK_SET);
     Sregister_boot_file_fd("scheme", fd2);
   }

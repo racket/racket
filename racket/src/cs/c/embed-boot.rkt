@@ -31,13 +31,21 @@
           (add-racket-section src-file dest-file #".rackboot"
                               (lambda (pos)
                                 (values data 'any1 'any2))))
+        (define (ensure-executable dest-file)
+          (let* ([perms1 (file-or-directory-permissions dest-file 'bits)]
+                 [perms2 (bitwise-ior user-read-bit user-write-bit user-execute-bit
+                                      perms1)])
+            (unless (equal? perms1 perms2)
+              (file-or-directory-permissions dest-file perms2))))
         (cond
           [start-pos
            ;; Success as ELF
+           (ensure-executable dest-file)
            start-pos]
           [else
            ;; Not ELF; just append to the end
            (copy-file src-file dest-file #t)
+           (ensure-executable dest-file)
            (define pos (file-size dest-file))
            (call-with-output-file*
             dest-file
