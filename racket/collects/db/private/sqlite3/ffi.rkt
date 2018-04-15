@@ -251,9 +251,10 @@
 (define-sqlite sqlite3_value_blob (_fun _sqlite3_value -> _pointer))
 (define-sqlite sqlite3_value_text (_fun _sqlite3_value -> _pointer))
 
-(define-ffi-definer define-rkt #f)
-(define-rkt scheme_make_sized_utf8_string (_fun _pointer _intptr -> _racket))
-(define-rkt scheme_make_sized_byte_string (_fun _pointer _intptr -> _racket))
+(define (pointer->bytes p len)
+  (define bstr (make-bytes len))
+  (memcpy bstr p len)
+  bstr)
 
 (define _sqlite3_value*
   (make-ctype _sqlite3_value
@@ -263,11 +264,11 @@
                 (cond [(= type SQLITE_INTEGER) (sqlite3_value_int64 v)]
                       [(= type SQLITE_FLOAT)   (sqlite3_value_double v)]
                       [(= type SQLITE_TEXT)
-                       (scheme_make_sized_utf8_string (sqlite3_value_text v)
-                                                      (sqlite3_value_bytes v))]
+                       (bytes->string/utf-8 (pointer->bytes (sqlite3_value_text v)
+                                                            (sqlite3_value_bytes v)))]
                       [(= type SQLITE_BLOB)
-                       (scheme_make_sized_byte_string (sqlite3_value_blob v)
-                                                      (sqlite3_value_bytes v))]
+                       (pointer->bytes (sqlite3_value_blob v)
+                                       (sqlite3_value_bytes v))]
                       [else (error '_sqlite3_value* "cannot convert: ~e (type = ~s)" v type)]))))
 
 (define-sqlite sqlite3_create_function_v2
