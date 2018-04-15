@@ -4104,7 +4104,7 @@ static int more_common1(mz_jit_state *jitter, void *_data)
 
     sjc.hash_ref_code = jit_get_ip();
 
-    mz_prolog(JIT_R2);
+    mz_prolog(JIT_V1);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
     CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);

@@ -5586,7 +5586,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       scheme_mz_load_retained(jitter, JIT_R2, app->args[3]);
       (void)jit_calli(sjc.hash_ref_code);
-      jit_retval(dest);
+      jit_movr_p(dest, JIT_R0);
       CHECK_LIMIT();
 
       __START_SHORT_JUMPS__(1);
