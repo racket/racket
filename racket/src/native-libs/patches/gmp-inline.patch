@@ -1,0 +1,34 @@
+diff -r -u orig/gmp/gmp.h next/gmp/gmp.h
+--- orig/gmp/gmp.h	2018-04-15 10:52:05.000000000 -0600
++++ next/gmp/gmp.h	2018-04-15 10:50:19.000000000 -0600
+@@ -129,7 +129,6 @@
+ #define __GMP_DECLSPEC
+ #endif
+ 
+-
+ #ifdef __GMP_SHORT_LIMB
+ typedef unsigned int		mp_limb_t;
+ typedef int			mp_limb_signed_t;
+@@ -361,7 +360,7 @@
+   || (defined __GNUC_GNU_INLINE__ && defined __cplusplus)
+ #define __GMP_EXTERN_INLINE extern __inline__ __attribute__ ((__gnu_inline__))
+ #else
+-#define __GMP_EXTERN_INLINE      extern __inline__
++#define __GMP_EXTERN_INLINE      static inline
+ #endif
+ #define __GMP_INLINE_PROTOTYPES  1
+ #endif
+@@ -616,9 +615,12 @@
+ #define mpz_realloc __gmpz_realloc
+ __GMP_DECLSPEC void *_mpz_realloc (mpz_ptr, mp_size_t);
+ 
++#undef __GMP_INLINE_PROTOTYPES
++#define  __GMP_INLINE_PROTOTYPES 0
++
+ #define mpz_abs __gmpz_abs
+ #if __GMP_INLINE_PROTOTYPES || defined (__GMP_FORCE_mpz_abs)
+-__GMP_DECLSPEC void mpz_abs (mpz_ptr, mpz_srcptr);
++  __GMP_DECLSPEC void mpz_abs (mpz_ptr, mpz_srcptr);
+ #endif
+ 
+ #define mpz_add __gmpz_add

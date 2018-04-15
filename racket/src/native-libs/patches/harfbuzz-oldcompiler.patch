@@ -1,0 +1,88 @@
+diff -u -r orig/harfbuzz-1.7.6/src/hb-ot-color-cbdt-table.hh next/harfbuzz-1.7.6/src/hb-ot-color-cbdt-table.hh
+--- orig/harfbuzz-1.7.6/src/hb-ot-color-cbdt-table.hh	2018-03-07 01:25:16.000000000 -0700
++++ next/harfbuzz-1.7.6/src/hb-ot-color-cbdt-table.hh	2018-04-15 08:12:47.000000000 -0600
+@@ -327,7 +327,7 @@
+ 		  sizeTables.sanitize (c, this));
+   }
+ 
+-  protected:
++  public:
+   const IndexSubtableRecord *find_table (hb_codepoint_t glyph,
+ 					 unsigned int *x_ppem, unsigned int *y_ppem) const
+   {
+diff -u -r orig/harfbuzz-1.7.6/src/hb-ot-font.cc next/harfbuzz-1.7.6/src/hb-ot-font.cc
+--- orig/harfbuzz-1.7.6/src/hb-ot-font.cc	2018-03-07 01:25:16.000000000 -0700
++++ next/harfbuzz-1.7.6/src/hb-ot-font.cc	2018-04-15 08:12:45.000000000 -0600
+@@ -38,6 +38,8 @@
+ 
+ #include "hb-ot-color-cbdt-table.hh"
+ 
++const unsigned int OT::KernOT::SubTableWrapper::min_size;
++const unsigned int OT::KernAAT::SubTableWrapper::min_size;
+ 
+ struct hb_ot_font_t
+ {
+diff -u -r orig/harfbuzz-1.7.6/src/hb-ot-glyf-table.hh next/harfbuzz-1.7.6/src/hb-ot-glyf-table.hh
+--- orig/harfbuzz-1.7.6/src/hb-ot-glyf-table.hh	2018-03-07 01:25:16.000000000 -0700
++++ next/harfbuzz-1.7.6/src/hb-ot-glyf-table.hh	2018-04-15 08:12:47.000000000 -0600
+@@ -55,7 +55,7 @@
+     return_trace (true);
+   }
+ 
+-  protected:
++  public:
+   HBUINT8		dataX[VAR];		/* Location data. */
+   DEFINE_SIZE_ARRAY (0, dataX);
+ };
+diff -u -r orig/harfbuzz-1.7.6/src/hb-private.hh next/harfbuzz-1.7.6/src/hb-private.hh
+--- orig/harfbuzz-1.7.6/src/hb-private.hh	2018-02-18 12:36:12.000000000 -0700
++++ next/harfbuzz-1.7.6/src/hb-private.hh	2018-04-15 08:12:47.000000000 -0600
+@@ -327,7 +327,7 @@
+ static inline HB_CONST_FUNC unsigned int
+ _hb_popcount (T v)
+ {
+-#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) && defined(__OPTIMIZE__)
++#if 0 && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) && defined(__OPTIMIZE__)
+   if (sizeof (T) <= sizeof (unsigned int))
+     return __builtin_popcount (v);
+ 
+@@ -414,7 +414,7 @@
+   if (sizeof (T) <= 8)
+   {
+     /* "bithacks" */
+-    const uint64_t b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000, 0xFFFFFFFF00000000};
++    const uint64_t b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000, 0xFFFFFFFF00000000ULL};
+     const unsigned int S[] = {1, 2, 4, 8, 16, 32};
+     unsigned int r = 0;
+     for (int i = 5; i >= 0; i--)
+@@ -489,12 +489,12 @@
+     unsigned int c = 64;
+     v &= - (int64_t) (v);
+     if (v) c--;
+-    if (v & 0x00000000FFFFFFFF) c -= 32;
+-    if (v & 0x0000FFFF0000FFFF) c -= 16;
+-    if (v & 0x00FF00FF00FF00FF) c -= 8;
+-    if (v & 0x0F0F0F0F0F0F0F0F) c -= 4;
+-    if (v & 0x3333333333333333) c -= 2;
+-    if (v & 0x5555555555555555) c -= 1;
++    if (v & 0x00000000FFFFFFFFULL) c -= 32;
++    if (v & 0x0000FFFF0000FFFFULL) c -= 16;
++    if (v & 0x00FF00FF00FF00FFULL) c -= 8;
++    if (v & 0x0F0F0F0F0F0F0F0FULL) c -= 4;
++    if (v & 0x3333333333333333ULL) c -= 2;
++    if (v & 0x5555555555555555ULL) c -= 1;
+     return c;
+   }
+   if (sizeof (T) == 16)
+diff -u -r orig/harfbuzz-1.7.6/src/hb-subset.cc next/harfbuzz-1.7.6/src/hb-subset.cc
+--- orig/harfbuzz-1.7.6/src/hb-subset.cc	2018-02-27 11:50:36.000000000 -0700
++++ next/harfbuzz-1.7.6/src/hb-subset.cc	2018-04-15 08:12:45.000000000 -0600
+@@ -42,6 +42,8 @@
+ #include "hb-ot-maxp-table.hh"
+ #include "hb-ot-os2-table.hh"
+ 
++const hb_tag_t OT::OpenTypeFontFile::CFFTag;
++const hb_tag_t OT::OpenTypeFontFile::TrueTypeTag;
+ 
+ #ifndef HB_NO_VISIBILITY
+ const void * const OT::_hb_NullPool[HB_NULL_POOL_SIZE / sizeof (void *)] = {};

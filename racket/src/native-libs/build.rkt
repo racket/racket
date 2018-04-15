@@ -153,6 +153,9 @@
 ;; 64-bit MinGW doesn't like this use of `__always_inline__`:
 (define-runtime-path noforceinline-patch "patches/noforceinline.patch")
 
+;; `vector` syntax with old gcc
+(define-runtime-path pixman-altivec-patch "patches/pixman-altivec.patch")
+
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
 (define-runtime-path libtool-link-patch "patches/libtool-link.patch")
@@ -161,6 +164,12 @@
 ;; Add FcSetFallbackDirs to set fallback directories dynamically:
 (define-runtime-path fcdirs-patch "patches/fcdirs.patch")
 (define-runtime-path fonts-conf "patches/fonts.conf")
+
+;; Avoid problems compiling with an old version of g++
+(define-runtime-path harfbuzz-oldcompiler-patch "patches/harfbuzz-oldcompiler.patch")
+
+;; Adapt inline-function handling for an old gcc
+(define-runtime-path gmp-inline-patch "patches/gmp-inline.patch")
 
 ;; --------------------------------------------------
 ;; General environment and flag configuration:
@@ -439,9 +448,10 @@
                                                       "--without-libintl-prefix")
                                                     '()))
                             #:patches (list fcdirs-patch))]
-    [("pixman") (config #:patches (if (and win? (not m32?))
-                                      (list noforceinline-patch)
-                                      null))]
+    [("pixman") (config #:patches (cond
+                                    [(and win? (not m32?)) (list noforceinline-patch)]
+                                    [ppc? (list pixman-altivec-patch)]
+                                    [else null]))]
     [("cairo")
      (when mac?
        (define zlib.pc (build-path dest "lib" "pkgconfig" "zlib.pc"))
@@ -466,7 +476,10 @@
                              courier-new-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
-                          #:env cxx-env)]
+                          #:env cxx-env
+                          #:patches (if ppc?
+                                        (list harfbuzz-oldcompiler-patch)
+                                        null))]
     [("fribidi") (config #:configure '("--disable-docs"))]
     [("pango") (config #:depends '("cairo" "harfbuzz" "fribidi")
                        #:env (if win? path-flags null)
@@ -493,12 +506,15 @@
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append
                                   '("--enable-shared" "--disable-static")
-                                  (if mac?
+                                  (if (and mac? (not ppc?))
                                       '("--build=corei-apple-darwin")
                                       null)
                                   (if (and m32? mac?)
                                       (list "ABI=32")
-                                      null)))]
+                                      null))
+                     #:post-patches (if (and mac? ppc?)
+                                        (list gmp-inline-patch)
+                                        null))]
     [("mpfr") (config #:configure (append (if win? '("--enable-thread-safe") null)
                                           '("--enable-shared" "--disable-static"))
                       #:depends '("gmp")

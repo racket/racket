@@ -1,0 +1,18 @@
+diff -r -u orig/pixman-0.34.0/pixman/pixman-vmx.c next/pixman-0.34.0/pixman/pixman-vmx.c
+--- orig/pixman-0.34.0/pixman/pixman-vmx.c	2016-01-04 02:13:54.000000000 -0700
++++ next/pixman-0.34.0/pixman/pixman-vmx.c	2018-04-15 06:43:36.000000000 -0600
+@@ -2933,10 +2933,10 @@
+ 	while (vx >= 0)
+ 	    vx -= src_width_fixed;
+ 
+-	tmp[0] = tmp1;
+-	tmp[1] = tmp2;
+-	tmp[2] = tmp3;
+-	tmp[3] = tmp4;
++	((unsigned int *)&tmp)[0] = tmp1;
++	((unsigned int *)&tmp)[1] = tmp2;
++	((unsigned int *)&tmp)[2] = tmp3;
++	((unsigned int *)&tmp)[3] = tmp4;
+ 
+ 	vsrc = combine4 ((const uint32_t *) &tmp, pm);
+ 
