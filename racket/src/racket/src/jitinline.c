@@ -5553,7 +5553,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     } else if (IS_NAMED_PRIM(rator, "hash-ref")) {
       GC_CAN_IGNORE jit_insn *refdone0, *refdone, *refslow;
       
-      /* We only get here is we have three arguments with the last as a
+      /* We only get here if we have three arguments with the last as a
          non-procedure constant */
 
       scheme_generate_two_args(app->args[1], app->args[2], jitter, 1, 3);
@@ -5586,7 +5586,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       scheme_mz_load_retained(jitter, JIT_R2, app->args[3]);
       (void)jit_calli(sjc.hash_ref_code);
-      jit_movr_p(dest, JIT_R0);
+      jit_retval(dest);
       CHECK_LIMIT();
 
       __START_SHORT_JUMPS__(1);
