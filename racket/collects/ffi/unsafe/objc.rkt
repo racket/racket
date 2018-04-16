@@ -729,11 +729,10 @@
       (objc_addClass (cast id _Class _objc_class-pointer))))
 
 (define (add-protocol id proto)
-  (unless proto
-    (error 'add-protocol "NULL protocol"))
-  (if class_addProtocol
-      (class_addProtocol id proto)
-      (add-protocol-the-hard-way id proto)))
+  (when proto
+    (if class_addProtocol
+        (class_addProtocol id proto)
+        (add-protocol-the-hard-way id proto))))
 
 (define (object-get-class id)
   (if object_getClass

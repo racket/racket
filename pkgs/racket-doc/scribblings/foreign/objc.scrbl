@@ -160,7 +160,8 @@ FFI type @racket[_Class]). The @racket[superclass-expr] should produce
 an Objective-C class or @racket[#f] for the superclass. An optional
 @racket[#:mixins] clause can specify mixins defined with
 @racket[define-objc-mixin]. An optional @racket[#:protocols] clause
-can specify Objective-C protocols to be implemented by the class.
+can specify Objective-C protocols to be implemented by the class, where
+a @racket[#f] result for a @racket[protocol-expr] is ignored.
 
 Each @racket[field-id] is an instance field that holds a Racket value
 and that is initialized to @racket[#f] when the object is
@@ -203,7 +204,10 @@ space for each @racket[field-id] within the instance is deallocated.
    (- _void (dealloc)
       (when bm (done-with-bm bm))))
  (void))
-]}
+]
+
+@history[#:changed "6.90.0.26" @elem{Changed @racket[#:protocols] handling to
+                                     ignore @racket[#f] expression results.}]}
 
 @defform[(define-objc-mixin (class-id superclass-id)
            maybe-mixins
