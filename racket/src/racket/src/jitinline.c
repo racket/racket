@@ -1854,7 +1854,6 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         else if (can_chaperone) {
           (void)jit_calli(sjc.bad_vector_length_code);
           /* can return with updated R0 */
-          jit_retval(JIT_R0);
         } else {
           (void)jit_calli(sjc.bad_vector_star_length_code);
           /* does not return */
@@ -2037,7 +2036,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __START_TINY_JUMPS__(1);
       ref = mz_bnei_t(jit_forward(), JIT_R0, scheme_chaperone_type, JIT_R1);
       (void)jit_calli(sjc.unbox_code);
-      jit_retval(dest);
+      jit_movr_p(dest, JIT_R0);
       ref2 = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
       CHECK_LIMIT();
@@ -4312,7 +4311,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       /* (slow path) */
       refslow = jit_get_ip();
       (void)jit_calli(sjc.make_rectangular_code);
-      jit_retval(dest);
+      jit_movr_p(dest, JIT_R0);
       CHECK_LIMIT();
       refdone = jit_jmpi(jit_forward());
       /* (end of slow path) */
