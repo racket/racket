@@ -17,8 +17,8 @@ Currently, we use the following external packages and versions:
 
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed`)
- sqlite[-autoconf]-3220000 (Windows and Linux only)
- openssl-1.1.0h (current PPC binaries are 1.0.1g)
+ sqlite[-autoconf]-3220000 (Windows, Linux, and PPC Mac OS only)
+ openssl-1.1.0h
  libiconv-1.15 (Windows only)
  zlib-1.2.11 (Windows and Linux only)
  libffi-3.2.1
@@ -33,7 +33,7 @@ Currently, we use the following external packages and versions:
  fribidi-1.0.2
  fontconfig-2.13.0
  freetype-2.9
- pango-1.42.0 (current PPC binaries are 1.36.3)
+ pango-1.42.0
  poppler-0.24.5
  mpfr-3.1.6
  gmp-6.1.2
