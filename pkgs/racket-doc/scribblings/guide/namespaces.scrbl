@@ -228,7 +228,8 @@ A @tech{namespace} encapsulates two pieces of information:
        every identifier to an uninitialized top-level variable.}
 
  @item{A mapping from module names to module declarations and
-       instances.}
+       instances. (The distinction between declaration and instance is
+       discussed in @secref["macro-module"].)}
 
 ]
 

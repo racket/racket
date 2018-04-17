@@ -15,11 +15,15 @@ make simple transformations easy to implement and reliable to
 use. Racket also supports arbitrary macro transformers that are
 implemented in Racket---or in a macro-extended variant of Racket.
 
-(For a bottom-up introduction of Racket macro, you may refer to: @(hyperlink "http://www.greghendershott.com/fear-of-macros/" "Fear of Macros"))
+This chapter provides an introduction to Racket macros, but see
+@hyperlink["http://www.greghendershott.com/fear-of-macros/"]{@italic{Fear of
+Macros}} for an introduction from a different perspective.
 
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------
 @include-section["pattern-macros.scrbl"]
 @include-section["proc-macros.scrbl"]
+@include-section["macro-module.scrbl"]
+
 

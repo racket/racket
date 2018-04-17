@@ -15,3 +15,4 @@ libraries.
 @include-section["module-require.scrbl"]
 @include-section["module-provide.scrbl"]
 @include-section["module-set.scrbl"]
+@include-section["module-macro.scrbl"]
