@@ -39,9 +39,9 @@ module's body. For example, evaluating
   (printf "picked ~a\n" n))
 ]
 
-declares the module @racket[number], but it doesn't immediately pick a
+declares the module @racket[number-n], but it doesn't immediately pick a
 random number for @racket[n] or display the number. A @racket[require]
-of @racket[number] causes the module to be @deftech{instantiated}
+of @racket[number-n] causes the module to be @deftech{instantiated}
 (i.e., it triggers an @deftech{instantiation}), which implies that the
 expressions in the body of the module are evaluated:
 
@@ -105,7 +105,7 @@ instantiated already):
 In the same way that declaring a module does not by itself instantiate
 a module, declaring a module that @racket[require]s another module
 does not by itself instantiate the @racket[require]d module, as
-illustrated in the preceding example. However, declaraing a module
+illustrated in the preceding example. However, declaring a module
 @emph{does} expand and compile the module. If a module imports another
 with @racket[(require (for-syntax ....))], then module that is
 imported @racket[for-syntax] must be instantiated during expansion:
