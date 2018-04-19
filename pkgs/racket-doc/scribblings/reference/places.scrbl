@@ -151,7 +151,7 @@ are simulated using @racket[thread].}
  the place.
 
  The module indicated by @racket[module-path] must export a function
- with the name @racket[start-proc]. The function must accept a single
+ with the name @racket[start-name]. The function must accept a single
  argument, which is a @tech{place channel} that corresponds to the
  other end of communication for the @tech{place descriptor} returned
  by @racket[place].
@@ -168,7 +168,7 @@ such as a distributed places node produced by @racket[create-place-node].
  is converted to @racket[0].
 
  If the function indicated by @racket[module-path] and
- @racket[start-proc] returns, then the place terminates with the
+ @racket[start-name] returns, then the place terminates with the
  @tech{completion value} @racket[0].
 
  In the created place, the @racket[current-input-port] parameter is
