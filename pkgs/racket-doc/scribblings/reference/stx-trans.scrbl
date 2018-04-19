@@ -458,11 +458,19 @@ An @tech{internal-definition context} internally creates a
 within the context or that appears as the result of a (partial)
 expansion within the context.
 
-If @racket[intdef-ctx] is not @racket[#f], then the new
-internal-definition context extends the given one. An extending
-definition context adds all @tech{scopes} that are added by
-@racket[intdef-ctx], and expanding in the new internal-definition context
-can use bindings previously introduced into @racket[intdef-ctx].
+If @racket[intdef-ctx] is not @racket[#f], then the new internal-definition context extends the given
+one. When bindings are added to an extending definition context using
+@racket[syntax-local-bind-syntaxes], all @tech{scopes} that would be added by @racket[intdef-ctx] are
+also added to both the binding identifiers and expression to be expanded and evaluated in the
+transformer environment. Additionally, all bindings previously introduced into @racket[intdef-ctx] are
+can be used by the expression.
+
+Note that @racket[intdef-ctx] is only used when adding bindings using
+@racket[syntax-local-bind-syntaxes]; it does @emph{not} affect which @tech{scopes} are added by
+@racket[internal-definition-context-introduce] or @racket[local-expand]. If the bindings introduced
+into @racket[intdef-ctx] should be available alongside the ones introduced into the new
+internal-definition context, @emph{both} @racket[intdef-ctx] and the new context must be explicitly
+included in the fourth argument to @racket[local-expand].
 
 @transform-time[]
 
