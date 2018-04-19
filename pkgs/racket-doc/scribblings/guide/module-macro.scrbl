@@ -59,7 +59,7 @@ with
                (+ x y))]
 
 Since @racket[show-arguments] isn't provided by the @racket[noisy]
-module, howevere, this literal textual replacement is not quite right.
+module, however, this literal textual replacement is not quite right.
 The actual replacement correctly tracks the origin of identifiers like
 @racket[show-arguments], so they can refer to other definitions in the
 place where the macro is defined---even if those identifiers are not

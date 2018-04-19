@@ -152,7 +152,7 @@ make compilation reliably separate and more deterministic.
 
 The expanded forms of @racket[use-p-at-compile-time] and
 @racket[use-p-again-at-compile-time] record the number that was
-seelcted each time, so those two different numbes are printed when the
+selected each time, so those two different numbers are printed when the
 modules are instantiated:
 
 @examples[
@@ -380,13 +380,13 @@ modules, but no modules were made newly available by simply evaluating
 When a module @racket[require]s another module using @racket[for-meta
 _n] for some @racket[_n] greater than 1, the @racket[require]d module
 is made @tech{available} at phase @racket[_n]. A module that is
-@tech{available} at phase @racket[_n] is @tech{visit}ed some some
+@tech{available} at phase @racket[_n] is @tech{visit}ed when some
 expression at phase @math{@racket[_n]-1} is expanded.
 
 To help illustrate, the following examples use
 @racket[(variable-reference->module-base-phase
 (#%variable-reference))], which returns a number for the phase at
-which the enclosing module is instaniated:
+which the enclosing module is instantiated:
 
 
 @examples[
@@ -420,7 +420,7 @@ following module includes a phase-1 expression after the phase-2
 If we @racket[require] the module @racket[use-at-phase-1] at the top
 level, then @racket[show-phase] is made @tech{available} at phase 1.
 Evaluating another expression causes @racket[use-at-phase-1] to be
-@tech{visit}ed, which in turn instanitates @racket[show-phase]:
+@tech{visit}ed, which in turn instantitates @racket[show-phase]:
 
 @examples[
 #:label #f
@@ -431,7 +431,7 @@ Evaluating another expression causes @racket[use-at-phase-1] to be
 
 A @racket[require] of @racket[use-at-phase-2] is similar, except that
 @racket[show-phase] is made @tech{available} at phase 2, so it is not
-instaniated until some expression is expanded at phase 1:
+instantiated until some expression is expanded at phase 1:
 
 @examples[
 #:label #f
