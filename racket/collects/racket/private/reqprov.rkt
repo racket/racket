@@ -1177,7 +1177,7 @@
     (datum->syntax
      (import-orig-stx i)
      (list #'just-meta
-           (import-req-mode i)
+           (import-orig-mode i)
            (list #'for-meta
                  (import-mode i)
                  (list #'rename

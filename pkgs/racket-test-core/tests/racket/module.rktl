@@ -2480,5 +2480,13 @@ case of module-leve bindings; it doesn't cover local bindings.
   (begin-for-syntax))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `local-require` with a phase shift
+
+(module local-require-with-phase-shift racket/base
+  (let ()
+    (local-require (for-template racket/base))
+    (void)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
