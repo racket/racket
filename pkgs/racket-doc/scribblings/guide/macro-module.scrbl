@@ -325,7 +325,7 @@ not yet specified what happens with @racket[for-meta 2] for when
 If you think of the top-level as a kind of module that is continuously
 expanded, the above rules imply that @racket[require] of another
 module at the top level both instantiates and visits the other module
-(it it is not already instantiated and visited). That's roughly true,
+(if it is not already instantiated and visited). That's roughly true,
 but the visit is made lazy in a way that is also explained in the next
 section, @secref["stx-available-module"].
 
@@ -343,14 +343,14 @@ A top-level @racket[require] of a module does not actually
 @deftech{available}. An @tech{available} module will be @tech{visit}ed
 when a future expression needs to be expanded in the same context. The
 next expression may or may not involve some imported macro that needs
-it's compile-time helpers evaluated by @tech{visit}ing, but the module
+its compile-time helpers evaluated by @tech{visit}ing, but the module
 system proactively @tech{visit}s the module, just in case.
 
 In the following example, a random number is picked as a result of
 visiting a module's own body while that module is being expanded. A
 @racket[require] of the module instantiates it, printing ``running'',
 and also makes the module @tech{available}. Evaluating any other
-expression implies expanding the expression, and that expansions
+expression implies expanding the expression, and that expansion
 triggers a @tech{visit} of the @tech{available} module---which picks
 another random number:
 
