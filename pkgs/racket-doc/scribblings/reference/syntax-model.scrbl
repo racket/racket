@@ -157,10 +157,10 @@ relevant.
 
 A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
 @tech{lexical information}, source-location information, @tech{syntax properties}, and @tech{tamper
-status}. The @deftech{lexical information} of a @tech{syntax object} is comprised of a set of
-@tech{scope sets}, one for each @tech{phase level}. In particular, an @tech{identifier} is represented
-as a syntax object containing a @tech{symbol}, and its @tech{lexical information} can be combined with
-the global table of bindings to determine its @tech{binding} (if any) at each @tech{phase level}.
+status}. The @deftech{lexical information} of a @tech{syntax object} comprises a set of @tech{scope
+sets}, one for each @tech{phase level}. In particular, an @tech{identifier} is represented as a syntax
+object containing a @tech{symbol}, and its @tech{lexical information} can be combined with the global
+table of bindings to determine its @tech{binding} (if any) at each @tech{phase level}.
 
 For example, a @racketidfont{car} @tech{identifier} might have
 @tech{lexical information} that designates it as the @racket[car] from
