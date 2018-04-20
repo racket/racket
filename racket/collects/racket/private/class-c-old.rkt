@@ -1699,11 +1699,8 @@
             [c (in-list method-contracts)]
             [method-proj (in-list method-projs)])
         (when c
-          (unless (just-check-existence? c)
+          (when method-proj
             (define i (hash-ref method-ht m))
-            (define p ((contract-late-neg-projection c)
-                       (blame-add-context blame (format "the ~a method in" m)
-                                          #:important m)))
             (vector-set! meths i (make-method (method-proj (vector-ref meths i) neg-party) m))))))
     
     ;; Handle external field contracts
