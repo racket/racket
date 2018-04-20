@@ -26,7 +26,12 @@
          identifier-remove-from-definition-context
          
          make-local-expand-context
-         flip-introduction-scopes)
+         flip-introduction-scopes
+
+         intdefs?
+         intdefs?-string
+         intdefs-or-false?
+         intdefs-or-false?-string)
 
 (struct internal-definition-context (frame-id      ; identifies the frame for use-site scopes
                                      scope         ; scope that represents the context
@@ -54,7 +59,7 @@
   (internal-definition-context frame-id sc add-scope? (box null)))
 
 ;; syntax-local-bind-syntaxes
-(define (syntax-local-bind-syntaxes ids s intdef)
+(define (syntax-local-bind-syntaxes ids s intdef [extra-intdefs '()])
   (unless (and (list? ids)
                (andmap identifier? ids))
     (raise-argument-error 'syntax-local-bind-syntaxes "(listof identifier?)" ids))
@@ -62,15 +67,19 @@
     (raise-argument-error 'syntax-local-bind-syntaxes "(or/c syntax? #f)" s))
   (unless (internal-definition-context? intdef)
     (raise-argument-error 'syntax-local-bind-syntaxes "internal-definition-context?" intdef))
+  (unless (intdefs? extra-intdefs)
+    (raise-argument-error 'syntax-local-bind-syntaxes intdefs?-string extra-intdefs))
   (define ctx (get-current-expand-context 'local-expand))
   (log-expand ctx 'local-bind ids)
   (define phase (expand-context-phase ctx))
-  (define intdef-env (add-intdef-bindings (expand-context-env ctx)
-                                          intdef))
+  (define all-intdefs (if (list? extra-intdefs)
+                          (cons intdef extra-intdefs)
+                          (list intdef extra-intdefs)))
   (define intdef-ids (for/list ([id (in-list ids)])
                        (define pre-id (remove-use-site-scopes (flip-introduction-scopes id ctx)
                                                               ctx))
-                       (add-intdef-scopes pre-id intdef #:always? #t)))
+                       (add-intdef-scopes (add-intdef-scopes pre-id intdef #:always? #t)
+                                          extra-intdefs)))
   (log-expand ctx 'rename-list intdef-ids)
   (define syms (for/list ([intdef-id (in-list intdef-ids)])
                  (add-local-binding! intdef-id phase (root-expand-context-counter ctx)
@@ -78,9 +87,8 @@
   (define vals
     (cond
      [s
-      (define input-s (flip-introduction-scopes (add-intdef-scopes s intdef #:always? #t)
-                                                ctx))
-      (define tmp-env (for/fold ([env intdef-env]) ([sym (in-list syms)])
+      (define input-s (flip-introduction-scopes (add-intdef-scopes s all-intdefs) ctx))
+      (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)])
                         (hash-set env sym variable)))
       (log-expand ctx 'enter-bind)
       (define vals
@@ -89,7 +97,7 @@
                                    (make-local-expand-context (struct*-copy expand-context ctx
                                                                             [env tmp-env])
                                                               #:context 'expression
-                                                              #:intdefs intdef)))
+                                                              #:intdefs all-intdefs)))
       (log-expand ctx 'exit-bind)
       vals]
      [else
@@ -117,12 +125,13 @@
   (unless (syntax? s)
     (raise-argument-error 'internal-definition-context-introduce "syntax?" s))
   (add-intdef-scopes s intdef
+                     #:always? #t
                      #:action (case mode
                                 [(add) add-scope]
                                 [(remove) remove-scope]
                                 [(flip) flip-scope]
                                 [else (raise-argument-error
-                                       internal-definition-context-introduce
+                                       'internal-definition-context-introduce
                                        "(or/c 'add 'remove 'flip)"
                                        mode)])))
 
@@ -144,6 +153,18 @@
                           intdef))
   (for/fold ([id id]) ([intdef (in-intdefs intdef)])
     (internal-definition-context-introduce intdef id 'remove)))
+
+;; For contract errors:
+(define (intdefs? x)
+  (or (internal-definition-context? x)
+      (and (list? x)
+           (andmap internal-definition-context? x))))
+(define intdefs?-string
+  "(or/c internal-definition-context? (listof internal-definition-context?))")
+(define (intdefs-or-false? x)
+  (or (not x) (intdefs? x)))
+(define intdefs-or-false?-string
+  "(or/c internal-definition-context? (listof internal-definition-context?) #f)")
 
 ;; Sequence for intdefs provided to `local-expand`
 (define-sequence-syntax in-intdefs
@@ -230,13 +251,13 @@
                              [else (or frame-id i-frame-id)]))]
                 [post-expansion-scope
                  #:parent root-expand-context
-                 (if intdefs
+                 (if (and intdefs (not (null? intdefs)))
                      (new-scope 'macro) ; placeholder; action uses `indefs`
                      (and same-kind?
                           (memq context '(module module-begin top-level))
                           (root-expand-context-post-expansion-scope ctx)))]
                 [post-expansion-scope-action
-                 (if intdefs
+                 (if (and intdefs (not (null? intdefs)))
                      (lambda (s placeholder-sc)
                        (add-intdef-scopes s intdefs))
                      (expand-context-post-expansion-scope-action ctx))]

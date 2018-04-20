@@ -22,19 +22,19 @@
          local-transformer-expand/capture-lifts
          syntax-local-expand-expression)
 
-(define (local-expand s context stop-ids [intdefs #f])
+(define (local-expand s context stop-ids [intdefs '()])
   (do-local-expand 'local-expand s context stop-ids intdefs))
 
-(define (local-expand/capture-lifts s context stop-ids [intdefs #f] [lift-key (generate-lift-key)])
+(define (local-expand/capture-lifts s context stop-ids [intdefs '()] [lift-key (generate-lift-key)])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:capture-lifts? #t
                    #:lift-key lift-key))
 
-(define (local-transformer-expand s context stop-ids [intdefs #f])
+(define (local-transformer-expand s context stop-ids [intdefs '()])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:as-transformer? #t))
 
-(define (local-transformer-expand/capture-lifts s context stop-ids [intdefs #f] [lift-key (generate-lift-key)])
+(define (local-transformer-expand/capture-lifts s context stop-ids [intdefs '()] [lift-key (generate-lift-key)])
   (do-local-expand 'local-expand s context stop-ids intdefs
                    #:as-transformer? #t
                    #:capture-lifts? #t
@@ -63,7 +63,7 @@
 
 ;; ----------------------------------------
 
-(define (do-local-expand who s-or-s-exp context stop-ids [intdefs #f]
+(define (do-local-expand who s-or-s-exp context stop-ids [intdefs '()]
                          #:capture-lifts? [capture-lifts? #f]
                          #:as-transformer? [as-transformer? #f]
                          #:to-parsed-ok? [to-parsed-ok? #f]
@@ -89,12 +89,8 @@
                (and (list? stop-ids)
                     (andmap identifier? stop-ids)))
      (raise-argument-error who "(or/c (listof identifier?) #f)" stop-ids))
-   (unless (or (not intdefs)
-               (internal-definition-context? intdefs)
-               (and (list? intdefs) (andmap internal-definition-context? intdefs)))
-     (raise-argument-error who
-                           "(or/c #f internal-definition-context? (listof internal-definition-context?))"
-                           intdefs))
+   (unless (intdefs-or-false? intdefs)
+     (raise-argument-error who intdefs-or-false?-string intdefs))
 
    (define ctx (get-current-expand-context who))
    (define phase (if as-transformer?

@@ -195,16 +195,22 @@ is used as the basis for the identifier's name.
                                             [stx syntax?])
          syntax?]{
 
-Applies the renamings of @racket[intdef-ctx] to @racket[stx].
+Equivalent to @racket[(internal-definition-context-introduce intdef-ctx stx 'add)]. The
+@racket[internal-definition-context-apply] function is provided for backwards compatibility; the more
+general @racket[internal-definition-context-introduce] function is preferred.
 }
 
 @defproc[(syntax-local-eval [stx syntax?]
-                            [intdef-ctx (or/c internal-definition-context? #f) #f])
+                            [intdef-ctx (or/c internal-definition-context?
+                                              (listof internal-definition-context?)
+                                              #f)
+                             '()])
          any]{
 
-Evaluates @racket[stx] as an expression in the current transformer
-environment (that is, at phase level 1), optionally extended with
-@racket[intdef-ctx].
+Evaluates @racket[stx] as an expression in the current @tech{transformer environment} (that is, at
+@tech{phase level} 1). If @racket[intdef-ctx] is not @racket[#f], the value provided for
+@racket[intdef-ctx] is used to enrich @racket[stx]’s @tech{lexical information} and extend the
+@tech{local binding context} in the same way as the fourth argument to @racket[local-expand].
 
 @examples[#:eval the-eval
 (define-syntax (show-me stx)
@@ -220,6 +226,11 @@ environment (that is, at phase level 1), optionally extended with
 (define fruit 'pear)
 (show-me fruit)
 ]
+
+@history[
+ #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
+                             contexts in addition to a single internal-definition context or
+                             @racket[#f].}]
 }
 
 @defform[(with-syntax* ([pattern stx-expr] ...)

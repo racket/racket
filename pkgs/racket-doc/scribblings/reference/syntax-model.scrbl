@@ -155,15 +155,12 @@ relevant.
 @;------------------------------------------------------------------------
 @section[#:tag "stxobj-model"]{Syntax Objects}
 
-A @deftech{syntax object} combines a simpler Racket value, such as a
-symbol or pair, with a @tech{scope set} at each @tech{phase level},
-source-location information, @tech{syntax properties}, and
-@tech{tamper status}. In particular, an @tech{identifier} is
-represented as a syntax object that combines a @tech{symbol} with scope sets
-and other information. The @deftech{lexical information} of a
-@tech{syntax object} is its @tech{scope set} combined with the portion
-of the global table of bindings that is relevant to the syntax
-object's set of scopes.
+A @deftech{syntax object} combines a simpler Racket value, such as a symbol or pair, with
+@tech{lexical information}, source-location information, @tech{syntax properties}, and @tech{tamper
+status}. The @deftech{lexical information} of a @tech{syntax object} is comprised of a set of
+@tech{scope sets}, one for each @tech{phase level}. In particular, an @tech{identifier} is represented
+as a syntax object containing a @tech{symbol}, and its @tech{lexical information} can be combined with
+the global table of bindings to determine its @tech{binding} (if any) at each @tech{phase level}.
 
 For example, a @racketidfont{car} @tech{identifier} might have
 @tech{lexical information} that designates it as the @racket[car] from
@@ -716,6 +713,81 @@ evaluated in the same way as for @racket[define-syntaxes]. However,
 any introduced bindings from definition within
 @racket[begin-for-syntax] are at @tech{phase level} 1 (not a
 @tech{transformer} binding at @tech{phase level} 0).
+
+@;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@subsection[#:tag "local-binding-context"]{Local Binding Context}
+
+Although the @tech{binding} of an @tech{identifier} can be uniquely determined from the combination of
+its @tech{lexical information} and the global binding table, the expander also maintains a
+@deftech{local binding context} that records additional information about @tech{local bindings} to
+ensure they are not used outside of the lexical region in which they are bound.
+
+Due to the way local binding forms like @racket[let] add a fresh @tech{scope} to both bound
+@tech{identifiers} and body forms, it isn’t ordinarily possible for an @tech{identifier} to reference
+a @tech{local binding} without appearing in the body of the @racket[let]. However, if macros use
+compile-time state to stash bound @tech{identifiers}, or use @racket[local-expand] to extract
+@tech{identifiers} from an expanded binding form, they can violate this constraint. For example, the
+following @racket[stash-id] and @racket[unstash-id] macros cooperate to move a reference to a
+locally-bound @racket[x] @tech{identifier} outside of the lexical region in which it is bound:
+
+@(examples
+  #:label #f
+  #:eval racket-eval
+  (begin-for-syntax
+    (define stashed-id #f))
+  (define-syntax (stash-id stx)
+    (syntax-case stx ()
+      [(_ id)
+       (begin
+         (set! stashed-id #'id)
+         #'(void))]))
+  (define-syntax (unstash-id stx)
+    stashed-id)
+  (let ([x 42])
+    (stash-id x)
+    (unstash-id))
+  (eval:error (unstash-id)))
+
+In general, an @tech{identifier}’s @tech{lexical information} is not sufficient to know whether or not
+its @tech{binding} is available in the enclosing context, since the @tech{scope set} for the
+@tech{identifier} stored in @racket[stashed-id] unambiguously refers to a binding in the global
+binding table. This can be observed by the fact that @racket[identifier-binding] produces
+@racket['lexical], not @racket[#f]:
+
+@(examples
+  #:label #f
+  #:eval racket-eval
+  #:escape UNSYNTAX
+  (define-syntax (stashed-id-binding stx)
+    #`(quote #,(identifier-binding stashed-id)))
+  (eval:check (stashed-id-binding) 'lexical))
+
+However, the reference produced by @racket[(unstash-id)] in the above program is still illegal, even
+if it isn’t technically unbound. To record the fact that @racket[x]’s @tech{binding} is in scope only
+within the body of its corresponding @racket[let] form, the expander adds @racket[x]’s @tech{binding}
+to the @tech{local binding context} while expanding the @racket[let] body. More generally, the
+expander adds all @tech{local variable} @tech{bindings} to the @tech{local binding context} while
+expanding expressions in which a reference to the @tech{variable} would be legal. When the expander
+encounters an @tech{identifier} bound to a @tech{local variable}, and the associated @tech{binding} is
+not in the current @tech{local binding context}, it raises a syntax error.
+
+The @tech{local binding context} also tracks local @tech{transformer} @tech{bindings} (i.e. bindings
+bound by forms like @racket[let-syntax]) in a similar way, except that the context also stores the
+compile-time value associated with the @tech{transformer}. When an @tech{identifier} that is locally
+bound as a @tech{transformer} is used in application position as a @tech{syntax transformer}, or its
+compile-time value is looked up using @racket[syntax-local-value], the @tech{local binding context} is
+consulted to retrieve the value. If the @tech{binding} is in scope, its associated compile-time value
+is used; otherwise, the expander raises a syntax error.
+
+@(examples
+  #:eval racket-eval
+  #:escape UNSYNTAX
+  (define-syntax (stashed-id-local-value stx)
+    #`(quote #,(syntax-local-value stashed-id)))
+  (let-syntax ([y 42])
+    (stash-id y)
+    (stashed-id-local-value))
+  (eval:error (stashed-id-local-value)))
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "partial-expansion"]{Partial Expansion}

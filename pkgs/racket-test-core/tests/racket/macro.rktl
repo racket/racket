@@ -1923,5 +1923,34 @@
                    (+ 1 2))))
 
 ;; ----------------------------------------
+;; Check that definition context bindings are made available when the context is provided as fourth
+;; argument of syntax-local-bind-syntaxes
+
+(module syntax-local-bind-syntaxes-local-value-in-other-context racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+    (define intdef-ctx-a (syntax-local-make-definition-context))
+    (syntax-local-bind-syntaxes (list #'x) #'42 intdef-ctx-a)
+
+    (define intdef-ctx-b (syntax-local-make-definition-context intdef-ctx-a))
+    (syntax-local-bind-syntaxes (list #'y) #'(syntax-local-value #'x) intdef-ctx-b intdef-ctx-a)))
+
+;; ----------------------------------------
+;; internal-definition-context-introduce always adds scope
+
+(module internal-definition-context-introduce-always-adds-scope racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+  (define-syntax (m stx)
+    (define intdef-ctx (syntax-local-make-definition-context #f #f))
+    (syntax-local-bind-syntaxes (list #'x) #''value intdef-ctx)
+    #`(list '#,(syntax-local-value #'x (λ () #f) intdef-ctx)
+            '#,(syntax-local-value (internal-definition-context-introduce intdef-ctx #'x)
+                                   (λ () #f) intdef-ctx)))
+  (define result (m)))
+
+(test '(#f value) dynamic-require ''internal-definition-context-introduce-always-adds-scope 'result)
+
+;; ----------------------------------------
 
 (report-errs)

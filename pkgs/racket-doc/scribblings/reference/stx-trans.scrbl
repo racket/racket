@@ -14,7 +14,7 @@
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
-expander or while a module is @tech{visit}ed (see 
+expander or while a module is @tech{visit}ed (see
 @racket[syntax-transforming?]), otherwise the
 @exnraise[exn:fail:contract].})
 
@@ -233,11 +233,10 @@ identifier, the @racket[exn:fail:contract] exception is raised.
 @defproc[(local-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) empty #f)]
-                       [intdef-ctx (or/c internal-definition-context? 
-                                         (and/c pair? 
-                                                (listof internal-definition-context?))
+                       [intdef-ctx (or/c internal-definition-context?
+                                         (listof internal-definition-context?)
                                          #f)
-                                   #f])
+                                   '()])
          syntax?]{
 
 Expands @racket[stx] in the lexical context of the expression
@@ -293,13 +292,17 @@ expansion is a @racket[#%plain-module-begin] form, then a
 @racket[module] form (but not @racket[module*] forms) in the same way as by
 @racket[module] expansion.
 
-The optional @racket[intdef-ctx] argument must be either @racket[#f],
-the result of @racket[syntax-local-make-definition-context], or a list
-of such results. In the latter two cases, lexical information for
-internal definitions is added to @racket[stx] before it is expanded
-(in reverse order relative to the list). The lexical information is
-also added to the expansion result (because the expansion might
-introduce bindings or references to internal-definition bindings).
+If the @racket[intdef-ctx] argument is an internal-definition context, its @tech{bindings} are added
+to the @tech{local binding context} during the dynamic extent of the call to @racket[local-expand].
+Additionally, unless @racket[#f] was provided for the @racket[_add-scope?] argument to
+@racket[syntax-local-make-definition-context] when the internal-definition context was created,
+its @tech{scope} is added to the @tech{lexical information} for both @racket[stx] prior to its
+expansion and the expansion result (because the expansion might introduce bindings or references to
+internal-definition bindings). If @racket[intdef-ctx] is a list, all @tech{bindings} from all of the
+provided internal-definition contexts are added to the @tech{local binding context}, and the
+@tech{scope} from each context for which @racket[_add-scope?] was not @racket[#f] is added in the same
+way. For backwards compatibility, providing @racket[#f] for @racket[intdef-ctx] is treated the same as
+providing an empty list.
 
 For a particular @tech{internal-definition context}, generate a unique
 value and put it into a list for @racket[context-v]. To allow
@@ -346,7 +349,10 @@ expansion history to external tools.
 
 @history[#:changed "6.0.1.3" @elem{Changed treatment of @racket[#%top]
                                    so that it is never introduced as
-                                   an explicit wrapper.}]}
+                                   an explicit wrapper.}
+         #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
+                                     allow an empty list, which is treated the same way as
+                                     @racket[#f].}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? #f])
@@ -377,9 +383,12 @@ result can be more efficient in some expansion contexts.
 
 
 @defproc[(local-transformer-expand [stx any/c]
-                       [context-v (or/c 'expression 'top-level list?)]
-                       [stop-ids (or/c (listof identifier?) #f)]
-                       [intdef-ctx (or/c internal-definition-context? #f) #f])
+                                   [context-v (or/c 'expression 'top-level list?)]
+                                   [stop-ids (or/c (listof identifier?) #f)]
+                                   [intdef-ctx (or/c internal-definition-context?
+                                                     (listof internal-definition-context?)
+                                                     #f)
+                                    '()])
          syntax?]{
 
 Like @racket[local-expand], but @racket[stx] is expanded as a
@@ -397,11 +406,15 @@ or @racket[let-values] wrapper is added.
                                    @racket['top-level] context.}]}
 
 
-@defproc[(local-expand/capture-lifts [stx any/c]
-                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
-                       [stop-ids (or/c (listof identifier?) #f)]
-                       [intdef-ctx (or/c internal-definition-context? #f) #f]
-                       [lift-ctx any/c (gensym 'lifts)])
+@defproc[(local-expand/capture-lifts
+          [stx any/c]
+          [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+          [stop-ids (or/c (listof identifier?) #f)]
+          [intdef-ctx (or/c internal-definition-context?
+                            (listof internal-definition-context?)
+                            #f)
+           '()]
+          [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
 Like @racket[local-expand], but the result is a syntax object that
@@ -420,11 +433,15 @@ If @racket[context-v] is @racket['top-level] or @racket['module], then
 @racket['module], then @racket[module*] forms can appear, too.}
 
 
-@defproc[(local-transformer-expand/capture-lifts [stx any/c]
-                       [context-v (or/c 'expression 'top-level list?)]
-                       [stop-ids (or/c (listof identifier?) #f)]
-                       [intdef-ctx (or/c internal-definition-context? #f) #f]
-                       [lift-ctx any/c (gensym 'lifts)])
+@defproc[(local-transformer-expand/capture-lifts
+          [stx any/c]
+          [context-v (or/c 'expression 'top-level list?)]
+          [stop-ids (or/c (listof identifier?) #f)]
+          [intdef-ctx (or/c internal-definition-context?
+                            (listof internal-definition-context?)
+                            #f)
+           '()]
+          [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
 Like @racket[local-expand/capture-lifts], but @racket[stx] is expanded
@@ -458,11 +475,10 @@ An @tech{internal-definition context} internally creates a
 within the context or that appears as the result of a (partial)
 expansion within the context.
 
-If @racket[intdef-ctx] is not @racket[#f], then the new
-internal-definition context extends the given one. An extending
-definition context adds all @tech{scopes} that are added by
-@racket[intdef-ctx], and expanding in the new internal-definition context
-can use bindings previously introduced into @racket[intdef-ctx].
+If the created definition context is intended to be spliced into a
+surrounding definition context, the surrounding context should be
+provided for the @racket[intdef-ctx] argument to ensure the necessary
+@tech{use-site scopes} are added to macros expanded in the context.
 
 @transform-time[]
 
@@ -474,7 +490,10 @@ can use bindings previously introduced into @racket[intdef-ctx].
 
 @defproc[(syntax-local-bind-syntaxes [id-list (listof identifier?)]
                                      [expr (or/c syntax? #f)]
-                                     [intdef-ctx internal-definition-context?])
+                                     [intdef-ctx internal-definition-context?]
+                                     [extra-intdef-ctxs (or/c internal-definition-context?
+                                                              (listof internal-definition-context?))
+                                      '()])
          void?]{
 
 Binds each identifier in @racket[id-list] within the
@@ -488,7 +507,15 @@ in the latter case, the number of values produced by the expression should
 match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 
-@transform-time[]}
+When @racket[expr] is not @racket[#f], it is expanded in an @tech{expression context} and evaluated in
+the current @tech{transformer environment}. In this case, the value provided for
+@racket[extra-intdef-ctxs] is used to enrich @racket[expr]’s @tech{lexical information} and extend the
+@tech{local binding context} in the same way as the fourth argument to @racket[local-expand]. If
+@racket[expr] is @racket[#f], the value provided for @racket[extra-intdef-ctxs] is ignored.
+
+@transform-time[]
+
+@history[#:changed "6.90.0.27" @elem{Added the @racket[extra-intdef-ctxs] argument.}]}
 
 
 @defproc[(internal-definition-context-binding-identifiers
@@ -584,16 +611,16 @@ the binding creates a binding alias that effectively routes around the
                              [failure-thunk (or/c (-> any) #f)
                                             #f]
                              [intdef-ctx (or/c internal-definition-context?
+                                               (listof internal-definition-context?)
                                                #f)
-                                         #f])
+                              '()])
          any]{
 
-Returns the @tech{transformer} binding value of the identifier
-@racket[id-stx] in either the context associated with
-@racket[intdef-ctx] (if not @racket[#f]) or the context of the
-expression being expanded (if @racket[intdef-ctx] is @racket[#f]). If
-@racket[intdef-ctx] is provided, it must be an extension of the
-context of the expression being expanded.
+Returns the @tech{transformer} binding value of the identifier @racket[id-stx] in the context of the
+current expansion. If @racket[intdef-ctx] is not @racket[#f], bindings from all provided definition
+contexts are also considered. @emph{Unlike} the fourth argument to @racket[local-expand], the
+@tech{scopes} associated with the provided definition contexts are @emph{not} used to enrich
+@racket[id-stx]’s @tech{lexical information}.
 
 If @racket[id-stx] is bound to a @tech{rename transformer} created
 with @racket[make-rename-transformer], @racket[syntax-local-value]
@@ -627,15 +654,21 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
   (define-syntax (transformer-3 stx)
     (syntax-local-value #'chips))
   (transformer-3)
-]}
+]
+
+@history[
+ #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
+                             contexts in addition to a single internal-definition context or
+                             @racket[#f].}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
                                        [failure-thunk (or/c (-> any) #f)
                                                       #f]
                                        [intdef-ctx (or/c internal-definition-context?
+                                                         (listof internal-definition-context?)
                                                          #f)
-                                                   #f])
+                                        '()])
          any]{
 
 Like @racket[syntax-local-value], but the result is normally two
@@ -671,7 +704,7 @@ to a top-level definition. A compile-time expression in a
 lifted to a @racket[let] wrapper around the corresponding right-hand
 side of the binding. A compile-time expression within
 @racket[begin-for-syntax] is lifted to a @racket[define]
-declaration just before the requesting expression within the 
+declaration just before the requesting expression within the
 @racket[begin-for-syntax].
 
 Other syntactic forms can capture lifts by using
@@ -742,7 +775,7 @@ is placed at the very end of the module (under a suitable number of
 enclosing @racket[begin-for-syntax].
 
 @transform-time[] If the current expression being transformed is not
-within a @racket[module] form (see @racket[syntax-transforming-module-expression?]), 
+within a @racket[module] form (see @racket[syntax-transforming-module-expression?]),
 then the @exnraise[exn:fail:contract].}
 
 
@@ -893,7 +926,7 @@ For (limited) backward compatibility only; raises @racket[exn:fail:unsupported].
 
 
 @defproc[(syntax-local-certifier [active? boolean? #f])
-         ((syntax?) (any/c (or/c procedure? #f)) 
+         ((syntax?) (any/c (or/c procedure? #f))
           . ->* . syntax?)]{
 
 For backward compatibility only; returns a procedure that returns its
@@ -979,7 +1012,7 @@ and different result procedures use distinct scopes.
                                added the optional operation argument
                                in the result procedure.}]}
 
-@defproc[(make-syntax-delta-introducer [ext-stx identifier?] 
+@defproc[(make-syntax-delta-introducer [ext-stx identifier?]
                                        [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)
                                                     (syntax-local-phase-level)])
@@ -1172,9 +1205,9 @@ Returns @racket[#t] if @racket[v] has the
 
 @defstruct[import ([local-id identifier?]
                    [src-sym symbol?]
-                   [src-mod-path (or/c module-path? 
+                   [src-mod-path (or/c module-path?
                                        (and/c syntax?
-                                              (lambda (stx) 
+                                              (lambda (stx)
                                                 (module-path? (syntax->datum stx)))))]
                    [mode (or/c exact-integer? #f)]
                    [req-mode (or/c exact-integer? #f)]
@@ -1267,7 +1300,7 @@ converted to an absolute module path that is equivalent to
 
 
 @defproc[(syntax-local-require-certifier)
-         ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
+         ((syntax?) (or/c #f (syntax? . -> . syntax?))
           . ->* . syntax?)]{
 
 For backward compatibility only; returns a procedure that returns its
@@ -1444,7 +1477,7 @@ A structure representing a single imported identifier:
 
 
 @defproc[(syntax-local-provide-certifier)
-         ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
+         ((syntax?) (or/c #f (syntax? . -> . syntax?))
           . ->* . syntax?)]{
 
 For backward compatibility only; returns a procedure that returns its
@@ -1458,13 +1491,13 @@ first argument.}
 
 @deftogether[(
 @defproc[(syntax-procedure-alias-property [stx syntax?])
-         (or/c #f 
+         (or/c #f
                (letrec ([val? (recursive-contract
                                (or/c (cons/c identifier? identifier?)
                                      (cons/c val? val?)))])
                  val?))]
 @defproc[(syntax-procedure-converted-arguments-property [stx syntax?])
-         (or/c #f 
+         (or/c #f
                (letrec ([val? (recursive-contract
                                (or/c (cons/c identifier? identifier?)
                                      (cons/c val? val?)))])

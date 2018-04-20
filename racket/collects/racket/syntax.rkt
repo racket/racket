@@ -185,21 +185,20 @@
 (define (generate-temporary [stx 'g])
   (car (generate-temporaries (list stx))))
 
-;; Applies the renaming of intdefs to stx.
+;; Included for backwards compatibility.
 (define (internal-definition-context-apply intdefs stx)
-  (let ([qastx (local-expand #`(quote #,stx) 'expression (list #'quote) intdefs)])
-    (with-syntax ([(q astx) qastx]) #'astx)))
+  (internal-definition-context-introduce intdefs stx 'add))
 
-(define (syntax-local-eval stx [intdef0 #f])
+(define (syntax-local-eval stx [intdefs '()])
   (let* ([name (generate-temporary)]
-         [intdefs (syntax-local-make-definition-context intdef0)])
+         [intdef (syntax-local-make-definition-context)])
     (syntax-local-bind-syntaxes (list name)
                                 #`(call-with-values (lambda () #,stx) list)
+                                intdef
                                 intdefs)
-    (internal-definition-context-seal intdefs)
     (apply values
-           (syntax-local-value (internal-definition-context-apply intdefs name)
-                               #f intdefs))))
+           (syntax-local-value (internal-definition-context-introduce intdef name)
+                               #f intdef))))
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()

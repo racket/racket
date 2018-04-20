@@ -152,16 +152,16 @@
 
 ;; ----------------------------------------
 
-(define (do-syntax-local-value who id intdef failure-thunk
+(define (do-syntax-local-value who id intdefs failure-thunk
                                #:immediate? immediate?)
   (check who identifier? id)
   (check who #:or-false (procedure-arity-includes/c 0) failure-thunk)
-  (check who #:or-false internal-definition-context? intdef)
+  (check who intdefs-or-false? #:contract intdefs-or-false?-string intdefs)
   (define current-ctx (get-current-expand-context who))
-  (define ctx (if intdef
+  (define ctx (if intdefs
                   (struct*-copy expand-context current-ctx
                                 [env (add-intdef-bindings (expand-context-env current-ctx)
-                                                          intdef)])
+                                                          intdefs)])
                   current-ctx))
   (log-expand ctx 'local-value id)
   (define phase (expand-context-phase ctx))
