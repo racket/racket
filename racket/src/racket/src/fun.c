@@ -5468,6 +5468,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         /* Prune resume_mc continuation marks that have replacements
            in the deepest frame of cont, and add extra_marks */
         prune_cont_marks(resume_mc, cont, extra_marks);
+        p->cont_mark_pos_bottom = cont->cont_mark_pos_bottom;
       }
       
       mc = clone_meta_cont(cont->meta_continuation, NULL, -1, NULL, NULL, resume_mc, 0);
@@ -5623,6 +5624,8 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         MZ_ASSERT(meta_prompt->runstack_boundary_offset <= scheme_current_thread->runstack_size);
       }
     }
+
+    meta_prompt->boundary_mark_pos = cont->cont_mark_pos_bottom; /* for mark splicing */
 
     p->meta_prompt = meta_prompt;
   }

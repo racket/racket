@@ -2395,3 +2395,32 @@
          (λ () #f))
      (λ (x) x)))))
 
+;; ----------------------------------------
+
+(test
+ '(2)
+ 'dont-double-continuation-mark
+ (let ()
+   (define tag (make-continuation-prompt-tag))
+
+   (define k
+     (call-with-continuation-prompt
+      (lambda ()
+        (with-continuation-mark 'test 2
+                                (#%app (call-with-composable-continuation (lambda (k) (abort-current-continuation tag k)) tag))))
+      tag
+      values))
+
+   (define (compose-continuations k1 k2)
+     (call-with-continuation-prompt
+      (lambda ()
+        (k1 (lambda ()
+              (k2 (lambda () (#%app (call-with-composable-continuation (lambda (k) (abort-current-continuation tag k)) tag)))))))
+      tag
+      values))
+
+   (continuation-mark-set->list
+    (continuation-marks (let ([c1 (compose-continuations k k)])
+                          (compose-continuations c1 c1))
+                        tag)
+    'test)))
