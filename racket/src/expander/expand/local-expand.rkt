@@ -44,7 +44,8 @@
   (define exp-s (do-local-expand 'syntax-local-expand-expression s 'expression null #f
                                  #:to-parsed-ok? opaque-only?
                                  #:skip-log-exit? #t
-                                 #:track-to-be-defined? #t))
+                                 #:track-to-be-defined? #t
+                                 #:keep-#%expression? #f))
   (define ctx (get-current-expand-context))
   ;; Move introduction scope from the already-expanded syntax object to
   ;; its wrapper. The expander will later check that the wrapper ends up
@@ -67,6 +68,7 @@
                          #:capture-lifts? [capture-lifts? #f]
                          #:as-transformer? [as-transformer? #f]
                          #:to-parsed-ok? [to-parsed-ok? #f]
+                         #:keep-#%expression? [keep-#%expression? #t]
                          #:lift-key [lift-key (and (or capture-lifts?
                                                        as-transformer?)
                                                    (generate-lift-key))]
@@ -102,6 +104,9 @@
                                                 #:intdefs intdefs
                                                 #:stop-ids stop-ids
                                                 #:to-parsed-ok? to-parsed-ok?
+                                                #:keep-#%expression? (or keep-#%expression?
+                                                                         (and (expand-context-in-local-expand? ctx)
+                                                                              (expand-context-keep-#%expression? ctx)))
                                                 #:track-to-be-defined? track-to-be-defined?))
 
    (namespace-visit-available-modules! (expand-context-namespace ctx) phase)

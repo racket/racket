@@ -755,15 +755,17 @@
                                                  #:wrt ctx)))
    (if (expand-context-to-parsed? ctx)
        exp-e
-       (case (and (not (expand-context-in-local-expand? ctx))
-                  (expand-context-context ctx))
-         [(expression)
+       (cond
+         [(or (and (expand-context-in-local-expand? ctx)
+                   (expand-context-keep-#%expression? ctx))
+              (eq? 'top-level (expand-context-context ctx)))
+          (rebuild
+           rebuild-s
+           `(,(m '#%expression) ,exp-e))]
+         [else
           (define result-s (syntax-track-origin exp-e rebuild-s))
           (log-expand ctx 'tag result-s)
-          result-s]
-         [else (rebuild
-                rebuild-s
-                `(,(m '#%expression) ,exp-e))]))))
+          result-s]))))
 
 ;; ----------------------------------------
 

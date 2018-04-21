@@ -377,6 +377,14 @@ If @racket[opaque-only?] is true, then the first result is @racket[#f]
 instead of the expanded expression. Obtaining only the second, opaque
 result can be more efficient in some expansion contexts.
 
+Unlike @racket[local-expand], @racket[syntax-local-expand-expression]
+normally produces an expanded expression that contains no
+@racket[#%expression] forms. However, if
+@racket[syntax-local-expand-expression] is used within an expansion
+that is triggered by an enclosing @racket[local-expand] call, then the
+result of @racket[syntax-local-expand-expression] can include
+@racket[#%expression] forms.
+
 @transform-time[]
 
 @history[#:changed "6.90.0.13" @elem{Added the @racket[opaque-only?] argument.}]}

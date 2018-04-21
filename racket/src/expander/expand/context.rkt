@@ -53,6 +53,7 @@
           * need-eventually-defined ; phase(>=1) -> variables expanded before binding
           allow-unbound? ; allow reference to unbound identifiers as variables
           in-local-expand? ; #t via `local-expand`
+          keep-#%expression? ; if `in-local-expand?`, keep `#%expression` forms
           stops      ; free-id-set; non-empty => `def-ctx-scopes` is a box
           * current-introduction-scopes ; scopes for current macro expansion
           declared-submodule-names ; mutable hash table: symbol -> 'module or 'module*
@@ -98,6 +99,7 @@
                   #f   ; need-eventually-defined
                   #t   ; allow-unbound?
                   #f   ; in-local-expand?
+                  #f   ; keep-#%expression?
                   empty-free-id-set ; stops
                   null ; current-introduction-scopes
                   #hasheq() ; declared-submodule-names

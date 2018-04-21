@@ -1951,6 +1951,23 @@
 
 (test '(#f value) dynamic-require ''internal-definition-context-introduce-always-adds-scope 'result)
 
+
+;; ----------------------------------------
+;; Make sure `#%expression` doesn't appear in fully
+;; expanded forms
+
+(let ([stx (expand '(module m racket/base
+                      (require racket/class)
+                      (define c
+                        (class object%
+                          (super-new)))))])
+  (test #f 'any-#%expression? (let loop ([e stx])
+                                (cond
+                                  [(eq? e '#%expression) #t]
+                                  [(syntax? e) (loop (syntax-e e))]
+                                  [(pair? e) (or (loop (car e)) (loop (cdr e)))]
+                                  [else #f]))))
+
 ;; ----------------------------------------
 
 (report-errs)
