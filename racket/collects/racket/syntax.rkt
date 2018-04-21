@@ -187,7 +187,10 @@
 
 ;; Included for backwards compatibility.
 (define (internal-definition-context-apply intdefs stx)
-  (internal-definition-context-introduce intdefs stx 'add))
+  ; The old implementation of internal-definition-context-apply implicitly converted its stx argument
+  ; to syntax, which some things seem to (possibly unintentionally) rely on, so replicate that
+  ; behavior here:
+  (internal-definition-context-introduce intdefs (datum->syntax #f stx) 'add))
 
 (define (syntax-local-eval stx [intdefs '()])
   (let* ([name (generate-temporary)]
