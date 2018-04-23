@@ -36,7 +36,8 @@
 (struct internal-definition-context (frame-id      ; identifies the frame for use-site scopes
                                      scope         ; scope that represents the context
                                      add-scope?    ; whether the scope is auto-added for expansion
-                                     env-mixins))  ; bindings for this context: box of list of mix-binding
+                                     env-mixins    ; bindings for this context: box of list of mix-binding
+                                     parent-ctx))  ; parent definition context or #f
 
 (struct env-mixin (id
                    sym
@@ -56,7 +57,7 @@
   (define def-ctx-scopes (expand-context-def-ctx-scopes ctx))
   (unless def-ctx-scopes (error "internal error: no box to accumulate definition-context scopes"))
   (set-box! def-ctx-scopes (cons sc (unbox def-ctx-scopes)))
-  (internal-definition-context frame-id sc add-scope? (box null)))
+  (internal-definition-context frame-id sc add-scope? (box null) parent-ctx))
 
 ;; syntax-local-bind-syntaxes
 (define (syntax-local-bind-syntaxes ids s intdef [extra-intdefs '()])
@@ -189,8 +190,10 @@
 
 (define (add-intdef-bindings env intdefs)
   (for/fold ([env env]) ([intdef (in-intdefs intdefs)])
+    (define parent-ctx (internal-definition-context-parent-ctx intdef))
+    (define parent-env (if parent-ctx (add-intdef-bindings env parent-ctx) env))
     (define env-mixins (unbox (internal-definition-context-env-mixins intdef)))
-    (let loop ([env env] [env-mixins env-mixins])
+    (let loop ([env parent-env] [env-mixins env-mixins])
       (cond
        [(null? env-mixins) env]
        [else

@@ -292,16 +292,18 @@ expansion is a @racket[#%plain-module-begin] form, then a
 @racket[module] form (but not @racket[module*] forms) in the same way as by
 @racket[module] expansion.
 
-If the @racket[intdef-ctx] argument is an internal-definition context, its @tech{bindings} are added
-to the @tech{local binding context} during the dynamic extent of the call to @racket[local-expand].
+If the @racket[intdef-ctx] argument is an internal-definition context, its @tech{bindings} and
+@tech{bindings} from all @tech{parent internal-definition contexts} are added to the
+@tech{local binding context} during the dynamic extent of the call to @racket[local-expand].
 Additionally, unless @racket[#f] was provided for the @racket[_add-scope?] argument to
 @racket[syntax-local-make-definition-context] when the internal-definition context was created,
-its @tech{scope} is added to the @tech{lexical information} for both @racket[stx] prior to its
-expansion and the expansion result (because the expansion might introduce bindings or references to
-internal-definition bindings). If @racket[intdef-ctx] is a list, all @tech{bindings} from all of the
-provided internal-definition contexts are added to the @tech{local binding context}, and the
-@tech{scope} from each context for which @racket[_add-scope?] was not @racket[#f] is added in the same
-way. For backwards compatibility, providing @racket[#f] for @racket[intdef-ctx] is treated the same as
+its @tech{scope} (but @emph{not} the scopes of any @tech{parent internal-definition contexts}) is
+added to the @tech{lexical information} for both @racket[stx] prior to its expansion and the expansion
+result (because the expansion might introduce bindings or references to internal-definition bindings).
+If @racket[intdef-ctx] is a list, all @tech{bindings} from all of the provided internal-definition
+contexts and their parents are added to the @tech{local binding context}, and the @tech{scope} from
+each context for which @racket[_add-scope?] was not @racket[#f] is added in the same way. For
+backwards compatibility, providing @racket[#f] for @racket[intdef-ctx] is treated the same as
 providing an empty list.
 
 For a particular @tech{internal-definition context}, generate a unique
@@ -465,28 +467,36 @@ context}, @racket[#f] otherwise.}
 
 
 @defproc[(syntax-local-make-definition-context
-          [intdef-ctx (or/c internal-definition-context? #f) #f]
+          [parent-ctx (or/c internal-definition-context? #f) #f]
           [add-scope? any/c #t])
          internal-definition-context?]{
 
-Creates an opaque @tech{internal-definition context} value to be used
-with @racket[local-expand] and other functions. A transformer should
-create one context for each set of internal definitions to be
-expanded, and use it when expanding any form whose lexical context
-should include the definitions. After discovering an internal
-@racket[define-values] or @racket[define-syntaxes] form, use
-@racket[syntax-local-bind-syntaxes] to add bindings to the context.
+Creates an opaque @tech{internal-definition context} value to be used with @racket[local-expand] and
+other functions. A transformer should create one context for each set of internal definitions to be
+expanded, and use it when expanding any form whose lexical context should include the definitions.
+After discovering an internal @racket[define-values] or @racket[define-syntaxes] form, use
+@racket[syntax-local-bind-syntaxes] to add @tech{bindings} to the context.
 
-An @tech{internal-definition context} internally creates a
-@tech{scope} to represent the context. Unless @racket[add-scope?] is
-@racket[#f], the @tech{scope} is added to any form that is expanded
-within the context or that appears as the result of a (partial)
-expansion within the context.
+An @tech{internal-definition context} internally creates a @tech{scope} to represent the context.
+Unless @racket[add-scope?] is @racket[#f], the @tech{scope} is added to any form that is expanded
+within the context or that appears as the result of a (partial) expansion within the context.
 
-If the created definition context is intended to be spliced into a
-surrounding definition context, the surrounding context should be
-provided for the @racket[intdef-ctx] argument to ensure the necessary
-@tech{use-site scopes} are added to macros expanded in the context.
+If @racket[parent-ctx] is not @racket[#f], then @racket[parent-ctx] is made the @deftech{parent
+internal-definition context} for the new internal-definition context. Whenever the new context’s
+@tech{bindings} are added to the @tech{local binding context} (e.g. by providing the context to
+@racket[local-expand], @racket[syntax-local-bind-syntaxes], or @racket[syntax-local-value]), then the
+bindings from @racket[parent-ctx] are also added as well. If @racket[parent-ctx] was also created with a
+@tech{parent internal-definition context}, @tech{bindings} from its parent are also added, and so on
+recursively. Note that the @tech{scopes} of parent contexts are @emph{not} added implicitly, only the
+@tech{bindings}, even when the @tech{scope} of the child context would be implicitly added. If the
+@tech{scopes} of parent definition contexts should be added, the parent contexts must be provided
+explicitly.
+
+Additionally, if the created definition context is intended to be spliced into a surrounding
+definition context, the surrounding context should always be provided for the @racket[parent-ctx]
+argument to ensure the necessary @tech{use-site scopes} are added to macros expanded in the context.
+Otherwise, expansion of nested definitions can be inconsistent with the expansion of definitions in
+the surrounding context.
 
 @transform-time[]
 
@@ -516,10 +526,11 @@ match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 
 When @racket[expr] is not @racket[#f], it is expanded in an @tech{expression context} and evaluated in
-the current @tech{transformer environment}. In this case, the value provided for
-@racket[extra-intdef-ctxs] is used to enrich @racket[expr]’s @tech{lexical information} and extend the
-@tech{local binding context} in the same way as the fourth argument to @racket[local-expand]. If
-@racket[expr] is @racket[#f], the value provided for @racket[extra-intdef-ctxs] is ignored.
+the current @tech{transformer environment}. In this case, the @tech{bindings} and @tech{lexical
+information} from both @racket[intdef-ctx] and @racket[extra-intdef-ctxs] are used to enrich
+@racket[expr]’s @tech{lexical information} and extend the @tech{local binding context} in the same way
+as the fourth argument to @racket[local-expand]. If @racket[expr] is @racket[#f], the value provided
+for @racket[extra-intdef-ctxs] is ignored.
 
 @transform-time[]
 

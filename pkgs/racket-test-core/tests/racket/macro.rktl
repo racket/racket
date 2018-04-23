@@ -1969,5 +1969,39 @@
                                   [else #f]))))
 
 ;; ----------------------------------------
+;; parent definition contexts’ bindings, but not scopes, are added implicitly during expansion
+
+(err/rt-test
+ (eval #'(module parent-internal-definition-contexts-do-not-add-scopes racket/base
+           (require (for-syntax racket/base))
+           (begin-for-syntax
+             (define intdef-ctx-a (syntax-local-make-definition-context))
+             (syntax-local-bind-syntaxes (list #'x) #'42 intdef-ctx-a)
+
+             (define intdef-ctx-b (syntax-local-make-definition-context intdef-ctx-a))
+             (syntax-local-bind-syntaxes (list #'y) #'(make-rename-transformer #'x) intdef-ctx-b)
+
+             (syntax-local-value (internal-definition-context-introduce intdef-ctx-b #'y)
+                                 #f intdef-ctx-b))))
+ exn:fail?)
+
+(module parent-internal-definition-contexts-do-add-bindings racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+  (define-syntax (m stx)
+    (define intdef-ctx-a (syntax-local-make-definition-context))
+    (syntax-local-bind-syntaxes (list #'x) #'42 intdef-ctx-a)
+
+    (define intdef-ctx-b (syntax-local-make-definition-context intdef-ctx-a))
+    (define x_a-id (internal-definition-context-introduce intdef-ctx-a #'x))
+    (syntax-local-bind-syntaxes (list #'y) #`(make-rename-transformer #'#,x_a-id) intdef-ctx-b)
+
+    #`(quote #,(syntax-local-value (internal-definition-context-introduce intdef-ctx-b #'y)
+                                   #f intdef-ctx-b)))
+  (define result (m)))
+
+(test 42 dynamic-require ''parent-internal-definition-contexts-do-add-bindings 'result)
+
+;; ----------------------------------------
 
 (report-errs)
