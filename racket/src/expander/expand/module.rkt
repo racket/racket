@@ -468,7 +468,11 @@
      (struct*-copy expand-context ctx
                    [context 'module-begin]
                    [module-begin-k module-begin-k]
-                   [in-local-expand? #f]))
+                   [in-local-expand? #f]
+                   [lifts #f]
+                   [module-lifts #f]
+                   [to-module-lifts #f]
+                   [require-lifts #f]))
    
    (define mb-scopes-s
      (if keep-enclosing-scope-at-phase

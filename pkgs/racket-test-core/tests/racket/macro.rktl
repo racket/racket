@@ -981,6 +981,34 @@
 
 (err/rt-test (syntax-local-lift-require 'abc #'def))
 
+(for ([lift-attempt+rx:expected-error
+       (in-list
+        (list (cons '(syntax-local-lift-require 'racket #'body)
+                    #rx"could not find target context")
+              (cons '(syntax-local-lift-expression #'body)
+                    #rx"no lift target")
+              (cons '(syntax-local-lift-module  #'(module m racket/base))
+                    #rx"not currently transforming within a module declaration or top level")
+              (cons '(syntax-local-lift-module-end-declaration  #'(define done #t))
+                    #rx"not currently transforming an expression within a module declaration")
+              (cons '(syntax-local-lift-provide #'cons)
+                    #rx"not expanding in a module run-time body")))])
+  (define lift-attempt (car lift-attempt+rx:expected-error))
+  (define rx:expected-error (cdr lift-attempt+rx:expected-error))
+  (err/rt-test
+   (expand `(module m racket/base
+              (require (for-syntax racket/base))
+              
+              (provide #%module-begin)
+              
+              (define-syntax (#%module-begin stx)
+                (syntax-case stx ()
+                  [(_ body) ,lift-attempt]))
+              
+              (module* test (submod "..")
+              body)))
+   (lambda (exn) (regexp-match? rx:expected-error (exn-message exn)))))
+
 ;; ----------------------------------------
 
 (let ()
