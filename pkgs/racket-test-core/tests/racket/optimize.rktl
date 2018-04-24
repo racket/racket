@@ -6301,5 +6301,17 @@
     (list-cmp348)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure conversion to internal `with-immediate-continuation-mark`
+;; correctly handles mutable variables
+
+(test #f
+      'wicm
+      (call-with-immediate-continuation-mark
+       'hello
+       (lambda (m)
+         (set! m m)
+         m)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

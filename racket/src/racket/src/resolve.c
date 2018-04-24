@@ -778,6 +778,16 @@ with_immed_mark_resolve(Scheme_Object *data, Resolve_Info *orig_rslv)
   var->resolve.lex_depth = rslv->current_lex_depth;
   
   e = resolve_expr(SCHEME_CDR(wcm->body), rslv);
+
+  if (var->mutated) {
+    Scheme_Object *bcode;
+    bcode = scheme_alloc_object();
+    bcode->type = scheme_boxenv_type;
+    SCHEME_PTR1_VAL(bcode) = scheme_make_integer(0);
+    SCHEME_PTR2_VAL(bcode) = e;
+    e = bcode;
+  }
+
   wcm->body = e;
 
   merge_resolve(orig_rslv, rslv);
