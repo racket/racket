@@ -1423,7 +1423,7 @@
    #:first-order instanceof/c-first-order
    #:stronger instanceof/c-stronger))
 
-(define (instanceof/c cctc)
+(define/subexpression-pos-prop (instanceof/c cctc)
   (let ([ctc (coerce-contract 'instanceof/c cctc)])
     (make-base-instanceof/c ctc)))
 

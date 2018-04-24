@@ -3,7 +3,7 @@
          racket/list)
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace 'racket/class)])
 (define (test-obligations quoted-expr expected-props)
   
   (define ((cleanup key stx) obj)
@@ -68,6 +68,9 @@
                       (racket/contract:positive-position b)))
   (test-obligations '(listof a)
                     '((racket/contract:contract (listof) ())
+                      (racket/contract:positive-position a)))
+  (test-obligations '(instanceof/c a)
+                    '((racket/contract:contract (instanceof/c) ())
                       (racket/contract:positive-position a)))
   (test-obligations '(hash/c a b)
                     '((racket/contract:contract (hash/c) ())
