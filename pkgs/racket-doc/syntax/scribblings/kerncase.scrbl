@@ -66,4 +66,7 @@ In addition to the identifiers listed in @secref[#:doc '(lib
 "scribblings/reference/reference.scrbl") "fully-expanded"], the list
 includes @racket[letrec-syntaxes+values], which is the core form for
 local expand-time binding and can appear in the result of
-@racket[local-expand].}
+@racket[local-expand].
+
+@history[#:changed "6.90.0.27" @elem{Added @racket[quote-syntax] and @racket[#%plain-module-begin] to
+                                     the list, which had previously been unintentionally missing.}]}

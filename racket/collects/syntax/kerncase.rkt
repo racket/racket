@@ -102,6 +102,7 @@
                 case-lambda
                 if
                 quote
+                quote-syntax
                 letrec-syntaxes+values
                 with-continuation-mark
                 #%expression
@@ -109,6 +110,7 @@
                 #%top
                 #%datum
                 #%variable-reference
+                #%plain-module-begin
                 module module* #%provide #%require #%declare))))
 
   (provide kernel-syntax-case
