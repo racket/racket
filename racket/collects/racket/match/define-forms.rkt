@@ -76,6 +76,8 @@
      (define-syntax (match-lambda** stx)
        (syntax-parse stx
          [(_ (~and clauses [(pats ...) . rhs]) ...)
+          (when (null? (syntax-e #'(rhs ...)))
+            (raise-syntax-error #f "expected at least one clause to match-lambda**" stx))
           (with-syntax* ([vars (generate-temporaries (car (syntax-e #'((pats ...) ...))))]
                          [body #`(match*/derived vars #,stx clauses ...)])
             (syntax/loc stx (lambda vars body)))]))
@@ -95,18 +97,25 @@
               (match*/derived #,(append* idss) #,stx
                 [(patss ... ...) (let () body1 body ...)])))]))
 
-     (define-syntax (match-let*-values stx)
+     ;; note: match-let*-values/derived is *not* provided
+     (define-syntax (match-let*-values/derived stx)
        (syntax-parse stx
-         [(_ () body1 body ...)
+         [(_ orig-stx () body1 body ...)
           (syntax/loc stx (let () body1 body ...))]
-         [(_ ([(pats ...) rhs] rest-pats ...) body1 body ...)
+         [(_ orig-stx ([(pats ...) rhs] rest-pats ...) body1 body ...)
           (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
             (quasisyntax/loc stx
               (let-values ([(ids ...) rhs])
-                (match*/derived (ids ...) #,stx
+                (match*/derived (ids ...) orig-stx
                   [(pats ...) #,(syntax/loc stx
-                                  (match-let*-values (rest-pats ...)
-                                    body1 body ...))]))))]))
+                                  (match-let*-values/derived
+                                   orig-stx (rest-pats ...)
+                                   body1 body ...))]))))]))
+
+     (define-syntax (match-let*-values stx)
+       (syntax-parse stx
+         [(_ (~and cl ([(pats ...) rhs:expr] ...)) body1 body ...)
+          (quasisyntax/loc stx (match-let*-values/derived #,stx cl body1 body ...))]))
 
      ;; there's lots of duplication here to handle named let
      ;; some factoring out would do a lot of good
@@ -122,50 +131,69 @@
              (letrec ([nm (lambda vars loop-body)])
                (nm init-exp ...))))]
          [(_ ([pat init-exp:expr] ...) body1 body ...)
-          (syntax/loc stx (match-let-values ([(pat) init-exp] ...) body1 body ...))]))
+          (quasisyntax/loc stx
+            ;; use of match*/derived instead of match-let-values fixes #1431
+            ;; alternatively, we could have created let-values/derived but
+            ;; that is not really necessary
+            (match*/derived [init-exp ...] #,stx [(pat ...) (let () body1 body ...)]))]))
 
-     (define-syntax-rule (match-let* ([pat exp] ...) body1 body ...)
-       (match-let*-values ([(pat) exp] ...) body1 body ...))
+     (define-syntax (match-let* stx)
+       (syntax-parse stx
+         [(_ ([pat rhs:expr] ...) body1 body ...)
+          (quasisyntax/loc stx
+            (match-let*-values/derived
+             #,stx
+             ([(pat) rhs] ...)
+             body1 body ...))]))
+
+     ;; note: match-define-values/derived is *not* provided
+     ;; it may be useful enough to suggest we should provide it...
+     (define-syntax (match-define-values/derived stx)
+       (syntax-parse stx
+         [(_ orig-stx (pats ...) rhs:expr)
+          (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))]
+                        [(pb-ids ...) (pats->bound-vars parse-id (syntax->list #'(pats ...)))])
+            (quasisyntax/loc stx
+              (define-values (pb-ids ...)
+                (let-values ([(ids ...) rhs])
+                  (match*/derived (ids ...) orig-stx
+                                  [(pats ...) (values pb-ids ...)])))))]))
 
      (define-syntax (match-letrec stx)
        (syntax-parse stx
          [(_ ((~and cl [pat exp]) ...) body1 body ...)
           (quasisyntax/loc stx
-			   (let ()
-                            #,@(for/list ([c (in-syntax #'(cl ...))]
-                                          [p (in-syntax #'(pat ...))]
-                                          [e (in-syntax #'(exp ...))])
-                                 (quasisyntax/loc c (match-define #,p #,e)))
-                            body1 body ...))]))
+            (let ()
+              #,@(for/list ([c (in-syntax #'(cl ...))]
+                            [p (in-syntax #'(pat ...))]
+                            [e (in-syntax #'(exp ...))])
+                   (quasisyntax/loc c
+                     (match-define-values/derived #,stx (#,p) #,e)))
+              body1 body ...))]))
 
      (define-syntax (match-letrec-values stx)
        (syntax-parse stx
          [(_ ((~and cl [(pat ...) exp]) ...) body1 body ...)
           (quasisyntax/loc stx
-			   (let ()
-                            #,@(for/list ([c (in-syntax #'(cl ...))]
-                                          [p (in-syntax #'((pat ...) ...))]
-                                          [e (in-syntax #'(exp ...))])
-                                 (quasisyntax/loc c (match-define-values #,p #,e)))
-                            body1 body ...))]))
+            (let ()
+              #,@(for/list ([c (in-syntax #'(cl ...))]
+                            [ps (in-syntax #'((pat ...) ...))]
+                            [e (in-syntax #'(exp ...))])
+                   (quasisyntax/loc c
+                     (match-define-values/derived #,stx #,ps #,e)))
+              body1 body ...))]))
 
      (define-syntax (match-define stx)
        (syntax-parse stx
          [(_ pat rhs:expr)
-          (let ([p (parse-id #'pat)])
-            (with-syntax ([vars (bound-vars p)])
-              (quasisyntax/loc stx
-                (define-values vars (match*/derived (rhs) #,stx
-                                      [(pat) (values . vars)])))))]))
+          (quasisyntax/loc stx
+            (match-define-values/derived #,stx (pat) rhs))]))
 
      (define-syntax (match-define-values stx)
        (syntax-parse stx
          [(_ (pats ...) rhs:expr)
-          (with-syntax ([(ids ...) (pats->bound-vars parse-id (syntax->list #'(pats ...)))])
-            (syntax/loc stx
-              (define-values (ids ...)
-                (match/values rhs
-                  [(pats ...) (values ids ...)]))))]))
+          (quasisyntax/loc stx
+            (match-define-values/derived #,stx (pats ...) rhs))]))
 
      (define-syntax (define/match stx)
        (syntax-parse stx

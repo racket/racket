@@ -12,8 +12,6 @@
                      get-key
                      (struct-out Row)))
 
-(define orig-stx (make-parameter #f))
-
 (define-struct Pat () #:transparent)
 ;; v is an identifier
 (define-struct (Var Pat) (v)
