@@ -201,7 +201,7 @@
 
   (if (or (on? "--clean")
           (on? "-c")
-	  (on? "--no-zo")
+          (on? "--no-zo")
           (on? "-n"))
       ;; Don't use .zos, in case they're out of date, and don't load
       ;;  cm:
