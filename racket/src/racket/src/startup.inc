@@ -42653,7 +42653,7 @@ static const char *startup_source =
 " 'syntax-local-lift-require"
 "(let-values()"
 "(let-values()"
-"(let-values(((sc_33)(new-scope 'macro)))"
+"(let-values(((sc_33)(new-scope 'lifted-require)))"
 "(let-values(((ctx_59 added-s_1)"
 "(let-values(((who118_0) 'syntax-local-lift-require)"
 "((temp119_0)(datum->syntax$1 #f s_333))"

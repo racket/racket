@@ -822,7 +822,12 @@ applied to each before passing them to
 @racket[syntax-local-lift-require]. Otherwise, marks added
 by the macro expander can prevent access to the new imports.
 
-@transform-time[]}
+@transform-time[]
+
+@history[#:changed "6.90.0.27" @elem{Changed the @tech{scope} added to inputs from a
+                                     macro-introduction scope to one that does not affect whether or
+                                     not the resulting syntax is considered original as reported by
+                                     @racket[syntax-original?].}]}
 
 @defproc[(syntax-local-lift-provide [raw-provide-spec-stx syntax?])
          void?]{

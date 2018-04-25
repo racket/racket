@@ -72,7 +72,7 @@
 ;; generally not share a most-recent scope.
 
 (struct scope (id             ; internal scope identity; used for sorting
-               kind           ; debug info
+               kind           ; 'macro for macro-introduction scopes, otherwise treated as debug info
                [binding-table #:mutable]) ; see "binding-table.rkt"
   #:authentic
   ;; Custom printer:

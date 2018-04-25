@@ -281,7 +281,7 @@
   (values ctx post-s))
 
 (define/who (syntax-local-lift-require s use-s)
-  (define sc (new-scope 'macro))
+  (define sc (new-scope 'lifted-require))
   (define-values (ctx added-s)
     (do-local-lift-to-module who
                              (datum->syntax #f s)
