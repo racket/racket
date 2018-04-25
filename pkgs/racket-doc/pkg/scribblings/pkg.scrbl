@@ -707,6 +707,9 @@ the given @nonterm{pkg-source}s.
     To convert a clone-linked package to a normal installation, use
     @command-ref{update} either with the @DFlag{lookup} flag or with
     a replacement @tech{package source} that is not a package name.}
+@item{@DFlag{unclone} --- An alias for @DFlag{lookup}, which (absent
+    @DFlag{clone}) has the effect of replacing a link to a repository
+    clone with a normal package installation.}    
  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
  @item{@DFlag{source} --- Same as for @command-ref{install}.}
  @item{@DFlag{scope} @nonterm{scope} --- Selects a @tech{package scope}, the same as for @command-ref{install}.}
@@ -742,7 +745,8 @@ the given @nonterm{pkg-source}s.
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
                                    the @DFlag{deps} default to depend only on interactive mode.}
          #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}
-         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}]}
+         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
+         #:changed "6.90.0.27" @elem{Added the @DFlag{unclone} flag.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency

@@ -457,7 +457,9 @@
          (when (eq? mode 'convert)
            (shelly-case
             "Converting back to non-clone"
-            $ "raco pkg update --multi-clone convert --lookup one"
+            $ (~a "raco pkg update --multi-clone convert "
+                  (if three? "--unclone" "--lookup") ; try either alias, arbitrarily tied to `three?`
+                  " one")
             $ "racket -l two" =stdout> "2\n"
             (when three?
               (shelly-begin

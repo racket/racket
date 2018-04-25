@@ -150,7 +150,9 @@
           #:install-force-flags (install-force-flags ...)
           #:install-clone-flags (install-clone-flags ...)
           #:update-deps-flags (update-deps-flags ...)
-          #:install-copy-flags (install-copy-flags ...)
+          #:install-copy-flags/pre-clone (install-copy-flags/pre-clone ...)
+          #:install-copy-flags/unclone (install-copy-flags/unclone ...)
+          #:install-copy-flags/post-clone (install-copy-flags/post-clone ...)
           #:install-copy-defns (install-copy-defns ...)
           #:install-copy-checks (install-copy-checks ...))
        (replace-context
@@ -173,7 +175,8 @@
              #:once-each
              update-deps-flags ...
              #:once-any
-             install-copy-flags ...
+             install-copy-flags/pre-clone ...
+             install-copy-flags/post-clone ...
              #:once-any
              scope-flags ...
              #:once-each
@@ -269,7 +272,9 @@
              #:once-each
              update-deps-flags ...
              #:once-any
-             install-copy-flags ...
+             install-copy-flags/pre-clone ...
+             install-copy-flags/unclone ...
+             install-copy-flags/post-clone ...
              #:once-any
              scope-flags ...
              #:once-each
@@ -306,13 +311,14 @@
                   install-copy-checks ...
                   (define clone-path (and (eq? a-type 'clone)
                                           (path->complete-path clone)))
+                  (define lookup? (or lookup unclone))
                   (define setup-collects
                     (with-pkg-lock
                         (parameterize ([current-pkg-catalogs (and catalog
                                                                   (list (catalog->url catalog)))])
                           (pkg-update (for/list ([pkg-source (in-list pkg-source)])
                                         (cond
-                                         [lookup
+                                         [lookup?
                                           (pkg-desc pkg-source a-type name checksum #f
                                                     #:path clone-path)]
                                          [else
@@ -341,7 +347,7 @@
                                                   (and binary 'binary)
                                                   (and binary-lib 'binary-lib))
                                       #:force-strip? force
-                                      #:lookup-for-clone? lookup
+                                      #:lookup-for-clone? lookup?
                                       #:multi-clone-behavior (or multi-clone
                                                                  (if batch
                                                                      'fail
@@ -710,12 +716,15 @@
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
     [#:bool ignore-implies () "When updating, treat `implies' like other dependencies"])
-   #:install-copy-flags
+   #:install-copy-flags/pre-clone
    ([#:bool link () ("Link a directory package source in place (default for a directory)")]
     [#:bool static-link () ("Link in place, promising collections do not change")]
     [#:bool copy () ("Treat directory sources the same as other sources")]
-    [(#:str dir #f) clone () ("Clone Git and GitHub package sources to <dir> and link")]
-    [#:bool source () ("Strip packages' built elements before installing; implies --copy")]
+    [(#:str dir #f) clone () ("Clone Git and GitHub package sources to <dir> and link")])
+   #:install-copy-flags/unclone
+   ([#:bool unclone () ("Unclones when currently a clone; alias for --lookup")])
+   #:install-copy-flags/post-clone
+   ([#:bool source () ("Strip packages' built elements before installing; implies --copy")]
     [#:bool binary () ("Strip packages' source elements before installing; implies --copy")]
     [#:bool binary-lib () ("Strip source & documentation before installing; implies --copy")])
    #:install-copy-defns
