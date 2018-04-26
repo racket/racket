@@ -156,6 +156,7 @@
     #`(#,maker '#,stx
                (λ () #,arg)
                '#,(syntax-local-infer-name stx)
+               (make-parameter #f)
                #,(if list-contract? #'#t #'#f)
                #,@(if (equal? (syntax-e type) '#:flat)
                       (list (if extra-delay? #'#t #'#f))
@@ -204,32 +205,27 @@
     [else current]))
 
 (define (recursive-contract-late-neg-projection ctc)
-  (cond
-    [(recursive-contract-list-contract? ctc)
-     (λ (blame)
+  (define p (recursive-contract-param ctc))
+  (λ (blame)
+    (cond
+      [(p) => (λ (b) (λ (val neg-party) ((unbox b) val neg-party)))]
+      [else
        (define r-ctc (force-recursive-contract ctc))
        (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
-       (define f-blame-known (make-thread-cell #f))
-       (λ (val neg-party)
-         (unless (list? val)
-           (raise-blame-error blame-known #:missing-party neg-party
-                              val
-                              '(expected: "list?" given: "~e")
-                              val))
-         (unless (thread-cell-ref f-blame-known)
-           (thread-cell-set! f-blame-known (f blame-known)))
-         ((thread-cell-ref f-blame-known) val neg-party)))]
-    [else
-     (λ (blame)
-       (define r-ctc (force-recursive-contract ctc))
-       (define f (get/build-late-neg-projection r-ctc))
-       (define blame-known (blame-add-context blame #f))
-       (define f-blame-known (make-thread-cell #f))
-       (λ (val neg-party)
-         (unless (thread-cell-ref f-blame-known)
-           (thread-cell-set! f-blame-known (f blame-known)))
-         ((thread-cell-ref f-blame-known) val neg-party)))]))
+       (define b (box 'uninitialized-recursive-contract))
+       (define func (parameterize ([p b]) (f blame-known)))
+       (set-box! b func)
+       (cond
+         [(recursive-contract-list-contract? ctc)
+          (λ (val neg-party)
+            (unless (list? val)
+              (raise-blame-error blame-known #:missing-party neg-party
+                                 val
+                                 '(expected: "list?" given: "~e")
+                                 val))
+            (func val neg-party))]
+         [else func])])))
 
 (define (flat-recursive-contract-late-neg-projection ctc)
   (cond
@@ -273,7 +269,7 @@
        (force-recursive-contract ctc)
        (contract-random-generate/choose (recursive-contract-ctc ctc) (- fuel 1))])))
 
-(struct recursive-contract ([name #:mutable] [thunk #:mutable] [ctc #:mutable] list-contract?)
+(struct recursive-contract ([name #:mutable] [thunk #:mutable] [ctc #:mutable] param list-contract?)
   #:property prop:recursive-contract (λ (this)
                                        (force-recursive-contract this)
                                        (recursive-contract-ctc this)))
