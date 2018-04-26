@@ -3242,7 +3242,7 @@ if test "${enable_cify}" = "yes" ; then
   STARTUP_AS_C=
   STARTUP_AS_AUTO=_auto
 else
-  if test "${enable_cify}" = "yes" ; then
+  if test "${enable_cify}" = "no" ; then
     STARTUP_AS_BYTECODE=
     STARTUP_AS_C=_c
     STARTUP_AS_AUTO=_auto
