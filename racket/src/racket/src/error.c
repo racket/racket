@@ -3019,7 +3019,7 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])
 {
-  const char *where, *detail;
+  const char *where = NULL, *detail = NULL;
   Scheme_Object **got_argv;
   int i, expected;
   
