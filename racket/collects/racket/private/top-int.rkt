@@ -1,4 +1,4 @@
-(module pre-base '#%kernel
+(module top-int '#%kernel
   (#%require (for-syntax '#%kernel))
 
   (#%provide #%top-interaction)
