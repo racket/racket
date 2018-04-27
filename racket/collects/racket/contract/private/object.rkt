@@ -65,9 +65,9 @@
      (define mtd-ctcs (object-contract-method-ctcs ctc))
      (λ (blame)
        (define p-app
-         (make-wrapper-object blame mtds mtd-ctcs flds fld-ctcs))
+         (make-wrapper-object blame mtds mtd-ctcs))
        (λ (val neg-party)
-         (p-app ctc val neg-party))))
+         (p-app ctc val neg-party flds fld-ctcs))))
    #:name
    (λ (ctc) `(object-contract ,@(map (λ (fld ctc) (build-compound-type-name 'field fld ctc))
                                      (object-contract-fields ctc)

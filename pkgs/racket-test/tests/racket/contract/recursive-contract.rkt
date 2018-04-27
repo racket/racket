@@ -111,7 +111,7 @@
       (for ([i (in-range 100)])
         (void (vector-ref v 0)))
       counter)
-   3)
+   2)
 
   (test/spec-passed/result
    'recursive-contract-not-too-slow
