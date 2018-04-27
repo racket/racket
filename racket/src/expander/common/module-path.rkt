@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../compile/serialize-property.rkt"
+(require ffi/unsafe/atomic
+         "../compile/serialize-property.rkt"
          "contract.rkt"
          "parse-module-path.rkt"
          "intern.rkt")
@@ -291,11 +292,17 @@
 (define (make-generic-self-module-path-index self)
   (define r (resolved-module-path-to-generic-resolved-module-path
              (module-path-index-resolved self)))
-  (or (let ([e (hash-ref generic-self-mpis r #f)])
-        (and e (ephemeron-value e)))
-      (let ([mpi (module-path-index #f #f r #f)])
-        (hash-set! generic-self-mpis r (make-ephemeron r mpi))
-        mpi)))
+  ;; The use of `generic-self-mpis` must be atomic, so that the
+  ;; current thread cannot be killed, since that could leave
+  ;; the table locked
+  (start-atomic)
+  (begin0
+    (or (let ([e (hash-ref generic-self-mpis r #f)])
+          (and e (ephemeron-value e)))
+        (let ([mpi (module-path-index #f #f r #f)])
+          (hash-set! generic-self-mpis r (make-ephemeron r mpi))
+          mpi))
+    (end-atomic)))
 
 (define (resolved-module-path-to-generic-resolved-module-path r)
   (define name (resolved-module-path-name r))
