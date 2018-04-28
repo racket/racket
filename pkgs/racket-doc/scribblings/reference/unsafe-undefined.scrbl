@@ -11,18 +11,25 @@ placeholder value. For example, it is used by @racket[letrec] as a
 value for a variable that has not yet been assigned a value.  Unlike
 the @racket[undefined] value exported by @racket[racket/undefined],
 however, the @racket[unsafe-undefined] value should not leak as the
-result of a safe expression. Expression results that potentially
+result of a safe expression, and it should not be passed as an optional
+argument to a procedure (because it may count as ``no value provided'').
+Expression results that potentially
 produce @racket[unsafe-undefined] can be guarded by
 @racket[check-not-unsafe-undefined], so that an exception can be
 raised instead of producing an @racket[undefined] value.
 
 The @racket[unsafe-undefined] value is always @racket[eq?] to itself.
 
-@history[#:added "6.0.1.2"]
+@history[#:added "6.0.1.2"
+         #:changed "6.90.0.29" @elem{Procedures with optional arguments
+                                     sometimes use the @racket[unsafe-undefined]
+                                     value internally to mean ``no argument supplied.''}]
 
 @defthing[unsafe-undefined any/c]{
 
-The unsafe ``undefined'' constant.}
+The unsafe ``undefined'' constant.
+
+See above for important constraints on the use of @racket[unsafe-undefined].}
 
 
 @defproc[(check-not-unsafe-undefined [v any/c] [sym symbol?])
