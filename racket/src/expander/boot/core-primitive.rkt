@@ -118,6 +118,7 @@
                       syntax-local-name
 
                       make-syntax-introducer
+                      make-interned-syntax-introducer
                       make-syntax-delta-introducer
                       syntax-local-make-delta-introducer
                       

@@ -18,7 +18,7 @@
          "built-in-symbol.rkt"
          "reserved-symbol.rkt")
 
-;; Serializaiton is mostly for syntax object and module path indexes.
+;; Serialization is mostly for syntax object and module path indexes.
 ;;
 ;; Serialization is implemented by a combination of direct handling
 ;; for some primitive datatypes, `prop:serialize` handlers attached
@@ -738,6 +738,8 @@
      (decode* (deserialize-scope))]
     [(#:scope+kind)
      (decode* (deserialize-scope kind))]
+    [(#:interned-scope)
+     (decode* (make-interned-scope id))]
     [(#:multi-scope)
      (decode* (deserialize-multi-scope name scopes))]
     [(#:shifted-multi-scope)

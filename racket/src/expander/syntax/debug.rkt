@@ -60,11 +60,17 @@
 (define (scope-set->context scs)
   (sort
    (for/list ([sc (in-set scs)])
-     (if (representative-scope? sc)
-         (vector (scope-id sc)
-                 (scope-kind sc)
-                 (multi-scope-name (representative-scope-owner sc)))
-         (vector (scope-id sc)
-                 (scope-kind sc))))
+     (cond
+       [(interned-scope? sc)
+        (vector (scope-id sc)
+                (scope-kind sc)
+                (interned-scope-key sc))]
+       [(representative-scope? sc)
+        (vector (scope-id sc)
+                (scope-kind sc)
+                (multi-scope-name (representative-scope-owner sc)))]
+       [else
+        (vector (scope-id sc)
+                (scope-kind sc))]))
    <
    #:key (lambda (v) (vector-ref v 0))))

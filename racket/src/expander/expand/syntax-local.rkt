@@ -36,6 +36,7 @@
          syntax-local-name
 
          make-syntax-introducer
+         make-interned-syntax-introducer
          make-syntax-delta-introducer
          syntax-local-make-delta-introducer
          
@@ -114,7 +115,13 @@
 ;; ----------------------------------------
 
 (define (make-syntax-introducer [as-use-site? #f])
-  (define sc (new-scope (if as-use-site? 'use-site 'macro)))
+  (do-make-syntax-introducer (new-scope (if as-use-site? 'use-site 'macro))))
+
+(define/who (make-interned-syntax-introducer sym-key)
+  (check who symbol? sym-key)
+  (do-make-syntax-introducer (make-interned-scope sym-key)))
+
+(define (do-make-syntax-introducer sc)
   (lambda (s [mode 'flip])
     (check 'syntax-introducer syntax? s)
     (case mode

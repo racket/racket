@@ -1036,6 +1036,27 @@ and different result procedures use distinct scopes.
                                added the optional operation argument
                                in the result procedure.}]}
 
+@defproc[(make-interned-syntax-introducer [key symbol?])
+         ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
+
+Like @racket[make-syntax-introducer], but the encapsulated @tech{scope} is interned. Multiple calls to
+@racket[make-interned-syntax-introducer] with the same @racket[key] will produce procedures that flip,
+add, or remove the same scope, even across @tech{phases} and module @tech{instantiations}.
+Furthermore, the scope remains consistent even when embedded in @tech{compiled} code, so a scope
+created with @racket[make-interned-syntax-introducer] will retain its identity in syntax objects
+loaded from compiled code. (In this sense, the relationship between @racket[make-syntax-introducer]
+and @racket[make-interned-syntax-introducer] is analogous to the relationship between
+@racket[gensym] and @racket[quote].)
+
+This function is intended for the implementation of separate binding environments within a single
+phase, for which the scope associated with each environment must be the same across modules.
+
+Unlike @racket[make-syntax-introducer], the scope added by a procedure created with
+@racket[make-interned-syntax-introducer] is always treated like a use-site scope, not a
+macro-introduction scope, so it does not affect originalness as reported by @racket[syntax-original?].
+
+@history[#:added "6.90.0.28"]}
+
 @defproc[(make-syntax-delta-introducer [ext-stx identifier?]
                                        [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)

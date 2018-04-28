@@ -2488,5 +2488,53 @@ case of module-leve bindings; it doesn't cover local bindings.
     (void)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `make-interned-syntax-introducer`
+
+(let ([ns-code '(module ns racket/base
+                  (require (for-syntax racket/base))
+                  (provide (for-syntax ns-introduce) begin-for-ns)
+                  (begin-for-syntax
+                    (define ns-introducer (make-interned-syntax-introducer 'ns))
+                    (define (ns-introduce stx) (ns-introducer stx 'add)))
+                  (define-syntax (begin-for-ns stx)
+                    (syntax-case stx ()
+                      [(_ form ...) (ns-introduce #'(begin form ...))])))]
+      [m-code '(module m racket/base
+                 (require (for-syntax racket/base) 'ns)
+                 (provide get-ns-value)
+                 (define-syntax (get-ns-value stx)
+                   (syntax-case stx ()
+                     [(_ x)
+                      (identifier? #'x)
+                      #`(quote #,(syntax-local-value (ns-introduce #'x)))])))]
+      [p-code '(module p racket/base
+                 (require (for-syntax racket/base) 'ns 'm)
+                 (provide foo)
+                 (begin-for-ns
+                   (define-syntax Foo 'ns-val))
+                 (define-syntax-rule (foo)
+                   (get-ns-value Foo)))]
+      [u-code '(module u racket/base
+                 (require 'p)
+                 (provide v)
+                 (define v (foo)))])
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval ns-code)
+    (eval m-code)
+    (eval p-code)
+    (eval u-code)
+    (test 'ns-val dynamic-require ''u 'v))
+  (parameterize ([current-namespace (make-base-namespace)])
+    (let ([compile/eval (λ (code) (let ([s (open-output-bytes)])
+                                    (write (compile code) s)
+                                    (eval (parameterize ([read-accept-compiled #t])
+                                            (read (open-input-bytes (get-output-bytes s)))))))])
+      (compile/eval ns-code)
+      (compile/eval m-code)
+      (compile/eval p-code)
+      (compile/eval u-code)
+      (test 'ns-val dynamic-require ''u 'v))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

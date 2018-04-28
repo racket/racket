@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/set.rkt"
+(require ffi/unsafe/atomic
+         "../common/set.rkt"
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "../common/memo.rkt"
@@ -14,6 +15,7 @@
          "cache.rkt")
 
 (provide new-scope
+         make-interned-scope
          new-multi-scope
          add-scope
          add-scopes
@@ -22,14 +24,14 @@
          flip-scope
          flip-scopes
          push-scope
-         
+
          syntax-e ; handles lazy scope and taint propagation
          syntax-e/no-taint ; like `syntax-e`, but doesn't explode a dye pack
-         
+
          syntax-scope-set
          syntax-any-scopes?
          syntax-any-macro-scopes?
-         
+
          syntax-shift-phase-level
 
          syntax-swap-scopes
@@ -51,9 +53,9 @@
          deserialize-representative-scope-fill!
          deserialize-multi-scope
          deserialize-shifted-multi-scope
-         
+
          generalize-scope
-         
+
          scope?
          scope<?
          shifted-multi-scope?
@@ -61,6 +63,7 @@
 
 (module+ for-debug
   (provide (struct-out scope)
+           (struct-out interned-scope)
            (struct-out multi-scope)
            (struct-out representative-scope)
            scope-set-at-fallback))
@@ -120,6 +123,28 @@
 
 (define (deserialize-scope-fill! s bt)
   (set-scope-binding-table! s bt))
+
+;; An "interned scope" is a scope identified by an interned symbol that is
+;; consistent across both module instantiations and bytecode unmarshalling.
+;; Creating an interned scope with the same symbol will always produce the
+;; same scope.
+(struct interned-scope scope (key)  ; symbolic key used for interning
+  #:authentic
+  #:property prop:custom-write
+  (lambda (sc port mode)
+    (write-string "#<scope:" port)
+    (display (scope-id sc) port)
+    (write-string ":" port)
+    (display (scope-kind sc) port)
+    (write-string " " port)
+    (display (interned-scope-key sc) port)
+    (write-string ">" port))
+  #:property prop:serialize
+  (lambda (s ser-push! state)
+    (unless (set-member? (serialize-state-reachable-scopes state) s)
+      (error "internal error: found supposedly unreachable scope"))
+    (ser-push! 'tag '#:interned-scope)
+    (ser-push! (interned-scope-key s))))
 
 ;; A "multi-scope" represents a group of scopes, each of which exists
 ;; only at a specific phase, and each in a distinct phase. This
@@ -289,6 +314,24 @@
 
 (define (new-scope kind)
   (scope (new-scope-id!) kind empty-binding-table))
+
+;; The intern table used for interned scopes. Access to the table must be
+;; atomic so that the table is not left locked if the expansion thread is
+;; killed.
+(define interned-scopes-table (make-weak-hasheq))
+
+(define (make-interned-scope sym)
+  (define (make)
+    ;; since interned scopes are reused by unmarshalled code, and because they’re generally unlikely
+    ;; to be a good target for bindings, always create them with a negative id
+    (make-ephemeron sym (interned-scope (- (new-scope-id!)) 'interned empty-binding-table sym)))
+  (call-as-atomic
+   (lambda ()
+     (or (ephemeron-value
+          (hash-ref! interned-scopes-table sym make))
+         (let ([new (make)])
+           (hash-set! interned-scopes-table sym new)
+           (ephemeron-value new))))))
 
 (define (new-multi-scope [name #f])
   (intern-shifted-multi-scope 0 (multi-scope (new-scope-id!) name (make-hasheqv) (box (hasheqv)) (box (hash)))))
