@@ -105,7 +105,9 @@
              [-make-flat-contract make-flat-contract]
              [-build-chaperone-contract-property build-chaperone-contract-property]
              [-build-flat-contract-property build-flat-contract-property])
- skip-projection-wrapper?)
+ skip-projection-wrapper?
+
+ contract-pos/neg-doubling)
 
 (define skip-projection-wrapper? (make-parameter #f))
 

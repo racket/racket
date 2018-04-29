@@ -177,27 +177,50 @@
                  [c (in-list (class/c-method-contracts ctc))])
         (and c
              ((contract-late-neg-projection c) (blame-add-method-context blame name)))))
-    
     (define external-field-projections
       (for/list ([f (in-list (class/c-fields ctc))]
                  [c (in-list (class/c-field-contracts ctc))])
         (define pos-blame (blame-add-field-context blame f #:swap? #f))
         (define neg-blame (blame-add-field-context blame f #:swap? #t))
-        (and c
-             (let ([p-pos ((contract-late-neg-projection c)
-                           pos-blame)]
-                   [p-neg ((contract-late-neg-projection c)
-                           neg-blame)])
-               (cons (lambda (x pos-party)
-                       (define blame+pos-party (cons pos-blame pos-party))
-                       (with-contract-continuation-mark
-                        blame+pos-party
+        (cond
+          [c
+           (define-values (filled? maybe-p-pos maybe-p-neg)
+             (contract-pos/neg-doubling ((contract-late-neg-projection c) pos-blame)
+                                        ((contract-late-neg-projection c) neg-blame)))
+           (cond
+             [filled?
+              (cons (lambda (x pos-party)
+                      (define blame+pos-party (cons pos-blame pos-party))
+                      (with-contract-continuation-mark
+                          blame+pos-party
+                        (maybe-p-pos x pos-party)))
+                    (lambda (x neg-party)
+                      (define blame+neg-party (cons neg-blame neg-party))
+                      (with-contract-continuation-mark
+                          blame+neg-party
+                        (maybe-p-neg x neg-party))))]
+             [else
+              (define tc-pos (make-thread-cell #f))
+              (define tc-neg (make-thread-cell #f))
+              (cons (lambda (x pos-party)
+                      (define blame+pos-party (cons pos-blame pos-party))
+                      (with-contract-continuation-mark
+                          blame+pos-party
+                        (define p-pos (or (thread-cell-ref tc-pos)
+                                          (let ([p-pos (maybe-p-pos)])
+                                            (thread-cell-set! tc-pos p-pos)
+                                            p-pos)))
                         (p-pos x pos-party)))
-                     (lambda (x neg-party)
-                       (define blame+neg-party (cons neg-blame neg-party))
-                       (with-contract-continuation-mark
-                        blame+neg-party
-                        (p-neg x neg-party))))))))
+                    (lambda (x neg-party)
+                      (define blame+neg-party (cons neg-blame neg-party))
+                      (with-contract-continuation-mark
+                          blame+neg-party
+                        (define p-neg (or (thread-cell-ref tc-neg)
+                                          (let ([p-neg (maybe-p-neg)])
+                                            (thread-cell-set! tc-neg p-neg)
+                                            p-neg)))
+                        (p-neg x neg-party))))])]
+          [else #f])))
     
     ;; zip the inits and contracts together for ordered selection
     (define inits+contracts 
@@ -439,20 +462,52 @@
     (define internal-field-projections
       (for/list ([f (in-list (internal-class/c-inherit-fields internal-ctc))]
                  [c (in-list (internal-class/c-inherit-field-contracts internal-ctc))])
-        (and c
-             (let* ([blame-acceptor (contract-late-neg-projection c)]
-                    [p-pos (blame-acceptor blame)]
-                    [p-neg (blame-acceptor bswap)])
-               (cons (lambda (x pos-party)
-                       (define blame+pos-party (cons blame pos-party))
-                       (with-contract-continuation-mark
-                        blame+pos-party
+        (cond
+          [c
+           (define blame-acceptor (contract-late-neg-projection c))
+           (define-values (filled? maybe-p-pos maybe-p-neg)
+             (contract-pos/neg-doubling (blame-acceptor blame)
+                                        (blame-acceptor bswap)))
+           (cond
+             [filled?
+              (cons (lambda (x pos-party)
+                      (define blame+pos-party (cons blame pos-party))
+                      (with-contract-continuation-mark
+                          blame+pos-party
+                        (maybe-p-pos x pos-party)))
+                    (lambda (x neg-party)
+                      (define blame+neg-party (cons blame neg-party))
+                      (with-contract-continuation-mark
+                          blame+neg-party
+                        (maybe-p-neg x neg-party))))]
+             [else
+              (define tc-pos (make-thread-cell #f))
+              (define tc-neg (make-thread-cell #f))
+              (cons (lambda (x pos-party)
+                      (define blame+pos-party (cons blame pos-party))
+                      (with-contract-continuation-mark
+                          blame+pos-party
+                        (define p-pos
+                          (cond
+                            [(thread-cell-ref tc-pos) => values]
+                            [else
+                             (define p-pos (maybe-p-pos))
+                             (thread-cell-set! tc-pos p-pos)
+                             p-pos]))
                         (p-pos x pos-party)))
-                     (lambda (x neg-party)
-                       (define blame+neg-party (cons blame neg-party))
-                       (with-contract-continuation-mark
-                        blame+neg-party
-                        (p-neg x neg-party))))))))
+                    (lambda (x neg-party)
+                      (define blame+neg-party (cons blame neg-party))
+                      (with-contract-continuation-mark
+                          blame+neg-party
+                        (define p-neg
+                          (cond
+                            [(thread-cell-ref tc-neg) => values]
+                            [else
+                             (define p-neg (maybe-p-neg))
+                             (thread-cell-set! tc-neg p-neg)
+                             p-neg]))
+                        (p-neg x neg-party))))])]
+          [else #f])))
     
     (define override-projections
       (for/list ([m (in-list (internal-class/c-overrides internal-ctc))]
@@ -1602,16 +1657,24 @@
          ((contract-late-neg-projection c) blame*)]
         [else #f])))
 
-  (define pos/neg-field-projs
-    (for/list ([f (in-list fields)]
-               [c (in-list field-contracts)])
-      (cond
-        [(just-check-existence? c) #f]
-        [else
-         (define prj (contract-late-neg-projection c))
-         (vector
-          (prj (blame-add-field-context blame f #:swap? #f))
-          (prj (blame-add-field-context blame f #:swap? #t)))])))
+  (define-values (filled? maybe-pos-field-projs maybe-neg-field-projs)
+    (contract-pos/neg-doubling
+     (for/list ([f (in-list fields)]
+                [c (in-list field-contracts)])
+       (cond
+         [(just-check-existence? c) #f]
+         [else
+          (define prj (contract-late-neg-projection c))
+          (prj (blame-add-field-context blame f #:swap? #f))]))
+     (for/list ([f (in-list fields)]
+                [c (in-list field-contracts)])
+       (cond
+         [(just-check-existence? c) #f]
+         [else
+          (define prj (contract-late-neg-projection c))
+          (prj (blame-add-field-context blame f #:swap? #t))]))))
+
+  (define tc (and (not filled?) (make-thread-cell #f)))
 
   (λ (cls neg-party)
   (let* ([name (class-name cls)]
@@ -1712,25 +1775,36 @@
           (when method-proj
             (define i (hash-ref method-ht m))
             (vector-set! meths i (make-method (method-proj (vector-ref meths i) neg-party) m))))))
-    
+
     ;; Handle external field contracts
     (unless (null? fields)
-      (for ([f (in-list fields)]
-            [c (in-list field-contracts)]
-            [pos/neg-field-proj (in-list pos/neg-field-projs)])
-        (unless (just-check-existence? c)
-          (define fi (hash-ref field-ht f))
-          (define p-pos (vector-ref pos/neg-field-proj 0))
-          (define p-neg (vector-ref pos/neg-field-proj 1))
-          (hash-set! field-ht f (field-info-extend-external fi
-                                                            (lambda args
-                                                              (with-contract-continuation-mark
-                                                               (cons blame neg-party)
-                                                               (apply p-pos args)))
-                                                            (lambda args
-                                                              (with-contract-continuation-mark
-                                                               (cons blame neg-party)
-                                                               (apply p-neg args)))
-                                                            neg-party)))))
+      (define (install-new-fields pos-field-projs neg-field-projs)
+        (for ([f (in-list fields)]
+              [c (in-list field-contracts)]
+              [p-pos (in-list pos-field-projs)]
+              [p-neg (in-list neg-field-projs)])
+          (unless (just-check-existence? c)
+            (define fi (hash-ref field-ht f))
+            (hash-set! field-ht f (field-info-extend-external
+                                   fi
+                                   (lambda args
+                                     (with-contract-continuation-mark
+                                         (cons blame neg-party)
+                                       (apply p-pos args)))
+                                   (lambda args
+                                     (with-contract-continuation-mark
+                                         (cons blame neg-party)
+                                       (apply p-neg args)))
+                                   neg-party)))))
+      (cond
+        [filled? (install-new-fields maybe-pos-field-projs maybe-neg-field-projs)]
+        [(thread-cell-ref tc)
+         =>
+         (λ (pr) (install-new-fields (car pr) (cdr pr)))]
+        [else
+         (define pos-field-projs (maybe-pos-field-projs))
+         (define neg-field-projs (maybe-neg-field-projs))
+         (thread-cell-set! tc (cons pos-field-projs neg-field-projs))
+         (install-new-fields pos-field-projs neg-field-projs)]))
     
     (copy-seals cls c))))

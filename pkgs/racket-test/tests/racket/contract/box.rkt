@@ -75,6 +75,27 @@
    'box/c12
    '(set-box! (contract (box/c integer?) (box 1) 'pos 'neg) 1.5))
 
+  (test/pos-blame
+   'box/c13
+   '(let ()
+      (define N 18)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (box/c c)))
+
+      (define val
+        (for/fold ([val 5])
+                  ([i (in-range N)])
+          (box val)))
+
+      (define cval (contract c val 'pos 'neg))
+
+      (for/fold ([val cval])
+                ([i (in-range N)])
+        (unbox val))))
+  
   ;; contract-stronger? tests
   (contract-eval '(require (only-in racket/contract/combinator contract-stronger?)))
 

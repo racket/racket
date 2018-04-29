@@ -84,7 +84,9 @@
          n->th
 
          false/c-contract
-         true/c-contract)
+         true/c-contract
+
+         contract-pos/neg-doubling)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -877,3 +879,20 @@
      [(2) "nd"]
      [(3) "rd"]
      [else "th"])))
+
+
+(define-syntax-rule
+  (contract-pos/neg-doubling e1 e2)
+  (contract-pos/neg-doubling/proc (λ () e1) (λ () e2)))
+(define doubling-cm-key (gensym 'racket/contract-doubling-mark))
+(define (contract-pos/neg-doubling/proc t1 t2)
+  (define depth
+    (or (continuation-mark-set-first (current-continuation-marks)
+                                     doubling-cm-key)
+        0))
+  (cond
+    [(> depth 5)
+     (values #f t1 t2)]
+    [else
+     (with-continuation-mark doubling-cm-key (+ depth 1)
+       (values #t (t1) (t2)))]))

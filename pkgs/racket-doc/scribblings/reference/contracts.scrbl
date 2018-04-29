@@ -2374,6 +2374,43 @@ of the @tech{blame object} and the missing party should be used instead.
 @history[#:added "6.4.0.4"]
 }
 
+@defform[(contract-pos/neg-doubling e1 e2)]{
+
+ Some contract combinators need to build projections for
+ subcontracts with both regular and @racket[blame-swap]ed
+ versions of the blame that they are given in order to check
+ both access and mutations (e.g., @racket[vector/c] and
+ @racket[vectorof]). In the case that such combinators are
+ nested deeply inside each other, there is a potential for an
+ exponential explosion of nested projections being built.
+
+ To avoid that explosion, wrap each of the calls to the
+ blame-accepting portion of the combinator in
+ @racket[contract-pos/neg-doubling]. It returns three values.
+ The first is a boolean, indicating how to interpret the
+ other two results. If the boolean is @racket[#t], then the
+ other two results are the values of @racket[e1] and
+ @racket[e2] and we are not too deep in the nesting. If the
+ boolean is @racket[#f], then we have passed a threshold and
+ it is not safe to evaluate @racket[e1] and @racket[e2] yet,
+ as we are in danger of running into the exponential
+ slowdown. In that case, the last two results are thunks
+ that, when invoked, compute the values of @racket[e1] and
+ @racket[e2].
+
+ As an example, @racket[vectorof] uses
+ @racket[contract-pos/neg-doubling] wrapping its two calls to
+ the blame-accepting part of the projection for its
+ subcontract. When it receives a @racket[#f] as that first
+ boolean, it does not invoke the thunks right away, but waits
+ until the interposition procedure that it attaches to the
+ chaperoned vector is called. Then it invokes them (and caches
+ the result). This delays the construction of the projections
+ until they are actually needed, avoiding the exponential blowup.
+
+ @history[#:added "6.90.0.27"]
+}
+
 @subsection{Blame Objects}
 
 This section describes @deftech{blame objects} and operations on them.

@@ -235,6 +235,21 @@
                      c-h))
    #t)
 
+  (test/pos-blame
+   'hash/c18
+   '(let ()
+      (define N 40)
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (hash/c c integer?)))
+      (define h
+        (for/fold ([h 0])
+                  ([i (in-range N)])
+          (hash h i)))
+      (immutable? h)
+
+      (void (contract c h 'pos 'neg))))
   
   (test/pos-blame
    'hash/dc1

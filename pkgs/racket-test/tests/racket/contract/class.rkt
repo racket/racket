@@ -1593,6 +1593,31 @@
                  (inherit-field f)
                  (define/public (m) f))])
       (send (new d%) m)))
+
+  (test/pos-blame
+   'inherit-field-lots-of-wrappers
+   '(let ()
+      (define N 40)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (class/c (inherit-field [fld c]))))
+
+      (define val
+        (for/fold ([val 5])
+                  ([i (in-range N)])
+          (class object% (field [fld val]) (super-new))))
+
+      (define cval (contract c val 'pos 'neg))
+
+      (for/fold ([val cval])
+                ([i (in-range N)])
+        (send (new (class val
+                     (super-new)
+                     (inherit-field fld)
+                     (define/public (m) fld)))
+              m))))
   
   (test/spec-passed
    'class/c-higher-order-override-1
@@ -2087,6 +2112,49 @@
                              'somethingelse1 'somethingelse2)
                    'pos 'neg)
          [x 2]))
+
+  (test/pos-blame
+   'class/c-deep.1
+   '(let ()
+      (define N 40)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (class/c (field [fld c]))))
+
+      (define v
+        (for/fold ([v 1])
+                  ([i (in-range N)])
+          (class object%
+            (field [fld v])
+            (super-new))))
+
+      (let loop ([v (contract c v 'pos 'neg)])
+        (loop (get-field fld (new v))))))
+
+  (test/neg-blame
+   'class/c-deep.2
+   '(let ()
+      (define N 40)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (class/c (field [fld c]))))
+
+      (define v
+        (for/fold ([v 1])
+                  ([i (in-range N)])
+          (class object%
+            (field [fld v])
+            (super-new))))
+
+      (let loop ([v (contract c v 'pos 'neg)]
+                 [i N])
+        (cond
+          [(= i 1) (set-field! fld (new v) 'not-a-proc)]
+          [else (loop (get-field fld (new v)) (- i 1))]))))
   
   (test/spec-passed/result
    'class-field-accessor1

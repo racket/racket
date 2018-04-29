@@ -147,7 +147,7 @@
 
 (define (blame-add-element-of-context blame #:swap? [swap? #f])
   (blame-add-context blame "an element of" #:swap? swap?))
-
+    
 (define (vectorof-late-neg-ho-projection chaperone-or-impersonate-vector)
   (λ (ctc)
     (define elem-ctc (base-vectorof-elem ctc))
@@ -158,20 +158,54 @@
       (define pos-blame (blame-add-element-of-context blame))
       (define neg-blame (blame-add-element-of-context blame #:swap? #t))
       (define vfp (get/build-late-neg-projection elem-ctc))
-      (define elem-pos-proj (vfp pos-blame))
-      (define elem-neg-proj (vfp neg-blame))
-      (define checked-ref (λ (neg-party)
-                            (define blame+neg-party (cons pos-blame neg-party))
-                            (λ (vec i val)
-                              (with-contract-continuation-mark
-                                blame+neg-party
-                                (elem-pos-proj val neg-party)))))
-      (define checked-set (λ (neg-party)
-                            (define blame+neg-party (cons neg-blame neg-party))
-                            (λ (vec i val)
-                              (with-contract-continuation-mark
-                                blame+neg-party
-                                (elem-neg-proj val neg-party)))))
+      (define-values (filled? elem-pos-proj elem-neg-proj)
+        (contract-pos/neg-doubling (vfp pos-blame) (vfp neg-blame)))
+      (define-values (checked-ref checked-set)
+        (cond
+          [filled?
+           (define checked-ref (λ (neg-party)
+                                 (define blame+neg-party (cons pos-blame neg-party))
+                                 (λ (vec i val)
+                                   (with-contract-continuation-mark
+                                       blame+neg-party
+                                     (elem-pos-proj val neg-party)))))
+           (define checked-set (λ (neg-party)
+                                 (define blame+neg-party (cons neg-blame neg-party))
+                                 (λ (vec i val)
+                                   (with-contract-continuation-mark
+                                       blame+neg-party
+                                     (elem-neg-proj val neg-party)))))
+           (values checked-ref checked-set)]
+          [else
+           (define ref-tc (make-thread-cell #f))
+           (define set-tc (make-thread-cell #f))
+           (define checked-ref (λ (neg-party)
+                                 (define blame+neg-party (cons pos-blame neg-party))
+                                 (λ (vec i val)
+                                   (with-contract-continuation-mark
+                                       blame+neg-party
+                                     (define real-elem-pos-proj
+                                       (cond
+                                         [(thread-cell-ref ref-tc) => values]
+                                         [else
+                                          (define real-elem-pos-proj (elem-pos-proj))
+                                          (thread-cell-set! ref-tc real-elem-pos-proj)
+                                          real-elem-pos-proj]))
+                                     (real-elem-pos-proj val neg-party)))))
+           (define checked-set (λ (neg-party)
+                                 (define blame+neg-party (cons neg-blame neg-party))
+                                 (λ (vec i val)
+                                   (with-contract-continuation-mark
+                                       blame+neg-party
+                                     (define real-elem-neg-proj
+                                       (cond
+                                         [(thread-cell-ref set-tc) => values]
+                                         [else
+                                          (define real-elem-neg-proj (elem-neg-proj))
+                                          (thread-cell-set! set-tc real-elem-neg-proj)
+                                          real-elem-neg-proj]))
+                                     (real-elem-neg-proj val neg-party)))))
+           (values checked-ref checked-set)]))
       (cond
         [(flat-contract? elem-ctc)
          (define p? (flat-contract-predicate elem-ctc))
@@ -181,35 +215,39 @@
            (check val raise-blame #f)
            ;; avoid traversing large vectors
            ;; unless `eager` is specified
-           (if (and (or (equal? eager #t)
-                        (and eager (<= (vector-length val) eager)))
-                    (immutable? val)
-                    (not (chaperone? val)))
-               (begin (for ([e (in-vector val)])
-                        (unless (p? e)
-                          (elem-pos-proj e neg-party)))
-                      val)
-               (chaperone-or-impersonate-vector
-                val
-                (checked-ref neg-party)
-                (checked-set neg-party)
-                impersonator-prop:contracted ctc
-                impersonator-prop:blame (blame-add-missing-party blame neg-party))))]
+           (cond
+             [(and (or (equal? eager #t)
+                       (and eager (<= (vector-length val) eager)))
+                   (immutable? val)
+                   (not (chaperone? val)))
+              (for ([e (in-vector val)])
+                (unless (p? e)
+                  (elem-pos-proj e neg-party)))
+              val]
+             [else
+              (chaperone-or-impersonate-vector
+               val
+               (checked-ref neg-party)
+               (checked-set neg-party)
+               impersonator-prop:contracted ctc
+               impersonator-prop:blame (blame-add-missing-party blame neg-party))]))]
         [else
-         (λ (val neg-party)
+          (λ (val neg-party)
            (define (raise-blame val . args) 
              (apply raise-blame-error blame #:missing-party neg-party val args))
            (check val raise-blame #f)
-           (if (and (immutable? val) (not (chaperone? val)))
-               (vector->immutable-vector
-                (for/vector #:length (vector-length val) ([e (in-vector val)])
-                  (elem-pos-proj e neg-party)))
-               (chaperone-or-impersonate-vector
-                val
-                (checked-ref neg-party)
-                (checked-set neg-party)
-                impersonator-prop:contracted ctc
-                impersonator-prop:blame (blame-add-missing-party blame neg-party))))]))))
+           (cond
+             [(and (immutable? val) (not (chaperone? val)))
+              (vector->immutable-vector
+               (for/vector #:length (vector-length val) ([e (in-vector val)])
+                 (elem-pos-proj e neg-party)))]
+             [else
+              (chaperone-or-impersonate-vector
+               val
+               (checked-ref neg-party)
+               (checked-set neg-party)
+               impersonator-prop:contracted ctc
+               impersonator-prop:blame (blame-add-missing-party blame neg-party))]))]))))
 
 (define-values (prop:neg-blame-party prop:neg-blame-party? prop:neg-blame-party-get)
   (make-impersonator-property 'prop:neg-blame-party))
@@ -250,7 +288,10 @@
           'racket/contract:contract
           (vector this-one (list #'vecof) null))))]))
 
-(define/subexpression-pos-prop (vectorof c #:immutable [immutable 'dont-care] #:flat? [flat? #f] #:eager [eager #t])
+(define/subexpression-pos-prop (vectorof c
+                                         #:immutable [immutable 'dont-care]
+                                         #:flat? [flat? #f]
+                                         #:eager [eager #t])
   (define ctc
     (if flat?
         (coerce-flat-contract 'vectorof c)
@@ -398,37 +439,71 @@
      (let ([elem-ctcs (base-vector/c-elems ctc)]
            [immutable (base-vector/c-immutable ctc)])
        (λ (blame)
-         (let ([elem-pos-projs (for/vector #:length (length elem-ctcs)
-                                 ([c (in-list elem-ctcs)]
-                                  [i (in-naturals)])
-                                 ((get/build-late-neg-projection c)
-                                  (blame-add-context blame (format "the ~a element of" (n->th i)))))]
-               [elem-neg-projs (for/vector #:length (length elem-ctcs)
-                                 ([c (in-list elem-ctcs)]
-                                  [i (in-naturals)])
-                                 ((get/build-late-neg-projection c)
-                                  (blame-add-context blame (format "the ~a element of" (n->th i))
-                                                     #:swap? #t)))])
-           (λ (val neg-party)
-             (check-vector/c ctc val blame neg-party)
-             (define blame+neg-party (cons blame neg-party))
-             (if (and (immutable? val) (not (chaperone? val)))
-                 (apply vector-immutable
-                        (for/list ([e (in-vector val)]
-                                   [i (in-naturals)])
-                          ((vector-ref elem-pos-projs i) e neg-party)))
-                 (vector-wrapper
-                  val
-                  (λ (vec i val)
-                    (with-contract-continuation-mark
-                     blame+neg-party
-                     ((vector-ref elem-pos-projs i) val neg-party)))
-                  (λ (vec i val)
-                    (with-contract-continuation-mark
-                     blame+neg-party
-                     ((vector-ref elem-neg-projs i) val neg-party)))
-                  impersonator-prop:contracted ctc
-                  impersonator-prop:blame blame))))))))
+         (define-values (filled? maybe-elem-pos-projs maybe-elem-neg-projs)
+           (contract-pos/neg-doubling 
+            (for/vector #:length (length elem-ctcs)
+              ([c (in-list elem-ctcs)]
+               [i (in-naturals)])
+              ((get/build-late-neg-projection c)
+               (blame-add-context blame (format "the ~a element of" (n->th i)))))
+            (for/vector #:length (length elem-ctcs)
+              ([c (in-list elem-ctcs)]
+               [i (in-naturals)])
+              ((get/build-late-neg-projection c)
+               (blame-add-context blame (format "the ~a element of" (n->th i))
+                                  #:swap? #t)))))
+         (cond
+           [filled?
+            (λ (val neg-party)
+              (check-vector/c ctc val blame neg-party)
+              (define blame+neg-party (cons blame neg-party))
+              (if (and (immutable? val) (not (chaperone? val)))
+                  (apply vector-immutable
+                         (for/list ([e (in-vector val)]
+                                    [i (in-naturals)])
+                           ((vector-ref maybe-elem-pos-projs i) e neg-party)))
+                  (vector-wrapper
+                   val
+                   (λ (vec i val)
+                     (with-contract-continuation-mark
+                         blame+neg-party
+                       ((vector-ref maybe-elem-pos-projs i) val neg-party)))
+                   (λ (vec i val)
+                     (with-contract-continuation-mark
+                         blame+neg-party
+                       ((vector-ref maybe-elem-neg-projs i) val neg-party)))
+                   impersonator-prop:contracted ctc
+                   impersonator-prop:blame blame)))]
+           [else
+            (define pos-tc (make-thread-cell #f))
+            (define neg-tc (make-thread-cell #f))
+            (define (get-projs tc get-ele-projs)
+              (cond
+                [(thread-cell-ref tc) => values]
+                [else
+                 (define projs (get-ele-projs))
+                 (thread-cell-set! tc projs)
+                 projs]))
+            (λ (val neg-party)
+              (check-vector/c ctc val blame neg-party)
+              (define blame+neg-party (cons blame neg-party))
+              (if (and (immutable? val) (not (chaperone? val)))
+                  (apply vector-immutable
+                         (for/list ([e (in-vector val)]
+                                    [i (in-naturals)])
+                           ((vector-ref (get-projs pos-tc maybe-elem-pos-projs) i) e neg-party)))
+                  (vector-wrapper
+                   val
+                   (λ (vec i val)
+                     (with-contract-continuation-mark
+                         blame+neg-party
+                       ((vector-ref (get-projs pos-tc maybe-elem-pos-projs) i) val neg-party)))
+                   (λ (vec i val)
+                     (with-contract-continuation-mark
+                         blame+neg-party
+                       ((vector-ref (get-projs neg-tc maybe-elem-neg-projs) i) val neg-party)))
+                   impersonator-prop:contracted ctc
+                   impersonator-prop:blame blame)))])))))
 
 (define-struct (chaperone-vector/c base-vector/c) ()
   #:property prop:custom-write custom-write-property-proc

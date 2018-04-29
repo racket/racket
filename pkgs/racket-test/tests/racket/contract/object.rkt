@@ -283,6 +283,51 @@
 
     (send x3 p)))
 
+  (test/pos-blame
+   'object/c-lots-of-wrapping.1
+   '(let ()
+      (define N 40)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (object/c (field [fld c]))))
+
+      (define o
+        (for/fold ([v 'not-a-proc])
+                  ([i (in-range N)])
+          (new
+           (class object%
+             (field [fld v])
+             (super-new)))))
+
+      (let loop ([o (contract c o 'pos 'neg)])
+        (loop (get-field fld o)))))
+
+  (test/neg-blame
+   'object/c-lots-of-wrapping.2
+   '(let ()
+      (define N 40)
+
+      (define c
+        (for/fold ([c (-> integer? integer?)])
+                  ([i (in-range N)])
+          (object/c (field [fld c]))))
+
+      (define o
+        (for/fold ([v add1])
+                  ([i (in-range N)])
+          (new
+           (class object%
+             (field [fld v])
+             (super-new)))))
+
+      (let loop ([o (contract c o 'pos 'neg)]
+                 [i N])
+        (cond
+          [(= i 1) (set-field! fld o 'not-a-proc)]
+          [else (loop (get-field fld o) (- i 1))]))))
+
   (test/spec-passed
    'object/c-just-check-existence
    '(contract (object/c m)
