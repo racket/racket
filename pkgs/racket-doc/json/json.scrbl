@@ -30,12 +30,13 @@ the @rfc for more information about JSON.
   @deftech{JS-Expression}, or @deftech{jsexpr}, is one of:
 
   @itemize[
-    @item{the value of @racket[jsnull], @racket['null] by default}
+    @item{the value of @racket[jsnull], @racket['null] by default,
+  which is recognized using @racket[eq?]}
     @item{@racket[boolean?]}
     @item{@racket[string?]}
-    @item{@racket[(or/c exact-integer? inexact-real?)]}
+    @item{@racket[(or/c exact-integer? (and/c inexact-real? rational?))]}
     @item{@racket[(listof jsexpr?)]}
-    @item{@racket[(and/c hash-eq? (hash/c symbol? jsexpr?))]}]
+    @item{@racket[(hash/c symbol? jsexpr?)]}]
 
 @examples[#:eval ev
   (jsexpr? 'null)
@@ -46,6 +47,7 @@ the @rfc for more information about JSON.
   (jsexpr? #hasheq((turnip . 82)))
   (jsexpr? (vector 1 2 3 4))
   (jsexpr? #hasheq(("turnip" . 82)))
+  (jsexpr? +inf.0)
 ]
 }
 
@@ -55,7 +57,11 @@ the @rfc for more information about JSON.
   In some cases a different value may better fit your needs, therefore
   all functions in this library accept a @racket[#:null] keyword
   argument for the value that is used to represent a JSON ``@tt{null}'',
-  and this argument defaults to @racket[(json-null)].}
+  and this argument defaults to @racket[(json-null)].
+
+  Note that the value of @racket[(json-null)] (or an explicitly-provided
+  @racket[#:null] argument) is recognized using @racket[eq?].
+}
 
 @section{Generating JSON Text from JS-Expressions}
 
