@@ -6,6 +6,13 @@
 ;; edited: Matthias, organization in preparation for pretty-print
 
 ;; -----------------------------------------------------------------------------
+;; DEPENDENCIES
+
+;; racket/contract must come before provide
+(require syntax/readerr
+         racket/contract)
+
+;; -----------------------------------------------------------------------------
 ;; SERVICES
 
 (provide
@@ -14,27 +21,37 @@
  
  ;; Any -> Boolean 
  jsexpr?
-
- #;
- (->* (Output-Port) ([#:null Any][#:encode (U 'control 'all)]))
- ;; #:null (json-null)
- ;; #:encode 'control
- write-json
  
- #;
- (->* (Input-Port) ([#:null Any]))
- ;; #null: (json-null)
- read-json
- 
- jsexpr->string
- jsexpr->bytes
- string->jsexpr
- bytes->jsexpr)
-
-;; -----------------------------------------------------------------------------
-;; DEPENDENCIES
-
-(require syntax/readerr)
+ (contract-out
+  [write-json
+   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+        (output-port? ;; (current-output-port)
+         #:null any/c ;; (json-null)
+         #:encode (or/c 'control 'all)) ;; 'control
+        any)]
+  [read-json
+   (->* (input-port?)
+        (#:null any/c) ;; (json-null)
+        any)] ;; jsexpr?
+  [jsexpr->string
+   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+        (#:null any/c ;; (json-null)
+         #:encode (or/c 'control 'all)) ;; 'control
+        any)] ;; string?
+  [jsexpr->bytes
+   (->* (any/c) ;; jsexpr? but dependent on #:null arg
+        (#:null any/c ;; (json-null)
+         #:encode (or/c 'control 'all)) ;; 'control
+        any)] ;; bytes?
+  [string->jsexpr
+   (->* (string?)
+        (#:null any/c) ;; (json-null)
+        any)] ;; jsexpr?
+  [bytes->jsexpr
+   (->* (bytes?)
+        (#:null any/c) ;; (json-null)
+        any)] ;; jsexpr?
+  ))
 
 ;; -----------------------------------------------------------------------------
 ;; CUSTOMIZATION
@@ -48,7 +65,7 @@
 (define (jsexpr? x #:null [jsnull (json-null)])
   (let loop ([x x])
     (or (exact-integer? x)
-        (real-real? x)
+        (inexact-rational? x)
         (boolean? x)
         (string? x)
         (eq? x jsnull)
@@ -56,8 +73,8 @@
         (and (hash? x) (for/and ([(k v) (in-hash x)])
                          (and (symbol? k) (loop v)))))))
 
-(define (real-real? x) ; not nan or inf
-  (and (inexact-real? x) (not (member x '(+nan.0 +inf.0 -inf.0)))))
+(define (inexact-rational? x) ; not nan or inf
+  (and (inexact-real? x) (rational? x)))
 
 ;; -----------------------------------------------------------------------------
 ;; GENERATION  (from Racket to JSON)
@@ -69,24 +86,28 @@
 (define (write-json* who x o jsnull enc)
   (define (escape m)
     (define ch (string-ref m 0))
-    (define r
-      (assoc ch '([#\backspace . "\\b"] [#\newline . "\\n"] [#\return . "\\r"]
-                                        [#\page . "\\f"] [#\tab . "\\t"]
-                                        [#\\ . "\\\\"] [#\" . "\\\""])))
-    (define (u-esc n)
-      (define str (number->string n 16))
-      (define pad (case (string-length str)
-                    [(1) "000"] [(2) "00"] [(3) "0"] [else ""]))
-      (string-append "\\u" pad str))
-    (if r
-        (cdr r)
-        (let ([n (char->integer ch)])
-          (if (n . < . #x10000)
-              (u-esc n)
-              ;; use the (utf-16 surrogate pair) double \u-encoding
-              (let ([n (- n #x10000)])
-                (string-append (u-esc (+ #xD800 (arithmetic-shift n -10)))
-                               (u-esc (+ #xDC00 (bitwise-and n #x3FF)))))))))
+    (case ch
+      [(#\backspace) "\\b"]
+      [(#\newline) "\\n"]
+      [(#\return) "\\r"]
+      [(#\page) "\\f"]
+      [(#\tab) "\\t"]
+      [(#\\) "\\\\"]
+      [(#\") "\\\""]
+      [else 
+       (define (u-esc n)
+         (define str (number->string n 16))
+         (define pad (case (string-length str)
+                       [(1) "000"] [(2) "00"] [(3) "0"] [else ""]))
+         (string-append "\\u" pad str))
+       (define n
+         (char->integer ch))
+       (if (n . < . #x10000)
+           (u-esc n)
+           ;; use the (utf-16 surrogate pair) double \u-encoding
+           (let ([n (- n #x10000)])
+             (string-append (u-esc (+ #xD800 (arithmetic-shift n -10)))
+                            (u-esc (+ #xDC00 (bitwise-and n #x3FF))))))]))
   (define rx-to-encode
     (case enc
       ;; FIXME: This should also encode (always) anything that is represented
@@ -101,7 +122,7 @@
     (write-string (regexp-replace* rx-to-encode str escape) o)
     (write-bytes #"\"" o))
   (let loop ([x x])
-    (cond [(or (exact-integer? x) (real-real? x)) (write x o)]
+    (cond [(or (exact-integer? x) (inexact-rational? x)) (write x o)]
           [(eq? x #f)     (write-bytes #"false" o)]
           [(eq? x #t)     (write-bytes #"true" o)]
           [(eq? x jsnull) (write-bytes #"null" o)]
@@ -158,10 +179,17 @@
             [else (write-byte c result) (loop)])))
       (cond
         [(not esc) (bytes->string/utf-8 (get-output-bytes result))]
-        [(assoc esc '([#"b" . #"\b"] [#"n" . #"\n"] [#"r" . #"\r"]
-                                     [#"f" . #"\f"] [#"t" . #"\t"]
-                                     [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
-         => (λ (m) (write-bytes (cdr m) result) (loop))]
+        [(case esc
+           [(#"b") #"\b"]
+           [(#"n") #"\n"]
+           [(#"r") #"\r"]
+           [(#"f") #"\f"]
+           [(#"t") #"\t"]
+           [(#"\\") #"\\"]
+           [(#"\"") #"\""]
+           [(#"/") #"/"]
+           [else #f])
+         => (λ (m) (write-bytes m result) (loop))]
         [(equal? esc #"u")
          (let* ([e (or (regexp-try-match #px#"^[a-fA-F0-9]{4}" i)
                        (err "bad string \\u escape"))]
@@ -236,9 +264,9 @@
   (get-output-bytes o))
 
 (define (string->jsexpr str #:null [jsnull (json-null)])
-  (unless (string? str) (raise-type-error 'string->jsexpr "string" str))
+  ;; str is protected by contract
   (read-json* 'string->jsexpr (open-input-string str) jsnull))
 
-(define (bytes->jsexpr str #:null [jsnull (json-null)])
-  (unless (bytes? str) (raise-type-error 'bytes->jsexpr "bytes" str))
-  (read-json* 'bytes->jsexpr (open-input-bytes str) jsnull))
+(define (bytes->jsexpr bs #:null [jsnull (json-null)])
+  ;; bs is protected by contract
+  (read-json* 'bytes->jsexpr (open-input-bytes bs) jsnull))

@@ -38,6 +38,12 @@
         (not (jsexpr? (/ 1.0 0.0)))
         (not (jsexpr? (/ -1.0 0.0)))
         (not (jsexpr? (/ 0.0 0.0)))
+        (not (jsexpr? +inf.0))
+        (not (jsexpr? -inf.0))
+        (not (jsexpr? +nan.0))
+        (not (jsexpr? +inf.f))
+        (not (jsexpr? -inf.f))
+        (not (jsexpr? +nan.f))
         )
   ;; other `null' values
   (parameterize ([json-null #\null])
