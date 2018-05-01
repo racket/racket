@@ -1950,6 +1950,16 @@
                  (let-syntax ([#%datum (make-rename-transformer #'unbound)])
                    (+ 1 2))))
 
+(module make-sure-not-bound-as-syntax-is-not-propagated-to-reexpansion racket/base
+  (module new-top racket/base
+    (provide #%top)
+    (define (helper sym) sym)
+    (define-syntax-rule (#%top . ID)
+      (helper 'ID)))
+  
+  (local-require (submod 'new-top))
+  foobar)
+
 ;; ----------------------------------------
 ;; Check that definition context bindings are made available when the context is provided as fourth
 ;; argument of syntax-local-bind-syntaxes

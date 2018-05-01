@@ -128,10 +128,10 @@
    (cond
      [(eq? binding 'ambiguous)
       (when fail-non-transformer (fail-non-transformer))
-     (raise-ambiguous-error id ctx)]
+      (raise-ambiguous-error id ctx)]
      [(not binding)
       (when fail-non-transformer (fail-non-transformer))
-     ;; The `#%app` binding might do something with unbound ids
+      ;; The `#%app` binding might do something with unbound ids
       (expand-implicit '#%app (substitute-alternate-id s alternate-id) ctx id)]
     [else
      ;; Find out whether it's bound as a variable, syntax, or core form
@@ -322,7 +322,7 @@
                                                             id))
                    #:skip-log? (or (expand-context-only-immediate? ctx)
                                    (rename-transformer? t))
-                   #:fail-non-transformer fail-non-transformer)])]))
+                   #:fail-non-transformer (and (rename-transformer? t) fail-non-transformer))])]))
 
 ;; Handle the expansion of a variable to itself
 (define (dispatch-variable t s id ctx binding primitive? protected?)
