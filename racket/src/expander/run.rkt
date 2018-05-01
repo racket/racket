@@ -347,4 +347,6 @@
      (fprintf o "~a:" (quote-if-space makefile-dependencies-target))
      (for ([dep (in-hash-keys dependencies)])
        (fprintf o " \\\n  ~a" (quote-if-space dep)))
-     (newline o))))
+     (newline o)
+     (for ([dep (in-hash-keys dependencies)])
+       (fprintf o "\n~a:\n" (quote-if-space dep))))))

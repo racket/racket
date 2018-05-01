@@ -102,7 +102,9 @@
                                 (quote-if-space target-file)))
           (for ([dep (in-list deps)])
             (fprintf o " \\\n ~a" (quote-if-space dep)))
-          (newline o)))
+          (newline o)
+          (for ([dep (in-list deps)])
+            (fprintf o "\n~a:\n" (quote-if-space dep)))))
 
       ;; Now that the lock is released, instantiate:
       (dynamic-require mod-file #f))))
