@@ -5,7 +5,7 @@
 (module misc '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" "path.rkt" "old-path.rkt"
              "path-list.rkt" "executable-path.rkt"
-             "reading-param.rkt"
+             "reading-param.rkt" "repl.rkt"
              (for-syntax '#%kernel "qq-and-or.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------
@@ -81,30 +81,7 @@
 
   ;; -------------------------------------------------------------------------
 
-  (define (read-eval-print-loop)
-    (let repl-loop ()
-      ;; This prompt catches all error escapes, including from read and print.
-      (call-with-continuation-prompt
-       (lambda ()
-         (let ([v ((current-prompt-read))])
-           (unless (eof-object? v)
-             (call-with-values
-                 (lambda () 
-                   ;; This prompt catches escapes during evaluation.
-                   ;; Unlike the outer prompt, the handler prints
-                   ;; the results.
-                   (call-with-continuation-prompt
-                    (lambda ()
-                      (let ([w (cons '#%top-interaction v)])
-                        ((current-eval) (if (syntax? v)
-                                            (namespace-syntax-introduce 
-                                             (datum->syntax #f w v))
-                                            w))))))
-               (lambda results (for-each (current-print) results)))
-             ;; Abort to loop. (Calling `repl-loop` directly would not be a tail call.)
-             (abort-current-continuation (default-continuation-prompt-tag)))))
-       (default-continuation-prompt-tag)
-       (lambda args (repl-loop)))))
+
 
   (define load/cd
     (lambda (n)
