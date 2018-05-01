@@ -1,5 +1,5 @@
-#lang racket/kernel
-(#%require "../private/top-int.rkt")
+(module init '#%kernel
+  (#%require "../private/top-int.rkt")
 
-(#%provide (all-from racket/kernel) 
-           #%top-interaction)
+  (#%provide (all-from '#%kernel)
+             #%top-interaction))
