@@ -490,7 +490,7 @@
             (lambda args (set! exit-value 1))))))
      (|#%app| (if gracket?
                   (dynamic-require 'racket/gui/init 'graphical-read-eval-print-loop)
-                  (dynamic-require 'racket/base 'read-eval-print-loop)))
+                  (dynamic-require 'racket/private/repl 'read-eval-print-loop)))
      (unless gracket?
        (newline)))
 

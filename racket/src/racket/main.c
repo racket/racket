@@ -488,7 +488,7 @@ static void do_scheme_rep(Scheme_Env *env, FinishArgs *fa)
   } else
 #endif
     {
-      a[0] = scheme_intern_symbol("racket/base");
+      a[0] = scheme_intern_symbol("racket/private/repl");
       a[1] = scheme_intern_symbol("read-eval-print-loop");
     }
 
