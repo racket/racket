@@ -76,10 +76,17 @@
            (unless positive
              (raise-type-error 'make-blame "(not/c #f)" 3
                                source value build-name positive negative original?))
+           (define build/memo-name
+             (let* ([uniq (box #f)]
+                    [ans uniq])
+               (λ ()
+                 (when (eq? uniq ans)
+                   (set! ans (build-name)))
+                 ans)))
            (make-blame
             source
             value
-            build-name
+            build/memo-name
             (list positive)
             (and negative (list negative))
             original?
