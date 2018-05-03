@@ -65,7 +65,8 @@
 
 (define -make-blame
   (let ([make-blame
-         (lambda (source value build-name positive negative original?)
+         (lambda (source value build-name positive negative original?
+                         #:track-context? [track-context? #t])
            (unless (srcloc? source)
              (raise-argument-error 'make-blame "srcloc?" 0
                                    source value build-name positive negative original?))
@@ -90,7 +91,7 @@
             (list positive)
             (and negative (list negative))
             original?
-            '()
+            (if track-context? '() #f)
             #t 
             #f
             (not negative)
@@ -99,27 +100,39 @@
 
 ;; s : (or/c string? #f)
 (define (blame-add-context b s #:important [name #f] #:swap? [swap? #f])
-  (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
-  (define new-context (if s (cons s (blame-context b)) (blame-context b)))
-  (struct-copy
-   blame b
-   [original? new-original?]
-   [positive (if swap? (blame-negative b) (blame-positive b))]
-   [negative (if swap? (blame-positive b) (blame-negative b))]
-   [important (if name (important name new-original?) (blame-important b))]
-   [context new-context]
-   [top-known? #t]))
+  (cond
+    [(and (not (blame-context b))
+          (not swap?)
+          (not name)
+          (blame-top-known? b))
+     b]
+    [else
+     (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
+     (define new-context (if (and s (blame-context b))
+                             (cons s (blame-context b))
+                             (blame-context b)))
+     (struct-copy
+      blame b
+      [original? new-original?]
+      [positive (if swap? (blame-negative b) (blame-positive b))]
+      [negative (if swap? (blame-positive b) (blame-negative b))]
+      [important (if name (important name new-original?) (blame-important b))]
+      [context new-context]
+      [top-known? #t])]))
 
 (struct important (name sense-swapped?) #:transparent)
 
 (define (blame-add-unknown-context b)
   (define old (blame-context b))
-  (struct-copy
-   blame b
-   [top-known? #f]
-   [context (if (blame-top-known? b)
-                (blame-context b)
-                (cons "..." (blame-context b)))]))
+  (cond
+    [old
+     (struct-copy
+      blame b
+      [top-known? #f]
+      [context (if (blame-top-known? b)
+                   (blame-context b)
+                   (cons "..." (blame-context b)))])]
+    [else b]))
 
 (define (blame-contract b) ((blame-build-name b)))
 
@@ -287,7 +300,7 @@
   (define source-message (source-location->string (blame-source blme)))
   
   (define context (blame-context blme))
-  (define context-lines (if (null? context)
+  (define context-lines (if (or (null? context) (not context))
                             #f
                             (apply string-append 
                                    (for/list ([context (in-list context)]

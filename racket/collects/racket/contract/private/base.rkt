@@ -42,19 +42,21 @@
   (syntax-case stx ()
     [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c v pos neg name loc))]
+       (apply-contract c v pos neg name loc #t))]
     [(_ c v pos neg)
      (with-syntax ([name (syntax-local-infer-name stx)])
       (syntax/loc stx
         (apply-contract c v pos neg 'name
-                        (build-source-location #f))))]
-    [(_ c v pos neg src)
-     (raise-syntax-error 'contract
-       (string-append
-        "please update contract application to new protocol "
-        "(either 4 or 6 arguments)"))]))
+                        (build-source-location #f)
+                        #t)))]
+    [(_ c v pos neg #:no-context)
+     (with-syntax ([name (syntax-local-infer-name stx)])
+      (syntax/loc stx
+        (apply-contract c v pos neg 'name
+                        (build-source-location #f)
+                        #f)))]))
 
-(define (apply-contract c v pos neg name loc)
+(define (apply-contract c v pos neg name loc track-context?)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (define clnp (contract-late-neg-projection c))
@@ -72,7 +74,8 @@
                   (or pos "false")
                   
                   (if clnp #f neg)
-                  #t))
+                  #t
+                  #:track-context? track-context?))
     (cond
       [clnp (with-contract-continuation-mark
              (cons blame neg)

@@ -329,4 +329,17 @@
               (blame-add-context b "thing" #:important 'yes!)))
    #t)
 
+  (test/spec-passed/result
+   'blame-no-context
+   ;; when the "in" has the contract after it, there is no context
+   '(regexp-match? #rx"in: [(]list/c"
+                   (with-handlers ([exn:fail? exn-message])
+                     ((car (contract (list/c (-> integer? integer?))
+                                     (list (λ (x) x))
+                                     'pos
+                                     'neg
+                                     #:no-context))
+                      #f)))
+   #t)
+
   )

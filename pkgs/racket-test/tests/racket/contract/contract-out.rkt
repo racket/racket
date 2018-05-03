@@ -1588,6 +1588,49 @@
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match? #rx"^my-favorite-name: " (exn-message x)))))
+
+  (contract-error-test
+   'define-module-boundary-contract6
+   '(begin
+      (eval '(module define-module-boundary-contract6-m racket/base
+               (require racket/contract/base)
+               (define internal-name (list (λ (x) #f)))
+               (define-module-boundary-contract external-name
+                 internal-name (list/c (-> integer? integer?))
+                 #:pos-source 'pos
+                 #:name-for-blame my-favorite-name
+                 #:no-context)
+               (provide external-name)))
+      (eval '(module define-module-boundary-contract6-n racket/base
+               (require 'define-module-boundary-contract6-m)
+               ((car external-name) #f)))
+      (eval '(require 'define-module-boundary-contract6-n)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          ;; ensure there is no context information
+          (regexp-match? #rx"in: [(]list/c" (exn-message x))
+          (regexp-match? #rx"blaming: [^\n]*contract6-n" (exn-message x)))))
+
+  (contract-error-test
+   'define-module-boundary-contract7
+   '(begin
+      (eval '(module define-module-boundary-contract7-m racket/base
+               (require racket/contract/base)
+               (define internal-name (list (λ (x) #f)))
+               (define-module-boundary-contract external-name
+                 internal-name (list/c (-> integer? integer?))
+                 #:pos-source 'pos
+                 #:name-for-blame my-favorite-name)
+               (provide external-name)))
+      (eval '(module define-module-boundary-contract7-n racket/base
+               (require 'define-module-boundary-contract7-m)
+               ((car external-name) #f)))
+      (eval '(require 'define-module-boundary-contract7-n)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          ;; ensure there is context information
+          (regexp-match? #rx"in: the 1st argument of" (exn-message x))
+          (regexp-match? #rx"blaming: [^\n]*contract7-n" (exn-message x)))))
   
   
   (contract-error-test

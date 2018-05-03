@@ -1990,13 +1990,16 @@ The @racket[define-struct/contract] form only allows a subset of the
            contract-expr
            pos-blame-party
            source-loc
-           name-for-blame)
+           name-for-blame
+           no-context)
          #:grammar ([pos-blame-party (code:line)
                                      (code:line #:pos-source pos-source-expr)]
                     [source-loc (code:line)
                                 (code:line #:srcloc srcloc-expr)]
                     [name-for-blame (code:line)
-                     (code:line #:name-for-blame blame-id)])]{
+                     (code:line #:name-for-blame blame-id)]
+                    [name-for-blame (code:line)
+                     (code:line #:no-context)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
   
@@ -2019,7 +2022,12 @@ The @racket[define-struct/contract] form only allows a subset of the
   The name used in the error messages will be @racket[orig-id], unless
   @racket[#:name-for-blame] is supplied, in which case the identifier
   following it is used as the name in the error messages.
-  
+
+ If @racket[#:no-context] is supplied, the error message do
+ not include the context information that indicates which
+ sub-portion of the contract where the violation was
+ detected.
+
   @examples[#:eval (contract-eval) #:once
             (module server racket/base
               (require racket/contract/base)
@@ -2041,6 +2049,9 @@ The @racket[define-struct/contract] form only allows a subset of the
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
+           (contract contract-expr to-protect-expr
+                     positive-blame-expr negative-blame-expr
+                     #:no-context)
            (contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr
                      value-name-expr source-location-expr)]]{
@@ -2075,6 +2086,10 @@ If specified, @racket[source-location-expr] indicates the source location
 reported by contract violations.  The expression must produce a @racket[srcloc]
 structure, @tech{syntax object}, @racket[#f], or a list or vector in the format
 accepted by the third argument to @racket[datum->syntax].
+
+If @racket[#:no-context] is supplied, the error message do not include
+the context information that indicates which sub-portion of the contract
+where the violation was detected.
 
 }
 

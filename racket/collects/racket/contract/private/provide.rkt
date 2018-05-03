@@ -259,7 +259,8 @@
                                                                     id-rename
                                                                     (stx->srcloc-expr srcloc-id)
                                                                     'provide/contract
-                                                                    pos-module-source)
+                                                                    pos-module-source
+                                                                    #t)
                              #,@(if provide?
                                     (list #`(provide (rename-out [#,id-rename external-name])))
                                     null)))
@@ -279,7 +280,8 @@
                                                         id-rename
                                                         srcloc-expr
                                                         contract-error-name
-                                                        pos-module-source)
+                                                        pos-module-source
+                                                        track-context?)
   (define-values (arrow? the-valid-app-shapes)
     (syntax-case ctrct (-> ->* ->i)
       [(-> . _) 
@@ -306,7 +308,8 @@
                            id
                            '#,name-for-blame
                            #,pos-module-source
-                           #,srcloc-expr))
+                           #,srcloc-expr
+                           '#,track-context?))
          #,@(if arrow?
                 (list #`(define extra-neg-party-argument-fn 
                           (wrapped-extra-arg-arrow-extra-neg-party-argument
@@ -351,15 +354,17 @@
             (raise-syntax-error #f "expected an identifier" stx #'new-id))
           (unless (identifier? #'orig-id)
             (raise-syntax-error #f "expected an identifier" stx #'orig-id))
-          (define-values (pos-blame-party-expr srcloc-expr name-for-blame)
+          (define-values (pos-blame-party-expr srcloc-expr name-for-blame track-context?)
             (let loop ([kwd-args (syntax->list #'(kwd-args ...))]
                        [pos-blame-party-expr #'(quote-module-path)]
                        [srcloc-expr #f]
-                       [name-for-blame #f])
+                       [name-for-blame #f]
+                       [track-context? #t])
               (cond
                 [(null? kwd-args) (values pos-blame-party-expr
                                           (or srcloc-expr (stx->srcloc-expr stx))
-                                          (or name-for-blame #'new-id))]
+                                          (or name-for-blame #'new-id)
+                                          track-context?)]
                 [else
                  (define kwd (car kwd-args))
                  (cond 
@@ -370,7 +375,8 @@
                     (loop (cddr kwd-args)
                           (cadr kwd-args)
                           srcloc-expr
-                          name-for-blame)]
+                          name-for-blame
+                          track-context?)]
                    [(equal? (syntax-e kwd) '#:srcloc)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:srcloc"
@@ -378,7 +384,8 @@
                     (loop (cddr kwd-args)
                           pos-blame-party-expr
                           (cadr kwd-args)
-                          name-for-blame)]
+                          name-for-blame
+                          track-context?)]
                    [(equal? (syntax-e kwd) '#:name-for-blame)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:name-for-blame"
@@ -391,11 +398,20 @@
                     (loop (cddr kwd-args)
                           pos-blame-party-expr
                           srcloc-expr
-                          name-for-blame)]
+                          name-for-blame
+                          track-context?)]
+                   [(equal? (syntax-e kwd) '#:no-context)
+                    (loop (cdr kwd-args)
+                          pos-blame-party-expr
+                          srcloc-expr
+                          name-for-blame
+                          #f)]
                    [else
                     (raise-syntax-error
                      #f
-                     "expected one of the keywords #:pos-source, #:srcloc, or #:name-for-blame"
+                     (string-append
+                      "expected one of the keywords"
+                      " #:pos-source, #:srcloc, #:name-for-blame, or #:no-context")
                      stx
                      (car kwd-args))])])))
           (internal-function-to-be-figured-out #'ctrct
@@ -405,10 +421,11 @@
                                                #'new-id
                                                srcloc-expr
                                                'define-module-boundary-contract
-                                               pos-blame-party-expr))])]))
+                                               pos-blame-party-expr
+                                               track-context?))])]))
 
 ;; ... -> (values (or/c #f (-> neg-party val)) blame)
-(define (do-partial-app ctc val name pos-module-source source)
+(define (do-partial-app ctc val name pos-module-source source track-context?)
   (define p (parameterize ([warn-about-val-first? #f])
               ;; when we're building the val-first projection
               ;; here we might be needing the plus1 arity
@@ -419,7 +436,8 @@
                            name
                            (λ () (contract-name ctc))
                            pos-module-source
-                           #f #t))
+                           #f #t
+                           #:track-context? track-context?))
   (with-contract-continuation-mark
    (cons blme 'no-negative-party) ; we don't know the negative party yet
    ;; computing neg-accepter may involve some front-loaded checking. instrument
