@@ -31,42 +31,48 @@
 (define invariant-assertion-party (string->uninterned-symbol "invariant-assertion"))
 
 (define (blame=? a b equal?/recur)
-  (and (equal?/recur (blame-source a) (blame-source b))
-       (equal?/recur (blame-value a) (blame-value b))
-       (equal?/recur (blame-contract a) (blame-contract b))
-       (equal?/recur (blame-positive a) (blame-positive b))
+  (and (equal?/recur (blame-positive a) (blame-positive b))
        (equal?/recur (blame-negative a) (blame-negative b))
        (equal?/recur (blame-original? a) (blame-original? b))
-       (equal?/recur (blame-context a) (blame-context b))
-       (equal?/recur (blame-top-known? a) (blame-top-known? b))
-       (equal?/recur (blame-important a) (blame-important b))
-       (equal?/recur (blame-missing-party? a) (blame-missing-party? b))))
+       (equal?/recur (blame-more-stuff a) (blame-more-stuff b))))
+
+(define (combine-them . args)
+  (let loop ([args args])
+    (cond
+      [(null? (cdr args)) (car args)]
+      [else (bitwise-xor (car args) (* 3 (loop (cdr args))))])))
 
 (define (blame-hash b hash/recur)
-  (bitwise-xor (hash/recur (blame-source b))
-               (hash/recur (blame-value b))
-               (hash/recur (blame-contract b))
-               (hash/recur (blame-positive b))
-               (hash/recur (blame-negative b))
-               (hash/recur (blame-original? b))
-               (hash/recur (blame-context b))
-               (hash/recur (blame-top-known? b))
-               (hash/recur (blame-important b))
-               (hash/recur (blame-missing-party? b))))
+  (combine-them (hash/recur (blame-positive b))
+                (hash/recur (blame-negative b))
+                (hash/recur (blame-original? b))
+                (hash/recur (blame-more-stuff b))))
 
 ;; missing-party? field is #t when the missing party
 ;; is still missing and it is #f when the missing party
 ;; has been filled in (or if it was filled in from the start)
+(define-struct more-stuff
+  [source value build-name context top-known? important missing-party? extra-fields]
+  #:transparent)
+
 (define-struct blame
-  [source value build-name positive negative original? context top-known? important missing-party?
-          extra-fields]
+  (positive negative original? [swapped #:mutable] more-stuff)
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
 
+(define (blame-source b) (more-stuff-source (blame-more-stuff b)))
+(define (blame-value b) (more-stuff-value (blame-more-stuff b)))
+(define (blame-context b) (more-stuff-context (blame-more-stuff b)))
+(define (blame-top-known? b) (more-stuff-top-known? (blame-more-stuff b)))
+(define (blame-important b) (more-stuff-important (blame-more-stuff b)))
+(define (blame-missing-party? b) (more-stuff-missing-party? (blame-more-stuff b)))
+(define (blame-contract b) ((more-stuff-build-name (blame-more-stuff b))))
+(define (blame-extra-fields b) (more-stuff-extra-fields (blame-more-stuff b)))
+
 (define -make-blame
   (let ([make-blame
-         (lambda (source value build-name positive negative original?
-                         #:track-context? [track-context? #t])
+         (λ (source value build-name positive negative original?
+                    #:track-context? [track-context? #t])
            (unless (srcloc? source)
              (raise-argument-error 'make-blame "srcloc?" 0
                                    source value build-name positive negative original?))
@@ -84,80 +90,112 @@
                  (when (eq? uniq ans)
                    (set! ans (build-name)))
                  ans)))
-           (make-blame
-            source
-            value
-            build/memo-name
-            (list positive)
-            (and negative (list negative))
-            original?
-            (if track-context? '() #f)
-            #t 
-            #f
-            (not negative)
-            '()))])
+           (define more-stuff
+             (make-more-stuff
+              source
+              value
+              build/memo-name
+              (if track-context? '() #f)
+              #t
+              #f
+              (not negative)
+              '()))
+           (new-blame (list positive)
+                      (and negative (list negative))
+                      original?
+                      more-stuff))])
     make-blame))
 
-;; s : (or/c string? #f)
+(define (new-blame/more-stuff b more-stuff)
+  (new-blame (blame-positive b)
+             (blame-negative b)
+             (blame-original? b)
+             more-stuff))
+
+(define (new-blame poss negs original? more-stuff)
+  (define original-blame
+    (make-blame
+     poss
+     negs
+     original?
+     #f
+     more-stuff))
+  (define swapped-blame
+    (make-blame
+     negs
+     poss
+     (not original?)
+     original-blame
+     more-stuff))
+  (set-blame-swapped! original-blame swapped-blame)
+  original-blame)
+
 (define (blame-add-context b s #:important [name #f] #:swap? [swap? #f])
+  (unless (blame? b)
+    (raise-argument-error 'blame-add-context
+                          "blame?"
+                          0
+                          b s))
+  (unless (or (string? s)
+              (not s))
+    (raise-argument-error 'blame-add-context
+                          (format "~s" '(or/c string? #f))
+                          1
+                          b s))
+  (do-blame-add-context b s name swap?))
+
+(define (blame-add-unknown-context b)
+  (do-blame-add-context b #f #f #f))
+
+(define (do-blame-add-context b s name swap?)
   (cond
     [(and (not (blame-context b))
-          (not swap?)
-          (not name)
+          ;; if we are not tracking context,
+          ;; we are not updating the name
+          ;; at the top of the messages either
+          ; (not name)
           (blame-top-known? b))
-     b]
+     (if swap? (blame-swap b) b)]
     [else
      (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
      (define new-context (if (and s (blame-context b))
                              (cons s (blame-context b))
                              (blame-context b)))
-     (struct-copy
-      blame b
-      [original? new-original?]
-      [positive (if swap? (blame-negative b) (blame-positive b))]
-      [negative (if swap? (blame-positive b) (blame-negative b))]
-      [important (if name (important name new-original?) (blame-important b))]
-      [context new-context]
-      [top-known? #t])]))
+     (define new-context/maybe-unknown
+       (if (or s (blame-top-known? b))
+           new-context
+           (cons "..." new-context)))
+     (define maybe-swapped (if swap? (blame-swap b) b))
+     (new-blame/more-stuff
+      maybe-swapped
+      (struct-copy
+       more-stuff (blame-more-stuff b)
+       [important (if name (important name new-original?) (blame-important b))]
+       [context new-context/maybe-unknown]
+       [top-known? (string? s)]))]))
 
 (struct important (name sense-swapped?) #:transparent)
 
-(define (blame-add-unknown-context b)
-  (define old (blame-context b))
-  (cond
-    [old
-     (struct-copy
-      blame b
-      [top-known? #f]
-      [context (if (blame-top-known? b)
-                   (blame-context b)
-                   (cons "..." (blame-context b)))])]
-    [else b]))
-
-(define (blame-contract b) ((blame-build-name b)))
-
-(define (blame-swap b)
-  (struct-copy
-   blame b
-   [original? (not (blame-original? b))]
-   [positive (blame-negative b)]
-   [negative (blame-positive b)]))
-
+(define (blame-swap b) (blame-swapped b))
 
 (define (blame-replace-negative b new-neg)
-  (struct-copy blame b [negative (list new-neg)]))
+  (new-blame (blame-positive b)
+             (list new-neg)
+             (blame-original? b)
+             (blame-more-stuff b)))
 
 (define (blame-replace-positive b new-pos)
-  (struct-copy blame b [positive (list new-pos)]))
+  (new-blame (list new-pos)
+             (blame-negative b)
+             (blame-original? b)
+             (blame-more-stuff b)))
 
-
-(define (blame-update blame-info extra-positive extra-negative)
-  (ensure-blame-known 'blame-update blame-info)
-  (struct-copy 
-   blame 
-   blame-info
-   [positive (cons extra-positive (blame-positive blame-info))]
-   [negative (cons extra-negative (blame-negative blame-info))]))
+(define (blame-update b extra-positive extra-negative)
+  (ensure-blame-known 'blame-update b)
+  (new-blame (cons extra-positive (blame-positive b))
+             (cons extra-negative (blame-negative b))
+             (blame-original? b)
+             (blame-more-stuff b)))
 
 (define (ensure-blame-known who blame)
   (unless (and (blame-positive blame)
@@ -207,7 +245,7 @@
        raw-blame]
       [else
        (blame-add-missing-party raw-blame missing-party)]))
-  
+
   (raise
    (make-exn:fail:contract:blame
     ((current-blame-format)
@@ -217,6 +255,7 @@
     blame)))
 
 (define (blame-add-missing-party b missing-party)
+
   (define (check-and-fail)
     (unless (blame-missing-party? b)
       (error 'blame-add-missing-party "already have the party: ~s; trying to add ~s" 
@@ -226,16 +265,22 @@
     [(not missing-party) b]
     [(blame-swapped? b)
      (check-and-fail)
-     (struct-copy blame b
-                  [positive (or (blame-positive b)
-                                (list missing-party))]
-                  [missing-party? #f])]
+     (new-blame (or (blame-positive b)
+                    (list missing-party))
+                (blame-negative b)
+                (blame-original? b)
+                (struct-copy
+                 more-stuff (blame-more-stuff b)
+                 [missing-party? #f]))]
     [else
      (check-and-fail)
-     (struct-copy blame b
-                  [negative (or (blame-negative b)
-                                (list missing-party))]
-                  [missing-party? #f])]))
+     (new-blame (blame-positive b)
+                (or (blame-negative b)
+                    (list missing-party))
+                (blame-original? b)
+                (struct-copy
+                 more-stuff (blame-more-stuff b)
+                 [missing-party? #f]))]))
 
 (define (blame-fmt->-string blame fmt)
   (cond
@@ -409,10 +454,12 @@
     (raise-argument-error 'blame-add-extra-field
                           "string?"
                           2 b name field))
-  (struct-copy
-   blame b
-   [extra-fields (cons (format "  ~a: ~a" name field)
-                       (blame-extra-fields b))]))
+  (new-blame/more-stuff
+   b
+   (struct-copy
+    more-stuff (blame-more-stuff b)
+    [extra-fields (cons (format "  ~a: ~a" name field)
+                        (blame-extra-fields b))])))
   
 ;; combine-lines : (-> (listof (or/c string? #f))) string?)
 ;; combines each of 'lines' into a single message, dropping #fs,

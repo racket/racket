@@ -321,6 +321,65 @@
    #t)
 
   (test/spec-passed/result
+   'blame-selectors
+   '(let ()
+      (define source "dunno")
+      (define pos "dunno")
+      (define neg "dunno")
+      (define ctc "dunno")
+      (define val "dunno")
+      (define orig? "dunno")
+      (define swapped? "dunno")
+      (contract (make-contract #:name 'blame-selector-helper
+                               #:late-neg-projection
+                               (λ (blame)
+                                 (set! source (blame-source blame))
+                                 (set! pos (blame-positive blame))
+                                 (set! neg (blame-negative blame))
+                                 (set! ctc (blame-contract blame))
+                                 (set! val (blame-value blame))
+                                 (set! orig? (blame-original? blame))
+                                 (set! swapped? (blame-swapped? blame))
+                                 (λ (val np)
+                                   val)))
+                'whatevs
+                'pos 'neg)
+      (list source pos neg ctc val orig? swapped?))
+   (list (srcloc #f #f #f #f #f)
+         'pos #f 'blame-selector-helper #f #t #f))
+
+  (test/spec-passed/result
+   'swapped-blame-selectors
+   '(let ()
+      (define source "dunno")
+      (define pos "dunno")
+      (define neg "dunno")
+      (define ctc "dunno")
+      (define val "dunno")
+      (define orig? "dunno")
+      (define swapped? "dunno")
+      (define the-ctc
+        (-> (make-contract #:name 'blame-selector-helper
+                           #:late-neg-projection
+                           (λ (blame)
+                             (set! source (blame-source blame))
+                             (set! pos (blame-positive blame))
+                             (set! neg (blame-negative blame))
+                             (set! ctc (blame-contract blame))
+                             (set! val (blame-value blame))
+                             (set! orig? (blame-original? blame))
+                             (set! swapped? (blame-swapped? blame))
+                             (λ (val np)
+                               val)))
+            any))
+      (contract the-ctc
+                (λ (x) 'whatevs)
+                'pos 'neg)
+      (list source pos neg ctc val orig? swapped?))
+   (list (srcloc #f #f #f #f #f)
+         #f 'pos '(-> blame-selector-helper any) #f #f #t))
+
+  (test/spec-passed/result
    'blame-equality
    '(let ([b
            (make-blame (srcloc "src.rkt" #f #f #f #f)
