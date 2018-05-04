@@ -487,5 +487,20 @@
                                 (exn-message exn)))))
 
 ;; ----------------------------------------
+;; Make sure that optional-argument handling doesn't go wrong with literal gensyms
+
+(let ()
+  (eval (let ([s (gensym)])
+          `(module optional-argument-with-gensym-default racket/base
+             (define (f #:x [x ',s])
+               (eq? x ',s))
+             (provide f))))
+  (namespace-require ''optional-argument-with-gensym-default)
+  (let ([o (open-output-bytes)])
+    (write (compile '(f)) o)
+    (test #t 'same? (eval (parameterize ([read-accept-compiled #t])
+                            (read (open-input-bytes (get-output-bytes o))))))))
+           
+;; ----------------------------------------
 
 (report-errs)
