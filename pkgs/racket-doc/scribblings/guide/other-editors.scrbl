@@ -60,7 +60,7 @@ popular among Racketeers as well.
        does not provide support for Racket-specific forms.}
 
  @item{No Racket program is complete without documentation. Scribble
-       support for emacs is available with Neil Van Dyke's
+       support for Emacs is available with Neil Van Dyke's
        @hyperlink["http://www.neilvandyke.org/scribble-emacs/"]{Scribble
        Mode}.
 
