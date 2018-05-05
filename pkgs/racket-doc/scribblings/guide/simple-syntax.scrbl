@@ -107,7 +107,7 @@ evaluated only for some side-effect, such as printing.
 @defexamples[
 #:eval ex-eval
 (define (bake flavor)
-  (printf "pre-heating oven...\n")
+  (printf "preheating oven...\n")
   (string-append flavor " pie"))
 (bake "apple")
 ]
