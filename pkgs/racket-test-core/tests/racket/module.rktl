@@ -2536,5 +2536,52 @@ case of module-leve bindings; it doesn't cover local bindings.
       (test 'ns-val dynamic-require ''u 'v))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Another example to check that re-expansion generates definition
+;; names consistent with the previoud expansion.
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define modbeg-trampoline
+    '(module modbeg-trampoline racket/base
+       (require (for-syntax racket/base
+                            syntax/strip-context))
+
+       (provide (rename-out [module-begin #%module-begin]))
+
+       (define-syntax (module-begin stx)
+         (syntax-case stx ()
+           [(_ lang . body)
+            #'(#%plain-module-begin (module-begin-trampoline lang . body))]))
+
+       (define-syntax (module-begin-trampoline stx)
+         (syntax-case stx ()
+           [(_ lang . body)
+            (with-syntax ([[modbeg . [body* ...]] (syntax-local-introduce
+                                                   (syntax-local-lift-require
+                                                    (strip-context #'lang)
+                                                    (datum->syntax #f (cons '#%module-begin
+                                                                            (strip-context #'body)))))])
+              (with-syntax ([body** (if (= (length (syntax->list #'(body* ...))) 1)
+                                        (error "oops")
+                                        #'(modbeg . [body* ...]))])
+                (with-syntax ([(modbeg* form ...) (local-expand #'body** 'module-begin #f)])
+                  (with-syntax ([body*** (local-expand #'(modbeg* form ...) 'module-begin (list #'module*))])
+                    (with-syntax ([(modbeg**:#%plain-module-begin form* ...) #'body***])
+                      (syntax-track-origin #`(begin form* ...) #'body*** #'modbeg**))))))]))))
+
+  (define m-use
+    '(module m-use 'modbeg-trampoline racket/base
+       (require racket/contract/base)
+       (provide (contract-out [f (-> number? number?)]))
+       (define (f x) (+ x 42))
+       (module* main racket
+         (require (submod ".."))
+         (f 10))))
+
+  (eval modbeg-trampoline)
+  (eval (expand m-use))
+
+  (dynamic-require '(submod 'm-use main) #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

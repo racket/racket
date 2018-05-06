@@ -3,6 +3,7 @@
          "../common/struct-star.rkt"
          "../common/performance.rkt"
          "../syntax/syntax.rkt"
+         "../syntax/debug.rkt"
          "../syntax/property.rkt"
          "../syntax/scope.rkt"
          "../syntax/taint.rkt"
@@ -233,7 +234,7 @@
        (hash-clear! compiled-submodules)
        (set-box! compiled-module-box #f))
      (set! again? #t)
-     
+
      ;; In case a nested `#%module-begin` expansion is forced, save
      ;; and restore the module-expansion state:
      (define ctx (struct*-copy expand-context mb-init-ctx
@@ -249,7 +250,8 @@
                                                             #:copy-requires requires+provides))
                                   (with-save-and-restore ([requires+provides new-requires+provides]
                                                           [compiled-submodules (make-hasheq)]
-                                                          [compiled-module-box (box #f)])
+                                                          [compiled-module-box (box #f)]
+                                                          [defined-syms (make-hasheq)])
                                     (module-begin-k s ctx)))]))
 
      ;; In case `#%module-begin` expansion is forced on syntax that
