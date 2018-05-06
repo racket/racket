@@ -940,8 +940,9 @@
       (check-one-stronger class/c-inits class/c-init-contracts this that)
       
       ;; check both ways for fields (since mutable)
-      (check-one-stronger class/c-fields class/c-field-contracts this that) 
-      (check-one-stronger class/c-fields class/c-field-contracts that this)
+      (limit-depth
+       (and (check-one-stronger class/c-fields class/c-field-contracts this that) 
+            (check-one-stronger class/c-fields class/c-field-contracts that this)))
       
 
       ;; inherits
@@ -1554,9 +1555,10 @@
 
 (define (object/c-common-fields-stronger? this that)
   ;; check both ways for fields (since mutable)
-  (and
+  (limit-depth
+   (and
     (check-one-object base-object/c-fields base-object/c-field-contracts this that)
-    (check-one-object base-object/c-fields base-object/c-field-contracts that this)))
+    (check-one-object base-object/c-fields base-object/c-field-contracts that this))))
 
 ;; True if `this` has at least as many field / method names as `that`
 (define (object/c-width-subtype? this that)
@@ -1808,3 +1810,20 @@
          (install-new-fields pos-field-projs neg-field-projs)]))
     
     (copy-seals cls c))))
+
+;; evaluates `e`, unless we are 5 deep nested in evaluating
+;; thing wrapped in limit-depth; in that case, just return #f
+;; without evaluating `e`
+(define-syntax-rule
+  (limit-depth e)
+  (limit-depth/proc (λ () e)))
+(define (limit-depth/proc thunk)
+  (define current-depth
+    (or (continuation-mark-set-first (current-continuation-marks) depth-cm-key)
+        0))
+  (cond
+    [(< current-depth 5)
+     (with-continuation-mark depth-cm-key (+ current-depth 1)
+       (thunk))]
+    [else #f]))
+(define depth-cm-key (gensym 'racket/contract-fields-stronger?-depth-limit))
