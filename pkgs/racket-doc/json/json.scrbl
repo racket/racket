@@ -35,7 +35,8 @@ the @rfc for more information about JSON.
     @item{@racket[string?]}
     @item{@racket[(or/c exact-integer? inexact-real?)]}
     @item{@racket[(listof jsexpr?)]}
-    @item{@racket[(and/c hash-eq? (hash/c symbol? jsexpr?))]}]
+    @item{@racket[(and/c hash-eq? (hash/c (or/c symbol? string?) jsexpr?))]}
+    @item{@racket[(json-serializable-struct?)]}]
 
 @examples[#:eval ev
   (jsexpr? 'null)
@@ -143,6 +144,54 @@ the @rfc for more information about JSON.
   (bytes->jsexpr #"{\"pancake\" : 5, \"waffle\" : 7}")
 ]
 }
+
+@subsection{JSON Serialization of structs}
+
+@defthing[prop:json-serializable property?]{
+
+This property identifies structures and structure types that are
+JSON serializable. The property value should be constructed with
+@racket[make-json-serialize-info].}
+
+@defproc[(make-json-serialize-info [to-json (any/c . -> . jsexpr?)])
+         any]{
+
+Produces a value to be associated with a structure type through the
+@racket[prop:json-serializable] property. This value is used by
+the @racket[json] module.
+
+The @racket[to-json] procedure should accept a structure instance
+and produce a @racket[jsexpr?] for the instance's content.}
+
+@examples[
+ #:eval ev
+ (struct pie (type)
+   #:transparent
+   #:property prop:json-serializable
+   (make-json-serialize-info
+    (λ (this)
+      (hash 'type (pie-type this)))))
+
+ (define original-pie
+   (pie "apple"))
+ original-pie
+ (define json-pie
+   (jsexpr->string original-pie))
+ json-pie
+ ]
+
+
+@defproc[(json-serializable-struct? [x any/c])
+         any]{
+
+Returns @racket[true] if @racket[x] is a struct that has a
+@racket[prop:json-serializable] property.}
+
+@examples[
+ #:eval ev
+ (json-serializable-struct? original-pie)
+ ]
+
 
 @section{A Word About Design}
 
