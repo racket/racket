@@ -29,7 +29,8 @@
   (define mpi (namespace-mpi ns))
   (when (non-self-module-path-index? mpi)
     ;; Ensure that the module is available
-    (namespace-module-make-available! ns mpi (namespace-0-phase ns)))
+    (parameterize ([current-namespace ns])
+      (namespace-module-make-available! ns mpi (namespace-0-phase ns))))
   ns)
 
 (define (variable-reference->namespace* vr)
