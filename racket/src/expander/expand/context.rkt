@@ -90,7 +90,7 @@
                   empty-env
                   push-scope ; post-expansion-scope-action
                   null ; scopes
-                  #f   ; def-ctx-scopes
+                  #f   ; def-ctx-scopes [=> don't record scopes to be stipped for `quote-syntax`]
                   (root-expand-context-frame-id root-ctx) ; binding-layer
                   null ; reference-records
                   #f   ; only-immediate?

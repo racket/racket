@@ -454,7 +454,9 @@
           `(,(m-local 'quote-syntax) ,(m-local 'datum) ,(m-kw 'kw))))]
     [else
      ;; otherwise, prune scopes up to transformer boundary:
-     (define datum-s (remove-scopes (m 'datum) (expand-context-scopes ctx)))
+     (define use-site-scopes (root-expand-context-use-site-scopes ctx))
+     (define datum-s (remove-scopes (remove-scopes (m 'datum) (expand-context-scopes ctx))
+                                    (if use-site-scopes (unbox use-site-scopes) '())))
      (if (and (expand-context-to-parsed? ctx)
               (free-id-set-empty? (expand-context-stops ctx)))
          (parsed-quote-syntax (keep-properties-only~ s) datum-s)

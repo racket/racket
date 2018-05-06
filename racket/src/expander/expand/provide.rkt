@@ -156,7 +156,7 @@
                                                             ;; Discarding definition-context scopes is ok,
                                                             ;; because the scopes won't be captured by
                                                             ;; any `quote-syntax`:
-                                                            [def-ctx-scopes (box null)])))
+                                                            [def-ctx-scopes #f])))
            (unless (and (pair? (syntax-e exp-spec))
                         (identifier? (car (syntax-e exp-spec)))
                         (eq? 'begin (core-form-sym exp-spec at-phase)))

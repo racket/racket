@@ -498,6 +498,12 @@ argument to ensure the necessary @tech{use-site scopes} are added to macros expa
 Otherwise, expansion of nested definitions can be inconsistent with the expansion of definitions in
 the surrounding context.
 
+The scope associated with a new definition context is pruned from
+@racket[quote-syntax] forms only when it is created during the dynamic
+extent of a @tech{syntax transformer} application or in a
+@racket[begin-for-syntax] form (potentially nested) within a module
+being expanded.
+
 @transform-time[]
 
 @history[#:changed "6.3" @elem{Added the @racket[add-scope?] argument,

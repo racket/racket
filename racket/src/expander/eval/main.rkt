@@ -234,7 +234,6 @@
     (define-values (require-lifts lifts exp-s)
       (expand-capturing-lifts s (struct*-copy expand-context tl-ctx
                                               [only-immediate? #t]
-                                              [def-ctx-scopes (box null)] ; discarding is ok
                                               [phase phase]
                                               [namespace ns])))
     (define disarmed-exp-s (raw:syntax-disarm exp-s))

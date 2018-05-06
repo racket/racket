@@ -360,7 +360,7 @@
                                         [to-module-lifts (make-to-module-lift-context phase
                                                                                       #:shared-module-ends module-ends
                                                                                       #:end-as-expressions? #t)]))
-         
+
          (finish-expanding-body-expressons partially-expanded-bodys
                                            #:phase phase
                                            #:ctx body-ctx
@@ -502,7 +502,8 @@
    ;; Expand the body
    (define expanded-mb (performance-region
                         ['expand 'module-begin]
-                        (expand mb (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes))))
+                        (expand mb (struct*-copy expand-context (accumulate-def-ctx-scopes mb-ctx mb-def-ctx-scopes)
+                                                 [def-ctx-scopes #f]))))
 
    ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
    ;; Assemble the `module` result

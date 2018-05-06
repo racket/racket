@@ -519,6 +519,69 @@
   (provide v))
 (test 1 dynamic-require ''uses-internal-definition-context-around-id 'v)
 
+;; Make sure `syntax-local-make-definition-context` can be called
+;; at unusual times, where the scope that is otherwise captured
+;; for `quote-syntax` isn't or can't be recorded
+(let-syntax ([x (syntax-local-make-definition-context)])
+  (void))
+(module makes-definition-context-at-compile-time-begin racket
+  (begin-for-syntax
+    (syntax-local-make-definition-context)))
+(require 'makes-definition-context-at-compile-time-begin)
+
+
+(module create-definition-context-during-visit racket/base
+  (require (for-syntax racket/base))
+  (provide (for-syntax ds))
+  ;; won't be stipped for `quote-syntax`
+  (define-for-syntax ds (syntax-local-make-definition-context)))
+
+(module create-definition-context-during-expand racket/base
+  (require (for-syntax racket/base)
+           'create-definition-context-during-visit)
+  (provide results
+           get-results)
+
+  ;; will be stipped for `quote-syntax`
+  (define-for-syntax ds2 (syntax-local-make-definition-context))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ body)
+       (internal-definition-context-introduce ds #'body)]))
+
+  (define-syntax (m2 stx)
+    (syntax-case stx ()
+      [(_ body)
+       (internal-definition-context-introduce ds2 #'body)]))
+
+  (define-syntax (m3 stx)
+    (syntax-case stx ()
+      [(_ body)
+       (let ([ds3 (syntax-local-make-definition-context)])
+         (internal-definition-context-introduce ds3 #'body))]))
+
+  (define results
+    (list
+     (bound-identifier=? (m #'x)
+                         #'x)
+     (bound-identifier=? (m2 #'x)
+                         #'x)
+     (bound-identifier=? (m3 #'x)
+                         #'x)))
+
+  (define (get-results)
+    (list
+     (bound-identifier=? (m #'x)
+                         #'x)
+     (bound-identifier=? (m2 #'x)
+                         #'x)
+     (bound-identifier=? (m3 #'x)
+                         #'x))))
+
+(test '(#f #t #t) dynamic-require ''create-definition-context-during-expand 'results)
+(test '(#f #t #t) (dynamic-require ''create-definition-context-during-expand 'get-results))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (module local-expand-begin-for-syntax-test racket/base
@@ -1508,6 +1571,22 @@
            (begin
              (eval-syntax #'a)
              (eval-syntax (expand-syntax #'b)))])))
+
+;; ----------------------------------------
+;; Basic use-site scope example
+
+(module define-n-as-ten-not-five racket/base
+  (define x 10)
+  
+  (define-syntax-rule (use-x misc-id)
+    (let ([misc-id 5])
+      x))
+  
+  (define n (use-x x))
+  
+  (provide n))
+
+(test 10 dynamic-require ''define-n-as-ten-not-five 'n)
 
 ;; ----------------------------------------
 ;; Check that use-site scopes are not pruned too eagerly
