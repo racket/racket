@@ -57,7 +57,7 @@
   (ctest #f contract-stronger? (>/c 2) (>/c 3))
   (ctest #f contract-stronger? (</c 3) (</c 2))
   (ctest #t contract-stronger? (</c 2) (</c 3))
-  (ctest #t contract-stronger? (</c 2) (>/c 2))
+  (ctest #f contract-stronger? (</c 2) (>/c 2))
   (ctest #t contract-stronger? (</c 2) (<=/c 2))
   (ctest #f contract-stronger? (</c 2) (>=/c 2))
   (ctest #f contract-stronger? (>/c 2) (<=/c 2))

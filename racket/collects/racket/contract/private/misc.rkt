@@ -263,7 +263,8 @@
        [(and (<-ctc? this) (<-ctc? that))
         (<= this-x (</>-ctc-x that))]
        [(and (>-ctc? this) (>-ctc? that))
-        (>= this-x (</>-ctc-x that))])]
+        (>= this-x (</>-ctc-x that))]
+       [else #f])]
     [(between/c-s? that)
      (cond
        [(<-ctc? this)
