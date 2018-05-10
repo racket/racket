@@ -12,6 +12,7 @@
          contract-struct-val-first-projection
          contract-struct-late-neg-projection
          contract-struct-stronger?
+         contract-struct-equivalent?
          contract-struct-generate
          contract-struct-exercise
          contract-struct-list-contract?
@@ -62,6 +63,7 @@
                                    first-order
                                    projection
                                    stronger
+                                   equivalent
                                    generate
                                    exercise
                                    val-first-projection
@@ -111,60 +113,86 @@
   (and get-projection
        (get-projection c)))
 
-(define trail (make-parameter #f))
-(define (contract-struct-stronger? a b)
-  (cond
-    [(and (or (flat-contract-struct? a)
-              (chaperone-contract-struct? a))
-          (equal? a b))
-     #t]
-    [else
-     (define prop (contract-struct-property a))
-     (define stronger? (contract-property-stronger prop))
-     (cond
-       [(stronger? a b)
-        ;; optimistically try skip some of the more complex work below
-        #t]
-       [(and (flat-contract-struct? a) (prop:any/c? b)) #t] ;; is the flat-check needed here?
-       [(let ([th (trail)])
-          (and th
-               (for/or ([(a2 bs-h) (in-hash th)])
-                 (and (eq? a a2)
-                      (for/or ([(b2 _) (in-hash bs-h)])
-                        (eq? b b2))))))
-        #t]
-       [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
-        (parameterize ([trail (or (trail) (make-hasheq))])
-          (define trail-h (trail))
-          (let ([a-h (hash-ref trail-h a #f)])
+(define (contract-struct-stronger/equivalent?
+         a b
+         trail
+         contract-property-stronger/equivalent
+         special-or/c-any/c-handling?)
+  (let loop ([a a][b b])
+    (cond
+      [(and (or (flat-contract-struct? a)
+                (chaperone-contract-struct? a))
+            (equal? a b))
+       #t]
+      [else
+       (define prop (contract-struct-property a))
+       (define stronger/equivalent? (contract-property-stronger/equivalent prop))
+       (cond
+         [(stronger/equivalent? a b)
+          ;; optimistically try skip some of the more complex work below
+          #t]
+         [(and special-or/c-any/c-handling?
+               (flat-contract-struct? a)
+               (prop:any/c? b))
+          ;; is the flat-check needed here?
+          #t]
+         [(let ([th (trail)])
+            (and th
+                 (for/or ([(a2 bs-h) (in-hash th)])
+                   (and (eq? a a2)
+                        (for/or ([(b2 _) (in-hash bs-h)])
+                          (eq? b b2))))))
+          #t]
+         [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
+          (parameterize ([trail (or (trail) (make-hasheq))])
+            (define trail-h (trail))
+            (let ([a-h (hash-ref trail-h a #f)])
+              (cond
+                [a-h
+                 (hash-set! a-h b #t)]
+                [else
+                 (define a-h (make-hasheq))
+                 (hash-set! trail-h a a-h)
+                 (hash-set! a-h b #t)]))
+            (loop (if (prop:recursive-contract? a)
+                      ((prop:recursive-contract-unroll a) a)
+                      a)
+                  (if (prop:recursive-contract? b)
+                      ((prop:recursive-contract-unroll b) b)
+                      b)))]
+         [special-or/c-any/c-handling?
+          ;; the 'later?' flag avoids checking
+          ;; (stronger? a b) in the first iteration,
+          ;; since it was checked in the "optimistically"
+          ;; branch above
+          (let loop ([b b] [later? #f])
             (cond
-              [a-h
-               (hash-set! a-h b #t)]
+              [(and later? (stronger/equivalent? a b))
+               #t]
+              [(prop:orc-contract? b)
+               (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+               (for/or ([sub-contract (in-list sub-contracts)])
+                 (loop sub-contract #t))]
               [else
-               (define a-h (make-hasheq))
-               (hash-set! trail-h a a-h)
-               (hash-set! a-h b #t)]))
-          (contract-struct-stronger? (if (prop:recursive-contract? a)
-                                         ((prop:recursive-contract-unroll a) a)
-                                         a)
-                                     (if (prop:recursive-contract? b)
-                                         ((prop:recursive-contract-unroll b) b)
-                                         b)))]
-       [else
-        ;; the 'later?' flag avoids checking
-        ;; (stronger? a b) in the first iteration,
-        ;; since it was checked in the "optimistically"
-        ;; branch above
-        (let loop ([b b] [later? #f])
-          (cond
-            [(and later? (stronger? a b))
-             #t]
-            [(prop:orc-contract? b)
-             (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
-             (for/or ([sub-contract (in-list sub-contracts)])
-               (loop sub-contract #t))]
-            [else
-             #f]))])]))
+               #f]))]
+         [else #f])])))
+
+(define stronger-trail (make-parameter #f))
+(define (contract-struct-stronger? a b)
+  (contract-struct-stronger/equivalent?
+   a b
+   stronger-trail
+   contract-property-stronger
+   #t))
+
+(define equivalent-trail (make-parameter #f))
+(define (contract-struct-equivalent? a b)
+  (contract-struct-stronger/equivalent?
+   a b
+   equivalent-trail
+   contract-property-equivalent
+   #f))
+
 
 (define (contract-struct-generate c)
   (define prop (contract-struct-property c))
@@ -262,13 +290,14 @@
 
 (define-logger racket/contract)
 
-(define ((build-property mk default-name proc-name first-order?)
+(define ((build-property mk default-name proc-name first-order? equivalent-equal?)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
          #:late-neg-projection [get-late-neg-projection #f]
          #:stronger [stronger #f]
+         #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (c) #f)])
@@ -304,6 +333,7 @@
       (or get-first-order get-any?)
       get-projection
       (or stronger weakest)
+      (or equivalent (if equivalent-equal? equal? weakest))
       generate exercise 
       get-val-first-projection
       (cond
@@ -325,13 +355,13 @@
     
 (define build-contract-property
   (procedure-rename
-   (build-property make-contract-property 'anonymous-contract 'build-contract-property #f)
+   (build-property make-contract-property 'anonymous-contract 'build-contract-property #f #f)
    'build-contract-property))
 
 (define build-flat-contract-property
   (procedure-rename
    (build-property (compose make-flat-contract-property make-contract-property)
-                   'anonymous-flat-contract 'build-flat-contract-property #t)
+                   'anonymous-flat-contract 'build-flat-contract-property #t #t)
    'build-flat-contract-property))
 
 (define (blame-context-projection-wrapper proj)
@@ -343,7 +373,7 @@
 (define build-chaperone-contract-property
   (procedure-rename
    (build-property (compose make-chaperone-contract-property make-contract-property)
-                   'anonymous-chaperone-contract 'build-chaperone-contract-property #f)
+                   'anonymous-chaperone-contract 'build-chaperone-contract-property #f #t)
    'build-chaperone-contract-property))
 
 (define (get-any? c) any?)
@@ -383,7 +413,7 @@
 
 (define-struct make-contract [ name first-order projection
                                     val-first-projection late-neg-projection 
-                                    stronger generate exercise list-contract? ]
+                                    stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -404,7 +434,7 @@
 
 (define-struct make-chaperone-contract [ name first-order projection
                                               val-first-projection late-neg-projection
-                                              stronger generate exercise list-contract? ]
+                                              stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -425,7 +455,7 @@
 
 (define-struct make-flat-contract [ name first-order projection
                                          val-first-projection late-neg-projection
-                                         stronger generate exercise list-contract? ]
+                                         stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -444,13 +474,14 @@
    #:exercise (lambda (c) (make-flat-contract-exercise c))
    #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
-(define ((build-contract mk default-name proc-name first-order?)
+(define ((build-contract mk default-name proc-name first-order? equivalent-equal?)
          #:name [name #f]
          #:first-order [first-order #f]
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
          #:late-neg-projection [late-neg-projection #f]
          #:stronger [stronger #f]
+         #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? #f])
@@ -485,6 +516,7 @@
            [else #f])]
         [else late-neg-projection])
       (or stronger weakest)
+      (or equivalent (if equivalent-equal? equal? weakest))
       generate exercise
       (and list-contract? #t)))
 
@@ -502,7 +534,7 @@
 
 (define make-contract
   (procedure-rename 
-   (build-contract make-make-contract 'anonymous-contract 'make-contract #f)
+   (build-contract make-make-contract 'anonymous-contract 'make-contract #f #f)
    'make-contract))
 
 (define make-chaperone-contract
@@ -510,7 +542,7 @@
    (build-contract make-make-chaperone-contract
                    'anonymous-chaperone-contract
                    'make-chaperone-contract
-                   #f)
+                   #f #t)
    'make-chaperone-contract))
 
 (define make-flat-contract
@@ -518,7 +550,7 @@
    (build-contract make-make-flat-contract
                    'anonymous-flat-contract
                    'make-flat-contract
-                   #t)
+                   #t #t)
    'make-flat-contract))
 
 ;; property should be bound to a function that accepts the contract and

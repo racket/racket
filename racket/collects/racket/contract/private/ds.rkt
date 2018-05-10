@@ -229,13 +229,15 @@ it around flattened out.
                           ctc-field-val)] ...)
               (values f-x ...)))
           
-          (define (stronger-lazy-contract? a b)
+          (define (stronger/equivalent-lazy-contract?
+                   a b
+                   contract-struct-stronger/equivalent?)
             (and (contract-predicate b)
                  (let ([a-sel (contract-get a selector-indices)]
                        [b-sel (contract-get b selector-indices)])
                    (if (contract-struct? a-sel)
                        (if (contract-struct? b-sel)
-                           (contract-struct-stronger? a-sel b-sel)
+                           (contract-struct-stronger/equivalent? a-sel b-sel)
                            #f)
                        (if (contract-struct? b-sel)
                            #f
@@ -321,7 +323,13 @@ it around flattened out.
              #:projection lazy-contract-proj
              #:name lazy-contract-name
              #:first-order (lambda (ctc) predicate)
-             #:stronger stronger-lazy-contract?))
+             #:equivalent (λ (this that)
+                            (stronger/equivalent-lazy-contract?
+                             this that
+                             contract-struct-equivalent?))
+             #:stronger (λ (this that) (stronger/equivalent-lazy-contract?
+                                        this that
+                                        contract-struct-stronger?))))
           
           (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
             (make-struct-type 'the-contract

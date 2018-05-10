@@ -53,6 +53,24 @@
                                       (apply (polymorphic-contract-body that) instances))]
           [else #f])]
        [else #f]))
+   #:equivalent
+   (λ (this that)
+     (cond
+       [(polymorphic-contract? that)
+        (define this-vars (polymorphic-contract-vars this))
+        (define that-vars (polymorphic-contract-vars that))
+        (define this-barrier/c (polymorphic-contract-barrier this))
+        (define that-barrier/c (polymorphic-contract-barrier that))
+        (cond
+          [(and (eq? this-barrier/c that-barrier/c)
+                (= (length this-vars) (length that-vars)))
+           (define instances
+             (for/list ([var (in-list this-vars)])
+               (this-barrier/c #t var)))
+           (contract-struct-equivalent? (apply (polymorphic-contract-body this) instances)
+                                        (apply (polymorphic-contract-body that) instances))]
+          [else #f])]
+       [else #f]))
    #:late-neg-projection
    (lambda (c)
      (lambda (orig-blame)
@@ -104,6 +122,7 @@
    #:name (lambda (c) (barrier-contract-name c))
    #:first-order (λ (c) (barrier-contract-pred c))
    #:stronger (λ (this that) (eq? this that))
+   #:equivalent (λ (this that) (eq? this that))
    #:late-neg-projection
    (lambda (c)
      (define mk (barrier-contract-make c))

@@ -940,10 +940,7 @@
       (check-one-stronger class/c-inits class/c-init-contracts this that)
       
       ;; check both ways for fields (since mutable)
-      (limit-depth
-       (and (check-one-stronger class/c-fields class/c-field-contracts this that) 
-            (check-one-stronger class/c-fields class/c-field-contracts that this)))
-      
+      (check-one-equivalent class/c-fields class/c-field-contracts this that)
 
       ;; inherits
       (check-one-stronger internal-class/c-inherits internal-class/c-inherit-contracts
@@ -972,6 +969,36 @@
       (equal? (class/c-opaque? this) (class/c-opaque? that))
       (all-included? (class/c-absent-fields that) (class/c-absent-fields this))
       (all-included? (class/c-absents that) (class/c-absents this)))]
+    [else #f]))
+
+(define (class/c-equivalent this that)
+  (define this-internal (class/c-internal this))
+  (cond
+    [(class/c? that)
+     (define that-internal (class/c-internal that))
+     (and
+      (check-one-equivalent class/c-methods class/c-method-contracts this that)
+      (check-one-equivalent class/c-inits class/c-init-contracts this that)
+      (check-one-equivalent class/c-fields class/c-field-contracts this that)
+      (check-one-equivalent internal-class/c-inherits internal-class/c-inherit-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-inherit-fields internal-class/c-inherit-field-contracts
+                            that-internal this-internal)
+      (check-one-equivalent internal-class/c-supers internal-class/c-super-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-inners internal-class/c-inner-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-overrides internal-class/c-override-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-augments internal-class/c-augment-contracts
+                            this-internal that-internal)
+      (check-one-equivalent internal-class/c-augrides internal-class/c-augride-contracts
+                            this-internal that-internal)
+      (equal? (class/c-opaque? this) (class/c-opaque? that))
+      (equal? (class/c-absent-fields that) (class/c-absent-fields this))
+      (equal? (class/c-absents that) (class/c-absents this)))]
     [else #f]))
 
 (define (all-included? this-items that-items)
@@ -1039,6 +1066,14 @@
       (and (equal? this-name that-name)
            (contract-stronger? this-ctc that-ctc)))))
 
+(define (check-one-equivalent names-sel ctcs-sel this that)
+  (for/and ([this-name (in-list (names-sel this))]
+            [this-ctc (in-list (ctcs-sel this))])
+    (for/or ([that-name (in-list (names-sel that))]
+             [that-ctc (in-list (ctcs-sel that))])
+      (and (equal? this-name that-name)
+           (contract-equivalent? this-ctc that-ctc)))))
+
 (define-struct class/c 
   (methods method-contracts fields field-contracts inits init-contracts
    absents absent-fields 
@@ -1050,6 +1085,7 @@
    #:late-neg-projection class/c-late-neg-proj
    #:name build-class/c-name
    #:stronger class/c-stronger
+   #:equivalent class/c-equivalent
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -1468,6 +1504,11 @@
        (contract-stronger? (base-instanceof/c-class-ctc this)
                            (base-instanceof/c-class-ctc that))))
 
+(define (instanceof/c-equivalent this that)
+  (and (base-instanceof/c? that)
+       (contract-equivalent? (base-instanceof/c-class-ctc this)
+                             (base-instanceof/c-class-ctc that))))
+
 (define-struct base-instanceof/c (class-ctc)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -1477,6 +1518,7 @@
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
    #:first-order instanceof/c-first-order
+   #:equivalent instanceof/c-equivalent
    #:stronger instanceof/c-stronger))
 
 (define/subexpression-pos-prop (instanceof/c cctc)
@@ -1550,15 +1592,24 @@
       (object/c-width-subtype? this that))]
     [else #f]))
 
+(define (object/c-equivalent this that)
+  (cond
+    [(base-object/c? that)
+     (and
+      (check-one-object/equivalent base-object/c-methods base-object/c-method-contracts this that)
+      (check-one-object/equivalent base-object/c-fields base-object/c-field-contracts this that)
+      (equal? (base-object/c-methods that)
+              (base-object/c-methods this))
+      (equal? (base-object/c-fields that)
+              (base-object/c-fields this)))]
+    [else #f]))
+
 (define (object/c-common-methods-stronger? this that)
   (check-one-object base-object/c-methods base-object/c-method-contracts this that))
 
 (define (object/c-common-fields-stronger? this that)
   ;; check both ways for fields (since mutable)
-  (limit-depth
-   (and
-    (check-one-object base-object/c-fields base-object/c-field-contracts this that)
-    (check-one-object base-object/c-fields base-object/c-field-contracts that this))))
+  (check-one-object/equivalent base-object/c-fields base-object/c-field-contracts this that))
 
 ;; True if `this` has at least as many field / method names as `that`
 (define (object/c-width-subtype? this that)
@@ -1585,6 +1636,22 @@
                     any/c
                     that-ctc)))))))
 
+(define (check-one-object/equivalent names-sel ctcs-sel this that)
+  (and (equal? (names-sel this)
+               (names-sel this))
+       (for/and ([this-name (in-list (names-sel this))]
+                 [this-ctc (in-list (ctcs-sel this))])
+         (for/or ([that-name (in-list (names-sel that))]
+                  [that-ctc (in-list (ctcs-sel that))])
+           (and (equal? this-name that-name)
+                (contract-equivalent?
+                 (if (just-check-existence? this-ctc)
+                     any/c
+                     this-ctc)
+                 (if (just-check-existence? that-ctc)
+                     any/c
+                     that-ctc)))))))
+
 (define-struct base-object/c (methods method-contracts fields field-contracts)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -1598,6 +1665,7 @@
                                (base-object/c-fields ctc)
                                (base-object/c-field-contracts ctc)))
    #:first-order object/c-first-order
+   #:equivalent object/c-equivalent
    #:stronger object/c-stronger))
 
 (define (build-object/c-type-name name method-names method-ctcs field-names field-ctcs)

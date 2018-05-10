@@ -62,6 +62,11 @@
        (pairwise-stronger-contracts? (base-and/c-ctcs this)
                                      (base-and/c-ctcs that))))
 
+(define (and-equivalent? this that)
+  (and (base-and/c? that)
+       (pairwise-equivalent-contracts? (base-and/c-ctcs this)
+                                       (base-and/c-ctcs that))))
+
 (define (and/c-generate? ctc)
   (cond
     [(and/c-check-nonneg ctc real?) => values]
@@ -147,6 +152,7 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:equivalent and-equivalent?
    #:generate and/c-generate?))
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -156,6 +162,7 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:equivalent and-equivalent?
    #:generate and/c-generate?))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -165,6 +172,7 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:equivalent and-equivalent?
    #:generate and/c-generate?))
 
 (define-syntax (and/c stx)
@@ -274,13 +282,23 @@
     [else exact-integer?]))
 
 (define (integer-in-stronger this that)
-  (define this-start (or (integer-in-ctc-start this) -inf.0))
-  (define this-end (or (integer-in-ctc-end this) +inf.0))
   (cond
     [(integer-in-ctc? that)
+     (define this-start (or (integer-in-ctc-start this) -inf.0))
+     (define this-end (or (integer-in-ctc-end this) +inf.0))
      (define that-start (or (integer-in-ctc-start that) -inf.0))
      (define that-end (or (integer-in-ctc-end that) +inf.0))
      (<= that-start this-start this-end that-end)]
+    [else #f]))
+
+(define (integer-in-equivalent this that)
+  (cond
+    [(integer-in-ctc? that)
+     (define this-start (or (integer-in-ctc-start this) -inf.0))
+     (define this-end (or (integer-in-ctc-end this) +inf.0))
+     (define that-start (or (integer-in-ctc-start that) -inf.0))
+     (define that-end (or (integer-in-ctc-end that) +inf.0))
+     (and (= that-start this-start) (= this-end that-end))]
     [else #f]))
 
 (define (integer-in-generate ctc)
@@ -311,6 +329,7 @@
    #:name integer-in-name
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
+   #:equivalent integer-in-equivalent
    #:generate integer-in-generate))
 
 (struct renamed-integer-in integer-in-ctc (name)
@@ -319,6 +338,7 @@
    #:name (λ (ctc) (renamed-integer-in-name ctc))
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
+   #:equivalent integer-in-equivalent
    #:generate integer-in-generate))
 
 (define (geo-dist p)

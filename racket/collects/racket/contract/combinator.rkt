@@ -51,6 +51,7 @@
  build-compound-type-name
  
  contract-stronger?
+ contract-equivalent?
  list-contract?
  
  contract-first-order

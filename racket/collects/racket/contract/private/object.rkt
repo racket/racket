@@ -128,6 +128,9 @@
                   [(subclass/c? that)
                    (subclass? (subclass/c-% this) (subclass/c-% that))]
                   [else #f]))
+   #:equivalent (λ (this that)
+                  (and (subclass/c? that)
+                       (equal? (subclass/c-% this) (subclass/c-% that))))
    #:name (λ (ctc) `(subclass?/c ,(or (object-name (subclass/c-% ctc)) 'unknown%)))))
 (define (subclass?/c %)
   (unless (class? %)
@@ -145,6 +148,10 @@
                    (interface-extension? (implementation/c-<%> this)
                                          (implementation/c-<%> that))]
                   [else #f]))
+   #:equivalent (λ (this that)
+                  (and (implementation/c? that)
+                       (equal? (implementation/c-<%> this)
+                               (implementation/c-<%> that))))
    #:name (λ (ctc) `(implementation?/c ,(or (object-name (implementation/c-<%> ctc)) 'unknown<%>)))))
             
 (define (implementation?/c <%>)
@@ -185,6 +192,10 @@
            (interface-extension? this-<%> that-<%>)]
           [else #f])]
        [else #f]))
+   #:equivalent
+   (λ (this that)
+     (and (is-a?-ctc? that)
+          (equal? (is-a?-ctc-<%> this) (is-a?-ctc-<%> that))))
    #:name
    (λ (ctc)
      (define <%> (is-a?-ctc-<%> ctc))

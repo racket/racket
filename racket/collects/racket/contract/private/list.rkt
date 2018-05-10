@@ -107,6 +107,28 @@
           (contract-struct-stronger? this-elem hd-ctc)
           (contract-struct-stronger? (ne->pe-ctc this) tl-ctc))]
     [else #f]))
+
+(define (listof-equivalent this that)
+  (define this-elem (listof-ctc-elem-c this))
+  (cond
+    [(listof-ctc? that)
+     (define that-elem (listof-ctc-elem-c that))
+     (cond
+       [(pe-listof-ctc? this) (and (pe-listof-ctc? that)
+                                   (contract-struct-equivalent? this-elem that-elem))]
+       [(im-listof-ctc? this)
+        (and (im-listof-ctc? that)
+             (contract-struct-equivalent? this-elem that-elem)
+             (contract-struct-equivalent? (im-listof-ctc-last-c this)
+                                          (im-listof-ctc-last-c that)))]
+       [else (contract-struct-equivalent? this-elem that-elem)])]
+    [(the-cons/c? that)
+     (define hd-ctc (the-cons/c-hd-ctc that))
+     (define tl-ctc (the-cons/c-tl-ctc that))
+     (and (ne-listof-ctc? this)
+          (contract-struct-equivalent? this-elem hd-ctc)
+          (contract-struct-equivalent? (ne->pe-ctc this) tl-ctc))]
+    [else #f]))
            
 (define (raise-listof-blame-error blame val empty-ok? neg-party)
   (raise-blame-error blame #:missing-party neg-party val
@@ -219,6 +241,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define chap-prop
   (build-chaperone-contract-property
@@ -228,6 +251,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define full-prop
   (build-contract-property
@@ -237,6 +261,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 
 (struct listof-ctc (elem-c))
@@ -382,6 +407,20 @@
           (contract-struct-stronger? this-tl that))]
     [else #f]))
 
+(define (cons/c-equivalent? this that)
+  (define this-hd (the-cons/c-hd-ctc this))
+  (define this-tl (the-cons/c-tl-ctc this))
+  (cond
+    [(the-cons/c? that)
+     (define that-hd (the-cons/c-hd-ctc that))
+     (define that-tl (the-cons/c-tl-ctc that))
+     (and (contract-struct-equivalent? this-hd that-hd)
+          (contract-struct-equivalent? this-tl that-tl))]
+    [(ne-listof-ctc? that)
+     (define elem-ctc (listof-ctc-elem-c that))
+     (and (contract-struct-equivalent? this-hd elem-ctc)
+          (contract-struct-equivalent? this-tl (ne->pe-ctc that)))]
+    [else #f]))
 
 (define (cons/c-generate ctc)
   (define ctc-car (the-cons/c-hd-ctc ctc))
@@ -405,6 +444,7 @@
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
+   #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
    #:list-contract? cons/c-list-contract?))
 (define-struct (chaperone-cons/c the-cons/c) ()
@@ -415,6 +455,7 @@
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
+   #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
    #:list-contract? cons/c-list-contract?))
 (define-struct (impersonator-cons/c the-cons/c) ()
@@ -425,6 +466,7 @@
    #:name cons/c-name
    #:first-order cons/c-first-order
    #:stronger cons/c-stronger?
+   #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
    #:list-contract? cons/c-list-contract?))
 
@@ -496,6 +538,7 @@
                  dep-val))))))
 
 (define (cons/dc-stronger? this that) #f)
+(define (cons/dc-equivalent? this that) #f)
 
 (define (cons/dc-generate ctc)
   (define undep-ctc (the-cons/dc-undep ctc))
@@ -526,6 +569,7 @@
    #:name cons/dc-name
    #:first-order cons/dc-first-order
    #:stronger cons/dc-stronger?
+   #:equivalent cons/dc-equivalent?
    #:generate cons/dc-generate))
 
 (struct chaperone-cons/dc the-cons/dc ()
@@ -536,6 +580,7 @@
    #:name cons/dc-name
    #:first-order cons/dc-first-order
    #:stronger cons/dc-stronger?
+   #:equivalent cons/dc-equivalent?
    #:generate cons/dc-generate))
 
 (struct impersonator-cons/dc the-cons/dc ()
@@ -546,6 +591,7 @@
    #:name cons/dc-name
    #:first-order cons/dc-first-order
    #:stronger cons/dc-stronger?
+   #:equivalent cons/dc-equivalent?
    #:generate cons/dc-generate))
 
 (define-syntax (cons/dc stx)
@@ -669,6 +715,13 @@
             (contract-struct-stronger? this-s that-elem-ctc)))]
     [else #f]))
 
+(define (list/c-equivalent this that)
+  (cond
+    [(generic-list/c? that)
+     (pairwise-equivalent-contracts? (generic-list/c-args this)
+                                     (generic-list/c-args that))]
+    [else #f]))
+
 (struct generic-list/c (args))
 
 (struct flat-list/c generic-list/c ()
@@ -680,6 +733,7 @@
    #:generate list/c-generate
    #:exercise list/c-exercise
    #:stronger list/c-stronger
+   #:equivalent list/c-equivalent
    #:late-neg-projection
    (λ (c) 
      (λ (blame)
@@ -774,6 +828,7 @@
    #:generate list/c-generate
    #:exercise list/c-exercise
    #:stronger list/c-stronger
+   #:equivalent list/c-equivalent
    #:late-neg-projection list/c-chaperone/other-late-neg-projection
    #:list-contract? (λ (c) #t)))
 
@@ -786,6 +841,7 @@
    #:generate list/c-generate
    #:exercise list/c-exercise
    #:stronger list/c-stronger
+   #:equivalent list/c-equivalent
    #:late-neg-projection list/c-chaperone/other-late-neg-projection
    #:list-contract? (λ (c) #t)))
 
@@ -882,6 +938,17 @@
             (contract-struct-stronger? suf that-elem)))]
     [else #f]))
 
+(define (*list/c-equivalent this that)
+  (define this-prefix (*list-ctc-prefix this))
+  (define this-suffix (*list-ctc-suffix this))
+  (cond
+    [(*list-ctc? that)
+     (define that-prefix (*list-ctc-prefix that))
+     (define that-suffix (*list-ctc-suffix that))
+     (and (contract-struct-equivalent? this-prefix that-prefix)
+          (pairwise-equivalent-contracts? this-suffix that-suffix))]
+    [else #f]))
+
 (define (*list/c-late-neg-projection ctc start-index flat?)
   (define prefix-lnp (contract-late-neg-projection (*list-ctc-prefix ctc)))
   (define suffix-lnps (map contract-late-neg-projection (*list-ctc-suffix ctc)))
@@ -959,6 +1026,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #t))
    #:list-contract? (λ (c) #t)))
 (struct chaperone-*list/c *list-ctc ()
@@ -969,6 +1037,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
    #:list-contract? (λ (c) #t)))
 (struct impersonator-*list/c *list-ctc ()
@@ -979,6 +1048,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
    #:list-contract? (λ (c) #t)))
 
@@ -1022,6 +1092,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection
    (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #t))
    #:list-contract? (λ (c) #t)))
@@ -1033,6 +1104,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection
    (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #f))
    #:list-contract? (λ (c) #t)))
@@ -1044,6 +1116,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
+   #:equivalent *list/c-equivalent
    #:late-neg-projection
    (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #f))
    #:list-contract? (λ (c) #t)))

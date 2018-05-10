@@ -101,11 +101,35 @@
         (contract-struct-stronger? this-content-r that-content-r)]
        [(or (equal? that-immutable 'dont-care)
             (equal? this-immutable that-immutable))
-        (and (contract-struct-stronger? this-content-r that-content-r)
-             (contract-struct-stronger? that-content-w this-content-w))]
+        (if (and (eq? this-content-r this-content-w)
+                 (eq? that-content-r that-content-w))
+            ;; if the original box/c didn't specify a separate read and write
+            ;; contract, we end up in this case
+            (contract-struct-equivalent? this-content-r that-content-r)
+            (and (contract-struct-stronger? this-content-r that-content-r)
+                 (contract-struct-stronger? that-content-w this-content-w)))]
        [else #f])]
     [else #f]))
 
+(define (box/c-equivalent this that)
+  (cond
+    [(base-box/c? that)
+     (define this-content-w (base-box/c-content-w this))
+     (define this-content-r (base-box/c-content-r this))
+     (define this-immutable (base-box/c-immutable this))
+     (define that-content-w (base-box/c-content-w that))
+     (define that-content-r (base-box/c-content-r that))
+     (define that-immutable (base-box/c-immutable that))
+     (and (equal? this-immutable that-immutable)
+          (cond
+            [(or (equal? this-immutable 'immutable)
+                 (and (eq? this-content-r this-content-w)
+                      (eq? that-content-r that-content-w)))
+             (contract-struct-equivalent? this-content-r that-content-r)]
+            [else
+             (and (contract-struct-equivalent? this-content-r that-content-r)
+                  (contract-struct-equivalent? that-content-w this-content-w))]))]
+    [else #f]))
 
 (define-struct (flat-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -114,6 +138,7 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
+   #:equivalent box/c-equivalent
    #:late-neg-projection
    (λ (ctc)
      (define content-ctc (get/build-late-neg-projection (base-box/c-content-w ctc)))
@@ -184,6 +209,7 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
+   #:equivalent box/c-equivalent
    #:late-neg-projection (ho-late-neg-projection chaperone-box)))
 
 (define-struct (impersonator-box/c base-box/c) ()
@@ -193,6 +219,7 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
+   #:equivalent box/c-equivalent
    #:late-neg-projection (ho-late-neg-projection impersonate-box)))
 
 (define-syntax (box/c stx)

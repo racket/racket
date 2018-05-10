@@ -259,7 +259,7 @@
             ((f blame-known) val neg-party)))])]
     [else (recursive-contract-late-neg-projection ctc)]))
   
-(define (recursive-contract-stronger this that) (equal? this that))
+(define (recursive-contract-equivalent this that) (equal? this that))
 
 (define ((recursive-contract-first-order ctc) val)
   (cond
@@ -288,7 +288,8 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection flat-recursive-contract-late-neg-projection
-   #:stronger recursive-contract-stronger
+   #:stronger recursive-contract-equivalent
+   #:equivalent recursive-contract-equivalent
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
 (struct chaperone-recursive-contract recursive-contract ()
@@ -298,7 +299,8 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection recursive-contract-late-neg-projection
-   #:stronger recursive-contract-stronger
+   #:stronger recursive-contract-equivalent
+   #:equivalent recursive-contract-equivalent
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
 (struct impersonator-recursive-contract recursive-contract ()
@@ -308,6 +310,7 @@
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection recursive-contract-late-neg-projection
-   #:stronger recursive-contract-stronger
+   #:stronger recursive-contract-equivalent
+   #:equivalent recursive-contract-equivalent
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))

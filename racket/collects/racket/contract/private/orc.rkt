@@ -110,6 +110,14 @@
                                          (single-or/c-flat-ctcs that)))
       (generic-or/c-stronger? this that)))
 
+(define (single-or/c-equivalent? this that)
+  (or (and (single-or/c? that)
+           (contract-struct-equivalent? (single-or/c-ho-ctc this)
+                                        (single-or/c-ho-ctc that))
+           (pairwise-equivalent-contracts? (single-or/c-flat-ctcs this)
+                                           (single-or/c-flat-ctcs that)))
+      (generic-or/c-equivalent? this that)))
+
 (define (generic-or/c-stronger? this that)
   (define this-sub-ctcs (or/c-sub-contracts this))
   (define that-sub-ctcs (or/c-sub-contracts that))
@@ -118,6 +126,15 @@
        (for/and ([this-sub-ctc (in-list this-sub-ctcs)])
          (for/or ([that-sub-ctc (in-list that-sub-ctcs)])
            (contract-struct-stronger? this-sub-ctc that-sub-ctc)))))
+
+(define (generic-or/c-equivalent? this that)
+  (define this-sub-ctcs (or/c-sub-contracts this))
+  (define that-sub-ctcs (or/c-sub-contracts that))
+  (and this-sub-ctcs
+       that-sub-ctcs
+       (pairwise-equivalent-contracts?
+        (sort this-sub-ctcs < #:key (λ (x) (equal-hash-code (contract-name x))))
+        (sort that-sub-ctcs < #:key (λ (x) (equal-hash-code (contract-name x)))))))
 
 (define (or/c-sub-contracts ctc)
   (cond
@@ -215,6 +232,7 @@
    #:name single-or/c-name
    #:first-order single-or/c-first-order
    #:stronger single-or/c-stronger?
+   #:equivalent single-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc
                                       (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
@@ -229,6 +247,7 @@
    #:name single-or/c-name
    #:first-order single-or/c-first-order
    #:stronger single-or/c-stronger?
+   #:equivalent single-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc
                                       (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
@@ -316,6 +335,14 @@
                                          (multi-or/c-flat-ctcs that)))
       (generic-or/c-stronger? this that)))
 
+(define (multi-or/c-equivalent? this that)
+  (or (and (multi-or/c? that)
+           (pairwise-equivalent-contracts? (multi-or/c-ho-ctcs this)
+                                           (multi-or/c-ho-ctcs that))
+           (pairwise-equivalent-contracts? (multi-or/c-flat-ctcs this)
+                                           (multi-or/c-flat-ctcs that)))
+      (generic-or/c-equivalent? this that)))
+
 (define (mult-or/c-list-contract? c)
   (and (for/and ([c (in-list (multi-or/c-flat-ctcs c))])
          (list-contract? c))
@@ -335,6 +362,7 @@
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
    #:stronger multi-or/c-stronger?
+   #:equivalent multi-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc
                                       (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
@@ -349,6 +377,7 @@
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
    #:stronger multi-or/c-stronger?
+   #:equivalent multi-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc
                                       (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
@@ -394,7 +423,7 @@
                                #f))]
                   [else #f])))
          (generic-or/c-stronger? this that)))
-                    
+   #:equivalent generic-or/c-equivalent?
 
    #:first-order
    (λ (ctc) (flat-or/c-pred ctc))
@@ -470,6 +499,7 @@
    #:name first-or/c-name
    #:first-order first-or/c-first-order
    #:stronger multi-or/c-stronger?
+   #:equivalent multi-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
    #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
    #:list-contract? first-or/c-list-contract?))
@@ -480,6 +510,7 @@
    #:name first-or/c-name
    #:first-order first-or/c-first-order
    #:stronger generic-or/c-stronger?
+   #:equivalent generic-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
    #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
    #:list-contract? first-or/c-list-contract?))
@@ -525,6 +556,15 @@
          [(recur?) 
           (parameterize ([recur? #f])
             (contract-struct-stronger? (get-flat-rec-me this) that))]
+         [else #f])))
+   #:equivalent
+   (let ([recur? (make-parameter #t)])
+     (λ (this that)
+       (cond
+         [(equal? this that) #t]
+         [(recur?)
+          (parameterize ([recur? #f])
+            (contract-struct-equivalent? (get-flat-rec-me this) that))]
          [else #f])))
    #:first-order
    (λ (ctc) 

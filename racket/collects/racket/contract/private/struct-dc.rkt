@@ -673,7 +673,44 @@
                  (procedure-closure-contents-eq?
                   (dep-dep-proc this-subcontract)
                   (dep-dep-proc that-subcontract)))]
-           [else #t]))))
+           [else #f]))))
+
+(define (struct/dc-equivalent? this that)
+  (and (base-struct/dc? that)
+       (eq? (base-struct/dc-pred this) (base-struct/dc-pred that))
+       (let ([this-inv (get-invariant this)]
+             [that-inv (get-invariant that)])
+         (cond
+           [(and (not this-inv) (not that-inv)) #t]
+           [(and this-inv that-inv)
+            (procedure-closure-contents-eq? (invariant-dep-proc this-inv)
+                                            (invariant-dep-proc that-inv))]
+           [else #f]))
+       (for/and ([this-subcontract (in-list (base-struct/dc-subcontracts this))]
+                 [that-subcontract (in-list (base-struct/dc-subcontracts that))])
+         (cond
+           [(and (indep? this-subcontract)
+                 (indep? that-subcontract))
+            (and (or (and (mutable? this-subcontract)
+                          (mutable? that-subcontract))
+                     (and (immutable? this-subcontract)
+                          (immutable? that-subcontract))
+                     (and (lazy-immutable? this-subcontract)
+                          (lazy-immutable? that-subcontract)))
+                 (contract-struct-equivalent? (indep-ctc this-subcontract)
+                                              (indep-ctc that-subcontract)))]
+           [(and (dep? this-subcontract)
+                 (dep? that-subcontract))
+            (and (or (and (dep-mutable? this-subcontract)
+                          (dep-mutable? that-subcontract))
+                     (and (dep-immutable? this-subcontract)
+                          (dep-immutable? that-subcontract))
+                     (and (dep-lazy-immutable? this-subcontract)
+                          (dep-lazy-immutable? that-subcontract)))
+                 (procedure-closure-contents-eq?
+                  (dep-dep-proc this-subcontract)
+                  (dep-dep-proc that-subcontract)))]
+           [else #f]))))
 
 (define (get-invariant sc)
   (for/or ([sub (base-struct/dc-subcontracts sc)]
@@ -700,6 +737,7 @@
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))
 
@@ -710,6 +748,7 @@
    #:first-order struct/dc-flat-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))
 
@@ -720,6 +759,7 @@
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))
 

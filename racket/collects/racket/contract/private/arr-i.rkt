@@ -317,6 +317,7 @@
              (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f #f)
              (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f #f)))))
    #:exercise exercise->i
+   #:equivalent (λ (this that) (eq? this that))
    #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 (struct chaperone->i ->i () #:property prop:chaperone-contract (mk-prop #t))

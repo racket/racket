@@ -22,6 +22,7 @@
          build-compound-type-name
          
          contract-stronger?
+         contract-equivalent?
          list-contract?
          
          contract-first-order
@@ -228,6 +229,10 @@
 (define (contract-stronger? a b)
   (contract-struct-stronger? (coerce-contract 'contract-stronger? a)
                              (coerce-contract 'contract-stronger? b)))
+
+(define (contract-equivalent? a b)
+  (contract-struct-equivalent? (coerce-contract 'contract-equivalent? a)
+                               (coerce-contract 'contract-equivalent? b)))
 
 ;; coerce-flat-contract : symbol any/c -> contract
 (define (coerce-flat-contract name x)
@@ -557,6 +562,11 @@
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
+   #:equivalent
+   (λ (this that)
+     (define this-val (eq-contract-val this))
+     (and (eq-contract? that)
+          (eq? this-val (eq-contract-val that))))
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
 (define false/c-contract (make-eq-contract #f #f))
@@ -576,6 +586,11 @@
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
+   #:equivalent
+   (λ (this that)
+     (define this-val (equal-contract-val this))
+     (and (equal-contract? that)
+          (equal? this-val (equal-contract-val that))))
    #:generate
    (λ (ctc) 
      (define v (equal-contract-val ctc))
@@ -597,6 +612,13 @@
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
+   #:equivalent
+   (λ (this that)
+     (define this-val (=-contract-val this))
+     (or (and (=-contract? that)
+              (= this-val (=-contract-val that)))
+         (and (between/c-s? that)
+              (= (between/c-s-low that) this-val (between/c-s-high that)))))
    #:generate
    (λ (ctc) 
      (define v (=-contract-val ctc))
@@ -659,6 +681,17 @@
         (and (char<=? that-low this-low)
              (char<=? this-high that-high))]
        [else #f]))
+   #:equivalent
+   (λ (this that)
+     (cond
+       [(char-in/c? that)
+        (define this-low (char-in/c-low this))
+        (define this-high (char-in/c-high this))
+        (define that-low (char-in/c-low that))
+        (define that-high (char-in/c-high that))
+        (and (char=? that-low this-low)
+             (char=? this-high that-high))]
+       [else #f]))
    #:generate
    (λ (ctc)
      (define low (char->integer (char-in/c-low ctc)))
@@ -667,6 +700,10 @@
      (λ (fuel)
        (λ ()
          (integer->char (+ low (random delta))))))))
+
+(define (regexp/c-equivalent this that)
+  (and (regexp/c? that)
+       (equal? (regexp/c-reg this) (regexp/c-reg that))))
 
 (define-struct regexp/c (reg name)
   #:property prop:custom-write contract-custom-write-property-proc
@@ -679,9 +716,13 @@
          (and (or (string? x) (bytes? x))
               (regexp-match? reg x))))
    #:name (λ (ctc) (regexp/c-reg ctc))
-   #:stronger
-   (λ (this that)
-      (and (regexp/c? that) (equal? (regexp/c-reg this) (regexp/c-reg that))))))
+   #:stronger regexp/c-equivalent
+   #:equivalent regexp/c-equivalent))
+
+(define (predicate-contract-equivalent this that)
+  (and (predicate-contract? that)
+       (procedure-closure-contents-eq? (predicate-contract-pred this)
+                                       (predicate-contract-pred that))))
 
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
@@ -689,11 +730,8 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:stronger
-   (λ (this that) 
-     (and (predicate-contract? that)
-          (procedure-closure-contents-eq? (predicate-contract-pred this)
-                                          (predicate-contract-pred that))))
+   #:stronger predicate-contract-equivalent
+   #:equivalent predicate-contract-equivalent
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
    #:late-neg-projection

@@ -50,6 +50,7 @@
          if/c
 
          pairwise-stronger-contracts?
+         pairwise-equivalent-contracts?
          check-two-args
 
          suggest/c
@@ -117,6 +118,15 @@
        [(>-ctc? that)
         (and (= this-high +inf.0)
              (< that-x this-low))])]
+    [else #f]))
+
+(define (between/c-equivalent this that)
+  (define this-low (between/c-s-low this))
+  (define this-high (between/c-s-high this))
+  (cond
+    [(between/c-s? that)
+     (and (= (between/c-s-low that) this-low)
+          (= this-high (between/c-s-high that)))]
     [else #f]))
 
 (define (between/c-first-order ctc)
@@ -193,6 +203,7 @@
           [(= n m) `(=/c ,n)]
           [else ])]))
    #:stronger between/c-stronger
+   #:equivalent between/c-equivalent
    #:first-order between/c-first-order
    #:generate between/c-generate))
 (define-struct (renamed-between/c between/c-s) (name))
@@ -253,7 +264,8 @@
           [1/10 (-/+ x 0.01)]
           [4/10 (-/+ x (random))]
           [else (-/+ x (random 4294967087))]))))
-   #:stronger </>-ctc-stronger))
+   #:stronger </>-ctc-stronger
+   #:equivalent </>-ctc-equivalent))
 
 (define (</>-ctc-stronger this that)
   (define this-x (</>-ctc-x this))
@@ -274,6 +286,17 @@
         (and (= (between/c-s-high that) +inf.0)
              (<= (between/c-s-low that) this-x))])]))
 
+(define (</>-ctc-equivalent this that)
+  (define this-x (</>-ctc-x this))
+  (cond
+    [(</>-ctc? that)
+     (cond
+       [(and (<-ctc? this) (<-ctc? that))
+        (= this-x (</>-ctc-x that))]
+       [(and (>-ctc? this) (>-ctc? that))
+        (= this-x (</>-ctc-x that))]
+       [else #f])]
+    [else #f]))
 
 (struct </>-ctc (x))
 (struct <-ctc </>-ctc ()
@@ -331,6 +354,10 @@
                 (and (syntax-ctc? that)
                      (contract-struct-stronger? (syntax-ctc-ctc this)
                                                 (syntax-ctc-ctc that))))
+   #:equivalent (λ (this that)
+                  (and (syntax-ctc? that)
+                       (contract-struct-equivalent? (syntax-ctc-ctc this)
+                                                    (syntax-ctc-ctc that))))
    #:first-order (λ (ctc) 
                    (define ? (flat-contract-predicate (syntax-ctc-ctc ctc)))
                    (λ (v)
@@ -406,6 +433,11 @@
        (contract-struct-stronger? (promise-base-ctc-ctc this)
                                   (promise-base-ctc-ctc that))))
 
+(define (promise-ctc-equivalent? this that)
+  (and (promise-base-ctc? that)
+       (contract-struct-equivalent? (promise-base-ctc-ctc this)
+                                    (promise-base-ctc-ctc that))))
+
 (struct promise-base-ctc (ctc))
 (struct chaperone-promise-ctc promise-base-ctc ()
   #:property prop:custom-write custom-write-property-proc
@@ -414,6 +446,7 @@
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
+   #:equivalent promise-ctc-equivalent?
    #:first-order (λ (ctc) promise?)))
 (struct promise-ctc promise-base-ctc ()
   #:property prop:custom-write custom-write-property-proc
@@ -422,6 +455,7 @@
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
+   #:equivalent promise-ctc-equivalent?
    #:first-order (λ (ctc) promise?)))
 
 ;; (parameter/c in/out-ctc)
@@ -488,16 +522,26 @@
            (and (contract-struct-stronger? (parameter/c-out this)
                                            (parameter/c-out that))
                 (contract-struct-stronger? (parameter/c-in that)
-                                           (parameter/c-in this)))))))
+                                           (parameter/c-in this)))))
+   #:equivalent
+   (λ (this that)
+      (and (parameter/c? that)
+           (and (contract-struct-equivalent? (parameter/c-out this)
+                                             (parameter/c-out that))
+                (contract-struct-equivalent? (parameter/c-in that)
+                                             (parameter/c-in this)))))))
 
+(define (procedure-arity-includes-equivalent? this that)
+  (and (procedure-arity-includes/c? that)
+       (= (procedure-arity-includes/c-n this)
+          (procedure-arity-includes/c-n that))))
 (define-struct procedure-arity-includes/c (n)
   #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:stronger (λ (this that) (and (procedure-arity-includes/c? that)
-                                  (= (procedure-arity-includes/c-n this)
-                                     (procedure-arity-includes/c-n that))))
+   #:stronger procedure-arity-includes-equivalent?
+   #:equivalent procedure-arity-includes-equivalent?
    #:name (λ (ctc) `(procedure-arity-includes/c ,(procedure-arity-includes/c-n ctc)))
    #:first-order (λ (ctc)
                    (define n (procedure-arity-includes/c-n ctc))
@@ -557,6 +601,7 @@
   (build-flat-contract-property
    #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)
    #:stronger (λ (this that) (any/c? that))
+   #:equivalent (λ (this that) (any/c? that))
    #:name (λ (ctc) 'any/c)
    #:generate (λ (ctc) 
                 (λ (fuel) 
@@ -584,6 +629,7 @@
   (build-flat-contract-property
    #:late-neg-projection none-curried-late-neg-proj
    #:stronger (λ (this that) #t)
+   #:equivalent (λ (this that) (none/c? that))
    #:name (λ (ctc) (none/c-name ctc))
    #:first-order (λ (ctc) (λ (val) #f))))
 
@@ -666,12 +712,21 @@
 
 (define (prompt-tag/c-stronger? this that)
   (and (base-prompt-tag/c? that)
-       (andmap (λ (this that) (contract-struct-stronger? this that))
-               (base-prompt-tag/c-ctcs this)
-               (base-prompt-tag/c-ctcs that))
-       (andmap (λ (this that) (contract-struct-stronger? this that))
-               (base-prompt-tag/c-call/ccs this)
-               (base-prompt-tag/c-call/ccs that))))
+       (pairwise-stronger-contracts?
+        (base-prompt-tag/c-ctcs this)
+        (base-prompt-tag/c-ctcs that))
+       (pairwise-stronger-contracts?
+        (base-prompt-tag/c-call/ccs this)
+        (base-prompt-tag/c-call/ccs that))))
+
+(define (prompt-tag/c-equivalent? this that)
+  (and (base-prompt-tag/c? that)
+       (pairwise-equivalent-contracts?
+        (base-prompt-tag/c-ctcs this)
+        (base-prompt-tag/c-ctcs that))
+       (pairwise-equivalent-contracts?
+        (base-prompt-tag/c-call/ccs this)
+        (base-prompt-tag/c-call/ccs that))))
 
 ;; (listof contract) (listof contract)
 (define-struct base-prompt-tag/c (ctcs call/ccs))
@@ -683,6 +738,7 @@
    #:late-neg-projection (prompt-tag/c-late-neg-proj #t)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
+   #:equivalent prompt-tag/c-equivalent?
    #:name prompt-tag/c-name))
 
 (define-struct (impersonator-prompt-tag/c base-prompt-tag/c) ()
@@ -692,6 +748,7 @@
    #:late-neg-projection (prompt-tag/c-late-neg-proj #f)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
+   #:equivalent prompt-tag/c-equivalent?
    #:name prompt-tag/c-name))
 
 
@@ -743,6 +800,12 @@
         (base-continuation-mark-key/c-ctc this)
         (base-continuation-mark-key/c-ctc that))))
 
+(define (continuation-mark-key/c-equivalent? this that)
+  (and (base-continuation-mark-key/c? that)
+       (contract-struct-equivalent?
+        (base-continuation-mark-key/c-ctc this)
+        (base-continuation-mark-key/c-ctc that))))
+
 (define-struct base-continuation-mark-key/c (ctc))
 
 (define-struct (chaperone-continuation-mark-key/c
@@ -754,6 +817,7 @@
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj chaperone-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
+   #:equivalent continuation-mark-key/c-equivalent?
    #:name continuation-mark-key/c-name))
 
 (define-struct (impersonator-continuation-mark-key/c
@@ -765,6 +829,7 @@
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj impersonate-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
+   #:equivalent continuation-mark-key/c-equivalent?
    #:name continuation-mark-key/c-name))
 
 ;; evt/c : Contract * -> Contract
@@ -823,9 +888,20 @@
 
 ;; evt/c-stronger? : Contract Contract -> Boolean
 (define (evt/c-stronger? this that)
-  (define this-ctcs (chaperone-evt/c-ctcs this))
-  (define that-ctcs (chaperone-evt/c-ctcs that))
-  (pairwise-stronger-contracts? this-ctcs that-ctcs))
+  (cond
+    [(chaperone-evt/c? that)
+     (define this-ctcs (chaperone-evt/c-ctcs this))
+     (define that-ctcs (chaperone-evt/c-ctcs that))
+     (pairwise-stronger-contracts? this-ctcs that-ctcs)]
+    [else #f]))
+
+(define (evt/c-equivalent? this that)
+  (cond
+    [(chaperone-evt/c? that)
+     (define this-ctcs (chaperone-evt/c-ctcs this))
+     (define that-ctcs (chaperone-evt/c-ctcs that))
+     (pairwise-equivalent-contracts? this-ctcs that-ctcs)]
+    [else #f]))
 
 ;; ctcs - Listof<Contract>
 (define-struct chaperone-evt/c (ctcs)
@@ -834,6 +910,7 @@
    #:late-neg-projection evt/c-proj
    #:first-order evt/c-first-order
    #:stronger evt/c-stronger?
+   #:equivalent evt/c-equivalent?
    #:name evt/c-name))
 
 ;; channel/c
@@ -891,6 +968,12 @@
         (base-channel/c-ctc this)
         (base-channel/c-ctc that))))
 
+(define (channel/c-equivalent? this that)
+  (and (base-channel/c? that)
+       (contract-struct-equivalent?
+        (base-channel/c-ctc this)
+        (base-channel/c-ctc that))))
+
 (define-struct base-channel/c (ctc))
 
 (define-struct (chaperone-channel/c base-channel/c)
@@ -901,6 +984,7 @@
    #:late-neg-projection (channel/c-late-neg-proj chaperone-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
+   #:equivalent channel/c-equivalent?
    #:name channel/c-name))
 
 (define-struct (impersonator-channel/c base-channel/c)
@@ -911,6 +995,7 @@
    #:late-neg-projection (channel/c-late-neg-proj impersonate-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
+   #:equivalent channel/c-equivalent?
    #:name channel/c-name))
 
 
@@ -980,12 +1065,15 @@
     (if (flat-contract? ctc)
         (flat-named-contract name (flat-contract-predicate ctc))
         (let* ([make-contract (if (chaperone-contract? ctc) make-chaperone-contract make-contract)])
-          (define (stronger? this other)
+          (define (rename-contract-stronger? this other)
             (contract-struct-stronger? ctc other))
+          (define (rename-contract-equivalent? this other)
+            (contract-struct-equivalent? ctc other))
           (make-contract #:name name
                          #:late-neg-projection (get/build-late-neg-projection ctc)
                          #:first-order (contract-first-order ctc)
-                         #:stronger stronger?
+                         #:stronger rename-contract-stronger?
+                         #:equivalent rename-contract-equivalent?
                          #:list-contract? (list-contract? ctc))))))
 
 (define (if/c predicate then/c else/c)
@@ -1063,6 +1151,16 @@
             (loop (cdr c1s) (cdr c2s)))]
       [else #f])))
 
+(define (pairwise-equivalent-contracts? c1s c2s)
+  (let loop ([c1s c1s]
+             [c2s c2s])
+    (cond
+      [(and (null? c1s) (null? c2s)) #t]
+      [(and (pair? c1s) (pair? c2s))
+       (and (contract-struct-equivalent? (car c1s) (car c2s))
+            (loop (cdr c1s) (cdr c2s)))]
+      [else #f])))
+
 (define (suggest/c _ctc field message)
   (define ctc (coerce-contract 'suggest/c _ctc))
   (unless (string? field)
@@ -1083,7 +1181,8 @@
    #:name (contract-name ctc)
    #:first-order (contract-first-order ctc)
    #:late-neg-projection (λ (b) (ctc-lnp (blame-add-extra-field b field message)))
-   #:stronger (λ (this that) (contract-stronger? ctc that))
+   #:stronger (λ (this that) (contract-struct-stronger? ctc that))
+   #:equivalent (λ (this that) (contract-struct-equivalent? ctc that))
    #:list-contract? (list-contract? ctc)))
 
 (define (flat-contract-with-explanation ? #:name [name (object-name ?)])

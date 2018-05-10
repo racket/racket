@@ -126,6 +126,15 @@
              (contract-struct-stronger? that-elem this-elem))])]
     [else #f]))
 
+(define (vectorof-equivalent this that)
+  (cond
+    [(base-vectorof? that)
+     (and (equal? (base-vectorof-immutable this)
+                  (base-vectorof-immutable that))
+          (contract-struct-equivalent? (base-vectorof-elem this)
+                                       (base-vectorof-elem that)))]
+    [else #f]))
+
 (define-struct (flat-vectorof base-vectorof) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
@@ -143,6 +152,7 @@
                                (for ([x (in-vector val)])
                                  (vfp+blame x neg-party))
                                val)))
+   #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger))
 
 (define (blame-add-element-of-context blame #:swap? [swap? #f])
@@ -258,6 +268,7 @@
   (build-chaperone-contract-property
    #:name vectorof-name
    #:first-order vectorof-first-order
+   #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
    #:late-neg-projection (vectorof-late-neg-ho-projection chaperone-vector)))
 
@@ -267,6 +278,7 @@
   (build-contract-property
    #:name vectorof-name
    #:first-order vectorof-first-order
+   #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
    #:late-neg-projection (vectorof-late-neg-ho-projection impersonate-vector)))
 
@@ -375,7 +387,6 @@
            (contract-first-order-passes? c e)))))
 
 (define (vector/c-stronger this that)
-  ;(define-struct base-vector/c (elems immutable))
   (define this-elems (base-vector/c-elems this))
   (define this-immutable (base-vector/c-immutable this))
   (cond
@@ -413,6 +424,15 @@
        [else #f])]
     [else #f]))
 
+(define (vector/c-equivalent this that)
+  (cond
+    [(base-vector/c? that)
+     (and (equal? (base-vector/c-immutable this)
+                  (base-vector/c-immutable that))
+          (pairwise-equivalent-contracts? (base-vector/c-elems this)
+                                          (base-vector/c-elems that)))]
+    [else #f]))
+
 (define-struct (flat-vector/c base-vector/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
@@ -420,6 +440,7 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
+   #:equivalent vector/c-equivalent
    #:late-neg-projection
    (λ (ctc) 
      (λ (blame) 
@@ -512,6 +533,7 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
+   #:equivalent vector/c-equivalent
    #:late-neg-projection (vector/c-ho-late-neg-projection chaperone-vector)))
 
 (define-struct (impersonator-vector/c base-vector/c) ()
@@ -521,6 +543,7 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
+   #:equivalent vector/c-equivalent
    #:late-neg-projection (vector/c-ho-late-neg-projection impersonate-vector)))
 
 (define-syntax (wrap-vector/c stx)

@@ -2125,6 +2125,9 @@ where the violation was detected.
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
+           #f]
           [#:list-contract? is-list-contract? boolean? #f])
          contract?]
 @defproc[(make-chaperone-contract
@@ -2150,6 +2153,9 @@ where the violation was detected.
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
+           #f]
           [#:list-contract? is-list-contract? boolean? #f])
          chaperone-contract?]
 @defproc[(make-flat-contract
@@ -2175,6 +2181,9 @@ where the violation was detected.
           [#:stronger stronger
                       (or/c #f (-> contract? contract? boolean?))
                       #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
+           #f]
           [#:list-contract? is-list-contract? boolean? #f])
          flat-contract?]
 )]{
@@ -2250,6 +2259,9 @@ with @racket[equal?] is used for @tech{flat contracts} and @tech{chaperone contr
 For @tech{impersonator contracts} constructed with @racket[make-contract] that do not
 supply the @racket[stronger] argument, @racket[contract-stronger?] returns @racket[#f].
 
+Similarly, the @racket[equivalent] argument is used to implement @racket[contract-equivalent?].
+If it isn't supplied or @racket[#false] is supplied, then @racket[equal?] is used
+for chaperone and flat contracts, and @racket[(λ (x y) #f)] is used otherwise.
 
 The @racket[is-list-contract?] argument is used by the @racket[list-contract?] predicate
 to determine if this is a contract that accepts only @racket[list?] values.
@@ -2717,6 +2729,9 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
+           #f]
           [#:generate
            generate
            (->i ([c contract?])
@@ -2759,6 +2774,9 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:stronger
            stronger
            (or/c (-> contract? contract? boolean?) #f)
+           #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
            #f]
           [#:generate
            generate
@@ -2813,6 +2831,9 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            stronger
            (or/c (-> contract? contract? boolean?) #f)
            #f]
+          [#:equivalent equivalent
+           (or/c #f (-> contract? contract? boolean?))
+           #f]
           [#:generate
            generate
            (->i ([c contract?])
@@ -2834,7 +2855,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          contract-property?])]{
-   
+
 These functions build the arguments for @racket[prop:contract],
 @racket[prop:chaperone-contract], and @racket[prop:flat-contract], respectively.
 
@@ -2852,6 +2873,11 @@ a contract.  It is specified in terms of seven properties:
   @item{@racket[stronger], a predicate that determines whether this
    contract (passed in the first argument) is stronger than some other
    contract (passed in the second argument) and whose default always
+   returns @racket[#f];}
+  @item{@racket[equivalent], a predicate that determines whether this
+   contract (passed in the first argument) is equivalent to some other
+   contract (passed in the second argument); the default for flat
+   and chaperone contracts is @racket[equal?] and for impersonator contracts
    returns @racket[#f];}
   @item{@racket[generate], which returns a thunk that generates random values
    matching the contract (using @racket[contract-random-generate-fail])
@@ -3010,7 +3036,7 @@ are below):
 
 @defproc[(contract-stronger? [c1 contract?] [c2 contract?]) boolean?]{
   Returns @racket[#t] if the contract @racket[c1] accepts either fewer
-  or the same number of values as @racket[c2] does.
+  or the same set of values that @racket[c2] does.
 
   @tech{Chaperone contracts} and @tech{flat contracts} that are the same
   (i.e., where @racket[c1] is @racket[equal?] to @racket[c2]) are
@@ -3027,6 +3053,28 @@ are below):
 
                  (contract-stronger? (λ (x) (and (real? x) (<= x 0)))
                                      (λ (x) (and (real? x) (<= x 100))))]
+
+
+}
+
+@defproc[(contract-equivalent? [c1 contract?] [c2 contract?]) boolean?]{
+  Returns @racket[#t] if the contract @racket[c1] accepts the same
+  set of values that @racket[c2] does.
+
+  @tech{Chaperone contracts} and @tech{flat contracts} that are the same
+  (i.e., where @racket[c1] is @racket[equal?] to @racket[c2]) are
+  considered to always be equivalent to each other.
+
+  This function is conservative, so it may return @racket[#f] when
+  @racket[c1] does, in fact, accept the same set of values that @racket[c2] does.
+
+@examples[#:eval (contract-eval) #:once
+                 (contract-equivalent? integer? integer?)
+                 (contract-equivalent? (non-empty-listof integer?)
+                                       (cons/c integer? (listof integer?)))
+
+                 (contract-equivalent? (λ (x) (and (real? x) (and (number? x) (>= (sqr x) 0))))
+                                       (λ (x) (and (real? x) (real? x))))]
 
 
 }
