@@ -3,7 +3,7 @@
 ;; cond
 
 (module cond '#%kernel
-  (#%require (for-syntax "stx.rkt" "qq-and-or.rkt" '#%kernel))
+  (#%require (for-syntax "stx.rkt" "qq-and-or.rkt" '#%kernel "gen-temp.rkt"))
 
   (define-syntaxes (=>)
     (lambda (stx)

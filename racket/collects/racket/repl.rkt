@@ -1,5 +1,5 @@
 (module repl '#%kernel
-
+  (#%declare #:cross-phase-persistent)
   (#%provide read-eval-print-loop)
 
   (define-values (read-eval-print-loop)
