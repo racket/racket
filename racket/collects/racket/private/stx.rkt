@@ -2,7 +2,7 @@
 ;; basic syntax utilities
 
 (module stx '#%kernel
-
+  (#%declare #:cross-phase-persistent)
   ;; These utilities facilitate operations on syntax objects.
   ;; A syntax object that represents a parenthesized sequence
   ;; can contain a mixture of cons cells and syntax objects,
@@ -197,20 +197,6 @@
                       (loop s))])
 	(values pre post (= m n)))))
 
-  (define-values (intro) #f)
-  (define-values (counter) 0)
-  (define-values (gen-temp-id)
-    ;; Even though we gensym, using an introducer helps the
-    ;;  syntax system simplify renamings that can't apply
-    ;;  to other identifiers (when the generated identifier
-    ;;  is used as a binding id)
-    (lambda (pfx)
-      (if intro
-          (void)
-          (set! intro (make-syntax-introducer)))
-      (set! counter (add1 counter))
-      (intro (datum->syntax #f (string->uninterned-symbol (format "~a~a" pfx counter))))))
-
   (#%provide identifier? stx-null? stx-null/#f stx-pair? stx-list?
              stx-car stx-cdr stx->list
              stx-vector? stx-vector-ref
@@ -218,5 +204,4 @@
              stx-prefab?
              stx-check/esc cons/#f append/#f
              stx-rotate stx-rotate*
-             split-stx-list
-             gen-temp-id))
+             split-stx-list))

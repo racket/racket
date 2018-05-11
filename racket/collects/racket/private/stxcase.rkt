@@ -5,7 +5,7 @@
   (#%require "stx.rkt" "small-scheme.rkt" '#%paramz '#%unsafe
              "ellipses.rkt"
              (for-syntax "stx.rkt" "small-scheme.rkt"
-                         "member.rkt" "sc.rkt" '#%kernel))
+                          "gen-temp.rkt" "member.rkt" "sc.rkt" '#%kernel))
 
   (-define interp-match
      (lambda (pat e literals immediate=?)
