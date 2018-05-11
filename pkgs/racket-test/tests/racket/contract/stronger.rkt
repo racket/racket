@@ -454,6 +454,9 @@
          (object/c (field (f (<=/c 4))))
          (object/c (field (f (<=/c 4)))))
   (ctest #t contract-stronger?
+         (object/c (field (f (<=/c 4))))
+         (object/c))
+  (ctest #t contract-stronger?
          (object/c (m (-> any/c (<=/c 3)))
                    (n (-> any/c any/c)))
          (object/c (m (-> any/c (<=/c 4)))))

@@ -1641,16 +1641,17 @@
                (names-sel this))
        (for/and ([this-name (in-list (names-sel this))]
                  [this-ctc (in-list (ctcs-sel this))])
-         (for/or ([that-name (in-list (names-sel that))]
-                  [that-ctc (in-list (ctcs-sel that))])
-           (and (equal? this-name that-name)
-                (contract-equivalent?
-                 (if (just-check-existence? this-ctc)
-                     any/c
-                     this-ctc)
-                 (if (just-check-existence? that-ctc)
-                     any/c
-                     that-ctc)))))))
+         (or (not (member this-name (names-sel that)))
+             (for/or ([that-name (in-list (names-sel that))]
+                      [that-ctc (in-list (ctcs-sel that))])
+               (and (equal? this-name that-name)
+                    (contract-equivalent?
+                     (if (just-check-existence? this-ctc)
+                         any/c
+                         this-ctc)
+                     (if (just-check-existence? that-ctc)
+                         any/c
+                         that-ctc))))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
   #:property prop:custom-write custom-write-property-proc
