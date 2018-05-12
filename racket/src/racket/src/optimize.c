@@ -2269,6 +2269,7 @@ int scheme_ir_duplicate_ok(Scheme_Object *fb, int cross_linklet)
 {
   return (SCHEME_VOIDP(fb)
           || SAME_OBJ(fb, scheme_true)
+          || SAME_OBJ(fb, scheme_undefined)
           || SCHEME_FALSEP(fb)
           || (SCHEME_SYMBOLP(fb) 
               && (!cross_linklet || (!SCHEME_SYM_WEIRDP(fb)

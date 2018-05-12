@@ -4320,6 +4320,23 @@
            '(lambda () #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check inlining with optional arguments
+
+(test-comp '(lambda (x)
+              (define (f z [y 2])
+                (+ z y))
+              (f x))
+           '(lambda (x)
+              (+ x 2)))
+
+(test-comp '(lambda (x)
+              (define (f z [y (+ 1 1)])
+                (+ z y))
+              (f x))
+           '(lambda (x)
+              (+ x 2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that the type information is shifted in the
 ;; right direction while inlining.
 ;; The first example triggered a bug in 6.3.
