@@ -1596,12 +1596,12 @@
   (cond
     [(base-object/c? that)
      (and
-      (check-one-object/equivalent base-object/c-methods base-object/c-method-contracts this that)
-      (check-one-object/equivalent base-object/c-fields base-object/c-field-contracts this that)
       (equal? (base-object/c-methods that)
               (base-object/c-methods this))
       (equal? (base-object/c-fields that)
-              (base-object/c-fields this)))]
+              (base-object/c-fields this))
+      (check-one-object/equivalent base-object/c-methods base-object/c-method-contracts this that)
+      (check-one-object/equivalent base-object/c-fields base-object/c-field-contracts this that))]
     [else #f]))
 
 (define (object/c-common-methods-stronger? this that)
@@ -1622,36 +1622,29 @@
 ;; See `check-one-stronger`. The difference is that this one only checks the
 ;; names that are in both this and that.
 (define (check-one-object names-sel ctcs-sel this that)
+  (check-one-object/common-names names-sel ctcs-sel this that contract-stronger?))
+
+;; Similar to `check-one-object`, but compare common fields/methods with
+;; `contract-equivalent?`
+(define (check-one-object/equivalent names-sel ctcs-sel this that)
+  (check-one-object/common-names names-sel ctcs-sel this that contract-equivalent?))
+
+;; Extract names (using `names-sel`) and contracts (`ctcs-sel`) from objects `this` and `that`.
+;; For all contracts with the same name, compare the contracts using `compare-ctcs`.
+(define (check-one-object/common-names names-sel ctcs-sel this that compare-ctcs)
   (for/and ([this-name (in-list (names-sel this))]
             [this-ctc (in-list (ctcs-sel this))])
     (or (not (member this-name (names-sel that)))
         (for/or ([that-name (in-list (names-sel that))]
                  [that-ctc (in-list (ctcs-sel that))])
           (and (equal? this-name that-name)
-               (contract-stronger?
+               (compare-ctcs
                 (if (just-check-existence? this-ctc)
                     any/c
                     this-ctc)
                 (if (just-check-existence? that-ctc)
                     any/c
                     that-ctc)))))))
-
-(define (check-one-object/equivalent names-sel ctcs-sel this that)
-  (and (equal? (names-sel this)
-               (names-sel this))
-       (for/and ([this-name (in-list (names-sel this))]
-                 [this-ctc (in-list (ctcs-sel this))])
-         (or (not (member this-name (names-sel that)))
-             (for/or ([that-name (in-list (names-sel that))]
-                      [that-ctc (in-list (ctcs-sel that))])
-               (and (equal? this-name that-name)
-                    (contract-equivalent?
-                     (if (just-check-existence? this-ctc)
-                         any/c
-                         this-ctc)
-                     (if (just-check-existence? that-ctc)
-                         any/c
-                         that-ctc))))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
   #:property prop:custom-write custom-write-property-proc
