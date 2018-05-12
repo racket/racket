@@ -57,6 +57,8 @@
          syntax-local-module-required-identifiers
          syntax-local-module-exports
          syntax-local-submodules
+
+         syntax-local-expand-observer
          
          syntax-local-get-shadower)
 
@@ -426,6 +428,13 @@
   (for/list ([(name kind) (in-hash submods)]
              #:when (eq? kind 'module))
     name))
+
+;; ----------------------------------------
+
+;; Exported via #%expobs, not #%kernel
+(define/who (syntax-local-expand-observer)
+  (define ctx (get-current-expand-context 'syntax-local-expand-observer))
+  (expand-context-observer ctx))
 
 ;; ----------------------------------------
 
