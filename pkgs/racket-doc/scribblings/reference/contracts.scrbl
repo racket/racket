@@ -1999,7 +1999,7 @@ The @racket[define-struct/contract] form only allows a subset of the
                     [name-for-blame (code:line)
                      (code:line #:name-for-blame blame-id)]
                     [name-for-blame (code:line)
-                     (code:line #:no-context)])]{
+                     (code:line #:context-limit limit-expr)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
   
@@ -2023,10 +2023,8 @@ The @racket[define-struct/contract] form only allows a subset of the
   @racket[#:name-for-blame] is supplied, in which case the identifier
   following it is used as the name in the error messages.
 
- If @racket[#:no-context] is supplied, the error message do
- not include the context information that indicates which
- sub-portion of the contract where the violation was
- detected.
+  If @racket[#:context-limit] is supplied, it behaves the same as
+  it does when supplied to @racket[contract].
 
   @examples[#:eval (contract-eval) #:once
             (module server racket/base
@@ -2043,7 +2041,8 @@ The @racket[define-struct/contract] form only allows a subset of the
             (eval:error (clients-fault))
             (eval:error (servers-fault))]
 
-  @history[#:changed "6.7.0.4" @elem{Added the @racket[#:name-for-blame] argument.}]
+  @history[#:changed "6.7.0.4" @elem{Added the @racket[#:name-for-blame] argument.}
+           #:changed "6.90.0.29" @elem{Added the @racket[#:context-limit] argument.}]
 
 }
 
@@ -2051,7 +2050,7 @@ The @racket[define-struct/contract] form only allows a subset of the
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr
-                     #:no-context)
+                     #:context-limit limit-expr)
            (contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr
                      value-name-expr source-location-expr)]]{
@@ -2087,9 +2086,13 @@ reported by contract violations.  The expression must produce a @racket[srcloc]
 structure, @tech{syntax object}, @racket[#f], or a list or vector in the format
 accepted by the third argument to @racket[datum->syntax].
 
-If @racket[#:no-context] is supplied, the error message do not include
-the context information that indicates which sub-portion of the contract
-where the violation was detected.
+ If @racket[#:context-limit] is supplied, the following expression
+ must evaluate to either @racket[#f] or a natural number. If
+ the expression evaluates to an natural number, the number of
+ layers of context information is limited to at most that
+ many. For example, if the number is @racket[0], no context
+ information is recorded and the error messages do not contain
+ the section that starts with @litchar{in:}.
 
 }
 
@@ -2531,6 +2534,12 @@ combinators that should not add any context (e.g., @racket[recursive-contract]),
 passing @racket[#f] as the context string argument avoids adding the
 @racket["..."] string.
 }
+
+@defproc[(blame-context [blame blame?]) (listof string?)]{
+  Returns the context information that would be supplied in
+  an error message, if @racket[blame] is passed to @racket[raise-blame-error].
+}
+
 
 @deftogether[(
 @defproc[(blame-positive [b blame?]) any/c]

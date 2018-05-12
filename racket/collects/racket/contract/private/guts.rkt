@@ -83,6 +83,9 @@
          raise-predicate-blame-error-failure
 
          n->th
+         nth-argument-of
+         nth-element-of
+         nth-case-of
 
          false/c-contract
          true/c-contract
@@ -918,6 +921,33 @@
      [(3) "rd"]
      [else "th"])))
 
+(define (nth-element-of/alloc n)
+  (format "the ~a element of" (n->th n)))
+(define (nth-argument-of/alloc n)
+  (format "the ~a argument of" (n->th n)))
+(define (nth-case-of/alloc n)
+  (format "the ~a case of" (n->th n)))
+
+(define-syntax (define-precompute/simple stx)
+  (syntax-case stx ()
+    [(_ fn fn/alloc lower-bound-stx upper-bound-stx)
+     (let ()
+       (define lower-bound (syntax-e #'lower-bound-stx))
+       (define upper-bound (syntax-e #'upper-bound-stx))
+       (define (n->id n)
+         (string->symbol (format "precomputed-~a" n)))
+     #`(begin
+         #,@(for/list ([i (in-range lower-bound (+ upper-bound 1))])
+              #`(define #,(n->id i) (fn/alloc #,i)))
+         (define (fn n)
+           (case n
+             #,@(for/list ([i (in-range lower-bound (+ upper-bound 1))])
+                  #`[(#,i) #,(n->id i)])
+             [else (fn/alloc n)]))))]))
+
+(define-precompute/simple nth-element-of nth-element-of/alloc 0 10)
+(define-precompute/simple nth-argument-of nth-argument-of/alloc 1 7)
+(define-precompute/simple nth-case-of nth-case-of/alloc 1 2)
 
 (define-syntax-rule
   (contract-pos/neg-doubling e1 e2)

@@ -260,7 +260,7 @@
                                                                     (stx->srcloc-expr srcloc-id)
                                                                     'provide/contract
                                                                     pos-module-source
-                                                                    #t)
+                                                                    #f)
                              #,@(if provide?
                                     (list #`(provide (rename-out [#,id-rename external-name])))
                                     null)))
@@ -281,7 +281,7 @@
                                                         srcloc-expr
                                                         contract-error-name
                                                         pos-module-source
-                                                        track-context?)
+                                                        context-limit)
   (define-values (arrow? the-valid-app-shapes)
     (syntax-case ctrct (-> ->* ->i)
       [(-> . _) 
@@ -309,7 +309,7 @@
                            '#,name-for-blame
                            #,pos-module-source
                            #,srcloc-expr
-                           '#,track-context?))
+                           #,context-limit))
          #,@(if arrow?
                 (list #`(define extra-neg-party-argument-fn 
                           (wrapped-extra-arg-arrow-extra-neg-party-argument
@@ -354,17 +354,17 @@
             (raise-syntax-error #f "expected an identifier" stx #'new-id))
           (unless (identifier? #'orig-id)
             (raise-syntax-error #f "expected an identifier" stx #'orig-id))
-          (define-values (pos-blame-party-expr srcloc-expr name-for-blame track-context?)
+          (define-values (pos-blame-party-expr srcloc-expr name-for-blame context-limit)
             (let loop ([kwd-args (syntax->list #'(kwd-args ...))]
                        [pos-blame-party-expr #'(quote-module-path)]
                        [srcloc-expr #f]
                        [name-for-blame #f]
-                       [track-context? #t])
+                       [context-limit #f])
               (cond
                 [(null? kwd-args) (values pos-blame-party-expr
                                           (or srcloc-expr (stx->srcloc-expr stx))
                                           (or name-for-blame #'new-id)
-                                          track-context?)]
+                                          context-limit)]
                 [else
                  (define kwd (car kwd-args))
                  (cond 
@@ -376,7 +376,7 @@
                           (cadr kwd-args)
                           srcloc-expr
                           name-for-blame
-                          track-context?)]
+                          context-limit)]
                    [(equal? (syntax-e kwd) '#:srcloc)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:srcloc"
@@ -385,7 +385,7 @@
                           pos-blame-party-expr
                           (cadr kwd-args)
                           name-for-blame
-                          track-context?)]
+                          context-limit)]
                    [(equal? (syntax-e kwd) '#:name-for-blame)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:name-for-blame"
@@ -399,19 +399,22 @@
                           pos-blame-party-expr
                           srcloc-expr
                           name-for-blame
-                          track-context?)]
-                   [(equal? (syntax-e kwd) '#:no-context)
-                    (loop (cdr kwd-args)
+                          context-limit)]
+                   [(equal? (syntax-e kwd) '#:context-limit)
+                    (when (null? (cdr kwd-args))
+                      (raise-syntax-error #f "expected an expression to follow #:context-limit"
+                                          stx))
+                    (loop (cddr kwd-args)
                           pos-blame-party-expr
                           srcloc-expr
                           name-for-blame
-                          #f)]
+                          (cadr kwd-args))]
                    [else
                     (raise-syntax-error
                      #f
                      (string-append
                       "expected one of the keywords"
-                      " #:pos-source, #:srcloc, #:name-for-blame, or #:no-context")
+                      " #:pos-source, #:srcloc, #:name-for-blame, or #:context-limit")
                      stx
                      (car kwd-args))])])))
           (internal-function-to-be-figured-out #'ctrct
@@ -422,10 +425,10 @@
                                                srcloc-expr
                                                'define-module-boundary-contract
                                                pos-blame-party-expr
-                                               track-context?))])]))
+                                               context-limit))])]))
 
 ;; ... -> (values (or/c #f (-> neg-party val)) blame)
-(define (do-partial-app ctc val name pos-module-source source track-context?)
+(define (do-partial-app ctc val name pos-module-source source context-limit)
   (define p (parameterize ([warn-about-val-first? #f])
               ;; when we're building the val-first projection
               ;; here we might be needing the plus1 arity
@@ -437,7 +440,7 @@
                            (λ () (contract-name ctc))
                            pos-module-source
                            #f #t
-                           #:track-context? track-context?))
+                           #:context-limit context-limit))
   (with-contract-continuation-mark
    (cons blme 'no-negative-party) ; we don't know the negative party yet
    ;; computing neg-accepter may involve some front-loaded checking. instrument

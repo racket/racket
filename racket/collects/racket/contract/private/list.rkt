@@ -811,13 +811,7 @@
          (expected-a-list val blame #:missing-party neg-party)]))))
 
 (define (add-list-context blame i)
-  (blame-add-context blame (format "the ~a~a element of"
-                                   i
-                                   (case (modulo i 10)
-                                     [(1) "st"]
-                                     [(2) "nd"]
-                                     [(3) "rd"]
-                                     [else "th"]))))
+  (blame-add-context blame (nth-element-of i)))
 
 (struct chaperone-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc

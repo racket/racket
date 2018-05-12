@@ -1599,7 +1599,7 @@
                  internal-name (list/c (-> integer? integer?))
                  #:pos-source 'pos
                  #:name-for-blame my-favorite-name
-                 #:no-context)
+                 #:context-limit 0)
                (provide external-name)))
       (eval '(module define-module-boundary-contract6-n racket/base
                (require 'define-module-boundary-contract6-m)

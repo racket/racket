@@ -560,7 +560,7 @@
                  [n (in-naturals 1)])
         ((get/build-late-neg-projection dom)
          (blame-add-context orig-blame 
-                            (format "the ~a argument of" (n->th (if method? (sub1 n) n)))
+                            (nth-argument-of (if method? (sub1 n) n))
                             #:swap? #t))))
     (define rest-blame
       (if (ellipsis-rest-arg-ctc? rest)

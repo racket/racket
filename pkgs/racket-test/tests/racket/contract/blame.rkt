@@ -126,6 +126,57 @@
        'neg2)
       'no-exn-raised)
    #t)
+  (test/spec-passed/result
+   'blame-selector.16
+   '(blame-context
+     (blame-add-context
+      (blame-add-context
+       (blame-add-context
+        (blame-add-context
+         (blame-add-context
+          (make-blame (srcloc "src.rkt" #f #f #f #f)
+                      'whatever (λ () 'the-name) 'pos #f #t)
+          "1")
+         "2")
+        "3")
+       "4")
+      "5"))
+   '("5" "4" "3" "2" "1"))
+  (test/spec-passed/result
+   'blame-selector.17
+   '(blame-context
+     (blame-add-context
+      (blame-add-context
+       (blame-add-context
+        (blame-add-context
+         (blame-add-context
+          (make-blame (srcloc "src.rkt" #f #f #f #f)
+                      'whatever (λ () 'the-name) 'pos 'neg #t
+                      #:context-limit 2)
+          "1")
+         "2")
+        "3")
+       "4")
+      "5"))
+   '("5" "4"))
+  (test/spec-passed/result
+   'blame-selector.18
+   '(blame-positive
+     (blame-add-context
+      (blame-add-context
+       (blame-add-context
+        (blame-add-context
+         (blame-add-context
+          (blame-swap
+           (make-blame (srcloc "src.rkt" #f #f #f #f)
+                       'whatever (λ () 'the-name) 'pos 'neg #t
+                       #:context-limit 2))
+          "1")
+         "2")
+        "3")
+       "4")
+      "5"))
+   'neg)
 
   (contract-eval
    #:test-case-name "blame.rkt setup.1"
@@ -392,12 +443,26 @@
    'blame-no-context
    ;; when the "in" has the contract after it, there is no context
    '(regexp-match? #rx"in: [(]list/c"
-                   (with-handlers ([exn:fail? exn-message])
+                   (with-handlers ([exn:fail:contract:blame? exn-message])
                      ((car (contract (list/c (-> integer? integer?))
                                      (list (λ (x) x))
                                      'pos
                                      'neg
-                                     #:no-context))
+                                     #:limit-context 0))
+                      #f)))
+   #t)
+
+  (test/spec-passed/result
+   'blame-1-context
+   ;; make sure that, when there is one frame of context,
+   ;; we do not see the `list/c` part of the context
+   '(regexp-match? #rx"element of"
+                   (with-handlers ([exn:fail:contract:blame? exn-message])
+                     ((car (contract (list/c (-> integer? integer?))
+                                     (list (λ (x) x))
+                                     'pos
+                                     'neg
+                                     #:limit-context 10))
                       #f)))
    #t)
 

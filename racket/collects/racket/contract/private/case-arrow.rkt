@@ -217,8 +217,8 @@
                                          (blame-add-context 
                                           (blame-add-context 
                                            blame 
-                                           (format "the ~a case of" (n->th (+ (car f) 1)))) 
-                                          "the domain of" 
+                                           (nth-case-of (+ (car f) 1)))
+                                          "the domain of"
                                           #:swap? #t)))
                                  dom-ctcs+case-nums)
                             (map (let ([memo '()])

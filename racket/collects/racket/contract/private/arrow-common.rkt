@@ -349,8 +349,8 @@
                                #:missing-party [missing-party #f])
   (define num-values (length results))
   (define blame-case (if case-context 
-                         (blame-add-context blame (format "the ~a case of"
-                                                          (n->th (+ case-context 1))))
+                         (blame-add-context blame
+                                            (nth-case-of (+ case-context 1)))
                          blame))
   (raise-blame-error (blame-add-range-context blame-case)
                      #:missing-party missing-party
@@ -360,8 +360,7 @@
                      num-values (if (= num-values 1) "" "s")))
 
 (define (blame-add-nth-arg-context blame n)
-  (blame-add-context blame
-                     (format "the ~a argument of" (n->th n))))
+  (blame-add-context blame (nth-argument-of n)))
 
 (define (raise-wrong-number-of-args-error
          blame #:missing-party [missing-party #f] val

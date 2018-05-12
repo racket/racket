@@ -466,13 +466,12 @@
               ([c (in-list elem-ctcs)]
                [i (in-naturals)])
               ((get/build-late-neg-projection c)
-               (blame-add-context blame (format "the ~a element of" (n->th i)))))
+               (blame-add-context blame (nth-element-of i))))
             (for/vector #:length (length elem-ctcs)
               ([c (in-list elem-ctcs)]
                [i (in-naturals)])
               ((get/build-late-neg-projection c)
-               (blame-add-context blame (format "the ~a element of" (n->th i))
-                                  #:swap? #t)))))
+               (blame-add-context blame (nth-element-of i) #:swap? #t)))))
          (cond
            [filled?
             (λ (val neg-party)

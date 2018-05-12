@@ -39,24 +39,35 @@
          (quasisyntax/loc stx (#%expression #,stx)))))
 
 (define-syntax (contract stx)
+
+  (let ([l (syntax->list stx)])
+    (when l
+      (for ([thing (in-list (cdr (syntax->list stx)))])
+        (when (keyword? (syntax-e thing))
+          (unless (equal? (syntax-e thing) '#:limit-context)
+            (raise-syntax-error 'contract
+                                (format "did not expect keyword ~a" (syntax-e thing))
+                                stx
+                                thing))))))
+  
   (syntax-case stx ()
+    [(_ c v pos neg #:limit-context limit-context-expression)
+     (with-syntax ([name (syntax-local-infer-name stx)])
+       (syntax/loc stx
+         (apply-contract c v pos neg 'name
+                         (build-source-location #f)
+                         limit-context-expression)))]
     [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c v pos neg name loc #t))]
+       (apply-contract c v pos neg name loc #f))]
     [(_ c v pos neg)
      (with-syntax ([name (syntax-local-infer-name stx)])
-      (syntax/loc stx
-        (apply-contract c v pos neg 'name
-                        (build-source-location #f)
-                        #t)))]
-    [(_ c v pos neg #:no-context)
-     (with-syntax ([name (syntax-local-infer-name stx)])
-      (syntax/loc stx
-        (apply-contract c v pos neg 'name
-                        (build-source-location #f)
-                        #f)))]))
+       (syntax/loc stx
+         (apply-contract c v pos neg 'name
+                         (build-source-location #f)
+                         #f)))]))
 
-(define (apply-contract c v pos neg name loc track-context?)
+(define (apply-contract c v pos neg name loc context-limit)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (define clnp (contract-late-neg-projection c))
@@ -75,7 +86,7 @@
                   
                   (if clnp #f neg)
                   #t
-                  #:track-context? track-context?))
+                  #:context-limit context-limit))
     (cond
       [clnp (with-contract-continuation-mark
              (cons blame neg)
