@@ -240,7 +240,7 @@ Types for the @cpp{IUnknown} @tech{COM interface}.}
 @defproc[(windows-error [msg string?] [hresult exact-integer?])
          any]{
 
-Raises an exception. The @racket[msg] strign provides the base error
+Raises an exception. The @racket[msg] string provides the base error
 message, but @racket[hresult] and its human-readable interpretation
 (if available) are added to the message.}
 
