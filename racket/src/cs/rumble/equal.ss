@@ -129,7 +129,7 @@
 
 (define/who (equal?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
-  (do-equal? a b (lambda (x) #f) eql?))
+  (do-equal? a b 'equal?/recur eql?))
 
 ;; ----------------------------------------
 
