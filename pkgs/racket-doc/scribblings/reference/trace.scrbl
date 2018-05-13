@@ -5,6 +5,10 @@
         (ev '(require racket/trace))
         (ev '(require (for-syntax racket/base))))
 
+@(begin (define ev1 (make-base-eval))
+        (ev1 '(require racket/trace))
+        (ev1 '(require (for-syntax racket/base))))
+
 @title{Tracing}
 
 @note-lib-only[racket/trace]
@@ -47,6 +51,26 @@ The result of a @racket[trace] expression is @|void-const|.
 (f 10)
 ]
 
+@racket[trace] can also be used to debug @tech{syntax transformers}.
+This is verbose to do directly with @racket[trace]; refer to @racket[trace-define-syntax] for a
+simpler way to do this.
+
+@examples[#:eval ev
+(require (for-syntax racket/trace))
+(begin-for-syntax
+  (define _let
+    (syntax-rules ()
+      [(_ ([x v]) e) ((lambda (x) e) v)]))
+  (trace _let))
+(define-syntax let _let)
+
+(let ([x 120]) x)
+]
+
+When tracing syntax transformers, it may be helpful to modify @racket[current-trace-print-args] and
+@racket[current-trace-print-result] to make the trace output more readable; see
+@racket[current-trace-print-args] for an extended example.
+
 }
 
 @defform*[((trace-define id expr)
@@ -69,7 +93,7 @@ function then tracing it. This form supports all @racket[define] forms.
            (trace-define-syntax (head args) body ...+))]{
 
 The @racket[trace-define-syntax] form is short-hand for first defining a
-macro then tracing it. This form supports all @racket[define-syntax] forms.
+syntax transformer then tracing it. This form supports all @racket[define-syntax] forms.
 
 For example:
 
@@ -81,25 +105,11 @@ For example:
 ]
 
 By default, @racket[trace] prints out syntax objects when tracing a
-macro. This can result in too much output if you do not need to see,
-e.g., source information. To get more readable output, try this:
-
-@examples[#:eval ev
-  (require (for-syntax racket/trace))
-  (begin-for-syntax
-    (current-trace-print-args
-      (let ([ctpa (current-trace-print-args)])
-        (lambda (s l kw l2 n)
-          (ctpa s (map syntax->datum l) kw l2 n))))
-    (current-trace-print-results
-      (let ([ctpr (current-trace-print-results)])
-        (lambda (s l n)
-         (ctpr s (map syntax->datum l) n)))))
-
-  (trace-define-syntax fact
-  (syntax-rules ()
-    [(_ x) #'120]))
-  (fact 5)]}
+syntax transformer. This can result in too much output if you do not need to see,
+e.g., source information.
+To get more readable output by printing syntax objects as datums, we can modify the
+@racket[current-trace-print-args] and @racket[current-trace-print-results].
+See those @racket[current-trace-print-args] for an example.
 
 @defform[(trace-lambda [#:name id] args expr)]{
 
@@ -164,6 +174,104 @@ The value of this parameter is invoked to print out the arguments of a
 traced call. It receives the name of the function, the function's
 ordinary arguments, its keywords, the values of the keywords, and a
 number indicating the depth of the call.
+
+Modifying this is useful to get more readable or additional output when tracing syntax transformers.
+For example, we may only care about the shape of the syntax object and not the source location
+information.
+By modifying @racket[current-trace-print-args], we can print the argument to (and, using
+@racket[current-trace-print-result], the result of) the syntax transformer as a datum using
+@racket[syntax->datum], as follows.
+
+@examples[#:eval ev
+  (require (for-syntax racket/trace))
+  (begin-for-syntax
+    (current-trace-print-args
+      (let ([ctpa (current-trace-print-args)])
+        (lambda (s l kw l2 n)
+          (ctpa s (map syntax->datum l) kw l2 n))))
+    (current-trace-print-results
+      (let ([ctpr (current-trace-print-results)])
+        (lambda (s r n)
+         (ctpr s (map syntax->datum r) n)))))
+
+  (trace-define-syntax fact
+    (syntax-rules ()
+      [(_ x) 120]))
+  (fact 5)]
+
+In this example, we update the printers by storing the current printers, @racket[ctpa] and
+@racket[ctpr], which we call after converting the arguments @racket[l] and results @racket[r] to
+datum.
+
+Note that this modification of @racket[current-trace-print-args] and
+@racket[current-trace-print-result] is an imperative update, and will affect all traced identifiers.
+This example assumes all arguments and results to @emph{all traced functions} will be syntax objects,
+which is the case only if you are only tracing syntax transformers.
+If used as-is, the above code could result in type errors when tracing both functions and syntax transformers.
+It would be better to use @racket[syntax->datum] only when the argument or result is actually a syntax
+object, for example, by defining @racket[maybe-syntax->datum] as follows.
+
+@examples[#:eval ev1
+  (require (for-syntax racket/trace))
+  (begin-for-syntax
+    (define (maybe-syntax->datum syn?)
+      (if (syntax? syn?)
+          (syntax->datum syn?)
+          syn?))
+    (current-trace-print-args
+      (let ([ctpa (current-trace-print-args)])
+        (lambda (s l kw l2 n)
+          (ctpa s (map maybe-syntax->datum l) kw l2 n))))
+    (current-trace-print-results
+      (let ([ctpr (current-trace-print-results)])
+        (lambda (s l n)
+         (ctpr s (map maybe-syntax->datum l) n))))
+
+  (trace-define (precompute-fact syn n) (datum->syntax syn (apply * (build-list n add1)))))
+  (trace-define (run-time-fact n) (apply * (build-list n add1)))
+
+  (require (for-syntax syntax/parse))
+  (trace-define-syntax (fact syn)
+    (syntax-parse syn
+      [(_ x:nat) (precompute-fact syn (syntax->datum #'x))]
+      [(_ x) #'(run-time-fact x)]))
+  (fact 5)
+  (fact (+ 2 3))]}
+
+Finally, you can modify these parameters to print additional information about syntax objects.
+For example, we can use @racketmodname[debug-scopes] to trace how scopes change through syntax
+transformers.
+
+@; manually typeset to avoid depending on debug-scopes
+@examples[
+  (eval:alts (require (for-syntax racket/trace debug-scopes)) (void))
+  (eval:alts
+    (begin-for-syntax
+      (define (maybe-syntax->scoped syn?)
+        (if (syntax? syn?)
+            (+scopes syn?)
+            syn?))
+      (current-trace-print-args
+        (let ([ctpa (current-trace-print-args)])
+          (lambda (s l kw l2 n)
+            (ctpa s (map maybe-syntax->scoped l) kw l2 n))))
+      (current-trace-print-results
+        (let ([ctpr (current-trace-print-results)])
+          (lambda (s l n)
+           (ctpr s (map maybe-syntax->scoped l) n)))))
+    (void))
+  (eval:alts
+    (trace-define-syntax let
+      (syntax-rules ()
+        [(_ ([x v]) e) ((lambda (x) e) v)]))
+    (void))
+  (eval:alts (let ([x 5]) (let ([y 120]) y))
+    (eval:result
+    "120"
+    ">(let \"(let⁰˙˙³ ((x⁰˙˙³ 5)) (let⁰˙˙³ ((y⁰˙˙³ 120)) y⁰˙˙³))ˢˡⁱ⁼²⁺ᵘˢᵉ⁼³\")
+<\"((lambda⁰˙˙¹ (x⁰˙˙³) (let⁰˙˙³ ((y⁰˙˙³ 120)) y⁰˙˙³)) 5)ˢˡⁱ⁼²⁺ᵘˢᵉ⁼³\"
+>(let \"(let⁰˙˙⁶⁻² ((y⁰˙˙⁶⁻² 120)) y⁰˙˙⁶⁻²)ˢˡⁱ⁼⁶⁺ᵘˢᵉ⁼\")
+<\"((lambda⁰˙˙¹ (y⁰˙˙⁶⁻²) y⁰˙˙⁶⁻²) 120)ˢˡⁱ⁼⁶⁺ᵘˢᵉ⁼\""))]
 
 }
 
