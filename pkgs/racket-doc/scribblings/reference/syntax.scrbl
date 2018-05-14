@@ -2866,7 +2866,7 @@ other way than as @racket[(#,unquote-id _expr)] or
 (eval:alts (#,(racket quasiquote) (0 1 2)) `(0 1 2))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-id (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
-(eval:error (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1) 4)) `(0 ,@1 4)))
+(eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1) 4)) (eval:error `(0 ,@1 4)))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1))) `(0 ,@1))
 ]
 
