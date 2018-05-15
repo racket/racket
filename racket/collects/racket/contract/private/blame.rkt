@@ -39,10 +39,15 @@
 (define (combine-them x y)
   (bitwise-xor x (* 3 y)))
 
-(define (blame-hash b hash/recur)
+(define (blame-hash/combine b hash/recur combine-them)
   (combine-them (hash/recur (blame-no-swap? b))
                 (combine-them (hash/recur (blame-context-frame b))
                               (hash/recur (blame-and-more b)))))
+
+(define (blame-hash b hash/recur)
+  (blame-hash/combine b hash/recur (λ (x y) (bitwise-xor x (* 3 y)))))
+(define (blame-secondary-hash b hash/recur)
+  (blame-hash/combine b hash/recur (λ (x y) (bitwise-xor (* 5 x) y))))
 
 ;; missing-party? field is #t when the missing party
 ;; is still missing and it is #f when the missing party
@@ -50,21 +55,21 @@
 (define-struct all-the-info
   [positive
    negative
-   source value build-name top-known? important missing-party? context-limit extra-fields]
+   source value build-name important missing-party? context-limit extra-fields]
   #:transparent)
 
 ;; and-more : (or/c blame-no-swap? blame-swap? all-the-info?)
 ;; context : string?
 (define-struct blame (context-frame and-more)
   #:property prop:equal+hash
-  (list blame=? blame-hash blame-hash))
+  (list blame=? blame-hash blame-secondary-hash))
 
 (define-struct (blame-no-swap blame) ()
   #:property prop:equal+hash
-  (list blame=? blame-hash blame-hash))
+  (list blame=? blame-hash blame-secondary-hash))
 (define-struct (blame-yes-swap blame) ()
   #:property prop:equal+hash
-  (list blame=? blame-hash blame-hash))
+  (list blame=? blame-hash blame-secondary-hash))
 
 (define (blame->all-the-info b)
   (let loop ([b b])
@@ -73,7 +78,6 @@
       [else b])))
 (define (blame-source b) (all-the-info-source (blame->all-the-info b)))
 (define (blame-value b) (all-the-info-value (blame->all-the-info b)))
-(define (blame-top-known? b) (all-the-info-top-known? (blame->all-the-info b)))
 (define (blame-important b) (all-the-info-important (blame->all-the-info b)))
 (define (blame-missing-party? b) (all-the-info-missing-party? (blame->all-the-info b)))
 (define (blame-contract b) ((all-the-info-build-name (blame->all-the-info b))))
@@ -146,7 +150,6 @@
               source
               value
               build/memo-name
-              #t
               #f
               (not negative)
               context-limit
@@ -155,11 +158,10 @@
            ;; so be careful in other parts of the code to ignore
            ;; it, as appropriate.
            (if original?
-               (blame-no-swap/intern #f all-the-info)
-               (blame-yes-swap/intern #f all-the-info)))])
+               (blame-no-swap #f all-the-info)
+               (blame-yes-swap #f all-the-info)))])
     make-blame))
 
-(define seen '())
 (define (blame-add-context b s #:important [name #f] #:swap? [swap? #f])
   (unless (blame? b)
     (raise-argument-error 'blame-add-context
@@ -172,20 +174,15 @@
                           (format "~s" '(or/c string? #f))
                           1
                           b s))
-  (do-blame-add-context b s name swap?))
+  (cond
+    [(string? s)
+     (do-blame-add-context b s name swap?)]
+    [else b]))
 
-(define (blame-add-unknown-context b)
-  (do-blame-add-context b #f #f #f))
-
-(define (make-blame-yes/no-swap/intern blame-yes/no-swap)
-  (define ht (make-hash))
-  (define (blame-yes/no-swap/intern s b)
-    (define b-table (hash-ref! ht s make-hash))
-    (hash-ref! b-table b (λ () (blame-yes/no-swap s b))))
-  blame-yes/no-swap/intern)
-
-(define blame-no-swap/intern (make-blame-yes/no-swap/intern blame-no-swap))
-(define blame-yes-swap/intern (make-blame-yes/no-swap/intern blame-yes-swap))
+;; this has become a no op. it seems to never have been
+;; documented. probably exported because of the Great
+;; Extra Export ScrewUp that happened years back
+(define (blame-add-unknown-context b) b)
 
 (define (do-blame-add-context b s name swap?)
   (define context-limit (blame-context-limit b))
@@ -194,52 +191,45 @@
           ;; if we are not tracking context,
           ;; we are not updating the name
           ;; at the top of the messages either
-          ; (not name)
-          (blame-top-known? b))
+          ;(not name)
+          )
      (cond
-       [(and s (not (zero? context-limit)))
+       [(not (zero? context-limit))
         ;; if the limit is zero, we skip this case,
         ;; which has the effect of always keeping only
         ;; the dummy context frame
         (define-values (limited-b dropped-swap?) (drop-to-limit b context-limit))
         (if (equal? dropped-swap? swap?)
-            (blame-no-swap/intern s limited-b)
-            (blame-yes-swap/intern s limited-b))]
+            (blame-no-swap s limited-b)
+            (blame-yes-swap s limited-b))]
        [swap?
         (if (blame-yes-swap? b)
-            (blame-no-swap/intern (blame-context-frame b) (blame-and-more b))
-            (blame-yes-swap/intern (blame-context-frame b) (blame-and-more b)))]
+            (blame-no-swap (blame-context-frame b) (blame-and-more b))
+            (blame-yes-swap (blame-context-frame b) (blame-and-more b)))]
        [else b])]
     [else
-     (define blame-yes/no-swap (if swap? blame-yes-swap/intern blame-no-swap/intern))
+     (define blame-yes/no-swap (if swap? blame-yes-swap blame-no-swap))
      (define inside-part
-       (let/ec k
-         (let loop ([inner-b b])
-           (cond
-             [(blame-yes-swap? inner-b)
-              (blame-yes-swap/intern (blame-context-frame inner-b) (loop (blame-and-more inner-b)))]
-             [(blame-no-swap? inner-b)
-              (blame-no-swap/intern (blame-context-frame inner-b) (loop (blame-and-more inner-b)))]
-             [else
-              (define top-known? (all-the-info-top-known? inner-b))
-              (cond
-                [(or (equal? top-known? (string? s))
-                     name)
-                 (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
-                 ;; in this case, we need to make a new blame record
-                 (struct-copy
-                  all-the-info inner-b
-                  [important (if name
-                                 (important name new-original?)
-                                 (all-the-info-important inner-b))]
-                  [top-known? (string? s)])]
-                [else
-                 ;; we can skip all that pending work
-                 ;; of making a copy in this case
-                 (k b)])]))))
+       (cond
+         [name
+          (let loop ([inner-b b])
+            (cond
+              [(blame-yes-swap? inner-b)
+               (blame-yes-swap (blame-context-frame inner-b) (loop (blame-and-more inner-b)))]
+              [(blame-no-swap? inner-b)
+               (blame-no-swap (blame-context-frame inner-b) (loop (blame-and-more inner-b)))]
+              [else
+               (define new-original? (if swap? (not (blame-original? b)) (blame-original? b)))
+               ;; in this case, we need to make a new blame record
+               (struct-copy
+                all-the-info inner-b
+                [important (if name
+                               (important name new-original?)
+                               (all-the-info-important inner-b))])]))]
+         [else b]))
      (if swap?
-         (blame-yes-swap/intern s inside-part)
-         (blame-no-swap/intern s inside-part))]))
+         (blame-yes-swap s inside-part)
+         (blame-no-swap s inside-part))]))
 
 (define (drop-to-limit b context-limit)
   (define short-enough?
@@ -269,10 +259,10 @@
                  (set! swapped? swap?)
                  b]))]
            [(blame-no-swap? b)
-            (blame-no-swap/intern (blame-context-frame b)
+            (blame-no-swap (blame-context-frame b)
                                   (loop (blame-and-more b) (- n 1)))]
            [(blame-yes-swap? b)
-            (blame-yes-swap/intern (blame-context-frame b)
+            (blame-yes-swap (blame-context-frame b)
                                    (loop (blame-and-more b) (- n 1)))])))
      (values limited-b swapped?)]))
   
@@ -281,9 +271,9 @@
 (define (blame-swap b)
   (cond
     [(blame-yes-swap? b)
-     (blame-no-swap/intern (blame-context-frame b) (blame-and-more b))]
+     (blame-no-swap (blame-context-frame b) (blame-and-more b))]
     [(blame-no-swap? b)
-     (blame-yes-swap/intern (blame-context-frame b) (blame-and-more b))]))
+     (blame-yes-swap (blame-context-frame b) (blame-and-more b))]))
 
 (define (blame-replace-negative b new-neg)
   (update-the-info
@@ -331,9 +321,9 @@
              [swap? #f])
     (cond
       [(blame-yes-swap? b)
-       (blame-yes-swap/intern (blame-context-frame b) (loop (blame-and-more b) (not swap?)))]
+       (blame-yes-swap (blame-context-frame b) (loop (blame-and-more b) (not swap?)))]
       [(blame-no-swap? b)
-       (blame-no-swap/intern (blame-context-frame b) (loop (blame-and-more b) swap?))]
+       (blame-no-swap (blame-context-frame b) (loop (blame-and-more b) swap?))]
       [else (f b swap?)])))
 
 (define (ensure-blame-known who blame)

@@ -170,6 +170,7 @@
     #`(#,maker '#,stx
                (λ () #,arg)
                '#,(syntax-local-infer-name stx)
+               'recursive-contract-val->lnp-not-yet-initialized
                #,(if list-contract? #'#t #'#f)
                #,@(if (equal? (syntax-e type) '#:flat)
                       (list (if extra-delay? #'#t #'#f))
@@ -207,6 +208,7 @@
        (unless (list-contract? forced-ctc)
          (raise-argument-error 'recursive-contract "list-contract?" forced-ctc)))
      (set-recursive-contract-ctc! ctc forced-ctc)
+     (set-recursive-contract-blame->val-np->val! ctc (make-blame->val-np->val ctc))
      (when (and (pair? old-name) (pair? (cdr old-name)))
        ;; this guard will be #f when we are forcing this contract
        ;; in a nested which (which can make the `cddr` below fail)
@@ -217,33 +219,48 @@
      forced-ctc]
     [else current]))
 
+(define (make-blame->val-np->val ctc)
+  (define list-check? (recursive-contract-list-contract? ctc))
+  (define blame-accepting-func-cell (make-thread-cell #f))
+  (define (do-list-check val neg-party blame-known)
+    (when list-check?
+      (unless (list? val)
+        (raise-blame-error blame-known #:missing-party neg-party
+                           val
+                           '(expected: "list?" given: "~e")
+                           val))))
+  (λ (blame)
+    (cond
+      [(thread-cell-ref blame-accepting-func-cell)
+       =>
+       (λ (blame-accepting-func) (blame-accepting-func blame))]
+      [else
+       (define r-ctc (force-recursive-contract ctc))
+       (define f (get/build-late-neg-projection r-ctc))
+       (define val-neg-party-acceptor (make-thread-cell #f))
+       (λ (val neg-party)
+         (cond
+           [(thread-cell-ref val-neg-party-acceptor)
+            =>
+            (λ (f) (f val neg-party))]
+           [else
+            (thread-cell-set! blame-accepting-func-cell
+                              (λ (blame)
+                                (λ (val neg-party)
+                                  ((thread-cell-ref val-neg-party-acceptor) val neg-party))))
+            (do-list-check val neg-party blame)
+            (define f-of-blame 'f-of-blame-not-yet-set)
+            (thread-cell-set! val-neg-party-acceptor
+                              (λ (val neg-party)
+                                (do-list-check val neg-party blame)
+                                (f-of-blame val neg-party)))
+            (set! f-of-blame (f blame))
+            (f-of-blame val neg-party)]))])))
+
 (define (recursive-contract-late-neg-projection ctc)
-  (cond
-    [(recursive-contract-list-contract? ctc)
-     (λ (blame)
-       (define r-ctc (force-recursive-contract ctc))
-       (define f (get/build-late-neg-projection r-ctc))
-       (define blame-known (blame-add-context blame #f))
-       (define f-blame-known (make-thread-cell #f))
-       (λ (val neg-party)
-         (unless (list? val)
-           (raise-blame-error blame-known #:missing-party neg-party
-                              val
-                              '(expected: "list?" given: "~e")
-                              val))
-         (unless (thread-cell-ref f-blame-known)
-           (thread-cell-set! f-blame-known (f blame-known)))
-         ((thread-cell-ref f-blame-known) val neg-party)))]
-    [else
-     (λ (blame)
-       (define r-ctc (force-recursive-contract ctc))
-       (define f (get/build-late-neg-projection r-ctc))
-       (define blame-known (blame-add-context blame #f))
-       (define f-blame-known (make-thread-cell #f))
-       (λ (val neg-party)
-         (unless (thread-cell-ref f-blame-known)
-           (thread-cell-set! f-blame-known (f blame-known)))
-         ((thread-cell-ref f-blame-known) val neg-party)))]))
+  (λ (blame)
+    (force-recursive-contract ctc)
+    ((recursive-contract-blame->val-np->val ctc) blame)))
 
 (define (flat-recursive-contract-late-neg-projection ctc)
   (cond
@@ -287,7 +304,11 @@
        (force-recursive-contract ctc)
        (contract-random-generate/choose (recursive-contract-ctc ctc) (- fuel 1))])))
 
-(struct recursive-contract ([name #:mutable] [thunk #:mutable] [ctc #:mutable] list-contract?)
+(struct recursive-contract ([name #:mutable]
+                            thunk
+                            [ctc #:mutable]
+                            [blame->val-np->val #:mutable]
+                            list-contract?)
   #:property prop:recursive-contract (λ (this)
                                        (force-recursive-contract this)
                                        (recursive-contract-ctc this)))

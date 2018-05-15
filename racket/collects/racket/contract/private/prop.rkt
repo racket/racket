@@ -364,12 +364,6 @@
                    'anonymous-flat-contract 'build-flat-contract-property #t #t)
    'build-flat-contract-property))
 
-(define (blame-context-projection-wrapper proj)
-  (λ (ctc)
-    (define c-proj (proj ctc))
-    (λ (blame)
-      (c-proj (blame-add-unknown-context blame)))))
-
 (define build-chaperone-contract-property
   (procedure-rename
    (build-property (compose make-chaperone-contract-property make-contract-property)

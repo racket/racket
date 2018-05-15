@@ -86,6 +86,15 @@
       (contract ctc (cons 1 (cons 2 'not-a-number)) 'pos 'neg)))
 
   (test/spec-passed/result
+   'recursive-contract14
+   '(let ()
+      (define c (recursive-contract (or/c integer? (cons/c c integer?))))
+      (void (contract (-> c any/c) void 'p 'n))
+      ((contract (-> c any/c) values 'p 'n) '(1 . 2)))
+   '(1 . 2))
+
+  
+  (test/spec-passed/result
    'memoize-applied-blame
    '(let ()
       (define counter 0)

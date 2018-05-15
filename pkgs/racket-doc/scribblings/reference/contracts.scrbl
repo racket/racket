@@ -2526,13 +2526,13 @@ The @racket[swap?] argument has the effect of calling @racket[blame-swap]
 while adding the layer of context, but without creating an extra
 @|blame-object|.
 
-The context information recorded in blame structs keeps track of
-combinators that do not add information, and add the string @racket["..."]
-for them, so programmers at least see that there was some context
-they are missing in the error messages. Accordingly, since there are
-combinators that should not add any context (e.g., @racket[recursive-contract]),
-passing @racket[#f] as the context string argument avoids adding the
-@racket["..."] string.
+
+Passing @racket[#f] as the context string argument is no longer relevant.
+For backwards compatibility, @racket[blame-add-context] returns @racket[b]
+when @racket[context] is @racket[#f].
+
+@history[#:changed "6.90.0.29" @elem{The @racket[context] argument being
+           @racket[#f] is no longer relevant.}]
 }
 
 @defproc[(blame-context [blame blame?]) (listof string?)]{
