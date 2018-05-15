@@ -439,7 +439,7 @@ application itself need not be installed on the client machine.
 
 There are a number of configuration issues relating to DCOM. See
 
-@centerline{@link["http://www.distribucon.com/dcom95.aspx"]{http://www.distribucon.com/dcom95.html}}
+@centerline{@link["https://web.archive.org/web/20061013184653/www.distribucon.com/dcom95.html"]{http://www.distribucon.com/dcom95.html}}
 
 for more information on how to setup client and server machines for DCOM.
 
