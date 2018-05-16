@@ -406,6 +406,9 @@ Conventions:
           (options-select-value chunks '#:context #:default #'x))
         (define colon-notation?
           (not (assq '#:disable-colon-notation chunks)))
+        (define track-literals?
+          (or (assq '#:track-literals chunks)
+              (eq? (syntax-e #'body-mode) 'one-template)))
         (define-values (decls0 defs)
           (get-decls+defs chunks #t #:context #'ctx))
         ;; for-clause : stx -> (values pattern stx (listof stx))
@@ -427,13 +430,16 @@ Conventions:
                            [_ (raise-syntax-error #f "expected exactly one template" #'ctx)]))
                         ((body-sequence)
                          (syntax-case rest ()
-                           [(e0 e ...) #'(let () e0 e ...)]
+                           [(e0 e ...)
+                            #'(let () e0 e ...)]
                            [_ (raise-syntax-error #f "expected non-empty clause body"
                                                   #'ctx clause)]))
                         (else
                          (raise-syntax-error #f "internal error: unknown body mode" #'ctx #'body-mode)))])
                  (values pattern body-expr defs2)))]
             [_ (raise-syntax-error #f "expected clause" #'ctx clause)]))
+        (define (wrap-track-literals stx)
+          (if track-literals? (quasisyntax/loc stx (track-literals '#,who #,stx)) stx))
         (unless (stx-list? clauses-stx)
           (raise-syntax-error #f "expected sequence of clauses" #'ctx))
         (define-values (patterns body-exprs defs2s)
@@ -451,25 +457,26 @@ Conventions:
               (parameterize ((current-syntax-context (cadr ctx0))
                              (current-state '#hasheq())
                              (current-state-writable? #f))
-                (with ([fail-handler fh0]
-                       [cut-prompt fh0]
-                       [undo-stack null])
-                  #,(cond [(pair? patterns)
-                           (with-syntax ([matrix
-                                          (optimize-matrix
-                                           (for/list ([pattern (in-list patterns)]
-                                                      [body-expr (in-list body-exprs)])
-                                             (pk1 (list pattern) body-expr)))])
-                             #'(parse:matrix ((x cx pr es)) matrix))
-                           #|
-                           (with-syntax ([(alternative ...)
-                                          (for/list ([pattern (in-list patterns)]
-                                                     [body-expr (in-list body-exprs)])
-                                            #`(parse:S x cx #,pattern pr es #,body-expr))])
-                             #`(try alternative ...))
-                           |#]
-                          [else
-                           #`(fail (failure* pr es))]))))))))]))
+                #,(wrap-track-literals
+                 #`(with ([fail-handler fh0]
+                          [cut-prompt fh0]
+                          [undo-stack null])
+                     #,(cond [(pair? patterns)
+                              (with-syntax ([matrix
+                                             (optimize-matrix
+                                              (for/list ([pattern (in-list patterns)]
+                                                         [body-expr (in-list body-exprs)])
+                                                (pk1 (list pattern) body-expr)))])
+                                #'(parse:matrix ((x cx pr es)) matrix))
+                              #|
+                              (with-syntax ([(alternative ...)
+                                             (for/list ([pattern (in-list patterns)]
+                                                        [body-expr (in-list body-exprs)])
+                                               #`(parse:S x cx #,pattern pr es #,body-expr))])
+                                #`(try alternative ...))
+                              |#]
+                             [else
+                              #`(fail (failure* pr es))])))))))))]))
 
 ;; ----
 

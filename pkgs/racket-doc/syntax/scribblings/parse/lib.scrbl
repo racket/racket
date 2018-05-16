@@ -73,7 +73,15 @@ When used outside of the dynamic extent of a macro transformer (see
 @racket[syntax-transforming?]), matching fails.
 
 The attribute @var[value] contains the value the name is bound to.
-}
+
+If matching succeeds, @racket[static] additionally adds the matched identifier
+to the current @racket[syntax-parse] state under the key @racket['literals]
+using @racket[syntax-parse-state-cons!], in the same way as identifiers matched
+using @racket[#:literals] or @racket[~literal].
+
+@history[#:changed "6.90.0.29"
+         @elem{Changed to add matched identifiers to the @racket[syntax-parse]
+               state under the key @racket['literals].}]}
 
 @defstxclass[(expr/c [contract-expr syntax?]
                      [#:positive pos-blame

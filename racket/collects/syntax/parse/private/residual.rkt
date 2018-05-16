@@ -253,7 +253,8 @@
          maybe-add-state-undo
          current-state
          current-state-writable?
-         state-cons!)
+         state-cons!
+         track-literals)
 
 (define (unwind-to undos base)
   ;; PRE: undos = (list* proc/hash ... base)
@@ -279,3 +280,21 @@
 (define (state-cons! key value)
   (define state (current-state))
   (current-state (hash-set state key (cons value (hash-ref state key null)))))
+
+(define (track-literals who v #:introduce? [introduce? #t])
+  (unless (syntax? v)
+    (raise-argument-error who "syntax?" v))
+  (let* ([literals (hash-ref (current-state) 'literals '())])
+    (if (null? literals)
+        v
+        (let ([literals* (if (and introduce? (syntax-transforming?) (list? literals))
+                             (for/list ([literal (in-list literals)])
+                               (if (identifier? literal)
+                                   (syntax-local-introduce literal)
+                                   literal))
+                             literals)]
+              [old-val (syntax-property v 'disappeared-use)])
+          (syntax-property v 'disappeared-use
+                           (if old-val
+                               (cons literals* old-val)
+                               literals*))))))

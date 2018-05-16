@@ -571,6 +571,27 @@
           [(_      lambda) (syntax-parse-state-ref 'literals null)]))
    '(lambda)))
 
+(test-case "track disappeared uses (implicit)"
+  (check-equal?
+   (map syntax-e
+        (syntax-property (syntax-parse #'(define lambda)
+                           #:literals (define lambda)
+                           #:track-literals
+                           [(define define) #'#f]
+                           [(_      lambda) #'#f])
+                         'disappeared-use))
+   '(lambda)))
+
+(test-case "track disappeared uses (explicit)"
+  (check-equal?
+   (map syntax-e
+        (syntax-property (syntax-parse #'(define lambda)
+                           #:literals (define lambda)
+                           [(define define) (syntax-parse-track-literals #'#f)]
+                           [(_      lambda) (syntax-parse-track-literals #'#f)])
+                         'disappeared-use))
+   '(lambda)))
+
 ;; == Lib tests
 
 ;; test string, bytes act as stxclasses

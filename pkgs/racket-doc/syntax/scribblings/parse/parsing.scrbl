@@ -3,6 +3,7 @@
           scribble/struct
           scribble/decode
           scribble/eval
+          "../common.rkt"
           "parse-common.rkt"
           (for-label racket/syntax))
 
@@ -28,6 +29,7 @@ Two parsing forms are provided: @racket[syntax-parse] and
                         (code:line #:literals (literal ...))
                         (code:line #:datum-literals (datum-literal ...))
                         (code:line #:literal-sets (literal-set ...))
+                        #:track-literals
                         (code:line #:conventions (convention-id ...))
                         (code:line #:local-conventions (convention-rule ...))
                         (code:line #:disable-colon-notation)]
@@ -156,6 +158,24 @@ If the @racket[#:at] keyword is given, the lexical context of the
 patterns are treated as literals; this option is useful primarily for
 macros that generate @racket[syntax-parse] expressions.
 }
+
+@specsubform[(code:line #:track-literals)]{
+
+If specified, each final @racket[body] expression is further constrained to
+produce a single value, which must be a @tech[#:doc refman]{syntax object}, and
+its @racket['disappeared-use] @tech[#:doc refman]{syntax property} is
+automatically extended to include literals matched as part of pattern-matching.
+Literals are automatically tracked from uses of @racket[#:literals],
+@racket[#:literal-sets], or @racket[~literal], but they can also be manually
+tracked using @racket[syntax-parse-state-cons!]. The property is added or
+extended in the same way as a property added by
+@racket[syntax-parse-track-literals].
+
+Due to the way the @racket[body] forms are wrapped, specifying this option means
+the final @racket[body] form will no longer be in tail position with respect to
+the enclosing @racket[syntax-parse] form.
+
+@history[#:added "6.90.0.29"]}
 
 @specsubform[(code:line #:conventions (conventions-id ...))]{
 

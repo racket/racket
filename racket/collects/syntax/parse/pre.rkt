@@ -12,7 +12,8 @@
          syntax-parse-state-ref
          syntax-parse-state-set!
          syntax-parse-state-update!
-         syntax-parse-state-cons!)
+         syntax-parse-state-cons!
+         syntax-parse-track-literals)
 
 (define not-given (gensym))
 
@@ -44,3 +45,6 @@
   (check-update 'syntax-parse-state-cons!)
   (define old (hash-ref (current-state) key default))
   (current-state (hash-set (current-state) key (cons value old))))
+
+(define (syntax-parse-track-literals stx #:introduce? [introduce? #t])
+  (track-literals 'syntax-parse-track-literals stx #:introduce? introduce?))

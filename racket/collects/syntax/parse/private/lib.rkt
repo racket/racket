@@ -1,6 +1,7 @@
 #lang racket/base
 (require "sc.rkt"
          "keywords.rkt"
+         (only-in "residual.rkt" state-cons!)
          (for-syntax syntax/parse/private/residual-ct)
          (for-syntax racket/base))
 
@@ -83,4 +84,5 @@
                          "not within the dynamic extent of a macro transformation"
            #:attr value (syntax-local-value #'x (lambda () notfound))
            #:fail-when (eq? (attribute value) notfound) #f
-           #:fail-unless (pred (attribute value)) #f))
+           #:fail-unless (pred (attribute value)) #f
+           #:do [(state-cons! 'literals #'x)]))

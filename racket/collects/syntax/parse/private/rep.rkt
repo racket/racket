@@ -1610,6 +1610,7 @@
 ;; parse-directive-table
 (define parse-directive-table
   (list* (list '#:context check-expression)
+         (list '#:track-literals)
          common-parse-directive-table))
 
 ;; rhs-directive-table
