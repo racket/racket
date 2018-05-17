@@ -1181,7 +1181,8 @@ Returns @racket[#t] if @racket[v] is a @tech{pattern expander},
 
 @defproc[(syntax-local-syntax-parse-pattern-introduce [stx syntax?]) syntax?]{
 
-Like @racket[syntax-local-introduce], but for @tech{pattern expanders}.
-}
+For backward compatibility only; equivalent to @racket[syntax-local-introduce].
+
+@history[#:changed "6.90.0.29" @elem{Made equivalent to @racket[syntax-local-introduce].}]}
 
 @(close-eval the-eval)

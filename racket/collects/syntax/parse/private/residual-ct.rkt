@@ -19,7 +19,6 @@
          prop:pattern-expander
          pattern-expander?
          pattern-expander-proc
-         current-syntax-parse-pattern-introducer
          syntax-local-syntax-parse-pattern-introduce)
 
 (define-logger syntax-parse)
@@ -94,10 +93,5 @@ An EH-alternative is
   (define get-proc (get-proc-getter pat-expander))
   (get-proc pat-expander))
 
-(define current-syntax-parse-pattern-introducer
-  (make-parameter
-   (lambda (stx)
-     (error 'syntax-local-syntax-parse-pattern-introduce "not expanding syntax-parse pattern"))))
-
 (define (syntax-local-syntax-parse-pattern-introduce stx)
-  ((current-syntax-parse-pattern-introducer) stx))
+  (syntax-local-introduce stx))
