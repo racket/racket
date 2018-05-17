@@ -841,5 +841,18 @@
               (set! foo 2)
               (check-equal? x 2))
 
+   (test-case
+    "match-expander with arity 2"
+    (define-syntax forty-two-pat
+      (let ()
+        (define-struct datum-pat (datum)
+          #:property prop:match-expander
+          (lambda (pat stx)
+            (datum->syntax #'here (datum-pat-datum pat) stx)))
+        (make-datum-pat 42)))
+    (check-equal? (match 42
+                    [(forty-two-pat) #t])
+                  #t))
+
 
 ))

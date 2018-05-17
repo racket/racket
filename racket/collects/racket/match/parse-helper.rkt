@@ -2,10 +2,9 @@
 
 (require (for-template racket/base)
          syntax/boundmap
+         syntax/apply-transformer
          racket/struct-info
-         ;macro-debugger/emit
-         "patterns.rkt"
-         "syntax-local-match-introduce.rkt")
+         "patterns.rkt")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match trans-match* parse-struct
@@ -170,20 +169,16 @@
                                   error-msg)
   (let* ([expander* (syntax-local-value expander)]
          [transformer (accessor expander*)]
-         ;; this transformer might have been defined w/ `syntax-id-rules'
-         [transformer (if (set!-transformer? transformer)
-                          (set!-transformer-procedure transformer)
-                          transformer)])
+         [transformer-proc (if (set!-transformer? transformer)
+                               (set!-transformer-procedure transformer)
+                               transformer)])
     (unless transformer (raise-syntax-error #f error-msg expander*))
-    (define introducer (make-syntax-introducer))
-    (parameterize ([current-match-introducer introducer])
-      (let* ([mstx (introducer (syntax-local-introduce stx))]
-             [mresult (if (procedure-arity-includes? transformer 2)
-                          (transformer expander* mstx)
-                          (transformer mstx))]
-             [result (syntax-local-introduce (introducer mresult))])
-        ;(emit-local-step stx result #:id expander)
-        (parse result)))))
+    (parse (local-apply-transformer
+            (λ (stx) (if (procedure-arity-includes? transformer-proc 2)
+                         (transformer-proc expander* stx)
+                         (transformer-proc stx)))
+            stx
+            'expression))))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)
