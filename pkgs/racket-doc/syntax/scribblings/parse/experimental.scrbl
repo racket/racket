@@ -306,8 +306,8 @@ Equivalent to @racket[~?] and @racket[~@], respectively.
            (define-template-metafunction (metafunction-id . formals) body ...+)]]{
 
 Defines @racket[metafunction-id] as a @deftech{template
-metafunction}. A metafunction application in a @racket[template]
-expression (but not a @racket[syntax] expression) is evaluated by
+metafunction}. A metafunction application in a @racket[syntax]
+or @racket[template] expression is evaluated by
 applying the metafunction to the result of processing the ``argument''
 part of the template.
 
