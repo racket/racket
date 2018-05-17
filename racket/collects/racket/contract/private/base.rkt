@@ -221,7 +221,7 @@
 
 (define (make-blame->val-np->val ctc)
   (define list-check? (recursive-contract-list-contract? ctc))
-  (define blame-accepting-func-cell (make-thread-cell #f))
+  (define blame-accepting-func-cell (make-thread-cell #f #t))
   (define (do-list-check val neg-party blame-known)
     (when list-check?
       (unless (list? val)
@@ -237,7 +237,7 @@
       [else
        (define r-ctc (force-recursive-contract ctc))
        (define f (get/build-late-neg-projection r-ctc))
-       (define val-neg-party-acceptor (make-thread-cell #f))
+       (define val-neg-party-acceptor (make-thread-cell #f #t))
        (λ (val neg-party)
          (cond
            [(thread-cell-ref val-neg-party-acceptor)
