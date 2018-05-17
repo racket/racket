@@ -21,11 +21,16 @@
 (define assume-primitives (make-parameter #t))
 (define worker-count (make-parameter 1))
 
+(define coll-paths (make-parameter null))
+
 (define mzc-symbol (string->symbol (short-program+command-name)))
 
-(define source-files
+(define source-file-paths
   (command-line
    #:program (short-program+command-name)
+   #:multi
+   [("-l") path "Compile <path> interpreted as a collection path"
+    (coll-paths (cons path (coll-paths)))]
    #:once-each
    [("-j") n "Compile with up to <n> tasks in parallel" 
     (let ([num (string->number n)])
@@ -48,7 +53,18 @@
    [("--vv") "Very verbose mode"
     (verbose #t)
     (very-verbose #t)]
-   #:args (file . another-file) (cons file another-file)))
+   #:args files
+   (when (and (null? files)
+              (null? (coll-paths)))
+     (raise-user-error (format "~a: expects at least one file path or collection path"
+                               (short-program+command-name))))
+   files))
+
+(define source-files
+  (append source-file-paths
+          (for/list ([lib-path (in-list (coll-paths))])
+            (resolved-module-path-name 
+             ((current-module-name-resolver) `(lib ,lib-path) #f #f #f)))))
 
 (cond 
   ;; Just compile one file:
@@ -79,12 +95,13 @@
                         (when (verbose)
                           (printf "  making ~s\n" p)))])
         (for ([file source-files])
+          (define file-name (if (string? file) file (path->string file)))
           (unless (file-exists? file)
-            (error mzc-symbol "file does not exist: ~a" file))
+            (error mzc-symbol "file does not exist: ~a" file-name))
           (set! did-one? #f)
           (let ([name (extract-base-filename/ss file mzc-symbol)])
             (when (verbose)
-              (printf "\"~a\":\n" file))
+              (printf "\"~a\":\n" file-name))
             (parameterize ([compile-context-preservation-enabled
                             (disable-inlining)]
                            [compile-enforce-module-constants
