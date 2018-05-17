@@ -11,3 +11,4 @@
 @include-section["path-spec.scrbl"]
 @include-section["template.scrbl"]
 @include-section["transformer.scrbl"]
+@include-section["apply-transformer.scrbl"]

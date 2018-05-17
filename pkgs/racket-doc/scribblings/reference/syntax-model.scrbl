@@ -578,8 +578,8 @@ a call of the @tech{syntax transformer} by the expander; see
 @secref["expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
-the @tech{syntax object} is extended with a fresh @tech{scope} (that
-applies to all sub-@tech{syntax objects}) to distinguish @tech{syntax objects}
+the @tech{syntax object} is extended with a fresh @deftech{macro-introduction scope}
+(that applies to all sub-@tech{syntax objects}) to distinguish @tech{syntax objects}
 at the macro's use site from @tech{syntax objects} that are introduced by the macro;
 in the result of the transformer the presence of the @tech{scope} is
 flipped, so that introduced @tech{syntax objects} retain the @tech{scope},
