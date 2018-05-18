@@ -463,6 +463,18 @@
   ;; decision on this)
   (test "" string-trim "ababa" "aba"))
 
+;test that mutable strings are not cached incorrectly
+(let ([str (string-copy "_1_")])
+  (test "x_2_" string-trim "_1_x_2_" str) ;add str to the internal cache
+  (string-set! str 1 #\2)
+  (test "_1_x" string-trim "_1_x_2_" str) ;verify that the new str is used
+)
+(let ([str (string-copy "_1_")])
+  (test "x x_2_x" string-normalize-spaces "x_1_x_2_x" str) ;add str to the internal cache
+  (string-set! str 1 #\2)
+  (test "x_1_x x" string-normalize-spaces "x_1_x_2_x" str) ;verify that the new str is used
+)
+
 ;; ---------- string-split ----------
 (let ()
   (for ([s (in-list '("x y z" " x y z "  "\nx y z" "  \t x\r\r\ry    z\n"))])
@@ -472,6 +484,13 @@
   (test '("x" "y" "z") string-split "axayaza" "a")
   (test '("" "x" "y" "z" "") string-split "axayaza" "a" #:trim? #f)
   (test '("foo" "bar" "baz") string-split "foo,bar;baz" #rx",|;"))
+
+;test that mutable strings are not cached incorrectly
+(let ([str (string-copy "_1_")])
+  (test '("x" "x_2_x") string-split "x_1_x_2_x" str) ;add str to the internal cache
+  (string-set! str 1 #\2)
+  (test '("x_1_x" "x") string-split "x_1_x_2_x" str) ;verify that the new str is used
+)
 
 ;; ---------- string-replace/* ----------
 (let ()

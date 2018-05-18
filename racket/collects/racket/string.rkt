@@ -29,14 +29,36 @@
                      #:after-last   [after-last none])
   (unless (and (list? strs) (andmap string? strs))
     (raise-argument-error 'string-join "(listof string?)" strs))
+  (unless (or (string? before-first) (eq? before-first none))
+    (raise-argument-error 'string-join "string?" before-first))
   (unless (string? sep)
     (raise-argument-error 'string-join "string?" sep))
+  (unless (or (string? after-last) (eq? after-last none))
+    (raise-argument-error 'string-join "string?" after-last))
   (let* ([r (if (or (null? strs) (null? (cdr strs)))
               strs
               (add-between strs sep #:before-last before-last))]
          [r (if (eq? after-last   none) r (append r (list after-last)))]
          [r (if (eq? before-first none) r (cons before-first r))])
     (apply string-append r)))
+
+;; Cache for string-replace and string-split and similar functions:
+;; A mutable string weakly holds a immutable copy until it is collected
+;; or modified (and used as a argument of string-replace, string-split, ...).
+;; The immutable copy weakly holds the regexp that is used in string-replace.
+;; Using string->immutable-string directly in string-replace is not a useful
+;; because the immutable copy could be immediately collected.
+ 
+(define immutable-cache (make-weak-hasheq))
+(define (string->immutable-string/cache str)
+  (if (immutable? str)
+    str
+    (let ([old (hash-ref immutable-cache str #f)])
+      (if (and old (string=? str old))
+        old
+        (let ([new (string->immutable-string str)])
+          (hash-set! immutable-cache str new)
+          new)))))    
 
 ;; Utility for the functions below: get a string or a regexp and return a list
 ;; of the regexp (strings are converted using `regexp-quote'), and versions
@@ -47,8 +69,11 @@
       (hash-set! t none spaces)
       (hash-set! t+ none spaces))
     (λ (who rx +?)
-      (hash-ref! (if +? t+ t) rx
-        (λ () (let* ([s (cond [(string? rx) (regexp-quote rx)]
+      (define rx* (if (string? rx)
+                     (string->immutable-string/cache rx)
+                     rx))
+      (hash-ref! (if +? t+ t) rx*
+        (λ () (let* ([s (cond [(string? rx) (regexp-quote rx*)]
                               [(regexp? rx) (string-append
                                              "(?:" (object-name rx) ")")]
                               [else (raise-argument-error
@@ -104,26 +129,7 @@
   (string-join (internal-split 'string-normalize-spaces str sep trim? +?)
                space))
 
-
-;; Caches for string-replace:
-;; A mutable string weakly holds a immutable copy until it is collected
-;; or modified (and used as a argument of string-replace).
-;; The immutable copy weakly holds the regexp that is used in string-replace.
-;; Using string->immutable-string directly in string-replace is not a useful
-;; because the immutable copy could be immediately collected.
- 
-(define immutable-cache (make-weak-hasheq))
-(define (string->immutable-string/cache str)
-  (if (immutable? str)
-    str
-    (let ([old (hash-ref immutable-cache str #f)])
-      (if (and old (string=? str old))
-        old
-        (let ([new (string->immutable-string str)])
-          (hash-set! immutable-cache str new)
-          new)))))    
-
-(define replace-cache (make-weak-hash))
+(define replace-cache (make-weak-hasheq))
 (define (string-replace str from to #:all? [all? #t])
   (unless (string? str) (raise-argument-error 'string-replace "string?" str))
   (unless (string? to)  (raise-argument-error 'string-replace "string?" to))
