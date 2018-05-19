@@ -45,6 +45,7 @@
 (define makefile-dependencies-file #f)
 (define extract-to-c? #f)
 (define extract-to-decompiled? #f)
+(define extract-to-bytecode? #f)
 (define instance-knot-ties (make-hasheq))
 (define primitive-table-directs (make-hasheq))
 (define side-effect-free-modules (make-hash))
@@ -104,6 +105,8 @@
     (set! extract-to-c? #t)]
    [("-D") "Print extracted bootstrap as a decompiled"
     (set! extract-to-decompiled? #t)]
+   [("-B") "Print extracted bootstrap as bytecode"
+    (set! extract-to-bytecode? #t)]
    #:multi
    [("++knot") sym path "Redirect imports from <sym> to flattened from <path>"
     (hash-update! instance-knot-ties
@@ -308,6 +311,7 @@
            #:print-extracted-to print-extracted-to
            #:as-c? extract-to-c?
            #:as-decompiled? extract-to-decompiled?
+           #:as-bytecode? extract-to-bytecode?
            #:instance-knot-ties instance-knot-ties
            #:primitive-table-directs primitive-table-directs
            #:side-effect-free-modules side-effect-free-modules))

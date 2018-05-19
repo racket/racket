@@ -75,6 +75,16 @@ Running:
    Expands and extracts <file-path> as a single linklet to
    <outfile-path>.
 
+ % racket bootstrap-run.rkt -c <dir> -sx -D -t <file-path> -o <outfile-path>
+
+   Expands and extracts <file-path> as a single linklet, compiles and
+   decompiles it, then writes the s-expression into <outfile-path>.
+
+ % racket bootstrap-run.rkt -c <dir> -sx -B -t <file-path> -o <outfile-path>
+
+   Expands and extracts <file-path> as a single linklet, compiles it
+   and then writes the bytecode into <outfile-path>.
+
  % racket bootstrap-run.rkt -c <dir> -O <checkout-dir>/racket
 
    Compiles the expander to source files in <dir> --- note that

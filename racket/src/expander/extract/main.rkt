@@ -25,6 +25,7 @@
                  #:print-extracted-to print-extracted-to
                  #:as-c? as-c?
                  #:as-decompiled? as-decompiled?
+                 #:as-bytecode? as-bytecode?
                  ;; Table of symbol -> (listof knot-spec),
                  ;; to redirect a remaining import back to
                  ;; an implementation that is defined in the
@@ -111,7 +112,7 @@
       (get-module-export-variables start-link
                                    #:compiled-modules compiled-modules
                                    #:cache cache))
-    
+
     ;; Generate the flattened linklet
     (define flattened-linklet-expr
       (flatten! start-link
@@ -124,7 +125,7 @@
     
     (define simplified-expr
       (simplify-definitions flattened-linklet-expr))
-    
+
     ;; Remove unreferenced definitions
     (define gced-linklet-expr
       (garbage-collect-definitions simplified-expr))
@@ -140,8 +141,8 @@
       (prune-names re-renamed-linklet-expr))
 
     (cond
-     [as-decompiled?
-      (compile-and-decompile pruned-linklet-expr print-extracted-to)]
+     [(or as-decompiled? as-bytecode?)
+      (compile-and-decompile pruned-linklet-expr print-extracted-to #:as-bytecode? as-bytecode?)]
      [else
       (save-and-report-flattened! pruned-linklet-expr print-extracted-to
                                   #:as-c? as-c?)])))
