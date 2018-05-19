@@ -83,7 +83,7 @@ Running:
  % racket bootstrap-run.rkt -c <dir> -sx -B -t <file-path> -o <outfile-path>
 
    Expands and extracts <file-path> as a single linklet, compiles it
-   and then writes the bytecodes into <outfile-path>.
+   and then writes the bytecode into <outfile-path>.
 
  % racket bootstrap-run.rkt -c <dir> -O <checkout-dir>/racket
 
