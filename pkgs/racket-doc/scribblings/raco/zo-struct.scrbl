@@ -416,13 +416,16 @@ binding, constructor, etc.}
   @racket[seq] is never in tail position, even if it is the only
   expression in the list.}
 
-@defstruct+[(varref expr) ([toplevel (or/c toplevel? #t)] 
+@defstruct+[(varref expr) ([toplevel (or/c toplevel? #t #f symbol?)] 
                            [dummy (or/c toplevel? #f)]
                            [constant? boolean?]
                            [from-unsafe? boolean?])]{
-  Represents a @racket[#%variable-reference] form. The @racket[toplevel]
-  field is @racket[#t] if the original reference was to a constant local
-  binding. The @racket[dummy] field
+  Represents a @racket[#%variable-reference] form. The
+  @racket[toplevel] field is @racket[#t] if the original reference was
+  to a constant local binding, @racket[#f] if the variable reference
+  is for @racket[(#%variable-reference)] and does not refer to a
+  specific variable, or a symbol if the variable reference refers to a
+  primitive variable. The @racket[dummy] field
   accesses a variable bucket that strongly references its namespace (as
   opposed to a normal variable bucket, which only weakly references its
   namespace); it can be @racket[#f].
