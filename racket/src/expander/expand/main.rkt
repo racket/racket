@@ -424,7 +424,7 @@
                    [current-namespace (namespace->namespace-at-phase
                                        (expand-context-namespace ctx)
                                        (add1 (expand-context-phase ctx)))]
-                   [current-module-code-inspector (or insp-of-t (current-module-code-inspector))])
+                   [current-module-code-inspector (or insp-of-t #;(current-module-code-inspector))])
       (call-with-continuation-barrier
        (lambda ()
          ;; Call the transformer!

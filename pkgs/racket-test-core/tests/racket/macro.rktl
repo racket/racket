@@ -2120,5 +2120,41 @@
 (test 42 dynamic-require ''parent-internal-definition-contexts-do-add-bindings 'result)
 
 ;; ----------------------------------------
+;; Make sure that changing the code expander disables syntax
+;; disarming when it should
+
+(parameterize ([current-namespace (make-base-namespace)]
+               [current-code-inspector (current-code-inspector)])
+
+  (eval
+   '(module disarm racket/base
+      (require (for-template racket/base))
+      (define (disarm s)
+        (unless (syntax-tainted? (car (syntax-e (syntax-disarm s #f))))
+          (error "disarm suceeded!"))
+        #''ok)
+      (provide disarm)))
+
+  (eval
+   '(module mapply racket/base
+      (require (for-syntax racket/base))
+      (provide mapply)
+      (define-syntax (mapply stx)
+        (syntax-case stx ()
+          [(_ m) #`(m #,(syntax-protect #'(x)))]))))
+
+  (current-code-inspector (make-inspector (current-code-inspector)))
+
+  (eval
+   '(module orig racket/base
+      (require (for-syntax racket/base
+                           'disarm)
+               'mapply)
+      (define-syntax (m stx)
+        (syntax-case stx ()
+          [(_ e) (disarm #'e)]))
+      (mapply m))))
+
+;; ----------------------------------------
 
 (report-errs)
