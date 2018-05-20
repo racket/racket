@@ -43,6 +43,8 @@ struct rktio_fd_t {
   char *buffer; /* shared with reading thread */
   int has_pending_byte; /* for text-mode input, may be dropped by a following lf */
   int pending_byte; /* for text-mode input, either a CR waiting to decode, or byte that didn't fit */
+  int leftover_len; /* for bytes that should be written, but that form a UTF-8 encoding prefix */
+  char leftover[6];
 #endif
 };
 
@@ -128,6 +130,11 @@ static intptr_t adjust_input_text_for_pending_cr(rktio_fd_t *rfd, char *buffer, 
 						 intptr_t got);
 static const char *adjust_output_text(const char *buffer, intptr_t *towrite);
 static intptr_t recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote);
+
+static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
+				     int *_can_leftover, int *_keep_leftover,
+				     int leftover_len, char *leftover);
+static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote);
 
 #endif
 
@@ -1021,15 +1028,18 @@ static void deinit_read_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
 {
   DWORD toget, got;
-  int perma_eof = 0;
+  int perma_eof = 0, ft, is_console = 0;
   HANDLE eof_wait = NULL;
 
-  if (GetFileType((HANDLE)th->fd) == FILE_TYPE_PIPE) {
+  ft = GetFileType((HANDLE)th->fd);
+    
+  if (ft == FILE_TYPE_PIPE) {
     /* Reading from a pipe will return early when data is available. */
     toget = RKTIO_FD_BUFFSIZE;
   } else {
     /* Non-pipe: get one char at a time: */
     toget = 1;
+    is_console = (ft == FILE_TYPE_CHAR);
   }
 
   while (!perma_eof && !th->err) {
@@ -1044,8 +1054,19 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
       /* Spurious wake-up? */
       ReleaseSemaphore(th->lock_sema, 1, NULL);
     } else {
+      int ok;
       ReleaseSemaphore(th->lock_sema, 1, NULL);
-      if (ReadFile(th->fd, th->buffer, toget, &got, NULL)) {
+      if (!is_console)
+	ok = ReadFile(th->fd, th->buffer, toget, &got, NULL);
+      else {
+#       define CONSOLE_BUFFER_IN_SIZE 16
+	wchar_t w_buffer[CONSOLE_BUFFER_IN_SIZE];
+	ok = ReadConsoleW(th->fd, w_buffer, CONSOLE_BUFFER_IN_SIZE, &got, NULL);
+	if (ok) {
+	  got = WideCharToMultiByte(CP_UTF8, 0, w_buffer, got, th->buffer, RKTIO_FD_BUFFSIZE, NULL, 0);
+	}
+      }
+      if (ok) {
 	WaitForSingleObject(th->lock_sema, INFINITE);
 	th->avail = got;
 	th->offset = 0;
@@ -1172,19 +1193,42 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
     /* If we try to write too much at once, the result
        is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
-    int ok;
+    int ok, to_console, can_leftover = 0, keep_leftover = 0;
     intptr_t towrite = len;
     const char *orig_buffer = buffer;
+    wchar_t *w_buffer = NULL;
+    DWORD max_winwrote;
     int err;
 
     if (rfd->modes & RKTIO_OPEN_TEXT)
       buffer = adjust_output_text(buffer, &towrite);
+
+    max_winwrote = towrite;
+  
+    to_console = rktio_fd_is_terminal(rktio, rfd);
+    if (to_console) {
+      /* Decode UTF-8 and write a chunk on a character boundary. */
+      w_buffer = convert_output_wtext(buffer, &towrite,
+				      &can_leftover, &keep_leftover,
+				      rfd->leftover_len, rfd->leftover);
+    }
     
     while (1) {
-      ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
+      if (!to_console)
+	ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
+      else {
+	if (towrite)
+	  ok = WriteConsoleW((HANDLE)rfd->fd, w_buffer, towrite, &winwrote, NULL);
+	else {
+	  /* can happend if can_leftover is > 0 */
+	  ok = 1;
+	  winwrote = 0;
+	}
+      }
+
       if (!ok)
         err = GetLastError();
-	    
+
       if (!ok && (err == ERROR_NOT_ENOUGH_MEMORY)) {
         towrite = towrite >> 1;
         if (towrite && (buffer != orig_buffer)) {
@@ -1203,6 +1247,27 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
       if (buffer != orig_buffer)
 	free((char *)buffer);
       return RKTIO_WRITE_ERROR;
+    }
+
+    if (to_console) {
+      /* Convert wchar count to byte count, taking into account leftovers */
+      int wrote_all = (winwrote == towrite);
+      if (winwrote) {
+	/* Recounting only works right if the outptu was well-formed
+	   UTF-8. Weird things happen otherwise... but we guard against
+	   external inconsistency with the `max_winwrote` check below. */
+	winwrote = recount_output_wtext(w_buffer, winwrote);
+	winwrote -= rfd->leftover_len;
+	rfd->leftover_len = 0;
+      }
+      if (wrote_all && can_leftover) {
+	memcpy(rfd->leftover + keep_leftover, buffer + winwrote, can_leftover);
+	rfd->leftover_len = can_leftover + keep_leftover;
+	winwrote += can_leftover;
+      }
+      free(w_buffer);
+      if (winwrote > max_winwrote)
+	winwrote = max_winwrote;
     }
 
     if (buffer != orig_buffer) {
@@ -1482,6 +1547,108 @@ static intptr_t recount_output_text(const char *orig_buffer, const char *buffer,
   }
 
   return i;
+}
+
+static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
+				     int *_can_leftover, int *_keep_leftover,
+				     int leftover_len, char *leftover)
+{
+  /* Figure out how many bytes we can convert to complete wide
+     characters. To avoid quadratic behavior overall, we'll limit the
+     number of bytes.
+
+     The given `leftover_len` and `leftover` is a prefix on `buffer`.
+     If the tail (after writing all other bytes) is an incomplete
+     UTF-8 prefix, report the prefix length in `_can_leftover`. */
+  intptr_t i, count, len = *_towrite;
+  char *src_buffer;
+  wchar_t *dest_buffer;
+  int want, span = 0;
+
+  if (leftover_len) {
+    /* Assume that leftover is a valid prefix: */
+    int v = ((unsigned char *)leftover)[0];
+    if ((v & 0xF8) == 0xF0)
+      span = 4;
+    else if ((v & 0xF0) == 0xE0)
+      span = 3;
+    else
+      span = 2;
+  } else
+    span = 0;
+  want = span - leftover_len;
+
+  for (i = 0, count = 0; (i < len) && (count < 1024); i++) {
+    int v = ((unsigned char *)buffer)[i];
+    if (want) {
+      if ((v & 0xC0) == 0x80) {
+	/* valid continuation byte */
+	want--;
+	if (!want) {
+	  count++;
+	  if (span == 4)
+	    count++; /* surrogate pair */
+	}
+      } else {
+	/* not a valid continuation byte */
+	count++;
+	want = 0;
+	--i; /* retry byte */
+      }
+    } else if (!(v & 0x80)) {
+      count++;
+    } else if ((v & 0xF8) == 0xF0) {
+      span = 4;
+      want = 3;
+    } else if ((v & 0xF0) == 0xE0) {
+      span = 3;
+      want = 2;
+    } else {
+      span = 2;
+      want = 1;
+    }
+  }
+
+  if ((i == len) && (want > 0)) {
+    /* consuming all input, so set leftover */
+    int keep = span - want;
+    if (i >= keep) {
+      *_can_leftover = keep;
+      i -= keep;
+      *_keep_leftover = 0;
+    } else {
+      *_can_leftover = (keep - leftover_len);
+      *_keep_leftover = leftover_len;
+      i = 0;
+    }
+  } else {
+    *_can_leftover = 0;
+    *_keep_leftover = 0;
+  }
+
+  if (leftover_len) {
+    src_buffer = malloc(i + leftover_len);
+    memcpy(src_buffer, leftover, leftover_len);
+    memcpy(src_buffer + leftover_len, buffer, i);
+    i += leftover_len;
+  } else
+    src_buffer = (char *)buffer;
+
+  dest_buffer = (wchar_t *)malloc(sizeof(wchar_t) * count);
+
+  if (count > 0)
+    count = MultiByteToWideChar(CP_UTF8, 0, src_buffer, i, dest_buffer, count);
+  *_towrite = count;
+
+  if (leftover_len)
+    free(src_buffer);
+
+  return dest_buffer;
+}
+
+static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote)
+{
+  return WideCharToMultiByte(CP_UTF8, 0, w_buffer, winwrote, NULL, 0, NULL, 0);
 }
 
 static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
