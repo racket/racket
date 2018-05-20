@@ -301,7 +301,7 @@ structure:
 @racketblock[
   (struct compile-event (timestamp path type) #:prefab)
 ]
-The @racket[timestamp] field is the time at which the event occured in
+The @racket[timestamp] field is the time at which the event occurred in
 milliseconds since the epoch.  The @racket[path] field is the path of a file
 being compiled for which the event is about. The @racket[type] field is a symbol
 which describes the action the event corresponds to. The currently logged values
@@ -600,7 +600,7 @@ parallel compilation.  The callback, @racket[handler], is called with the symbol
 @racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
 @racket['output] when a
 successful compilation produces stdout/stderr output, @racket['error] when a
-compilation error has occured, or @racket['fatal-error] when a unrecoverable
+compilation error has occurred, or @racket['fatal-error] when a unrecoverable
 error occurs. The other arguments give more information for each status update.
 The return value is @racket[(void)] if it was successful, or @racket[#f] if there was an error.
  
