@@ -1257,11 +1257,14 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 	   UTF-8. Weird things happen otherwise... but we guard against
 	   external inconsistency with the `max_winwrote` check below. */
 	winwrote = recount_output_wtext(w_buffer, winwrote);
-	winwrote -= rfd->leftover_len;
+	if (winwrote > rfd->leftover_len)
+	  winwrote -= rfd->leftover_len;
+	else
+	  winwrote = 0;
 	rfd->leftover_len = 0;
       }
       if (wrote_all && can_leftover) {
-	memcpy(rfd->leftover + keep_leftover, buffer + winwrote, can_leftover);
+	memcpy(rfd->leftover + keep_leftover, buffer + max_winwrote - can_leftover, can_leftover);
 	rfd->leftover_len = can_leftover + keep_leftover;
 	winwrote += can_leftover;
       }
@@ -1603,9 +1606,12 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
     } else if ((v & 0xF0) == 0xE0) {
       span = 3;
       want = 2;
-    } else {
+    } else if ((v & 0xE0) == 0xC0) {
       span = 2;
       want = 1;
+    } else {
+      /* bad continuation byte */
+      count++;
     }
   }
 
@@ -1636,8 +1642,14 @@ static wchar_t *convert_output_wtext(const char *buffer, intptr_t *_towrite,
 
   dest_buffer = (wchar_t *)malloc(sizeof(wchar_t) * count);
 
-  if (count > 0)
+  if (count > 0) {
     count = MultiByteToWideChar(CP_UTF8, 0, src_buffer, i, dest_buffer, count);
+    if (!count) {
+      /* force progress */
+      src_buffer[0] = 0xFFFD;
+      count = 1;
+    }
+  }
   *_towrite = count;
 
   if (leftover_len)
