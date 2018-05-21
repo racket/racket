@@ -921,10 +921,15 @@ return the same or a chaperone of the procedure, which is used as the
 result of @racket[struct-type-make-constructor] on the chaperoned
 structure type.
 
-The @racket[guard-proc] must accept as many argument as a constructor
-for @racket[struct-type]; it must return the same number of arguments,
-each the same or a chaperone of the corresponding argument. The
-@racket[guard-proc] is added as a constructor guard when a subtype is
+The @racket[guard-proc] is like a @racket[guard] argument to
+@racket[make-struct-type]: it must accept one more argument 
+than a constructor for @racket[struct-type], where the last argument
+is the name the name of the instantiated structure type.
+It must return the number of values needed by the constructor
+(i.e. one value for each argument but the last),
+and each returned value must be the same as
+or a chaperone of the corresponding argument. 
+The @racket[guard-proc] is added as a constructor guard when a subtype is
 created of the chaperoned structure type.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
