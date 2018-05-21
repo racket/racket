@@ -15,16 +15,16 @@
              (define f (syntax->datum f-stx))
              (format "tests-~a.rkt" f))])
          (syntax/loc stx
-           (let ([succesful 0])
+           (let ([successful 0])
              (run-tests*
               (list (let ()
                       (local-require (only-in tests-f run-pkg-tests))
                       (λ ()
                         (printf "starting ~a\n" 'tests-f)
                         (run-pkg-tests)
-                        (set! succesful (add1 succesful))))
+                        (set! successful (add1 successful))))
                     ...))
-             (unless (= succesful (length '(f ...)))
+             (unless (= successful (length '(f ...)))
                (exit 1)))))]))
 
 (define (run-tests* l)
