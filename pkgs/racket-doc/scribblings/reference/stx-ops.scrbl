@@ -354,14 +354,21 @@ The generated identifiers are built with interned symbols (not
          identifier?]{
 
 Returns an identifier with the same binding as @racket[id-stx], but
-without lexical information from @racket[id-stx] that does not apply
+without possibly lexical information from @racket[id-stx] that does not apply
 to the symbols in @racket[syms], where even further extension of the
 lexical information drops information for other symbols. In
 particular, transferring the lexical context via
 @racket[datum->syntax] from the result of this function to a symbol
-other than one in @racket[syms] produces an identifier with no binding.
+other than one in @racket[syms] may produce an identifier with no binding.
 
-See also @racket[quote-syntax/prune].}
+Currently, the result is always @racket[id-stx] exactly. Pruning was
+intended primarily as a kind of optimization in a previous version of
+Racket, but it is less useful and difficult to implement efficiently
+in the current macro expander.
+
+See also @racket[quote-syntax/prune].
+
+@history[#:changed "6.5" @elem{Always return @racket[id-stx].}]}
 
 
 @defproc[(identifier-prune-to-source-module [id-stx identifier?])
