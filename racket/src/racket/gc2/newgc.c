@@ -6111,7 +6111,7 @@ void GC_dump_with_traces(int flags,
               for_each_struct(obj_start, gcWORDS_TO_BYTES(info->size));
           }
           if ((tag >= min_trace_for_tag) && (tag <= max_trace_for_tag)) {
-            if (record_traced_filter(obj_start))
+            if (!record_traced_filter || record_traced_filter(obj_start))
               register_traced_object(obj_start);
             if (for_each_found)
               for_each_found(obj_start);
