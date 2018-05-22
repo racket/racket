@@ -1212,6 +1212,24 @@
       (eval '(dynamic-require ''provide/contract65-m2 #f)))
    "provide/contract65-m2")
 
+  (test/spec-failed
+   'provide/contract66
+   '(let ()
+      (eval '(module provide/contract66-m1 racket/base
+               (require racket/contract)
+               (provide f
+                        (contract-out
+                         (struct base ([f (-> number? boolean?)])
+                           #:omit-constructor)))
+               (struct base (f) #:transparent)
+               (define (f x) ((base-f x) #f))))
+      (eval '(module provide/contract66-m2 racket/base
+               (require 'provide/contract66-m1)
+               (struct derived base () #:transparent)
+               (f (derived (λ (x) #f)))))
+      (eval '(dynamic-require ''provide/contract66-m2 #f)))
+   "provide/contract66-m1")
+
   (contract-error-test
    'contract-error-test8
    #'(begin

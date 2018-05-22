@@ -1186,7 +1186,8 @@
                [field-name (in-list field-names)])
       ((get/build-late-neg-projection ctc)
        (blame-add-context blame
-                          (format "the ~a field of" field-name)))))
+                          (format "the ~a field of" field-name)
+                          #:swap? #t))))
   (chaperone-struct-type
    struct-type
    (λ (a b c d e f g h) (values a b c d e f g h))
