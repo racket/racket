@@ -2583,5 +2583,19 @@ case of module-leve bindings; it doesn't cover local bindings.
   (dynamic-require '(submod 'm-use main) #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a module can be attached without a recorded namespace syntax context
+
+(eval
+ (let ([o (open-output-bytes)])
+   (write (compile
+           '(module please-attach-me-successfully racket/kernel
+              (#%declare #:empty-namespace)))
+          o)
+   (parameterize ([read-accept-compiled #t])
+     (read (open-input-bytes (get-output-bytes o))))))
+
+(namespace-attach-module-declaration (current-namespace) ''please-attach-me-successfully (make-base-namespace))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

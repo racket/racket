@@ -247,9 +247,7 @@
                              syntax-literals-linklet data-instance syntax-literals-data-instance
                              phase-shift original-self self bulk-binding-registry insp
                              create-root-expand-context-from-module)
-  (when (and (not (load-on-demand-enabled))
-             (not (eq? syntax-literals-data-instance empty-syntax-literals-data-instance))
-             (not (eq? syntax-literals-data-instance empty-syntax-literals-instance/empty-namespace)))
+  (when (not (load-on-demand-enabled))
     (force-syntax-deserialize syntax-literals-data-instance bulk-binding-registry))
   
   (define inst
@@ -296,12 +294,14 @@
 ;; ----------------------------------------
 
 (define (force-syntax-deserialize syntax-literals-data-instance bulk-binding-registry)
+  (unless (or (eq? syntax-literals-data-instance empty-syntax-literals-data-instance)
+              (eq? syntax-literals-data-instance empty-syntax-literals-instance/empty-namespace))
     ;; Since on-demand loading is disabled, force deserialization
     (let ([deserialize-syntax (instance-variable-value syntax-literals-data-instance deserialize-syntax-id)])
       ;; We need to make sure there's something to deserialize; if it's already done
       ;; `deserialize-syntax` has been set to #f
       (when deserialize-syntax
-        (deserialize-syntax bulk-binding-registry))))
+        (deserialize-syntax bulk-binding-registry)))))
 
 ;; ----------------------------------------
 
