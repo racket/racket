@@ -2621,5 +2621,39 @@ case of module-leve bindings; it doesn't cover local bindings.
  exn:fail?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; If `local-expand` creates a macro binding, and if
+;; the definition is discarded with a non-macro definition
+;; is introduced, then make sure the non-macro definition
+;; is referenced.
+
+(module discards-module-begin-macro-definition racket/base
+
+  (module mb racket/base
+    (require (for-syntax racket/base))
+    (provide (except-out (all-from-out racket/base)
+                         #%module-begin)
+             (rename-out [module-begin #%module-begin]))
+    (define-syntax (module-begin stx)
+      (syntax-case stx ()
+        [(_ a b)
+         (begin
+           (local-expand #'(#%module-begin a) 'module-begin null)
+           #'(#%module-begin b))])))
+
+  (module use (submod ".." mb)
+    (begin
+      (require (for-syntax racket/base))
+      (define-syntax (m stx) #''not-ok))
+    (begin
+      (define (m) 'ok)
+      (define result (m))
+      (provide result)))
+
+  (require 'use)
+  (provide result))
+
+(test 'ok dynamic-require ''discards-module-begin-macro-definition 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -777,6 +777,9 @@
                                                       #:frame-id frame-id
                                                       #:requires+provides requires+provides
                                                       #:in exp-body))
+          (for ([sym (in-list syms)])
+            ;; In case `local-expand` created a binding with `sym` to a transformer
+            (namespace-unset-transformer! m-ns phase sym))
           (add-defined-syms! requires+provides syms phase)
           (log-expand partial-body-ctx 'exit-prim
                       (datum->syntax #f `(,(m 'define-values) ,ids ,(m 'rhs)) exp-body))
