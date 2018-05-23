@@ -422,6 +422,8 @@
                     (module-instance-made-available? mi)))
      ;; Something to do...
      (define m (module-instance-module mi))
+     (unless m
+       (error 'require "import cycle detected; trying to run module being expanded"))
      (define mpi (namespace-mpi m-ns))
      (define phase-shift instance-phase) ; instance phase = phase shift
      (define bulk-binding-registry (namespace-bulk-binding-registry m-ns))

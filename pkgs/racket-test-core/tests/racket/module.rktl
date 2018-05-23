@@ -2597,5 +2597,26 @@ case of module-leve bindings; it doesn't cover local bindings.
 (namespace-attach-module-declaration (current-namespace) ''please-attach-me-successfully (make-base-namespace))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `local-expand` doesn't make module available in a way
+;; that allows the module to import itself
+
+(err/rt-test
+ (eval
+  '(module use-submodule-tries-to-import-itself racket/base
+     (module mb racket/base
+       (require (for-syntax racket/base))
+       (provide (except-out (all-from-out racket/base)
+                            #%module-begin)
+                (rename-out [module-begin #%module-begin]))
+       (define-syntax (module-begin stx)
+         (syntax-case stx ()
+           [(_ a b)
+            #'(#%module-begin b)])))
+
+     (module use (submod ".." mb)
+       (module* m racket/base)
+       (require (submod "." m ".."))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
