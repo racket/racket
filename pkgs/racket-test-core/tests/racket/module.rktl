@@ -2611,11 +2611,14 @@ case of module-leve bindings; it doesn't cover local bindings.
        (define-syntax (module-begin stx)
          (syntax-case stx ()
            [(_ a b)
-            #'(#%module-begin b)])))
+            (begin
+              (local-expand #'(#%module-begin a) 'module-begin null)
+              #'(#%module-begin b))])))
 
      (module use (submod ".." mb)
        (module* m racket/base)
-       (require (submod "." m ".."))))))
+       (require (submod "." m "..")))))
+ exn:fail?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
