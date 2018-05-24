@@ -1431,11 +1431,17 @@
 		(for-each (lambda (i) (vector-set! v i (* i i)))
 			'(0 1 2 3 4))
 		v))
-
+(test '(1 2 3) map (lambda (s #:c [c string->number]) (c s)) '("1" "2" "3"))
 
 (define (map-tests map)
-  (let ([size? exn:application:mismatch?]
-	[non-list? type?])
+  (define ((name-and pred) exn)
+    (and (pred exn)
+         (regexp-match? (format "^~a:" name) (exn-message exn))))
+  (let ([size? (name-and exn:application:mismatch?)]
+	[non-list? (name-and type?)]
+        [keywords? (lambda (exn)
+                     (and (exn:fail:contract? exn)
+                          (regexp-match #rx"expects keyword arguments" (exn-message exn))))])
     (err/rt-test (map (lambda (x y) (+ x y)) '(1 2) '1))
     (err/rt-test (map (lambda (x y) (+ x y)) '2 '(1 2)))
     (err/rt-test (map (lambda (x y) (+ x y)) '(1 2) '(1 2 3)) size?)
@@ -1449,7 +1455,9 @@
     (err/rt-test (map (lambda (x y) (+ x y))) exn:application:arity?)
     (err/rt-test (map (lambda () 10) null) exn:application:mismatch?)
     (err/rt-test (map (case-lambda [() 9] [(x y) 10]) '(1 2 3)) exn:application:mismatch?)
-    (err/rt-test (map (lambda (x) 10) '(1 2) '(3 4)) exn:application:mismatch?)))
+    (err/rt-test (map (lambda (x) 10) '(1 2) '(3 4)) exn:application:mismatch?)
+    (err/rt-test (map (lambda (x #:y y) 10) '(1 2)) keywords?)
+    (err/rt-test (map (lambda (x #:y y) 10) '()) keywords?)))
 (map-tests map)
 (map-tests for-each)
 (map-tests andmap)

@@ -5,6 +5,7 @@
 (module map '#%kernel
   (#%require "small-scheme.rkt" "define.rkt"
              "performance-hint.rkt"
+             "kw.rkt"
              '#%paramz
              (for-syntax '#%kernel))
 
@@ -193,10 +194,14 @@
                                      "procedure" f))
             (loop len (cdr ls) (add1 i))))))
     (unless (procedure-arity-includes? f (length ls))
+      (define-values (required-keywords optional-keywords) (procedure-keywords f))
       (apply raise-arguments-error who
-             (string-append "argument mismatch;\n"
-                            " the given procedure's expected number of arguments does not match"
-                            " the given number of lists")
+             (if (pair? required-keywords)
+                 (string-append "argument mismatch;\n"
+                                " the given procedure expects keyword arguments")
+                 (string-append "argument mismatch;\n"
+                                " the given procedure's expected number of arguments does not match"
+                                " the given number of lists"))
              "given procedure" (unquoted-printing-string
                                 (or (let ([n (object-name f)])
                                       (and (symbol? n)
@@ -205,6 +210,8 @@
              (append
               (let ([a (procedure-arity f)])
                 (cond
+                  [(pair? required-keywords)
+                   null]
                   [(integer? a)
                    (list "expected" a)]
                   [(arity-at-least? a)
@@ -212,7 +219,26 @@
                                      (string-append "at least " (number->string (arity-at-least-value a)))))]
                   [else
                    null]))
-              (list "given" (length ls))
+              (cond
+                [(pair? required-keywords)
+                 null]
+                [else
+                 (list "given" (length ls))])
+              (cond
+                [(pair? required-keywords)
+                 (list "required keywords"
+                       (unquoted-printing-string
+                        (apply string-append
+                               (cdr
+                                (let loop ([kws required-keywords])
+                                  (cond
+                                    [(null? kws) null]
+                                    [else (list* " "
+                                                 (string-append "#:"
+                                                                (keyword->string (car kws)))
+                                                 (loop (cdr kws)))]))))))]
+                [else
+                 null])
               (let ([w (quotient (error-print-width) (length ls))])
                 (if (w . > . 10)
                     (list "argument lists..."

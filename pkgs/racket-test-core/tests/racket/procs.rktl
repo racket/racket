@@ -145,7 +145,7 @@
                                     null))])
                   (test a procedure-arity (car p))
                   (when (number? a)
-                    (let ([rx (regexp (format " mismatch;.*(expected number(?!.*expected:)|expected: ~a)"
+                    (let ([rx (regexp (format " mismatch;.*(expected number(?!.*expected:)|expected: ~a|required keywords:)"
                                               (if (zero? a) "(0|no)" (if method? (sub1 a) a))))]
                           [bad-args (cons 'extra (for/list ([i (in-range a)]) 'a))])
                       (test #t regexp-match? rx
