@@ -1030,6 +1030,9 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
   DWORD toget, got;
   int perma_eof = 0, ft, is_console = 0;
   HANDLE eof_wait = NULL;
+# define CONSOLE_BUFFER_IN_SIZE 16
+  wchar_t w_buffer[CONSOLE_BUFFER_IN_SIZE];
+  int w_buf_count = 0;
 
   ft = GetFileType((HANDLE)th->fd);
     
@@ -1059,11 +1062,31 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
       if (!is_console)
 	ok = ReadFile(th->fd, th->buffer, toget, &got, NULL);
       else {
-#       define CONSOLE_BUFFER_IN_SIZE 16
-	wchar_t w_buffer[CONSOLE_BUFFER_IN_SIZE];
-	ok = ReadConsoleW(th->fd, w_buffer, CONSOLE_BUFFER_IN_SIZE, &got, NULL);
+	if (w_buf_count) {
+	  ok = 1;
+	  got = w_buf_count;
+	} else
+	  ok = ReadConsoleW(th->fd, w_buffer, CONSOLE_BUFFER_IN_SIZE, &got, NULL);
 	if (ok) {
+	  /* check for Ctl-Z, and convert it to an EOF */
+	  int i, move_start = 0, move_len = 0;
+	  for (i = 0; i < got; i++) {
+	    if (w_buffer[i] == 26 /* ctl-z */) {
+	      move_start = i;
+	      move_len = got - i;
+	      if (i == 0) {
+		/* report EOF now */
+		move_start++;
+		move_len--;
+	      }
+	      got = i;
+	      break;
+	    }
+	  }
 	  got = WideCharToMultiByte(CP_UTF8, 0, w_buffer, got, th->buffer, RKTIO_FD_BUFFSIZE, NULL, 0);
+	  if (move_len > 0)
+	    memmove(w_buffer, w_buffer + move_start, sizeof(wchar_t) * move_len);
+	  w_buf_count = move_len;
 	}
       }
       if (ok) {
