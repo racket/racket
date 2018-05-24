@@ -1126,6 +1126,27 @@
 (test #\{ syntax-property (read-syntax 'x (open-input-string "#{1 2}")) 'paren-shape)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `read/recursive`
+
+(let ()
+  (define in (open-input-string "abc"))
+  (test 'abc read/recursive in))
+
+(let ()
+  (define in2 (open-input-string "(#0=(abc) #z(#0#))"))
+  (parameterize ([current-readtable
+                  (make-readtable (current-readtable)
+                                  #\z
+                                  'dispatch-macro
+                                  (lambda (char in name line col pos)
+                                    (define v (read/recursive in))
+                                    (log-error ">> ~s" v)
+                                    v))])
+    (define v (read in2))
+    (test '((abc) ((abc))) values v)
+    (test #t eq? (car v) (caadr v))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test read error on a character not in any port
 
 (err/rt-test (read/recursive (open-input-string ";") #\. #f) exn:fail:read?)

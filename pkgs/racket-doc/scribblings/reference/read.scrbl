@@ -62,17 +62,9 @@ When @racket[graph?] is @racket[#f], graph structure annotations in
 the read datum are local to the datum.
 
 When called within the dynamic extent of @racket[read], the
-@racket[read/recursive] procedure produces either an opaque
-placeholder value, a special-comment value, or an end-of-file.  The
-result is a special-comment value (see @secref["special-comments"])
-when the input stream's first non-whitespace content parses as a
-comment. The result is end-of-file when @racket[read/recursive]
-encounters an end-of-file. Otherwise, the result is a placeholder that
-protects graph references that are not yet resolved. When this
-placeholder is returned within an S-expression that is produced by any
-reader-extension procedure (see @secref["reader-procs"]) for the
-same outermost @racket[read], it will be replaced with the actual read
-value before the outermost @racket[read] returns.
+@racket[read/recursive] procedure can produce a special-comment value
+(see @secref["special-comments"]) when the input stream's first
+non-whitespace content parses as a comment.
 
 See @secref["readtables"] for an extended example that uses
 @racket[read/recursive].

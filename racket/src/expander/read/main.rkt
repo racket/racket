@@ -103,7 +103,7 @@
          (not (eof-object? v))
          (not (special-comment? v)))
     (get-graph-hash config) ; to trigger placeholder resolution
-    (make-placeholder v)]
+    v]
    [else v]))
 
 (define (read-language in fail-k
