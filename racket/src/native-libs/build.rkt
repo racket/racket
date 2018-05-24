@@ -172,6 +172,17 @@
 (define-runtime-path gmp-inline-patch "patches/gmp-inline.patch")
 
 ;; --------------------------------------------------
+
+(define (replace-in-file file orig new)
+  (define rx (regexp-quote orig))
+  (define-values (i o) (open-input-output-file file #:exists 'update))
+  (define pos (caar (regexp-match-positions rx i)))
+  (file-position o pos)
+  (write-bytes new o)
+  (close-output-port o)
+  (close-input-port i))
+
+;; --------------------------------------------------
 ;; General environment and flag configuration:
 
 (define win-prefix (if m32?
@@ -281,7 +292,8 @@
                 #:setup [setup null]
                 #:patches [patches null]
                 #:post-patches [post-patches null]
-                #:fixup [fixup #f])
+                #:fixup [fixup #f]
+                #:fixup-proc [fixup-proc #f])
   (for ([d (in-list (append (if (or (equal? package-name "pkg-config")
                                     (equal? package-name "sed"))
                                 '()
@@ -291,7 +303,7 @@
                             deps))])
     (unless (file-exists? (build-path dest "stamps" d))
       (error 'build "prerequisite needed: ~a" d)))
-  (values env exe args make make-install setup patches post-patches fixup))
+  (values env exe args make make-install setup patches post-patches fixup fixup-proc))
 
 (define path-flags
   (list (list "CPPFLAGS" (~a "-I" dest "/include"))
@@ -308,9 +320,9 @@
 (define (linux-only)
   (unless linux?
     (error (format "build ~a only for Linux" package-name))))
-  
+
 (define-values (extra-env configure-exe extra-args make-command make-install-command 
-                          setup patches post-patches fixup)
+                          setup patches post-patches fixup fixup-proc)
   (case package-name
     [("pkg-config") (config #:configure (list "--with-internal-glib"))]
     [("sed") (config)]
@@ -354,7 +366,12 @@
              #:fixup (and win?
                           (~a "cd " (build-path dest "bin")
                               " && mv libssl-1_1" (if m32? "" "-x64") ".dll ssleay32.dll"
-                              " && mv libcrypto-1_1" (if m32? "" "-x64") ".dll libeay32.dll")))]
+                              " && mv libcrypto-1_1" (if m32? "" "-x64") ".dll libeay32.dll"))
+             #:fixup-proc (and win?
+                               (lambda ()
+                                 (replace-in-file (build-path dest "bin" "ssleay32.dll")
+                                                  (bytes-append #"libcrypto-1_1" (if m32? #"" #"-x64") #".dll\0")
+                                                  #"libeay32.dll\0"))))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure '("--enable-languages=c")
@@ -578,5 +595,7 @@
   (system/show make-install-command)
   (when fixup
     (system/show fixup))
+  (when fixup-proc
+    (fixup-proc))
   (stamp package-name)
   (displayln "Success!"))
