@@ -2300,7 +2300,8 @@ to determine if this is a contract that accepts only @racket[list?] values.
 (eval:error (halve 1))
 ]
 
-@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
+@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
+         #:changed "6.90.0.30" @list{Added the @racket[#:equivalent] argument.}]
 }
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
@@ -2928,7 +2929,9 @@ arguments as @racket[build-contract-property].  The differences are:
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
          #:changed "6.1.1.4"
-         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}]
+         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
+         #:changed "6.90.0.30"
+         @list{Added the @racket[#:equivalent] argument.}]
 }
 
 @deftogether[(
@@ -3086,6 +3089,7 @@ are below):
                                        (λ (x) (and (real? x) (real? x))))]
 
 
+  @history[#:added "6.90.0.30"]
 }
 
 @defproc[(contract-first-order-passes? [contract contract?]
