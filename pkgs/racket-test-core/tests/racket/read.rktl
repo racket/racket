@@ -1140,7 +1140,6 @@
                                   'dispatch-macro
                                   (lambda (char in name line col pos)
                                     (define v (read/recursive in))
-                                    (log-error ">> ~s" v)
                                     v))])
     (define v (read in2))
     (test '((abc) ((abc))) values v)
