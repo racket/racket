@@ -126,6 +126,7 @@
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
+                    #:equivalent [equivalent #f]
                     #:list-contract? [is-list-contract #f])
            (:make-chaperone-contract
             #:name name
@@ -137,6 +138,7 @@
             #:projection
             (maybe-add-wrapper add-projection-chaperone-check projection)
             #:stronger stronger
+            #:equivalent equivalent
             #:list-contract? is-list-contract))])
     make-chaperone-contract))
 
@@ -149,6 +151,7 @@
              #:late-neg-projection [late-neg-proj #f]
              #:projection [get-projection #f]
              #:stronger [stronger #f]
+             #:equivalent [equivalent #f]
              #:generate [generate #f]
              #:exercise [exercise #f]
              #:list-contract? [is-list-contract? (λ (c) #f)])
@@ -162,6 +165,7 @@
        #:projection
        (maybe-add-wrapper add-prop-chaperone-check get-projection)
        #:stronger stronger
+       #:equivalent equivalent
        #:generate generate
        #:exercise exercise
        #:list-contract? is-list-contract?))
@@ -220,6 +224,7 @@
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
+                    #:equivalent [equivalent #f]
                     #:list-contract? [is-list-contract #f])
            (:make-flat-contract
             #:name name
@@ -228,6 +233,7 @@
             #:val-first-projection (force-val-first-eq val-first-projection)
             #:projection (force-projection-eq projection)
             #:stronger stronger
+            #:equivalent equivalent
             #:list-contract? is-list-contract))])
     make-flat-contract))
 
@@ -239,6 +245,7 @@
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
+                    #:equivalent [equivalent #f]
                     #:generate [generate (λ (ctc) (λ (fuel) #f))]
                     #:list-contract? [is-list-contract (λ (c) #f)])
            (:build-flat-contract-property
@@ -251,6 +258,7 @@
             #:projection
             (and projection (λ (c) (force-projection-eq (projection c))))
             #:stronger stronger
+            #:equivalent equivalent
             #:generate generate
             #:list-contract? is-list-contract))])
     build-flat-contract-property))
