@@ -4666,7 +4666,7 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
                        "make-file-or-directory-link: cannot make link;\n"
                        " the path already exists\n"
                        "  path: %q",
-                       filename_for_error(argv[0]));
+                       filename_for_error(argv[1]));
     } else {
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
                        "make-file-or-directory-link: cannot make link\n"

@@ -1966,6 +1966,7 @@
   (unless (eq? 'windows (system-type))
     (delete-file tf)
     (make-file-or-directory-link "other.txt" tf)
+    (err/rt-test (make-file-or-directory-link "other.txt" tf) exn:fail:filesystem? (regexp-quote tf))
     (test (string->path "other.txt") resolve-path tf))
   (delete-file tf)
   (case (system-path-convention-type)
