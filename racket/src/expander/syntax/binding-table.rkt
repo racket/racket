@@ -25,6 +25,7 @@
          binding-table-empty?
          
          in-binding-table
+         in-full-non-bulk-binding-table
          
          binding-table-symbols
          
@@ -191,7 +192,7 @@
 ;; the syntax object and extra shifts expressions may be used for
 ;; loading bulk bindings.
 (define-sequence-syntax in-binding-table
-  (lambda () #'do-not-use-in-binding-as-an-expression)
+  (lambda () #'do-not-use-in-binding-table-as-an-expression)
   (lambda (stx)
     (syntax-case stx ()
       [[(scopes-id binding-id) (_ sym table-expr s-expr extra-shifts-expr)]
@@ -236,6 +237,57 @@
              [(pair? i) (cdr i)]
              [else (or (hash-iterate-next ht i)
                        bulk-bindings)])])]])))
+
+;; ----------------------------------------
+
+;; Iterate through all non-bulk symbol+scope+binding combinations.
+;; This iterator allocates; its intended for use in situations
+;; that don't need a tight loop, which should generally be the
+;; case for somethign that's inspecting all bindings.
+(define-sequence-syntax in-full-non-bulk-binding-table
+  (lambda () #'do-not-use-in-full-non-bulk-binding-table-as-an-expression)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(sym-id scopes-id binding-id) (_ table-expr)]
+       #'[(scopes-id binding-id)
+          (:do-in
+           ([(sym-ht)
+             (let ([table table-expr])
+               (if (hash? table)
+                   table
+                   (table-with-bulk-bindings-syms table)))])
+           #t
+           ([state (let loop ([sym-i (hash-iterate-first sym-ht)])
+                     (if sym-i
+                         (next-state-in-full-binding-table sym-ht sym-i)
+                         '(#f . #f)))])
+           (car state)
+           ;; At each step, extract the current scope set and binding;
+           ;; either can be #f, in which case the consumer of the
+           ;; sequence should move on the the next result
+           ([(sym-id) (vector-ref (car state) 1)]
+            [(scopes-id) (hash-iterate-key (vector-ref (car state) 2) (cdr state))]
+            [(binding-id) (hash-iterate-value (vector-ref (car state) 2) (cdr state))])
+           #t
+           #t
+           [(let* ([ht (vector-ref (car state) 2)]
+                   [i (hash-iterate-next ht (cdr state))])
+              (if i
+                  (cons (car state) i)
+                  (next-state-in-full-binding-table sym-ht
+                                                    (hash-iterate-next sym-ht (vector-ref (car state) 0)))))])]])))
+
+(define (next-state-in-full-binding-table sym-ht sym-i)
+  (if sym-i
+      (let* ([ht (hash-iterate-value sym-ht sym-i)]
+             [i (hash-iterate-first ht)])
+        (if i
+            (cons (vector sym-i
+                          (hash-iterate-key sym-ht sym-i) ; symbol
+                          ht)
+                  i)
+            (next-state-in-full-binding-table (hash-iterate-next sym-ht sym-i))))
+      '(#f . #f)))
 
 ;; ----------------------------------------
 

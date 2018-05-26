@@ -2006,6 +2006,12 @@
     (eval '(require (prefix-in foo: racket/base)))
     (check (lambda (stx) (syntax-debug-info (namespace-syntax-introduce stx))))))
 
+(test #t
+      'syntax-debug-info-all-binding
+      (let ([y 10])
+        (for/or ([e (in-list (hash-ref (syntax-debug-info (quote-syntax x #:local) 0 #t) 'bindings null))])
+          (eq? 'y (hash-ref e 'name #f)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that attacks are thwarted via `syntax-local-get-shadower'
 ;; or `make-syntax-delta-introducer':

@@ -20,35 +20,51 @@
       (define context (scope-set->context s-scs))
       (define context-ht (hash-set init-ht 'context context))
       (define sym (syntax-e s))
+      (define (classify-binding b)
+        (if (local-binding? b)
+            'local
+            'module))
+      (define (extract-binding b)
+        (if (local-binding? b)
+            (local-binding-key b)
+            (vector (module-binding-sym b)
+                    (module-binding-module b)
+                    (module-binding-phase b))))
       (define bindings
-        (cond
-         [(identifier? s)
-          (define-values (bindings covered-scopess)
-            (for*/fold ([bindings null] [covered-scope-sets (set)])
-                       ([sc (in-set s-scs)]
-                        [(scs b) (in-binding-table sym (scope-binding-table sc) s null)]
-                        #:when (and scs b
-                                    (or all-bindings?
-                                        (subset? scs s-scs))
-                                    ;; Skip overidden:
-                                    (not (set-member? covered-scope-sets scs))))
-              (values
-               (cons
-                (hash 'name (syntax-e s)
+        (append
+         ;; Bindings based on the identifier `s`
+         (cond
+           [(identifier? s)
+            (define-values (bindings covered-scopess)
+              (for*/fold ([bindings null] [covered-scope-sets (set)])
+                         ([sc (in-set s-scs)]
+                          [(scs b) (in-binding-table sym (scope-binding-table sc) s null)]
+                          #:when (and scs b
+                                      (or all-bindings?
+                                          (subset? scs s-scs))
+                                      ;; Skip overidden:
+                                      (not (set-member? covered-scope-sets scs))))
+                (values
+                 (cons
+                  (hasheq 'name (syntax-e s)
+                          'context (scope-set->context scs)
+                          'match? (subset? scs s-scs)
+                          (classify-binding b) (extract-binding b))
+                  bindings)
+                 (set-add covered-scope-sets scs))))
+            bindings]
+           [else null])
+         ;; All other bindings (but not other bulk bindings, currently)
+         (cond
+           [all-bindings?
+            (for*/list ([sc (in-set s-scs)]
+                        [(o-sym scs b) (in-full-non-bulk-binding-table (scope-binding-table sc))]
+                        #:unless (eq? o-sym sym))
+              (hasheq 'name o-sym
                       'context (scope-set->context scs)
-                      'match? (subset? scs s-scs)
-                      (if (local-binding? b)
-                          'local
-                          'module)
-                      (if (local-binding? b)
-                          (local-binding-key b)
-                          (vector (module-binding-sym b)
-                                  (module-binding-module b)
-                                  (module-binding-phase b))))
-                bindings)
-               (set-add covered-scope-sets scs))))
-          bindings]
-         [else null]))
+                      'match? #f
+                      (classify-binding b) (extract-binding b)))]
+           [else null])))
       (if (null? bindings)
           context-ht
           (hash-set context-ht 'bindings bindings))))
