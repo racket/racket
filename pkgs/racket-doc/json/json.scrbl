@@ -61,7 +61,8 @@ the @rfc for more information about JSON.
 
 @defproc[(write-json [x jsexpr?] [out output-port? (current-output-port)]
                      [#:null jsnull any/c (json-null)]
-                     [#:encode encode (or/c 'control 'all) 'control])
+                     [#:encode encode (or/c 'control 'all) 'control]
+                     [#:indent indent (or/c exact-integer? #f) #f])
          any]{
   Writes the @racket[x] @tech{jsexpr}, encoded as JSON, to the
   @racket[out] output port.
@@ -74,18 +75,26 @@ the @rfc for more information about JSON.
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
   escapes, see Section 2.5 of the @|rfc|.
 
+  If @racket[indent] is supplied as an integer, output will be "pretty
+  printed" at the specified indentation level.
+
 @examples[#:eval ev
   (with-output-to-string
     (λ () (write-json #hasheq((waffle . (1 2 3))))))
   (with-output-to-string
     (λ () (write-json #hasheq((와플 . (1 2 3)))
                       #:encode 'all)))
+  (displayln
+   (with-output-to-string
+    (λ () (write-json #hasheq((apple . #hasheq((banana . ("fruit" "pie")))))
+                      #:indent 2))))
 ]
 }
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any/c (json-null)]
-                         [#:encode encode (or/c 'control 'all) 'control])
+                         [#:encode encode (or/c 'control 'all) 'control]
+                         [#:indent indent (or/c exact-integer? #f) #f])
          string?]{
   Generates a JSON source string for the @tech{jsexpr} @racket[x].
 
@@ -96,7 +105,8 @@ the @rfc for more information about JSON.
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any/c (json-null)]
-                        [#:encode encode (or/c 'control 'all) 'control])
+                        [#:encode encode (or/c 'control 'all) 'control]
+                        [#:indent indent (or/c exact-integer? #f) #f])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
   (The byte string is encoded in UTF-8.)
