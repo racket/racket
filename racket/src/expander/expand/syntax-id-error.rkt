@@ -18,7 +18,7 @@
 ;; ----------------------------------------
 
 (define (syntax-debug-info-string s ctx)
-  (define info (syntax-debug-info s (expand-context-phase ctx) #t))
+  (define info (syntax-debug-info s (expand-context-phase ctx) #f))
   (cond
    [(not (or (pair? (hash-ref info 'bindings null))
              (for*/or ([fb-info (in-list (hash-ref info 'fallbacks null))])
