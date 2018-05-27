@@ -44047,7 +44047,7 @@ static const char *startup_source =
 "(let-values(((ht_148)"
 "(syntax-scope-set"
 "(root-expand-context-all-scopes-stx root-ctx_5)"
-"(namespace-phase ns_58))))"
+" 0)))"
 "(begin"
 "(if(variable-reference-from-unsafe?(#%variable-reference))"
 "(void)"

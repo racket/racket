@@ -2655,5 +2655,21 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 'ok dynamic-require ''discards-module-begin-macro-definition 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a compile-time `eval` (as opposed to `eval-syntax`)
+;; doesn't add the wrong phase's bindings via
+;; `namespace-syntax-introduce`. The wrong phase's bindings in this
+;; example could make `#%app` ambiguous.
+
+(module uses-eval-at-compile-time racket/base
+  (require (for-syntax racket/base)
+           (for-meta 2 racket/base))
+  
+  (define-syntax (ct-eval stx)
+    (syntax-case stx ()
+      [(_ e) #`'#,(eval #'e)]))
+  
+  (ct-eval (+ 1 2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

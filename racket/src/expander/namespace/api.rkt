@@ -62,7 +62,7 @@
   (define other-namespace-scopes (for/list ([sc (in-set
                                                  ;; `all-scopes-stx` corresponds to the initial import
                                                  (syntax-scope-set (root-expand-context-all-scopes-stx root-ctx)
-                                                                   (namespace-phase ns)))]
+                                                                   0))]
                                             #:unless (equal? sc post-scope))
                                    sc))
   (define (add-ns-scopes s)
