@@ -22,9 +22,9 @@ To help manage the growth our code and showcase good Racket style, we need
  code base so that everyone who opens files can easily find their way
  around.
 
-This document spells out the guidelines. They cover a range of topics, from
- basic work (commit) habits to small syntactic ideas like indentation and
- naming.
+This document spells out the guidelines and best practices. They cover a range
+ of topics, from basic work (commit) habits to small syntactic ideas like
+ indentation and naming.
 
 Many pieces of the code base don't live up to the guidelines yet.  Here is how
  we get started. When you start a new file, stick to the guidelines. If you need
