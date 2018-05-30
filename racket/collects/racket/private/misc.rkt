@@ -5,7 +5,7 @@
 (module misc '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" "path.rkt" "old-path.rkt"
              "path-list.rkt" "executable-path.rkt"
-             "reading-param.rkt" "repl.rkt"
+             "reading-param.rkt" "../repl.rkt"
              (for-syntax '#%kernel "qq-and-or.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------
