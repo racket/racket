@@ -3,6 +3,8 @@
          "common/module-path.rkt"
          "namespace/namespace.rkt"
          "eval/main.rkt"
+         (only-in "eval/api.rkt"
+                  [eval eval-top-level])
          "eval/dynamic-require.rkt"
          "eval/reflect.rkt"
          "eval/load.rkt"
@@ -42,6 +44,9 @@
          compile
          eval
          read
+
+         ;; Uses handlers:
+         eval-top-level
 
          load
          load/use-compiled

@@ -3546,7 +3546,7 @@ Scheme_Object *scheme_compile_for_eval(Scheme_Object *form, Scheme_Env *env)
 Scheme_Object *scheme_eval(Scheme_Object *obj, Scheme_Env *env)
 {
   Scheme_Object *eval_proc, *a[2];
-  eval_proc = scheme_get_startup_export("eval");
+  eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
   a[1] = env->namespace;
   return scheme_apply(eval_proc, 2, a);
@@ -3555,7 +3555,7 @@ Scheme_Object *scheme_eval(Scheme_Object *obj, Scheme_Env *env)
 Scheme_Object *scheme_eval_multi(Scheme_Object *obj, Scheme_Env *env)
 {
   Scheme_Object *eval_proc, *a[2];
-  eval_proc = scheme_get_startup_export("eval");
+  eval_proc = scheme_get_startup_export("eval-top-level");
   a[0] = obj;
   a[1] = env->namespace;
   return scheme_apply_multi(eval_proc, 2, a);
@@ -3569,10 +3569,8 @@ static Scheme_Object *finish_eval_with_prompt(void *_data, int argc, Scheme_Obje
 
 Scheme_Object *scheme_eval_with_prompt(Scheme_Object *obj, Scheme_Env *env)
 {
-  Scheme_Object *expr;
-  expr = scheme_compile_for_eval(obj, env);
   return scheme_call_with_prompt(finish_eval_with_prompt, 
-                                 scheme_make_pair(expr, (Scheme_Object *)env));
+                                 scheme_make_pair(obj, (Scheme_Object *)env));
 }
 
 static Scheme_Object *finish_eval_multi_with_prompt(void *_data, int argc, Scheme_Object **argv)
@@ -3583,10 +3581,8 @@ static Scheme_Object *finish_eval_multi_with_prompt(void *_data, int argc, Schem
 
 Scheme_Object *scheme_eval_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env)
 {
-  Scheme_Object *expr;
-  expr = scheme_compile_for_eval(obj, env);
   return scheme_call_with_prompt_multi(finish_eval_multi_with_prompt, 
-                                       scheme_make_pair(expr, (Scheme_Object *)env));
+                                       scheme_make_pair(obj, (Scheme_Object *)env));
 }
 
 Scheme_Object *_scheme_eval_compiled(Scheme_Object *obj, Scheme_Env *env)
