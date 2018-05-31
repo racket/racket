@@ -177,8 +177,8 @@ number indicating the depth of the call.
 
 Modifying this and @racket[current-trace-print-results] is useful to to get more
 readable or additional output when tracing syntax transformers.
-For example, we can use @racketmodname[debug-scopes] to add scopes information
-to the trace, (see @racketmodname[debug-scopes] for an example),
+For example, we can use @racketmodname[debug-scopes #:indirect] to add scopes information
+to the trace, (see @racketmodname[debug-scopes #:indirect] for an example),
 or remove source location information to just display the shape of the syntax
 object
 
