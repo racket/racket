@@ -410,8 +410,8 @@
         (accumulate-def-ctx-scopes ctx (expand-context-def-ctx-scopes ctx))
         ctx))
   (define m-ctx (struct*-copy expand-context accum-ctx
-                              [current-introduction-scopes (cons intro-scope
-                                                                 use-scopes)]
+                              [current-introduction-scopes (list intro-scope)]
+                              [current-use-scopes use-scopes]
                               [def-ctx-scopes
                                 (if confine-def-ctx-scopes?
                                     ;; Can confine tracking to this call

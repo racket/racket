@@ -92,7 +92,7 @@
 (define/who (syntax-local-introduce s)
   (check who syntax? s)
   (define ctx (get-current-expand-context 'syntax-local-introduce))
-  (flip-introduction-scopes s ctx))
+  (flip-introduction-and-use-scopes s ctx))
 
 (define/who (syntax-local-identifier-as-binding id)
   (check who identifier? id)

@@ -27,6 +27,7 @@
          
          make-local-expand-context
          flip-introduction-scopes
+         flip-introduction-and-use-scopes
 
          intdefs?
          intdefs?-string
@@ -299,3 +300,7 @@
 
 (define (flip-introduction-scopes s ctx)
   (flip-scopes s (expand-context-current-introduction-scopes ctx)))
+
+(define (flip-introduction-and-use-scopes s ctx)
+  (flip-scopes (flip-introduction-scopes s ctx)
+               (expand-context-current-use-scopes ctx)))

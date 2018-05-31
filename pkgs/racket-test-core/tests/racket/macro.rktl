@@ -2156,5 +2156,24 @@
       (mapply m))))
 
 ;; ----------------------------------------
+;; Make sure `local-expand` doesn't flip the use-site
+;; scope in addition to the introduction scope
+
+(module local-expand-result-depends-on-use-site-scope racket/base
+  (require (for-syntax racket/base))
+  (define x 1)
+  
+  (define-syntax (a stx)
+    (syntax-case stx ()
+      [(a id)
+       (local-expand #'(let ([id 3]) x) 'expression '())]))
+  
+  (define result (a x))
+  (provide result))
+
+(test 1 dynamic-require ''local-expand-result-depends-on-use-site-scope 'result)
+
+
+;; ----------------------------------------
 
 (report-errs)

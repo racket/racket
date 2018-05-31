@@ -56,6 +56,7 @@
           keep-#%expression? ; if `in-local-expand?`, keep `#%expression` forms
           stops      ; free-id-set; non-empty => `def-ctx-scopes` is a box
           * current-introduction-scopes ; scopes for current macro expansion
+          * current-use-scopes ; scopes for current macro expansion
           declared-submodule-names ; mutable hash table: symbol -> 'module or 'module*
           lifts      ; #f or lift-context, which contains a list of lifteds
           lift-envs  ; list of box of env for lifts to locals
@@ -103,6 +104,7 @@
                   #f   ; keep-#%expression?
                   empty-free-id-set ; stops
                   null ; current-introduction-scopes
+                  null ; current-use-scopes
                   #hasheq() ; declared-submodule-names
                   #f   ; lifts
                   '()  ; lift-envs
