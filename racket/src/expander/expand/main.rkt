@@ -463,9 +463,11 @@
     ;; if the macro expands to a definition form, the binding will be
     ;; in the definition context's scope. The sepcific action depends
     ;; on the expansion context.
-    ((expand-context-post-expansion-scope-action ctx)
-     s
-     (root-expand-context-post-expansion-scope ctx))]
+    (define new-s
+      ((expand-context-post-expansion-scope-action ctx)
+       s
+       (root-expand-context-post-expansion-scope ctx)))
+    (syntax-add-shifts new-s (root-expand-context-post-expansion-shifts ctx))]
    [else s]))
 
 (define (accumulate-def-ctx-scopes ctx def-ctx-scopes)

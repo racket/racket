@@ -37,6 +37,7 @@
  syntax-apply-shifts
  binding-module-path-index-shift
  syntax-transfer-shifts
+ syntax-add-shifts
  
  syntax-source-module
  identifier-prune-to-source-module)
@@ -280,7 +281,9 @@
    [else b]))
 
 (define (syntax-transfer-shifts to-s from-s [inspector #f] #:non-source? [non-source? #f])
-  (define shifts (syntax-mpi-shifts from-s))
+  (syntax-add-shifts to-s (syntax-mpi-shifts from-s) inspector #:non-source? non-source?))
+
+(define (syntax-add-shifts to-s shifts [inspector #f] #:non-source? [non-source? #f])
   (cond
    [(and (null? shifts) inspector)
     (syntax-set-inspector to-s inspector)]

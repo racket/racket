@@ -21,6 +21,7 @@
          (self-mpi        ; MPI for the enclosing module during compilation
           module-scopes   ; list of scopes for enclosing module or top level; includes next two fields
           * post-expansion-scope  ; #f or scope to add to every expansion; often module's inside edge
+          * post-expansion-shifts ; a list of MPIshifts to go with `post-expansion-scope`
           top-level-bind-scope  ; #f or a scope to constrain expansion bindings; see "expand-bind-top.rkt"
           all-scopes-stx  ; scopes like the initial import, which correspond to original forms
           * use-site-scopes ; #f or boxed list: scopes that should be pruned from binders
@@ -41,6 +42,7 @@
   (root-expand-context self-mpi
                        module-scopes
                        post-expansion-scope
+                       null ; post-expansion-shifts
                        (new-scope 'module) ; top-level-bind-scope
                        (or all-scopes-stx
                            (add-scopes empty-syntax module-scopes))
@@ -57,7 +59,8 @@
   (datum->syntax
    #f
    (vector (add-scopes empty-syntax (root-expand-context-module-scopes ctx))
-           (add-scope empty-syntax (root-expand-context-post-expansion-scope ctx))
+           (syntax-add-shifts (add-scope empty-syntax (root-expand-context-post-expansion-scope ctx))
+                              (root-expand-context-post-expansion-shifts ctx))
            (syntax-module-path-index-shift (root-expand-context-all-scopes-stx ctx) orig-self new-self)
            (add-scopes empty-syntax (unbox (root-expand-context-use-site-scopes ctx)))
            (for/hasheqv ([(phase ht) (in-hash (root-expand-context-defined-syms ctx))]) ; make immutable
@@ -83,6 +86,7 @@
   (root-expand-context self
                        (extract-scope-list (vector-ref vec 0)) ; module-scopes
                        (extract-scope (vector-ref vec 1))      ; post-expansion-scope
+                       (extract-shifts (vector-ref vec 1))     ; post-expansion-scope-shifts
                        (new-scope 'module)                     ; top-level-bind-scope
                        (vector-ref vec 2)                      ; all-scopes-stx
                        (box (extract-scope-list (vector-ref vec 3))) ; use-site-scopes
@@ -109,6 +113,9 @@
 (define (extract-scope stx)
   (define s (syntax-scope-set stx 0))
   (generalize-scope (set-first s)))
+
+(define (extract-shifts stx)
+  (syntax-mpi-shifts stx))
 
 (define (unpack-defined-syms v)
   (hash-copy ; make mutable

@@ -260,6 +260,12 @@
                      (and same-kind?
                           (memq context '(module module-begin top-level))
                           (root-expand-context-post-expansion-scope ctx)))]
+                [post-expansion-shifts
+                 #:parent root-expand-context
+                 (if (and same-kind?
+                          (eq? context 'top-level))
+                     (root-expand-context-post-expansion-shifts ctx)
+                     null)]
                 [post-expansion-scope-action
                  (if (and intdefs (not (null? intdefs)))
                      (lambda (s placeholder-sc)

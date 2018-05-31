@@ -76,6 +76,7 @@
   (expand-context (root-expand-context-self-mpi root-ctx)
                   (root-expand-context-module-scopes root-ctx)
                   (root-expand-context-post-expansion-scope root-ctx)
+                  (root-expand-context-post-expansion-shifts root-ctx)
                   (root-expand-context-top-level-bind-scope root-ctx)
                   (root-expand-context-all-scopes-stx root-ctx)
                   (root-expand-context-use-site-scopes root-ctx)
