@@ -3078,11 +3078,13 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
               pf = (Scheme_Prefix *)read_compact(port, 0);
             }
 
-            if ((pos < 0) || (pos >= pf->num_slots))
+            if (!SAME_TYPE(SCHEME_TYPE(pf), scheme_prefix_type) || (pos < 0) || (pos >= pf->num_slots))
               scheme_ill_formed_code(port);
 
             flags &= SCHEME_TOPLEVEL_FLAGS_MASK;
             i = ((pos << SCHEME_LOG_TOPLEVEL_FLAG_MASK) | flags);
+            if ((i < 0) || (i >= (pf->num_slots * (SCHEME_TOPLEVEL_FLAGS_MASK + 1))))
+              scheme_ill_formed_code(port);
 
             tl = ((Scheme_Object **)pf->a[pf->num_slots-1])[i];
             if (!tl) {
