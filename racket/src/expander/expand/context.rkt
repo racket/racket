@@ -122,6 +122,7 @@
                 [self-mpi #:parent root-expand-context (root-expand-context-self-mpi root-ctx)]
                 [module-scopes #:parent root-expand-context (root-expand-context-module-scopes root-ctx)]
                 [post-expansion-scope #:parent root-expand-context (root-expand-context-post-expansion-scope root-ctx)]
+                [post-expansion-shifts #:parent root-expand-context (root-expand-context-post-expansion-shifts root-ctx)]
                 [top-level-bind-scope #:parent root-expand-context (root-expand-context-top-level-bind-scope root-ctx)]
                 [all-scopes-stx #:parent root-expand-context (root-expand-context-all-scopes-stx root-ctx)]
                 [use-site-scopes #:parent root-expand-context (root-expand-context-use-site-scopes root-ctx)]

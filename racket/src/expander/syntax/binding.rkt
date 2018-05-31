@@ -159,17 +159,25 @@
                       (non-source-shift from-mpi to-mpi)
                       (cons from-mpi to-mpi)))
     (struct-copy syntax s
-                 [mpi-shifts (cons shift (syntax-mpi-shifts s))]
+                 [mpi-shifts (shift-cons shift (syntax-mpi-shifts s))]
                  [inspector (or (syntax-inspector s)
                                 inspector)]
                  [scope-propagations+tamper (if (datum-has-elements? (syntax-content s))
                                                 (propagation-mpi-shift (syntax-scope-propagations+tamper s)
-                                                                       (lambda (s) (cons shift s))
+                                                                       (lambda (s) (shift-cons shift s))
                                                                        inspector
                                                                        (syntax-scopes s)
                                                                        (syntax-shifted-multi-scopes s)
                                                                        (syntax-mpi-shifts s))
                                                 (syntax-scope-propagations+tamper s))])]))
+
+(define (shift-cons shift shifts)
+  (cond
+    [(and (pair? shifts)
+          (eq? (shift-from shift) (shift-from (car shifts))))
+     ;; Adding `shift` is not useful
+     shifts]
+    [else (cons shift shifts)]))
 
 ;; Use `resolve+shift` instead of `resolve` when the module of a
 ;; module binding is relevant or when `free-identifier=?` equivalences
