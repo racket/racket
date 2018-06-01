@@ -11,23 +11,24 @@
 
 @title[#:tag "stx-patterns"]{Pattern-Based Syntax Matching}
 
-@defform/subs[(syntax-case stx-expr (literal-id ...)
+@defform/subs[#:literals (_)
+              (syntax-case stx-expr (literal-id ...)
                 clause ...)
               ([clause [pattern result-expr]
                        [pattern fender-expr result-expr]]
-               [pattern _
-                        id
+               [pattern np-pattern
                         (pattern ...)
-                        (pattern ...+ . pattern)
-                        (pattern ... pattern ellipsis pattern ...)
-                        (pattern ... pattern ellipsis pattern ... . pattern)
-                        (code:line #,(tt "#")(pattern ...))
-                        (code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))
-                        (code:line #,(tt "#&")pattern)
-                        (code:line #,(tt "#s")(key-datum pattern ...))
-                        (code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))
-                        (ellipsis stat-pattern)
-                        const]
+                        (pattern ...+ . np-pattern)
+                        (pattern ... pattern ellipsis pattern ... . np-pattern)]
+               [np-pattern _
+                          id
+                          (code:line #,(tt "#")(pattern ...))
+                          (code:line #,(tt "#")(pattern ... pattern ellipsis pattern ...))
+                          (code:line #,(tt "#&")pattern)
+                          (code:line #,(tt "#s")(key-datum pattern ...))
+                          (code:line #,(tt "#s")(key-datum pattern ... pattern ellipsis pattern ...))
+                          (ellipsis stat-pattern)
+                          const]
                [stat-pattern id
                              (stat-pattern ...)
                              (stat-pattern ...+ . stat-pattern)
@@ -79,18 +80,13 @@ A syntax object matches a @racket[pattern] as follows:
  Any @tech{pattern variables} bound by the sub-@racket[pattern]s are
  bound by the complete pattern; the bindings must all be distinct.}
 
- @specsubform[(pattern ...+ . pattern)]{
-
- The last @racket[pattern] must not be a @racket/form[(pattern ...)],
- @racket/form[(pattern ...+ . pattern)], @racket/form[(pattern ... pattern
- ellipsis pattern ...)], or @racket/form[(pattern ... pattern ellipsis
- pattern ... . pattern)] form.
+ @specsubform[(pattern ...+ . np-pattern)]{
 
  Like the previous kind of pattern, but matches syntax objects that
  are not necessarily lists; for @math{n} sub-@racket[pattern]s before
- the last sub-@racket[pattern], the syntax object's datum must be a
- pair such that @math{n-1} @racket[cdr]s produce pairs. The last
- sub-@racket[pattern] is matched against the syntax object
+ the final @racket[np-pattern], the syntax object's datum must be a
+ pair such that @math{n-1} @racket[cdr]s produce pairs. The final
+ @racket[np-pattern] is matched against the syntax object
  corresponding to the @math{n}th @racket[cdr] (or the
  @racket[datum->syntax] coercion of the datum using the nearest
  enclosing syntax object's lexical context and source location).}
@@ -111,11 +107,11 @@ A syntax object matches a @racket[pattern] as follows:
  lists of syntax objects with a @tech{depth marker} of @math{2}, and
  so on.)}
 
- @specsubform[(pattern ... pattern ellipsis pattern ... . pattern)]{
+ @specsubform[(pattern ... pattern ellipsis pattern ... . np-pattern)]{
 
  Like the previous kind of pattern, but with a final
- sub-@racket[pattern] as for @racket[(pattern ...+ . pattern)].  The
- final @racket[pattern] never matches a syntax object whose datum is a
+ @racket[np-pattern] as for @racket[(pattern ...+ . np-pattern)].  The
+ final @racket[np-pattern] never matches a syntax object whose datum is a
  pair.}
 
  @specsubform[(code:line #,(tt "#")(pattern ...))]{
