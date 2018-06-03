@@ -9,7 +9,7 @@
 The constant @racket[unsafe-undefined] is used internally as a
 placeholder value. For example, it is used by @racket[letrec] as a
 value for a variable that has not yet been assigned a value.  Unlike
-the @racket[undefined] value exported by @racket[racket/undefined],
+the @racket[undefined] value exported by @racketmodname[racket/undefined],
 however, the @racket[unsafe-undefined] value should not leak as the
 result of a safe expression, and it should not be passed as an optional
 argument to a procedure (because it may count as ``no value provided'').
