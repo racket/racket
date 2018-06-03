@@ -85,9 +85,10 @@
     ;; Add the namespace's post-expansion scope (i.e., the inside-edge
     ;; scope) so that the binding has a specific phase:
     (define post-scope
-      (root-expand-context-post-expansion-scope
-       (namespace-get-root-expand-ctx
-        (expand-context-namespace ctx))))
+      (post-expansion-scope
+       (root-expand-context-post-expansion
+        (namespace-get-root-expand-ctx
+         (expand-context-namespace ctx)))))
     (define tl-ids (for/list ([id (in-list ids)])
                      (add-scope id post-scope)))
     ;; Bind the identifier:

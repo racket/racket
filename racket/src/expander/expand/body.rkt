@@ -51,8 +51,8 @@
                                  [name #f]
                                  [only-immediate? #t]
                                  [def-ctx-scopes def-ctx-scopes]
-                                 [post-expansion-scope #:parent root-expand-context inside-sc]
-                                 [post-expansion-scope-action add-scope]
+                                 [post-expansion #:parent root-expand-context
+                                                 (lambda (s) (add-scope s inside-sc))]
                                  [scopes (cons inside-sc
                                                (expand-context-scopes ctx))]
                                  [use-site-scopes #:parent root-expand-context (box null)]
@@ -243,7 +243,7 @@
                                             (expand-context-scopes body-ctx))]
                                    [only-immediate? #f]
                                    [def-ctx-scopes #f]
-                                   [post-expansion-scope #:parent root-expand-context #f]))
+                                   [post-expansion #:parent root-expand-context #f]))
   ;; Helper to expand and wrap the ending expressions in `begin`, if needed:
   (define (finish-bodys)
     (define block->list? (null? val-idss))

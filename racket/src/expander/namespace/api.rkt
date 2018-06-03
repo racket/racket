@@ -58,7 +58,7 @@
   (check who syntax? s)
   (check who namespace? ns)
   (define root-ctx (namespace-get-root-expand-ctx ns))
-  (define post-scope (root-expand-context-post-expansion-scope root-ctx))
+  (define post-scope (post-expansion-scope (root-expand-context-post-expansion root-ctx)))
   (define other-namespace-scopes (for/list ([sc (in-set
                                                  ;; `all-scopes-stx` corresponds to the initial import
                                                  (syntax-scope-set (root-expand-context-all-scopes-stx root-ctx)

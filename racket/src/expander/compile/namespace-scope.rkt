@@ -36,7 +36,7 @@
 
 (define (extract-namespace-scopes/values ns)
   (define root-ctx (namespace-get-root-expand-ctx ns))
-  (define post-expansion-sc (root-expand-context-post-expansion-scope root-ctx))
+  (define post-expansion-sc (post-expansion-scope (root-expand-context-post-expansion root-ctx)))
   (values (seteq post-expansion-sc)
           (set-remove (list->seteq (root-expand-context-module-scopes root-ctx))
                       post-expansion-sc)))

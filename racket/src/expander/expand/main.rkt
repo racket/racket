@@ -385,7 +385,7 @@
    (define result-s (flip-scope transformed-s intro-scope))
    ;; In a definition context, we need to add the inside-edge scope to
    ;; any expansion result
-   (define post-s (maybe-add-post-expansion-scope result-s ctx))
+   (define post-s (maybe-add-post-expansion result-s ctx))
    ;; Track expansion:
    (define tracked-s (syntax-track-origin post-s cleaned-s (or origin-id (if (syntax-identifier? s) s (car (syntax-e s))))))
    (define rearmed-s (taint-dispatch tracked-s (lambda (t-s) (syntax-rearm t-s s)) (expand-context-phase ctx)))
@@ -455,20 +455,14 @@
        (or (eq? current-frame-id bind-frame-id)
            (eq? current-frame-id 'all))))
 
-(define (maybe-add-post-expansion-scope s ctx)
-  (cond
-   [(root-expand-context-post-expansion-scope ctx)
-    ;; We're in a definition context where, say, an inside-edge scope
-    ;; needs to be added to any immediate macro expansion; that way,
-    ;; if the macro expands to a definition form, the binding will be
-    ;; in the definition context's scope. The sepcific action depends
-    ;; on the expansion context.
-    (define new-s
-      ((expand-context-post-expansion-scope-action ctx)
-       s
-       (root-expand-context-post-expansion-scope ctx)))
-    (syntax-add-shifts new-s (root-expand-context-post-expansion-shifts ctx))]
-   [else s]))
+(define (maybe-add-post-expansion s ctx)
+  ;; We may be in a definition context where, say, an inside-edge scope
+  ;; needs to be added to any immediate macro expansion; that way,
+  ;; if the macro expands to a definition form, the binding will be
+  ;; in the definition context's scope. The sepcific action depends
+  ;; on the expansion context.
+  (apply-post-expansion (root-expand-context-post-expansion ctx)
+                        s))
 
 (define (accumulate-def-ctx-scopes ctx def-ctx-scopes)
   ;; Move any accumulated definition-context scopes to the `scopes`
@@ -627,7 +621,7 @@
                            (expand-context-stops ctx)
                            empty-free-id-set)]
                 [def-ctx-scopes #f]
-                [post-expansion-scope #:parent root-expand-context #f]))
+                [post-expansion #:parent root-expand-context #f]))
 
 ;; Expand and evaluate `s` as a compile-time expression, ensuring that
 ;; the number of returned values matches the number of target

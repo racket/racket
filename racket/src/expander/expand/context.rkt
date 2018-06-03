@@ -42,7 +42,6 @@
           phase      ; current expansion phase; must match phase of `namespace`
           namespace  ; namespace for modules and evaluation
           * env        ; environment for local bindings
-          * post-expansion-scope-action ; function to apply with `post-expansion-scope`
           * scopes     ; list of scopes that should be pruned by `quote-syntax`
           * def-ctx-scopes ; #f or box of list of scopes; transformer-created def-ctxes
           * binding-layer ; changed when a binding is nested; to check already-expanded
@@ -76,8 +75,7 @@
   (define root-ctx (namespace-get-root-expand-ctx ns))
   (expand-context (root-expand-context-self-mpi root-ctx)
                   (root-expand-context-module-scopes root-ctx)
-                  (root-expand-context-post-expansion-scope root-ctx)
-                  (root-expand-context-post-expansion-shifts root-ctx)
+                  (root-expand-context-post-expansion root-ctx)
                   (root-expand-context-top-level-bind-scope root-ctx)
                   (root-expand-context-all-scopes-stx root-ctx)
                   (root-expand-context-use-site-scopes root-ctx)
@@ -90,7 +88,6 @@
                   (namespace-phase ns)
                   ns
                   empty-env
-                  push-scope ; post-expansion-scope-action
                   null ; scopes
                   #f   ; def-ctx-scopes [=> don't record scopes to be stipped for `quote-syntax`]
                   (root-expand-context-frame-id root-ctx) ; binding-layer
@@ -121,8 +118,7 @@
   (struct*-copy expand-context ctx
                 [self-mpi #:parent root-expand-context (root-expand-context-self-mpi root-ctx)]
                 [module-scopes #:parent root-expand-context (root-expand-context-module-scopes root-ctx)]
-                [post-expansion-scope #:parent root-expand-context (root-expand-context-post-expansion-scope root-ctx)]
-                [post-expansion-shifts #:parent root-expand-context (root-expand-context-post-expansion-shifts root-ctx)]
+                [post-expansion #:parent root-expand-context (root-expand-context-post-expansion root-ctx)]
                 [top-level-bind-scope #:parent root-expand-context (root-expand-context-top-level-bind-scope root-ctx)]
                 [all-scopes-stx #:parent root-expand-context (root-expand-context-all-scopes-stx root-ctx)]
                 [use-site-scopes #:parent root-expand-context (root-expand-context-use-site-scopes root-ctx)]
@@ -170,7 +166,7 @@
    [else (struct*-copy expand-context ctx
                        [context 'expression]
                        [name #f]
-                       [post-expansion-scope #:parent root-expand-context #f])]))
+                       [post-expansion #:parent root-expand-context #f])]))
 
 ;; Adjusts `ctx` to make it suitable for a non-tail position
 ;; in an `begin` form, possibly in a 'top-level or 'module context

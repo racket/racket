@@ -162,7 +162,7 @@
    (define ctx (struct*-copy expand-context (copy-root-expand-context init-ctx root-ctx)
                              [allow-unbound? #f]
                              [namespace m-ns]
-                             [post-expansion-scope-action add-scope]
+                             [post-expansion #:parent root-expand-context (lambda (s) (add-scope s inside-scope))]
                              [phase phase]
                              [just-once? #f]))
    
@@ -356,7 +356,7 @@
          (define body-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes partial-body-ctx def-ctx-scopes)
                                         [stops empty-free-id-set]
                                         [def-ctx-scopes #f]
-                                        [post-expansion-scope #:parent root-expand-context #f]
+                                        [post-expansion #:parent root-expand-context #f]
                                         [to-module-lifts (make-to-module-lift-context phase
                                                                                       #:shared-module-ends module-ends
                                                                                       #:end-as-expressions? #t)]))
@@ -407,7 +407,7 @@
      
      (define submod-ctx (struct*-copy expand-context ctx
                                       [frame-id #:parent root-expand-context #f]
-                                      [post-expansion-scope #:parent root-expand-context #f]
+                                      [post-expansion #:parent root-expand-context #f]
                                       [namespace submod-m-ns]))
      
      (define declare-enclosing-module
@@ -905,10 +905,10 @@
             (semi-parsed-define-values s syms scoped-ids rhs))))
 
 (define (add-post-expansion-scope bodys ctx)
-  (define sc (root-expand-context-post-expansion-scope ctx))
-  (if sc
+  (define pe (root-expand-context-post-expansion ctx))
+  (if pe
       (for/list ([body (in-list bodys)])
-        (add-scope body sc))
+        (apply-post-expansion pe body))
       bodys))
 
 ;; ----------------------------------------
@@ -1166,8 +1166,8 @@
   (let* ([s (syntax-property s 'module-body-context (root-expand-context-all-scopes-stx root-ctx))]
          [s (syntax-property s
                              'module-body-inside-context
-                             (add-scope empty-syntax
-                                        (root-expand-context-post-expansion-scope root-ctx)))])
+                             (apply-post-expansion (root-expand-context-post-expansion root-ctx)
+                                                   empty-syntax))])
     s))
 
 ;; ----------------------------------------
@@ -1336,7 +1336,7 @@
                    (struct*-copy expand-context ctx
                                  [context 'module]
                                  [stops empty-free-id-set]
-                                 [post-expansion-scope #:parent root-expand-context #f])
+                                 [post-expansion #:parent root-expand-context #f])
                    self
                    #:always-produce-compiled? #t
                    #:keep-enclosing-scope-at-phase keep-enclosing-scope-at-phase

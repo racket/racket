@@ -232,9 +232,6 @@
   (define def-ctx-scopes (if (expand-context-def-ctx-scopes ctx)
                              (unbox (expand-context-def-ctx-scopes ctx))
                              null))
-  (define placeholder-sc (and intdefs
-                              (not (null? intdefs))
-                              (new-scope 'macro)))
   (struct*-copy expand-context ctx
                 [context context]
                 [env (add-intdef-bindings (expand-context-env ctx)
@@ -257,29 +254,16 @@
                               ;; Special ID 'all means "use-site scopes for all expansions"
                               'all]
                              [else (or frame-id i-frame-id)]))]
-                [post-expansion-scope
-                 #:parent root-expand-context
-                 (or (and same-kind?
-                          (memq context '(module module-begin top-level))
-                          (root-expand-context-post-expansion-scope ctx))
-                     ;; Placeholder to make sure `post-expansion-scope-action`
-                     ;; is used
-                     placeholder-sc)]
-                [post-expansion-shifts
-                 #:parent root-expand-context
-                 (if (and same-kind?
-                          (eq? context 'top-level))
-                     (root-expand-context-post-expansion-shifts ctx)
-                     null)]
-                [post-expansion-scope-action
-                 (let ([act (expand-context-post-expansion-scope-action ctx)])
-                   (if (and intdefs (not (null? intdefs)))
-                       (lambda (s sc)
-                         (define s2 (if (eq? sc placeholder-sc)
-                                        s
-                                        (act s sc)))
-                         (add-intdef-scopes s2 intdefs))
-                       act))]
+                [post-expansion #:parent root-expand-context
+                                (let ([pe (and same-kind?
+                                               (or (pair? context)
+                                                   (memq context '(module module-begin top-level)))
+                                               (root-expand-context-post-expansion ctx))])
+                                  (cond
+                                    [(and intdefs (not (null? intdefs)))
+                                     (lambda (s)
+                                       (add-intdef-scopes (apply-post-expansion pe s) intdefs))]
+                                    [else pe]))]
                 [scopes
                  (append def-ctx-scopes
                          (expand-context-scopes ctx))]
