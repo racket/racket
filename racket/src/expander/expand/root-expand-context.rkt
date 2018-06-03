@@ -61,7 +61,7 @@
   (cond
     [(not pe) s]
     [(shifted-multi-scope? pe) (push-scope s pe)]
-    [(pair? pe) (syntax-add-shifts (add-scope s (car pe)) (cdr pe))]
+    [(pair? pe) (syntax-add-shifts (push-scope s (car pe)) (cdr pe))]
     [else (pe s)]))
 
 (define (post-expansion-scope pe)

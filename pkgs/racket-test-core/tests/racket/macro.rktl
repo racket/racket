@@ -2206,6 +2206,34 @@
     (#%module-begin
      (m))))
 
+(module test-for-scope-specific-binding/nested racket/base
+
+  (module l racket/base
+    (require (for-syntax racket/base racket/syntax)
+             syntax/parse/define)
+
+    (provide expand-in-modbeg m
+             (all-from-out racket/base))
+
+    (define-syntax-parser expand-in-modbeg
+      [(_ form ...)
+       (local-expand #'(#%plain-module-begin form ...)
+                     'module-begin
+                     '())
+       #'(void)])
+
+    (define-syntax-parser m
+      [(_)
+       #:with x (generate-temporary)
+       #'(begin
+           (define x #f)
+           (begin-for-syntax #'x))]))
+
+  (module c (submod ".." l)
+    (let ()
+      (expand-in-modbeg
+       (m)))))
+
 ;; ----------------------------------------
 
 (report-errs)

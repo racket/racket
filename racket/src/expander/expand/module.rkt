@@ -252,7 +252,12 @@
                                                           [compiled-submodules (make-hasheq)]
                                                           [compiled-module-box (box #f)]
                                                           [defined-syms (make-hasheq)])
-                                    (module-begin-k s ctx)))]))
+                                    (module-begin-k s ctx)))]
+                               ;; Also, force `post-expansion` to be right, in case 'module-begin
+                               ;; module is triggered within some other mode; a correct value
+                               ;; for `post-expansion` is important to getting scopes right.
+                               [post-expansion #:parent root-expand-context
+                                               (lambda (s) (add-scope s inside-scope))]))
 
      ;; In case `#%module-begin` expansion is forced on syntax that
      ;; that wasn't already introduced into the mdoule's inside scope,
