@@ -2173,6 +2173,38 @@
 
 (test 1 dynamic-require ''local-expand-result-depends-on-use-site-scope 'result)
 
+;; ----------------------------------------
+;; Make sure `local-expand` doesn't get confused about the
+;; post-expansion scope needed to make a binding phase-specific
+
+(module test-for-scope-specific-binding racket/base
+
+  (module l racket/base
+    (require (for-syntax racket/base racket/syntax)
+             syntax/parse/define)
+
+    (provide #%module-begin m
+             (all-from-out racket/base))
+
+    (define-syntax-parser #%module-begin
+      [(_ form ...)
+       (let ([intdef-ctx (syntax-local-make-definition-context #f #f)])
+         (local-expand #'(#%plain-module-begin form ...)
+                       'module-begin
+                       '()
+                       intdef-ctx))])
+
+    (define-syntax-parser m
+      [(_)
+       #:with x (generate-temporary)
+       #'(begin
+           (define x #f)
+           ;; The #' here triggers a `syntax-local-value` call:
+           (begin-for-syntax #'x))]))
+
+  (module c (submod ".." l)
+    (#%module-begin
+     (m))))
 
 ;; ----------------------------------------
 

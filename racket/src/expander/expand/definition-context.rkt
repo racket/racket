@@ -232,6 +232,9 @@
   (define def-ctx-scopes (if (expand-context-def-ctx-scopes ctx)
                              (unbox (expand-context-def-ctx-scopes ctx))
                              null))
+  (define placeholder-sc (and intdefs
+                              (not (null? intdefs))
+                              (new-scope 'macro)))
   (struct*-copy expand-context ctx
                 [context context]
                 [env (add-intdef-bindings (expand-context-env ctx)
@@ -256,11 +259,12 @@
                              [else (or frame-id i-frame-id)]))]
                 [post-expansion-scope
                  #:parent root-expand-context
-                 (if (and intdefs (not (null? intdefs)))
-                     (new-scope 'macro) ; placeholder; action uses `indefs`
-                     (and same-kind?
+                 (or (and same-kind?
                           (memq context '(module module-begin top-level))
-                          (root-expand-context-post-expansion-scope ctx)))]
+                          (root-expand-context-post-expansion-scope ctx))
+                     ;; Placeholder to make sure `post-expansion-scope-action`
+                     ;; is used
+                     placeholder-sc)]
                 [post-expansion-shifts
                  #:parent root-expand-context
                  (if (and same-kind?
@@ -268,10 +272,14 @@
                      (root-expand-context-post-expansion-shifts ctx)
                      null)]
                 [post-expansion-scope-action
-                 (if (and intdefs (not (null? intdefs)))
-                     (lambda (s placeholder-sc)
-                       (add-intdef-scopes s intdefs))
-                     (expand-context-post-expansion-scope-action ctx))]
+                 (let ([act (expand-context-post-expansion-scope-action ctx)])
+                   (if (and intdefs (not (null? intdefs)))
+                       (lambda (s sc)
+                         (define s2 (if (eq? sc placeholder-sc)
+                                        s
+                                        (act s sc)))
+                         (add-intdef-scopes s2 intdefs))
+                       act))]
                 [scopes
                  (append def-ctx-scopes
                          (expand-context-scopes ctx))]
