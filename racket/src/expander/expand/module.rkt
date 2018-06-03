@@ -255,7 +255,8 @@
                                     (module-begin-k s ctx)))]
                                ;; Also, force `post-expansion` to be right, in case 'module-begin
                                ;; module is triggered within some other mode; a correct value
-                               ;; for `post-expansion` is important to getting scopes right.
+                               ;; for `post-expansion` is important to getting phase-specific
+                               ;; binding right.
                                [post-expansion #:parent root-expand-context
                                                (lambda (s) (add-scope s inside-scope))]))
 
