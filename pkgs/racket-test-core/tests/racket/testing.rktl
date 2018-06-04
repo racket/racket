@@ -209,7 +209,7 @@ transcript.
     [(expr) (error-test expr exn:application:type?)]
     [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
-(require (only-in racket [lambda err:mz:lambda])) ; so err/rt-test works with beginner.rktl
+(require (only-in racket/base [lambda err:mz:lambda])) ; so err/rt-test works with beginner.rktl
 (define-syntax err/rt-test
   (lambda (stx)
     (syntax-case stx ()
