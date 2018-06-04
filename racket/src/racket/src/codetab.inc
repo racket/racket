@@ -146,6 +146,27 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   int offset = (JIT_WORD_SIZE * 8), split_offset = 0;
   void **the_tree, **t1, **t2, **split_t, *val1, *val2;
 
+
+  if (value && SCHEME_SYMBOLP(value)) {
+    Scheme_Object* val = (Scheme_Object*)value;
+    pid_t p;
+    intptr_t len = 120;
+    char fname[80];
+    char* func_name;
+    FILE* fp;
+    p = getpid();
+    func_name = malloc(120);
+    //fprintf(stderr, "/tmp/perf-%d.map\n", (unsigned int)p);
+    sprintf(fname,"/tmp/perf-%d.map", (unsigned int)p);
+    fp = fopen(fname, "a");
+    fprintf(fp, "%lx %lx ", (long unsigned int)start, (long unsigned int)end-start);
+    func_name = scheme_write_to_string(val, &len);
+    fprintf(fp,"%s\n", func_name);
+    fclose(fp);
+  }
+
+  
+
 #ifdef PLT_DUMP_JIT_RANGES
   if (!dump_registered) {
     dump_registered = 1;
