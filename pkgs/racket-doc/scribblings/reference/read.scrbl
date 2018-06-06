@@ -294,7 +294,7 @@ or @litchar{#!} are allowed for selecting a parser. See
 
 @defboolparam[read-accept-lang on?]{
 
-A @tech{parameter} that (along with @racket[read-accept-reader] controls
+A @tech{parameter} that (along with @racket[read-accept-reader]) controls
 whether @litchar{#lang} and @litchar{#!} are allowed for selecting a
 parser. See @secref["parse-reader"] for more information.}
 
