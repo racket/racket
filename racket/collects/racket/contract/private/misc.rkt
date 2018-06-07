@@ -257,13 +257,39 @@
    #:generate
    (λ (ctc)
      (define x (</>-ctc-x ctc))
-     (λ (fuel)
-       (λ ()
-         (rand-choice
-          [1/10 (-/+ +inf.0)]
-          [1/10 (-/+ x 0.01)]
-          [4/10 (-/+ x (random))]
-          [else (-/+ x (random 4294967087))]))))
+     (cond
+       [(and (= x +inf.0) (equal? name '</c))
+        (λ (fuel)
+          (λ ()
+            (rand-choice
+             [1/10 -inf.0]
+             [2/10 (random)]
+             [2/10 (- (random))]
+             [2/10 (random 4294967087)]
+             [2/10 (- (random 4294967087))]
+             [else 0])))]
+       [(and (= x -inf.0) (equal? name '</c))
+        (λ (fuel) #f)]
+       [(and (= x +inf.0) (equal? name '>/c))
+        (λ (fuel) #f)]
+       [(and (= x -inf.0) (equal? name '>/c))
+        (λ (fuel)
+          (λ ()
+            (rand-choice
+             [1/10 +inf.0]
+             [2/10 (random)]
+             [2/10 (- (random))]
+             [2/10 (random 4294967087)]
+             [2/10 (- (random 4294967087))]
+             [else 0])))]
+       [else
+        (λ (fuel)
+          (λ ()
+            (rand-choice
+             [1/10 (-/+ +inf.0)]
+             [1/10 (-/+ x 0.01)]
+             [4/10 (-/+ x (random))]
+             [else (-/+ x (random 4294967087))])))]))
    #:stronger </>-ctc-stronger
    #:equivalent </>-ctc-equivalent))
 
