@@ -1071,7 +1071,7 @@
                                           (list-ref super-v 3)))
                            (list-ize (list-ref v 4)
                                      (and super-v
-                                          (list-ref super-v 3)))))))
+                                          (list-ref super-v 4)))))))
                   (raise-syntax-error
                    #f
                    "identifier is not bound to struct type information"
