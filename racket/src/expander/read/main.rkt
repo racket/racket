@@ -153,8 +153,11 @@
          [(char=? ec #\.)
           (define-values (dot-line dot-col dot-pos) (port-next-location in))
           (consume-char in c)
-          (define cdot (wrap '#%dot in (reading-at config dot-line dot-col dot-pos) #\.))
+          (define pos-config (reading-at config dot-line dot-col dot-pos))
+          (define cdot (wrap '#%dot in pos-config #\.))
           (define post-v (read-undotted #f in config))
+          (when (eof-object? post-v)
+            (reader-error in pos-config #:due-to eof "expected a datum after cdot, found end-of-file"))
           (loop (wrap (list cdot v post-v) in (reading-at config line col pos) #\.))]
          [else v]))])]))
 

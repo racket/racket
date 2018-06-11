@@ -956,16 +956,17 @@ When the @racket[read-cdot] @tech{parameter} is set to @racket[#t],
 then a variety of changes occur in the reader.
 
 First, symbols can no longer include the character @litchar{.}, unless
-the entire symbol is quoted with @litchar{|}.
+the @litchar{.} is quoted with @litchar{|} or @litchar{\}.
 
 Second, numbers can no longer include the character @litchar{.},
-unless the number is prefixed with @litchar{#e} or @litchar{#i}, or an
+unless the number is prefixed with @litchar{#e}, @litchar{#i},
+@litchar{#b}, @litchar{#o}, @litchar{#d}, @litchar{#x}, or an
 equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
-infix dot, then there must be separating whitespace.
+infix dot, then a delimiter must precede the @litchar{.}.
 
 Finally, after reading any datum @racket[_x], the reader will seek
-through whitespace and look for zero or more sequences of a
+through whitespace and comments and look for zero or more sequences of a
 @litchar{.} followed by another datum @racket[_y]. It will then group
 @racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
 @racket[_x.y] reads equal to @racket[(#%dot _x _y)].
