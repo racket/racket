@@ -12,7 +12,7 @@
 
 (provide read-symbol-or-number)
 
-(define (read-symbol-or-number init-c in config
+(define (read-symbol-or-number init-c in orig-config
                                ;; `mode` can be 'symbol-or-number,
                                ;; 'symbol, 'symbol/indirect, 'keyword,
                                ;; or a number prefix string like "#e";
@@ -21,6 +21,9 @@
                                ;; symbol handler
                                #:mode [mode 'symbol-or-number]
                                #:extra-prefix [extra-prefix #f])
+  (define config (if (string? mode)
+                     (override-parameter read-cdot orig-config #f)
+                     orig-config))
   (define rt (read-config-readtable config))
   (cond
    [(and rt

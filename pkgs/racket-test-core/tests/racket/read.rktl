@@ -1356,7 +1356,19 @@
   (test '(#%dot (f a) (m b c))               readstr "(f a).(m b c)")
   (test '(#%dot (#%dot (f a) (m b c)) (n d e)) readstr "(f a).(m b c).(n d e)")
   (test '(#%dot (#%dot (#%dot (#%dot (#%dot (f a) (m b c)) x) (n d e)) y) z)
-        readstr "(f a).(m b c).x.(n d e).y.z"))
+        readstr "(f a).(m b c).x.(n d e).y.z")
+  (test '(#%dot 1.2 a) readstr "#i1.2 .a")
+  (test '(#%dot 1.0 a) readstr "#b1.0 .a")
+  (test '(#%dot 1.25 a) readstr "#o1.2 .a")
+  (test '(#%dot 1.2 a) readstr "#d1.2 .a")
+  (test '(#%dot 1.125 a) readstr "#x1.2 .a")
+  (test '(#%dot (#%dot 1 2) a) readstr "1.2 .a")
+  (test 'a.b readstr "|a.b|")
+  (test 'a.b readstr "a|.|b")
+  (test 'a.b readstr "a|.b|")
+  (test 'a.b readstr "a\\.b")
+  (err/rt-test (readstr "x.") exn:fail:read:eof?)
+  (err/rt-test (readstr "1.") exn:fail:read:eof?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; srcloc->string
