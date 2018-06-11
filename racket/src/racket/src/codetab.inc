@@ -147,13 +147,21 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   void **the_tree, **t1, **t2, **split_t, *val1, *val2;
 
 
-  if (value && SCHEME_SYMBOLP(value)) {
+  if (1) {
     Scheme_Object* val = (Scheme_Object*)value;
     pid_t p;
     intptr_t len = 120;
     char fname[80];
     char* func_name;
     FILE* fp;
+    if (!value) 
+      val = scheme_intern_symbol("MISSING-RACKET-ENTRY");
+    else if ((SCHEME_BOOLP(value)))
+      val = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
+    else if ((SCHEME_VOIDP(value)))
+      val = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
+    else if ((SCHEME_VECTORP(value)))
+      val = SCHEME_VEC_ELS(value)[0];
     p = getpid();
     func_name = malloc(120);
     //fprintf(stderr, "/tmp/perf-%d.map\n", (unsigned int)p);
