@@ -89,6 +89,7 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 AC_ARG_ENABLE(noopt,   [  --enable-strip          strip debug on install (usually enabled by default)])
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
+AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
 
 ###### Some flags imply other flags #######
 
@@ -341,6 +342,8 @@ show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
+
+show_explicitly_enabled "${enable_jitframe}" "jitframe"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
@@ -676,6 +679,10 @@ fi
 
 if test "${enable_gcov}" = "yes" ; then
   PROFFLAGS="$PROFFLAGS -fprofile-arcs -ftest-coverage"
+fi
+
+if test "${enable_jitframe}" = "yes" ; then
+  MZOPTIONS="$MZOPTIONS -DMZ_PROLOG_CREATE_FULL_STACK_FRAME"
 fi
 
 ORIG_CC_FOR_BUILD="${CC_FOR_BUILD}"

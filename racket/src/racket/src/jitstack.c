@@ -380,17 +380,23 @@ Scheme_Object *scheme_native_stack_trace(void)
 
       if (STK_COMP((uintptr_t)np, real_stack_end)
 	  && STK_COMP(stack_start, (uintptr_t)np)) {
-	if (SCHEME_VOIDP(name)) {
+ 	if (SCHEME_VOIDP(name)) {
 	  /* JIT_LOCAL2 has the next return address (always) */
 	  q = ((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 	} else {
-#ifdef MZ_USE_JIT_I386
+#ifdef MZ_PROLOG_CREATE_FULL_STACK_FRAME
+          /* np is the actual stack frame */
+          p = np;
+          q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+#else
+# ifdef MZ_USE_JIT_I386
 	  /* Push after local stack of return-address proc
 	     has the next return address */
 	  q = ((void **)np)[-(3 + LOCAL_FRAME_SIZE + 1)];
-#else
+# else
           /* JIT_LOCAL2 has the next return address */
           q = ((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+# endif
 #endif
 	}
       } else {

@@ -820,7 +820,7 @@ static void *top;
       LOCAL1 (which is a cont_mark_stack offset, if anything)
       LOCAL2 (some pointer, never to stack or runstack)
       LOCAL3 (temp space for misc uses; not saved across calls that might capture LWC)
-      LOCAL4 (x86_64: = saved R14 otherwise when THREAD_LOCAL
+      LOCAL4 (x86_64: = saved R14 when THREAD_LOCAL
               x86: = RUNSTACK_BASE or THREAD_LOCAL)
       [some empty slots, maybe, depending on alignment]
       [space for "flostack" --- local unboxed values, such as flonums]
@@ -944,9 +944,6 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  else
 #   define STACK_ALIGN_WORDS 3
 #  endif
-#  define mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
-#  define mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
-#  define mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
 #  define JIT_LOCAL3 -(JIT_WORD_SIZE * 6)
 #  ifdef NEED_LOCAL4
 #   ifdef JIT_X86_64
@@ -958,10 +955,10 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  else
 #   define LOCAL_FRAME_SIZE 3
 #  endif
+#  define _mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
+#  define _mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
+#  define _mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
 # else
-#  define mz_prolog(x) /* empty */
-#  define mz_epilog(x) RET_()
-#  define mz_epilog_without_jmp() ADDQir(JIT_WORD_SIZE, JIT_SP)
 #  define JIT_LOCAL3 JIT_LOCAL2
 #  ifdef NEED_LOCAL4
 #   define LOCAL_FRAME_SIZE 3
@@ -969,9 +966,28 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  else
 #   define LOCAL_FRAME_SIZE 2
 #  endif
+#  define _mz_prolog(x) /* empty */
+#  define _mz_epilog(x) RET_()
+#  define _mz_epilog_without_jmp() ADDQir(JIT_WORD_SIZE, JIT_SP)
 # endif
 # ifdef NEED_LOCAL4
 #   define JIT_LOCAL4 -(JIT_WORD_SIZE * JIT_LOCAL4_OFFSET)
+# endif
+# ifdef MZ_PROLOG_CREATE_FULL_STACK_FRAME
+  /* Make the internal ABI the same as the main call ABI */
+#  define MZ_LOCAL_FRAME_SIZE 8
+#  define mz_prolog(x) (PUSHQr(_EBP),                                  \
+                        mz_get_local_p((x), JIT_LOCAL3),               \
+                        MOVQrr(_ESP, _EBP),                            \
+                        ADDQiBr(-(MZ_LOCAL_FRAME_SIZE * JIT_WORD_SIZE), JIT_SP), \
+                        mz_set_local_p((x), JIT_LOCAL3))
+#  define mz_epilog_without_jmp() (ADDQiBr(MZ_LOCAL_FRAME_SIZE * JIT_WORD_SIZE, JIT_SP), POPQr(_EBP), ADDQiBr(JIT_WORD_SIZE, JIT_SP))
+#  define mz_epilog(x) (ADDQiBr(MZ_LOCAL_FRAME_SIZE * JIT_WORD_SIZE, JIT_SP), POPQr(_EBP), RET_())
+# else
+  /* Normal internal ABI */
+#  define mz_prolog(x) _mz_prolog(x)
+#  define mz_epilog_without_jmp(x) _mz_epilog_without_jmp(x)
+#  define mz_epilog(x) _mz_epilog(x)
 # endif
 # define mz_push_locals() SUBQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)

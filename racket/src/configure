@@ -832,6 +832,7 @@ enable_gprof
 enable_gcov
 enable_noopt
 enable_ubsan
+enable_jitframe
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1489,6 +1490,7 @@ Optional Features:
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined)
+  --enable-jitframe       x86_64: use frame pointer for internal calls
 
 Some influential environment variables:
   CC          C compiler command
@@ -2843,6 +2845,11 @@ if test "${enable_ubsan+set}" = set; then :
   enableval=$enable_ubsan;
 fi
 
+# Check whether --enable-jitframe was given.
+if test "${enable_jitframe+set}" = set; then :
+  enableval=$enable_jitframe;
+fi
+
 
 ###### Some flags imply other flags #######
 
@@ -3095,6 +3102,8 @@ show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
 show_explicitly_enabled "${enable_gprof}" "gprof"
 show_explicitly_enabled "${enable_gcov}" "gcov"
+
+show_explicitly_enabled "${enable_jitframe}" "jitframe"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
@@ -4577,6 +4586,10 @@ fi
 
 if test "${enable_gcov}" = "yes" ; then
   PROFFLAGS="$PROFFLAGS -fprofile-arcs -ftest-coverage"
+fi
+
+if test "${enable_jitframe}" = "yes" ; then
+  MZOPTIONS="$MZOPTIONS -DMZ_PROLOG_CREATE_FULL_STACK_FRAME"
 fi
 
 ORIG_CC_FOR_BUILD="${CC_FOR_BUILD}"
