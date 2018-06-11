@@ -148,27 +148,26 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
 
 
   if (1) {
-    Scheme_Object* val = (Scheme_Object*)value;
     pid_t p;
     intptr_t len = 120;
     char fname[80];
     char* func_name;
     FILE* fp;
-    if (!value) 
-      val = scheme_intern_symbol("MISSING-RACKET-ENTRY");
+    if (value && (SCHEME_VECTORP(value)))
+      value = SCHEME_VEC_ELS(value)[0];
+    if (!value)
+      value = scheme_intern_symbol("MISSING-RACKET-ENTRY");
     else if ((SCHEME_BOOLP(value)))
-      val = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
+      value = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
     else if ((SCHEME_VOIDP(value)))
-      val = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
-    else if ((SCHEME_VECTORP(value)))
-      val = SCHEME_VEC_ELS(value)[0];
+      value = scheme_intern_symbol("UNKNOWN-RACKET-FUNCTION");
     p = getpid();
     func_name = malloc(120);
     //fprintf(stderr, "/tmp/perf-%d.map\n", (unsigned int)p);
     sprintf(fname,"/tmp/perf-%d.map", (unsigned int)p);
     fp = fopen(fname, "a");
     fprintf(fp, "%lx %lx ", (long unsigned int)start, (long unsigned int)end-start);
-    func_name = scheme_write_to_string(val, &len);
+    func_name = scheme_write_to_string_w_max(value, &len, len);
     fprintf(fp,"%s\n", func_name);
     fclose(fp);
   }
