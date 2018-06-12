@@ -2235,5 +2235,32 @@
        (m)))))
 
 ;; ----------------------------------------
+;; Make sure `syntax-local-bind-syntaxes` binds variables in a way
+;; that `local-expand` replaces a use with the binding scopes.
+
+(module uses-definition-context-and-local-expand-to-replace racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let ()
+         (define intdef (syntax-local-make-definition-context))
+         (syntax-local-bind-syntaxes (list #'id)
+                                     #f ; => local variable
+                                     intdef)
+         (define raw-bind-id (internal-definition-context-introduce intdef #'id))
+         (define raw-ex-id (local-expand ((make-syntax-introducer) #'id) 'expression null intdef))
+         (define bind-id (syntax-local-identifier-as-binding raw-bind-id))
+         (define ex-id (syntax-local-identifier-as-binding raw-ex-id))
+         #`(list #,(free-identifier=? bind-id ex-id)
+                 #,(bound-identifier=? bind-id ex-id)))]))
+
+  (define result (m x))
+  (provide result))
+
+(test '(#t #t) dynamic-require ''uses-definition-context-and-local-expand-to-replace 'result)
+
+;; ----------------------------------------
 
 (report-errs)

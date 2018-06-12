@@ -275,11 +275,15 @@ The @racket[stop-ids] argument controls how far @racket[local-expand] expands @r
 
        When @racket[#%plain-module-begin] is not in @racket[stop-ids], the
        @racket[#%plain-module-begin] transformer detects and expands sub-forms (such as
-       @racket[define-values]) regardless of the identifiers presence in @racket[stop-ids].}
+       @racket[define-values]) regardless of the identifiers presence in @racket[stop-ids].
+
+       Expansion does not replace the scopes in a local-variable
+       reference to match the binding identifier.}
 
  @item{If @racket[stop-ids] is @racket[#f] instead of a list, then @racket[stx] is expanded only as
        long as the outermost form of @racket[stx] is a macro (i.e. expansion does @emph{not} proceed
-       to sub-expressions). @racketid[#%app], @racketid[#%datum], and @racketid[#%top] identifiers are
+       to sub-expressions, and it does not replace the scopes in a local-variable reference to match the
+       binding identifier). The @racketid[#%app], @racketid[#%datum], and @racketid[#%top] identifiers are
        never introduced.}]
 
 Independent of @racket[stop-ids], when @racket[local-expand] encounters an identifier that has a local
