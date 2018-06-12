@@ -33,9 +33,8 @@ through a textbook:
 
 @itemize[
 
- @item{@italic{@link["http://htdp.org/"]{How to Design Programs}}
-       is the best place to start. Whenever the book says ``Scheme,''
-       you can read it as ``Racket.''}
+ @item{@italic{@link["http://htdp.org/"]{How to Design Programs, Second Edition}}
+       is the best place to start.}
 
  @item{@other-manual['(lib "web-server/scribblings/tutorial/continue.scrbl")]
        introduces you to modules and building web applications.}
