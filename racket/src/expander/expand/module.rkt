@@ -300,7 +300,7 @@
      
      ;; Passes 1 and 2 are nested via `begin-for-syntax`:
      (define expression-expanded-bodys
-       (let pass-1-and-2-loop ([bodys bodys] [phase phase])
+       (let pass-1-and-2-loop ([bodys bodys] [phase phase] [keep-stops? (stop-at-module*? ctx)])
 
          ;; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
          ;; Pass 1: partially expand to discover all bindings and install all 
@@ -309,7 +309,6 @@
          ;; Need to accumulate definition contexts created during
          ;; partial expansion:
          (define def-ctx-scopes (box null))
-         (define to-parsed? (expand-context-to-parsed? ctx))
          
          (define partial-body-ctx (struct*-copy expand-context ctx
                                                 [context 'module]
@@ -360,7 +359,9 @@
          (log-expand partial-body-ctx 'next-group)
          
          (define body-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes partial-body-ctx def-ctx-scopes)
-                                        [stops empty-free-id-set]
+                                        [stops (if keep-stops?
+                                                   (expand-context-stops ctx)
+                                                   empty-free-id-set)]
                                         [def-ctx-scopes #f]
                                         [post-expansion #:parent root-expand-context #f]
                                         [to-module-lifts (make-to-module-lift-context phase
@@ -760,7 +761,7 @@
           (prepare-next-phase-namespace partial-body-ctx)
           (log-expand partial-body-ctx 'phase-up)
           (define-match m disarmed-exp-body '(begin-for-syntax e ...))
-          (define nested-bodys (pass-1-and-2-loop (m 'e) (add1 phase)))
+          (define nested-bodys (pass-1-and-2-loop (m 'e) (add1 phase) #f))
           (log-expand partial-body-ctx 'next-group)
           (namespace-run-available-modules! m-ns (add1 phase)) ; to support running `begin-for-syntax`
           (eval-nested-bodys nested-bodys (add1 phase) ct-m-ns self partial-body-ctx)

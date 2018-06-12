@@ -2691,5 +2691,36 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test '(new orig) dynamic-require ''mixes-top-level-namespaces 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `local-expand` with `#:extend-stop-ids? #f` expands through core forms
+
+(err/rt-test
+ (eval
+  '(module local-expand-with-only-stop-list racket/base
+     (require (for-syntax racket/base))
+     (define-syntax (stop stx)
+       (syntax-case stx ()
+         [(_ form) #'form]))
+     (define-syntax (m stx)
+       (syntax-case stx ()
+         [(_ form)
+          (local-expand #'form 'expression (list #'stop) #:extend-stop-ids? #f)]))
+     (m (let-syntax ([plus (make-rename-transformer #'+)])
+          (stop (plus 1 2))))))
+ exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure #%module-begin respects the stop list when module* is present
+
+(module module-begin-stop-list racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (stop stx)
+    (raise-syntax-error #f "don't expand me!" stx))
+  (begin-for-syntax
+    (local-expand #'(#%plain-module-begin (#%expression (stop)))
+                  'module-begin
+                  (list #'module* #'stop)
+                  #:extend-stop-ids? #f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
