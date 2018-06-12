@@ -2671,5 +2671,25 @@ case of module-leve bindings; it doesn't cover local bindings.
   (ct-eval (+ 1 2)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure "self" module path indices are not mixed up
+;; across namespaces
+
+(module mixes-top-level-namespaces racket/base
+  (define ns (variable-reference->namespace (#%variable-reference)))
+  (define x 'orig)
+
+  (namespace-require 'racket/base)
+
+  (eval '(define x 'new))
+  (define result
+    (eval
+     `(list x ,(parameterize ([current-namespace ns])
+                 (expand #'x)))))
+
+  (provide result))
+
+(test '(new orig) dynamic-require ''mixes-top-level-namespaces 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
