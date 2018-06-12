@@ -975,7 +975,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # endif
 # ifdef MZ_PROLOG_CREATE_FULL_STACK_FRAME
   /* Make the internal ABI the same as the main call ABI */
-#  define MZ_LOCAL_FRAME_SIZE 8
+#  define MZ_LOCAL_FRAME_SIZE (LOCAL_FRAME_SIZE+3)
 #  define mz_prolog(x) (PUSHQr(_EBP),                                  \
                         mz_get_local_p((x), JIT_LOCAL3),               \
                         MOVQrr(_ESP, _EBP),                            \

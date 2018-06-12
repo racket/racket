@@ -159,6 +159,33 @@ static void set_cache(void *p, Scheme_Object *last)
   ((void **)p)[RETURN_ADDRESS_OFFSET] = sjc.stack_cache_pop_code;
 }
 
+#ifdef MZ_USE_DWARF_LIBUNWIND
+static int manual_unw_step(unw_cursor_t *c, uintptr_t stack_start, uintptr_t stack_end) {
+  void **pp;
+  unw_word_t stack_addr;
+
+  pp = (void **)unw_get_frame_pointer(c);
+  if (!(STK_COMP((uintptr_t)pp, stack_end)
+        && STK_COMP(stack_start, (uintptr_t)pp)))
+    return 0;
+
+# ifdef MZ_USE_JIT_ARM
+  stack_addr = (unw_word_t)&(pp[JIT_NEXT_FP_OFFSET+2]);
+  unw_manual_step(c,
+                  &pp[RETURN_ADDRESS_OFFSET], &stack_addr,
+                  &pp[0], &pp[1], &pp[2], &pp[3],
+                  &pp[4], &pp[5], &pp[6], &pp[7],
+                  &pp[NEXT_FRAME_OFFSET]);
+# else
+  stack_addr = (unw_word_t)&(pp[RETURN_ADDRESS_OFFSET+1]);
+  unw_manual_step(c, &pp[RETURN_ADDRESS_OFFSET], &pp[0],
+                  &stack_addr, &pp[-1], &pp[-2], &pp[-3]);
+# endif
+
+  return 1;
+}
+#endif
+
 Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q, *cache_frame_p, *set_cache_sp = NULL;
@@ -169,7 +196,6 @@ Scheme_Object *scheme_native_stack_trace(void)
   unw_context_t cx;
   unw_cursor_t c;
   int manual_unw = 0;
-  unw_word_t stack_addr;
 #else
   Get_Stack_Proc gs;
 #endif
@@ -388,6 +414,10 @@ Scheme_Object *scheme_native_stack_trace(void)
           /* np is the actual stack frame */
           p = np;
           q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+# ifdef MZ_USE_DWARF_LIBUNWIND
+          if (!manual_unw_step(&c, stack_start, stack_end))
+            q = NULL;
+# endif
 #else
 # ifdef MZ_USE_JIT_I386
 	  /* Push after local stack of return-address proc
@@ -484,24 +514,9 @@ Scheme_Object *scheme_native_stack_trace(void)
     if (use_unw) {
       if (manual_unw) {
         /* A JIT-generated function, so we unwind ourselves... */
-	void **pp;
-	pp = (void **)unw_get_frame_pointer(&c);
-	if (!(STK_COMP((uintptr_t)pp, stack_end)
-	      && STK_COMP(stack_start, (uintptr_t)pp)))
-	  break;
-# ifdef MZ_USE_JIT_ARM
-        stack_addr = (unw_word_t)&(pp[JIT_NEXT_FP_OFFSET+2]);
-	unw_manual_step(&c, 
-                        &pp[RETURN_ADDRESS_OFFSET], &stack_addr,
-                        &pp[0], &pp[1], &pp[2], &pp[3],
-                        &pp[4], &pp[5], &pp[6], &pp[7],
-                        &pp[NEXT_FRAME_OFFSET]);
-# else
-	stack_addr = (unw_word_t)&(pp[RETURN_ADDRESS_OFFSET+1]);
-	unw_manual_step(&c, &pp[RETURN_ADDRESS_OFFSET], &pp[0],
-			&stack_addr, &pp[-1], &pp[-2], &pp[-3]);
-# endif
-	manual_unw = 0;
+        if (!manual_unw_step(&c, stack_start, stack_end))
+          break;
+        manual_unw = 0;
       } else {
         unw_step(&c);
         q = (void *)unw_get_ip(&c);

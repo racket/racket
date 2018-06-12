@@ -246,7 +246,7 @@ Scheme_Object *scheme_jit_continuation_apply_install(Apply_LWC_Args *args) XFORM
       next_new_fp = NULL;
     }
 
-    /* fixups of local variables in the fraame */
+    /* fixups of local variables in the frame */
 #if defined(JIT_X86_64) || defined(JIT_X86_PLAIN)
     new_fp[-4] = (void *)((intptr_t)new_fp[-4] + cm_delta); /* LOCAL1 */
 #endif
