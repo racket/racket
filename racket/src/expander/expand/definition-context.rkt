@@ -90,8 +90,9 @@
     (cond
      [s
       (define input-s (flip-introduction-scopes (add-intdef-scopes s all-intdefs) ctx))
-      (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)])
-                        (hash-set env sym variable)))
+      (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)]
+                                                                  [intdef-id (in-list intdef-ids)])
+                        (hash-set env sym (local-variable intdef-id))))
       (log-expand ctx 'enter-bind)
       (define vals
         (eval-for-syntaxes-binding 'syntax-local-bind-syntaxes
@@ -103,7 +104,7 @@
       (log-expand ctx 'exit-bind)
       vals]
      [else
-      (for/list ([id (in-list ids)]) variable)]))
+      (for/list ([intdef-id (in-list intdef-ids)]) (local-variable intdef-id))]))
   (define env-mixins (internal-definition-context-env-mixins intdef))
   (set-box! env-mixins (append (for/list ([intdef-id (in-list intdef-ids)]
                                           [sym (in-list syms)]
