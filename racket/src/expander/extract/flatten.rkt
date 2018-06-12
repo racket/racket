@@ -17,23 +17,25 @@
                   #:needed needed
                   #:exports exports
                   #:instance-knot-ties instance-knot-ties
-                  #:primitive-table-directs primitive-table-directs)
+                  #:primitive-table-directs primitive-table-directs
+                  #:check-later-names check-later-names)
   (log-status "Flattening to a single linklet...")
   (define needed-linklets-in-order
     (for/list ([lnk (in-list (unbox linklets-in-order))]
                #:when (hash-ref needed lnk #f))
       lnk))
-  
+
   (define variable-names (pick-variable-names
                           #:linklets linklets
                           #:needed-linklets-in-order needed-linklets-in-order
                           #:instance-knot-ties instance-knot-ties))
 
   (for ([var (in-hash-keys variable-names)]
-        #:when (symbol? (link-name (variable-link var))))
-    (error 'flatten "found a dependency on a non-primitive: ~s from ~s"
-           (variable-name var)
-           (link-name (variable-link var))))
+        #:when (symbol? (link-name (variable-link var)))
+        #:unless (memq (variable-name var) check-later-names))
+      (error 'flatten "found a dependency on a non-primitive: ~s from ~s"
+             (variable-name var)
+             (link-name (variable-link var))))
   
   `(linklet
     ;; imports

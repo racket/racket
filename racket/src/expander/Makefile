@@ -25,7 +25,7 @@ DIRECT = ++direct linklet ++direct kernel
 # The linklet compiler's simple inference cannot tell that this
 # module's keyword-function declarations will have no side effect, but
 # we promise that it's pure:
-PURE = ++pure $(TREE)/collects/racket/private/collect.rkt
+PURE =
 
 # Set `BUILDDIR` as a prefix on "compiled" output (defaults to empty).
 # Set `DEPENDSDIR` as the same sort of prefix in the generated

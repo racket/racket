@@ -40,6 +40,7 @@
   ;; Check whether any needed linklet needs an instance of a
   ;; pre-defined instance that is not part of the runtime system:
   (define complained? #f)
+  (define needed-vars null)
   (for ([lnk (in-list (unbox linklets-in-order))])
     (define needed-reason (hash-ref needed lnk #f))
     (when needed-reason
@@ -54,16 +55,19 @@
                    (not (hash-ref instance-knot-ties p #f))
                    (hash-ref needed in-lnk #t))
           (unless complained?
-            (log-status "~a\n~a"
+            (log-status "~a\n ~a"
                         "Unfortunately, some linklets depend on pre-defined host instances"
                         "that are not part of the runtime system:")
             (set! complained? #t))
           (unless complained-this?
             (log-status " - ~a at ~s" (link-name lnk) (link-phase lnk))
             (set! complained-this? #t))
-          (log-status "~a" (lines (format "   needs ~s:" p) in-vars))))
+          (log-status "~a" (lines (format "   needs ~s:" p) in-vars))
+          (set! needed-vars (append in-vars needed-vars))))
       (when complained-this?
         (log-status "   needed by ~s" needed-reason))))
-
   (when complained?
-    (exit 1)))
+    (log-status "~a\n ~a"
+                "If these dependencies are not removed by subsequent flattening"
+                "and simplification, extraction cannot succeed."))
+  (and complained? needed-vars))
