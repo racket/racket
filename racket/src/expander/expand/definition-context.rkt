@@ -222,6 +222,7 @@
                                    #:phase [phase (expand-context-phase ctx)]
                                    #:intdefs intdefs
                                    #:stop-ids [stop-ids #f]
+                                   #:extend-stops? [extend-stops? #t]
                                    #:to-parsed-ok? [to-parsed-ok? #f]
                                    #:track-to-be-defined? [track-to-be-defined? #f]
                                    #:keep-#%expression? [keep-#%expression? #t])
@@ -229,7 +230,11 @@
                               (expand-context-context ctx))
                          (and (list? context)
                               (list? (expand-context-context ctx)))))
-  (define all-stop-ids (and stop-ids (stop-ids->all-stop-ids stop-ids phase)))
+  (define all-stop-ids (if stop-ids
+                           (if extend-stops?
+                               (stop-ids->all-stop-ids stop-ids phase)
+                               stop-ids)
+                           null))
   (define def-ctx-scopes (if (expand-context-def-ctx-scopes ctx)
                              (unbox (expand-context-def-ctx-scopes ctx))
                              null))
@@ -275,7 +280,7 @@
                 [just-once? #f]
                 [in-local-expand? #t]
                 [keep-#%expression? keep-#%expression?]
-                [stops (free-id-set phase (or all-stop-ids null))]
+                [stops (free-id-set phase all-stop-ids)]
                 [current-introduction-scopes null]
                 [need-eventually-defined (let ([ht (expand-context-need-eventually-defined ctx)])
                                            (cond
