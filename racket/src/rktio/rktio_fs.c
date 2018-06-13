@@ -699,7 +699,7 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char
     if (!wp) return 0;
     fdh = CreateFileW(wp,
                       0, /* not even read access => just get info */
-                      FILE_SHARE_READ | FILE_SHARE_WRITE,
+                      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                       NULL,
                       OPEN_EXISTING,
                       FILE_FLAG_BACKUP_SEMANTICS 

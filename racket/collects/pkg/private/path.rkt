@@ -2,7 +2,8 @@
 (require racket/path
          racket/file
          racket/list
-         racket/function)
+         racket/function
+	 "rename-dir.rkt")
 
 (provide (all-defined-out))
 
@@ -55,15 +56,15 @@
         ;; pick a new name:
         (loop (string->path (format "sub~a" i)) (add1 i))]
        [(not (equal? sub orig-sub))
-        (rename-file-or-directory (build-path pkg-dir orig-sub)
-                                  (build-path pkg-dir sub))
+        (rename-directory (build-path pkg-dir orig-sub)
+			  (build-path pkg-dir sub))
         sub]
        [else sub])))
   ;; Move content of `sub` out:
   (define sub-path (apply build-path (cons sub (cdr path))))
   (for ([f (in-list sub-l)])
-    (rename-file-or-directory (build-path pkg-dir sub-path f)
-                              (build-path pkg-dir f)))
+    (rename-directory (build-path pkg-dir sub-path f)
+		      (build-path pkg-dir f)))
   ;; Remove directory that we moved files out of:
   (delete-directory/files (build-path pkg-dir sub)))
 

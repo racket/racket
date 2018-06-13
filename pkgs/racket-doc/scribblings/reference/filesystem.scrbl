@@ -303,6 +303,16 @@ permission change if the deletion fails.
 On Windows, @racket[delete-file] can delete a symbolic link, but not
 a junction. Use @racket[delete-directory] to delete a junction.
 
+On Windows, beware that if a file is deleted while it remains in use
+by some process (e.g., a background search indexer), then the file's
+content will eventually go away, but the file's name remains occupied
+until the file is no longer used. As long as the name remains
+occupied, attempts to open, delete, or replace the file will trigger a
+permission error (as opposed to a file-exists error). A common
+technique to avoid this pitfall is to move the file to a generated
+temporary name before deleting it. See also
+@racket[delete-directory/files].
+
 @history[#:changed "6.1.1.7" @elem{Changed Windows behavior to use
                                    @racket[current-force-delete-permissions].}]}
 
@@ -332,7 +342,16 @@ typically fail on Windows. See also @racket[call-with-atomic-output-file].
 
 If @racket[old] is a link, the link is renamed rather than the
 destination of the link, and it counts as a file for replacing any
-existing @racket[new].}
+existing @racket[new].
+
+On Windows, beware that a directory cannot be renamed if any file
+within the directory is open. That constraint is particularly
+problematic if a search indexer is running in the background (as in
+the default Windows configuration). A possible workaround is to
+combine @racket[copy-directory/files] and
+@racket[delete-directory/files], since the latter can deal with open
+files, although that sequence is obviously not atomic and temporarily
+duplicates files.}
 
 
 @defproc*[([(file-or-directory-modify-seconds [path path-string?]
@@ -1001,7 +1020,17 @@ raised if @racket[path] does not exist. If @racket[must-exist?] is
 false, then @racket[delete-directory/files] succeeds if @racket[path]
 does not exist (but a failure is possible if @racket[path] initially
 exists and is removed by another thread or process before 
-@racket[delete-directory/files] deletes it).}
+@racket[delete-directory/files] deletes it).
+
+On Windows, @racket[delete-directory/files] attempts to move a file
+into the temporary-file directory before deleting it, which avoids
+problems caused by deleting a file that is currently open (e.g., by a
+search indexer running as a background process). If the move attempt
+fails (e.g., because the temporary directory is on a different drive
+than the file), then the file is deleted directly with
+@racket[delete-file].
+
+@history[#:changed "7.0" @elem{Added Windows-specific file deletion.}]}
 
 
 @defproc[(find-files [predicate (path? . -> . any/c)]

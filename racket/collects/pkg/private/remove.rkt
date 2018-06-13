@@ -11,7 +11,8 @@
          "params.rkt"
          "print.rkt"
          "get-info.rkt"
-         "trash.rkt")
+         "trash.rkt"
+	 "rename-dir.rkt")
 
 (provide remove-package
          pkg-remove)
@@ -64,7 +65,7 @@
               (select-trash-dest pkg-name))
          => (lambda (trash-dest)
               (printf/flush "Moving ~a to trash: ~a\n" pkg-name trash-dest)
-              (rename-file-or-directory pkg-dir trash-dest))]
+              (rename-directory pkg-dir trash-dest))]
         [else
          (delete-directory/files pkg-dir)])])))
       

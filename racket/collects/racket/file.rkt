@@ -53,7 +53,7 @@
   (let loop ([path path])
     (cond
      [(or (link-exists? path) (file-exists? path))
-      (delete-file path)]
+      (delete-file* path)]
      [(directory-exists? path)
       (for-each (lambda (e) (loop (build-path path e)))
                 (directory-list path))
@@ -61,6 +61,24 @@
      [else
       (when must-exist?
         (raise-not-a-file-or-directory 'delete-directory/files path))])))
+
+(define (delete-file* path)
+  (cond
+    [(eq? 'windows (system-type))
+     ;; Deleting a file doesn't remove the file name from the
+     ;; parent directory until all references are closed, and
+     ;; other processes (like the search indexer) might open
+     ;; files. So, try to move a file to the temp directory,
+     ;; then delete from there. That way, the enclosing directory
+     ;; can still be deleted. The move might fail if the
+     ;; temp directory is on a different volume, though.
+     (define tmp (make-temporary-file))
+     (unless (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
+               (rename-file-or-directory path tmp #t)
+               #t)
+       (delete-file path))
+     (delete-file tmp)]
+    [else (delete-file path)]))
 
 (define (raise-not-a-file-or-directory who path)
   (raise
@@ -172,16 +190,35 @@
                               base-dir))
       (let ([tmpdir (find-system-path 'temp-dir)])
         (let loop ([s (current-seconds)]
-                   [ms (inexact->exact (truncate (current-inexact-milliseconds)))])
+                   [ms (inexact->exact (truncate (current-inexact-milliseconds)))]
+                   [tries 0])
           (let ([name (let ([n (format template (format "~a~a" s ms))])
                         (cond [base-dir (build-path base-dir n)]
                               [(relative-path? n) (build-path tmpdir n)]
                               [else n]))])
-            (with-handlers ([exn:fail:filesystem:exists?
+            (with-handlers ([(lambda (exn)
+                               (or (exn:fail:filesystem:exists? exn)
+                                   (and (exn:fail:filesystem:errno? exn)
+                                        (let ([errno (exn:fail:filesystem:errno-errno exn)])
+                                          (and (eq? 'windows (cdr errno))
+                                               (eqv? (car errno) 5) ; ERROR_ACCESS_DENIED
+                                               ;; On Windows, if the target path refers to a file
+                                               ;; that has been deleted but is still open
+                                               ;; somehere, then an access-denied error is reported
+                                               ;; instead of a file-exists error; there appears
+                                               ;; to be no way to detect that it was really a
+                                               ;; file-still-exists error. Try again for a while.
+                                               ;; There's still a small chance that this will
+                                               ;; fail, but it's vanishingly small at 32 tries.
+                                               ;; If ERROR_ACCESS_DENIED really is the right
+                                               ;; error (e.g., because the target directory is not
+                                               ;; writable), we'll take longer to get there.
+                                               (tries . < . 32))))))
                              (lambda (x)
                                ;; try again with a new name
                                (loop (- s (random 10))
-                                     (+ ms (random 10))))])
+                                     (+ ms (random 10))
+                                     (add1 tries)))])
               (if copy-from
                   (if (eq? copy-from 'directory)
                       (make-directory name)
