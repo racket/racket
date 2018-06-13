@@ -2262,5 +2262,17 @@
 (test '(#t #t) dynamic-require ''uses-definition-context-and-local-expand-to-replace 'result)
 
 ;; ----------------------------------------
+;; Check that a rename transformer mapped to a
+;; primitive is ok in the result of a local expansion
+
+(module module-begin-with-a-rename-transformer racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax m (make-rename-transformer #'#%expression))
+  
+  (begin-for-syntax
+    (local-expand #'(#%plain-module-begin (m #f)) 'module-begin '())))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -293,7 +293,11 @@
     (define adj-s (avoid-current-expand-context (substitute-alternate-id s id) t ctx))
     (log-expand ctx 'exit-macro s)
     (expand adj-s ctx)]
-   [(expand-context-should-not-encounter-macros? ctx)
+   [(and (expand-context-should-not-encounter-macros? ctx)
+         ;; It's ok to have a rename transformer whose target
+         ;; is a primitive form, so if it's a rename transformer,
+         ;; delay the check for another step
+         (not (rename-transformer? t)))
     (raise-syntax-error #f
                         "encountered a macro binding in form that should be fully expanded"
                         s)]
