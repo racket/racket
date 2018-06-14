@@ -19,6 +19,10 @@
      (if (literal? t)
          (if (unwrap t) e1 e2)
          v)]
+    [`(not ,t)
+     (if (literal? t)
+         `,(not (unwrap t))
+         v)]
     [`(procedure? ,e)
      (define u (unwrap e))
      (cond
