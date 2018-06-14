@@ -21,8 +21,8 @@
     (or (not check-attributes?)
         (and (or (and (eq? check-attributes? 'file)
                       (directory-exists? p1))
-                 (= (round-date (file-or-directory-modify-seconds p1))
-                    (round-date (file-or-directory-modify-seconds p2)))
+                 (fuzzy-= (round-date (file-or-directory-modify-seconds p1))
+                          (round-date (file-or-directory-modify-seconds p2)))
                  (begin
                    (printf "~s ~s ~s\n"
                            p1 
@@ -31,6 +31,10 @@
                    #f))
              (equal? (file-or-directory-permissions p1)
                      (file-or-directory-permissions p2)))))
+  ;; sometimes seconds are off by 2
+  (define (fuzzy-= a b)
+    (or (= a b)
+        (= 2 (abs (- a b)))))
   (define (round-date s)
     (if (eq? check-attributes? 'file)
         ;; granularity of ".zip" file dates is 2 seconds(!)
