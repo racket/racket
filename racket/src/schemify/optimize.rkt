@@ -46,6 +46,10 @@
             '#t
             v)]
        [else v])]
+    [`(list)
+     ''()]
+    [`null
+     ''()]
     [`,_
      (define u (unwrap v))
      (cond
