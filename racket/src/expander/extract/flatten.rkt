@@ -18,13 +18,14 @@
                   #:exports exports
                   #:instance-knot-ties instance-knot-ties
                   #:primitive-table-directs primitive-table-directs
-                  #:check-later-names check-later-names)
+                  #:check-later-vars check-later-vars)
   (log-status "Flattening to a single linklet...")
   (define needed-linklets-in-order
     (for/list ([lnk (in-list (unbox linklets-in-order))]
                #:when (hash-ref needed lnk #f))
       lnk))
 
+  ;; variable -> symbol
   (define variable-names (pick-variable-names
                           #:linklets linklets
                           #:needed-linklets-in-order needed-linklets-in-order
@@ -32,32 +33,34 @@
 
   (for ([var (in-hash-keys variable-names)]
         #:when (symbol? (link-name (variable-link var)))
-        #:unless (memq (variable-name var) check-later-names))
-      (error 'flatten "found a dependency on a non-primitive: ~s from ~s"
-             (variable-name var)
-             (link-name (variable-link var))))
-  
-  `(linklet
-    ;; imports
-    ()
-    ;; exports
-    ,(for/list ([ex-sym (in-list (sort (hash-keys exports) symbol<?))])
-       (define var (hash-ref exports ex-sym))
-       (define int-sym (hash-ref variable-names var #f))
-       (unless int-sym
-         (error 'flatten "export does not map to an instance variable: ~s" ex-sym))
-       `[,int-sym ,ex-sym])
-    ;; body
-    ,@(apply
-       append
-       (for/list ([lnk (in-list (reverse needed-linklets-in-order))])
-         (define body
-           (body-with-substituted-variable-names lnk
-                                                 (hash-ref linklets lnk)
-                                                 variable-names
-                                                 #:linklets linklets
-                                                 #:instance-knot-ties instance-knot-ties))
-         (substitute-primitive-table-access body primitive-table-directs)))))
+        #:unless (hash-ref check-later-vars var #f))
+    (error 'flatten "found a dependency on a non-primitive: ~s from ~s"
+           (variable-name var)
+           (link-name (variable-link var))))
+
+  (values
+   variable-names
+   `(linklet
+     ;; imports
+     ()
+     ;; exports
+     ,(for/list ([ex-sym (in-list (sort (hash-keys exports) symbol<?))])
+        (define var (hash-ref exports ex-sym))
+        (define int-sym (hash-ref variable-names var #f))
+        (unless int-sym
+          (error 'flatten "export does not map to an instance variable: ~s" ex-sym))
+        `[,int-sym ,ex-sym])
+     ;; body
+     ,@(apply
+        append
+        (for/list ([lnk (in-list (reverse needed-linklets-in-order))])
+          (define body
+            (body-with-substituted-variable-names lnk
+                                                  (hash-ref linklets lnk)
+                                                  variable-names
+                                                  #:linklets linklets
+                                                  #:instance-knot-ties instance-knot-ties))
+          (substitute-primitive-table-access body primitive-table-directs))))))
 
 (define (pick-variable-names #:linklets linklets
                              #:needed-linklets-in-order needed-linklets-in-order

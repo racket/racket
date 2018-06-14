@@ -1,18 +1,21 @@
 #lang racket/base
-(require "../run/status.rkt"
+(require "../common/set.rkt"
+         "../run/status.rkt"
          "../boot/runtime-primitive.rkt"
          "link.rkt"
          "linklet-info.rkt"
-         "linklet.rkt")
+         "linklet.rkt"
+         "variable.rkt")
 
-(provide check-and-report!)
+(provide check-and-record-report!)
 
-;; Check for bootstrap obstacles and report the results
-(define (check-and-report! #:compiled-modules compiled-modules
-                           #:linklets linklets
-                           #:linklets-in-order linklets-in-order
-                           #:needed needed
-                           #:instance-knot-ties instance-knot-ties)
+;; Check for bootstrap obstacles, and prepare to report if the
+;; obstacles persist
+(define (check-and-record-report! #:compiled-modules compiled-modules
+                                  #:linklets linklets
+                                  #:linklets-in-order linklets-in-order
+                                  #:needed needed
+                                  #:instance-knot-ties instance-knot-ties)
 
   (log-status "Traversed ~s modules" (hash-count compiled-modules))
   (log-status "Got ~s relevant linklets" (hash-count linklets))
@@ -40,7 +43,7 @@
   ;; Check whether any needed linklet needs an instance of a
   ;; pre-defined instance that is not part of the runtime system:
   (define complained? #f)
-  (define needed-vars null)
+  (define check-later-vars (make-hash)) ; variable -> (listof complain-proc)
   (for ([lnk (in-list (unbox linklets-in-order))])
     (define needed-reason (hash-ref needed lnk #f))
     (when needed-reason
@@ -54,20 +57,25 @@
                    (not (eq? p '#%linklet))
                    (not (hash-ref instance-knot-ties p #f))
                    (hash-ref needed in-lnk #t))
-          (unless complained?
-            (log-status "~a\n ~a"
-                        "Unfortunately, some linklets depend on pre-defined host instances"
-                        "that are not part of the runtime system:")
-            (set! complained? #t))
-          (unless complained-this?
-            (log-status " - ~a at ~s" (link-name lnk) (link-phase lnk))
-            (set! complained-this? #t))
-          (log-status "~a" (lines (format "   needs ~s:" p) in-vars))
-          (set! needed-vars (append in-vars needed-vars))))
-      (when complained-this?
-        (log-status "   needed by ~s" needed-reason))))
-  (when complained?
-    (log-status "~a\n ~a"
-                "If these dependencies are not removed by subsequent flattening"
-                "and simplification, extraction cannot succeed."))
-  (and complained? needed-vars))
+          ;; Delay the complaint until we know whether the name is
+          ;; actually used after flattening and pruning
+          (define (complain really-used-var?)
+            (unless complained?
+              (log-status "~a\n ~a\n ~a\n ~a\n ~a"
+                          "Unfortunately, some linklets depend on pre-defined host instances"
+                          "that are not part of the runtime system; at least one the following"
+                          "references is a problem, but not necessarily all of them, because"
+                          "some references may be detected as unused by the flattener (but"
+                          "we've lost track of the connection):")
+              (set! complained? #t))
+            (unless complained-this?
+              (log-status "  - ~a at ~s" (link-name lnk) (link-phase lnk))
+              (log-status "~a" (lines (format "   needs ~s:" p)
+                                      (for/list ([in-var (in-list in-vars)]
+                                                 #:when (really-used-var? (variable in-lnk in-var)))
+                                        in-var)))
+              (log-status "   needed by ~s" needed-reason)
+              (set! complained-this? #t)))
+          (for ([in-var (in-list in-vars)])
+            (hash-update! check-later-vars (variable in-lnk in-var) (lambda (l) (cons complain l)) null))))))
+  check-later-vars)

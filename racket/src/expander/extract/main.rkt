@@ -100,12 +100,12 @@
                #:needed needed)))
   
   ;; Check for bootstrap obstacles, and report what we've found
-  (define needed-vars
-    (check-and-report! #:compiled-modules compiled-modules
-                       #:linklets linklets
-                       #:linklets-in-order linklets-in-order
-                       #:needed needed
-                       #:instance-knot-ties instance-knot-ties))
+  (define check-later-vars
+    (check-and-record-report! #:compiled-modules compiled-modules
+                              #:linklets linklets
+                              #:linklets-in-order linklets-in-order
+                              #:needed needed
+                              #:instance-knot-ties instance-knot-ties))
   
   ;; If we're in source mode, we can generate a single linklet
   ;; that combines all the ones we found
@@ -118,7 +118,7 @@
                                    #:cache cache))
 
     ;; Generate the flattened linklet
-    (define flattened-linklet-expr
+    (define-values (variable-names flattened-linklet-expr)
       (flatten! start-link
                 #:linklets linklets
                 #:linklets-in-order linklets-in-order
@@ -126,7 +126,7 @@
                 #:exports exports
                 #:instance-knot-ties instance-knot-ties
                 #:primitive-table-directs primitive-table-directs
-                #:check-later-names needed-vars))
+                #:check-later-vars check-later-vars))
     
     (define simplified-expr
       (simplify-definitions flattened-linklet-expr))
@@ -135,15 +135,17 @@
     (define gced-linklet-expr
       (garbage-collect-definitions simplified-expr))
 
-    (log-status "Checking that references to the runtime were removed by simplification ...")
-    (define used-names (all-used-symbols gced-linklet-expr))
-    (define still-needed (filter (lambda (v) (set-member? used-names v)) needed-vars))
-    (unless (null? still-needed)
-      (log-status "Simplification failed to remove references to: ~a"
-                   (lines still-needed))
+    (log-status "Checking that references outside the runtime were removed by simplification...")
+    (define really-used-names (all-used-symbols gced-linklet-expr))
+    (define complained? #f)
+    (for ([(var complains) (in-hash check-later-vars)])
+      (when (set-member? really-used-names (hash-ref variable-names var))
+        (for ([complain (in-list (reverse complains))])
+          (complain (lambda (var)
+                      (set-member? really-used-names (hash-ref variable-names var))))
+          (set! complained? #t))))
+    (when complained?
       (exit 1))
-
-
 
     ;; Avoid gratuitous differences due to names generated during
     ;; expansion

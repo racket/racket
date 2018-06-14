@@ -4,11 +4,6 @@
 RACKET = ../../bin/racket
 RACO = $(RACKET) -N raco -l- raco
 
-# Ignoring functions from `#%read` works beause they won't appear in
-# the simplified expansion, and declaring "collect.rkt" pure works
-# around a limitation of the flattener:
-IGNORE = ++knot read - ++pure ../../collects/racket/private/collect.rkt
-
 # Can be set to empty to avoid building rktio
 RKTIO_DEP=../build/so-rktio/Makefile
 
@@ -23,7 +18,7 @@ GENERATE_ARGS = -t main.rkt --submod main \
                 --depends $(BUILDDIR)compiled/io-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/io.rktl $(BUILDDIR)compiled/io.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. $(IGNORE) -s -x \
+                -k ../.. -s -x \
                 -o $(BUILDDIR)compiled/io.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

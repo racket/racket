@@ -4,11 +4,6 @@
 RACKET = ../../bin/racket
 RACO = $(RACKET) -N raco -l- raco
 
-# Ignoring functions from `#%read` works beause they won't appear in
-# the simplified expansion, and declaring "collect.rkt" pure works
-# around a limitation of the flattener:
-IGNORE = ++knot read - ++direct pthread ++pure ../../collects/racket/private/collect.rkt
-
 thread-src:
 	$(RACO) make ../expander/bootstrap-run.rkt
 	$(MAKE) thread-src-generate
@@ -19,7 +14,7 @@ GENERATE_ARGS = -t main.rkt --submod main \
                 --depends $(BUILDDIR)compiled/thread-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/thread.rktl $(BUILDDIR)compiled/thread.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. $(IGNORE) -s -x \
+                -k ../.. -s -x \
                 -o $(BUILDDIR)compiled/thread.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

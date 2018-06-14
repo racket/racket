@@ -22,11 +22,6 @@ KNOT = ++knot read read/api.rkt \
 # a direct use of the primitive name:
 DIRECT = ++direct linklet ++direct kernel
 
-# The linklet compiler's simple inference cannot tell that this
-# module's keyword-function declarations will have no side effect, but
-# we promise that it's pure:
-PURE =
-
 # Set `BUILDDIR` as a prefix on "compiled" output (defaults to empty).
 # Set `DEPENDSDIR` as the same sort of prefix in the generated
 # makefile-dependency file (also defaults to empty). The `BUILDDIR`
@@ -36,7 +31,7 @@ PURE =
 
 expander:
 	$(RACO) make bootstrap-run.rkt
-	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) $(PURE) -O $(TREE)
+	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) -O $(TREE)
 
 expander-src:
 	$(RACO) make bootstrap-run.rkt
@@ -47,7 +42,7 @@ GENERATE_ARGS = -c $(BUILDDIR)compiled/cache-src \
                 ++depend-module bootstrap-run.rkt \
                 --depends $(BUILDDIR)compiled/expander-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/expander.rktl $(BUILDDIR)compiled/expander.d \
-                $(KNOT) $(DIRECT) $(PURE) -k $(TREE) -s -x \
+                $(KNOT) $(DIRECT) -k $(TREE) -s -x \
                 -o $(BUILDDIR)compiled/expander.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`
@@ -75,11 +70,11 @@ run-no-cache:
 # Writes the extracted, compiled, decompiled expander to compiled/exp.rkt
 decompile:
 	$(RACO) make bootstrap-run.rkt
-	$(RACKET) $(RKT_ARGS) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(PURE) -s -x -D -o compiled/exp.rkt
+	$(RACKET) $(RKT_ARGS) bootstrap-run.rkt -c compiled/cache-src $(KNOT) -s -x -D -o compiled/exp.rkt
 
 # Writes the extracted, compiled expander to compiled/exp.zo
 bytecode:
 	$(RACO) make bootstrap-run.rkt
-	$(RACKET) $(RKT_ARGS) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(PURE) -s -x -B -o compiled/exp.zo
+	$(RACKET) $(RKT_ARGS) bootstrap-run.rkt -c compiled/cache-src $(KNOT) -s -x -B -o compiled/exp.zo
 
 .PHONY: expander expander-src expander-src-generate demo run run-no-cache
