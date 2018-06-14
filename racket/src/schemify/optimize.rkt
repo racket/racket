@@ -50,6 +50,10 @@
      ''()]
     [`null
      ''()]
+    [`(begin ,e)
+     e]
+    [`(let-values () ,e)
+     e]
     [`,_
      (define u (unwrap v))
      (cond
