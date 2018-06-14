@@ -19,6 +19,12 @@
      (if (literal? t)
          (if (unwrap t) e1 e2)
          v)]
+    [`(if (not ,t) ,e1 ,e2)
+     (optimize `(if ,t ,e2 ,e1) prim-knowns knowns imports mutated)]
+    [`(not ,t)
+     (if (literal? t)
+         `,(not (unwrap t))
+         v)]
     [`(procedure? ,e)
      (define u (unwrap e))
      (cond
