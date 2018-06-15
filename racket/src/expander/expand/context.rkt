@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/promise
+(require "../common/promise.rkt"
          "../common/struct-star.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"

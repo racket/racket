@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/promise
+(require "../common/promise.rkt"
          "../common/phase.rkt"
          "../common/small-hash.rkt"
          "../syntax/bulk-binding.rkt"
