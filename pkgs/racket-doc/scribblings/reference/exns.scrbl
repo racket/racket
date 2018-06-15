@@ -340,7 +340,8 @@ generated error message.
                              [message string?]
                              [expr any/c #f]
                              [sub-expr any/c #f]
-                             [extra-sources (listof syntax?) null])
+                             [extra-sources (listof syntax?) null]
+                             [message-suffix string? ""])
          any]{
 
 Creates an @racket[exn:fail:syntax] value and @racket[raise]s it as an
@@ -391,7 +392,15 @@ through a combination of the @racket[name], @racket[expr], and
  @item{When @racket[name] is a symbol, then the symbol
   is used as the form name in the generated error message.}
 
-]}
+]
+
+The @racket[message-suffix] string is appended to the end of the error
+message. If not @racket[""], it should normally start with a newline
+and two spaces to add extra fields to the message (see
+@secref["err-msg-conventions"]).
+
+@history[#:changed "6.90.0.18" @elem{Added the @racket[message-suffix] optional argument.}]}
+
 
 @deftogether[(
 @defproc[(unquoted-printing-string? [v any/c]) boolean?]

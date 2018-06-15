@@ -361,7 +361,7 @@ expansion history to external tools.
                                      @racket[#f].}]}
 
 
-@defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? #f])
+@defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])
          (values (if opaque-only? #f syntax?) syntax?)]{
 
 Like @racket[local-expand] given @racket['expression] and an empty

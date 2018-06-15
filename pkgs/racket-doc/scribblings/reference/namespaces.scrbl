@@ -188,7 +188,7 @@ If @racket[as-constant?] is true, then the variable is made a constant
 (so future assignments are rejected) after @racket[v] is installed as
 the value.
 
-@history[#:changed "6.6.1" @elem{Added the @racket[as-constant?] argument.}]}
+@history[#:changed "6.90.0.14" @elem{Added the @racket[as-constant?] argument.}]}
 
 
 @defproc[(namespace-undefine-variable! [sym symbol?]
@@ -210,11 +210,12 @@ corresponding to the @tech{namespace}'s @tech{base phase}.}
 
 
 
-@defproc[(namespace-require [quoted-raw-require-spec any/c])
+@defproc[(namespace-require [quoted-raw-require-spec any/c]
+                            [namespace namespace? (current-namespace)])
          void?]{
 
 Performs the import corresponding to @racket[quoted-raw-require-spec]
-in the top-level environment of the current namespace, like a
+in the top-level environment of @racket[namespace], like a
 top-level @racket[#%require]. The @racket[quoted-raw-require-spec]
 argument must be either a datum that corresponds to a quoted
 @racket[_raw-require-spec] for @racket[#%require], which includes
@@ -223,38 +224,49 @@ module paths, or it can be a @tech{resolved module path}.
 Module paths in @racket[quoted-raw-require-spec] are resolved with respect
 to @racket[current-load-relative-directory] or
 @racket[current-directory] (if the former is @racket[#f]), even if the
-current namespace corresponds to a module body.}
+current namespace corresponds to a module body.
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[namespace] optional argument.}]}
 
 
 
-@defproc[(namespace-require/copy [quoted-raw-require-spec any/c])
+@defproc[(namespace-require/copy [quoted-raw-require-spec any/c]
+                                 [namespace namespace? (current-namespace)])
          void?]{
 
 Like @racket[namespace-require] for syntax exported from the module,
 but exported variables at the namespace's @tech{base phase} are
 treated differently: the export's current value is copied to a
-top-level variable in the current namespace.}
+top-level variable in @racket[namespace].
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[namespace] optional argument.}]}
 
 
-@defproc[(namespace-require/constant [quoted-raw-require-spec any/c])
+@defproc[(namespace-require/constant [quoted-raw-require-spec any/c]
+                                     [namespace namespace? (current-namespace)])
          void?]{
 
 Like @racket[namespace-require], but for each exported variable at the
 @tech{namespace}'s @tech{base phase}, the export's value is copied to
 a corresponding top-level variable that is made immutable. Despite
 setting the top-level variable, the corresponding identifier is bound
-as imported.}
+as imported.
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[namespace] optional argument.}]}
 
 
-@defproc[(namespace-require/expansion-time [quoted-raw-require-spec any/c])
+@defproc[(namespace-require/expansion-time [quoted-raw-require-spec any/c]
+                                           [namespace namespace? (current-namespace)])
          void?]{
 
 Like @racket[namespace-require], but only the transformer part of the
-module is executed relative to the @tech{namespace}'s @tech{base
+module is executed relative to @racket[namespace]'s @tech{base
 phase}; that is, the module is merely @tech{visit}ed, and not
 @tech{instantiate}d (see @secref["mod-parse"]). If the required module
 has not been instantiated before, the module's variables remain
-undefined.}
+undefined.
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[namespace] optional argument.}]}
 
 
 @defproc[(namespace-attach-module [src-namespace namespace?]
@@ -356,16 +368,17 @@ is useful only for identification via @racket[eq?].}
 
 @defproc[(module->namespace [mod (or/c module-path? 
                                        resolved-module-path? 
-                                       module-path-index?)])
+                                       module-path-index?)]
+                            [src-namespace namespace? (current-namespace)])
          namespace?]{
 
 Returns a namespace that corresponds to the body of an instantiated
-module in the current namespace's @tech{module registry} and in the
-current namespace's @tech{base phase}, making the module
-@tech{available} for on-demand @tech{visits} at the namespace's
+module in @racket[src-namespace]'s @tech{module registry} and in the
+@racket[src-namespace]'s @tech{base phase}, making the module
+@tech{available} for on-demand @tech{visits} at @racket[src-namespace]'s
 @tech{base phase}. The returned namespace has the same @tech{module
-registry} as the current namespace. Modifying a binding in the
-namespace changes the binding seen in modules that require the
+registry} as @racket[src-namespace]. Modifying a binding in the
+resulting namespace changes the binding seen in modules that require the
 namespace's module.
 
 Module paths in a top-level @racket[require] expression are resolved
@@ -373,24 +386,30 @@ with respect to the namespace's module. New @racket[provide]
 declarations are not allowed.
 
 If the current code inspector does not control the invocation of the
-module in the current namespace's @tech{module registry}, the
+module in @racket[src-namespace]'s @tech{module registry}, the
 @exnraise[exn:fail:contract]; see also @secref["modprotect"].
 
-Bindings in the namespace cannot be modified if the
+Bindings in the result namespace cannot be modified if the
 @racket[compile-enforce-module-constants] parameter was true when the
 module was declared, unless the module declaration itself included
-assignments to the binding via @racket[set!].}
+assignments to the binding via @racket[set!].
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[src-namespace] optional argument.}]}
 
 
-@defproc[(namespace-syntax-introduce [stx syntax?]) syntax?]{
+@defproc[(namespace-syntax-introduce [stx syntax?]
+                                     [namespace namespace? (current-namespace)])
+         syntax?]{
 
-Returns a syntax object like @racket[stx], except that the current
-namespace's bindings are included in the @tech{syntax object}'s
+Returns a syntax object like @racket[stx], except that
+@racket[namespace]'s bindings are included in the @tech{syntax object}'s
 @tech{lexical information} (see @secref["stxobj-model"]). The
 additional context is overridden by any existing @tech{top-level
 bindings} in the @tech{syntax object}'s @tech{lexical information}, or
 by any existing or future @tech{module bindings} in the @tech{lexical
-information}.}
+information}.
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[namespace] optional argument.}]}
 
 
 @defproc[(module-provide-protected? [module-path-index (or/c symbol? module-path-index?)]
