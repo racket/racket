@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/promise
+(require "../common/promise.rkt"
          "../common/performance.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
