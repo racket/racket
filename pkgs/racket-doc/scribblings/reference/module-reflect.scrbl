@@ -273,7 +273,8 @@ Returns @racket[#t] if @racket[v] is a @tech{module path index},
 @racket[#f] otherwise.}
 
 
-@defproc[(module-path-index-resolve [mpi module-path-index?])
+@defproc[(module-path-index-resolve [mpi module-path-index?]
+                                    [load? any/c #f])
          resolved-module-path?]{
 
 Returns a @tech{resolved module path} for the resolved module name,
@@ -285,9 +286,12 @@ name resolver} (see @racket[current-module-name-resolver]). Depending
 on the kind of module paths encapsulated by @racket[mpi], the computed
 resolved name can depend on the value of
 @racket[current-load-relative-directory] or
-@racket[current-directory].
+@racket[current-directory]. The @racket[load?] argument is propagated as
+the last argument to the @tech{module name resolver}.
 
-See @racket[resolve-module-path-index].}
+See @racket[resolve-module-path-index].
+
+@history[#:changed "6.90.0.16" @elem{Added the @racket[load?] optional argument.}]}
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
