@@ -69,5 +69,11 @@ Racket software includes or extends the following copyrighted material:
   Copyright (c) 2003-2005 Hewlett-Packard Development Company, L.P.
 }
 
+@copyright{
+  MemoryModule
+  Copyright (c) 2004-2015 by Joachim Bauch / mail@"@"joachim-bauch.de
+  http://www.joachim-bauch.de
+}
+
 See also other @filepath{LICENSE.txt} files in your distribution or
 packages.
