@@ -146,6 +146,9 @@ Scheme_Env *scheme_restart_instance()
   scheme_init_logger_config();
   scheme_init_exn_config();
 
+  scheme_startup_instance = scheme_make_instance(scheme_intern_symbol("startup"), scheme_false);
+  scheme_init_startup_instance(scheme_startup_instance);
+
   boot_module_resolver();
 
   scheme_init_resolver_config();
