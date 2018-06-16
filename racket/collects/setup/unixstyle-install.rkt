@@ -28,7 +28,8 @@
 ;;   path names.
 
 #lang racket/base
-(require setup/cross-system)
+(require setup/cross-system
+         racket/file)
 
 (module test racket/base)
 
@@ -125,11 +126,7 @@
 
 ;; removes a file or a directory (recursively)
 (define (rm path)
-  (cond [(or (file-exists? path) (link-exists? path)) (delete-file path)]
-        [(directory-exists? path)
-         (parameterize ([current-directory path]) (for-each rm (ls)))
-         (delete-directory path)]
-        [else #t])) ; shouldn't happen
+  (delete-directory/files path))
 
 ;; removes "compiled" subdirectories recursively
 (define (rm-compiled path)
@@ -244,12 +241,12 @@
                (regexp-match #rx#"^\317\372\355\376" magic))
            (let ([temp (format "~a-temp-for-install"
                                (regexp-replace* #rx"/" file "_"))])
-             (with-handlers ([exn? (lambda (e) (delete-file temp) (raise e))])
+             (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
                ;; always copy so we never change the running executable
                (rm temp)
                (copy-file file temp)
                (fix-binary temp)
-               (delete-file file)
+               (rm file)
                (mv temp file)))]
           [(regexp-match #rx#"^#!/bin/sh" magic)
            (fix-script file)]
@@ -322,7 +319,7 @@
                         (mv dst src)))]
               [(rd) make-directory]
               [(md) delete-directory]
-              [(file) delete-file]
+              [(file) rm]
               [else (error 'undo-changes "internal-error: ~e" p)])
             (cdr p)))
    path-changes))
