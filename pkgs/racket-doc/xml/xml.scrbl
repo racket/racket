@@ -227,12 +227,16 @@ Reads a single XML element from the port.  The next non-whitespace
 character read must start an XML element, but the input port can
 contain other data after the element.}
 
-@defproc[(syntax:read-xml [in input-port? (current-input-port)]) syntax?]{
+@defproc[(syntax:read-xml [in input-port? (current-input-port)]
+                          [#:src source-name any/c (object-name in)])
+         syntax?]{
 
 Reads in an XML document and produces a syntax object version (like
 @racket[read-syntax]) of an @tech{X-expression}.}
 
-@defproc[(syntax:read-xml/element [in input-port? (current-input-port)]) syntax?]{
+@defproc[(syntax:read-xml/element [in input-port? (current-input-port)]
+                                  [#:src source-name any/c (object-name in)])
+         syntax?]{
 
 Like @racket[syntax:real-xml], but it reads an XML element like
 @racket[read-xml/element].}
