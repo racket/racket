@@ -46,6 +46,7 @@ language.
                                racket/private/stx
                                racket/private/map
                                racket/private/list
+                               racket/private/kw-syntax-local
                                racket/private/base)]{
 
 Unless otherwise noted, the bindings defined in this manual are
