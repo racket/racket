@@ -427,6 +427,20 @@ END
      (test-syntax:read-xml
       "<!-- comment --><br />"
       '(br ()))
+
+     (check-equal?
+       (syntax-source
+        (syntax:read-xml
+         #:src "file.xml"
+         (open-input-string "<span>From a file</span>")))
+       "file.xml")
+
+     (check-equal?
+      (syntax-source
+       (last (syntax->list
+              (syntax:read-xml #:src "file-with-span.xml"
+                               (open-input-string "<span>From a file</span>")))))
+      "file-with-span.xml")
      
      ; XXX need more syntax:read-xml tests
      
@@ -480,6 +494,21 @@ END
      (test-syntax:read-xml/element/exn
       "<!-- comment --><br />"
       "read-xml: parse-error: expected root element - received (comment ")
+
+     (check-equal?
+      (syntax-source
+       (syntax:read-xml/element
+        #:src "file-with-element.xml"
+        (open-input-string "<span>From a file</span>")))
+      "file-with-element.xml")
+
+     (check-equal?
+      (syntax-source
+       (last (syntax->list
+              (syntax:read-xml/element
+               #:src "file-with-span-element.xml"
+               (open-input-string "<span>From a file</span>")))))
+      "file-with-span-element.xml")
      
      ; XXX need more syntax:read-xml/element tests
      
