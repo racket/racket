@@ -174,7 +174,13 @@ HRESULT CSink::InternalQueryInterface(void *pThis,
     }
   }
 
-  // Use IUnknown pointer for IUnknown, ISink, and the outbound interface
+  /* Don't claim to implement INoMarshal, because that disables
+     the sink for some uses, including with MzCOM */
+  if (riid == IID_INoMarshal) {
+      return E_NOINTERFACE;
+  }
+
+  // Use IUnknown pointer for IUnknown, ISink, and anything else (which we assume to be the outbound interface)
 
   return CComObjectRootEx<CComSingleThreadModel>::InternalQueryInterface(pThis,pEntries,IID_IUnknown,ppVoid);
 

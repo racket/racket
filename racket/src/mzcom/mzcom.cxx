@@ -247,6 +247,17 @@ extern "C" int WINAPI WinMain(HINSTANCE hInstance,
               nRet |= RegCloseKey(sub);
             }
 
+            if (!nRet) {
+	      ITypeLib *typelib;
+	      wchar_t *path;
+	      path = (wchar_t *)malloc(1024 * sizeof(wchar_t));
+	      GetModuleFileNameW(NULL, path, 1024);
+	      nRet = LoadTypeLibEx(path, REGKIND_REGISTER, &typelib);
+	      if (!nRet)
+		typelib->Release();
+	      free(path);
+            }
+
 	    bRun = FALSE;
 	  }
         }

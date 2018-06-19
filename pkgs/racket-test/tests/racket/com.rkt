@@ -86,7 +86,6 @@
   (test (void) (com-unregister-event-callback mzcom "SchemeError"))
   (test (void) ((sync exec)))
   (test #t (regexp-match? #rx"bad" recved))
-
   (test #f (com-iunknown? mzcom))
   (test #t (com-iunknown? (com-object-get-iunknown mzcom)))
   (test #t (com-iunknown? (com-object-get-idispatch mzcom)))
@@ -116,7 +115,6 @@
                                            (and (regexp-match #rx"released" (exn-message exn))
                                                 'no))])
                 (com-invoke mzcom2 "About"))))
-
   (define ie (com-create-instance "InternetExplorer.Application.1"))
   (test #t (and (member "Visible" (com-get-properties ie)) #t))
   (test #t (and (member "Visible" (com-set-properties ie)) #t))
@@ -133,7 +131,7 @@
 
   (define doc (com-get-property ie "Document"))
   (test #t (com-object? doc))
-  (test "The Racket Language" (com-get-property ie "Document" "title"))
+  (test "Racket" (com-get-property ie "Document" "title"))
   (test (void) (com-set-property! ie "Document" "title" "The Racket Documentation"))
   (test "The Racket Documentation" (com-get-property ie "Document" "title"))
   (test '(-> () string) #:alts '((-> () any)) (com-get-property-type doc "title"))
