@@ -106,7 +106,7 @@ uninitialized variables provides core support for top-level evaluation
 where variables may be referenced and then defined in a separate
 element of compilation.
 
-@history[#:added "6.6.1"]
+@history[#:added "6.90.0.1"]
 
 @; --------------------------------------------------
 
@@ -385,17 +385,28 @@ Sets or creates the variable exported as @racket[name] in
 variable does not exist already as constant. If a variable for
 @racket[name] exists as constant, the @exnraise[exn:fail:contract].
 
-If @racket[mode] is a single, then the variable is created or changed
-to be constant. If @racket[mode] is @racket['consistent], then
-the optimizer can assume that the value has the same shape in all
-instances that are used to satisfy a linklet's imports.}
+If @racket[mode] is @racket['constant] or @racket['consistent], then
+the variable is created or changed to be constant. Furthermore, when
+the instance is reported for a linklet's import though a
+@racket[_get-import] callback to @racket[compile-linklet], the
+compiler can assume that the variable will be constant in all future
+instances that are used to satisfy a linklet's imports.
+
+If @racket[mode] is @racket['consistent], when the instance is
+reported though a callback to @racket[compile-linklet], the compiler
+can further assume that the variable's value will be the same for
+future instances. For compilation purposes, ``the same'' can mean that
+a procedure value will have the same arity and implementation details,
+a @tech{structure type} value will have the same configuration, a
+marshalable constant will be @racket[equal?] to the current value, and
+so on.}
 
 
 @defproc[(instance-unset-variable! [instance instance?]
                                    [name symbol?])
           void?]{
 
-Changes @racket[instance] so taht it does not export a variable as
+Changes @racket[instance] so that it does not export a variable as
 @racket[name], as long as @racket[name] does not exist as a constant
 variable. If a variable for @racket[name] exists as constant, the
 @exnraise[exn:fail:contract].}
