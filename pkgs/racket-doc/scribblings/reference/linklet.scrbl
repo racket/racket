@@ -21,7 +21,7 @@ linklet. A linklet is also used for metadata such as the @tech{module
 path index}es for a module's @racket[require]s. These linklets, plus
 some other metadata, are combined to form a @deftech{linklet bundle}.
 Information in a @tech{linklet bundle} is keyed by either a symbol or
-a @tech{fixnum}. A @tech{linklet directory} containing
+a @tech{fixnum}. A @tech{linklet bundle} containing
 @tech{linklet}s can be marshaled to and from a byte stream by
 @racket[write] and (with @racket[read-accept-compiled] is enabled)
 @racket[read].
