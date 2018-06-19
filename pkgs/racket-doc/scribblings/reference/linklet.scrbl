@@ -95,7 +95,7 @@ Primitives are accessed directly by name, and shadowing is not allowed
 within a @racketidfont{linklet} form for primitive names, imported
 variables, defined variables, or local variables.
 
-When a @racket[_exported-id/renamed] has no corresponding definition
+When an @racket[_exported-id/renamed] has no corresponding definition
 among the @racket[_defn-or-expr]s, then the variable is effectively
 defined as uninitialized; referencing the variable will trigger
 @racket[exn:fail:contract:variable], the same as referencing a
@@ -135,7 +135,7 @@ Takes an S-expression or @tech{correlated object} for a
 @schemeidfont{linklet} form and produces a @tech{linklet}.
 As long as @racket['serializable] included in @racket[options], the
 resulting linklet can be marshaled to and from a byte stream when it is
-part of a @tech{linklet bundle}.
+part of a @tech{linklet bundle} (possibly in a @tech{linklet directory}).
 
 The optional @racket[name] is associated to the linklet for debugging
 purposes and as the default name of the linklet's instance.
@@ -152,7 +152,7 @@ provided to the compiled linklet when it is eventually instantiated;
 ensuring consistency between reported linklet or instance and the eventual
 instance is up to the caller of @racket[compile-linklet]. If
 @racket[get-import] returns @racket[#f] as its first value, the
-compiler will be prevented from make any assumptions about the
+compiler will be prevented from making any assumptions about the
 imported instance. The second result from @racket[get-import] is an
 optional vector of keys to provide transitive information on a
 returned linklet's imports (and is not allowed for a returned instance);
@@ -183,8 +183,8 @@ the linklet is compiled in @tech{unsafe mode} can be exposed through
 produced by a @racket[#%variable-reference] form within the module
 body.
 
-If @racket['static] is included in @racket[options] then the linklet
-must be instantiated only once; in the linklet is serialized, then any
+If @racket['static] is included in @racket[options], then the linklet
+must be instantiated only once; if the linklet is serialized, then any
 individual instance read from the serialized form must be instantiated
 at most once. Compilation with @racket['static] is intended to improve
 the performance of references within the linklet to defined and
