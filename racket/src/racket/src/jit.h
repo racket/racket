@@ -986,7 +986,7 @@ void scheme_jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # else
   /* Normal internal ABI */
 #  define mz_prolog(x) _mz_prolog(x)
-#  define mz_epilog_without_jmp(x) _mz_epilog_without_jmp(x)
+#  define mz_epilog_without_jmp() _mz_epilog_without_jmp()
 #  define mz_epilog(x) _mz_epilog(x)
 # endif
 # define mz_push_locals() SUBQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
