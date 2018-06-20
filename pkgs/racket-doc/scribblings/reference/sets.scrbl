@@ -932,15 +932,15 @@ Produces seven values:
 
 @itemize[
 @item{a predicate recognizing all instances of the new set type,}
-@item{a predicate recognizing immutable instances,}
-@item{a predicate recognizing mutable instances,}
 @item{a predicate recognizing weak instances,}
-@item{a constructor for immutable instances,}
+@item{a predicate recognizing mutable instances,}
+@item{a predicate recognizing immutable instances,}
+@item{a constructor for weak instances,}
 @item{a constructor for mutable instances, and}
-@item{a constructor for weak instances.}
+@item{a constructor for immutable instances.}
 ]
 
-See @racket[define-custom-hash-types] for an example.
+See @racket[define-custom-set-types] for an example.
 
 }
 
