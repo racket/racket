@@ -21,7 +21,7 @@
     (cond [(or (eof-object? exp) (eof-object? (syntax-e exp)))
            (and filename
                 (error 'load-handler
-                       "expected a `module' declaration in ~s, but found end-of-file"
+                       "expected a `module` declaration in ~s, but found end-of-file"
                        filename))]
           [(compiled-module-expression? (syntax-e exp))
            exp]
@@ -30,7 +30,7 @@
                   [(mod nm . _)
                    (and (eq? (syntax-e #'mod) 'module) (identifier? #'nm))]
                   [_else #f]))
-           ;; It's ok; need to install a specific `module' binding:
+           ;; It's ok; need to install a specific `module` binding:
            (with-syntax ([(mod nm . _) exp])
              (datum->syntax exp
                             (cons (namespace-module-identifier)
@@ -40,5 +40,5 @@
           [else
            (and filename
                 (error 'load-handler
-                       "expected a `module' declaration in ~s, but found something else"
+                       "expected a `module` declaration in ~s, but found something else"
                        filename))])))
