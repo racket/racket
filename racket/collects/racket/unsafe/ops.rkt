@@ -30,6 +30,7 @@
                      unsafe-make-custodian-at-root
                      unsafe-custodian-register
                      unsafe-custodian-unregister
+                     unsafe-add-post-custodian-shutdown
                      unsafe-register-process-global
                      unsafe-get-place-table
                      unsafe-make-security-guard-at-root

@@ -590,6 +590,8 @@ void scheme_place_instance_destroy(int force)
   else
     scheme_run_atexit_closers_on_all(force_more_closed_after);
 
+  scheme_run_post_custodian_shutdown();
+
   scheme_release_fd_semaphores();
   
   scheme_release_file_descriptor();

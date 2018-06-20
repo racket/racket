@@ -21,6 +21,11 @@
     [(_ id ...)
      (begin (define-place-not-yet-available id) ...)]))
 
+;; This operation adds shutdown thunks to a non-main place, so it's a
+;; no-op for now:
+(define (unsafe-add-post-custodian-shutdown proc)
+  (void))
+
 (define-place-not-yet-available
   place-break
   place-channel-get

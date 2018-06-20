@@ -335,6 +335,8 @@ static Scheme_Object *unsafe_make_custodian_at_root(int argc, Scheme_Object *arg
 static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_custodian_unregister(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_add_post_custodian_shutdown(int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[]);
@@ -477,6 +479,12 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 #endif
 
 SHARED_OK Scheme_Object *initial_cmdline_vec;
+
+#if defined(MZ_USE_PLACES)
+# define RUNNING_IN_ORIGINAL_PLACE (scheme_current_place_id == 0)
+#else
+# define RUNNING_IN_ORIGINAL_PLACE 1
+#endif
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -645,6 +653,8 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-make-custodian-at-root", unsafe_make_custodian_at_root, 0, 0, env);
   ADD_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 5, env);
   ADD_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
+
+  ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 1, env);
 
   ADD_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-get-place-table", unsafe_get_place_table, 0, 0, env);
@@ -1916,6 +1926,40 @@ void do_run_atexit_closers_on_all()
   scheme_run_atexit_closers_on_all(NULL);
 }
 
+static Scheme_Object *unsafe_add_post_custodian_shutdown(int argc, Scheme_Object *argv[])
+{
+  scheme_check_proc_arity("unsafe-add-post-custodian-shutdown", 0, 0, argc, argv);
+
+#if defined(MZ_USE_PLACES)
+  if (!RUNNING_IN_ORIGINAL_PLACE) {
+    if (!post_custodian_shutdowns) {
+      REGISTER_SO(post_custodian_shutdowns);
+      post_custodian_shutdowns = scheme_null;
+    }
+    
+    post_custodian_shutdowns = scheme_make_pair(argv[0], post_custodian_shutdowns);
+  }
+#endif
+  
+  return scheme_void;
+}
+
+void scheme_run_post_custodian_shutdown()
+{
+#if defined(MZ_USE_PLACES)
+  if (post_custodian_shutdowns) {
+    Scheme_Object *proc;
+    scheme_start_in_scheduler();
+    while (SCHEME_PAIRP(post_custodian_shutdowns)) {
+      proc = SCHEME_CAR(post_custodian_shutdowns);
+      post_custodian_shutdowns = SCHEME_CDR(post_custodian_shutdowns);
+      _scheme_apply_multi(proc, 0, NULL);
+    }
+    scheme_end_in_scheduler();
+  }
+#endif
+}
+
 void scheme_set_atexit(Scheme_At_Exit_Proc p)
 {
   replacement_at_exit = p;
@@ -1923,12 +1967,6 @@ void scheme_set_atexit(Scheme_At_Exit_Proc p)
 
 void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
-#if defined(MZ_USE_PLACES)
-# define RUNNING_IN_ORIGINAL_PLACE (scheme_current_place_id == 0)
-#else
-# define RUNNING_IN_ORIGINAL_PLACE 1
-#endif
-
   if (!cust_closers) {
     if (RUNNING_IN_ORIGINAL_PLACE) {
       scheme_atexit(do_run_atexit_closers_on_all);
