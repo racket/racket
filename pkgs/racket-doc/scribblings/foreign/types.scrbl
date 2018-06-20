@@ -106,7 +106,7 @@ element representation followed by an exact-integer count.
 
 @defproc[(compiler-sizeof [sym (or/c symbol? (listof symbol?))]) exact-nonnegative-integer?]{
 
-Possible values for @racket[sym] are @racket['int], @racket['char],
+Possible values for @racket[sym] are @racket['int], @racket['char], @racket['wchar],
 @racket['short], @racket['long], @racket['*], @racket['void],
 @racket['float], @racket['double], or lists of symbols, such as 
 @racket['(long long)]. The result is the size of the
@@ -152,6 +152,15 @@ for @racket[_sint8] and @racket[_uint8], respectively.
 The @racket[_byte] type is like @racket[_ubyte], but adds
 256 to a negative Racket value that would work as a @racket[_sbyte]
 (i.e., it casts signed bytes to unsigned bytes).}
+
+
+@defthing*[([_wchar ctype?])]{
+
+The @racket[_wchar] type is an alias for an unsigned integer type,
+such as @racket[_uint16] or @racket[_uint32], corresponding to the platform's
+@as-index{@tt{wchar_t}} type.
+
+@history[#:added "7.0.0.3"]}
 
 
 @defthing*[([_word ctype?]

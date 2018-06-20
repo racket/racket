@@ -549,11 +549,12 @@
           (if star?
               (foreign-sizeof 'void*)
               (raise-arguments-error 'compiler-sizeof "cannot use 'void without a '*"))]
-         [(or (not base-type)
-              (eq? base-type 'int))
+         [(or (not size)
+              (eq? base-type 'int)
+              (not base-type))
           (if star?
               (foreign-sizeof 'void*)
-              (foreign-sizeof (or size 'int)))]
+              (foreign-sizeof (or size base-type 'int)))]
          [(eq? base-type 'double)
           (case size
             [(long)
@@ -580,7 +581,7 @@
        [else
         (let ([s (if (pair? sl) (car sl) sl)])
           (case s
-            [(int char float double void)
+            [(int char wchar float double void)
              (cond
               [base-type
                (raise-arguments-error 'compiler-sizeof

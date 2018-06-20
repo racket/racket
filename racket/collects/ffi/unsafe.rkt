@@ -16,7 +16,7 @@
          vector->cpointer flvector->cpointer extflvector->cpointer saved-errno lookup-errno
          ctype? make-ctype make-cstruct-type make-array-type make-union-type
          make-sized-byte-string ctype->layout
-         _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
+         _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64 _wchar
          _fixint _ufixint _fixnum _ufixnum
          _float _double _longdouble _double*
          _bool _stdbool _pointer _gcpointer _scheme (rename-out [_scheme _racket]) _fpointer function-ptr
@@ -61,6 +61,13 @@
                            (lambda (v) v)))
 (define* _uword _uint16)
 (define* _sword _int16)
+
+(define* _wchar (case (compiler-sizeof 'wchar)
+                  [(1) _uint8]
+                  [(2) _uint16]
+                  [(4) _uint32]
+                  [(8) _uint64]
+                  [else (error '_wchar "implausible 'wchar size")]))
 
 ;; utility for the next few definitions
 (define (sizeof->3ints c-type)

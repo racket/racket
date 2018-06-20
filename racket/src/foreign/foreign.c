@@ -2478,7 +2478,7 @@ static Scheme_Object *foreign_ctype_alignof(int argc, Scheme_Object *argv[])
 static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
 {
   int res=0;
-  int basetype = 0; /* 1=int, 2=char, 3=void, 4=float, 5=double */
+  int basetype = 0; /* 1=int, 2=char, 3=void, 4=float, 5=double, 6=wchar_t */
   int intsize = 0;  /* "short" => decrement, "long" => increment */
   int stars = 0;    /* number of "*"s */
   int must_list = 0;
@@ -2494,6 +2494,9 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
       else scheme_signal_error(MYNAME": extraneous type: %V", p);
     } else if (!strcmp(SCHEME_SYM_VAL(p),"char")) {
       if (basetype==0) basetype=2;
+      else scheme_signal_error(MYNAME": extraneous type: %V", p);
+    } else if (!strcmp(SCHEME_SYM_VAL(p),"wchar")) {
+      if (basetype==0) basetype=6;
       else scheme_signal_error(MYNAME": extraneous type: %V", p);
     } else if (!strcmp(SCHEME_SYM_VAL(p),"void")) {
       if (basetype==0) basetype=3;
@@ -2559,6 +2562,10 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
     if (intsize==0) RETSIZE(double);
     else if (intsize==1) RETSIZE(mz_long_double);
     else scheme_signal_error(MYNAME": bad qualifiers for 'double");
+    break;
+  case 6: /* wchar_t */
+    if (intsize==0) RETSIZE(wchar_t);
+    else scheme_signal_error(MYNAME": cannot qualify 'wchar");
     break;
   default:
     scheme_signal_error(MYNAME": internal error (unexpected type %d)",
