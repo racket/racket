@@ -1904,7 +1904,8 @@
   (make-directory* sub)
   (file-or-directory-permissions sub #o000)
   (file-or-directory-permissions sub)
-  (err/rt-test (for ([v (in-directory sub)]) v) exn:fail:filesystem?)
+  (unless (memq 'write (file-or-directory-permissions sub)) ; root can still modify the directory
+    (err/rt-test (for ([v (in-directory sub)]) v) exn:fail:filesystem?))
   (delete-directory sub)
   (delete-directory/files tmp))
 
@@ -1939,7 +1940,9 @@
 
   ;; On Unix, non-writable directory means the file
   ;; can't be deleted.
-  (unless (eq? 'windows (system-type))
+  (unless (or (eq? 'windows (system-type))
+              ;; root can still modify the directory
+              (memq 'write (file-or-directory-permissions dir)))
     (unless (eq? 'exn (with-handlers ([void (lambda (exn) 'exn)])
                         (delete-file file)))
       (error "expected an error")))
@@ -1955,7 +1958,7 @@
         (error "expected an error"))))
 
   ;; In default mode, non-writable things in writable directories
-  ;; an be deleted everywhere:
+  ;; can be deleted everywhere:
   (delete-file file)
   (delete-directory dir))
 
