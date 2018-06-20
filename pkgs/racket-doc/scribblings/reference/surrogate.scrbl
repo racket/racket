@@ -17,23 +17,17 @@ surrogate.
               (surrogate use-wrapper-proc method-spec ...)
               ([use-wrapper-proc #:use-wrapper-proc (code:line)]
                [method-spec (augment default-expr method-id arg-spec ...)
-                            (override method-id arg-spec ...)               
-                            (override-final method-id (lambda () default-expr) 
-                                            arg-spec ...)]
+                            (override method-id arg-spec ...)]
                [arg-spec (id ...)
                          id])]{
 
-If neither @racket[override] nor @racket[override-final] is specified
-for a @racket[method-id], then @racket[override] is assumed.
-
-The @racket[surrogate] form produces four values: a host mixin (a
-procedure that accepts and returns a class), a host interface, a
-surrogate class, and a surrogate interface.
+The @racket[surrogate] form produces four values: a host @tech{mixin} (a
+procedure that accepts and returns a class), a host @tech{interface}, a
+surrogate @tech{class}, and a surrogate @tech{interface}.
 
 If @racket[#:use-wrapper-proc] does not appear,
-the host mixin adds one field @racket[surrogate]
-to its argument. It also adds getter and setter methods
- @racket[get-surrogate] and @racket[set-surrogate]. The
+the host mixin adds a single private field to its argument. It also adds getter and setter methods
+@racket[get-surrogate] and @racket[set-surrogate] to get and set the value of the field. The
 @racket[set-surrogate] method accepts instances of the class returned by
 the @racket[surrogate] form or @racket[#f], and it updates the field with its
 argument; then, @racket[set-surrogate] calls the @racket[on-disable-surrogate] on the
@@ -42,21 +36,21 @@ new value of the field. The @racket[get-surrogate] method returns the
 current value of the field.
 
 If @racket[#:use-wrapper-proc] does appear, the the host mixin adds
-both the @racket[_surrogate] field (with its getters and setters) and a
-a second field, @racket[_surrogate-wrapper-proc] and its getter and setter
-methods, @racket[_get-surrogate-wrapper-proc] and @racket[_set-surrogate-wrapper-proc].
-The @racket[_surrogate-wrapper-proc] field holds a procedure whose contract
-is @racket[(-> (-> any) (-> any) any)]. The function is invoked with two thunks.
-The first one is a fallback that invokes the original object's method,
-skipping the surrogate. The other one invokes the surrogate.
+and a second private field and its getter and setter
+methods @racket[get-surrogate-wrapper-proc] and @racket[set-surrogate-wrapper-proc].
+The additional field holds a wrapper procedure whose contract
+is @racket[(-> (-> any) (-> any) any)], so the procedure is invoked with two thunks.
+The first thunk is a fallback that invokes the original object's method,
+skipping the surrogate. The second thunk invokes the surrogate. The default
+wrapper procedure is
  @racketblock[(λ (fallback-thunk surrogate-thunk)
                 (surrogate-thunk))]
-This means that it simply defers to the method being invoked on the surrogate.
-The @racket[_surrogate-wrapper-proc] capability is part of the surrogate
-so that the dynamic extent of the calls to the surrogate can be adjusted
-(by, for example, changing the values of parameters). The
-@racket[_surrogate-wrapper-proc] is also invoked when calling the
-@racket[_on-disable-surrogate] and @racket[_on-enable-surrogate] methods
+That is, it simply defers to the method being invoked on the surrogate.
+Note that wrapper procedure can adjust the
+dynamic extent of calls to the surrogate
+by, for example, changing the values of parameters. The
+wrapper procedure  is also invoked when calling the
+@racket[on-disable-surrogate] and @racket[on-enable-surrogate] methods
 of the surrogate.
 
 The host mixin has a single overriding method for each
@@ -65,9 +59,9 @@ specified with @racket[augment]). Each of these
 methods is defined with a @racket[case-lambda] with one arm for each
 @racket[arg-spec]. Each arm has the variables as arguments in the
 @racket[arg-spec]. The body of each method tests the
-@racket[surrogate] field. If it is @racket[#f], the method just
+private surrogate field. If the field value is @racket[#f], the method just
 returns the result of invoking the super or inner method. If the
-@racket[surrogate] field is not @racket[#f], the corresponding method
+field value is not @racket[#f], the corresponding method
 of the object in the field is invoked. This method receives the same
 arguments as the original method, plus two extras. The extra arguments
 come at the beginning of the argument list. The first is the original
@@ -87,7 +81,7 @@ will override the @racket[m] method and call the surrogate like this:
                          x y z)
                    (super m x y z)))]
 where @racket[_surrogate] is bound to the value most recently passed
-to the host mixin's @racket[_set-surrogate] method.
+to the host mixin's @racket[set-surrogate] method.
 
 The host interface has the names @racket[set-surrogate],
 @racket[get-surrogate], and each of the @racket[method-id]s in the
@@ -103,7 +97,7 @@ In the example above, this is the @racket[_m] method in the surrogate class:
 @racketblock[(define/public (m original-object original-super x y z)
                (original-super x y z))]
 
-Note: if you derive a class from the surrogate class, do not both call
+If you derive a class from the surrogate class, do not both call
 the @racket[super] argument and the super method of the surrogate
 class itself. Only call one or the other, since the default methods
 call the @racket[super] argument.
