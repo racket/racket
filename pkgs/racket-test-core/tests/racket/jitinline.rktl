@@ -1056,5 +1056,12 @@
 (test 9 dynamic-require ''assign-to-bytes-array-with-non-constant-offset 'out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `char=?` and similar don't get confused when trying to
+;; reverse the argument order internally
+(let ([f (lambda () (char=? (peek-char (open-input-string "")) #\x))])
+  (set! f f)
+  (err/rt-test (f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

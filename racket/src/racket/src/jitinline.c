@@ -2697,6 +2697,9 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
 
   if (direction < 0) {
     /* reverse sense of comparison */
+    GC_CAN_IGNORE Scheme_Object *tmp = r2;
+    r2 = r1;
+    r1 = tmp;
     switch (cmp) {
     case CMP_LEQ:
       cmp = CMP_GEQ;
