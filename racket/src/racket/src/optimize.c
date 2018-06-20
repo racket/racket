@@ -4520,6 +4520,12 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       }
     }
 
+    if (IS_NAMED_PRIM(rator, "length")
+        && SCHEME_LISTP(rand)) {
+      alt = scheme_make_integer(scheme_list_length(rand));
+      return replace_tail_inside(alt, inside, app->rand);
+    }
+
     alt = try_reduce_predicate(rator, rand, info);
     if (alt)
       return replace_tail_inside(alt, inside, app->rand);

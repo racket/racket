@@ -152,6 +152,10 @@
            '(if (pair? null) 89 88))
 (test-comp 89
            '(if (list? null) 89 88))
+(test-comp 0
+           '(length '()))
+(test-comp 3
+           '(length '(1 2 3)))
 
 (test-comp '(lambda (x) (if x 2 1))
            '(lambda (x) (if (not x) 1 2)))
