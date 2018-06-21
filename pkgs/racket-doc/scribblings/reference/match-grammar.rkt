@@ -21,7 +21,7 @@ pat     ::= id                                     @match anything, bind identif
          |  (BOX pat)                              @match boxed pat
          |  (struct-id pat ...)                    @match struct-id instance
          |  (STRUCT struct-id (pat ...))           @match struct-id instance
-         |  (STRUCT* struct-id ([field pat] ...))  @match
+         |  (STRUCT* struct-id ([field pat] ...))  @match struct-id instance where each field matches its pat (library extension, see its documentation)
          |  (REGEXP rx-expr)                       @match string
          |  (REGEXP rx-expr pat)                   @match string, result with pat
          |  (PREGEXP px-expr)                      @match string
@@ -31,8 +31,8 @@ pat     ::= id                                     @match anything, bind identif
          |  (NOT pat ...)                          @match when no pat matches
          |  (APP expr pats ...)                    @match (expr value) output values to pats
          |  (? expr pat ...)                       @match if (expr value) and pats
-         |  (== val)                               @match if equal% to val
-         |  (== val comparator)                    @match if equal to val using comparator
+         |  (== val)                               @match if equal% to val (library extension, see its documentation)
+         |  (== val comparator)                    @match if equal to val using comparator (library extension, see its documentation)
          |  (QUASIQUOTE qp)                        @match a quasipattern
          |  derived-pattern                        @match using extension
 literal ::= #t                                     @match true
