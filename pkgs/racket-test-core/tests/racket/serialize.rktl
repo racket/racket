@@ -577,6 +577,13 @@
   (set-box! (immutable-a-b a) a)
   (deserialize (serialize a)))
 
+(let ([a (immutable-a 42)])
+  (parameterize ([deserialize-module-guard
+                  (λ (mod name)
+                    (test immutable-a name)
+                    (void))])
+    (deserialize (serialize a))))
+
 ;; ----------------------------------------
 
 (report-errs)
