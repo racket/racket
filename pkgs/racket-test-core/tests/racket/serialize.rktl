@@ -584,6 +584,17 @@
                     (void))])
     (deserialize (serialize a))))
 
+(define alt-immutable-a-deserial
+  (make-deserialize-info
+   (λ _ 2048)
+   (λ () (error 'alt-immutable "no cycles"))))
+
+(let ([a (immutable-a 42)])
+  (parameterize ([deserialize-module-guard
+                  (λ (mod name)
+                    (values mod alt-immutable-a-deserial))
+    (test 2048 (deserialize (serialize a)))])))
+
 ;; ----------------------------------------
 
 (report-errs)

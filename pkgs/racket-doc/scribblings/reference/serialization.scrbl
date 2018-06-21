@@ -378,7 +378,7 @@ be passed to @racket[dynamic-require]. The procedure can raise an
 exception to disallow the @racket[dynamic-require].
 
 The procedure can optionally return a pair containing a
-@racket[module-path?] and @racket[symbol?]. If returned,
+@tech{module-path} and @tech{symbol}. If returned,
 @racket[deserialize] will use them as arguments to
 @racket[dynamic-require] instead.
 
