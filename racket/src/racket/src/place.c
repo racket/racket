@@ -523,6 +523,9 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   mzrt_sema_destroy(ready);
   ready = NULL;
 
+  if (!place_data->place_obj)
+    scheme_signal_error("place: place creation failed");
+
   log_place_event("id %d: create %" PRIdPTR, "create", 1, place_data->place_obj->id);
 
   place_data->ready = NULL;
@@ -2387,7 +2390,12 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   mem_limit = SCHEME_INT_VAL(place_data->cust_limit);
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
-  scheme_place_instance_init(stack_base, place_data->parent_gc, mem_limit);
+  if (!scheme_place_instance_init(stack_base, place_data->parent_gc, mem_limit)) {
+    /* setup failed (because we're out of some resource?); try to exit gracefully */
+    place_data->place_obj = NULL; /* reports failure */
+    mzrt_sema_post(place_data->ready);
+    return NULL;
+  }
 
   a[0] = places_deep_direct_uncopy(place_data->current_library_collection_paths);
   scheme_current_library_collection_paths(1, a);

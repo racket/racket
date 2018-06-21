@@ -554,6 +554,7 @@ Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *parent_gc
   GC_construct_child_gc(parent_gc, memory_limit);
 # endif
   scheme_rktio = rktio_init();
+  if (!scheme_rktio) return NULL;
   env = place_instance_init(stack_base, 0);
 # if defined(MZ_PRECISE_GC)
   if (scheme_rktio) {
