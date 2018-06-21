@@ -101,6 +101,7 @@ thread other than one currently running the promise causes the
 promise is also a @tech{synchronizable event} for use with
 @racket[sync]; @racket[sync]ing on the promise does not @racket[force]
 it, but merely waits until a value is forced by another thread.
+The @tech{synchronization result} is @|void-const|.
 
 If a promise created by @racket[delay/sync] is forced on a thread that
 is already running the promise, an exception is raised in the same way
