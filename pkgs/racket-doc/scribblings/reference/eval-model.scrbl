@@ -984,7 +984,7 @@ outermost frame of the continuation for any new thread.
 
 A @deftech{custodian} manages a collection of threads,
 @tech{file-stream ports}, TCP ports, @tech{TCP listeners}, @tech{UDP
-sockets}, and @tech{byte converters}.  Whenever a thread, @|etc|, is
+sockets}, @tech{byte converters}, and @tech{places}.  Whenever a thread, @|etc|, is
 created, it is placed under the management of the @deftech{current
 custodian} as determined by the @racket[current-custodian]
 @tech{parameter}.

@@ -113,6 +113,9 @@ used: @racket[current-library-collection-paths],
 @racket[current-library-collection-links], and
 @racket[current-compiled-file-roots].
 
+A newly created place is registered with the @tech{current custodian},
+so that the place is terminated when the custodian is shut down.
+
 @; ----------------------------------------
 
 @section[#:tag "places-api"]{Using Places}
