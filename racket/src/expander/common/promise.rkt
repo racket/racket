@@ -11,12 +11,14 @@
 (define-syntax-rule (delay e) (promise (lambda () e) #f))
 
 (define (force v)
-  (cond [(promise? v)
-         (define s (promise-status v))
-         (cond [(not s)
-                (define result ((promise-val v)))
-                (set-promise-val! v result)
-                (set-promise-status! v #t)
-                result]
-               [else (promise-val v)])]
-        [else v]))
+  (cond
+    [(promise? v)
+     (define s (promise-status v))
+     (cond
+       [(not s)
+        (define result ((promise-val v)))
+        (set-promise-val! v result)
+        (set-promise-status! v #t)
+        result]
+       [else (promise-val v)])]
+    [else v]))
