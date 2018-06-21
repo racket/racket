@@ -998,7 +998,8 @@ following:
   some value, and this value is accessible after the call, to be used
   by an extra return expression.  If @racket[_ptr] is used in this
   mode, then the generated wrapper does not expect an argument since
-  one will be freshly allocated before the call.}
+  one will be freshly allocated before the call. The argument is
+  allocated using @racket[(malloc type-expr)].}
 
  @item{@racket[io] --- combines the above into an
   @italic{input/output} pointer argument: the wrapper gets the Racket
