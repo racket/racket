@@ -592,8 +592,8 @@
 (let ([a (immutable-a 42)])
   (parameterize ([deserialize-module-guard
                   (λ (mod name)
-                    (values mod alt-immutable-a-deserial))
-    (test 2048 (deserialize (serialize a)))])))
+                    (values mod alt-immutable-a-deserial))])
+    (test 2048 (deserialize (serialize a)))))
 
 ;; ----------------------------------------
 
