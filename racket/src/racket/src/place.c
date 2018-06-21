@@ -588,12 +588,31 @@ static void do_place_kill(Scheme_Place *place)
   {
     mzrt_mutex_lock(place_obj->lock);
 
-    if (!place_obj->die)
-      place_obj->die = 1;
+    if (!place_obj->dead) {
+      if (!place_obj->die)
+        place_obj->die = 1;
+      if (place_obj->signal_handle)
+        scheme_signal_received_at(place_obj->signal_handle);
+      resume_one_place_with_lock(place_obj);
+
+      do {
+        /* We need to block until the place is really finished; that
+           should happen quickly, so block atomically (with a little
+           cooperation for GCing, just in case). */
+        mzrt_mutex_unlock(place_obj->lock);
+        GC_check_master_gc_request();
+        scheme_start_atomic();
+        scheme_thread_block(0.0);
+        scheme_end_atomic_no_swap();
+        mzrt_mutex_lock(place_obj->lock);
+      } while (!place_obj->dead);
+    }
+
     place_obj->refcount--;
     refcount = place_obj->refcount;
 
-    if (place_obj->signal_handle) { scheme_signal_received_at(place_obj->signal_handle); }
+    if (place_obj->signal_handle)
+      scheme_signal_received_at(place_obj->signal_handle);
 
     place->result = place_obj->result;
 
@@ -2355,7 +2374,7 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
   
   place_data = (Place_Start_Data *) data_arg;
   data_arg = NULL;
- 
+
   /* printf("Startin place: proc thread id%u\n", ptid); */
 
   /* create pristine THREAD_LOCAL variables*/
