@@ -960,7 +960,12 @@
         (raise-arguments-error 'read-compiled-linklet
                                "version mismatch"
                                "expected" (version)
-                               "found" (bytes->string/utf-8 vers #\?)))
+                               "found" (bytes->string/utf-8 vers #\?)
+                               "in" (let ([n (object-name in)])
+                                      (if (path? n)
+                                          (unquoted-printing-string
+                                           (path->string n))
+                                          in))))
       (let ([tag (read-byte in)])
         (cond
          [(equal? tag (char->integer #\B))
