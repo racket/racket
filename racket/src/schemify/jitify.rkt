@@ -37,8 +37,7 @@
                                    need-extract?
                                    need-lift?
                                    convert-size-threshold ; #f or a number; see above
-                                   extractable-annotation
-                                   reannotate)
+                                   extractable-annotation)
 
   ;; Constucts a closed `lambda` form as wrapped with
   ;; `extractable-annotaton` and generates an application of
@@ -872,5 +871,4 @@
                               #t
                               #t ; need-lift?
                               #f ; size threshold
-                              wrapped
-                              (lambda (v u) u))))
+                              wrapped)))

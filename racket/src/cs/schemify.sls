@@ -9,11 +9,13 @@
           prim-knowns
           known-procedure
           a-known-constant)
-  (import (chezpart)
+  (import (except (chezpart)
+                  datum->syntax)
           (rename (rumble)
                   [correlated? rumble:correlated?]
                   [correlated-e rumble:correlated-e]
-                  [correlated-property rumble:correlated-property])
+                  [correlated-property rumble:correlated-property]
+                  [datum->correlated rumble:datum->correlated])
           (regexp)
           (io))
 
@@ -26,13 +28,15 @@
        ;; directly, instead:
        (hash 'syntax? rumble:correlated?
              'syntax-e rumble:correlated-e
-             'syntax-property rumble:correlated-property)]
+             'syntax-property rumble:correlated-property
+             'datum->syntax rumble:datum->correlated)]
       [else #f]))
 
   ;; For direct access by schemified schemify:
   (define syntax? rumble:correlated?)
   (define syntax-e rumble:correlated-e)
   (define syntax-property rumble:correlated-property)
+  (define datum->syntax rumble:datum->correlated)
 
   (include "include.ss")
   (include-generated "schemify.scm")

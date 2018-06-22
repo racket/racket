@@ -43,7 +43,7 @@
 ;; All binding identifiers in a clone must be fresh to stay consistent
 ;; with the unique-variable invariant of expanded/schemified form.
 
-(define (inline-clone k im add-import! mutated imports reannotate)
+(define (inline-clone k im add-import! mutated imports)
   (define env (if (known-procedure/can-inline/need-imports? k)
                   ;; The `needed->env` setup can fail if a needed
                   ;; import cannot be made available:
@@ -56,12 +56,12 @@
    (match (known-procedure/can-inline-expr k)
      [`(lambda ,args . ,bodys)
       (define-values (new-args new-env) (clone-args args env mutated))
-      `(lambda ,new-args . ,(clone-body bodys new-env mutated reannotate))]
+      `(lambda ,new-args . ,(clone-body bodys new-env mutated))]
      [`(case-lambda [,argss . ,bodyss] ...)
       `(case-lambda ,@(for/list ([args (in-list argss)]
                                  [bodys (in-list bodyss)])
                         (define-values (new-args new-env) (clone-args args env mutated))
-                        `[,new-args . ,(clone-body bodys new-env mutated reannotate)]))]
+                        `[,new-args . ,(clone-body bodys new-env mutated)]))]
      [`,id
       ;; We expect `id` to refer to an imported variable, where inlining the
       ;; imported variable will need to pull from there
@@ -70,7 +70,7 @@
          => (lambda (im)
               (define i-k (import-lookup im))
               (and (known-procedure/can-inline? i-k)
-                   (inline-clone i-k im add-import! mutated imports reannotate)))]
+                   (inline-clone i-k im add-import! mutated imports)))]
         [else #f])])))
 
 ;; Build a mapping from ids in the expr to imports into the current
@@ -111,11 +111,11 @@
                (cdr (car env))]))
           env))
 
-(define (clone-body l env mutated reannotate)
+(define (clone-body l env mutated)
   (for/list ([e (in-wrap-list l)])
-    (clone-expr e env mutated reannotate)))
+    (clone-expr e env mutated)))
 
-(define (clone-let v env mutated reannotate)
+(define (clone-let v env mutated)
   (match v
     [`(,let-id ([,idss ,rhss] ...) ,bodys ...)
      (define-values (rev-new-idss new-env)
@@ -124,41 +124,41 @@
          (values (cons new-ids rev-new-idss) new-env)))
      `(,let-id ,(for/list ([ids (in-list (reverse rev-new-idss))]
                            [rhs (in-list rhss)])
-                  `[,ids ,(clone-expr rhs new-env mutated reannotate)])
-               . ,(clone-body bodys new-env mutated reannotate))]))
+                  `[,ids ,(clone-expr rhs new-env mutated)])
+               . ,(clone-body bodys new-env mutated))]))
 
-(define (clone-expr v env mutated reannotate)
+(define (clone-expr v env mutated)
   (reannotate
    v
    (match v
      [`(lambda ,args . ,bodys)
-      `(lambda ,args . ,(clone-body bodys env mutated reannotate))]
+      `(lambda ,args . ,(clone-body bodys env mutated))]
      [`(case-lambda [,argss . ,bodyss] ...)
       `(case-lambda ,@(for/list ([args (in-list argss)]
                                  [bodys (in-list bodyss)])
-                        `[,args . ,(clone-body bodys env mutated reannotate)]))]
+                        `[,args . ,(clone-body bodys env mutated)]))]
      [`(quote ,_) v]
-     [`(let-values . ,_) (clone-let v env mutated reannotate)]
-     [`(letrec-values . ,_) (clone-let v env mutated reannotate)]
+     [`(let-values . ,_) (clone-let v env mutated)]
+     [`(letrec-values . ,_) (clone-let v env mutated)]
      [`(if ,tst ,thn ,els)
-      `(if ,(clone-expr tst env mutated reannotate)
-           ,(clone-expr thn env mutated reannotate)
-           ,(clone-expr els env mutated reannotate))]
+      `(if ,(clone-expr tst env mutated)
+           ,(clone-expr thn env mutated)
+           ,(clone-expr els env mutated))]
      [`(with-continuation-mark ,key ,val ,body)
-      `(with-continuation-mark ,(clone-expr key env mutated reannotate)
-                               ,(clone-expr val env mutated reannotate)
-                               ,(clone-expr body env mutated reannotate))]
+      `(with-continuation-mark ,(clone-expr key env mutated)
+                               ,(clone-expr val env mutated)
+                               ,(clone-expr body env mutated))]
      [`(begin ,exps ...)
-      `(begin . ,(clone-body exps env mutated reannotate))]
+      `(begin . ,(clone-body exps env mutated))]
      [`(begin0 ,exps ...)
-      `(begin0 . ,(clone-body exps env mutated reannotate))]
+      `(begin0 . ,(clone-body exps env mutated))]
      [`(set! ,id ,rhs)
-      `(set! ,id ,(clone-expr rhs env mutated reannotate))]
+      `(set! ,id ,(clone-expr rhs env mutated))]
      [`(#%variable-reference) v]
      [`(#%variable-reference ,id)
-      `(#%variable-reference ,(clone-expr id env mutated reannotate))]
+      `(#%variable-reference ,(clone-expr id env mutated))]
      [`(,rator . ,_)
-      (clone-body v env mutated reannotate)]
+      (clone-body v env mutated)]
      [`,_
       (let ([u-v (unwrap v)])
         (cond

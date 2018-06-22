@@ -375,7 +375,6 @@
                            jitify-mode?
                            (|#%app| compile-allow-set!-undefined)
                            #f ;; safe mode
-                           recorrelate
                            prim-knowns
                            ;; Callback to get a specific linklet for a
                            ;; given import:
@@ -383,8 +382,7 @@
                              (lookup-linklet-or-instance get-import key))
                            import-keys))
        (define impl-lam/lifts
-         (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)
-                                     recorrelate))
+         (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)))
        (define impl-lam/jitified
          (cond
            [(not jitify-mode?) impl-lam/lifts]
@@ -404,7 +402,7 @@
                                          [(jit)
                                           ;; Preserve annotated `lambda` source for on-demand compilation:
                                           (lambda (expr arity-mask name)
-                                            (make-wrapped-code (correlated->annotation (xify expr recorrelate))
+                                            (make-wrapped-code (correlated->annotation (xify expr))
                                                                arity-mask
                                                                name))]
                                          [else
@@ -416,8 +414,7 @@
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask name)
-                                                    code))))])
-                                       recorrelate)]))
+                                                    code))))]))]))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?
                                     linklet-compilation-mode)
@@ -1137,13 +1134,6 @@
                       (if (|#%app| read-on-demand-source)
                           'faslable
                           'faslable-strict)))
-
-  ;; --------------------------------------------------
-
-  (define (recorrelate old-term new-term)
-    (if (correlated? old-term)
-        (datum->correlated #f new-term old-term)
-        new-term))
 
   ;; --------------------------------------------------
 

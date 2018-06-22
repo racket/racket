@@ -124,12 +124,12 @@
     (printf "Schemify...\n")
     (define body
       (time
-       (schemify-body bodys/constants-lifted (lambda (old-v new-v) new-v) prim-knowns #hasheq() #hasheq() for-cify? unsafe-mode?)))
+       (schemify-body bodys/constants-lifted prim-knowns #hasheq() #hasheq() for-cify? unsafe-mode?)))
     (printf "Lift...\n")
     ;; Lift functions to aviod closure creation:
     (define lifted-body
       (time
-       (lift-in-schemified-body body (lambda (old new) new))))
+       (lift-in-schemified-body body)))
     (append (for/list ([p (in-list lifted-constants)])
               (cons 'define p))
             lifted-body)))

@@ -45,13 +45,13 @@
 ;; bound-variable sets
 (define empty-frees+binds (cons #hasheq() #hasheq()))
 
-(define (lift-in-schemified-linklet v reannotate)
+(define (lift-in-schemified-linklet v)
   ;; Match outer shape of a linklet produced by `schemify-linklet`
   ;; and lift in the linklet body:
   (let loop ([v v])
     (match v
       [`(lambda ,args . ,body)
-       (define new-body (lift-in-schemified-body body reannotate))
+       (define new-body (lift-in-schemified-body body))
        (if (for/and ([old (in-list body)]
                      [new (in-list new-body)])
              (eq? old new))
@@ -63,11 +63,11 @@
            v
            `(let* ,bindings ,new-body))])))
 
-(define (lift-in-schemified-body body reannotate)
+(define (lift-in-schemified-body body)
   (for/list ([v (in-list body)])
-    (lift-in-schemified v reannotate)))
+    (lift-in-schemified v)))
 
-(define (lift-in-schemified v reannotate)
+(define (lift-in-schemified v)
   ;; Quick pre-check: do any lifts appear to be possible?
   (define (lift-in? v)
     (match v

@@ -8,7 +8,7 @@
 
 (provide xify)
 
-(define (xify e reannotate)
+(define (xify e)
   (define (xify e env)
     (reannotate
      e
@@ -75,40 +75,35 @@
   (xify e #hasheq()))
 
 (module+ test
-  (define (reannotate old new) new)
   (define-syntax-rule (test a b)
     (let ([v a])
       (unless (equal? v b) (error 'test "failed: ~s => ~e" 'a v))))
   
-  (test (xify '(let ([apple 1]) apple) reannotate)
+  (test (xify '(let ([apple 1]) apple))
         '(let ([x0 1]) x0))
-  (test (xify '(let ([apple 1] [banana 2]) apple) reannotate)
+  (test (xify '(let ([apple 1] [banana 2]) apple))
         '(let ([x0 1] [x1 2]) x0))
   (test (xify '(let ([apple 1]
                      [banana 2])
                  (let ([apple 1]
                        [banana 2])
-                   apple))
-              reannotate)
+                   apple)))
         '(let ([x0 1]
                [x1 2])
            (let ([x0 1]
                  [x1 2])
              x0)))
   (test (xify '(+ (let ([apple 1]) apple)
-                  (let ([banana 2]) banana))
-              reannotate)
+                  (let ([banana 2]) banana)))
         '(+ (let ([x0 1]) x0)
             (let ([x0 2]) x0)))
   (test (xify '(lambda (a b c)
-                 (list c b a))
-              reannotate)
+                 (list c b a)))
         '(lambda (x0 x1 x2)
            (list x2 x1 x0)))
   (test (xify '(case-lambda
                  [(a b c) (list c b a)]
-                 [(x . y) (list x y)])
-              reannotate)
+                 [(x . y) (list x y)]))
         '(case-lambda
            [(x0 x1 x2)
             (list x2 x1 x0)]
@@ -119,8 +114,7 @@
                      (with-continuation-mark a b c))
                  (set! a b)
                  (list 'a 'b 'c 1 2 3)
-                 (#%app a b c))
-              reannotate)
+                 (#%app a b c)))
         '(lambda (x0 x1 x2)
            (if x0
                (begin x1 x2)

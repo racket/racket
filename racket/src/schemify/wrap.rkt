@@ -6,13 +6,15 @@
          wrap-pair? wrap-null? wrap-car wrap-cdr wrap-list?
          wrap-eq? wrap-equal?
          in-wrap-list
-         wrap-property)
+         wrap-property
+         reannotate)
 
 (import-from-primitive-table
  #%kernel
  [syntax? correlated?]
  [syntax-e correlated-e]
- [syntax-property correlated-property])
+ [syntax-property correlated-property]
+ [datum->syntax datum->correlated])
 
 (define (unwrap v)
   (if (correlated? v)
@@ -68,6 +70,11 @@
 (define (wrap-property a key)
   (and (correlated? a)
        (correlated-property a key)))
+
+(define (reannotate old-term new-term)
+  (if (correlated? old-term)
+      (datum->correlated #f new-term old-term)
+      new-term))
 
 (define-sequence-syntax in-wrap-list
   (lambda (stx) (raise-argument-error "allowed only in `for` forms" stx))
