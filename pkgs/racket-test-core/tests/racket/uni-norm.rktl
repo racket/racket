@@ -22,11 +22,13 @@
         (define path (build-path dir name))
         (and (file-exists? path) path))
       (let ([path (build-path here name)])
-        (with-output-to-file path
-          (lambda ()
-            (copy-port (get-pure-port (string->url (string-append base name)))
-                       (current-output-port))))
-        path)))
+        (define (try)
+          (with-handlers ([exn:fail? (lambda (x) #f)])
+            (with-output-to-file path
+              (lambda ()
+                (copy-port (get-pure-port (string->url (string-append base name)))
+                           (current-output-port))))))
+        (and (for/or ([_ 5]) (try)) path))))
 
 (printf "Reading tests...\n")
 (define test-strings
