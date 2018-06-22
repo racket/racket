@@ -657,6 +657,13 @@
 
 ;; ----------------------------------------
 
+;; Used to encode an 'inferred-name property as a Scheme expression
+(define-syntax (|#%name| stx)
+  (syntax-case stx ()
+    [(_ name val) #`(let ([name val]) name)]))
+
+;; ----------------------------------------
+
 (define (set-primitive-applicables!)
   (struct-property-set! prop:procedure
                         (record-type-descriptor parameter)

@@ -149,6 +149,7 @@
           primitive-closure?
           primitive-result-arity
           make-jit-procedure ; not exported to racket
+          |#%name|           ; not exported to racket
 
           equal?
           equal?/recur

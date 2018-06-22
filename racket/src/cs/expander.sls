@@ -153,6 +153,9 @@
                [(_ rator rand ...)
                 (with-syntax ([n-args (length #'(rand ...))])
                   #'((extract-procedure rator n-args) rand ...))])))
+    (eval '(define-syntax (|#%name| stx)
+             (syntax-case stx ()
+               [(_ name val) #`(let ([name val]) name)])))
     (eval `(define raise-binding-result-arity-error ',raise-binding-result-arity-error)))
 
   ;; For interpretation of the outer shell of a linklet:

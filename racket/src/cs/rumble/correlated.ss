@@ -26,7 +26,11 @@
          src)
   (if (correlated? datum)
       datum
-      (make-correlated datum (extract-srcloc src) empty-hasheq)))
+      (make-correlated datum
+                       (extract-srcloc src)
+                       (if (correlated? src)
+                           (correlated-props src)
+                           empty-hasheq))))
 
 (define (correlated->datum e)
   (cond

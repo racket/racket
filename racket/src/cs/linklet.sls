@@ -1154,8 +1154,13 @@
                       (values (cons a d)
                               (cons stripped-a stripped-d))))]
      [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])
-                        (values (transfer-srcloc v e stripped-e)
-                                stripped-e))]
+                        (let ([name (correlated-property v 'inferred-name)])
+                          (define (add-name e)
+                            (if name
+                                `(|#%name| ,name ,e)
+                                e))
+                          (values (add-name (transfer-srcloc v e stripped-e))
+                                  (add-name stripped-e))))]
      ;; correlated will be nested only in pairs with current expander
      [else (values v v)]))
 
