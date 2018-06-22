@@ -18,6 +18,8 @@
          "namespace/core.rkt"
          "namespace/primitive-module.rkt"
          "expand/missing-module.rkt"
+         (only-in "compile/correlate.rkt"
+                  compile-keep-source-locations!)
          "boot/kernel.rkt"
          "boot/read-primitive.rkt"
          "boot/main-primitive.rkt"
@@ -104,7 +106,9 @@
          declare-primitive-module! ; to support "extensions"
 
          embedded-load ; for -k
-         
+
+         compile-keep-source-locations! ; to enable if the back end wants them
+
          ;; This functions are provided for basic testing
          ;; (such as "demo.rkt")
          syntax? syntax-e

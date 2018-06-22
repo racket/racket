@@ -65,11 +65,7 @@
        (define u-id (unwrap (car ids)))
        (define x (or (hash-ref env u-id #f)
                      (string->symbol (string-append "x" (number->string (hash-count env))))))
-       (define-values (rest-xs rest-env) (xify-ids (cdr ids)
-                                                   (if (and (eq? x u-id)
-                                                            (not (hash-ref env u-id #f)))
-                                                       env
-                                                       (hash-set env u-id x))))
+       (define-values (rest-xs rest-env) (xify-ids (cdr ids) (hash-set env u-id x)))
        (values (cons x rest-xs) rest-env)]
       [(null? ids) (values '() env)]
       [else

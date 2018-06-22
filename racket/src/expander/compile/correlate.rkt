@@ -12,7 +12,11 @@
 (provide correlate*
          correlate~
          correlate/app
-         ->correlated)
+         ->correlated
+
+         compile-keep-source-locations!)
+
+(define keep-source-locations? #f)
 
 (define (correlate* stx s-exp)
   (if (syntax-srcloc stx)
@@ -26,9 +30,13 @@
   s-exp)
 
 (define (correlate/app stx s-exp)
-  (if (eq? (system-type 'vm) 'chez-scheme)
+  (if keep-source-locations?
       (correlate* stx s-exp)
       (correlate~ stx s-exp)))
 
 (define (->correlated s)
   (datum->correlated s #f))
+
+
+(define (compile-keep-source-locations! on?)
+  (set! keep-source-locations? on?))

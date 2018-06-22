@@ -43,6 +43,7 @@
           compiled-position->primitive
           primitive-in-category?
 
+          omit-debugging?             ; not exported to racket
           platform-independent-zo-mode? ; not exported to racket
           linklet-performance-init!   ; not exported to racket
           linklet-performance-report! ; not exported to racket
@@ -276,7 +277,7 @@
                (wrapped-code-content-set! wc f)
                f)]
             [else
-             (let* ([f (compile* (wrapped-code-content wc))])
+             (let ([f (compile* f)])
                (when jit-demand-on?
                  (show "JIT demand" (strip-nested-annotations (wrapped-code-content wc))))
                (wrapped-code-content-set! wc f)

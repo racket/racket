@@ -25,16 +25,20 @@
                module->language-info
                module-path-index-join
                version
-               exit)
+               exit
+               compile-keep-source-locations!)
          (regexp)
          (io)
          (thread)
          (only (linklet)
+               omit-debugging?
                platform-independent-zo-mode?
                linklet-performance-init!
                linklet-performance-report!))
 
  (linklet-performance-init!)
+ (unless omit-debugging?
+   (compile-keep-source-locations! #t))
 
  (define the-command-line-arguments
    (or (and (top-level-bound? 'bytes-command-line-arguments)

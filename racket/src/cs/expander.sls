@@ -4,7 +4,8 @@
           load-on-demand-enabled
           call-in-main-thread
           version
-          exit)
+          exit
+          compile-keep-source-locations!)
   (import (except (chezpart)
                   syntax->datum
                   datum->syntax)
