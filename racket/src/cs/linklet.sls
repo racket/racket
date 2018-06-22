@@ -394,6 +394,8 @@
                                          [else (show "schemified" impl-lam/lifts)])
                                        ;; don't need extract for non-serializable 'lambda mode
                                        (or serializable? (eq? linklet-compilation-mode 'jit))
+                                       ;; need lift only for serializable JIT mode
+                                       (and serializable? (eq? linklet-compilation-mode 'jit))
                                        ;; compilation threshold for ahead-of-time mode:
                                        (and (eq? linklet-compilation-mode 'mach)
                                             linklet-compilation-limit)
@@ -1161,7 +1163,7 @@
      [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])
                         (let ([name (correlated-property v 'inferred-name)])
                           (define (add-name e)
-                            (if name
+                            (if (and name (not (void? name)))
                                 `(|#%name| ,name ,e)
                                 e))
                           (values (add-name (transfer-srcloc v e stripped-e))

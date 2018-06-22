@@ -13,6 +13,11 @@
 ;; useful for drawing a boundary between compiled and non-compiled
 ;; code, as opposed to a true JIT setup.
 
+;; If `need-lift?` is #t, then a converted function never contains
+;; a direct reference to a converted function. Instead, the converted
+;; function takes an argument to access other converted functions.
+;; That way, the converted functions are completely independent.
+
 ;; An environment maps a variables that needs to be passed into the
 ;; closed code:
 ;;
@@ -26,8 +31,11 @@
 
 (provide jitify-schemified-linklet)
 
+(define lifts-id (gensym 'jits))
+
 (define (jitify-schemified-linklet v
                                    need-extract?
+                                   need-lift?
                                    convert-size-threshold ; #f or a number; see above
                                    extractable-annotation
                                    reannotate)
@@ -35,7 +43,7 @@
   ;; Constucts a closed `lambda` form as wrapped with
   ;; `extractable-annotaton` and generates an application of
   ;; `extract[-closed]-id` to the wrapped form.
-  (define (make-jit-on-call free-vars argss v name env)
+  (define (make-jit-on-call free-vars argss v name env convert-mode body-lifts lifts)
     (define ids (for/list ([id (in-hash-keys free-vars)])
                   id))
     (define (extract-id m id)
@@ -80,19 +88,41 @@
             [else v])))
     (define arity-mask (argss->arity-mask argss))
     (cond
-      [(null? captures)
-       (let ([e (extractable-annotation jitted-proc arity-mask name)])
-         (if need-extract?
-             `(jitified-extract-closed ',e)
-             `',e))]
+      [(and (null? captures)
+            (no-lifts? body-lifts))
+       (define e (extractable-annotation jitted-proc arity-mask name))
+       (define-values (get-e new-lifts)
+         (cond
+           [(convert-mode-need-lift? convert-mode) (add-lift e lifts)]
+           [else (values `',e lifts)]))
+       (values (if need-extract?
+                   `(jitified-extract-closed ,get-e)
+                   get-e)
+               new-lifts)]
       [else
-       (let ([e (extractable-annotation `(lambda ,captures
-                                           ,jitted-proc)
+       (define e (extractable-annotation `(lambda ,(if (no-lifts? body-lifts)
+                                                       captures
+                                                       (cons lifts-id captures))
+                                            ,jitted-proc)
                                         arity-mask
-                                        name)])
-         (if need-extract?
-             `((jitified-extract ',e) . ,captures)
-             `(',e . ,captures)))]))
+                                        name))
+       (define-values (all-captures new-lifts)
+         (cond
+           [(no-lifts? body-lifts)
+            (values captures lifts)]
+           [(not (convert-mode-need-lift? convert-mode))
+            (values (cons `',(lifts->datum body-lifts) captures) lifts)]
+           [else
+            (define-values (get-sub-lift new-lifts) (add-lift (lifts->datum body-lifts) lifts))
+            (values (cons get-sub-lift captures) new-lifts)]))
+       (define-values (get-e newer-lifts)
+         (cond
+           [(convert-mode-need-lift? convert-mode) (add-lift e new-lifts)]
+           [else (values `',e new-lifts)]))
+       (values (if need-extract?
+                   `((jitified-extract ,get-e) . ,all-captures)
+                   `(,get-e . ,all-captures))
+               newer-lifts)]))
 
   ;; ----------------------------------------
 
@@ -151,8 +181,11 @@
     ;; one mutable variable from polluting another in a different scope
     (define mutables (find-mutable #hasheq() v #hasheq()))
     (define convert-mode (init-convert-mode v))
-    (define-values (new-v free) (jitify-expr v env mutables #hasheq() convert-mode name #f))
-    new-v)
+    (define-values (new-v free lifts) (jitify-expr v env mutables #hasheq() no-lifts convert-mode name #f))
+    (if (no-lifts? lifts)
+        new-v
+        `(let ([,lifts-id ',(lifts->datum lifts)])
+           ,new-v)))
 
   ;; The `name` argument is a name to be given to the expresison `v`
   ;;  if it's a function. It also corresponds to a name that can be
@@ -161,7 +194,7 @@
   ;; The `in-name` argument is the current self `name` that is in effect
   ;;  for the current expression. It might be mapped to '(self ...)
   ;;  and need to be unmapped for a more nested function.
-  (define (jitify-expr v env mutables free convert-mode name in-name)
+  (define (jitify-expr v env mutables free lifts convert-mode name in-name)
     (match v
       [`(lambda ,args . ,body)
        (define convert? (convert-mode-convert-lambda? convert-mode v))
@@ -171,15 +204,19 @@
                             env))
        (define body-env (add-args self-env args mutables body-convert-mode))
        (define body-in-name (if convert? (or name '#:anonymous) in-name))
-       (define-values (new-body lam-body-free)
-         (jitify-body body body-env mutables #hasheq() body-convert-mode #f body-in-name))
+       (define body-lifts (if convert? no-lifts lifts))
+       (define-values (new-body lam-body-free new-body-lifts)
+         (jitify-body body body-env mutables #hasheq() body-lifts body-convert-mode #f body-in-name))
        (define lam-free (remove-args lam-body-free args))
        (define new-v (reannotate v `(lambda ,args . ,(mutable-box-bindings args mutables body-convert-mode
                                                                            new-body))))
-       (values (if (not convert?)
-                   new-v
-                   (make-jit-on-call lam-free (list args) new-v name self-env))
-               (union-free free lam-free))]
+       (define-values (converted-v new-lifts)
+         (if (not convert?)
+             (values new-v new-body-lifts)
+             (make-jit-on-call lam-free (list args) new-v name self-env convert-mode new-body-lifts lifts)))
+       (values converted-v
+               (union-free free lam-free)
+               new-lifts)]
       [`(case-lambda [,argss . ,bodys] ...)
        (define convert? (convert-mode-convert-lambda? convert-mode v))
        (define body-convert-mode (convert-mode-lambda-body-mode convert-mode convert?))
@@ -187,60 +224,79 @@
                             (activate-self (deactivate-self env in-name) name)
                             env))
        (define body-in-name (if convert? (or name '#:anonymous) in-name))
-       (define-values (rev-new-bodys lam-free)
-         (for/fold ([rev-new-bodys '()] [lam-free #hasheq()]) ([args (in-list argss)]
-                                                               [body (in-list bodys)])
+       (define body-lifts (if convert? no-lifts lifts))
+       (define-values (rev-new-bodys lam-free new-body-lifts)
+         (for/fold ([rev-new-bodys '()] [lam-free #hasheq()] [body-lifts body-lifts]) ([args (in-list argss)]
+                                                                                       [body (in-list bodys)])
            (define body-env (add-args self-env args mutables body-convert-mode))
-           (define-values (new-body lam-body-free)
-             (jitify-body body body-env mutables #hasheq() body-convert-mode #f body-in-name))
+           (define-values (new-body lam-body-free new-body-lifts)
+             (jitify-body body body-env mutables #hasheq() body-lifts body-convert-mode #f body-in-name))
            (values (cons new-body rev-new-bodys)
                    (union-free (remove-args lam-body-free args)
-                               lam-free))))
+                               lam-free)
+                   new-body-lifts)))
        (define new-v (reannotate v
                                  `(case-lambda
                                     ,@(for/list ([args (in-list argss)]
                                                  [body (in-list (reverse rev-new-bodys))])
                                         `[,args . ,(mutable-box-bindings args mutables body-convert-mode
                                                                          body)]))))
-       (values (if (not convert?)
-                   new-v
-                   (make-jit-on-call lam-free argss new-v name self-env))
-               (union-free free lam-free))]
-      [`(let . ,_) (jitify-let v env mutables free convert-mode name in-name)]
-      [`(letrec . ,_) (jitify-let v env mutables free convert-mode name in-name)]
-      [`(letrec* . ,_) (jitify-let v env mutables free convert-mode name in-name)]
+       (define-values (converted-v new-lifts)
+         (if (not convert?)
+             (values new-v new-body-lifts)
+             (make-jit-on-call lam-free argss new-v name self-env convert-mode new-body-lifts lifts)))
+       (values converted-v
+               (union-free free lam-free)
+               new-lifts)]
+      [`(let . ,_) (jitify-let v env mutables free lifts convert-mode name in-name)]
+      [`(letrec . ,_) (jitify-let v env mutables free lifts convert-mode name in-name)]
+      [`(letrec* . ,_) (jitify-let v env mutables free lifts convert-mode name in-name)]
       [`(begin . ,vs)
-       (define-values (new-body new-free) (jitify-body vs env mutables free convert-mode name in-name))
+       (define-values (new-body new-free new-lifts)
+         (jitify-body vs env mutables free lifts convert-mode name in-name))
        (values (reannotate v `(begin . ,new-body))
-               new-free)]
+               new-free
+               new-lifts)]
       [`(begin0 ,v0 . ,vs)
-       (define-values (new-v0 v0-free)
-         (jitify-expr v0 env mutables free (convert-mode-non-tail convert-mode) name in-name))
-       (define-values (new-body new-free)
-         (jitify-body vs env mutables v0-free (convert-mode-non-tail convert-mode) #f in-name))
+       (define-values (new-v0 v0-free v0-lifts)
+         (jitify-expr v0 env mutables free lifts (convert-mode-non-tail convert-mode) name in-name))
+       (define-values (new-body new-free new-lifts)
+         (jitify-body vs env mutables v0-free v0-lifts (convert-mode-non-tail convert-mode) #f in-name))
        (values (reannotate v `(begin0 ,new-v0 . ,new-body))
-               new-free)]
+               new-free
+               new-lifts)]
       [`(pariah ,e)
-       (define-values (new-e new-free) (jitify-expr e env mutables free convert-mode name in-name))
+       (define-values (new-e new-free new-lifts)
+         (jitify-expr e env mutables free lifts convert-mode name in-name))
        (values (reannotate v `(pariah ,new-e))
-               new-free)]
+               new-free
+               new-lifts)]
       [`(if ,tst ,thn ,els)
        (define sub-convert-mode (convert-mode-non-tail convert-mode))
-       (define-values (new-tst new-free/tst) (jitify-expr tst env mutables free sub-convert-mode #f in-name))
-       (define-values (new-thn new-free/thn) (jitify-expr thn env mutables new-free/tst convert-mode name in-name))
-       (define-values (new-els new-free/els) (jitify-expr els env mutables new-free/thn convert-mode name in-name))
+       (define-values (new-tst new-free/tst new-lifts/tst)
+         (jitify-expr tst env mutables free lifts sub-convert-mode #f in-name))
+       (define-values (new-thn new-free/thn new-lifts/thn)
+         (jitify-expr thn env mutables new-free/tst new-lifts/tst convert-mode name in-name))
+       (define-values (new-els new-free/els new-lifts/els)
+         (jitify-expr els env mutables new-free/thn new-lifts/thn convert-mode name in-name))
        (values (reannotate v `(if ,new-tst ,new-thn ,new-els))
-               new-free/els)]
+               new-free/els
+               new-lifts/els)]
       [`(with-continuation-mark ,key ,val ,body)
        (define sub-convert-mode (convert-mode-non-tail convert-mode))
-       (define-values (new-key new-free/key) (jitify-expr key env mutables free sub-convert-mode #f in-name))
-       (define-values (new-val new-free/val) (jitify-expr val env mutables new-free/key sub-convert-mode #f in-name))
-       (define-values (new-body new-free/body) (jitify-expr body env mutables new-free/val convert-mode name in-name))
+       (define-values (new-key new-free/key new-lifts/key)
+         (jitify-expr key env mutables free lifts sub-convert-mode #f in-name))
+       (define-values (new-val new-free/val new-lifts/val)
+         (jitify-expr val env mutables new-free/key new-lifts/key sub-convert-mode #f in-name))
+       (define-values (new-body new-free/body new-lifts/body)
+         (jitify-expr body env mutables new-free/val new-lifts/val convert-mode name in-name))
        (values (reannotate v `(with-continuation-mark ,new-key ,new-val ,new-body))
-               new-free/body)]
-      [`(quote ,_) (values v free)]
+               new-free/body
+               new-lifts/body)]
+      [`(quote ,_) (values v free lifts)]
       [`(set! ,var ,rhs)
-       (define-values (new-rhs new-free) (jitify-expr rhs env mutables free (convert-mode-non-tail convert-mode) var in-name))
+       (define-values (new-rhs new-free new-lifts)
+         (jitify-expr rhs env mutables free lifts (convert-mode-non-tail convert-mode) var in-name))
        (define id (unwrap var))
        (define dest (hash-ref env id #f))
        (cond
@@ -250,7 +306,8 @@
                  [`,_ #f]))
           ;; Not under lambda: don't rewrite references to definitions
           (values `(set! ,var ,new-rhs)
-                  new-free)]
+                  new-free
+                  new-lifts)]
          [else
           (define newer-free (if dest
                                  (hash-set new-free id dest)
@@ -262,35 +319,41 @@
               [`(variable-ref ,var-id) (reannotate v `(variable-set! ,var-id ,new-rhs '#f))]
               [`(unbox ,box-id) (reannotate v `(set-box! ,box-id ,new-rhs))]
               [`(unbox/check-undefined ,box-id ,_) (reannotate v `(set-box!/check-undefined ,box-id ,new-rhs ',var))]))
-          (values new-v newer-free)])]
+          (values new-v newer-free new-lifts)])]
       [`(call-with-values ,proc1 ,proc2)
        (define proc-convert-mode (convert-mode-called convert-mode))
-       (define-values (new-proc1 new-free1) (jitify-expr proc1 env mutables free proc-convert-mode #f in-name))
-       (define-values (new-proc2 new-free2) (jitify-expr proc2 env mutables new-free1 proc-convert-mode #f in-name))
+       (define-values (new-proc1 new-free1 new-lifts1)
+         (jitify-expr proc1 env mutables free lifts proc-convert-mode #f in-name))
+       (define-values (new-proc2 new-free2 new-lifts2)
+         (jitify-expr proc2 env mutables new-free1 new-lifts1 proc-convert-mode #f in-name))
        (define call-with-values-id (if (and (lambda? new-proc1) (lambda? new-proc2))
                                        'call-with-values
                                        '#%call-with-values))
        (values (reannotate v `(,call-with-values-id ,new-proc1 ,new-proc2))
-               new-free2)]
+               new-free2
+               new-lifts2)]
       [`(#%app ,_ ...)
-       (define-values (new-vs new-free)
-         (jitify-body (wrap-cdr v) env mutables free (convert-mode-non-tail convert-mode) #f in-name))
+       (define-values (new-vs new-free new-lifts)
+         (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
        (values (reannotate v `(#%app . ,new-vs))
-               new-free)]
+               new-free
+               new-lifts)]
       [`(,rator ,_ ...)
        (define u (unwrap rator))
        (match (and (symbol? u) (hash-ref env u #f))
          [`(self ,_ ,orig-id)
           ;; Keep self call as direct
-          (define-values (new-vs new-free)
-            (jitify-body (wrap-cdr v) env mutables free (convert-mode-non-tail convert-mode) #f in-name))
+          (define-values (new-vs new-free new-lifts)
+            (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
           (values (reannotate v `(,rator . ,new-vs))
-                  new-free)]
+                  new-free
+                  new-lifts)]
          [`,x
-          (define-values (new-vs new-free)
-            (jitify-body v env mutables free (convert-mode-non-tail convert-mode) #f in-name))
+          (define-values (new-vs new-free new-lifts)
+            (jitify-body v env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
           (values (reannotate v new-vs)
-                  new-free)])]
+                  new-free
+                  new-lifts)])]
       [`,var
        (define id (unwrap var))
        (define dest (hash-ref env id #f))
@@ -300,7 +363,7 @@
                  [`(variable-ref ,_) #t]
                  [`,_ #f]))
           ;; Not under lambda: don't rewrite references to definitions
-          (values var free)]
+          (values var free lifts)]
          [else
           (define new-var
             (match dest
@@ -313,7 +376,8 @@
                 (hash-set free id dest)
                 free))
           (values new-var
-                  new-free)])]))
+                  new-free
+                  lifts)])]))
 
   (define (lambda? v)
     (match v
@@ -321,23 +385,24 @@
       [`(case-lambda . ,_) #t]
       [`,_ #f]))
 
-  (define (jitify-body vs env mutables free convert-mode name in-name)
-    (let loop ([vs vs] [free free])
+  (define (jitify-body vs env mutables free lifts convert-mode name in-name)
+    (let loop ([vs vs] [free free] [lifts lifts])
       (cond
-        [(wrap-null? vs) (values null free)]
+        [(wrap-null? vs) (values null free lifts)]
         [(wrap-null? (wrap-cdr vs))
-         (define-values (new-v new-free)
-           (jitify-expr (wrap-car vs) env mutables free convert-mode name in-name))
-         (values (list new-v) new-free)]
+         (define-values (new-v new-free new-lifts)
+           (jitify-expr (wrap-car vs) env mutables free lifts convert-mode name in-name))
+         (values (list new-v) new-free new-lifts)]
         [else
-         (define-values (new-v new-free)
-           (jitify-expr (wrap-car vs) env mutables free (convert-mode-non-tail convert-mode) #f in-name))
-         (define-values (new-rest newer-free)
-           (loop (wrap-cdr vs) new-free))
+         (define-values (new-v new-free new-lifts)
+           (jitify-expr (wrap-car vs) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
+         (define-values (new-rest newer-free newer-lifts)
+           (loop (wrap-cdr vs) new-free new-lifts))
          (values (cons new-v new-rest)
-                 newer-free)])))
+                 newer-free
+                 newer-lifts)])))
 
-  (define (jitify-let v env mutables free convert-mode name in-name)
+  (define (jitify-let v env mutables free lifts convert-mode name in-name)
     (match v
       [`(,let-form ([,ids ,rhss] ...) . ,body)
        (define rec?
@@ -354,23 +419,23 @@
                                                   (lambda? rhs)))
                                            convert-mode)
                            env))
-       (define-values (rev-new-rhss rhs-free)
-         (for/fold ([rev-new-rhss '()] [free #hasheq()]) ([id (in-list ids)]
-                                                          [rhs (in-list rhss)])
+       (define-values (rev-new-rhss rhs-free rhs-lifts)
+         (for/fold ([rev-new-rhss '()] [free #hasheq()] [lifts lifts]) ([id (in-list ids)]
+                                                                        [rhs (in-list rhss)])
            (define self-env
              (if rec?
                  (add-self rhs-env mutables id)
                  rhs-env))
-           (define-values (new-rhs rhs-free)
-             (jitify-expr rhs self-env mutables free rhs-convert-mode id in-name))
-           (values (cons new-rhs rev-new-rhss) rhs-free)))
+           (define-values (new-rhs rhs-free rhs-lifts)
+             (jitify-expr rhs self-env mutables free lifts rhs-convert-mode id in-name))
+           (values (cons new-rhs rev-new-rhss) rhs-free rhs-lifts)))
        (define local-env
          (add-args/unbox env ids mutables
                          (lambda (var) (and rec? (hash-ref rhs-free var #f)))
                          #f
                          convert-mode))
-       (define-values (new-body new-free)
-         (jitify-body body local-env mutables (union-free free rhs-free) convert-mode name in-name))
+       (define-values (new-body new-free new-lifts)
+         (jitify-body body local-env mutables (union-free free rhs-free) rhs-lifts convert-mode name in-name))
        (define new-v
          (cond
            [(not rec?)
@@ -398,7 +463,8 @@
                             [else `[,id ,new-rhs]]))
                      ,body)))]))
        (values (reannotate v new-v)
-               (remove-args new-free ids))]))
+               (remove-args new-free ids)
+               new-lifts)]))
 
   (define (mutable-box-bindings args mutables convert-mode body)
     (cond
@@ -607,23 +673,23 @@
   ;; Convert mode
   ;;
   ;; If there's no size threshold for conversion, then convert mode is
-  ;; simply 'called or 'not-called.
+  ;; a pair of 'called or 'not-called (where the former means "definitely
+  ;; called, so don't bother wrapper) and 'lift or 'no-lift.
   ;;
   ;; If there's a size threshold, then a convert mode is a
   ;; `convert-mode` instance.
 
-  (struct convert-mode (sizes called? no-more-conversions?))
+  (struct convert-mode (sizes called? lift? no-more-conversions?))
   
   (define (init-convert-mode v)
     (cond
       [convert-size-threshold
-       (convert-mode (record-sizes v) #f #f)]
-      [else 'not-called]))
+       (convert-mode (record-sizes v) #f #f #f)]
+      [else '(not-called . no-lift)]))
 
   (define (convert-mode-convert-lambda? cm v)
     (cond
-      [(eq? cm 'called) #f]
-      [(eq? cm 'not-called) #t]
+      [(pair? cm) (eq? (car cm) 'not-called)]
       [(convert-mode-called? cm) #f]
       [(convert-mode-no-more-conversions? cm) #f]
       [((hash-ref (convert-mode-sizes cm) v) . >= . convert-size-threshold) #f]
@@ -633,29 +699,60 @@
     (cond
       [(convert-mode? cm)
        (if convert?
-           (convert-mode 'not-needed #f #t)
+           (convert-mode 'not-needed #f need-lift? #t)
            (convert-mode-non-tail cm))]
-      [else 'not-called]))
+      [else (if (or (not need-lift?)
+                    (and (eq? 'no-lift (cdr cm))
+                         (not convert?)))
+                '(not-called . no-lift)
+                '(not-called . lift))]))
 
   (define (convert-mode-non-tail cm)
     (cond
       [(convert-mode? cm)
        (struct-copy convert-mode cm
                     [called? #f])]
-      [else 'not-called]))
+      [else (if (eq? 'no-lift (cdr cm))
+                '(not-called . no-lift)
+                '(not-called . lift))]))
 
   (define (convert-mode-called cm)
     (cond
       [(convert-mode? cm)
        (struct-copy convert-mode cm
                     [called? #t])]
-      [else 'called]))
+      [else (if (eq? 'no-lift (cdr cm))
+                '(called . no-lift)
+                '(called . lift))]))
 
   (define (convert-mode-box-mutables? cm)
     (cond
       [(convert-mode? cm)
        (not (convert-mode-no-more-conversions? cm))]
       [else #t]))
+
+  (define (convert-mode-need-lift? cm)
+    (cond
+      [(convert-mode? cm) (convert-mode-lift? cm)]
+      [else (eq? 'lift (cdr cm))]))
+
+  ;; ----------------------------------------
+
+  ;; Keep lifts in a list, in reverse order of eventual
+  ;; registration in a vector, and prefix the list with its length
+  
+  (define no-lifts '(0))
+
+  (define (no-lifts? v)
+    (zero? (car v)))
+
+  (define (lifts->datum v)
+    (list->vector (reverse (cdr v))))
+
+  (define (add-lift e lifts)
+    (values `(unsafe-vector-ref ,lifts-id ,(car lifts))
+            (cons (add1 (car lifts))
+                  (cons e (cdr lifts)))))
 
   ;; ----------------------------------------
 
@@ -718,6 +815,7 @@
 
 (module+ main
   (require racket/pretty)
+  (struct wrapped (proc arity-mask name) #:prefab)
   (pretty-print
    (jitify-schemified-linklet (values ; datum->correlated
                                '(lambda (iv xv do-immediate)
@@ -741,6 +839,7 @@
                                                      [g (lambda (q) (set! f g) (f q))])
                                               (list (lambda (f) (list x)))))
                                   (define x (lambda (j) j))
+                                  (define x1 (lambda () (lambda () (other iv))))
                                   (define x2 (lambda () (letrec ([other (lambda () (other iv))])
                                                           other)))
                                   (define whatever (begin (variable-set! xv x 'const) (void)))
@@ -756,6 +855,9 @@
                                   (define sets-arg (lambda (x)
                                                      (values (lambda () (set! x (add1 x)))
                                                              (lambda () x))))
+                                  (define nested-3 (lambda (x)
+                                                     (lambda ()
+                                                       (lambda () x))))
                                   (letrec ([outer
                                             (lambda (x)
                                               (letrec ([inner
@@ -763,9 +865,12 @@
                                                           (outer y))])
                                                 (inner x)))])
                                     (outer 5))
-                                  (lambda () (let ([x 5]) (set! x 6) x))))
+                                  (lambda () (let ([x 5]) (set! x 6) x))
+                                  (case-lambda
+                                    [(q) (x q)]
+                                    [() (lambda () (x1))])))
                               #t
+                              #t ; need-lift?
                               #f ; size threshold
-                              vector
-                              (lambda (v u) u)
-                              values)))
+                              wrapped
+                              (lambda (v u) u))))
