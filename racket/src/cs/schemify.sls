@@ -2,6 +2,7 @@
   (export schemify-linklet
           lift-in-schemified-linklet
           jitify-schemified-linklet
+          xify
           interpretable-jitified-linklet
           interpret-linklet
           linklet-bigger-than?

@@ -16,6 +16,9 @@
 (define (left-to-right/let ids rhss bodys
                            prim-knowns knowns imports mutated)
   (cond
+   [(null? ids) (if (null? (cdr bodys))
+                    (car bodys)
+                    `(begin . ,bodys))]
    [(null? (cdr ids))
     `(let ([,(car ids) ,(car rhss)]) . ,bodys)]
    [else

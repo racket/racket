@@ -3,6 +3,7 @@
          "known.rkt"
          "lift.rkt"
          "jitify.rkt"
+         "xify.rkt"
          "interpret.rkt"
          "size.rkt")
 
@@ -15,6 +16,8 @@
          lift-in-schemified-body
 
          jitify-schemified-linklet
+
+         xify
 
          interpretable-jitified-linklet
          interpret-linklet

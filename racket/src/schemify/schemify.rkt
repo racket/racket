@@ -389,8 +389,16 @@
                 (if k
                     (hash-set knowns (unwrap id) k)
                     knowns)))
-            (left-to-right/let ids
-                               (for/list ([rhs (in-list rhss)])
+            (define (merely-a-copy? id)
+              (define u-id (unwrap id))
+              (and (known-copy? (hash-ref new-knowns u-id #f))
+                   (simple-mutated-state? (hash-ref mutated u-id #f))))
+            (left-to-right/let (for/list ([id (in-list ids)]
+                                          #:unless (merely-a-copy? id))
+                                 id)
+                               (for/list ([id (in-list ids)]
+                                          [rhs (in-list rhss)]
+                                          #:unless (merely-a-copy? id))
                                  (schemify rhs))
                                (for/list ([body (in-list bodys)])
                                  (schemify/knowns new-knowns inline-fuel body))

@@ -401,7 +401,9 @@
                                          [(jit)
                                           ;; Preserve annotated `lambda` source for on-demand compilation:
                                           (lambda (expr arity-mask name)
-                                            (make-wrapped-code (correlated->annotation expr) arity-mask name))]
+                                            (make-wrapped-code (correlated->annotation (xify expr recorrelate))
+                                                               arity-mask
+                                                               name))]
                                          [else
                                           ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
@@ -1197,7 +1199,7 @@
             s
             (cons a d)))]
      [else s]))
-  
+
   ;; --------------------------------------------------
   
   (define compile-enforce-module-constants
