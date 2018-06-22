@@ -25,6 +25,7 @@
                          (namespace-require ''#%futures)
                          (namespace-require ''#%foreign)
                          (namespace-require ''#%paramz)
+                         (namespace-require ''#%linklet)
                          (for/hasheq ([name (in-list (namespace-mapped-symbols))])
                            (values (namespace-variable-value name #t (lambda () #f))
                                    name))))])
