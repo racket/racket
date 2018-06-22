@@ -422,6 +422,7 @@
          (begin
            (hash-set! closed gen-id #t)
            `(#%closed ,gen-id ,(decompile-expr lam globs stack closed))))]
+    [(? void?) (list 'void)]
     [else `(quote ,expr)]))
 
 (define (decompile-lam expr globs stack closed)
