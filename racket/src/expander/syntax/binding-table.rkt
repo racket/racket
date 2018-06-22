@@ -286,7 +286,7 @@
                           (hash-iterate-key sym-ht sym-i) ; symbol
                           ht)
                   i)
-            (next-state-in-full-binding-table (hash-iterate-next sym-ht sym-i))))
+            (next-state-in-full-binding-table sym-ht (hash-iterate-next sym-ht sym-i))))
       '(#f . #f)))
 
 ;; ----------------------------------------

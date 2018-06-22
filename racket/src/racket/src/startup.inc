@@ -6699,7 +6699,7 @@ static const char *startup_source =
 "(let-values(((i_51)(hash-iterate-first ht_32)))"
 "(if i_51"
 "(cons(vector sym-i_0(hash-iterate-key sym-ht_0 sym-i_0) ht_32) i_51)"
-"(next-state-in-full-binding-table(hash-iterate-next sym-ht_0 sym-i_0)))))"
+"(next-state-in-full-binding-table sym-ht_0(hash-iterate-next sym-ht_0 sym-i_0)))))"
 " '(#f . #f)))))"
 "(define-values"
 "(binding-table-symbols)"
