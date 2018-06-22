@@ -368,13 +368,21 @@ More precisely, it returns the same value that @racket[(equal?
 
 @; ----------------------------------------------------------------------
 
-@defparam[deserialize-module-guard guard (module-path? symbol? . -> . void?)]{
+@defparam[deserialize-module-guard guard (-> module-path? symbol?
+                                             (or/c void? (cons/c module-path? symbol?)))]{
 
 A parameter whose value is called by @racket[deserialize] before
 dynamically loading a module via @racket[dynamic-require]. The two
 arguments provided to the procedure are the same as the arguments to
 be passed to @racket[dynamic-require]. The procedure can raise an
-exception to disallow the @racket[dynamic-require].}
+exception to disallow the @racket[dynamic-require].
+
+The procedure can optionally return a pair containing a
+@tech{module-path} and @tech{symbol}. If returned,
+@racket[deserialize] will use them as arguments to
+@racket[dynamic-require] instead.
+
+@history[#:changed "6.90.0.30" "Adds optional return values for bindings."]}
 
 @; ----------------------------------------------------------------------
 

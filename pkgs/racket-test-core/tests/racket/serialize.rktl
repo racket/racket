@@ -579,4 +579,30 @@
 
 ;; ----------------------------------------
 
+(module immutable-b racket/base
+  (require racket/serialize)
+  (provide (all-defined-out))
+  (define-serializable-struct immutable-b (b))
+  (define alt-immutable-b-deserial
+    (make-deserialize-info
+     (λ _ 2048)
+     (λ () (error 'alt-immutable "no cycles")))))
+(require 'immutable-b)
+
+(let ([a (immutable-b 42)])
+  (parameterize ([deserialize-module-guard
+                  (λ (mod name)
+                    (test name values 'deserialize-info:immutable-b-v0)
+                    (void))])
+    (deserialize (serialize a))))
+
+
+(let ([a (immutable-b 42)])
+  (parameterize ([deserialize-module-guard
+                  (λ (mod name)
+                    (cons ''immutable-b 'alt-immutable-b-deserial))])
+    (test 2048 values (deserialize (serialize a)))))
+
+;; ----------------------------------------
+
 (report-errs)

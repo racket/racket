@@ -674,9 +674,11 @@
           (unless (null? l)
             (let* ([path+name (car l)]
                    [des (if (car path+name)
-                            (let ([p (unprotect-path (car path+name))]
-                                  [sym (revive-symbol (cdr path+name))])
-                              ((deserialize-module-guard) p sym)
+                            (let ([serial-p (unprotect-path (car path+name))]
+                                  [serial-sym (revive-symbol (cdr path+name))])
+                              (define maybe-binding ((deserialize-module-guard) serial-p serial-sym))
+                              (define p (if (pair? maybe-binding) (car maybe-binding) serial-p))
+                              (define sym (if (pair? maybe-binding) (cdr maybe-binding) serial-sym))
                               (let ([sub (add-submodule p)]
                                     [fallback
                                      (lambda ()
