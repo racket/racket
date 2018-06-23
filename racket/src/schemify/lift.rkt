@@ -369,17 +369,19 @@
   (define (compute-letrec-lifts! v frees+binds lifts locals)
     (match v
       [`(,_ ([,ids ,rhss] ...) . ,body)
-       (define all-lambda?
+       (define all-lambda-or-immediate?
          (for/and ([rhs (in-list rhss)])
-           (lambda? rhs)))
-       (when all-lambda?
+           (or (lambda? rhs)
+               (immediate? rhs))))
+       (when all-lambda-or-immediate?
          ;; Each RHS is a candidate for lifting
          (for ([id (in-list ids)]
                [rhs (in-list rhss)])
-           (hash-set! lifts (unwrap id) (liftable rhs #f #f))))
-       (let* ([rhs-locals (add-args ids locals (if all-lambda? 'ready 'early))]
+           (when (lambda? rhs)
+             (hash-set! lifts (unwrap id) (liftable rhs #f #f)))))
+       (let* ([rhs-locals (add-args ids locals (if all-lambda-or-immediate? 'ready 'early))]
               [frees+binds (compute-rhs-lifts! ids rhss frees+binds lifts rhs-locals)]
-              [locals (if all-lambda?
+              [locals (if all-lambda-or-immediate?
                           rhs-locals
                           (add-args ids locals))]
               [frees+binds (compute-seq-lifts! body frees+binds lifts locals)])
@@ -606,6 +608,13 @@
       [`(lambda . ,_) #t]
       [`(case-lambda . ,_) #t]
       [`,_ #f]))
+
+  (define (immediate? v)
+    (match v
+      [`(quote . ,_) #t]
+      [`(,_ . ,_) #f]
+      [`,_
+       (not (symbol? (unwrap v)))]))
 
   (define (consistent-argument-count? proc n)
     (define (consistent? args n)

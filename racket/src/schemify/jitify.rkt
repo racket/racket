@@ -31,6 +31,8 @@
 
 (provide jitify-schemified-linklet)
 
+(struct convert-mode (sizes called? lift? no-more-conversions?))
+
 (define lifts-id (gensym 'jits))
 
 (define (jitify-schemified-linklet v
@@ -132,16 +134,10 @@
       (match v
         [`(lambda ,args . ,body)
          (define new-body (jitify-schemified-body body (plain-add-args env args)))
-         (if (for/and ([old (in-list body)]
-                       [new (in-list new-body)])
-               (eq? old new))
-             v
-             (reannotate v `(lambda ,args . ,new-body)))]
+         (reannotate v `(lambda ,args . ,new-body))]
         [`(let* ,bindings ,body)
          (define new-body (loop body (add-bindings env bindings)))
-         (if (eq? body new-body)
-             v
-             (reannotate v `(let* ,bindings ,new-body)))])))
+         (reannotate v `(let* ,bindings ,new-body))])))
 
   (define (jitify-schemified-body body env)
     (define top-env
@@ -678,8 +674,6 @@
   ;; If there's a size threshold, then a convert mode is a
   ;; `convert-mode` instance.
 
-  (struct convert-mode (sizes called? lift? no-more-conversions?))
-  
   (define (init-convert-mode v)
     (cond
       [convert-size-threshold

@@ -139,23 +139,33 @@
       v]))
 
   (define region-times (make-eq-hashtable))
+  (define region-gc-times (make-eq-hashtable))
   (define region-counts (make-eq-hashtable))
   (define region-memories (make-eq-hashtable))
-  (define current-start-time 0)
+  (define current-start-time '())
+  (define current-gc-start-time '())
   (define-syntax performance-region
     (syntax-rules ()
       [(_ label e ...) (measure-performance-region label (lambda () e ...))]))
   (define (measure-performance-region label thunk)
     (cond
      [measure-performance?
-      (let ([old-start current-start-time])
-        (set! current-start-time (current-inexact-milliseconds))
-        (begin0
-         (thunk)
-         (let ([delta (- (current-inexact-milliseconds) current-start-time)])
-           (hashtable-update! region-times label (lambda (v) (+ v delta)) 0)
-           (hashtable-update! region-counts label add1 0)
-           (set! current-start-time (+ old-start delta)))))]
+      (set! current-start-time (cons (current-inexact-milliseconds) current-start-time))
+      (set! current-gc-start-time (cons (current-gc-milliseconds) current-gc-start-time))
+      (begin0
+       (thunk)
+       (let ([delta (- (current-inexact-milliseconds) (car current-start-time))]
+             [gc-delta (- (current-gc-milliseconds) (car current-gc-start-time))])
+         (hashtable-update! region-times label (lambda (v) (+ v delta)) 0)
+         (hashtable-update! region-gc-times label (lambda (v) (+ v gc-delta)) 0)
+         (hashtable-update! region-counts label add1 0)
+         (set! current-start-time (cdr current-start-time))
+         (set! current-gc-start-time (cdr current-gc-start-time))
+         (let loop ([l current-start-time] [gc-l current-gc-start-time])
+           (unless (null? l)
+             (set-car! l (+ (car l) delta))
+             (set-car! gc-l (+ (car gc-l) gc-delta))
+             (loop (cdr l) (cdr gc-l))))))]
      [else (thunk)]))
   (define (add-performance-memory! label delta)
     (when measure-performance?
@@ -168,14 +178,15 @@
   (define (linklet-performance-report!)
     (when measure-performance?
       (let ([total 0])
-        (define (report label n units extra)
-          (define (pad v w)
-            (let ([s (chez:format "~a" v)])
-              (string-append (make-string (max 0 (- w (string-length s))) #\space)
-                             s)))
-          (chez:printf ";; ~a: ~a ~a~a\n"
+        (define (pad v w)
+          (let ([s (chez:format "~a" v)])
+            (string-append (make-string (max 0 (- w (string-length s))) #\space)
+                           s)))
+        (define (report label n n-extra units extra)
+          (chez:printf ";; ~a: ~a~a ~a~a\n"
                        (pad label 15)
                        (pad (round (inexact->exact n)) 5)
+                       n-extra
                        units
                        extra))
         (define (ht->sorted-list ht)
@@ -185,14 +196,17 @@
                     (let ([label (car p)]
                           [n (cdr p)])
                       (set! total (+ total n))
-                      (report label n 'ms (let ([c (hashtable-ref region-counts label 0)])
-                                            (if (zero? c)
-                                                ""
-                                                (chez:format " ; ~a times" c))))))
+                      (report label n
+                              (chez:format " [~a]" (pad (hashtable-ref region-gc-times label 0) 5))
+                              'ms
+                              (let ([c (hashtable-ref region-counts label 0)])
+                                (if (zero? c)
+                                    ""
+                                    (chez:format " ; ~a times" c))))))
                   (ht->sorted-list region-times))
-        (report 'total total 'ms "")
+        (report 'total total "" 'ms "")
         (chez:printf ";;\n")
-        (for-each (lambda (p) (report (car p) (/ (cdr p) 1024 1024) 'MB ""))
+        (for-each (lambda (p) (report (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
                   (ht->sorted-list region-memories)))))
 
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
@@ -387,26 +401,28 @@
          (cond
            [(not jitify-mode?) impl-lam/lifts]
            [else
-            (jitify-schemified-linklet (case linklet-compilation-mode
-                                         [(jit) (show pre-jit-on? "pre-jitified" impl-lam/lifts)]
-                                         [else (show "schemified" impl-lam/lifts)])
-                                       ;; don't need extract for non-serializable 'lambda mode
-                                       (or serializable? (eq? linklet-compilation-mode 'jit))
-                                       ;; need lift only for serializable JIT mode
-                                       (and serializable? (eq? linklet-compilation-mode 'jit))
-                                       ;; compilation threshold for ahead-of-time mode:
-                                       (and (eq? linklet-compilation-mode 'mach)
-                                            linklet-compilation-limit)
-                                       ;; correlation -> lambda
-                                       (case linklet-compilation-mode
-                                         [(jit)
-                                          ;; Preserve annotated `lambda` source for on-demand compilation:
-                                          (lambda (expr arity-mask name)
-                                            (make-wrapped-code (correlated->annotation (xify expr))
-                                                               arity-mask
-                                                               name))]
-                                         [else
-                                          ;; Compile an individual `lambda`:
+            (performance-region
+             'jitify
+             (jitify-schemified-linklet (case linklet-compilation-mode
+                                          [(jit) (show pre-jit-on? "pre-jitified" impl-lam/lifts)]
+                                          [else (show "schemified" impl-lam/lifts)])
+                                        ;; don't need extract for non-serializable 'lambda mode
+                                        (or serializable? (eq? linklet-compilation-mode 'jit))
+                                        ;; need lift only for serializable JIT mode
+                                        (and serializable? (eq? linklet-compilation-mode 'jit))
+                                        ;; compilation threshold for ahead-of-time mode:
+                                        (and (eq? linklet-compilation-mode 'mach)
+                                             linklet-compilation-limit)
+                                        ;; correlation -> lambda
+                                        (case linklet-compilation-mode
+                                          [(jit)
+                                           ;; Preserve annotated `lambda` source for on-demand compilation:
+                                           (lambda (expr arity-mask name)
+                                             (make-wrapped-code (correlated->annotation (xify expr))
+                                                                arity-mask
+                                                                name))]
+                                          [else
+                                           ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
                                              (performance-region
                                               'compile
@@ -414,7 +430,7 @@
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask name)
-                                                    code))))]))]))
+                                                    code))))])))]))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?
                                     linklet-compilation-mode)
