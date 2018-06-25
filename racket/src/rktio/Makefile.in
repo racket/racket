@@ -40,6 +40,8 @@ OBJS = rktio_fs.@LTO@ \
        rktio_time.@LTO@ \
        rktio_syslog.@LTO@ \
        rktio_convert.@LTO@ \
+       rktio_sha1.@LTO@ \
+       rktio_sha2.@LTO@ \
        rktio_dll.@LTO@ \
        rktio_error.@LTO@ \
        rktio_hash.@LTO@ \
@@ -112,6 +114,12 @@ rktio_syslog.@LTO@: $(srcdir)/rktio_syslog.c $(RKTIO_HEADERS)
 
 rktio_convert.@LTO@: $(srcdir)/rktio_convert.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_convert.@LTO@ -c $(srcdir)/rktio_convert.c
+
+rktio_sha1.@LTO@: $(srcdir)/rktio_sha1.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_sha1.@LTO@ -c $(srcdir)/rktio_sha1.c
+
+rktio_sha2.@LTO@: $(srcdir)/rktio_sha2.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_sha2.@LTO@ -c $(srcdir)/rktio_sha2.c
 
 rktio_dll.@LTO@: $(srcdir)/rktio_dll.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_dll.@LTO@ -c $(srcdir)/rktio_dll.c

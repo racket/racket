@@ -34,6 +34,9 @@ typedef long long rktio_int64_t;
 typedef unsigned long long rktio_uint64_t;
 #endif
 
+/* Endianness. */
+#undef RKTIO_BIG_ENDIAN
+
 /* Whether pthread is available */
 #undef RKTIO_USE_PTHREADS
 

@@ -2049,4 +2049,33 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #"\205\327\305\377@:\276r\337[\212'\b\202\36\343<\320\274\316" sha1-bytes #"abcdefghijklmn")
+(test #"\340\373\262\1m\341\6V\352$IR\311}\350x7\337d\263\320\243\247\350\342\31R " sha224-bytes #"abcdefghijklmn")
+(test #"\6S\307\351\222\327\252\324\f\262cW8\270p\344\301T\257\263F4\r\2\307\227\324\220\335R\325\371" sha256-bytes #"abcdefghijklmn")
+
+(define (test-sha-more sha-bytes)
+  (define (try sha-bytes base)
+    (define expect (sha-bytes base))
+    (define len (bytes-length base))
+    (test expect sha-bytes base 0)
+    (test expect sha-bytes base 0 #f)
+    (test expect sha-bytes (bytes-append #"__" base) 2)
+    (test expect sha-bytes (bytes-append #"__" base) 2 #f)
+    (test expect sha-bytes (bytes-append #"__" base) 2 (+ 2 len))
+    (test expect sha-bytes (bytes-append #"__" base #"__") 2 (+ 2 len))
+    (test expect sha-bytes (bytes-append base #"__") 0 len)
+    (test expect sha-bytes (bytes-append (make-bytes 1035 42) base) 1035)
+    #;(test expect sha-bytes (bytes-append (make-bytes 1035 42) base #"__") 1035 (+ 1035 len)))
+  (define (try-base base)
+    (try sha-bytes base)
+    #;
+    (try (lambda (bstr . args) (apply sha-bytes (open-input-bytes bstr) args)) base))
+  (try-base #"abcdefghijklmn")
+  (try-base (make-bytes 5077 79)))
+(test-sha-more sha1-bytes)
+(test-sha-more sha224-bytes)
+(test-sha-more sha256-bytes)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

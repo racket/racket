@@ -14,12 +14,15 @@
 (define void _void)
 (define char _byte)
 (define int _int)
+(define unsigned _uint)
 (define unsigned-short _ushort)
+(define unsigned-8 _ubyte)
 (define intptr_t _intptr)
 (define uintptr_t _uintptr)
 (define rktio_int64_t _int64)
 (define float _float)
 (define double _double)
+(define function-pointer _pointer)
 (define NULL #f)
 
 (define-syntax-rule (define-constant n v) (define n v))
@@ -47,6 +50,7 @@
 
 (define-syntax-rule (ref t) _pointer)
 (define-syntax-rule (*ref t) _pointer)
+(define-syntax-rule (array n t) (_array t n))
 
 (define-syntax-rule (define-function flags ret-type name ([arg-type arg-name] ...))
   (define name
@@ -169,6 +173,11 @@
   (lambda (k)
     (racket:void)))
 
+(define (rktio_make_sha1_ctx)
+  (malloc _Rrktio_sha1_ctx_t))
+(define (rktio_make_sha2_ctx)
+  (malloc _Rrktio_sha2_ctx_t))
+
 (primitive-table '#%rktio
                  (let ()
                    (define-syntax extract-functions
@@ -206,6 +215,8 @@
                                          'rktio_to_shorts rktio_to_shorts
                                          'rktio_from_bytes_list rktio_from_bytes_list
                                          'rktio_free_bytes_list rktio_free_bytes_list
+                                         'rktio_make_sha1_ctx rktio_make_sha1_ctx
+                                         'rktio_make_sha2_ctx rktio_make_sha2_ctx
                                          'rktio_process_result_stdin_fd rktio_process_result_stdin_fd
                                          'rktio_process_result_stdout_fd rktio_process_result_stdout_fd
                                          'rktio_process_result_stderr_fd rktio_process_result_stderr_fd

@@ -10,11 +10,15 @@
 
 See @racketmodname[openssl/sha1] for a faster implementation.
 
-@defproc[(sha1 [in input-port?]) string?]{
+@defproc[(sha1 [in (or/c bytes? input-port?)]
+               [start exact-nonnegative-integer? 0]
+               [end (or/c #f exact-nonnegative-integer?) #f])
+         string?]{
 
 Returns a 40-character string that represents the SHA-1 hash (in
-hexadecimal notation) of the content from @racket[in], consuming all
-of the input from @racket[in] until an end-of-file.
+hexadecimal notation) of the content from @racket[in]. The
+@racket[in], @racket[start], and @racket[end] arguments are treated
+the same as @racket[sha1-bytes] from @racketmodname[racket/base].
 
 The @racket[sha1] function composes @racket[bytes->hex-string] with
 @racket[sha1-bytes].
@@ -22,18 +26,30 @@ The @racket[sha1] function composes @racket[bytes->hex-string] with
 @examples[
 #:eval sha1-eval
 (sha1 (open-input-bytes #"abc"))
-]}
+]
 
-@defproc[(sha1-bytes [in input-port?]) bytes?]{
+@history[#:changed "7.0.0.5" @elem{Allowed a byte string as @racket[in]
+                                   and added the @racket[start] and
+                                   @racket[end] arguments.}]}
 
-Returns a 20-byte byte string that represents the SHA-1 hash of the
-content from @racket[in], consuming all of the input from @racket[in]
-until an end-of-file.
+@defproc[#:link-target? #f
+         (sha1-bytes [in (or/c bytes? input-port?)]
+                     [start exact-nonnegative-integer? 0]
+                     [end (or/c #f exact-nonnegative-integer?) #f])
+         string?]{
+
+The same as @racket[sha1-bytes] from @racketmodname[racket/base],
+returns a 20-byte byte string that represents the SHA-1 hash of the
+content from @racket[in].
 
 @examples[
 #:eval sha1-eval
 (sha1-bytes (open-input-bytes #"abc"))
-]}
+]
+
+@history[#:changed "7.0.0.5" @elem{Allowed a byte string as @racket[in]
+                                   and added the @racket[start] and
+                                   @racket[end] arguments.}]}
 
 @defproc[(bytes->hex-string [bstr bytes?]) string?]{
 

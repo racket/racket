@@ -2,12 +2,18 @@
 @(require scribble/manual
           racket/list
           (for-label openssl
-                     racket
+                     (except-in racket sha1-bytes)
                      openssl/sha1
                      openssl/md5
                      openssl/libcrypto
                      openssl/libssl
                      (only-in ffi/unsafe ffi-lib ffi-lib?)))
+
+@(define-syntax-rule (define-racket/base sha1-bytes-id)
+   (begin
+     (require (for-label (only-in racket/base sha1-bytes)))
+     (define sha1-bytes-id @racket[sha1-bytes])))
+@(define-racket/base racket:sha1-bytes)
 
 @title{OpenSSL: Secure Communication}
 
@@ -812,7 +818,10 @@ The @racket[sha1] function composes @racket[bytes->hex-string] with
 
 Returns a 20-byte byte string that represents the SHA-1 hash of the
 content from @racket[in], consuming all of the input from @racket[in]
-until an end-of-file.}
+until an end-of-file.
+
+The @racket:sha1-bytes function from @racketmodname[racket/base]
+computes the same result and is only slightly slower.}
 
 @defproc[(bytes->hex-string [bstr bytes?]) string?]{
 

@@ -179,9 +179,16 @@ rktio_set_locale
 rktio_push_c_numeric_locale
 rktio_pop_c_numeric_locale
 rktio_system_language_country
+rktio_sha1_init
+rktio_sha1_update
+rktio_sha1_final
+rktio_sha2_init
+rktio_sha2_update
+rktio_sha2_final
 rktio_dll_open
 rktio_dll_find_object
 rktio_dll_get_error
+rktio_set_dll_procs
 rktio_get_last_error_kind
 rktio_get_last_error
 rktio_get_last_error_step

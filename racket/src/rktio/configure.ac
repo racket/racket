@@ -14,6 +14,7 @@ AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
+AC_ARG_ENABLE(bigendian,  [  --enable-bigendian      assume "big" if endianness cannot be determined])
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
@@ -134,6 +135,19 @@ AC_LANG_C
 
 AC_TYPE_INTPTR_T
 AC_TYPE_UINTPTR_T
+
+AC_C_BIGENDIAN(endianness=big, endianness=little, endianness=unknown)
+if test "${endianness}" = "unknown" ; then
+  if test "${enable_bigendian}" = "yes" ; then
+    endianness=big
+  else
+    echo configure: warning: cannot determine endianness, assuming little
+  fi
+fi
+
+if test "${endianness}" = "big" ; then
+  AC_DEFINE(RKTIO_BIG_ENDIAN,1,[Big endian])
+fi
 
 AC_MSG_CHECKING([for getaddrinfo])
 AC_TRY_LINK([#include <sys/types.h>

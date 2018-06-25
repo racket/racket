@@ -41,6 +41,7 @@
     (define-ftype intptr_t iptr)
     (define-ftype uintptr_t uptr)
     (define-ftype rktio_int64_t integer-64)
+    (define-ftype function-pointer uptr)
     (define _uintptr _uint64)
     (define NULL 0)
 
@@ -255,6 +256,11 @@
       (rktio_to_bytes_list lls len)
       (void))
 
+    (define (rktio_make_sha1_ctx)
+      (make-bytevector (ftype-sizeof rktio_sha1_ctx_t)))
+    (define (rktio_make_sha2_ctx)
+      (make-bytevector (ftype-sizeof rktio_sha2_ctx_t)))
+
     (define (null-to-false v) (if (eqv? v NULL) #f v))
 
     (define (rktio_process_result_stdin_fd r)
@@ -318,6 +324,8 @@
                                  'rktio_free_bytes_list rktio_free_bytes_list
                                  'rktio_from_bytes_list rktio_from_bytes_list
                                  'rktio_free_bytes_list rktio_free_bytes_list
+                                 'rktio_make_sha1_ctx rktio_make_sha1_ctx
+                                 'rktio_make_sha2_ctx rktio_make_sha2_ctx
                                  'rktio_process_result_stdin_fd rktio_process_result_stdin_fd
                                  'rktio_process_result_stdout_fd rktio_process_result_stdout_fd
                                  'rktio_process_result_stderr_fd rktio_process_result_stderr_fd

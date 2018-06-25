@@ -110,6 +110,9 @@
 (define-constant RKTIO_CONVERT_STRCOLL_UTF16 (<< 1 1))
 (define-constant RKTIO_CONVERT_RECASE_UTF16 (<< 1 2))
 (define-constant RKTIO_CONVERT_ERROR -1)
+(define-constant RKTIO_SHA1_DIGEST_SIZE 20)
+(define-constant RKTIO_SHA224_DIGEST_SIZE 28)
+(define-constant RKTIO_SHA256_DIGEST_SIZE 32)
 (define-constant RKTIO_ERROR_KIND_POSIX 0)
 (define-constant RKTIO_ERROR_KIND_WINDOWS 1)
 (define-constant RKTIO_ERROR_KIND_GAI 2)
@@ -188,6 +191,19 @@
 (define-struct-type
  rktio_convert_result_t
  ((intptr_t in_consumed) (intptr_t out_produced) (intptr_t converted)))
+(define-struct-type
+ rktio_sha1_ctx_t
+ (((array 5 unsigned) state)
+  ((array 2 unsigned) count)
+  ((array 64 unsigned-8) buffer)))
+(define-struct-type
+ rktio_sha2_ctx_t
+ (((array 2 unsigned) total)
+  ((array 8 unsigned) state)
+  ((array 64 unsigned-8) buffer)
+  (int is224)))
+(define-type dll_open_proc function-pointer)
+(define-type dll_find_object_proc function-pointer)
 (define-function () (ref rktio_t) rktio_init ())
 (define-function () void rktio_destroy (((ref rktio_t) rktio)))
 (define-function () void rktio_free (((ref void) p)))
@@ -1278,6 +1294,38 @@
  (ref char)
  rktio_system_language_country
  (((ref rktio_t) rktio)))
+(define-function () void rktio_sha1_init (((*ref rktio_sha1_ctx_t) context)))
+(define-function
+ ()
+ void
+ rktio_sha1_update
+ (((*ref rktio_sha1_ctx_t) context)
+  ((*ref unsigned-8) data)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function
+ ()
+ void
+ rktio_sha1_final
+ (((*ref rktio_sha1_ctx_t) context) ((*ref unsigned-8) digest)))
+(define-function
+ ()
+ void
+ rktio_sha2_init
+ (((*ref rktio_sha2_ctx_t) ctx) (rktio_bool_t is224)))
+(define-function
+ ()
+ void
+ rktio_sha2_update
+ (((*ref rktio_sha2_ctx_t) ctx)
+  ((*ref unsigned-8) data)
+  (intptr_t start)
+  (intptr_t end)))
+(define-function
+ ()
+ void
+ rktio_sha2_final
+ (((*ref rktio_sha2_ctx_t) ctx) ((*ref unsigned-8) digest)))
 (define-function/errno
  NULL
  ()
@@ -1296,6 +1344,11 @@
  (ref char)
  rktio_dll_get_error
  (((ref rktio_t) rktio)))
+(define-function
+ ()
+ void
+ rktio_set_dll_procs
+ ((dll_open_proc dll_open) (dll_find_object_proc dll_find_object)))
 (define-function () int rktio_get_last_error_kind (((ref rktio_t) rktio)))
 (define-function () int rktio_get_last_error (((ref rktio_t) rktio)))
 (define-function () int rktio_get_last_error_step (((ref rktio_t) rktio)))

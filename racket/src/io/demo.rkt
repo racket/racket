@@ -23,6 +23,12 @@
 
 (test #f (bytes-utf-8-ref #"\364\220\200\200" 0))
 
+(test #"\205\327\305\377@:\276r\337[\212'\b\202\36\343<\320\274\316" (sha1-bytes #"abcdefghijklmn"))
+(test #"\340\373\262\1m\341\6V\352$IR\311}\350x7\337d\263\320\243\247\350\342\31R " (sha224-bytes #"abcdefghijklmn"))
+(test #"\6S\307\351\222\327\252\324\f\262cW8\270p\344\301T\257\263F4\r\2\307\227\324\220\335R\325\371" (sha256-bytes #"abcdefghijklmn"))
+(test #"\205\327\305\377@:\276r\337[\212'\b\202\36\343<\320\274\316" (sha1-bytes (open-input-bytes #"abcdefghijklmn")))
+(test #"\205\327\305\377@:\276r\337[\212'\b\202\36\343<\320\274\316" (sha1-bytes (open-input-bytes #"__abcdefghijklmn__") 2 16))
+
 (test #t (file-exists? "demo.rkt"))
 (test #f (file-exists? "compiled"))
 (test #f (file-exists? "compiled/demo-file"))

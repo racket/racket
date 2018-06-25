@@ -401,7 +401,7 @@ place.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_place.inc
 port.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_port.inc
-portfun.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
+portfun.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) $(srcdir)/schvers.h \
         $(srcdir)/stypes.h $(srcdir)/mzmark_portfun.inc
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/stypes.h $(srcdir)/schcpt.h \
           $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc \

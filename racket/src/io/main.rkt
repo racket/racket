@@ -14,6 +14,7 @@
          "filesystem-change-evt/main.rkt"
          "security/main.rkt"
          "envvar/main.rkt"
+         "sha/main.rkt"
          "subprocess/main.rkt"
          "network/main.rkt"
          "foreign/main.rkt"
@@ -34,6 +35,7 @@
          (all-from-out "filesystem-change-evt/main.rkt")
          (all-from-out "security/main.rkt")
          (all-from-out "envvar/main.rkt")
+         (all-from-out "sha/main.rkt")
          (all-from-out "subprocess/main.rkt")
          (all-from-out "network/main.rkt")
          (all-from-out "foreign/main.rkt")

@@ -1135,6 +1135,46 @@ RKTIO_EXTERN char *rktio_system_language_country(rktio_t *rktio);
 /* Returns the current system's language in country in a 5-character
    format such as "en_US". */
 
+
+/*************************************************/
+/* SHA-1, SHA-224, SHA-256                       */
+
+/* From Steve Reid's implementation at https://www.ghostscript.com/ */
+
+typedef struct rktio_sha1_ctx_t {
+  unsigned int state[5];
+  unsigned int count[2];
+  unsigned char buffer[64];
+} rktio_sha1_ctx_t;
+
+#define RKTIO_SHA1_DIGEST_SIZE 20
+
+RKTIO_EXTERN void rktio_sha1_init(rktio_sha1_ctx_t *context);
+/* Initialize a context, which is memory of length `rktio_sha1_ctx_size()`
+   containing no pointers. */
+
+RKTIO_EXTERN void rktio_sha1_update(rktio_sha1_ctx_t *context,
+                                    const unsigned char *data, intptr_t start, intptr_t end);
+/* Add some bytes to the hash. */
+
+RKTIO_EXTERN void rktio_sha1_final(rktio_sha1_ctx_t *context, unsigned char *digest /* RKTIO_SHA1_DIGEST_SIZE */);
+/* Get the final hash value after all bytes have been added. */
+
+typedef struct rktio_sha2_ctx_t {
+    unsigned total[2];
+    unsigned state[8];
+    unsigned char buffer[64];
+    int is224;
+} rktio_sha2_ctx_t;
+
+#define RKTIO_SHA224_DIGEST_SIZE 28
+#define RKTIO_SHA256_DIGEST_SIZE 32
+
+RKTIO_EXTERN void rktio_sha2_init(rktio_sha2_ctx_t *ctx, rktio_bool_t is224);
+RKTIO_EXTERN void rktio_sha2_update(rktio_sha2_ctx_t *ctx,
+                                    const unsigned char *data, intptr_t start, intptr_t end);
+RKTIO_EXTERN void rktio_sha2_final(rktio_sha2_ctx_t *ctx, unsigned char *digest /* RKTIO_SHA2{24,56}_DIGEST_SIZE */);
+
 /*************************************************/
 /* Dynamically loaded libraries                  */
 

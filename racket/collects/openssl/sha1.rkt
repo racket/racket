@@ -2,13 +2,16 @@
 (require ffi/unsafe
          racket/runtime-path
          (for-syntax racket/base)
-         (prefix-in r: file/sha1)
+         (only-in file/sha1
+                  [sha1-bytes r:sha1-bytes]
+                  bytes->hex-string
+                  hex-string->bytes)
          "libcrypto.rkt")
 
 (provide sha1
          sha1-bytes
-         (rename-out [r:bytes->hex-string bytes->hex-string])
-         (rename-out [r:hex-string->bytes hex-string->bytes]))
+         bytes->hex-string
+         hex-string->bytes)
 
 (define _SHA_CTX-pointer _pointer)
 
@@ -40,4 +43,4 @@
 
 (define (sha1 in)
   (unless (input-port? in) (raise-argument-error 'sha1 "input-port?" in))
-  (r:bytes->hex-string (sha1-bytes in)))
+  (bytes->hex-string (sha1-bytes in)))

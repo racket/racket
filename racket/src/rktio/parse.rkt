@@ -49,9 +49,9 @@
 
 (define-empty-tokens delim-tokens
   (EOF WHITESPACE
-       OPEN CLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
+       OPEN CLOSE BOPEN BCLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
        __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
-       DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT
+       DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT CHAR
        CONST NULLABLE BLOCKING))
 
 (define lex
@@ -60,6 +60,8 @@
    [";" 'SEMI]
    ["(" 'OPEN]
    [")" 'CLOSE]
+   ["[" 'BOPEN]
+   ["]" 'BCLOSE]
    ["{" 'COPEN]
    ["}" 'CCLOSE]
    ["*" 'STAR]
@@ -74,6 +76,7 @@
    ["unsigned" 'UNSIGNED]
    ["short" 'SHORT]
    ["int" 'INT]
+   ["char" 'CHAR]
    ["const" 'CONST]
    ["__RKTIO_H__" '__RKTIO_H__]
    ["RKTIO_EXTERN" 'EXTERN]
@@ -126,6 +129,8 @@
              (if (eq? $2 $5)
                  `(define-struct-type ,$2 ,$4)
                  (error 'parse "typedef struct names don't match at ~s" $5))]
+            [(TYPEDEF <type> STAR OPEN STAR <id> CLOSE OPEN <params> SEMI)
+             `(define-type ,$6 function-pointer)]
             [(<extern> <blocking> <return-type> <id> OPEN <params> SEMI)
              (let ([r-type (shift-stars $4 $3)]
                    [id (unstar $4)])
@@ -151,7 +156,8 @@
                (append (map (lambda (id) `(,(shift-stars id $1) ,(unstar id))) $2)
                        $3)])
     (<id> [(ID) $1]
-          [(STAR <id>) `(*ref ,$2)])
+          [(STAR <id>) `(*ref ,$2)]
+          [(ID BOPEN NUM BCLOSE) `(array ,$3 ,$1)])
     (<ids> [(<id> SEMI) (list $1)]
            [(<id> COMMA <ids>) (cons $1 $3)])
     (<expr> [(ID) $1]
@@ -161,11 +167,13 @@
     (<type> [(ID) $1]
             [(CONST <type>) $2]
             [(NULLABLE <type>) `(nullable ,$2)]
-            [(UNSIGNED SHORT) `unsigned-short]
-            [(UNSIGNED INT) `unsigned]
+            [(UNSIGNED SHORT) 'unsigned-short]
+            [(UNSIGNED INT) 'unsigned]
+            [(UNSIGNED CHAR) 'unsigned-8]
             [(UNSIGNED) 'unsigned]
             [(INT) 'int]
             [(SHORT) 'short]
+            [(CHAR) 'char]
             [(VOID) 'void]
             [(STRUCT ID) $2])
     (<return-type> [(<type>) $1]))))
@@ -182,16 +190,24 @@
     [else (list def-kind)]))
 
 (define (shift-stars from to)
-  (if (and (pair? from)
-           (eq? '*ref (car from)))
-      `(*ref ,(shift-stars (cadr from) to))
-      to))
+  (cond
+    [(and (pair? from)
+          (eq? '*ref (car from)))
+     `(*ref ,(shift-stars (cadr from) to))]
+    [(and (pair? from)
+          (eq? 'array (car from)))
+     `(array ,(cadr from) ,(shift-stars (caddr from) to))]
+    [else to]))
 
 (define (unstar from)
-  (if (and (pair? from)
-           (eq? '*ref (car from)))
-      (unstar (cadr from))
-      from))
+  (cond
+    [(and (pair? from)
+          (eq? '*ref (car from)))
+     (unstar (cadr from))]
+    [(and (pair? from)
+          (eq? 'array (car from)))
+     (unstar (caddr from))]
+    [else from]))
 
 (define (enum-definitions l)
   (let loop ([l l] [i 0])
@@ -246,7 +262,7 @@
 (define defined-types
   (let ([ht (for/hash ([e (in-list type-content)])
               (values (cadr e) #t))])
-    (for/fold ([ht ht]) ([t (in-list '(char int unsigned-short
+    (for/fold ([ht ht]) ([t (in-list '(char int unsigned-short unsigned-8
                                             intptr_t rktio_int64_t))])
       (hash-set ht t #t))))
 

@@ -7,7 +7,7 @@
          racket/list
          racket/path
          racket/promise
-         openssl/sha1
+         file/sha1
          setup/collects
          compiler/compilation-path
          compiler/private/dep)
@@ -209,7 +209,7 @@
            ;; sort by sha1s so that order doesn't matter
            (write (sort l string<? #:key car) p)
            ;; compute one hash from all hashes
-           (sha1 (open-input-bytes (get-output-bytes p)))))))
+           (sha1 (get-output-bytes p))))))
 
 (define (write-deps code path->mode roots path src-sha1
                     external-deps external-module-deps reader-deps 
@@ -417,10 +417,7 @@
   (case mode
     [(#\B)
      ;; A linklet bundle:
-     (define h (sha1-bytes (open-input-bytes (if (and (zero? start)
-                                                      (= len (bytes-length s)))
-                                                 s
-                                                 (subbytes s start (+ start len))))))
+     (define h (sha1-bytes s start (+ start len)))
      ;; Write sha1 for bundle hash:
      (bytes-copy! s (+ start 4 vlen) h)]
     [(#\D)

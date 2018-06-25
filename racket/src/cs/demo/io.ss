@@ -17,6 +17,19 @@
 
 ;; ----------------------------------------
 
+(define abcdefghijklmn (string->bytes/utf-8 "abcdefghijklmn"))
+(define __abcdefghijklmn__ (string->bytes/utf-8 "__abcdefghijklmn__"))
+
+(test '#vu8(133 215 197 255 64 58 190 114 223 91 138 39 8 130 30 227 60 208 188 206) (sha1-bytes abcdefghijklmn))
+(test '#vu8(224 251 178 1 109 225 6 86 234 36 73 82 201 125 232 120 55 223 100 179 208 163 167 232 226 25 82 32)
+      (sha224-bytes abcdefghijklmn))
+(test '#vu8(6 83 199 233 146 215 170 212 12 178 99 87 56 184 112 228 193 84 175 179 70 52 13 2 199 151 212 144 221 82 213 249)
+      (sha256-bytes abcdefghijklmn))
+(test '#vu8(133 215 197 255 64 58 190 114 223 91 138 39 8 130 30 227 60 208 188 206) (sha1-bytes (open-input-bytes abcdefghijklmn)))
+(test '#vu8(133 215 197 255 64 58 190 114 223 91 138 39 8 130 30 227 60 208 188 206) (sha1-bytes (open-input-bytes __abcdefghijklmn__) 2 16))
+
+;; ----------------------------------------
+
 (time
  (let loop ([j 10])
    (unless (zero? j)

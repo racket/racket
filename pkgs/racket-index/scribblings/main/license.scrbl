@@ -75,5 +75,10 @@ Racket software includes or extends the following copyrighted material:
   http://www.joachim-bauch.de
 }
 
+@copyright{
+  SHA-224 and SHA-256 implementation from mbed TLS
+  Copyright (c) 2006-2015, ARM Limited, All Rights Reserved
+}
+
 See also other @filepath{LICENSE.txt} files in your distribution or
 packages.

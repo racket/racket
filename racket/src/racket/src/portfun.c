@@ -28,6 +28,7 @@
 
 #include "schpriv.h"
 #include "schvers.h"
+#include "schrktio.h"
 
 static Scheme_Object *input_port_p (int, Scheme_Object *[]);
 static Scheme_Object *output_port_p (int, Scheme_Object *[]);
@@ -131,6 +132,10 @@ static Scheme_Object *sch_default_global_port_print_handler(int argc, Scheme_Obj
 static int pipe_input_p(Scheme_Object *o);
 static int pipe_output_p(Scheme_Object *o);
 static int pipe_out_ready(Scheme_Output_Port *p);
+
+static Scheme_Object *sha1_bytes(int, Scheme_Object **args);
+static Scheme_Object *sha224_bytes(int, Scheme_Object **args);
+static Scheme_Object *sha256_bytes(int, Scheme_Object **args);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -345,6 +350,10 @@ scheme_init_port_fun(Scheme_Startup_Env *env)
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
     = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 3);
+
+  ADD_PRIM_W_ARITY("sha1-bytes",                  sha1_bytes,                    1, 3, env);
+  ADD_PRIM_W_ARITY("sha224-bytes",                sha224_bytes,                  1, 3, env);
+  ADD_PRIM_W_ARITY("sha256-bytes",                sha256_bytes,                  1, 3, env);
 }
 
 void scheme_init_param_symbol()
@@ -1161,7 +1170,7 @@ user_peeked_read(Scheme_Input_Port *port,
 
     scheme_port_count_lines((Scheme_Port *)port, buf, 0, size);
   }
-
+  
   return SCHEME_TRUEP(val);
 }
 
@@ -4524,6 +4533,144 @@ flush_output(int argc, Scheme_Object *argv[])
   scheme_flush_output(op);
 
   return (scheme_void);
+}
+
+#define SCHEME_DO_SHA1   0
+#define SCHEME_DO_SHA224 1
+#define SCHEME_DO_SHA256 2
+
+typedef union rktio_sha_ctx_t {
+  rktio_sha1_ctx_t sha1;
+  rktio_sha2_ctx_t sha2;
+} rktio_sha_ctx_t;
+
+static Scheme_Object *sha_bytes(const char *name, int argc, Scheme_Object **argv, int mode)
+{
+  Scheme_Object *o;
+  GC_CAN_IGNORE rktio_sha_ctx_t ctx;
+  int sz;
+  unsigned char r[RKTIO_SHA256_DIGEST_SIZE]; /* bigger than RKTIO_SHA{1,224}_DIGEST_SIZE */
+
+  if (mode == SCHEME_DO_SHA1)
+    rktio_sha1_init(&ctx.sha1);
+  else
+    rktio_sha2_init(&ctx.sha2, mode == SCHEME_DO_SHA224);
+
+  o = argv[0];
+  if (SCHEME_BYTE_STRINGP(o)) {
+    intptr_t start, finish;
+    scheme_get_substring_indices(name, o,
+                                 (((argc > 2) && SCHEME_FALSEP(argv[2])) ? 2 : argc),
+                                 argv,
+                                 1, 2, &start, &finish);
+    if (mode == SCHEME_DO_SHA1)
+      rktio_sha1_update(&ctx.sha1, (unsigned char *)SCHEME_BYTE_STR_VAL(o), start, finish);
+    else
+      rktio_sha2_update(&ctx.sha2, (unsigned char *)SCHEME_BYTE_STR_VAL(o), start, finish);
+  } else if (SCHEME_INPUT_PORTP(o)) {
+    Scheme_Object *skip, *count;
+    char buf[256];
+
+    if (argc > 1) {
+      intptr_t start, end;
+      start = scheme_extract_index(name, 1, argc, argv, -1, 0);
+      if ((argc > 2) && !SCHEME_FALSEP(argv[2]))
+        end = scheme_extract_index(name, 2, argc, argv, -1, 1);
+      else
+        end = -1;
+      if (end >= 0) {
+        if (scheme_bin_lt(argv[2], argv[1])) {
+          scheme_contract_error(name,
+                                "ending index is smaller than starting index",
+                                "starting index", 1, argv[1],
+                                "ending index", 1, argv[2],
+                                NULL);
+          return NULL;
+        }
+        count = scheme_bin_minus(argv[2], argv[1]);
+      } else
+        count = scheme_false;
+      skip = argv[1];
+    } else {
+      skip = scheme_make_integer(0);
+      count = scheme_false;
+    }
+
+    while (1) {
+      intptr_t size = sizeof(buf), got;
+
+      if (SCHEME_INTP(count)) {
+        intptr_t c = SCHEME_INT_VAL(count);
+        if (!c)
+          break;
+        if (c < size)
+          size = c;
+      }
+      
+      got = scheme_get_byte_string(name, o,
+                                 buf, 0, size,
+                                 0, 0, NULL);
+      if (got == EOF)
+        break;
+
+      if (!SCHEME_INTP(skip)) {
+        skip = scheme_bin_minus(skip, scheme_make_integer(got));
+      } else {
+        intptr_t s = SCHEME_INT_VAL(skip), delta = 0;
+
+        if (s > 0) {
+          if (s < got) {
+            delta = s;
+            got -= s;
+            skip = scheme_make_integer(0);
+          } else {
+            got = 0;
+            skip = scheme_make_integer(s-got);
+          }
+        }
+          
+        if (got > 0) {
+          if (mode == SCHEME_DO_SHA1)
+            rktio_sha1_update(&ctx.sha1, (unsigned char *)buf, delta, delta + got);
+          else
+            rktio_sha2_update(&ctx.sha2, (unsigned char *)buf, delta, delta + got);
+          if (!SCHEME_FALSEP(count))
+            count = scheme_bin_minus(count, scheme_make_integer(got));
+        }
+      }
+    }
+  } else {
+    scheme_wrong_contract(name, "(or/c bytes? input-port?)", 0, argc, argv);
+    return NULL;
+  }
+
+  if (mode == SCHEME_DO_SHA1) {
+    rktio_sha1_final(&ctx.sha1, r);
+    sz = RKTIO_SHA1_DIGEST_SIZE;
+  } else {
+    rktio_sha2_final(&ctx.sha2, r);
+    if (mode == SCHEME_DO_SHA224)
+      sz = RKTIO_SHA224_DIGEST_SIZE;
+    else
+      sz = RKTIO_SHA256_DIGEST_SIZE;
+  }
+  
+  return scheme_make_sized_byte_string((char *)r, sz, 1);
+}
+
+static Scheme_Object *sha1_bytes(int argc, Scheme_Object **argv)
+{
+  return sha_bytes("sha1-bytes", argc, argv, SCHEME_DO_SHA1);
+}
+
+static Scheme_Object *sha224_bytes(int argc, Scheme_Object **argv)
+{
+  return sha_bytes("sha224-bytes", argc, argv, SCHEME_DO_SHA224);
+}
+
+static Scheme_Object *sha256_bytes(int argc, Scheme_Object **argv)
+{
+  return sha_bytes("sha256-bytes", argc, argv, SCHEME_DO_SHA256);
 }
 
 /*========================================================================*/
