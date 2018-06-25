@@ -3,7 +3,9 @@
 ;; Roughly based on the PLaneT package by Dave Herman,
 ;;   Originally released under MIT license.
 
-;; edited: Matthias, organization in preparation for pretty-print
+;; edited:
+;; -- Matthias, organization in preparation for pretty-print
+;; -- Matthias, contracts 
 
 ;; -----------------------------------------------------------------------------
 ;; DEPENDENCIES
@@ -30,8 +32,8 @@
          #:encode (or/c 'control 'all)) ;; 'control
         any)]
   [read-json
-   (->* (input-port?)
-        (#:null any/c) ;; (json-null)
+   (->* ()
+        (input-port? #:null any/c) ;; (json-null)
         any)] ;; jsexpr?
   [jsexpr->string
    (->* (any/c) ;; jsexpr? but dependent on #:null arg

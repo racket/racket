@@ -1,6 +1,9 @@
 #lang at-exp racket/base
 
+;; Mathias, added test for contracts on read-json 
+
 (require json racket/string tests/eli-tester)
+(require racket/port)
 
 (define T string-append)
 
@@ -114,6 +117,9 @@
         (string->jsexpr @T{ " \b\n\r\f\t\\\"\/ " }) => " \b\n\r\f\t\\\"/ "
         (string->jsexpr @T{ "\uD834\uDD1E" }) => "\U1D11E"
         (string->jsexpr @T{ "\ud834\udd1e" }) => "\U1d11e"
+	;; INPUT PORT is optional 
+	(with-input-from-string "[]" read-json)
+	=> (parameterize ((json-null '())) (json-null))
         ;; EOF detection
         (for/list ([je (in-port read-json
                                 (open-input-string
