@@ -12,10 +12,19 @@
        [(not base2)
         ;; Path at a root
         (path->string p)]
+       [(symbol? name2)
+        ;; "." or ".." before a name
+        (string-append ".../" (path-elem->string name1))]
        [else
-        (string-append ".../" (path->string name2) "/" (path->string name1))])]
+        (string-append ".../" (path->string name2) "/" (path-elem->string name1))])]
     [(eq? base1 'relative)
-     (path->string name1)]
-     [else
-      ;; Path is a root
-      (path->string p)]))
+     (path-elem->string name1)]
+    [else
+     ;; Path is a root, ".", or ".."
+     (path->string p)]))
+
+(define (path-elem->string p)
+  (cond
+    [(eq? p 'same) "."]
+    [(eq? p 'up) ".."]
+    [else (path->string p)]))
