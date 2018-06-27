@@ -4572,8 +4572,8 @@ static Scheme_Object *sha_bytes(const char *name, int argc, Scheme_Object **argv
     char buf[256];
 
     if (argc > 1) {
-      intptr_t start, end;
-      start = scheme_extract_index(name, 1, argc, argv, -1, 0);
+      intptr_t end;
+      (void)scheme_extract_index(name, 1, argc, argv, -1, 0);
       if ((argc > 2) && !SCHEME_FALSEP(argv[2]))
         end = scheme_extract_index(name, 2, argc, argv, -1, 1);
       else
