@@ -4311,23 +4311,30 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p)
   int isdir;
   
   name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
-  if (SCHEME_PATHP(name) && SCHEME_PATHP(base)) {
+  if ((SCHEME_PATHP(name) || SCHEME_SYMBOLP(name)) && SCHEME_PATHP(base)) {
     dir_name = scheme_split_path(SCHEME_PATH_VAL(base), SCHEME_PATH_LEN(base), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
     if (SCHEME_FALSEP(base)) {
       /* Path is file at root, so just keep the whole path */
       return scheme_path_to_char_string(p);
     }
+    if (SCHEME_PATHP(name))
+      name = scheme_path_to_char_string(name);
+    else {
+      /* convert "." or ".." */
+      if (!strcmp(SCHEME_SYM_VAL(name), "up"))
+        name = scheme_make_utf8_string("..");
+      else
+        name = scheme_make_utf8_string(".");
+    }
     if (SCHEME_PATHP(dir_name))
       name = scheme_append_strings(scheme_path_to_char_string(dir_name),
                                    scheme_append_strings(scheme_make_utf8_string("/"),
-                                                         scheme_path_to_char_string(name)));
-    else
-      name = scheme_path_to_char_string(name);
+                                                         name));
     return scheme_append_strings(scheme_make_utf8_string(".../"), name);
   } else if (SCHEME_PATHP(name))
     return scheme_path_to_char_string(name);
   else {
-    /* original path is a root */
+    /* original path is a root, ".", or ".." */
     return scheme_path_to_char_string(p);
   }
 }

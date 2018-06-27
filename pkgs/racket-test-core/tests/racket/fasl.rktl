@@ -96,7 +96,9 @@
         (test (srcloc "there" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc windows-path 1 2 3 4))))
     (let ([root (car (filesystem-root-list))])
       (test (srcloc (path->string root) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc root 1 2 3 4)))
-      (test (srcloc (path->string (build-path root "x")) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root "x") 1 2 3 4))))
+      (test (srcloc (path->string (build-path root "x")) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root "x") 1 2 3 4)))
+      (test (srcloc (path->string (build-path root 'up)) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root 'up) 1 2 3 4)))
+      (test (srcloc (path->string (build-path root 'same)) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root 'same) 1 2 3 4))))
     (test (srcloc ".../a/b" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path (current-directory) "a" "b") 1 2 3 4)))))
 
 (let* ([rel-p (build-path "nested" "data.rktd")]
@@ -112,5 +114,10 @@
   (parameterize ([current-load-relative-directory (current-directory)])
     (test p fasl->s-exp bstr)
     (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr)))
+
+(test (srcloc ".../a" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path 'up "a") 1 2 3 4)))
+(test (srcloc ".../a" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path 'same "a") 1 2 3 4)))
+(test (srcloc ".../a/.." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'up) 1 2 3 4)))
+(test (srcloc ".../a/." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'same) 1 2 3 4)))
 
 (report-errs)
