@@ -69,7 +69,7 @@
 (printf "Schemify...\n")
 (define body
   (time
-   (schemify-body bodys/constants-lifted (lambda (old-v new-v) new-v) prim-knowns #hasheq() #hasheq()
+   (schemify-body bodys/constants-lifted prim-knowns #hasheq() #hasheq()
                   ;; for cify:
                   #t
                   ;; unsafe mode:
@@ -78,7 +78,7 @@
 (printf "Lift...\n")
 (define lifted-body
   (time
-   (lift-in-schemified-body body (lambda (old new) new))))
+   (lift-in-schemified-body body)))
 
 (define converted-body
   (append (for/list ([p (in-list lifted-constants)])
