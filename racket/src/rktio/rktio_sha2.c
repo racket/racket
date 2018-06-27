@@ -31,9 +31,8 @@
 #include <string.h>
 
 /* rktio requires certain integer sizes, anyway: */
-typedef unsigned int uint32_sha1_t;
-typedef unsigned char uint8_sha1_t;
-typedef uintptr_t size_sha1_t;
+typedef unsigned int uint32_sha2_t;
+typedef uintptr_t size_sha2_t;
 
 typedef rktio_sha2_ctx_t mbedtls_sha256_context;
 
@@ -48,10 +47,10 @@ typedef rktio_sha2_ctx_t mbedtls_sha256_context;
 #ifndef GET_UINT32_BE
 #define GET_UINT32_BE(n,b,i)                            \
 do {                                                    \
-    (n) = ( (uint32_t) (b)[(i)    ] << 24 )             \
-        | ( (uint32_t) (b)[(i) + 1] << 16 )             \
-        | ( (uint32_t) (b)[(i) + 2] <<  8 )             \
-        | ( (uint32_t) (b)[(i) + 3]       );            \
+    (n) = ( (uint32_sha2_t) (b)[(i)    ] << 24 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 1] << 16 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 2] <<  8 )             \
+        | ( (uint32_sha2_t) (b)[(i) + 3]       );            \
 } while( 0 )
 #endif
 
@@ -108,7 +107,7 @@ static int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 )
     return( 0 );
 }
 
-static const uint32_t K[] =
+static const uint32_sha2_t K[] =
 {
     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
     0x3956C25B, 0x59F111F1, 0x923F82A4, 0xAB1C5ED5,
@@ -156,8 +155,8 @@ static const uint32_t K[] =
 static int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
                                             const unsigned char data[64] )
 {
-    uint32_t temp1, temp2, W[64];
-    uint32_t A[8];
+    uint32_sha2_t temp1, temp2, W[64];
+    uint32_sha2_t A[8];
     unsigned int i;
 
     for( i = 0; i < 8; i++ )
@@ -216,11 +215,11 @@ static int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
  */
 static int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
                                       const unsigned char *input,
-                                      size_t ilen )
+                                      size_sha2_t ilen )
 {
     int ret;
-    size_t fill;
-    uint32_t left;
+    size_sha2_t fill;
+    uint32_sha2_t left;
 
     if( ilen == 0 )
         return( 0 );
@@ -228,10 +227,10 @@ static int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
     left = ctx->total[0] & 0x3F;
     fill = 64 - left;
 
-    ctx->total[0] += (uint32_t) ilen;
+    ctx->total[0] += (uint32_sha2_t) ilen;
     ctx->total[0] &= 0xFFFFFFFF;
 
-    if( ctx->total[0] < (uint32_t) ilen )
+    if( ctx->total[0] < (uint32_sha2_t) ilen )
         ctx->total[1]++;
 
     if( left && ilen >= fill )
@@ -276,8 +275,8 @@ static int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx,
                                       unsigned char output[32] )
 {
     int ret;
-    uint32_t last, padn;
-    uint32_t high, low;
+    uint32_sha2_t last, padn;
+    uint32_sha2_t high, low;
     unsigned char msglen[8];
 
     high = ( ctx->total[0] >> 29 )
@@ -321,7 +320,7 @@ static const unsigned char sha256_test_buf[3][57] =
     { "" }
 };
 
-static const size_t sha256_test_buflen[3] =
+static const size_sha2_t sha256_test_buflen[3] =
 {
     3, 56, 1000
 };

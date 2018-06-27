@@ -179,6 +179,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_sha1.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\rktio\rktio_sha2.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_dll.c"
 				>
 			</File>

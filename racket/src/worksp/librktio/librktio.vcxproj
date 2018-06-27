@@ -133,6 +133,8 @@
     <ClCompile Include="..\..\rktio\rktio_time.c" />
     <ClCompile Include="..\..\rktio\rktio_syslog.c" />
     <ClCompile Include="..\..\rktio\rktio_convert.c" />
+    <ClCompile Include="..\..\rktio\rktio_sha1.c" />
+    <ClCompile Include="..\..\rktio\rktio_sha2.c" />
     <ClCompile Include="..\..\rktio\rktio_dll.c" />
     <ClCompile Include="..\..\rktio\rktio_error.c" />
     <ClCompile Include="..\..\rktio\rktio_hash.c" />
