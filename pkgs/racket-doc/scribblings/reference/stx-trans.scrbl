@@ -232,7 +232,7 @@ identifier, the @racket[exn:fail:contract] exception is raised.
 
 @defproc[(local-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
-                       [stop-ids (or/c (listof identifier?) (cons/c 'only (listof identifier?)) #f)]
+                       [stop-ids (or/c (listof identifier?) empty #f)]
                        [intdef-ctx (or/c internal-definition-context?
                                          (listof internal-definition-context?)
                                          #f)
