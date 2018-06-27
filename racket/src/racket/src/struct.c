@@ -5770,6 +5770,20 @@ Scheme_Object *scheme_make_location(Scheme_Object *src,
   return scheme_make_struct_instance(location_struct, 5, a);
 }
 
+Scheme_Object *scheme_unsafe_make_location(void)
+{
+  Scheme_Structure *inst;
+
+  inst = (Scheme_Structure *)scheme_malloc_tagged(STRUCT_BYTES(5));
+  
+  inst->so.type = scheme_structure_type;
+  inst->stype = (Scheme_Struct_Type *)location_struct;
+
+  /* caller must initialize content */
+  
+  return (Scheme_Object *)inst;
+}
+
 int scheme_is_location(Scheme_Object *o)
 {
   if (SCHEME_CHAPERONEP(o))

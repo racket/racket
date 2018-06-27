@@ -11,7 +11,8 @@
          racket/pretty
          racket/path
          racket/set
-         racket/extflonum)
+         racket/extflonum
+         racket/private/truncate-path)
 
 (provide/contract
  [zo-marshal ((or/c linkl-directory? linkl-bundle?) . -> . bytes?)]
@@ -329,9 +330,10 @@
   CPT_SET_BANG
   CPT_VARREF
   CPT_APPLY_VALUES
-  CPT_OTHER_FORM)
+  CPT_OTHER_FORM
+  CPT_SRCLOC)
 
-(define CPT_SMALL_NUMBER_START 46)
+(define CPT_SMALL_NUMBER_START 47)
 (define CPT_SMALL_NUMBER_END 74)
 
 (define CPT_SMALL_SYMBOL_START 74)
@@ -745,26 +747,8 @@
           (out-anything qv out))]
        [(? path?)
         (out-byte CPT_PATH out)
-        (define (within? p)
-          (and (relative-path? p)
-               (let loop ([p p])
-                 (define-values (base name dir?) (split-path p))
-                 (and (not (eq? name 'up))
-                      (not (eq? name 'same))
-                      (or (not (path? base))
-                          (loop base))))))
         (define maybe-rel
-          (and (current-write-relative-directory)
-               (let ([dir (current-write-relative-directory)])
-                 (and (or (not dir)
-                          (within? (find-relative-path v
-                                                       (if (pair? dir)
-                                                           (cdr dir)
-                                                           dir))))
-                      (find-relative-path v
-                                          (if (pair? dir)
-                                              (car dir)
-                                              dir))))))
+          (path->relative-path v))
         (cond
          [(not maybe-rel)
           (define bstr (path->bytes v))
@@ -777,6 +761,19 @@
                               (path-element->bytes e)
                               e))
                         out)])]
+       [(? srcloc?)
+        (out-byte CPT_SRCLOC out)
+        (define src (srcloc-source v))
+        (define new-src
+          (cond
+            [(and (path? src) (not (path->relative-path src)))
+             (truncate-path src)]
+            [else src]))
+        (out-anything new-src out)
+        (out-anything (srcloc-line v) out)
+        (out-anything (srcloc-column v) out)
+        (out-anything (srcloc-position v) out)
+        (out-anything (srcloc-span v) out)]
        [(or (? regexp?)
             (? byte-regexp?)
             (? number?)
@@ -973,3 +970,24 @@
    [(struct-other-shape? constantness)
     (to-sym 5)]
    [else #f]))
+
+(define (path->relative-path v)
+  (define (within? p)
+    (and (relative-path? p)
+         (let loop ([p p])
+           (define-values (base name dir?) (split-path p))
+           (and (not (eq? name 'up))
+                (not (eq? name 'same))
+                (or (not (path? base))
+                    (loop base))))))
+  (and (current-write-relative-directory)
+       (let ([dir (current-write-relative-directory)])
+         (and (or (not dir)
+                  (within? (find-relative-path v
+                                               (if (pair? dir)
+                                                   (cdr dir)
+                                                   dir))))
+              (find-relative-path v
+                                  (if (pair? dir)
+                                      (car dir)
+                                      dir))))))

@@ -417,6 +417,7 @@
 (struct path-bytes (bstr) #:prefab)
 (struct unreadable (str) #:prefab)
 (struct void-value () #:prefab)
+(struct srcloc-parts (source line column position span) #:prefab)
 
 (define (marshal c)
   (datum-map c (lambda (tail? c)
@@ -424,6 +425,11 @@
                   [(path? c) (path-bytes (path->bytes c))]
                   [(and (symbol? c) (symbol-unreadable? c)) (unreadable (symbol->string c))]
                   [(void? c) (void-value)]
+                  [(srcloc? c) (srcloc-parts (marshal (srcloc-source c))
+                                             (marshal (srcloc-line c))
+                                             (marshal (srcloc-column c))
+                                             (marshal (srcloc-position c))
+                                             (marshal (srcloc-span c)))]
                   [else c]))))
 
 (define (unmarshal c)
@@ -433,6 +439,11 @@
                 [(path-bytes? c) (bytes->path (path-bytes-bstr c))]
                 [(unreadable? c) (string->unreadable-symbol (unreadable-str c))]
                 [(void-value? c) (void)]
+                [(srcloc-parts? c)  (srcloc (marshal (srcloc-parts-source c))
+                                            (marshal (srcloc-parts-line c))
+                                            (marshal (srcloc-parts-column c))
+                                            (marshal (srcloc-parts-position c))
+                                            (marshal (srcloc-parts-span c)))]
                 [else c]))))
 
 ;; Like `correlated->datum`, but preserves 'inferred-name information

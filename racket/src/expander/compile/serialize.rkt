@@ -51,13 +51,13 @@
 ;; quoted data (that's non-cyclic and with no internal sharing). A few
 ;; special cases enable a more compact representation:
 ;;
-;;  - numbers, booleans, and symbols are represented as themselves
-;;    (i.e., self-quoting, in a sense);
+;;  - numbers, booleans, symbols, and path srclocs are represented
+;;    as themselves (i.e., self-quoting, in a sense);
 ;;
 ;;  - #&<number> is a reference to a mutable or shared value at
 ;;    position <number> in a deserialization array;
 ;;
-;;  - #(<elem> ...) is a `srcloc`
+;;  - #(<elem> ...) is a srcloc whose source is not a path
 ;;
 ;;  - #:inspector and #:bulk-binding-registry refer to
 ;;    instantiation-time values supplied as imported to the
@@ -297,8 +297,9 @@
           (for ([e (in-vector (struct->vector v) 1)])
             (loop e))]
          [(srcloc? v)
-          (for ([e (in-vector (struct->vector v) 1)])
-            (loop e))]
+          (unless (path? (srcloc-source v))
+            (for ([e (in-vector (struct->vector v) 1)])
+              (loop e)))]
          [else
           (void)])
         ;; `v` may already be in `objs`, but to get the order right
@@ -483,12 +484,19 @@
              (ser-push-optional-quote!)
              (ser-push! 'exact v)))]
      [(srcloc? v)
-      (ser-push! 'tag '#:srcloc)
-      (ser-push! (srcloc-source v))
-      (ser-push! (srcloc-line v))
-      (ser-push! (srcloc-column v))
-      (ser-push! (srcloc-position v))
-      (ser-push! (srcloc-span v))]
+      (cond
+        [(path? (srcloc-source v))
+         ;; Let core printer handle it --- and truncate the path if it
+         ;; can't be made relative on serialize
+         (ser-push-optional-quote!)
+         (ser-push! 'exact v)]
+        [else
+         (ser-push! 'tag '#:srcloc)
+         (ser-push! (srcloc-source v))
+         (ser-push! (srcloc-line v))
+         (ser-push! (srcloc-column v))
+         (ser-push! (srcloc-position v))
+         (ser-push! (srcloc-span v))])]
      [else
       (ser-push-optional-quote!)
       (ser-push! 'exact v)]))

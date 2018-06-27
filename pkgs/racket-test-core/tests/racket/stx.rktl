@@ -2601,6 +2601,23 @@
                 (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that paths from the current installation are not
+;; preserved in marshaled bytecode
+
+(let ([m '(module m racket/base
+            ;; Extending a primitive structure type tends to
+            ;; capture an identifier whose source is "kernstruct.rkt"
+            (define-struct (cookie-error exn:fail) ()))])
+  (define o (open-output-bytes))
+  (write (compile m) o)
+  (call-with-output-file "/tmp/d" #:exists 'replace (lambda (o) (write (compile m) o)))
+  (test #t
+        not
+        (regexp-match? (regexp-quote
+                        (path->bytes (collection-file-path "kernstruct.rkt" "racket/private")))
+                       (get-output-bytes o))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure the srcloc encoding doesn't do something strange
 ;; with a path in a root directory:
 
@@ -2615,7 +2632,7 @@
     (write (compile (read-syntax path p)) out)
     (eval (read in))
     (define src (syntax-source ((dynamic-require path 'f))))
-    (test path values src)))
+    (test (path->string path) values src)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

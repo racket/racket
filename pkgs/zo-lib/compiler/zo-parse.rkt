@@ -294,7 +294,8 @@
     [43 varref]
     [44 apply-values]
     [45 other-form]
-    [46 74 small-number]
+    [46 srcloc]
+    [47 74 small-number]
     [74 92 small-symbol]
     [92 ,(+ 92 small-list-max) small-proper-list]
     [,(+ 92 small-list-max) 192 small-list]
@@ -460,6 +461,12 @@
                    (build-path p (if (bytes? e) (bytes->path-element e) e))))
                ;; Read a path:
                (bytes->path (read-compact-bytes cp len))))]
+        [(srcloc)
+         (srcloc (read-compact cp)
+                 (read-compact cp)
+                 (read-compact cp)
+                 (read-compact cp)
+                 (read-compact cp))]
         [(small-number)
          (let ([l (- ch cpt-start)])
            l)]

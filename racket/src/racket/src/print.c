@@ -154,6 +154,7 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
 				PrintParams *pp, int notdisplay);
 static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, PrintParams *pp);
 
+static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 
 #define print_compact(pp, v) print_this_string(pp, &compacts[v], 0, 1)
 
@@ -2388,6 +2389,52 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     {
       print_compact(pp, CPT_VOID);
     }
+  else if (compact && SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_location(obj))
+    {
+      /* Support srclocs in marshaled form with special treatment
+         of paths */
+      int i;
+      Scheme_Object *src, *rel_src, *dir;
+
+      src = scheme_struct_ref(obj, 0);
+      if (SCHEME_PATHP(src)) {
+        /* To make paths portable and to avoid full paths, check
+           whether the path can be made relative, in which case it is
+           turned into a list of byte strings. If not, convert to a
+           string using only the last couple of path elements. */
+        dir = scheme_get_param(scheme_current_config(),
+                               MZCONFIG_WRITE_DIRECTORY);
+        if (SCHEME_TRUEP(dir))
+          rel_src = scheme_extract_relative_to(src, dir, mt->path_cache);
+        else
+          rel_src = src;
+        if (SCHEME_PATHP(rel_src)) {
+          src = scheme_hash_get(mt->path_cache, scheme_box(rel_src));
+          if (!src) {
+            src = srcloc_path_to_string(rel_src);
+            scheme_hash_set(mt->path_cache, scheme_box(rel_src), src);
+          }
+        } else {
+          /* let the printer make it relative when recurring */
+        }
+      } else if (SCHEME_FALSEP(src)
+                 || SCHEME_CHAR_STRINGP(src)
+                 || SCHEME_BYTE_STRINGP(src)
+                 || SCHEME_SYMBOLP(src)
+                 || SCHEME_GENERAL_PATHP(src)) {
+        /* ok */
+      } else {
+        cannot_print(pp, notdisplay, obj, ht, compact);
+      }
+
+      print_compact(pp, CPT_SRCLOC);
+      print(src, notdisplay, compact, ht, mt, pp);
+      for (i = 1; i < 5; i++) {
+        print(scheme_struct_ref(obj, i), notdisplay, compact, ht, mt, pp);
+      }
+
+      closed = 1;
+    }
   else if (SCHEME_CHAPERONE_STRUCTP(obj))
     {
       if (compact && SCHEME_PREFABP(obj)) {
@@ -4256,6 +4303,33 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
   /* This must go last, because it might escape: */
   if (!orig_pp->print_port)
     flush_from_byte_port(SCHEME_VEC_ELS(vec)[4], orig_pp);
+}
+
+static Scheme_Object *srcloc_path_to_string(Scheme_Object *p)
+{
+  Scheme_Object *base, *name, *dir_name;
+  int isdir;
+  
+  name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
+  if (SCHEME_PATHP(name) && SCHEME_PATHP(base)) {
+    dir_name = scheme_split_path(SCHEME_PATH_VAL(base), SCHEME_PATH_LEN(base), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
+    if (SCHEME_FALSEP(base)) {
+      /* Path is file at root, so just keep the whole path */
+      return scheme_path_to_char_string(p);
+    }
+    if (SCHEME_PATHP(dir_name))
+      name = scheme_append_strings(scheme_path_to_char_string(dir_name),
+                                   scheme_append_strings(scheme_make_utf8_string("/"),
+                                                         scheme_path_to_char_string(name)));
+    else
+      name = scheme_path_to_char_string(name);
+    return scheme_append_strings(scheme_make_utf8_string(".../"), name);
+  } else if (SCHEME_PATHP(name))
+    return scheme_path_to_char_string(name);
+  else {
+    /* original path is a root */
+    return scheme_path_to_char_string(p);
+  }
 }
 
 /*========================================================================*/
