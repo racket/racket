@@ -61,7 +61,15 @@ exec racket -t "$0" -- -s -t 60 -v -R $*
      (for ([sp (in-list (maybe-randomize-list (directory-list p)))])
        (for-zos ! (build-path p sp)))]
     [(regexp-match #rx"\\.zo$" p-str)
-     (! p-str)]))
+     (when (valid-bytecode? p-str)
+       (! p-str))]))
+
+(define (valid-bytecode? f)
+  ;; Make sure the file makes sense for the current platform
+  (with-handlers ([exn:fail:read? (lambda (exn) #f)])
+    (parameterize ([read-accept-compiled #t])
+      (call-with-input-file* f read))
+    #t))
 
 (define-runtime-path zo-test-worker-path "zo-test-worker.rkt")
 (define racket-path (path->string (find-exe)))
