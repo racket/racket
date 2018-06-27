@@ -3308,6 +3308,25 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         }
       }
       break;
+    case CPT_SRCLOC:
+      {
+        Scheme_Object *r;
+        r = scheme_unsafe_make_location();
+        /* No checking of field values, so a corrupt ".zo" can
+           create bad srclocs (but won't crash while reading) */
+        v = read_compact(port, 0);
+        ((Scheme_Structure *)r)->slots[0] = v;
+        v = read_compact(port, 0);
+        ((Scheme_Structure *)r)->slots[1] = v;
+        v = read_compact(port, 0);
+        ((Scheme_Structure *)r)->slots[2] = v;
+        v = read_compact(port, 0);
+        ((Scheme_Structure *)r)->slots[3] = v;
+        v = read_compact(port, 0);
+        ((Scheme_Structure *)r)->slots[4] = v;
+        return r;
+      }
+      break;
     case CPT_CLOSURE:
       {
         Scheme_Closure *cl;

@@ -26,8 +26,9 @@ output port or returning the byte string otherwise. The
 @racket[s-exp->fasl].
 
 The @racket[v] argument must be a value that could be @racket[quote]d
-as a literal---that is, something for which @racket[(compile `(quote
-,v))] would work and be @racket[read]able after @racket[write]. The
+as a literal---that is, a value without syntax objects for which
+@racket[(compile `(quote ,v))]
+would work and be @racket[read]able after @racket[write]. The
 byte string produced by @racket[s-exp->fasl] does not use the same
 format as compiled code, however.
 
@@ -38,7 +39,9 @@ preserve graph structure, handle cyclic data, and encode serializable
 structures. The @racket[s-exp->fasl] and @racket[fasl->s-exp]
 functions consult @racket[current-write-relative-directory] and
 @racket[current-load-relative-directory], respectively, in the same
-way as bytecode saving and loading to store paths in relative form.
+way as bytecode saving and loading to store paths in relative form,
+and they similarly allow and convert constrained @racket[srcloc]
+values (see @secref["print-compiled"]).
 
 Unless @racket[keep-mutable?] is provided as true to
 @racket[s-exp->fasl], then mutable values in @racket[v] are replaced

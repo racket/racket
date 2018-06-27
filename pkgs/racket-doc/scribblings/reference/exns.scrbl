@@ -988,7 +988,10 @@ The fields of a @racket[srcloc] instance are as follows:
  @item{@racket[span] --- The number of covered positions (counts from
  0) or @racket[#f] (unknown).}
 
-]}
+]
+
+See @secref["print-compiled"] for information about the treatment of
+@racket[srcloc] values that are embedded in compiled code.}
 
 
 @defproc[(srcloc->string [srcloc srcloc?]) (or/c string? #f)]{

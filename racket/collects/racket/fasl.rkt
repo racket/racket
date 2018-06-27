@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base))
+(require (for-syntax racket/base)
+         "private/truncate-path.rkt")
 
 (provide s-exp->fasl
          fasl->s-exp)
@@ -76,6 +77,8 @@
   (fasl-hash-type     36)
   (fasl-immutable-hash-type 37)
 
+  (fasl-srcloc 38)
+
   ;; Unallocated numbers here are for future extensions
 
   ;; 100 to 255 is used for small integers:
@@ -124,6 +127,18 @@
        (loop (struct->vector v))]
       [else (void)]))
   (define exploded-wrt-dir 'not-ready)
+  (define (path->relative-path-elements v)
+    (when (and (eq? exploded-wrt-dir 'not-ready)
+               (path? v))
+      (define wrt-dir (current-write-relative-directory))
+      (set! exploded-wrt-dir (and wrt-dir (explode-path wrt-dir))))
+    (and exploded-wrt-dir
+         (path? v)
+         (let ([exploded (explode-path v)])
+           (and (for/and ([wrt-p (in-list exploded-wrt-dir)]
+                          [p (in-list exploded)])
+                  (equal? wrt-p p))
+                (list-tail exploded (length exploded-wrt-dir))))))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   ;; The fasl formal prefix:
   (write-bytes fasl-prefix o)
@@ -203,18 +218,7 @@
            (write-fasl-integer (if (treat-immutable? v) fasl-immutable-bytes-type fasl-bytes-type) o)
            (write-fasl-bytes v o)]
           [(path-for-some-system? v)
-           (when (and (eq? exploded-wrt-dir 'not-ready)
-                      (path? v))
-             (define wrt-dir (current-write-relative-directory))
-             (set! exploded-wrt-dir (and wrt-dir (explode-path wrt-dir))))
-           (define rel-elems
-             (and exploded-wrt-dir
-                  (path? v)
-                  (let ([exploded (explode-path v)])
-                    (and (for/and ([wrt-p (in-list exploded-wrt-dir)]
-                                   [p (in-list exploded)])
-                           (equal? wrt-p p))
-                         (list-tail exploded (length exploded-wrt-dir))))))
+           (define rel-elems (path->relative-path-elements v))
            (cond
              [rel-elems
               (write-byte fasl-relative-path-type o)
@@ -224,6 +228,26 @@
               (write-byte fasl-path-type o)
               (write-fasl-bytes (path->bytes v) o)
               (loop (path-convention-type v))])]
+          [(and (srcloc? v) (let ([src (srcloc-source v)])
+                              (or (not src)
+                                  (path-for-some-system? src)
+                                  (string? src)
+                                  (bytes? src)
+                                  (symbol? src))))
+           (define src (srcloc-source v))
+           (define new-src
+             (cond
+               [(and (path? src)
+                     (not (path->relative-path-elements src)))
+                ;; Convert to a string
+                (truncate-path src)]
+               [else src]))
+           (write-fasl-integer fasl-srcloc o)
+           (loop new-src)
+           (loop (srcloc-line v))
+           (loop (srcloc-column v))
+           (loop (srcloc-position v))
+           (loop (srcloc-span v))]
           [(pair? v)
            (cond
              [(pair? (cdr v))
@@ -414,6 +438,8 @@
       (define len (read-fasl-integer i))
       (for/fold ([ht ht]) ([j (in-range len)])
         (hash-set ht (loop) (loop)))]
+     [(fasl-srcloc)
+      (srcloc (loop) (loop) (loop) (loop) (loop))]
      [else
       (cond
         [(type . >= . fasl-small-integer-start)

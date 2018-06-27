@@ -27,11 +27,12 @@
       43/100
       44+100i
       45.0+100.0i
-      46f0))
+      46f0
+      (srcloc "x" 1 2 3 4)))
 
 ;; The fasl format is meant to be forward-compatible:
 (define immutables-regression-bstr
-  #"racket/fasl:\0\200\371\0\34\"n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\200\16\bnineteen\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@\n\0\08B")
+  #"racket/fasl:\0\200\n\1\34#n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\200\16\bnineteen\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@\n\0\08B\34\6\16\6srcloc\23\1xopqr")
 
 (for ([i (in-list immutables)])
   (test i fasl->s-exp (s-exp->fasl i)))
@@ -89,16 +90,27 @@
   (let ([unix-path (bytes->path #"here" 'unix)]
         [windows-path (bytes->path #"there" 'windows)])
     (test unix-path fasl->s-exp (s-exp->fasl unix-path))
-    (test windows-path fasl->s-exp (s-exp->fasl windows-path))))
+    (test windows-path fasl->s-exp (s-exp->fasl windows-path))
+    (if (eq? (system-path-convention-type) 'unix)
+        (test (srcloc "here" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc unix-path 1 2 3 4)))
+        (test (srcloc "there" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc windows-path 1 2 3 4))))
+    (let ([root (car (filesystem-root-list))])
+      (test (srcloc (path->string root) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc root 1 2 3 4)))
+      (test (srcloc (path->string (build-path root "x")) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root "x") 1 2 3 4))))
+    (test (srcloc ".../a/b" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path (current-directory) "a" "b") 1 2 3 4)))))
 
 (let* ([rel-p (build-path "nested" "data.rktd")]
        [p (build-path (current-directory) rel-p)])
-  (define bstr
+  (define-values (bstr srcloc-bstr)
     (parameterize ([current-write-relative-directory (current-directory)])
-      (s-exp->fasl p)))
+      (values
+       (s-exp->fasl p)
+       (s-exp->fasl (srcloc p 10 20 30 40)))))
   (parameterize ([current-load-relative-directory #f])
-    (test rel-p fasl->s-exp bstr))
+    (test rel-p fasl->s-exp bstr)
+    (test (srcloc rel-p 10 20 30 40) fasl->s-exp srcloc-bstr))
   (parameterize ([current-load-relative-directory (current-directory)])
-    (test p fasl->s-exp bstr)))
+    (test p fasl->s-exp bstr)
+    (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr)))
 
 (report-errs)
