@@ -71,20 +71,28 @@ Racket on Chez Scheme currently supports two modes:
     Select this mode by seting the `PLT_CS_MACH` environment variable,
     but it's currently the default.
 
+    Set `PLT_CS_COMPILE_LIMIT` to set the maximum size of forms to
+    compile before falling back to interpreted "bytecode". The default
+    is 10000.
+
  * JIT mode --- The compiled form of a module is an S-expression where
     individual `lambda`s are compiled on demand. Compiled ".zo" files
     in this format are written to a "cs" subdirectory of "compiled".
 
     Select this mode by seting the `PLT_CS_JIT` environment variable.
 
+    S-expressions fragments are hashed at compilation time, so that
+    the hash for each fragment is stored in the ".zo" file. At JIT
+    time, the hash is used to consult and/or update a cache
+    (implemented as an SQLite database) of machine-code forms. Set the
+    `PLT_JIT_CACHE` environment variable to change the cache file, or
+    set the environment variable to empty to disable the cache.
+
 Set the `PLT_ZO_PATH` environment variable to override the path used
 for ".zo" files. For example, you may want to preserve a normal build
 while also building in machine-code mode with `PLT_CS_DEBUG` set, in
 which case setting `PLT_ZO_PATH` to something like "a6osx-debug" could
 be a good idea.
-
-In machine-code code, set `PLT_CS_COMPILE_LIMIT` to set the maximum
-size of forms to compile. The default is 10000.
 
 
 Running
@@ -145,6 +153,8 @@ Files in this directory:
  rumble/*.ss - Parts of "rumble.sls" (via `include`) to implement data
          structures, immutable hash tables, structs, delimited
          continuations, engines, impersonators, etc.
+
+ linklet/*.ss - Parts of "linklet.sls" (via `include`).
 
  compiled/*.rktl (generated) - A Racket library (e.g., to implement
          regexps) that has been fully macro expanded and flattened

@@ -105,7 +105,12 @@ expander-rktl:
 linklet-demo: $(BUILDDIR)linklet.so
 	$(SCHEME) $(LINKLET_DEPS) $(BUILDDIR)linklet.so demo/linklet.ss
 
-$(BUILDDIR)linklet.so: linklet.sls $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
+LINKLET_SRCS = linklet/read.ss \
+               linklet/write.ss \
+               linklet/performance.ss \
+               linklet/db.ss
+
+$(BUILDDIR)linklet.so: linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) linklet.sls $(LINKLET_DEPS)
 
 

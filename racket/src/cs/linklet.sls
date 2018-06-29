@@ -66,6 +66,8 @@
                 path?
                 complete-path?
                 path->string
+                path->bytes
+                bytes->path
                 string->bytes/utf-8
                 bytes->string/utf-8
                 prop:custom-write
@@ -76,7 +78,14 @@
                 get-output-bytes
                 file-position
                 current-logger
-                log-message)
+                log-message
+                sha1-bytes
+                environment-variables-ref
+                current-environment-variables
+                find-system-path
+                build-path)
+          (only (thread)
+                current-process-milliseconds)
           (regexp)
           (schemify))
 
@@ -94,6 +103,17 @@
                       (and (real? n)
                            n))))
              10000)))
+
+  (define no-future-jit-db? (getenv "PLT_NO_FUTURE_JIT_CACHE")) ; => don't calculate key for cache
+  (define jit-db-path (let ([bstr (environment-variables-ref
+                                   (|#%app| current-environment-variables)
+                                   (string->utf8 "PLT_JIT_CACHE"))])
+                        (cond
+                         [(equal? bstr '#vu8()) #f] ; empty value disables the JIT cache
+                         [(not bstr)
+                          (build-path (find-system-path 'addon-dir)
+                                      "cs-jit.sqlite")]
+                         [else (bytes->path bstr)])))
 
   ;; For "main.sps" to select the default ".zo" directory name:
   (define platform-independent-zo-mode? (eq? linklet-compilation-mode 'jit))
@@ -138,76 +158,11 @@
                              (correlated->annotation v))))))))
       v]))
 
-  (define region-times (make-eq-hashtable))
-  (define region-gc-times (make-eq-hashtable))
-  (define region-counts (make-eq-hashtable))
-  (define region-memories (make-eq-hashtable))
-  (define current-start-time '())
-  (define current-gc-start-time '())
-  (define-syntax performance-region
-    (syntax-rules ()
-      [(_ label e ...) (measure-performance-region label (lambda () e ...))]))
-  (define (measure-performance-region label thunk)
-    (cond
-     [measure-performance?
-      (set! current-start-time (cons (current-inexact-milliseconds) current-start-time))
-      (set! current-gc-start-time (cons (current-gc-milliseconds) current-gc-start-time))
-      (begin0
-       (thunk)
-       (let ([delta (- (current-inexact-milliseconds) (car current-start-time))]
-             [gc-delta (- (current-gc-milliseconds) (car current-gc-start-time))])
-         (hashtable-update! region-times label (lambda (v) (+ v delta)) 0)
-         (hashtable-update! region-gc-times label (lambda (v) (+ v gc-delta)) 0)
-         (hashtable-update! region-counts label add1 0)
-         (set! current-start-time (cdr current-start-time))
-         (set! current-gc-start-time (cdr current-gc-start-time))
-         (let loop ([l current-start-time] [gc-l current-gc-start-time])
-           (unless (null? l)
-             (set-car! l (+ (car l) delta))
-             (set-car! gc-l (+ (car gc-l) gc-delta))
-             (loop (cdr l) (cdr gc-l))))))]
-     [else (thunk)]))
-  (define (add-performance-memory! label delta)
-    (when measure-performance?
-      (hashtable-update! region-memories label (lambda (v) (+ v delta)) 0)))
-  (define (linklet-performance-init!)
-    (hashtable-set! region-times 'boot
-                    (let ([t (sstats-cpu (statistics))])
-                      (+ (* 1000.0 (time-second t))
-                         (/ (time-nanosecond t) 1000000.0)))))
-  (define (linklet-performance-report!)
-    (when measure-performance?
-      (let ([total 0])
-        (define (pad v w)
-          (let ([s (chez:format "~a" v)])
-            (string-append (make-string (max 0 (- w (string-length s))) #\space)
-                           s)))
-        (define (report label n n-extra units extra)
-          (chez:printf ";; ~a: ~a~a ~a~a\n"
-                       (pad label 15)
-                       (pad (round (inexact->exact n)) 5)
-                       n-extra
-                       units
-                       extra))
-        (define (ht->sorted-list ht)
-          (list-sort (lambda (a b) (< (cdr a) (cdr b)))
-                     (hash-table-map ht cons)))
-        (for-each (lambda (p)
-                    (let ([label (car p)]
-                          [n (cdr p)])
-                      (set! total (+ total n))
-                      (report label n
-                              (chez:format " [~a]" (pad (hashtable-ref region-gc-times label 0) 5))
-                              'ms
-                              (let ([c (hashtable-ref region-counts label 0)])
-                                (if (zero? c)
-                                    ""
-                                    (chez:format " ; ~a times" c))))))
-                  (ht->sorted-list region-times))
-        (report 'total total "" 'ms "")
-        (chez:printf ";;\n")
-        (for-each (lambda (p) (report (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
-                  (ht->sorted-list region-memories)))))
+  (include "linklet/write.ss")
+  (include "linklet/read.ss")
+  (include "linklet/annotation.ss")
+  (include "linklet/performance.ss")
+  (include "linklet/db.ss")
 
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
   ;; that need to be managed correctly when swapping Racket
@@ -273,8 +228,30 @@
        'outer
        ((load-compiled-from-port i)))))
 
+  (define-values (lookup-code insert-code delete-code)
+    (let ([get-procs!-maker
+           (lambda (retry)
+             (lambda args
+               (let-values ([(lookup insert delete) (get-code-database-procedures)])
+                 (set! lookup-code lookup)
+                 (set! insert-code insert)
+                 (set! delete-code delete)
+                 (apply retry args))))])
+      (values (get-procs!-maker (lambda (hash) (lookup-code hash)))
+              (get-procs!-maker (lambda (hash code) (insert-code hash code)))
+              (get-procs!-maker (lambda (hash) (delete-code hash))))))
+
+  (define (add-code-hash a)
+    (cond
+     [no-future-jit-db? a]
+     [else
+      ;; Combine an annotation with a hash code in a vector
+      (let-values ([(o get) (open-bytevector-output-port)])
+        (fasl-write (cons (version) a) o)
+        (vector (sha1-bytes (get)) a))]))
+
   (define-record-type wrapped-code
-    (fields (mutable content) ; bytevector for 'lambda mode; annotation for 'jit mode
+    (fields (mutable content) ; bytevector for 'lambda mode; annotation or (vector hash annotation) for 'jit mode
             arity-mask
             name)
     (nongenerative #{wrapped-code p6o2m72rgmi36pm8vy559b-0}))
@@ -285,17 +262,38 @@
           f
           (performance-region
            'on-demand
-           (cond
-            [(bytevector? f)
-             (let* ([f (code-from-bytevector f)])
-               (wrapped-code-content-set! wc f)
-               f)]
-            [else
-             (let ([f (compile* f)])
+           (let ([f (if (and (vector? f)
+                             (or (not jit-db-path)
+                                 (wrong-jit-db-thread?)))
+                        (vector-ref f 1)
+                        f)])
+             (cond
+              [(bytevector? f)
+               (let* ([f (code-from-bytevector f)])
+                 (wrapped-code-content-set! wc f)
+                 f)]
+              [(vector? f)
                (when jit-demand-on?
-                 (show "JIT demand" (strip-nested-annotations (wrapped-code-content wc))))
-               (wrapped-code-content-set! wc f)
-               f)])))))
+                 (show "JIT demand" (strip-nested-annotations (vector-ref f 1))))
+               (let* ([hash (vector-ref f 0)]
+                      [code (lookup-code hash)])
+                 (cond
+                  [code
+                   (let* ([f (eval-from-bytevector code 'compile)])
+                     (wrapped-code-content-set! wc f)
+                     f)]
+                  [else
+                   (let ([code (compile-to-bytevector (vector-ref f 1) 'compile)])
+                     (insert-code hash code)
+                     (let* ([f (eval-from-bytevector code 'compile)])
+                       (wrapped-code-content-set! wc f)
+                       f))]))]
+              [else
+               (let ([f (compile* f)])
+                 (when jit-demand-on?
+                   (show "JIT demand" (strip-nested-annotations (wrapped-code-content wc))))
+                 (wrapped-code-content-set! wc f)
+                 f)]))))))
 
   (define (jitified-extract-closed wc)
     (let ([f (wrapped-code-content wc)])
@@ -418,9 +416,12 @@
                                           [(jit)
                                            ;; Preserve annotated `lambda` source for on-demand compilation:
                                            (lambda (expr arity-mask name)
-                                             (make-wrapped-code (correlated->annotation (xify expr))
-                                                                arity-mask
-                                                                name))]
+                                             (let ([a (correlated->annotation (xify expr))])
+                                               (make-wrapped-code (if serializable?
+                                                                      (add-code-hash a)
+                                                                      a)
+                                                                  arity-mask
+                                                                  name)))]
                                           [else
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
@@ -781,443 +782,6 @@
 
   (define (make-instance-variable-reference vr v)
     (make-variable-reference (variable-reference-instance vr) v))
-
-  ;; ----------------------------------------
-
-  (define (write-linklet-bundle b port mode)
-    ;; Various tools expect a particular header:
-    ;;   "#~"
-    ;;   length of version byte string (< 64) as one byte
-    ;;   version byte string
-    ;;   "B"
-    ;;   20 bytes of SHA-1 hash
-    (write-bytes '#vu8(35 126) port)
-    (let ([vers (string->bytes/utf-8 (version))])
-      (write-bytes (bytes (bytes-length vers)) port)
-      (write-bytes vers port))
-    (write-bytes '#vu8(66) port)
-    (write-bytes (make-bytes 20 0) port)
-    ;; The rest is whatever we want. We'll simply fasl the bundle.
-    (let-values ([(o get) (open-bytevector-output-port)])
-      (fasl-write* b o)
-      (let ([bstr (get)])
-        (write-int (bytes-length bstr) port)
-        (write-bytes bstr port))))
-
-  (define (linklet-bundle->bytes b)
-    (let ([o (open-output-bytes)])
-      (write-linklet-bundle b o #t)
-      (get-output-bytes o)))
-
-  (define (write-linklet-directory ld port mode)
-    ;; Various tools expect a particular header:
-    ;;   "#~"
-    ;;   length of version byte string (< 64) as one byte
-    ;;   version byte string
-    ;;   "D"
-    ;;   bundle count as 4-byte integer
-    ;;   binary tree:
-    ;;     bundle-name length as 4-byte integer
-    ;;     bundle name [encoding decribed below]
-    ;;     bundle offset as 4-byte integer
-    ;;     bundle size as 4-byte integer
-    ;;     left-branch offset as 4-byte integer
-    ;;     right-branch offset as 4-byte integer
-    ;; A bundle name corresponds to a list of symbols. Each symbol in the list is
-    ;; prefixed with either: its length as a byte if less than 255; 255 followed by
-    ;; a 4-byte integer for the length.
-    (write-bytes '#vu8(35 126) port)
-    (let ([vers (string->bytes/utf-8 (version))])
-      (write-bytes (bytes (bytes-length vers)) port)
-      (write-bytes vers port)
-      (write-bytes '#vu8(68) port)
-      ;; Flatten a directory of bundles into a vector of pairs, where
-      ;; each pair has the encoded bundle name and the bundle bytes
-      (let* ([bundles (list->vector (flatten-linklet-directory ld '() '()))]
-             [len (vector-length bundles)]
-             [initial-offset (+ 2 ; "#~"
-                                1 ; version length
-                                (bytes-length vers)
-                                1 ; D
-                                4)]) ; bundle count
-        (write-int len port) ; bundle count
-        (chez:vector-sort! (lambda (a b) (bytes<? (car a) (car b))) bundles)
-        ;; Compute bundle offsets
-        (let* ([btree-size (compute-btree-size bundles len)]
-               [node-offsets (compute-btree-node-offsets bundles len initial-offset)]
-               [bundle-offsets (compute-bundle-offsets bundles len (+ initial-offset btree-size))])
-          (write-directory-btree bundles node-offsets bundle-offsets len port)
-          ;; Write the bundles
-          (let loop ([i 0])
-            (unless (fx= i len)
-              (write-bytes (cdr (vector-ref bundles i)) port)
-              (loop (fx1+ i))))))))
-
-  ;; Flatten a tree into a list of `(cons _name-bstr _bundle-bstr)`
-  (define (flatten-linklet-directory ld rev-name-prefix accum)
-    (let ([ht (linklet-directory-hash ld)])
-      (let loop ([i (hash-iterate-first ht)] [accum accum] [saw-bundle? #f])
-        (cond
-         [(not i)
-          (if saw-bundle?
-              accum
-              (cons (cons (encode-name rev-name-prefix)
-                          '#vu8(35 102))
-                    accum))]
-         [else
-          (let-values ([(key value) (hash-iterate-key+value ht i)])
-            (cond
-             [(eq? key #f)
-              (loop (hash-iterate-next ht i)
-                    (cons (cons (encode-name rev-name-prefix)
-                                (linklet-bundle->bytes value))
-                          accum)
-                    #t)]
-             [else
-              (loop (hash-iterate-next ht i)
-                    (flatten-linklet-directory value (cons key rev-name-prefix) accum)
-                    saw-bundle?)]))]))))
-
-  ;; Encode a bundle name (as a reversed list of symbols) as a single
-  ;; byte string
-  (define (encode-name rev-name)
-    (define (encode-symbol s)
-      (let* ([bstr (string->bytes/utf-8 (symbol->string s))]
-             [len (bytes-length bstr)])
-        (if (< len 255)
-            (list (bytes len) bstr)
-            (list (bytes 255) (integer->integer-bytes len 4 #f #f) bstr))))
-    (let loop ([rev-name rev-name] [accum '()])
-      (cond
-       [(null? rev-name) (apply bytes-append accum)]
-       [else
-        (loop (cdr rev-name) (append (encode-symbol (car rev-name))
-                                     accum))])))
-
-  ;; Figure out how big the binary tree will be, which depends
-  ;; on the size of bundle-name byte strings
-  (define (compute-btree-size bundles len)
-    (let loop ([i 0] [size 0])
-      (if (= i len)
-          size
-          (let ([nlen (bytes-length (car (vector-ref bundles i)))])
-            ;; 5 numbers: name length, bundle offset, bundles size, lef, and right
-            (loop (fx1+ i) (+ size nlen (* 5 4)))))))
-
-  ;; Compute the offset where each node in the binary tree will reside
-  ;; relative to the start of the bundle directory's "#~"
-  (define (compute-btree-node-offsets bundles len initial-offset)
-    (let ([node-offsets (make-vector len)])
-      (let loop ([lo 0] [hi len] [offset initial-offset])
-        (cond
-         [(= lo hi) offset]
-         [else
-          (let* ([mid (quotient (+ lo hi) 2)])
-            (vector-set! node-offsets mid offset)
-            (let* ([nlen (bytes-length (car (vector-ref bundles mid)))]
-                   [offset (+ offset 4 nlen 4 4 4 4)])
-              (let ([offset (loop lo mid offset)])
-                (loop (add1 mid) hi offset))))]))
-      node-offsets))
-
-  ;; Compute the offset where each bundle will reside relative
-  ;; to the start of the bundle directory's "#~"
-  (define (compute-bundle-offsets bundles len offset)
-    (let ([bundle-offsets (make-vector len)])
-      (let loop ([i 0] [offset offset])
-        (unless (= i len)
-          (vector-set! bundle-offsets i offset)
-          (loop (fx1+ i) (+ offset (bytes-length (cdr (vector-ref bundles i)))))))
-      bundle-offsets))
-
-  ;; Write the binary tree for the directory:
-  (define (write-directory-btree bundles node-offsets bundle-offsets len port)
-    (let loop ([lo 0] [hi len])
-      (cond
-       [(= lo hi) (void)]
-       [else
-        (let* ([mid (quotient (+ lo hi) 2)]
-               [p (vector-ref bundles mid)]
-               [nlen (bytes-length (car p))])
-          (write-int nlen port)
-          (write-bytes (car p) port)
-          (write-int (vector-ref bundle-offsets mid) port)
-          (write-int (bytes-length (cdr p)) port)
-          (cond
-           [(> mid lo)
-            (let ([left (quotient (+ lo mid) 2)])
-              (write-int (vector-ref node-offsets left) port))]
-           [else
-            (write-int 0 port)])
-          (cond
-           [(< (fx1+ mid) hi)
-            (let ([right (quotient (+ (fx1+ mid) hi) 2)])
-              (write-int (vector-ref node-offsets right) port))]
-           [else
-            (write-int 0 port)])
-          (loop lo mid)
-          (loop (fx1+ mid) hi))])))
-
-  (define (write-int n port)
-    (write-bytes (integer->integer-bytes n 4 #f #f) port))
-
-  ;; --------------------------------------------------
-
-  (define (read-compiled-linklet in)
-    (read-compiled-linklet-or-directory in #t))
-  
-  (define (read-compiled-linklet-or-directory in initial?)
-    ;; `#~` has already been read
-    (let* ([start-pos (- (file-position in) 2)]
-           [vers-len (min 63 (read-byte in))]
-           [vers (read-bytes vers-len in)])
-      (unless (equal? vers (string->bytes/utf-8 (version)))
-        (raise-arguments-error 'read-compiled-linklet
-                               "version mismatch"
-                               "expected" (version)
-                               "found" (bytes->string/utf-8 vers #\?)
-                               "in" (let ([n (object-name in)])
-                                      (if (path? n)
-                                          (unquoted-printing-string
-                                           (path->string n))
-                                          in))))
-      (let ([tag (read-byte in)])
-        (cond
-         [(equal? tag (char->integer #\B))
-          (let ([sha-1 (read-bytes 20 in)])
-            (let ([len (read-int in)])
-              (let ([bstr (read-bytes len in)])
-                (let ([b (fasl-read (open-bytevector-input-port bstr))])
-                  (add-hash-code (adjust-linklet-bundle-laziness
-                                  (if initial?
-                                      (strip-submodule-references b)
-                                      b))
-                                 sha-1)))))]
-         [(equal? tag (char->integer #\D))
-          (unless initial?
-            (raise-argument-error 'read-compiled-linklet
-                                  "expected a linklet bundle"))
-          (read-bundle-directory in start-pos)]
-         [else
-          (raise-arguments-error 'read-compiled-linklet
-                                 "expected a `B` or `D`")]))))
-
-  (define (read-int in)
-    (integer-bytes->integer (read-bytes 4 in) #f #f))
-  
-  (define (read-bundle-directory in pos)
-    (let ([count (read-int in)])
-      (let ([position-to-name
-             (let loop ([count count] [accum (hasheqv)])
-               (cond
-                [(zero? count) accum]
-                [else
-                 (let ([bstr (read-bytes (read-int in) in)])
-                   (let* ([offset (read-int in)]
-                          [len (read-int in)])
-                     (read-int in) ; left
-                     (read-int in) ; right
-                     (loop (fx1- count)
-                           (hash-set accum offset bstr))))]))])
-        (let loop ([count count] [accum '()])
-          (cond
-           [(zero? count)
-            (list->bundle-directory accum)]
-           [else
-            (let ([name (hash-ref position-to-name (- (file-position in) pos) #f)])
-              (unless name
-                (raise-arguments-error 'read-compiled-linklet
-                                       "bundle not at an expected file position"))
-              (let ([bstr (read-bytes 2 in)])
-                (let ([bundle
-                       (cond
-                        [(equal? '#vu8(35 126) bstr)
-                         (read-compiled-linklet in)]
-                        [(equal? '#vu8(35 102) bstr)
-                         #f]
-                        [else
-                         (raise-arguments-error 'read-compiled-linklet
-                                                "expected a `#~` or `#f` for a bundle")])])
-                  (loop (fx1- count)
-                        (cons (cons (decode-name name 0) bundle) accum)))))])))))
-
-  (define (decode-name bstr pos)
-    (let ([blen (bytes-length bstr)]
-          [bad-bundle (lambda ()
-                        (raise-arguments-error 'read-compiled-linklet
-                                               "malformed bundle"))])
-      (cond
-       [(= pos blen)
-        '()]
-       [(> pos blen) (bad-bundle)]
-       [else
-        (let ([len (bytes-ref bstr pos)])
-          (when (> (+ pos len 1) blen) (bad-bundle))
-          (if (= len 255)
-              (let ([len (integer-bytes->integer bstr #f #f (fx1+ pos) (fx+ pos 5))])
-                (when (> (+ pos len 1) blen) (bad-bundle))
-                (cons (string->symbol (bytes->string/utf-8 (subbytes bstr (fx+ pos 5) (+ pos 5 len)) #\?))
-                      (decode-name bstr (+ pos 5 len))))
-              (cons (string->symbol (bytes->string/utf-8 (subbytes bstr (fx1+ pos) (+ pos 1 len)) #\?))
-                    (decode-name bstr (+ pos 1 len)))))])))
-
-  ;; Convert a post-order list into a tree
-  (define (list->bundle-directory l)
-    ;; The bundles list is in post-order, so we can build directories
-    ;; bottom-up
-    (let loop ([l l] [prev-len 0] [stack '()] [accum (hasheq)])
-      (when (null? l)
-        (raise-arguments-error 'read-compiled-linklet
-                               "invalid bundle sequence"))
-      (let* ([p (car l)]
-             [path (car p)]
-             [v (cdr p)]
-             [len (length path)])
-        (when (< len prev-len)
-          (raise-arguments-error 'read-compiled-linklet
-                                 "invalid bundle sequence"))
-        (let sloop ([prev-len prev-len] [stack stack] [accum accum])
-          (cond
-           [(> len (fx1+ prev-len))
-            (sloop (fx1+ prev-len)
-                   (cons accum stack)
-                   (hasheq))]
-           [else
-            (let ([path (list-tail path (fxmax 0 (fx1- prev-len)))])
-              (cond
-               [(= len prev-len)
-                (let ([accum (if v
-                                 (hash-set accum #f v)
-                                 accum)])
-                  (if (zero? len)
-                      (make-linklet-directory accum)
-                      (loop (cdr l)
-                            (fx1- prev-len)
-                            (cdr stack)
-                            (hash-set (car stack) (car path) (make-linklet-directory accum)))))]
-               [else
-                (let ([path (if (positive? prev-len)
-                                (cdr path)
-                                path)])
-                  (loop (cdr l)
-                        prev-len
-                        stack
-                        (hash-set accum
-                                  (car path)
-                                  (make-linklet-directory (if v
-                                                              (hasheq #f v)
-                                                              (hasheq))))))]))])))))
-
-  ;; When a bundle is loaded by itself, remove any 'pre and 'post
-  ;; submodule descriptions:
-  (define (strip-submodule-references b)
-    (make-linklet-bundle (hash-remove (hash-remove (linklet-bundle-hash b) 'pre) 'post)))
-
-  ;; If the bundle has a non-zero hash code, record it with the
-  ;; 'hash-code key to enable module caching
-  (define (add-hash-code b sha-1)
-    (if (bytevector=? sha-1 '#vu8(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
-        b
-        (make-linklet-bundle (hash-set (linklet-bundle-hash b) 'hash-code sha-1))))
-
-  (define read-on-demand-source
-    (make-parameter #f
-                    (lambda (v)
-                      (unless (or (eq? v #t) (eq? v #f) (and (path? v)
-                                                             (complete-path? v)))
-                        (raise-argument-error 'read-on-demand-source
-                                              "(or/c #f #t (and/c path? complete-path?))"
-                                              v))
-                      v)))
-
-  (define (adjust-linklet-bundle-laziness b)
-    (make-linklet-bundle
-     (let ([ht (linklet-bundle-hash b)])
-       (let loop ([i (hash-iterate-first ht)])
-         (cond
-          [(not i) (hasheq)]
-          [else
-           (let-values ([(key val) (hash-iterate-key+value ht i)])
-             (hash-set (loop (hash-iterate-next ht i))
-                       key
-                       (if (linklet? val)
-                           (adjust-linklet-laziness val)
-                           val)))])))))
-                  
-  (define (adjust-linklet-laziness linklet)
-    (set-linklet-code linklet
-                      (linklet-code linklet)
-                      (if (|#%app| read-on-demand-source)
-                          'faslable
-                          'faslable-strict)))
-
-  ;; --------------------------------------------------
-
-  (define (correlated->annotation v)
-    (let-values ([(e stripped-e) (correlated->annotation* v)])
-      e))
-
-  (define (correlated->annotation* v)
-    (cond
-     [(pair? v) (let-values ([(a stripped-a) (correlated->annotation* (car v))]
-                             [(d stripped-d) (correlated->annotation* (cdr v))])
-                  (if (and (eq? a (car v))
-                           (eq? d (cdr v)))
-                      (values v v)
-                      (values (cons a d)
-                              (cons stripped-a stripped-d))))]
-     [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])
-                        (let ([name (correlated-property v 'inferred-name)])
-                          (define (add-name e)
-                            (if (and name (not (void? name)))
-                                `(|#%name| ,name ,e)
-                                e))
-                          (values (add-name (transfer-srcloc v e stripped-e))
-                                  (add-name stripped-e))))]
-     ;; correlated will be nested only in pairs with current expander
-     [else (values v v)]))
-
-  (define (transfer-srcloc v e stripped-e)
-    (let ([src (correlated-source v)]
-          [pos (correlated-position v)]
-          [line (correlated-line v)]
-          [column (correlated-column v)]
-          [span (correlated-span v)])
-      (if (and pos span (or (path? src) (string? src)))
-          (let ([pos (sub1 pos)]) ; Racket positions are 1-based; host Scheme positions are 0-based
-            (make-annotation e
-                             (if (and line column)
-                                 ;; Racket columns are 0-based; host-Scheme columns are 1-based
-                                 (make-source-object (source->sfd src) pos (+ pos span) line (add1 column))
-                                 (make-source-object (source->sfd src) pos (+ pos span)))
-                             stripped-e))
-          e)))
-
-  (define sfd-cache (make-weak-hash))
-
-  (define (source->sfd src)
-    (or (hash-ref sfd-cache src #f)
-        (let ([str (if (path? src)
-                       (path->string src)
-                       src)])
-          ;; We'll use a file-position object in source objects, so
-          ;; the sfd checksum doesn't matter
-          (let ([sfd (source-file-descriptor str 0)])
-            (hash-set! sfd-cache src sfd)
-            sfd))))
-
-  ;; --------------------------------------------------
-  
-  (define (strip-nested-annotations s)
-    (cond
-     [(annotation? s) (annotation-stripped s)]
-     [(pair? s)
-      (let ([a (strip-nested-annotations (car s))]
-            [d (strip-nested-annotations (cdr s))])
-        (if (and (eq? a (car s)) (eq? d (cdr s)))
-            s
-            (cons a d)))]
-     [else s]))
 
   ;; --------------------------------------------------
   
