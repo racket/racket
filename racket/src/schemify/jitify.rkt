@@ -146,8 +146,8 @@
           (match v
             [`(variable-set! ,var-id ,id . ,_)
              (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id)))]
-            [`(define ,_ (begin (variable-set! ,var-id ,id . ,_) (void)))
-             (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id)))]
+            [`(define ,_ (begin (variable-set! . ,vs) (void)))
+             (loop `(variable-set! . ,vs) env)]
             [`(define ,id ,rhs) (plain-add-args env id)]
             [`(define-values ,ids ,rhs) (plain-add-args env ids)]
             [`(begin . ,vs)
@@ -157,8 +157,13 @@
     (let loop ([body body])
       (for/list ([v (in-list body)])
         (match v
-          [`(variable-set! ,var-id ,id . ,_) v]
-          [`(define ,_ (begin (variable-set! ,var-id ,id . ,_) (void))) v]
+          [`(variable-set! ,var-id ,id ',constance)
+           (when constance
+             ;; From now on, a direct reference is ok
+             (set! top-env (hash-set top-env (unwrap id) '#:direct)))
+           v]
+          [`(define ,_ (begin (variable-set! . ,vs) (void)))
+           (car (loop (list `(variable-set! . ,vs))))]
           [`(define ,id ,rhs)
            ;; If there's a direct reference to `id` in `rhs`, then
            ;; `id` must not be mutable
