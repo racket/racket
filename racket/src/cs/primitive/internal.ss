@@ -28,5 +28,6 @@
   [record-predicate (known-constant)]
   [record-accessor (known-constant)]
   [record-mutator (known-constant)]
+  [unsafe-struct? (known-constant)]
 
   [make-pthread-parameter (known-procedure 2)])

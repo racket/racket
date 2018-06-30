@@ -925,6 +925,8 @@
   (#3%vector-ref s i))
 (define (unsafe-struct*-set! s i v)
   (#3%vector-set! s i v))
+(define (unsafe-struct? v r)
+  (#3%record? v r))
 
 (define (unsafe-struct-ref s i)
   (if (impersonator? s)

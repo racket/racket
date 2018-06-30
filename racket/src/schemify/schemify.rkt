@@ -204,7 +204,7 @@
                                      prim-knowns knowns mutated imports exports
                                      allow-set!-undefined?
                                      add-import!
-                                     for-cify?
+                                     for-cify? for-jitify?
                                      unsafe-mode?))
         (match form
           [`(define-values ,ids ,_)
@@ -259,7 +259,7 @@
 ;; Schemify `let-values` to `let`, etc., and
 ;; reorganize struct bindings.
 (define (schemify v prim-knowns knowns mutated imports exports allow-set!-undefined? add-import!
-                  for-cify? unsafe-mode?)
+                  for-cify? for-jitify? unsafe-mode?)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [v v])
     (let schemify ([v v])
       (define s-v
@@ -278,7 +278,7 @@
                          ,make2
                          ,?2
                          ,make-acc/muts ...)))
-            #:guard (not for-cify?)
+            #:guard (not (or for-jitify? for-cify?))
             ;; Convert a `make-struct-type` binding into a 
             ;; set of bindings that Chez's cp0 recognizes,
             ;; and push the struct-specific extra work into
@@ -566,19 +566,74 @@
                           (left-left-lambda-convert
                            (inline-clone k (hash-ref imports u-rator #f) add-import! mutated imports)
                            (sub1 inline-fuel))))))
+            (define (maybe-tmp e name)
+              ;; use `e` directly if it's ok to duplicate
+              (if (simple/can-copy? e prim-knowns knowns imports mutated)
+                  e
+                  (gensym name)))
+            (define (wrap-tmp tmp e body)
+              (if (eq? tmp e)
+                  body
+                  `(let ([,tmp ,e])
+                     ,body)))
+            (define (inline-field-access k s-rator u-rator args)
+              ;; For imported accessors or for JIT mode, inline the
+              ;; selector with an `unsafe-struct?` test plus `unsafe-struct*-ref`.
+              (define im (hash-ref imports u-rator #f))
+              (define type-id (and (or im for-jitify?)
+                                   (pair? args)
+                                   (null? (cdr args))
+                                   (inline-type-id k im add-import! mutated imports)))
+              (cond
+                [type-id
+                 (define tmp (maybe-tmp (car args) 'v))
+                 (define sel `(if (unsafe-struct? ,tmp ,(schemify type-id))
+                                  (unsafe-struct*-ref ,tmp ,(known-field-accessor-pos k))
+                                  (,s-rator ,tmp)))
+                 (wrap-tmp tmp (car args)
+                           sel)]
+                [else #f]))
+            (define (inline-field-mutate k s-rator u-rator args)
+              (define im (hash-ref imports u-rator #f))
+              (define type-id (and (or im for-jitify?)
+                                   (pair? args)
+                                   (pair? (cdr args))
+                                   (null? (cddr args))
+                                   (inline-type-id k im add-import! mutated imports)))
+              (cond
+                [type-id
+                 (define tmp (maybe-tmp (car args) 'v))
+                 (define tmp-rhs (maybe-tmp (cadr args) 'rhs))
+                 (define mut `(if (unsafe-struct? ,tmp ,(schemify type-id))
+                                  (unsafe-struct*-set! ,tmp ,(known-field-mutator-pos k) ,tmp-rhs)
+                                  (,s-rator ,tmp ,tmp-rhs)))
+                 (wrap-tmp tmp (car args)
+                           (wrap-tmp tmp-rhs (cadr args)
+                                     mut))]
+                [else #f]))
             (or (left-left-lambda-convert rator inline-fuel)
                 (and (positive? inline-fuel)
                      (inline-rator))
                 (let ([s-rator (schemify rator)]
                       [args (map schemify exps)]
                       [u-rator (unwrap rator)])
-                  (let ([plain-app?
-                         (or (known-procedure? (find-known u-rator prim-knowns knowns imports mutated))
-                             (lambda? rator))])
-                    (left-to-right/app s-rator
-                                       args
-                                       plain-app? for-cify?
-                                       prim-knowns knowns imports mutated))))]
+                  (define k (find-known u-rator prim-knowns knowns imports mutated))
+                  (cond
+                    [(and (not for-cify?)
+                          (known-field-accessor? k)
+                          (inline-field-access k s-rator u-rator args))
+                     => (lambda (e) e)]
+                    [(and (not for-cify?)
+                          (known-field-mutator? k)
+                          (inline-field-mutate k s-rator u-rator args))
+                     => (lambda (e) e)]
+                    [else
+                     (define plain-app? (or (known-procedure? k)
+                                            (lambda? rator)))
+                     (left-to-right/app s-rator
+                                        args
+                                        plain-app? for-cify?
+                                        prim-knowns knowns imports mutated)])))]
            [`,_
             (let ([u-v (unwrap v)])
               (cond

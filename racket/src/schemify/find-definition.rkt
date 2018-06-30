@@ -45,13 +45,26 @@
                                 (unwrap s?)
                                 (known-predicate 2 type))]
               [knowns
-               (for/fold ([knowns knowns]) ([id (in-list acc/muts)]
-                                            [maker (in-list make-acc/muts)])
-                 (cond
-                  [(wrap-eq? (wrap-car maker) -ref)
-                   (hash-set knowns (unwrap id) (known-accessor 2 type))]
-                  [else
-                   (hash-set knowns (unwrap id) (known-mutator 4 type))]))])
+               (let* ([immediate-count (struct-type-info-immediate-field-count info)]
+                      [parent-count (- (struct-type-info-field-count info)
+                                       immediate-count)])
+                 (for/fold ([knowns knowns]) ([id (in-list acc/muts)]
+                                              [maker (in-list make-acc/muts)])
+                   (match maker
+                     [`(,make ,ref-or-set ,pos (quote ,name))
+                      (or (and (exact-nonnegative-integer? pos)
+                               (pos . < . immediate-count)
+                               (symbol? name)
+                               (cond
+                                 [(and (wrap-eq? make 'make-struct-field-accessor)
+                                       (wrap-eq? ref-or-set -ref))
+                                  (hash-set knowns (unwrap id) (known-field-accessor 2 type struct:s (+ parent-count pos)))]
+                                 [(and (wrap-eq? make 'make-struct-field-mutator)
+                                       (wrap-eq? ref-or-set -set!))
+                                  (hash-set knowns (unwrap id) (known-field-mutator 4 type struct:s (+ parent-count pos)))]
+                                 [else knowns]))
+                          knowns)]
+                     [`,_ knowns])))])
          (values (hash-set knowns (unwrap struct:s) (known-struct-type type
                                                                        (struct-type-info-field-count info)
                                                                        (struct-type-info-pure-constructor? info)))

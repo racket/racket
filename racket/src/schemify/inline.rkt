@@ -8,6 +8,7 @@
 (provide init-inline-fuel
          can-inline?
          inline-clone
+         inline-type-id
          known-inline->export-known)
 
 (define inline-base 3)
@@ -72,6 +73,33 @@
               (and (known-procedure/can-inline? i-k)
                    (inline-clone i-k im add-import! mutated imports)))]
         [else #f])])))
+
+(define (inline-type-id k im add-import! mutated imports)
+  (define type-id (cond
+                    [(known-field-accessor? k)
+                     (known-field-accessor-type-id k)]
+                    [(known-field-mutator? k)
+                     (known-field-mutator-type-id k)]
+                    [else #f]))
+  (define env
+    ;; A `needed->env` setup can fail if a needed import cannot be
+    ;; made available:
+    (cond
+      [(not type-id) #f]
+      [(not im) '()]
+      [(known-field-accessor/need-imports? k)
+       (needed->env (known-field-accessor/need-imports-needed k)
+                    add-import!
+                    im)]
+      [(known-field-mutator/need-imports? k)
+       (needed->env (known-field-mutator/need-imports-needed k)
+                    add-import!
+                    im)]
+      [else '()]))
+  (and env
+       (cond
+         [(null? env) type-id]
+         [else (clone-expr type-id env mutated)])))
 
 ;; Build a mapping from ids in the expr to imports into the current
 ;; linklet, where `add-import!` arranges for the import to exist as
@@ -187,8 +215,31 @@
         (known-procedure/can-inline/need-imports
          (known-procedure-arity-mask k)
          (known-procedure/can-inline-expr k)
-         (for/list ([(k v) (in-hash needed)])
-           (cons k v)))])]
+         (hash->list needed))])]
+    [(known-field-accessor? k)
+     (define needed (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (cond
+       [needed
+        (known-field-accessor/need-imports (known-procedure-arity-mask k)
+                                           (known-accessor-type k)
+                                           (known-field-accessor-type-id k)
+                                           (known-field-accessor-pos k)
+                                           (hash->list needed))]
+       [else
+        (known-accessor (known-procedure-arity-mask k)
+                        (known-accessor-type k))])]
+    [(known-field-mutator? k)
+     (define needed (needed-imports (known-field-mutator-type-id k) prim-knowns imports exports '() '#hasheq()))
+     (cond
+       [needed
+        (known-field-mutator/need-imports (known-procedure-arity-mask k)
+                                          (known-mutator-type k)
+                                          (known-field-mutator-type-id k)
+                                          (known-field-mutator-pos k)
+                                          (hash->list needed))]
+       [else
+        (known-mutator (known-procedure-arity-mask k)
+                       (known-mutator-type k))])]
     [else k]))
 
 (define (needed-imports v prim-knowns imports exports env needed)
@@ -277,3 +328,7 @@
                (wrap-cdr args))]
     [else
      (cons (unwrap args) env)]))
+
+(define (hash->list needed)
+  (for/list ([(k v) (in-hash needed)])
+    (cons k v)))

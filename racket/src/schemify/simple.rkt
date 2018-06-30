@@ -5,7 +5,8 @@
          "import.rkt"
          "mutated-state.rkt")
 
-(provide simple?)
+(provide simple?
+         simple/can-copy?)
 
 ;; Check whether an expression is simple in the sense that its order
 ;; of evaluation isn't detectable. This function receives both
@@ -52,3 +53,18 @@
              (string? e)
              (bytes? e)
              (regexp? e)))])))
+
+(define (simple/can-copy? e prim-knowns knowns imports mutated)
+  (match e
+    [`(quote ,v) (can-copy-literal? v)]
+    [`(,_ . ,_) #f]
+    [`,_
+     (let ([e (unwrap e)])
+       (or (and (symbol? e)
+                (simple-mutated-state? (hash-ref mutated e #f)))
+           (can-copy-literal? e)))]))
+
+(define (can-copy-literal? e)
+  (or (integer? e)
+      (boolean? e)
+      (symbol? e)))

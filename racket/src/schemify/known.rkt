@@ -18,6 +18,10 @@
          known-predicate known-predicate? known-predicate-type
          known-accessor known-accessor? known-accessor-type
          known-mutator known-mutator? known-mutator-type
+         known-field-accessor known-field-accessor? known-field-accessor-type-id known-field-accessor-pos
+         known-field-mutator known-field-mutator? known-field-mutator-type-id known-field-mutator-pos
+         known-field-accessor/need-imports known-field-accessor/need-imports? known-field-accessor/need-imports-needed
+         known-field-mutator/need-imports known-field-mutator/need-imports? known-field-mutator/need-imports-needed
          known-struct-type-property/immediate-guard known-struct-type-property/immediate-guard?
          a-known-constant
          a-known-consistent)
@@ -56,6 +60,10 @@
 (struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
 (struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+(struct known-field-accessor (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)
+(struct known-field-mutator (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-mutator)
+(struct known-field-accessor/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-accessor)
+(struct known-field-mutator/need-imports (needed) #:prefab #:omit-define-syntaxes #:super struct:known-field-mutator)
 
 (struct known-struct-type-property/immediate-guard () #:prefab #:omit-define-syntaxes)
 

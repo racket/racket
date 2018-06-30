@@ -619,6 +619,7 @@
           unsafe-struct-set!
           unsafe-struct*-ref
           unsafe-struct*-set!
+          unsafe-struct? ; not exported to racket
 
           unsafe-s16vector-ref
           unsafe-s16vector-set!
