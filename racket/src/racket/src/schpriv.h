@@ -3847,6 +3847,14 @@ void *scheme_environment_variables_to_block(Scheme_Object *env, int *_need_free)
 
 int scheme_compare_equal(void *v1, void *v2);
 
+typedef struct Scheme_Performance_State {
+  intptr_t start, gc_start;
+  intptr_t old_nested_delta, old_nested_gc_delta;
+} Scheme_Performance_State;
+
+void scheme_performance_record_start(Scheme_Performance_State *perf_state);
+void scheme_performance_record_end(const char *who, Scheme_Performance_State *perf_state);
+
 /*========================================================================*/
 /*                           places                                       */
 /*========================================================================*/

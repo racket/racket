@@ -3854,7 +3854,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   Scheme_Object *dir;
   Scheme_Config *config;
   char hash_code[20];
-	  
+  Scheme_Performance_State perf_state;
+
+  scheme_performance_record_start(&perf_state);
+
   while (1) {
     bundle_pos = SCHEME_INT_VAL(scheme_file_position(1, &port)) - 2; /* -2 for "#~" */
     
@@ -4125,11 +4128,14 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
           v = bundle_list_to_hierarchical_directory(bundles);
           if (!v)
             scheme_read_err(port, "read (compiled): bad shape for bundle-directory tree");
+          scheme_performance_record_end("read", &perf_state);
           return v;
         }
         /* otherwise, continue reading bundles */
-      } else
+      } else {
+        scheme_performance_record_end("read", &perf_state);
         return result;
+      }
     } else {
       scheme_read_err(port, "read (compiled): found bad mode");
     }
@@ -4163,6 +4169,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
           v = bundle_list_to_hierarchical_directory(bundles);
           if (!v)
             scheme_read_err(port, "read (compiled): bad shape for bundle-directory tree");
+          scheme_performance_record_end("read", &perf_state);
           return v;
         }
       } else {
@@ -4226,7 +4233,10 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   Scheme_Object * volatile v_exn;
   Scheme_Hash_Table ** volatile ht;
   mz_jmp_buf newbuf, * volatile savebuf;
+  Scheme_Performance_State perf_state;
 
+  scheme_performance_record_start(&perf_state);
+  
   /* Remove from cache-clearing chain: */
   if (!delay_info->perma_cache) {
     if (delay_info->clear_bytes_prev)
@@ -4353,7 +4363,9 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   }
 
   scheme_end_atomic_no_swap();
-  
+
+  scheme_performance_record_end("demand-read", &perf_state);
+
   if (v) {
     /* Although `which` is a symbol-table index for `v`,
        we don't actually record v, because the delayed

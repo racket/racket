@@ -98,8 +98,10 @@
 
 (define (strcpy s)
   (let* ([n (cast s _string _bytes)]
-         [p (malloc 'raw (add1 (bytes-length n)))])
-    (memcpy p n (add1 (bytes-length n)))
+         [len (bytes-length n)]
+         [p (malloc 'raw (add1 len))])
+    (memcpy p n len)
+    (ptr-set! p _byte len 0)
     p))
 
 (define (allocate-class-pair-the-hard-way superclass name)
@@ -508,7 +510,7 @@
                   [send send/typed]
                   [(send-arg ...) send-args])
       (quasisyntax/loc stx
-        ((send (type-vector #,result-type type ...))
+        ((send (type-vector '(tag ...) #,result-type type ...))
          send-arg ... #,(register-selector (combine #'(tag ...)))
          arg ...)))))
 
@@ -530,13 +532,13 @@
      (let ([m #'method])
        (check-method-name m stx)
        (quasisyntax/loc stx
-         ((objc_msgSend/typed (type-vector t)) target #,(register-selector (syntax-e m)))))]
+         ((objc_msgSend/typed (type-vector 'method t)) target #,(register-selector (syntax-e m)))))]
     [(_ target method)
      (not (keyword? (syntax-e #'target)))
      (let ([m #'method])
        (check-method-name m stx)
        (quasisyntax/loc stx
-         ((objc_msgSend/typed (type-vector _id)) target #,(register-selector (syntax-e m)))))]
+         ((objc_msgSend/typed (type-vector 'method _id)) target #,(register-selector (syntax-e m)))))]
     [(_ #:type result-type target method/arg ...)
      (build-send stx #'result-type 
                  #'objc_msgSend/typed #'(target)
@@ -561,37 +563,39 @@
                   prims)))))
 
 (define-syntax (type-vector stx)
-  (let ([types (cdr (syntax->list stx))])
-    (let ([vec-exp (quasisyntax/loc stx (vector . #,types))]
-          [type-exprs (cdr (syntax->list stx))])
-      (cond
-        [(andmap liftable-type? type-exprs)
-         ;; Recognized types => simple lift
-         (syntax-local-lift-expression #`(intern-type-vector #,vec-exp))]
-        [(andmap (lambda (type-expr)
-                   (and (identifier? type-expr)
-                        (pair? (identifier-binding type-expr))))
-                 type-exprs)
-         ;; Types bound as imports => lift with cache and `#%variable-reference-constant?` check
-         (let* ([expanded-type-exprs
-                 (map (lambda (type-expr)
-                        (local-expand type-expr 'expression #f))
-                      type-exprs)]
-                [expanded-vec-exp #`(vector . #,expanded-type-exprs)])
-           (cond
-             [(andmap identifier? expanded-type-exprs)
-              (let ([saved-vector-id (syntax-local-lift-expression #'(box #f))])
-                (quasisyntax/loc stx
-                  (or (unbox #,saved-vector-id)
-                      (maybe-cache-type-vector-in-box
-                       #,expanded-vec-exp
-                       #,saved-vector-id
-                       (vector #,@(for/list ([expanded-type-expr (in-list expanded-type-exprs)])
-                                    #`(variable-reference-constant? (#%variable-reference #,expanded-type-expr))))))))]
-             [else expanded-vec-exp]))]
-        [else
-         ;; General case: construct type vector every time
-         vec-exp]))))
+  (syntax-case stx ()
+    [(_ who . types)
+     (let* ([type-exprs (syntax->list #'types)]
+            [vec-exp (quasisyntax/loc stx (vector . #,type-exprs))])
+       (cond
+         [(andmap liftable-type? type-exprs)
+          ;; Recognized types => simple lift
+          (syntax-local-lift-expression #`(intern-type-vector #,vec-exp))]
+         [(andmap (lambda (type-expr)
+                    (and (identifier? type-expr)
+                         (pair? (identifier-binding type-expr))))
+                  type-exprs)
+          ;; Types bound as imports => lift with cache and `#%variable-reference-constant?` check
+          (let* ([expanded-type-exprs
+                  (map (lambda (type-expr)
+                         (local-expand type-expr 'expression #f))
+                       type-exprs)]
+                 [expanded-vec-exp #`(vector . #,expanded-type-exprs)])
+            (cond
+              [(andmap identifier? expanded-type-exprs)
+               (let ([saved-vector-id (syntax-local-lift-expression #'(box #f))])
+                 (quasisyntax/loc stx
+                   (or (unbox #,saved-vector-id)
+                       (maybe-cache-type-vector-in-box
+                        who
+                        #,expanded-vec-exp
+                        #,saved-vector-id
+                        (vector #,@(for/list ([expanded-type-expr (in-list expanded-type-exprs)])
+                                     #`(variable-reference-constant? (#%variable-reference #,expanded-type-expr))))))))]
+              [else expanded-vec-exp]))]
+         [else
+          ;; General case: construct type vector every time
+          vec-exp]))]))
 
 (define type-vectors (make-hash))
 (define (intern-type-vector v)
@@ -600,10 +604,15 @@
         (hash-set! type-vectors v v)
         v)))
 
-(define (maybe-cache-type-vector-in-box vec saved-vec-box const?s)
-  (when (for/and ([c? (in-vector const?s)])
-          c?)
-    (set-box! saved-vec-box vec))
+(define-logger ffi/unsafe/objc)
+
+(define (maybe-cache-type-vector-in-box who vec saved-vec-box const?s)
+  (cond
+    [(for/and ([c? (in-vector const?s)])
+       c?)
+     (set-box! saved-vec-box vec)]
+    [else
+     (log-ffi/unsafe/objc-debug "not a known-constant type vector for ~s" who)])
   vec)
 
 ;; ----------------------------------------
@@ -907,7 +916,7 @@
      (let ([m #'method])
        (check-method-name m stx)
        (quasisyntax/loc stx
-         ((objc_msgSendSuper/typed (type-vector t))
+         ((objc_msgSendSuper/typed (type-vector 'method t))
           (make-objc_super self super-class) 
           #,(register-selector (syntax-e m)))))]
     [(_ method)
@@ -915,7 +924,7 @@
      (let ([m #'method])
        (check-method-name m stx)
        (quasisyntax/loc stx
-         ((objc_msgSendSuper/typed (type-vector _id)) 
+         ((objc_msgSendSuper/typed (type-vector 'method _id)) 
           (make-objc_super self super-class)
           #,(register-selector (syntax-e m)))))]
     [(_ #:type result-type method/arg ...)

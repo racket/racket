@@ -479,11 +479,20 @@
                 `(,(if allow-set!-undefined? 'variable-set! 'variable-set!/check-undefined) ,(export-id ex) ,(schemify rhs) '#f)
                 `(set! ,id ,(schemify rhs)))]
            [`(variable-reference-constant? (#%variable-reference ,id))
-            (let ([id (unwrap id)])
-              (and (not (hash-ref mutated id #f))
-                   (let ([im (hash-ref imports id #f)])
-                     (or (not im)
-                         (known-constant? (import-lookup im))))))]
+            (define u-id (unwrap id))
+            (cond
+              [(hash-ref mutated u-id #f) #f]
+              [else
+               (define im (hash-ref imports u-id #f))
+               (cond
+                 [(not im)
+                  ;; Not imported and not mutable => a constant or local defined
+                  ;; in this linklet or a direct primitive reference
+                  #t]
+                 [(known-constant? (import-lookup im)) #t]
+                 [else
+                  ;; Not statically known
+                  `(variable-reference-constant? ,(schemify `(#%variable-reference ,id)))])])]
            [`(variable-reference-from-unsafe? (#%variable-reference))
             unsafe-mode?]
            [`(#%variable-reference)
@@ -500,9 +509,10 @@
                   ,v)
                 `(make-instance-variable-reference 
                   instance-variable-reference
-                  ',(if (hash-ref mutated u #f)
-                        'mutable
-                        'immutable)))]
+                  ',(cond
+                      [(hash-ref mutated u #f) 'mutable]
+                      [(hash-ref prim-knowns u #f) 'primitive]
+                      [else 'constant])))]
            [`(equal? ,exp1 ,exp2)
             (let ([exp1 (schemify exp1)]
                   [exp2 (schemify exp2)])

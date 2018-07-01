@@ -147,7 +147,7 @@
 
 (test #f
       variable-reference->module-path-index (#%variable-reference test))
-(test (module-path-index-join ''#%runtime #f)
+(test (module-path-index-join ''#%kernel #f)
       variable-reference->module-path-index (#%variable-reference +))
 (require (only-in racket/unsafe/ops
                   [unsafe-fx+ $$unsafe-fx+]))

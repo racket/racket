@@ -38,8 +38,7 @@
   (cond
     [(symbol? inst)
      ;; This case happens for `(#%variable-reference id)` where `id`
-     ;; refers directly to a primitive. The expander doesn't currently
-     ;; generate that, but just in case... We get a namespace for a
+     ;; refers directly to a primitive. We get a namespace for a
      ;; primitive instance; that might not be the same module as
      ;; reorted by `identifier-binding`, but close enough.
      (module->namespace `',inst (instance-data (variable-reference->instance vr #t)))]

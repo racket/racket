@@ -737,10 +737,9 @@
        (raise-syntax-error #f "identifier does not refer to a variable" var-id s))
      (if (expand-context-to-parsed? ctx)
          (parsed-#%variable-reference (keep-properties-only~ s)
-                                      ;; Intentionally not using `parsed-primitive-id`;
-                                      ;; see also `variable-reference->namespace`
                                       (cond
                                         [(top-m) (parsed-top-id var-id binding #f)]
+                                        [primitive? (parsed-primitive-id var-id binding #f)]
                                         [else (parsed-id var-id binding #f)]))
          s)]
     [else

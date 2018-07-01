@@ -43,15 +43,19 @@
 
 (define (linklet-performance-report!)
   (when measure-performance?
-    (let ([total 0])
+    (let* ([total (apply + (hash-table-map region-times (lambda (k v) (round (inexact->exact v)))))]
+           [gc-total (apply + (hash-table-map region-gc-times (lambda (k v) v)))]
+           [name-len (apply max (hash-table-map region-times (lambda (k v) (string-length (symbol->string k)))))]
+           [len (string-length (number->string total))]
+           [gc-len (string-length (number->string gc-total))])
       (define (pad v w)
         (let ([s (chez:format "~a" v)])
           (string-append (make-string (max 0 (- w (string-length s))) #\space)
                          s)))
       (define (report label n n-extra units extra)
-        (chez:printf ";; ~a: ~a~a ~a~a\n"
-                     (pad label 15)
-                     (pad (round (inexact->exact n)) 5)
+        (chez:printf ";; ~a:  ~a~a ~a~a\n"
+                     (pad label name-len)
+                     (pad (round (inexact->exact n)) len)
                      n-extra
                      units
                      extra))
@@ -61,16 +65,15 @@
       (for-each (lambda (p)
                   (let ([label (car p)]
                         [n (cdr p)])
-                    (set! total (+ total n))
                     (report label n
-                            (chez:format " [~a]" (pad (hashtable-ref region-gc-times label 0) 5))
+                            (chez:format " [~a]" (pad (hashtable-ref region-gc-times label 0) gc-len))
                             'ms
                             (let ([c (hashtable-ref region-counts label 0)])
                               (if (zero? c)
                                   ""
                                   (chez:format " ; ~a times" c))))))
                 (ht->sorted-list region-times))
-      (report 'total total "" 'ms "")
+      (report 'total total (#%format " [~a]" gc-total) 'ms "")
       (chez:printf ";;\n")
       (for-each (lambda (p) (report (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
                 (ht->sorted-list region-memories)))))

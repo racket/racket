@@ -218,6 +218,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
   intptr_t size_pre_retained = 0, size_pre_retained_double = 0, num_retained = 0, num_retained_double = 0, padding;
   int mappings_size = JIT_INIT_MAPPINGS_SIZE;
   int ok, max_extra_pushed = 0;
+  Scheme_Performance_State perf_state;
 #ifdef SET_DEFAULT_LONG_JUMPS
   int use_long_jumps = default_long_jumps;
 #endif
@@ -231,6 +232,8 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
   } else
     fnl_obj = NULL;
 #endif
+
+  scheme_performance_record_start(&perf_state);
 
   if (!jit_buffer_cache_registered) {
     jit_buffer_cache_registered = 1;
@@ -316,6 +319,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
          then switch over to long-jump mode. */
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
+        scheme_performance_record_end("jit", &perf_state);
         return scheme_generate_one(old_jitter, generate, data, gcable,
                                    save_ptr, ndata);
       }
@@ -368,6 +372,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
     if (!use_long_jumps) {
       if (check_long_mode((uintptr_t)buffer, size)) {
         /* start over */
+        scheme_performance_record_end("jit", &perf_state);
         return scheme_generate_one(old_jitter, generate, data, gcable,
                                    save_ptr, ndata);
       }
@@ -431,6 +436,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
       if (known_size) {
 	/* That was in the permanent area, so return: */
 	jit_flush_code(buffer, jit_get_raw_ip());
+        scheme_performance_record_end("jit", &perf_state);
 	return buffer;
       } else {
 	/* Allocate permanent area and jit again: */

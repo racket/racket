@@ -229,9 +229,10 @@
 
   (define (code-from-bytevector bv)
     (let ([i (open-bytevector-input-port bv)])
-      (performance-region
-       'outer
-       ((load-compiled-from-port i)))))
+      (let ([r (load-compiled-from-port i)])
+        (performance-region
+         'outer
+         (r)))))
 
   (define-values (lookup-code insert-code delete-code)
     (let ([get-procs!-maker
@@ -757,7 +758,7 @@
     (linklet-bundle-hash b))
 
   (define-record variable-reference (instance      ; the use-site instance
-                                     var-or-info)) ; the referenced variable
+                                     var-or-info)) ; the referenced variable, 'constant, 'mutable, #f, or 'primitive
               
   (define variable-reference->instance
     (case-lambda
@@ -775,12 +776,21 @@
             (if (eq? i #!bwp)
                 (variable-reference->instance vr #t)
                 i))]
+         [(eq? v 'primitive)
+          ;; FIXME: We don't have the right primitive instance name
+          ;; ... but '#%kernel is usually right.
+          '|#%kernel|]
          [else
           ;; Local variable, so same as use-site
           (variable-reference->instance vr #t)]))]))
 
   (define (variable-reference-constant? vr)
-    (eq? (variable-reference-var-or-info vr) 'constant))
+    (let ([v (variable-reference-var-or-info vr)])
+      (cond
+       [(variable? v)
+        (and (variable-constance v) #t)]
+       [(eq? v 'mutable) #f]
+       [else (and v #t)])))
 
   (define (variable-reference-from-unsafe? vr)
     #f)

@@ -1166,6 +1166,9 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
 {
   Scheme_Config *config;
   int enforce_const, set_undef, can_inline;
+  Scheme_Performance_State perf_state;
+
+  scheme_performance_record_start(&perf_state);
 
   config = scheme_current_config();
   enforce_const = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
@@ -1201,6 +1204,8 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
 
   if (validate_compile_result)
     scheme_validate_linklet(NULL, linklet);
+
+  scheme_performance_record_end("compile", &perf_state);
 
   return linklet;
 }
@@ -1351,6 +1356,9 @@ static void *instantiate_linklet_k(void)
   int depth;
   Scheme_Object *b, *v;
   Scheme_Hash_Tree *source_names;
+  Scheme_Performance_State perf_state;
+
+  scheme_performance_record_start(&perf_state);
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
@@ -1402,6 +1410,8 @@ static void *instantiate_linklet_k(void)
 
   if (!multi)
     v = scheme_check_one_value(v);
+
+  scheme_performance_record_end("instantiate", &perf_state);
 
   return (void *)v;
 }
@@ -1712,6 +1722,200 @@ int check_pruned_prefix(void *p) XFORM_SKIP_PROC
   return SCHEME_PREFIX_FLAGS(pf) & 0x1;
 }
 #endif
+
+/*========================================================================*/
+/*  Recorindg performance times                                           */
+/*========================================================================*/
+
+static intptr_t nested_delta, nested_gc_delta;
+static int perf_reg, perf_count;
+
+typedef struct {
+  const char *name;
+  intptr_t accum;
+  intptr_t gc_accum;
+  intptr_t count;
+} Performance_Entry;
+
+#define MAX_PERF_ENTRIES 16
+
+static Performance_Entry perf_entries[MAX_PERF_ENTRIES];
+
+static char *do_tab(int len, char *tab, int max_len)
+{
+  int i;
+
+  len = max_len - len;
+  if (len < 0)
+    len = 0;
+  for (i = 0; i < len; i++) {
+    tab[i] = ' ';
+  }
+  tab[i] = 0;
+
+  return tab;
+}
+
+static int numlen(intptr_t n)
+{
+  int len = 1;
+
+  while (n >= 10) {
+    n = n / 10;
+    len++;
+  }
+
+  return len;
+}
+
+static char *tab_number(intptr_t n, char *tab, int max_len)
+{
+  return do_tab(numlen(n), tab, max_len);
+}
+
+static char *tab_string(const char *s, char *tab, int max_len)
+{
+  return do_tab(strlen(s), tab, max_len);
+}
+
+static void sort_perf(int lo, int hi)
+{
+  int i, pivot;
+  
+  if (lo >= hi)
+    return;
+
+  pivot = lo;
+  for (i = lo + 1; i < hi; i++) {
+    if (perf_entries[i].accum < perf_entries[pivot].accum) {
+      Performance_Entry tmp = perf_entries[pivot];
+      perf_entries[pivot] = perf_entries[i];
+      perf_entries[i] = perf_entries[pivot+1];
+      perf_entries[pivot+1] = tmp;
+      pivot++;
+    }
+  }
+
+  sort_perf(lo, pivot);
+  sort_perf(pivot+1, hi);
+}
+
+static void show_perf()
+{
+  intptr_t total = 0, gc_total = 0;
+  int i, name_len = 0, len, gc_len;
+  char name_tab[16], tab[10], gc_tab[10];
+
+  sort_perf(0, perf_count);
+
+  for (i = 0; i < perf_count; i++) {
+    len = strlen(perf_entries[i].name);
+    if (len > name_len) name_len = len;
+    total += perf_entries[i].accum;
+    gc_total += perf_entries[i].gc_accum;
+  }
+
+  len = numlen(total);
+  gc_len = numlen(gc_total);
+
+  if (name_len >= sizeof(name_tab))
+    name_len = sizeof(name_tab) - 1;
+  if (len >= sizeof(tab))
+    len = sizeof(tab) - 1;
+  if (gc_len >= sizeof(gc_tab))
+    gc_len = sizeof(gc_tab) -1;
+  
+  for (i = 0; i < perf_count; i++) {
+    fprintf(stderr, ";; %s%s:  %s%"PRIdPTR " [%s%"PRIdPTR"] ms ; %"PRIdPTR" times\n",
+            tab_string(perf_entries[i].name, name_tab, name_len),
+            perf_entries[i].name,
+            tab_number(perf_entries[i].accum, tab, len),
+            perf_entries[i].accum,
+            tab_number(perf_entries[i].gc_accum, gc_tab, gc_len),
+            perf_entries[i].gc_accum,
+            perf_entries[i].count);
+  }
+
+  fprintf(stderr, ";; %stotal:  %s%"PRIdPTR " [%s%"PRIdPTR"] ms\n",
+          tab_string("total", name_tab, name_len),
+          tab_number(total, tab, len),
+          total,
+          tab_number(gc_total, gc_tab, gc_len),
+          gc_total);
+}
+
+void scheme_performance_record_start(GC_CAN_IGNORE Scheme_Performance_State *perf_state)
+{
+#if defined(MZ_USE_PLACES)
+  if (scheme_current_place_id != 0)
+    return;
+#endif
+  
+  if (!perf_reg) {
+    if (scheme_getenv("PLT_LINKLET_TIMES")) {
+      perf_reg = 1;
+      scheme_atexit(show_perf);
+    } else {
+      perf_reg = -1;
+    }
+  }
+
+  if (perf_reg < 0)
+    return;
+
+  perf_state->gc_start = scheme_total_gc_time;
+  perf_state->start = scheme_get_process_milliseconds();
+  perf_state->old_nested_delta = nested_delta;
+  perf_state->old_nested_gc_delta = nested_gc_delta;
+
+  nested_delta = 0;
+  nested_gc_delta = 0;
+}
+
+void scheme_performance_record_end(const char *who, GC_CAN_IGNORE Scheme_Performance_State *perf_state)
+{
+  int i;
+  intptr_t d, gc_d;
+  
+#if defined(MZ_USE_PLACES)
+  if (scheme_current_place_id != 0)
+    return;
+#endif
+
+  if (perf_reg < 0)
+    return;
+
+  for (i = 0; i < MAX_PERF_ENTRIES; i++) {
+    if (perf_entries[i].name) {
+      if (!strcmp(perf_entries[i].name, who))
+        break;
+    } else
+      break;
+  }
+
+  if (i >= MAX_PERF_ENTRIES)
+    return;
+
+  d = (scheme_get_process_milliseconds() - perf_state->start);
+  gc_d = (scheme_total_gc_time - perf_state->gc_start);
+
+  perf_state->old_nested_delta += d;
+  perf_state->old_nested_gc_delta += gc_d;
+
+  d -= nested_delta;
+  gc_d -= nested_gc_delta;
+
+  nested_delta = perf_state->old_nested_delta;
+  nested_gc_delta = perf_state->old_nested_gc_delta;
+
+  if (!perf_entries[i].name) {
+    perf_entries[i].name = who;
+    perf_count++;
+  }
+  perf_entries[i].accum += d;
+  perf_entries[i].gc_accum += gc_d;
+  perf_entries[i].count++;
+}
 
 /*========================================================================*/
 /*                         precise GC traversers                          */
