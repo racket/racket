@@ -154,6 +154,10 @@
 (test (module-path-index-join ''#%unsafe #f)
       variable-reference->module-path-index (#%variable-reference $$unsafe-fx+))
 
+(test #t variable-reference-constant? (#%variable-reference cons))
+(require (only-in ffi/unsafe _bool))
+(test #t variable-reference-constant? (#%variable-reference _bool))
+
 ;; ----------------------------------------
 
 (module phaser scheme/base 

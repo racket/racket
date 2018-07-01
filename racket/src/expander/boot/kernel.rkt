@@ -85,7 +85,7 @@
                 (lambda (data-box ns phase-shift phase-level self bulk-binding-registry insp)
                   (when (= 0 phase-level)
                     (for ([(sym val) (in-hash ht)])
-                      (namespace-set-variable! ns 0 sym val)))))
+                      (namespace-set-variable! ns 0 sym val #t)))))
    (module-path-index-resolve mpi)))
 
 (define (declare-reexporting-module! name require-names
