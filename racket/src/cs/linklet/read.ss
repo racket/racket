@@ -1,5 +1,7 @@
 (define (read-compiled-linklet in)
-  (read-compiled-linklet-or-directory in #t))
+  (performance-region
+   'read
+   (read-compiled-linklet-or-directory in #t)))
 
 (define (read-compiled-linklet-or-directory in initial?)
   ;; `#~` has already been read

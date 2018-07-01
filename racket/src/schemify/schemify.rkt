@@ -152,10 +152,9 @@
         (define v (known-inline->export-known (hash-ref defn-info id #f)
                                               prim-knowns imports exports))
         (cond
-         [(and v
-               (not (set!ed-mutated-state? (hash-ref mutated id #f))))
+         [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
           (define ext-id (ex-ext-id ex-id))
-          (hash-set knowns ext-id v)]
+          (hash-set knowns ext-id (or v a-known-constant))]
          [else knowns])))]))
 
 ;; ----------------------------------------

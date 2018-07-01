@@ -176,6 +176,11 @@
   (define (compile-to-port* s o)
     (call-with-system-wind (lambda () (compile-to-port s o))))
 
+  (define (eval/foreign e mode)
+    (performance-region
+     mode
+     (compile* e)))
+
   (define primitives (make-hasheq))
   (define (install-linklet-primitive-tables! . tables)
     (for-each
@@ -826,6 +831,8 @@
   (when omit-debugging?
     (generate-inspector-information (not omit-debugging?))
     (generate-procedure-source-information #t))
+
+  (set-foreign-eval! eval/foreign)
 
   (expand-omit-library-invocations #t)
 
