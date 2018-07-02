@@ -61,6 +61,9 @@ racket-so:
 
 RACKET_SO_ENV = @CONFIGURE_RACKET_SO_COMPILE@ env COMPILED_SCM_DIR="$(builddir)/compiled/"
 
+CS_PROGS = RACKET="$(RACKET)" SCHEME="$(SCHEME)" CONVERT_RACKET="$(CONVERT_RACKET)"
+CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@
+
 build-racket-so:
 	$(MAKE) expander
 	$(MAKE) thread
@@ -68,7 +71,7 @@ build-racket-so:
 	$(MAKE) regexp
 	$(MAKE) schemify
 	$(MAKE) known
-	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" RACKET="$(RACKET)" SCHEME="$(SCHEME)" BUILDDIR="$(builddir)/" CONVERT_RACKET="$(CONVERT_RACKET)"
+	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS) BUILDDIR="$(builddir)/"
 
 bounce:
 	$(MAKE) RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" srcdir="$(ABS_SRCDIR)" builddir="$(ABS_BUILDDIR)" $(TARGET)
@@ -113,10 +116,10 @@ $(SCHEME_BIN):
 EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
 racketcs@NOT_OSX@: raw_racketcs racket.so $(EMBED_DEPS)
-	$(RACKET) $(srcdir)/embed-boot.rkt raw_racketcs racketcs $(SCHEME_INC) racket.so
+	$(RACKET) $(srcdir)/embed-boot.rkt @COMPRESS_COMP@ raw_racketcs racketcs $(SCHEME_INC) racket.so
 
 gracketcs@NOT_OSX@: raw_gracketcs racket.so $(EMBED_DEPS)
-	$(RACKET) $(srcdir)/embed-boot.rkt raw_gracketcs gracketcs $(SCHEME_INC) racket.so
+	$(RACKET) $(srcdir)/embed-boot.rkt @COMPRESS_COMP@ raw_gracketcs gracketcs $(SCHEME_INC) racket.so
 
 BOOT_OBJS = boot.o $(SCHEME_INC)/kernel.o rktio/librktio.a
 
@@ -150,6 +153,7 @@ $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schve
 	env $(RACKET) $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "CS"
 
 BOOT_FILES = $(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot racket.so
+FW_BOOT_DEST = Racket.framework/Versions/$(FWVERSION)_CS/boot
 
 $(RKTFW): $(BOOT_OBJS) $(BOOT_FILES)
 	mkdir -p  Racket.framework/Versions/$(FWVERSION)_CS
@@ -157,8 +161,9 @@ $(RKTFW): $(BOOT_OBJS) $(BOOT_FILES)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
 	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	cp $(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot Racket.framework/Versions/$(FWVERSION)_CS/boot
-	cp racket.so Racket.framework/Versions/$(FWVERSION)_CS/boot
+	cp $(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot $(FW_BOOT_DEST)
+	cp racket.so $(FW_BOOT_DEST)
+	$(RACKET) $(srcdir)/adjust-compress.rkt @COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.so
 
 # ----------------------------------------
 # Common

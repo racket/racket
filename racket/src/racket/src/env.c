@@ -532,6 +532,8 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
   scheme_starting_up = 0;
 
+  scheme_performance_record_end("boot", NULL);
+
   --scheme_current_thread->suspend_break; /* created with breaks suspended */
 
 #ifdef TIME_STARTUP_PROCESS

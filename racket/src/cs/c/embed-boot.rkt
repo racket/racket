@@ -2,23 +2,33 @@
 (require racket/cmdline
          racket/file
          compiler/private/mach-o
-         compiler/private/elf)
+         compiler/private/elf
+         "adjust-compress.rkt")
 
 (command-line
+ #:once-each
+ [("--compress") "Leave compiled code files as compressed"
+  (enable-compress!)]
  #:args (src-file dest-file boot-dir racket.so)
 
- (define bstr1 (file->bytes (build-path boot-dir "petite.boot")))
- (define bstr2 (file->bytes (build-path boot-dir "scheme.boot")))
- (define bstr3 (file->bytes racket.so))
+ (define bstr1 (adjust-compress (file->bytes (build-path boot-dir "petite.boot"))))
+ (define bstr2 (adjust-compress (file->bytes (build-path boot-dir "scheme.boot"))))
+ (define bstr3 (adjust-compress (file->bytes racket.so)))
 
  (with-handlers ([exn? (lambda (x)
                          (when (file-exists? dest-file)
                            (delete-file dest-file))
                          (raise x))])
+   (define terminator
+     (if (compress-enabled?)
+         ;; zero byte stops a gzip-read sequence
+         #"\0"
+         ;; #!eof encoding stops(!) a fasl-read sequence
+         #"\26\4\fl"))
    (define data
-     (bytes-append bstr1 #"\0"
-                   bstr2 #"\0"
-                   bstr3 #"\0"))
+     (bytes-append bstr1 terminator
+                   bstr2 terminator
+                   bstr3 terminator))
    (define pos
      (case (path->string (system-library-subpath #f))
        [("x86_64-darwin" "i386-darwin" "x86_64-macosx" "i386-macosx")
@@ -59,8 +69,10 @@
    (define m (regexp-match-positions #rx"BooT FilE OffsetS:" i))
    (unless m
      (error 'embed-boot "cannot file boot-file offset tag"))
-   
+
+   (define terminator-len (bytes-length terminator))
+
    (file-position o (cdar m))
    (void (write-bytes (integer->integer-bytes pos 4 #t #f) o))
-   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) 1) 4 #t #f) o))
-   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) 2) 4 #t #f) o))))
+   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t #f) o))
+   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t #f) o))))

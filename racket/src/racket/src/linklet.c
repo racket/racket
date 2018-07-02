@@ -1876,7 +1876,8 @@ void scheme_performance_record_end(const char *who, GC_CAN_IGNORE Scheme_Perform
 {
   int i;
   intptr_t d, gc_d;
-  
+  Scheme_Performance_State zero_perf_state;
+
 #if defined(MZ_USE_PLACES)
   if (scheme_current_place_id != 0)
     return;
@@ -1895,6 +1896,11 @@ void scheme_performance_record_end(const char *who, GC_CAN_IGNORE Scheme_Perform
 
   if (i >= MAX_PERF_ENTRIES)
     return;
+
+  if (!perf_state) {
+    memset(&zero_perf_state, 0, sizeof(zero_perf_state));
+    perf_state = &zero_perf_state;
+  }
 
   d = (scheme_get_process_milliseconds() - perf_state->start);
   gc_d = (scheme_total_gc_time - perf_state->gc_start);

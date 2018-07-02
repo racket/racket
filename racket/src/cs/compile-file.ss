@@ -42,6 +42,7 @@
 (define whole-program? #f)
 (generate-inspector-information #f)
 (generate-procedure-source-information #t)
+(compile-compressed #f)
 (define build-dir "")
 
 (define-values (src deps)
@@ -54,6 +55,11 @@
      [(get-opt args "--unsafe" 0)
       => (lambda (args)
            (optimize-level 3)
+           (loop args))]
+     [(get-opt args "--compress" 0)
+      => (lambda (args)
+           (compile-compressed #t)
+           (putenv "PLT_CS_MAKE_COMPRESSED" "y") ; for "linklet.sls"
            (loop args))]
      [(get-opt args "--whole-program" 0)
       => (lambda (args)

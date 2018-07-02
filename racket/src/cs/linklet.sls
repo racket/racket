@@ -127,6 +127,16 @@
   (define omit-debugging? (not (getenv "PLT_CS_DEBUG")))
   (define measure-performance? (getenv "PLT_LINKLET_TIMES"))
 
+  (define compress-code? (cond
+                          [(getenv "PLT_LINKLET_COMPRESS") #t]
+                          [(getenv "PLT_LINKLET_NO_COMPRESS") #f]
+                          [else
+                           ;; Default selected at compile time, intended
+                           ;; to be a `configure` option
+                           (meta-cond
+                            [(getenv "PLT_CS_MAKE_COMPRESSED") #t]
+                            [else #f])]))
+
   (define gensym-on? (getenv "PLT_LINKLET_SHOW_GENSYM"))
   (define pre-lift-on? (getenv "PLT_LINKLET_SHOW_PRE_LIFT"))
   (define pre-jit-on? (getenv "PLT_LINKLET_SHOW_PRE_JIT"))
@@ -200,19 +210,24 @@
       (get)))
 
   (define (compile-to-bytevector s format)
-    (bytevector-compress
-     (cond
-      [(eq? format 'interpret)
-       (let-values ([(o get) (open-bytevector-output-port)])
-         (fasl-write* s o)
-         (get))]
-      [else (compile*-to-bytevector s)])))
+    (let ([bv (cond
+               [(eq? format 'interpret)
+                (let-values ([(o get) (open-bytevector-output-port)])
+                  (fasl-write* s o)
+                  (get))]
+               [else (compile*-to-bytevector s)])])
+      (if compress-code?
+          (bytevector-compress bv)
+          bv)))
 
   (define (eval-from-bytevector c-bv format)
-    (add-performance-memory! 'uncompress (bytevector-length c-bv))
-    (let* ([bv (performance-region
-                'uncompress
-                (bytevector-uncompress c-bv))])
+    (let ([bv (if (bytevector-uncompressed-fasl? c-bv)
+                  c-bv
+                  (begin
+                    (add-performance-memory! 'uncompress (bytevector-length c-bv))
+                    (performance-region
+                     'uncompress
+                     (bytevector-uncompress c-bv))))])
       (add-performance-memory! 'faslin (bytevector-length bv))
       (cond
        [(eq? format 'interpret)
@@ -233,6 +248,21 @@
         (performance-region
          'outer
          (r)))))
+
+  (define (bytevector-uncompressed-fasl? bv)
+    ;; There's not actually a way to distinguish a fasl header from a
+    ;; compression header, but the fasl header as a compression header
+    ;; would mean a > 1GB uncompressed bytevector, so we can safely
+    ;; assume that it's a fasl stream in that case.
+    (and (> (bytevector-length bv) 8)
+         (fx= 0 (bytevector-u8-ref bv 0))
+         (fx= 0 (bytevector-u8-ref bv 1))
+         (fx= 0 (bytevector-u8-ref bv 2))
+         (fx= 0 (bytevector-u8-ref bv 3))
+         (fx= (char->integer #\c) (bytevector-u8-ref bv 4))
+         (fx= (char->integer #\h) (bytevector-u8-ref bv 5))
+         (fx= (char->integer #\e) (bytevector-u8-ref bv 6))
+         (fx= (char->integer #\z) (bytevector-u8-ref bv 7))))
 
   (define-values (lookup-code insert-code delete-code)
     (let ([get-procs!-maker
