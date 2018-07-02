@@ -412,3 +412,9 @@
   (check-not-exn (λ () (test-contract-generation even-list/c/generate)))
   (check-exercise 2 void? even-list/c)
   (check-exercise 2 void? even-list/c/generate))
+
+(check-false
+ (contract-random-generate
+  (make-chaperone-contract
+   #:late-neg-projection
+   (λ (b) (λ (f v np) v)))))
