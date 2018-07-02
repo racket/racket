@@ -6,6 +6,10 @@
 (define current-start-time '())
 (define current-gc-start-time '())
 
+;; Beware that `performance-region` doesn't really handle escapes, and
+;; Racket-level thread swaps during `performance-region` can cause
+;; strange results.
+
 (define-syntax performance-region
   (syntax-rules ()
     [(_ label e ...) (measure-performance-region label (lambda () e ...))]))
@@ -13,27 +17,30 @@
 (define (measure-performance-region label thunk)
   (cond
    [measure-performance?
-    (set! current-start-time (cons (current-process-milliseconds) current-start-time))
-    (set! current-gc-start-time (cons (current-gc-milliseconds) current-gc-start-time))
+    (with-interrupts-disabled
+     (set! current-start-time (cons (current-process-milliseconds) current-start-time))
+     (set! current-gc-start-time (cons (current-gc-milliseconds) current-gc-start-time)))
     (begin0
      (thunk)
-     (let ([delta (- (current-process-milliseconds) (car current-start-time))]
-           [gc-delta (- (current-gc-milliseconds) (car current-gc-start-time))])
-       (hashtable-update! region-times label (lambda (v) (+ v delta)) 0)
-       (hashtable-update! region-gc-times label (lambda (v) (+ v gc-delta)) 0)
-       (hashtable-update! region-counts label add1 0)
-       (set! current-start-time (cdr current-start-time))
-       (set! current-gc-start-time (cdr current-gc-start-time))
-       (let loop ([l current-start-time] [gc-l current-gc-start-time])
-         (unless (null? l)
-           (set-car! l (+ (car l) delta))
-           (set-car! gc-l (+ (car gc-l) gc-delta))
-           (loop (cdr l) (cdr gc-l))))))]
+     (with-interrupts-disabled
+      (let ([delta (- (current-process-milliseconds) (car current-start-time))]
+            [gc-delta (- (current-gc-milliseconds) (car current-gc-start-time))])
+        (hashtable-update! region-times label (lambda (v) (+ v delta)) 0)
+        (hashtable-update! region-gc-times label (lambda (v) (+ v gc-delta)) 0)
+        (hashtable-update! region-counts label add1 0)
+        (set! current-start-time (cdr current-start-time))
+        (set! current-gc-start-time (cdr current-gc-start-time))
+        (let loop ([l current-start-time] [gc-l current-gc-start-time])
+          (unless (null? l)
+            (set-car! l (+ (car l) delta))
+            (set-car! gc-l (+ (car gc-l) gc-delta))
+            (loop (cdr l) (cdr gc-l)))))))]
    [else (thunk)]))
 
 (define (add-performance-memory! label delta)
   (when measure-performance?
-    (hashtable-update! region-memories label (lambda (v) (+ v delta)) 0)))
+    (with-interrupts-disabled
+     (hashtable-update! region-memories label (lambda (v) (+ v delta)) 0))))
 
 (define (linklet-performance-init!)
   (hashtable-set! region-times 'boot
