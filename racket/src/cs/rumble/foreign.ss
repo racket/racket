@@ -471,12 +471,12 @@
    [(types abi alignment)
     (let ([make-decls
            (escapes-ok
-             (lambda (id)
-               (let-values ([(reps decls) (types->reps types)])
+             (lambda (id next!-id)
+               (let-values ([(reps decls) (types->reps types next!-id)])
                  (append decls
                          `((define-ftype ,id
                              (struct ,@(map (lambda (rep)
-                                              `[,(gensym) ,rep])
+                                              `[,(next!-id) ,rep])
                                             reps))))))))])
       (let-values ([(size alignment) (ctypes-sizeof+alignof types alignment)])
         (create-compound-ctype 'struct
@@ -493,12 +493,12 @@
             types)
   (let ([make-decls
          (escapes-ok
-           (lambda (id)
-             (let-values ([(reps decls) (types->reps types)])
+           (lambda (id next!-id)
+             (let-values ([(reps decls) (types->reps types next!-id)])
                (append decls
                        `((define-ftype ,id
                            (union ,@(map (lambda (rep)
-                                           `[,(gensym) ,rep])
+                                           `[,(next!-id) ,rep])
                                          reps))))))))]
         [size (apply max (map ctype-sizeof types))]
         [alignment (apply max (map ctype-alignof types))])
@@ -516,8 +516,8 @@
   (check who exact-nonnegative-integer? count)
   (let ([make-decls
          (escapes-ok
-           (lambda (id)
-             (let-values ([(reps decls) (types->reps (list type))])
+           (lambda (id next!-id)
+             (let-values ([(reps decls) (types->reps (list type) next!-id)])
                (append decls
                        `((define-ftype ,id
                            (array ,count ,(car reps))))))))]
@@ -1286,6 +1286,10 @@
 (define (set-foreign-eval! proc)
   (set! eval/foreign proc))
 
+;; Cache generated code for an underlying foreign call or callable shape:
+(define ffi-expr->code (make-weak-hash))  ; expr to weak cell of code
+(define ffi-code->expr (make-weak-eq-hashtable)) ; keep exprs alive as long as code lives
+
 (define/who ffi-call
   (case-lambda
    [(p in-types out-type)
@@ -1343,22 +1347,29 @@
                                      (if (eq? host-rep 'array)
                                          'void*
                                          host-rep))]
+         [next!-id (let ([counter 0])
+                     ;; Like `gensym`, but deterministic --- and doesn't
+                     ;; have to be totally unique, as long as it doesn't
+                     ;; collide with other code that we generate
+                     (lambda ()
+                       (set! counter (add1 counter))
+                       (string->symbol (string-append "type_" (number->string counter)))))]
          [ids (map (lambda (in-type)
                      (and (by-value? in-type)
-                          (gensym)))
+                          (next!-id)))
                    in-types)]
          [ret-id (and (by-value? out-type)
-                      (gensym))]
+                      (next!-id))]
          [decls (let loop ([in-types in-types] [ids ids] [decls '()])
                   (cond
                    [(null? in-types) decls]
                    [(car ids)
-                    (let ([id-decls ((compound-ctype-get-decls (car in-types)) (car ids))])
+                    (let ([id-decls ((compound-ctype-get-decls (car in-types)) (car ids) next!-id)])
                       (loop (cdr in-types) (cdr ids) (append decls id-decls)))]
                    [else
                     (loop (cdr in-types) (cdr ids) decls)]))]
          [ret-decls (if ret-id
-                        ((compound-ctype-get-decls out-type) ret-id)
+                        ((compound-ctype-get-decls out-type) ret-id next!-id)
                         '())]
          [ret-size (and ret-id (ctype-sizeof out-type))]
          [gen-proc+ret-maker+arg-makers
@@ -1392,7 +1403,16 @@
                                                (make-ftype-pointer ,id p))))
                                      ids)
                                 '())))])
-            (eval/foreign expr (if call? 'comp-ffi 'comp-ffi-back)))]
+            (let* ([wb (with-interrupts-disabled
+                        (weak-hash-ref ffi-expr->code expr #f))]
+                   [code (if wb (car wb) #!bwp)])
+              (if (eq? code #!bwp)
+                  (let ([code (eval/foreign expr (if call? 'comp-ffi 'comp-ffi-back))])
+                    (hashtable-set! ffi-code->expr (car code) expr)
+                    (with-interrupts-disabled
+                     (weak-hash-set! ffi-expr->code expr (weak-cons code #f)))
+                    code)
+                  code)))]
          [gen-proc (car gen-proc+ret-maker+arg-makers)]
          [ret-maker (cadr gen-proc+ret-maker+arg-makers)]
          [arg-makers (cddr gen-proc+ret-maker+arg-makers)]
@@ -1480,15 +1500,15 @@
                             [(void*) (cpointer-address v)]
                             [else v]))))))])))
 
-(define (types->reps types)
+(define (types->reps types next!-id)
   (let loop ([types types] [reps '()] [decls '()])
     (cond
      [(null? types) (values (reverse reps) decls)]
      [else
       (let ([type (car types)])
         (if (compound-ctype? type)
-            (let* ([id (gensym)]
-                   [id-decls ((compound-ctype-get-decls type) id)])
+            (let* ([id (next!-id)]
+                   [id-decls ((compound-ctype-get-decls type) id next!-id)])
               (loop (cdr types) (cons id reps) (append id-decls decls)))
             (loop (cdr types) (cons (ctype-host-rep type) reps) decls)))])))
 
