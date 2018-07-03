@@ -481,10 +481,21 @@
    (when init-library
      (namespace-require+ init-library))
 
-   (for-each (lambda (ld) (ld))
-             (reverse loads))
+   (call-with-continuation-prompt
+    (lambda ()
+      (for-each (lambda (ld) (ld))
+                (reverse loads)))
+    (default-continuation-prompt-tag)
+    ;; If any load escapes, then set the exit value and
+    ;; stop running loads (but maybe continue with the REPL)
+    (lambda (proc)
+      (set! exit-value 1)
+      ;; Let the actual default handler report an arity mismatch, etc.
+      (call-with-continuation-prompt
+       (lambda () (abort-current-continuation (default-continuation-prompt-tag) proc)))))
 
    (when repl?
+     (set! exit-value 0)
      (when repl-init?
        (let ([m (get-repl-init-filename)])
          (when m
@@ -498,6 +509,6 @@
      (unless gracket?
        (newline)))
 
-   (|#%app| (|#%app| executable-yield-handler) 0)
+   (|#%app| (|#%app| executable-yield-handler) exit-value)
 
    (exit exit-value))))

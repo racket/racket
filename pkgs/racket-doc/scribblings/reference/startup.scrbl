@@ -121,7 +121,9 @@ specified. Requiring @racketmodname[racket/gui/base] sets this parameter call
 The default exit status for a Racket or GRacket process is non-zero if
 an error occurs during a command-line @racket[eval] (via @Flag{e},
 etc.), @racket[load] (via @Flag{f}, @Flag{r}, etc.), or
-@racket[require] (via @Flag{-l}, @Flag{t}, etc.), but only when no
+@racket[require] (via @Flag{l}, @Flag{t}, etc.)---or, more generally,
+if the abort handler of the @tech{prompt} surrounding those evalutions
+is called---but only when no
 read-eval-print loop is started. Otherwise, the default exit status is
 @racket[0].
 

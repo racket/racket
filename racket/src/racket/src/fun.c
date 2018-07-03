@@ -1155,7 +1155,7 @@ static void *apply_again_k(void)
 
   if (num_vals != 1) {
     scheme_wrong_return_arity("call-with-continuation-prompt", 1, num_vals, (Scheme_Object **)val,
-                              "application of default prompt handler");
+                              "\n  in: application of default prompt handler");
     return NULL;
   } else {
     scheme_check_proc_arity("default-continuation-prompt-handler", 0, 0, 1, &val);
@@ -6699,9 +6699,9 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
          * as the number of aborted values
          */
         if (num_args == 1 && num_args != argc)
-          scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "use of redirecting procedure");
+          scheme_wrong_return_arity(name, argc, 1, (Scheme_Object **)(vals[0]), "\n  in: use of redirecting procedure");
         else if (num_args != argc)
-          scheme_wrong_return_arity(name, argc, num_args, vals, "use of redirecting procedure");
+          scheme_wrong_return_arity(name, argc, num_args, vals, "\n   in: use of redirecting procedure");
 
         if (mode == 3) {
           if (!scheme_check_proc_arity(NULL, 1, 0, argc, vals)) {
@@ -7080,7 +7080,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
       scheme_check_proc_arity("default-continuation-prompt-handler", 0, 0, argc, argv);
     } else {
       scheme_wrong_return_arity("call-with-continuation-prompt", 1, argc, argv,
-                                "application of default prompt handler");
+                                "\n  in: application of default prompt handler");
     }
   }
 
