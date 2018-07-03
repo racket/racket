@@ -125,6 +125,7 @@
                   (end-atomic)
                   (loop #f #f)]
                  [else
+                  (end-atomic)
                   ;; Return result in a thunk:
                   (lambda () #f)])]
               [(and (all-asynchronous? s)

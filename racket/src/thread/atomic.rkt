@@ -41,6 +41,7 @@
      (set! end-atomic-callback #f)
      (current-atomic n)
      (cb)]
+    [(negative? n) (internal-error "not in atomic mode to end")]
     [else
      (current-atomic n)]))
 
