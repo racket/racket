@@ -258,8 +258,9 @@
                                      #'select-handler/breaks-as-is)
                                e bpz
                                (list (cons pred-name handler-name) ...)))
-                            (lambda ()
-                              expr1 expr ...)))))))])))])
+                            #,(syntax/loc stx
+                                (lambda ()
+                                  expr1 expr ...))))))))])))])
       (values (wh #t) (wh #f))))
 
   (define (call-with-exception-handler exnh thunk)
