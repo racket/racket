@@ -34,7 +34,7 @@
     [(= v amt) v]
     [else
      (let loop ([got v])
-       (define v (read-some-bytes! who in bstr got amt #:keep-eof? #t #:special-ok? #f))
+       (define v (read-some-bytes! who in bstr (+ start got) end #:keep-eof? #t #:special-ok? #f))
        (cond
          [(eof-object? v)
           got]

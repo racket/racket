@@ -158,6 +158,7 @@
      
      #:read-byte
      (lambda ()
+       (assert-atomic)
        (cond
          [(input-empty?)
           (if output-closed?
@@ -177,6 +178,7 @@
 
      #:read-in
      (lambda (dest-bstr dest-start dest-end copy?)
+       (assert-atomic)
        (cond
          [(input-empty?)
           (if output-closed?
@@ -205,6 +207,7 @@
 
      #:peek-byte
      (lambda ()
+       (assert-atomic)
        (cond
          [(input-empty?)
           (if output-closed?
@@ -216,6 +219,7 @@
      
      #:peek-in
      (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
+       (assert-atomic)
        (define content-amt (content-length))
        (cond
          [(and progress-evt
@@ -250,6 +254,7 @@
 
      #:byte-ready
      (lambda (work-done!)
+       (assert-atomic)
        (or output-closed?
            (not (zero? (content-length)))))
 
@@ -273,6 +278,7 @@
      ;; Allows `amt` to be zero and #f for other arguments,
      ;; which is helpful for `open-input-peek-via-read`.
      (lambda (amt progress-evt ext-evt finish)
+       (assert-atomic)
        ;; `progress-evt` is a `semepahore-peek-evt`, and `ext-evt`
        ;; is constrained; we can send them over to different threads
        (cond
@@ -314,6 +320,7 @@
      #:write-out
      ;; in atomic mode
      (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+       (assert-atomic)
        (let try-again ()
          (define top-pos (if (zero? start)
                              (sub1 len)

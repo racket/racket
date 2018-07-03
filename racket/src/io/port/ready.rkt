@@ -31,7 +31,7 @@
     (cond
       [(byte-ready? in)
        (define peek-byte (core-input-port-peek-byte in))
-       (define b (and peek-byte (peek-byte)))
+       (define b (and peek-byte (atomically (peek-byte))))
        (cond
          [(and b
                (or (eof-object? b)

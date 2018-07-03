@@ -43,6 +43,7 @@
           'end-atomic end-atomic
           'start-atomic/no-interrupts start-atomic/no-interrupts
           'end-atomic/no-interrupts end-atomic/no-interrupts
+          'in-atomic-mode? in-atomic-mode?
           'current-custodian current-custodian
           'unsafe-custodian-register unsafe-custodian-register
           'unsafe-custodian-unregister unsafe-custodian-unregister

@@ -180,7 +180,9 @@
                  (rktio_set_file_modify_seconds rktio host-path secs)
                  (rktio_get_file_modify_seconds rktio host-path)))
   (define r (if (and (not secs) (not (rktio-error? r0)))
-                (rktio_timestamp_ref r0)
+                (begin0
+                  (rktio_timestamp_ref r0)
+                  (rktio_free r0))
                 r0))
   (end-atomic)
   (cond

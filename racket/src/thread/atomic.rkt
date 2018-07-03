@@ -12,6 +12,8 @@
          start-atomic/no-interrupts
          end-atomic/no-interrupts
 
+         in-atomic-mode?
+
          set-end-atomic-callback!
 
          start-implicit-atomic-mode
@@ -52,6 +54,9 @@
 (define (end-atomic/no-interrupts)
   (host:enable-interrupts)
   (end-atomic))
+
+(define (in-atomic-mode?)
+  (positive? (current-atomic)))
 
 ;; ----------------------------------------
 
