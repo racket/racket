@@ -230,7 +230,7 @@ DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
 
-# Redirected for "as-is":
+# Redirected for `cs-as-is` and `cs-base`:
 BASE_TARGET = plain-minimal-in-place
 CS_SETUP_TARGET = plain-in-place-after-base
 
@@ -240,6 +240,12 @@ cs:
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) racket-then-cs ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+
+cs-in-place:
+	$(MAKE) cs
+
+cs-base:
+	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
 
 cs-as-is:
 	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
@@ -271,6 +277,9 @@ cs-after-racket-with-abs-paths:
 	$(MAKE) base-config
 	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
+
+nothing-after-base:
+	echo base done
 
 racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
 	mkdir -p cd racket/src/build/cs
