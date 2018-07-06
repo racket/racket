@@ -2691,5 +2691,20 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test '(new orig) dynamic-require ''mixes-top-level-namespaces 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that re-expansion of a `(module _name #f ....)`
+;; submodule doesn't lose track of the base scope of the
+;; submodule --- which would, for example, cause a definition
+;; of `x` in the original submodule to be mapped to an
+;; inaccessible `x.1`.
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval-syntax (expand '(module m racket/base
+                          (require syntax/location)
+                          (module* check #f
+                            (define x 42)))))
+  (dynamic-require '(submod 'm check) #f)
+  (eval 'x (module->namespace '(submod 'm check))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

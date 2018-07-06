@@ -85,7 +85,6 @@
 (define (expand-module s init-ctx enclosing-self
                        #:always-produce-compiled? [always-produce-compiled? #f]
                        #:keep-enclosing-scope-at-phase [keep-enclosing-scope-at-phase #f]
-                       #:enclosing-all-scopes-stx [enclosing-all-scopes-stx #f]
                        #:enclosing-is-cross-phase-persistent? [enclosing-is-cross-phase-persistent? #f]
                        #:enclosing-requires+provides [enclosing-r+p #f]
                        #:mpis-for-enclosing-reset [mpis-for-enclosing-reset #f]
@@ -129,11 +128,7 @@
 
    ;; Initial require name provides the module's base scopes
    (define initial-require-s (apply-module-scopes (m 'initial-require)))
-   (define all-scopes-s (if enclosing-all-scopes-stx
-                            (apply-module-scopes
-                             (syntax-shift-phase-level enclosing-all-scopes-stx
-                                                       keep-enclosing-scope-at-phase))
-                            initial-require-s))
+   (define all-scopes-s initial-require-s)
 
    (define root-ctx (make-root-expand-context
                      #:self-mpi self
@@ -1238,7 +1233,6 @@
                  (expand-submodule shifted-s self submod-ctx
                                    #:is-star? #t
                                    #:keep-enclosing-scope-at-phase neg-phase
-                                   #:enclosing-all-scopes-stx all-scopes-s
                                    #:enclosing-requires+provides requires+provides
                                    #:enclosing-is-cross-phase-persistent? enclosing-is-cross-phase-persistent?
                                    #:mpis-to-reset mpis-to-reset
@@ -1319,7 +1313,6 @@
                           #:keep-enclosing-scope-at-phase [keep-enclosing-scope-at-phase #f]
                           #:enclosing-requires+provides [enclosing-r+p #f]
                           #:enclosing-is-cross-phase-persistent? [enclosing-is-cross-phase-persistent? #f]
-                          #:enclosing-all-scopes-stx [enclosing-all-scopes-stx #f]
                           #:mpis-to-reset mpis-to-reset
                           #:declared-submodule-names declared-submodule-names
                           #:compiled-submodules compiled-submodules
@@ -1345,7 +1338,6 @@
                    self
                    #:always-produce-compiled? #t
                    #:keep-enclosing-scope-at-phase keep-enclosing-scope-at-phase
-                   #:enclosing-all-scopes-stx enclosing-all-scopes-stx
                    #:enclosing-requires+provides enclosing-r+p
                    #:enclosing-is-cross-phase-persistent? enclosing-is-cross-phase-persistent?
                    #:mpis-for-enclosing-reset mpis-to-reset
