@@ -2764,7 +2764,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (λ (c) (λ (x) #t))]
           [#:late-neg-projection
            late-neg-proj
-           (or/c #f (-> contract? blame? (-> any/c any/c any/c)))
+           (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
            #f]
           [#:val-first-projection 
            val-first-proj
@@ -2820,7 +2820,7 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            (λ (c) (λ (x) #t))]
           [#:late-neg-projection
            late-neg-proj
-           (or/c #f (-> contract? blame? (-> any/c any/c any/c)))
+           (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
            #f]
           [#:val-first-projection 
            val-first-proj
