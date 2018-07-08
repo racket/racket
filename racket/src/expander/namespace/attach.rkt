@@ -8,17 +8,17 @@
 (provide namespace-attach-module
          namespace-attach-module-declaration)
 
-(define (namespace-attach-module src-namespace	 	 	 	 
-                                 mod-path
-                                 [dest-namespace (current-namespace)])
-  (do-attach-module 'namespace-attach-module
+(define/who (namespace-attach-module src-namespace
+                                     mod-path
+                                     [dest-namespace (current-namespace)])
+  (do-attach-module who
                     src-namespace mod-path dest-namespace
                     #:attach-instances? #t))
 
-(define (namespace-attach-module-declaration src-namespace	 	 	 	 
+(define/who (namespace-attach-module-declaration src-namespace
                                              mod-path
                                              [dest-namespace (current-namespace)])
-  (do-attach-module 'namespace-attach-module-declaration
+  (do-attach-module who
                     src-namespace mod-path dest-namespace
                     #:attach-instances? #f))
 
@@ -40,7 +40,7 @@
   
   (define todo (make-hasheq)) ; module name -> phase -> namespace-or-#f
   
-  (define missing (gensym 'missing))
+  (define missing '#:missing)
 
   ;; Loop to check and decide what to transfer
   (let loop ([mpi (module-path-index-join
@@ -53,7 +53,6 @@
              [attach-phase phase])
     (define mod-name (parameterize ([current-namespace src-namespace])
                        (module-path-index-resolve mpi)))
-    
     (define attach-this-instance? (and attach-instances? (eqv? phase attach-phase)))
     (define m-ns (hash-ref (hash-ref todo mod-name #hasheqv()) phase missing))
 
