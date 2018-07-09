@@ -101,7 +101,9 @@
       (test (srcloc (path->string (build-path root 'same)) 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path root 'same) 1 2 3 4))))
     (test (srcloc ".../a/b" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path (current-directory) "a" "b") 1 2 3 4)))))
 
-(let* ([rel-p (build-path "nested" "data.rktd")]
+(let* ([file-p (build-path "data.rktd")]
+       [dir-p (build-path "nested")]
+       [rel-p (build-path dir-p file-p)]
        [p (build-path (current-directory) rel-p)])
   (define-values (bstr srcloc-bstr)
     (parameterize ([current-write-relative-directory (current-directory)])
@@ -113,7 +115,30 @@
     (test (srcloc rel-p 10 20 30 40) fasl->s-exp srcloc-bstr))
   (parameterize ([current-load-relative-directory (current-directory)])
     (test p fasl->s-exp bstr)
-    (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr)))
+    (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr))
+
+  ;; Try a pair for `current-write-relative-directory`
+  (let* ([alt-rel-p (build-path "alternate" "bytes.rktd")]
+         [alt-p (build-path (current-directory) alt-rel-p)])
+    (define-values (bstr srcloc-bstr bstr2 srcloc-bstr2)
+      (parameterize ([current-write-relative-directory (cons (build-path (current-directory) dir-p)
+                                                             (current-directory))])
+        (values
+         (s-exp->fasl p)
+         (s-exp->fasl (srcloc p 10 20 30 40))
+         (s-exp->fasl alt-p)
+         (s-exp->fasl (srcloc alt-p 10 20 30 40)))))
+    (parameterize ([current-load-relative-directory #f])
+      (test file-p fasl->s-exp bstr)
+      (test (srcloc file-p 10 20 30 40) fasl->s-exp srcloc-bstr)
+      (test (build-path 'up alt-rel-p) fasl->s-exp bstr2)
+      (test (srcloc (build-path 'up alt-rel-p) 10 20 30 40) fasl->s-exp srcloc-bstr2))
+    (parameterize ([current-load-relative-directory (build-path (current-directory) dir-p)])
+      (test p fasl->s-exp bstr)
+      (test (srcloc p 10 20 30 40) fasl->s-exp srcloc-bstr)
+      (let ([up-alt-p (build-path (current-directory) dir-p 'up alt-rel-p)])
+        (test up-alt-p fasl->s-exp bstr2)
+        (test (srcloc up-alt-p 10 20 30 40) fasl->s-exp srcloc-bstr2)))))
 
 (test (srcloc ".../a" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path 'up "a") 1 2 3 4)))
 (test (srcloc ".../a" 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path 'same "a") 1 2 3 4)))
