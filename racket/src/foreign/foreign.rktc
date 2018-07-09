@@ -2957,7 +2957,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   a[0] = data;
 
-  scheme_performance_record_end("comp-ffi", &perf_state);
+  scheme_performance_record_end("comp-ffi-call", &perf_state);
 
   if (curry) {
     return scheme_make_prim_closure_w_arity(make_ffi_call_from_curried, 

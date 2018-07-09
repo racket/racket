@@ -54,33 +54,70 @@
            [gc-total (apply + (hash-table-map region-gc-times (lambda (k v) v)))]
            [name-len (apply max (hash-table-map region-times (lambda (k v) (string-length (symbol->string k)))))]
            [len (string-length (number->string total))]
-           [gc-len (string-length (number->string gc-total))])
-      (define (pad v w)
+           [gc-len (string-length (number->string gc-total))]
+           [categories '((read (read-bundle faslin-code))
+                         (comp-ffi (comp-ffi-call comp-ffi-back))
+                         (run (instantiate outer)))]
+           [region-subs (make-eq-hashtable)]
+           [region-gc-subs (make-eq-hashtable)])
+      (define (pad v w combine)
         (let ([s (chez:format "~a" v)])
-          (string-append (make-string (max 0 (- w (string-length s))) #\space)
-                         s)))
-      (define (report label n n-extra units extra)
-        (chez:printf ";; ~a:  ~a~a ~a~a\n"
-                     (pad label name-len)
-                     (pad (round (inexact->exact n)) len)
+          (combine (make-string (max 0 (- w (string-length s))) #\space)
+                   s)))
+      (define (pad-left v w) (pad v w string-append))
+      (define (pad-right v w) (pad v w (lambda (p s) (string-append s p))))
+      (define (report level label n n-extra units extra)
+        (chez:printf ";; ~a~a~a  ~a~a ~a~a\n"
+                     (make-string (* level 2) #\space)
+                     (pad-right label name-len)
+                     (make-string (* (- 3 level) 2) #\space)
+                     (pad-left (round (inexact->exact n)) len)
                      n-extra
                      units
                      extra))
       (define (ht->sorted-list ht)
         (list-sort (lambda (a b) (< (cdr a) (cdr b)))
                    (hash-table-map ht cons)))
-      (for-each (lambda (p)
-                  (let ([label (car p)]
-                        [n (cdr p)])
-                    (report label n
-                            (chez:format " [~a]" (pad (hashtable-ref region-gc-times label 0) gc-len))
-                            'ms
-                            (let ([c (hashtable-ref region-counts label 0)])
-                              (if (zero? c)
-                                  ""
-                                  (chez:format " ; ~a times" c))))))
-                (ht->sorted-list region-times))
-      (report 'total total (#%format " [~a]" gc-total) 'ms "")
+      (define (sum-values ht keys key subs)
+        (define sub-ht (make-eq-hashtable))
+        (hashtable-set! subs key sub-ht)
+        (let loop ([keys keys])
+          (cond
+           [(null? keys) 0]
+           [else
+            (let* ([sub-key (car keys)]
+                   [v (hashtable-ref ht sub-key 0)])
+              (hashtable-set! sub-ht sub-key v)
+              (hashtable-delete! ht sub-key)
+              (+ v (loop (cdr keys))))])))
+      (define (report-time level label n gc-ht)
+        (report level label n
+                (chez:format " [~a]" (pad-left (hashtable-ref gc-ht label 0) gc-len))
+                'ms
+                (let ([c (hashtable-ref region-counts label 0)])
+                  (if (zero? c)
+                      ""
+                      (chez:format " ; ~a times" c)))))
+      (for-each (lambda (l)
+                  (let* ([cat (car l)]
+                         [subs (cadr l)]
+                         [t (sum-values region-times subs cat region-subs)]
+                         [gc-t (sum-values region-gc-times subs cat region-gc-subs)])
+                    (unless (and (zero? t) (zero? gc-t))
+                      (hashtable-set! region-times cat t)
+                      (hashtable-set! region-gc-times cat gc-t))))
+                categories)
+      (let loop ([ht region-times] [gc-ht region-gc-times] [level 0])
+        (for-each (lambda (p)
+                    (let ([label (car p)]
+                          [n (cdr p)])
+                      (report-time level label n gc-ht)
+                      (let ([sub-ht (hashtable-ref region-subs label #f)]
+                            [sub-gc-ht (hashtable-ref region-gc-subs label #f)])
+                        (when sub-ht
+                          (loop sub-ht sub-gc-ht (add1 level))))))
+                  (ht->sorted-list ht)))
+      (report 0 'total total (#%format " [~a]" gc-total) 'ms "")
       (chez:printf ";;\n")
-      (for-each (lambda (p) (report (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
+      (for-each (lambda (p) (report 0 (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
                 (ht->sorted-list region-memories)))))

@@ -1741,6 +1741,26 @@ typedef struct {
 
 static Performance_Entry perf_entries[MAX_PERF_ENTRIES];
 
+#define MAX_PERF_CATS    3
+#define MAX_PERF_SUBS    3
+
+typedef struct {
+  const char *name;
+  Performance_Entry perf_entries[MAX_PERF_SUBS];
+  int perf_count;
+} Performance_Cat;
+
+typedef struct {
+  const char *entry;
+  const char *cat;
+} Performace_Recat;
+
+static Performace_Recat recats[] = { { "instantiate", "run" },
+                                     { "jit", "run" },
+                                     { "comp-ffi-call", "comp-ffi" },
+                                     { "comp-ffi-back", "comp-ffi" },
+                                     { NULL, NULL} };
+
 static char *do_tab(int len, char *tab, int max_len)
 {
   int i;
@@ -1778,7 +1798,7 @@ static char *tab_string(const char *s, char *tab, int max_len)
   return do_tab(strlen(s), tab, max_len);
 }
 
-static void sort_perf(int lo, int hi)
+static void sort_perf(Performance_Entry *pref_entries, int lo, int hi)
 {
   int i, pivot;
   
@@ -1796,26 +1816,66 @@ static void sort_perf(int lo, int hi)
     }
   }
 
-  sort_perf(lo, pivot);
-  sort_perf(pivot+1, hi);
+  sort_perf(perf_entries, lo, pivot);
+  sort_perf(perf_entries, pivot+1, hi);
 }
 
-static void show_perf()
+static void show_perf(Performance_Entry *perf_entries, int perf_count,
+                      int len, int name_len,
+                      int depth)
 {
   intptr_t total = 0, gc_total = 0;
-  int i, name_len = 0, len, gc_len;
-  char name_tab[16], tab[10], gc_tab[10];
+  int i, j, k, m, n, gc_len;
+  char name_tab[16], tab[10], gc_tab[10], pre_indent[8], post_indent[8];
+  Performance_Cat cats[MAX_PERF_CATS];
+  int num_cats = 0;
 
-  sort_perf(0, perf_count);
+  memset(cats, 0, sizeof(cats));
+
+  if (!depth) {
+    for (i = 0; i < perf_count; i++) {
+      for (j = 0; recats[j].entry; j++) {
+        if (!strcmp(recats[j].entry, perf_entries[i].name)) {
+          for (m = 0; m < num_cats; m++) {
+            if (!strcmp(recats[j].cat, cats[m].name))
+              break;
+          }
+          if (num_cats <= m) num_cats = m+1;
+          cats[m].name = recats[j].cat;
+          for (k = 0; k < perf_count; k++) {
+            if (perf_entries[k].name) {
+              if (!strcmp(perf_entries[k].name, recats[j].cat))
+                break;
+            } else
+              break;
+          }
+          perf_entries[k].name = recats[j].cat;
+          if (perf_count <= k) perf_count = k+1;
+          perf_entries[k].accum += perf_entries[i].accum;
+          perf_entries[k].gc_accum += perf_entries[i].gc_accum;
+          perf_entries[k].count += perf_entries[i].count;
+
+          n = cats[m].perf_count++;
+          cats[m].perf_entries[n] = perf_entries[i];
+          perf_entries[i].accum = 0;
+          perf_entries[i].gc_accum = 0;
+          perf_entries[i].count = 0;
+        }
+      }
+    }
+  }
+
+  sort_perf(perf_entries, 0, perf_count);
 
   for (i = 0; i < perf_count; i++) {
-    len = strlen(perf_entries[i].name);
-    if (len > name_len) name_len = len;
+    n = strlen(perf_entries[i].name);
+    if (n > name_len) name_len = n;
     total += perf_entries[i].accum;
     gc_total += perf_entries[i].gc_accum;
   }
 
-  len = numlen(total);
+  n = numlen(total);
+  if (n > len) len = n;
   gc_len = numlen(gc_total);
 
   if (name_len >= sizeof(name_tab))
@@ -1824,24 +1884,47 @@ static void show_perf()
     len = sizeof(tab) - 1;
   if (gc_len >= sizeof(gc_tab))
     gc_len = sizeof(gc_tab) -1;
+
+  for (i = 0; i < depth * 2; i++) {
+    pre_indent[i] = ' ';
+  }
+  pre_indent[i] = 0;
+  for (i = 0; i < (3 - depth) * 2; i++) {
+    post_indent[i] = ' ';
+  }
+  post_indent[i] = 0;
   
   for (i = 0; i < perf_count; i++) {
-    fprintf(stderr, ";; %s%s:  %s%"PRIdPTR " [%s%"PRIdPTR"] ms ; %"PRIdPTR" times\n",
-            tab_string(perf_entries[i].name, name_tab, name_len),
-            perf_entries[i].name,
-            tab_number(perf_entries[i].accum, tab, len),
-            perf_entries[i].accum,
-            tab_number(perf_entries[i].gc_accum, gc_tab, gc_len),
-            perf_entries[i].gc_accum,
-            perf_entries[i].count);
+    if (perf_entries[i].count)
+      fprintf(stderr, ";; %s%s%s%s  %s%"PRIdPTR " [%s%"PRIdPTR"] ms ; %"PRIdPTR" times\n",
+              pre_indent,
+              perf_entries[i].name,
+              tab_string(perf_entries[i].name, name_tab, name_len),
+              post_indent,
+              tab_number(perf_entries[i].accum, tab, len),
+              perf_entries[i].accum,
+              tab_number(perf_entries[i].gc_accum, gc_tab, gc_len),
+              perf_entries[i].gc_accum,
+              perf_entries[i].count);
+    for (m = 0; m < num_cats; m++) {
+      if (!strcmp(perf_entries[i].name, cats[m].name))
+        show_perf(cats[m].perf_entries, cats[m].perf_count, len, name_len, depth+1);
+    }
   }
 
-  fprintf(stderr, ";; %stotal:  %s%"PRIdPTR " [%s%"PRIdPTR"] ms\n",
-          tab_string("total", name_tab, name_len),
-          tab_number(total, tab, len),
-          total,
-          tab_number(gc_total, gc_tab, gc_len),
-          gc_total);
+  if (!depth)
+    fprintf(stderr, ";; %stotal%s  %s%"PRIdPTR " [%s%"PRIdPTR"] ms\n",
+            tab_number(total, tab, len),
+            tab_string("total", name_tab, name_len),
+            post_indent,
+            total,
+            tab_number(gc_total, gc_tab, gc_len),
+            gc_total);
+}
+
+static void show_all_perf()
+{
+  return show_perf(perf_entries, perf_count, 0, 0, 0);
 }
 
 void scheme_performance_record_start(GC_CAN_IGNORE Scheme_Performance_State *perf_state)
@@ -1854,7 +1937,7 @@ void scheme_performance_record_start(GC_CAN_IGNORE Scheme_Performance_State *per
   if (!perf_reg) {
     if (scheme_getenv("PLT_LINKLET_TIMES")) {
       perf_reg = 1;
-      scheme_atexit(show_perf);
+      scheme_atexit(show_all_perf);
     } else {
       perf_reg = -1;
     }

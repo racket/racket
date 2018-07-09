@@ -1,6 +1,6 @@
 (define (read-compiled-linklet in)
   (performance-region
-   'read
+   'read-bundle
    (read-compiled-linklet-or-directory in #t)))
 
 (define (read-compiled-linklet-or-directory in initial?)
