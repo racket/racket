@@ -126,19 +126,36 @@
       [(prefab-struct-key v)
        (loop (struct->vector v))]
       [else (void)]))
-  (define exploded-wrt-dir 'not-ready)
+  (define exploded-base-dir 'not-ready)
+  (define exploded-wrt-rel-dir 'not-ready)
   (define (path->relative-path-elements v)
-    (when (and (eq? exploded-wrt-dir 'not-ready)
+    (when (and (eq? exploded-base-dir 'not-ready)
                (path? v))
-      (define wrt-dir (current-write-relative-directory))
-      (set! exploded-wrt-dir (and wrt-dir (explode-path wrt-dir))))
-    (and exploded-wrt-dir
+      (define wr-dir (current-write-relative-directory))
+      (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
+      (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
+      (set! exploded-base-dir (and base-dir (explode-path base-dir)))
+      (set! exploded-wrt-rel-dir
+            (if (eq? base-dir wrt-dir)
+                '()
+                (list-tail (explode-path wrt-dir)
+                           (length exploded-base-dir)))))
+    (and exploded-base-dir
          (path? v)
          (let ([exploded (explode-path v)])
-           (and (for/and ([wrt-p (in-list exploded-wrt-dir)]
+           (and (for/and ([base-p (in-list exploded-base-dir)]
                           [p (in-list exploded)])
-                  (equal? wrt-p p))
-                (list-tail exploded (length exploded-wrt-dir))))))
+                  (equal? base-p p))
+                (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir ]
+                           [rel (list-tail exploded (length exploded-base-dir))])
+                  (cond
+                    [(null? exploded-wrt-rel-dir) rel]
+                    [(and (pair? rel)
+                          (equal? (car rel) (car exploded-wrt-rel-dir)))
+                     (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
+                    [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
+                                    'up)
+                                  rel)]))))))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   ;; The fasl formal prefix:
   (write-bytes fasl-prefix o)
