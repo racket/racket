@@ -178,12 +178,13 @@
                                [else 'no]))
                         (stxclass-colon-notation? colon-notation?))
            (parse-variants rest decls splicing? expected-attrs)))
-       (let ([sattrs
-              (or attributes
-                  (intersect-sattrss (map variant-attrs variants)))])
-         (make rhs sattrs transp? description variants
-               (append (get-txlifts-as-definitions) defs)
-               commit? delimit-cut?))))))
+       (define sattrs
+         (or attributes
+             (filter (lambda (a) (symbol-interned? (attr-name a)))
+                     (intersect-sattrss (map variant-attrs variants)))))
+       (make rhs sattrs transp? description variants
+             (append (get-txlifts-as-definitions) defs)
+             commit? delimit-cut?)))))
 
 (define (parse-rhs/part1 stx splicing? strict?)
   (define-values (chunks rest)
