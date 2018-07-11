@@ -2278,5 +2278,21 @@
     (local-expand #'(#%plain-module-begin (m #f)) 'module-begin '())))
 
 ;; ----------------------------------------
+;; Check order of complaints for unbound identifiers
+
+(define (check-complain-first m)
+  (err/rt-test (eval m)
+               (lambda (x)
+                 (regexp-match? #rx"complain-about-this-one" (exn-message x)))))
+
+(check-complain-first '(module m racket/base
+                         (define (f a)
+                           (complain-about-this-one (not-about-this-one)))))
+(check-complain-first '(module m racket/base
+                         (require (for-syntax racket/base))
+                         (define-syntax (f a)
+                           (complain-about-this-one (not-about-this-one)))))
+
+;; ----------------------------------------
 
 (report-errs)

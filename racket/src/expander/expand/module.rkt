@@ -1035,7 +1035,7 @@
 (define (check-defined-by-now need-eventually-defined self ctx requires+provides)
   ;; If `need-eventually-defined` is not empty, report an error
   (for ([(phase l) (in-hash need-eventually-defined)])
-    (for ([id (in-list l)])
+    (for ([id (in-list (reverse l))])
       (define b (resolve+shift id phase))
       (define bound-here? (and b
                                (module-binding? b)

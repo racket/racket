@@ -75577,7 +75577,7 @@ static const char *startup_source =
 "(begin"
 "(let-values()"
 "(begin"
-"(let-values(((lst_447) l_89))"
+"(let-values(((lst_447)(reverse$1 l_89)))"
 "(begin"
 "(if(variable-reference-from-unsafe?"
 "(#%variable-reference))"
