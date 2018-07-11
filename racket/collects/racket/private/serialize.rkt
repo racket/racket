@@ -67,7 +67,7 @@
   (define (protect-path p rel-to)
     (cond
      [(path? p) (if rel-to
-                    `(relative ,(path->relative-path-elements p #:write-relative-directory rel-to))
+                    `(relative . ,(path->relative-path-elements p #:write-relative-directory rel-to))
                     (path->bytes p))]
      [(and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
       `(submod ,(protect-path (cadr p) rel-to) . ,(cddr p))]
@@ -75,7 +75,8 @@
   (define (unprotect-path p)
     (cond
      [(bytes? p) (bytes->path p)]
-     [(and (pair? p) (eq? (car p) 'submod) (bytes? (cadr p)))
+     [(and (pair? p) (eq? (car p) 'submod) (or (bytes? (cadr p))
+                                               (list? (cadr p))))
       `(submod ,(unprotect-path (cadr p)) . ,(cddr p))]
      [(and (pair? p) (eq? (car p) 'relative))
       (relative-path-elements->path (cdr p))]
