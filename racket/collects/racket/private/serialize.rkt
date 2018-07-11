@@ -435,7 +435,7 @@
       (cons 'pf (cons (prefab-struct-key v)
                       (sub1 (vector-length (struct->vector v)))))]))
 
-  (define (serialize v #:relative-to [rel-to #f])
+  (define (serialize v #:relative-directory [rel-to #f])
     (let ([mod-map (make-hasheq)]
 	  [mod-map-cache (make-hash)]
 	  [share (make-hasheq)]
