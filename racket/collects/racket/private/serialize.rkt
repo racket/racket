@@ -66,38 +66,20 @@
   ;;  keep the literal path, but marshal it to bytes.
   (define (protect-path p rel-to)
     (cond
-     [(path? p) (path->relative-bytes p rel-to)]
+     [(path? p) (if rel-to
+                    `(relative ,(path->relative-path-elements p #:write-relative-directory rel-to))
+                    (path->bytes p))]
      [(and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
       `(submod ,(protect-path (cadr p) rel-to) . ,(cddr p))]
      [else p]))
   (define (unprotect-path p)
     (cond
-     [(bytes? p) (relative-bytes->path p)]
+     [(bytes? p) (bytes->path p)]
      [(and (pair? p) (eq? (car p) 'submod) (bytes? (cadr p)))
       `(submod ,(unprotect-path (cadr p)) . ,(cddr p))]
+     [(and (pair? p) (eq? (car p) 'relative))
+      (relative-path-elements->path (cdr p))]
      [else p]))
-
-  ;; If a relative path is given, convert paths to those
-  ;; relative paths.
-  (define (path->relative-bytes v rel-dir)
-    (define new-path (path->relative-path-elements v rel-dir))
-    (path->bytes (or (and new-path (apply build-path new-path))
-                     v)))
-  (define (relative-bytes->path v [type (system-path-convention-type)])
-    (define rel-path (bytes->path v type))
-    (cond
-      [(complete-path? rel-path) rel-path]
-      [else
-       (path->complete-path rel-path (current-load-relative-directory))]))
-  (define (path->relative-path-elements v rel-dir)
-    (define exploded-rel-dir (and rel-dir (explode-path rel-dir)))
-    (and exploded-rel-dir
-         (path? v)
-         (let ([exploded (explode-path v)])
-           (and (for/and ([wrt-p (in-list exploded-rel-dir)]
-                          [p (in-list exploded)])
-                  (equal? wrt-p p))
-                (list-tail exploded (length exploded-rel-dir))))))
 
   ;; A deserialization function is provided from a `deserialize-info`
   ;; module:
@@ -369,7 +351,11 @@
 	    (bytes? v))
 	(cons 'u v)]
        [(path-for-some-system? v)
-        (list* 'p+ (path->relative-bytes v rel-to) (path-convention-type v))]
+        (list* 'p+
+               (if rel-to
+                   (path->relative-path-elements v #:write-relative-directory rel-to)
+                   (path->bytes v))
+               (path-convention-type v))]
        [(vector? v)
         (define elems (map (serial #t) (vector->list v)))
         (if (and (immutable? v)
@@ -559,8 +545,14 @@
 		 (cond
 		  [(string? x) (string-copy x)]
 		  [(bytes? x) (bytes-copy x)]))]
-	  [(p) (relative-bytes->path (cdr v))]
-	  [(p+) (relative-bytes->path (cadr v) (cddr v))]
+	  [(p) (let ([x (cdr v)])
+                 (cond
+                   [(bytes? x) (bytes->path x)]
+                   [(list? x) (relative-path-elements->path x)]))]
+	  [(p+) (let ([x (cadr v)])
+                  (cond
+                    [(bytes? x) (bytes->path x (cddr v))]
+                    [(list? x) (relative-path-elements->path x)]))]
 	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]

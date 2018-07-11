@@ -13,11 +13,12 @@
     [else (apply build-path rel-elems)]))
 
 (define (path->relative-path-elements v
+                                      #:write-relative-directory [write-relative-directory #f]
                                       #:exploded-base-dir [exploded-base-dir (box 'not-ready)]
                                       #:exploded-wrt-rel-dir [exploded-wrt-rel-dir (box 'not-ready)])
   (when (and (eq? (unbox exploded-base-dir) 'not-ready)
              (path? v))
-    (define wr-dir (current-write-relative-directory))
+    (define wr-dir (or write-relative-directory (current-write-relative-directory)))
     (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
     (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
     (set-box! exploded-base-dir (and base-dir (explode-path base-dir)))
