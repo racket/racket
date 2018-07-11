@@ -351,11 +351,7 @@
 	    (bytes? v))
 	(cons 'u v)]
        [(path-for-some-system? v)
-        (list* 'p+
-               (if rel-to
-                   (path->relative-path-elements v #:write-relative-directory rel-to)
-                   (path->bytes v))
-               (path-convention-type v))]
+        (list* 'p+ (path->bytes v) (path-convention-type v))]
        [(vector? v)
         (define elems (map (serial #t) (vector->list v)))
         (if (and (immutable? v)
@@ -545,14 +541,8 @@
 		 (cond
 		  [(string? x) (string-copy x)]
 		  [(bytes? x) (bytes-copy x)]))]
-	  [(p) (let ([x (cdr v)])
-                 (cond
-                   [(bytes? x) (bytes->path x)]
-                   [(list? x) (relative-path-elements->path x)]))]
-	  [(p+) (let ([x (cadr v)])
-                  (cond
-                    [(bytes? x) (bytes->path x (cddr v))]
-                    [(list? x) (relative-path-elements->path x)]))]
+	  [(p) (bytes->path (cdr v))]
+	  [(p+) (bytes->path (cdr v))]
 	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]
