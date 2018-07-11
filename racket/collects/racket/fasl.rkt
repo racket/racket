@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         "private/truncate-path.rkt")
+         "private/truncate-path.rkt"
+         "private/relative-path.rkt")
 
 (provide s-exp->fasl
          fasl->s-exp)
@@ -126,36 +127,8 @@
       [(prefab-struct-key v)
        (loop (struct->vector v))]
       [else (void)]))
-  (define exploded-base-dir 'not-ready)
-  (define exploded-wrt-rel-dir 'not-ready)
-  (define (path->relative-path-elements v)
-    (when (and (eq? exploded-base-dir 'not-ready)
-               (path? v))
-      (define wr-dir (current-write-relative-directory))
-      (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
-      (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
-      (set! exploded-base-dir (and base-dir (explode-path base-dir)))
-      (set! exploded-wrt-rel-dir
-            (if (eq? base-dir wrt-dir)
-                '()
-                (list-tail (explode-path wrt-dir)
-                           (length exploded-base-dir)))))
-    (and exploded-base-dir
-         (path? v)
-         (let ([exploded (explode-path v)])
-           (and (for/and ([base-p (in-list exploded-base-dir)]
-                          [p (in-list exploded)])
-                  (equal? base-p p))
-                (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir ]
-                           [rel (list-tail exploded (length exploded-base-dir))])
-                  (cond
-                    [(null? exploded-wrt-rel-dir) rel]
-                    [(and (pair? rel)
-                          (equal? (car rel) (car exploded-wrt-rel-dir)))
-                     (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
-                    [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
-                                    'up)
-                                  rel)]))))))
+  (define exploded-base-dir (box 'not-ready))
+  (define exploded-wrt-rel-dir (box 'not-ready))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   ;; The fasl formal prefix:
   (write-bytes fasl-prefix o)
@@ -235,7 +208,9 @@
            (write-fasl-integer (if (treat-immutable? v) fasl-immutable-bytes-type fasl-bytes-type) o)
            (write-fasl-bytes v o)]
           [(path-for-some-system? v)
-           (define rel-elems (path->relative-path-elements v))
+           (define rel-elems (path->relative-path-elements v
+                                                           #:exploded-base-dir exploded-base-dir
+                                                           #:exploded-wrt-rel-dir exploded-wrt-rel-dir))
            (cond
              [rel-elems
               (write-byte fasl-relative-path-type o)
@@ -255,7 +230,9 @@
            (define new-src
              (cond
                [(and (path? src)
-                     (not (path->relative-path-elements src)))
+                     (not (path->relative-path-elements src
+                                                        #:exploded-base-dir exploded-base-dir
+                                                        #:exploded-wrt-rel-dir exploded-wrt-rel-dir)))
                 ;; Convert to a string
                 (truncate-path src)]
                [else src]))

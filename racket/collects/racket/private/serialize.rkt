@@ -4,6 +4,7 @@
            racket/list
            racket/flonum
            racket/fixnum
+           "relative-path.rkt"
            "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
