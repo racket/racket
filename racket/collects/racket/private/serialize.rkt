@@ -542,7 +542,7 @@
 		  [(string? x) (string-copy x)]
 		  [(bytes? x) (bytes-copy x)]))]
 	  [(p) (bytes->path (cdr v))]
-	  [(p+) (bytes->path (cdr v))]
+	  [(p+) (bytes->path (cadr v) (cddr v))]
 	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]
