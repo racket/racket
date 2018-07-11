@@ -2610,7 +2610,6 @@
             (define-struct (cookie-error exn:fail) ()))])
   (define o (open-output-bytes))
   (write (compile m) o)
-  (call-with-output-file "/tmp/d" #:exists 'replace (lambda (o) (write (compile m) o)))
   (test #t
         not
         (regexp-match? (regexp-quote
