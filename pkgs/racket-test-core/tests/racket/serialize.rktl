@@ -605,4 +605,34 @@
 
 ;; ----------------------------------------
 
+(let ([fn (make-temporary-file)])
+  (with-output-to-file fn
+    #:exists 'truncate
+    (lambda () (display
+                (string-append "#lang racket/base\n"
+                               "(require racket/serialize)\n"
+                               "(module+ main\n"
+                               "   (provide s foo?)\n"
+                               "   (serializable-struct foo (bar))\n"
+                               "   (define s (serialize (foo 49)\n"
+                               "               #:relative-directory (find-system-path\n"
+                               "                                      'temp-dir))))\n"))))
+  (define s (dynamic-require `(submod ,fn main) 's))
+  (define foo? (dynamic-require `(submod ,fn main) 'foo?))
+  (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+    (test #t 'relative-dir (foo? (deserialize s))))
+  (test 'correct-error 'unrelative-dir
+        (with-handlers ([exn:fail:contract?
+                          (λ (e) 'correct-error)])
+          (deserialize s)))
+  (delete-file fn))
+
+(test (build-path "/" "home" "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path "/" "home" "hotdogs")
+                  #:relative-directory (build-path "/" "home"))))
+
+;; ----------------------------------------
+
 (report-errs)

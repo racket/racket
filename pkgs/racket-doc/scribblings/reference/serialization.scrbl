@@ -16,7 +16,13 @@ See @racket[serialize] for an enumeration of serializable values.}
 
 @; ----------------------------------------------------------------------
 
-@defproc[(serialize [v serializable?]) any]{
+@defproc[(serialize [v serializable?]
+                    [#:relative-directory relative-to (or/c (and/c path? complete-path?)
+                                                            (cons/c (and/c path? complete-path?)
+                                                                    (and/c path? complete-path?))
+                                                            #f)
+                     #f])
+         any]{
 
 Returns a value that encapsulates the value @racket[v]. This value
 includes only readable values, so it can be written to a stream with
@@ -65,6 +71,10 @@ are all reachable from each other), then @racket[v] can be serialized
 only if the cycle includes a mutable value, where a @tech{prefab}
 structure counts as mutable only if all of its fields are mutable.
 
+If @racket[relative-to] is not @racket[#f], than the
+deserializer paths will be relative. See
+@racket[current-write-relative-path].
+
 @margin-note{The @racket[serialize] and @racket[deserialize] functions
 currently do not handle certain cyclic values that @racket[read] and
 @racket[write] can handle, such as @racket['@#,read[(open-input-string "#0=(#0#)")]].}
@@ -72,7 +82,8 @@ currently do not handle certain cyclic values that @racket[read] and
 See @racket[deserialize] for information on the format of serialized
 data.
 
-@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable}]}
+@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable}
+         #:changed "7.0.0.6" @elem{Added @racket[#:relative-directory] argument}]}
 
 @; ----------------------------------------------------------------------
 
@@ -98,22 +109,27 @@ elements:
        number of distinct structure types represented in the
        serialized data.}
 
- @item{A list @racket[_s-types] of length @racket[_s-count], where
-       each element represents a structure type. Each structure type
-       is encoded as a pair. The @racket[car] of the pair is
-       @racket[#f] for a structure whose deserialization information
-       is defined at the top level, otherwise it is a quoted
-       @tech{module path} or a byte string (to be converted into a
-       platform-specific path using @racket[bytes->path]) for a module
-       that exports the structure's deserialization information.  The
-       @racket[cdr] of the pair is the name of a binding (at the top
-       level or exported from a module) for deserialization
-       information, either a symbol or a string representing an
-       @tech{unreadable symbol}. These two are used with either
-       @racket[namespace-variable-binding] or @racket[dynamic-require]
-       to obtain deserialization information. See
-       @racket[make-deserialize-info] for more information on the
-       binding's value. See also @racket[deserialize-module-guard].}
+ @item{A list @racket[_s-types] of length @racket[_s-count],
+   where each element represents a structure type. Each
+   structure type is encoded as a pair. The @racket[car] of the
+   pair is @racket[#f] for a structure whose deserialization
+   information is defined at the top level, otherwise it is a
+   quoted @tech{module path}, a byte string (to be converted
+   into a platform-specific path using @racket[bytes->path])
+   for a module that exports the structure's deserialization
+   information, or a relative path element list for a module to
+   be resolved with respect to
+   @racket[current-load-relative-directory] (seen when using
+   the @racket[#:relative-directory] keyword with
+   @racket[serialize]). The @racket[cdr] of the pair is the
+   name of a binding (at the top level or exported from a
+   module) for deserialization information, either a symbol or
+   a string representing an @tech{unreadable symbol}. These two
+   are used with either @racket[namespace-variable-binding] or
+   @racket[dynamic-require] to obtain deserialization
+   information. See @racket[make-deserialize-info] for more
+   information on the binding's value. See also
+   @racket[deserialize-module-guard].}
 
  @item{A non-negative exact integer, @racket[_g-count] that represents the
        number of graph points contained in the following list.}

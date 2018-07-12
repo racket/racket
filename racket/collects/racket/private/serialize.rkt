@@ -4,6 +4,7 @@
            racket/list
            racket/flonum
            racket/fixnum
+           "relative-path.rkt"
            "serialize-structs.rkt")
 
   ;; This module implements the core serializer. The syntactic
@@ -63,17 +64,22 @@
   ;; If a module is dynamic-required through a path,
   ;;  then it can cause simplified module paths to be paths;
   ;;  keep the literal path, but marshal it to bytes.
-  (define (protect-path p)
+  (define (protect-path p rel-to)
     (cond
-     [(path? p) (path->bytes p)]
+     [(path? p) (if rel-to
+                    `(relative . ,(path->relative-path-elements p #:write-relative-directory rel-to))
+                    (path->bytes p))]
      [(and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
-      `(submod ,(protect-path (cadr p)) . ,(cddr p))]
+      `(submod ,(protect-path (cadr p) rel-to) . ,(cddr p))]
      [else p]))
   (define (unprotect-path p)
     (cond
      [(bytes? p) (bytes->path p)]
-     [(and (pair? p) (eq? (car p) 'submod) (bytes? (cadr p)))
+     [(and (pair? p) (eq? (car p) 'submod) (or (bytes? (cadr p))
+                                               (list? (cadr p))))
       `(submod ,(unprotect-path (cadr p)) . ,(cddr p))]
+     [(and (pair? p) (eq? (car p) 'relative))
+      (relative-path-elements->path (cdr p))]
      [else p]))
 
   ;; A deserialization function is provided from a `deserialize-info`
@@ -107,7 +113,7 @@
                 v2))
           v)))
   
-  (define (mod-to-id info mod-map cache)
+  (define (mod-to-id info mod-map cache rel-to)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
       (hash-ref 
        cache deserialize-id
@@ -125,7 +131,8 @@
 				      (collapse/resolve-module-path-index 
 				       (caddr b)
 				       (build-path (serialize-info-dir info)
-						   "here.ss")))))
+						   "here.ss"))
+                                      rel-to)))
 			    (syntax-e deserialize-id)))]
 			[(symbol? deserialize-id)
 			 (cons #f deserialize-id)]
@@ -137,7 +144,8 @@
 			       (collapse/resolve-module-path-index 
 				(cdr deserialize-id)
 				(build-path (serialize-info-dir info)
-					    "here.ss"))))
+					    "here.ss"))
+                               rel-to))
 			  (car deserialize-id))])])
 		  (hash-ref 
 		   mod-map path+name
@@ -302,7 +310,7 @@
             (byte-regexp? v)
             (bytes? v))))
 
-  (define (serialize-one v share check-share? mod-map mod-map-cache)
+  (define (serialize-one v share check-share? mod-map mod-map-cache rel-to)
     (define ((serial check-share?) v)
       (cond
        [(or (boolean? v)
@@ -329,7 +337,7 @@
         v]
        [(serializable-struct? v)
 	(let ([info (serializable-info v)])
-	  (cons (mod-to-id info mod-map mod-map-cache) 
+	  (cons (mod-to-id info mod-map mod-map-cache rel-to) 
 		(map (serial #t)
 		     (vector->list
 		      ((serialize-info-vectorizer info) v)))))]
@@ -344,7 +352,7 @@
 	    (bytes? v))
 	(cons 'u v)]
        [(path-for-some-system? v)
-	(list* 'p+ (path->bytes v) (path-convention-type v))]
+        (list* 'p+ (path->bytes v) (path-convention-type v))]
        [(vector? v)
         (define elems (map (serial #t) (vector->list v)))
         (if (and (immutable? v)
@@ -403,11 +411,11 @@
        [else (error 'serialize "shouldn't get here")]))
     ((serial check-share?) v))
   
-  (define (serial-shell v mod-map mod-map-cache)
+  (define (serial-shell v mod-map mod-map-cache rel-to)
     (cond
      [(serializable-struct? v)
       (let ([info (serializable-info v)])
-	(mod-to-id info mod-map mod-map-cache))]
+	(mod-to-id info mod-map mod-map-cache rel-to))]
      [(vector? v)
       (cons 'v (vector-length v))]
      [(mpair? v)
@@ -424,7 +432,7 @@
       (cons 'pf (cons (prefab-struct-key v)
                       (sub1 (vector-length (struct->vector v)))))]))
 
-  (define (serialize v)
+  (define (serialize v #:relative-directory [rel-to #f])
     (let ([mod-map (make-hasheq)]
 	  [mod-map-cache (make-hash)]
 	  [share (make-hasheq)]
@@ -442,16 +450,16 @@
 				  (if (hash-ref cycle v #f)
 				      ;; Box indicates cycle record allocation
 				      ;;  followed by normal serialization
-				      (box (serial-shell v mod-map mod-map-cache))
+				      (box (serial-shell v mod-map mod-map-cache rel-to))
 				      ;; Otherwise, normal serialization
-				      (serialize-one v share #f mod-map mod-map-cache)))
+				      (serialize-one v share #f mod-map mod-map-cache rel-to)))
 				ordered)]
 	      [fixups (hash-map 
 		       cycle
 		       (lambda (v n)
 			 (cons n
-			       (serialize-one v share #f mod-map mod-map-cache))))]
-	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
+			       (serialize-one v share #f mod-map mod-map-cache rel-to))))]
+	      [main-serialized (serialize-one v share #t mod-map mod-map-cache rel-to)]
 	      [mod-map-l (map car (sort (hash-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
 	  (list '(3) ;; serialization-format version
