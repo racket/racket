@@ -556,7 +556,8 @@ serializable. The property value should be constructed with
                               [deserialize-id (or identifier?
                                                   symbol?
                                                   (cons/c symbol?
-                                                          module-path-index?))]
+                                                          module-path-index?)
+                                                  (-> any/c))]
                               [can-cycle? any/c]
                               [dir path-string?])
          any]{
@@ -590,6 +591,10 @@ must be one of the following:
  a symbol to name an exported identifier, and the @racket[cdr] must be
  a module path index to specify the exporting module.}
 
+ @item{If @racket[deserialize-id] is a procedure, then it is
+ applied during serialization and its result is used for
+ @racket[deserialize-id].}
+                                                      
 ]
 
 See @racket[make-deserialize-info] and @racket[deserialize] for more
