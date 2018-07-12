@@ -610,7 +610,9 @@ resolve a module reference for the binding of @racket[deserialize-id].
 This directory path is used as a last resort when
 @racket[deserialize-id] indicates a module that was loaded through a
 relative path with respect to the top level. Usually, it should be
-@racket[(or (current-load-relative-directory) (current-directory))].}
+@racket[(or (current-load-relative-directory) (current-directory))].
+
+@history[#:changed "7.0.0.6" @elem{Allow @racket[deserialize-id] to be a procedure.}]}
 
 @examples[
  #:eval ser-eval
