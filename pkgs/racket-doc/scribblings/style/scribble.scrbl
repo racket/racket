@@ -178,7 +178,7 @@ normally lowercase. For example, use ``The @racket[_thing] argument
 is...'' instead of ``@racket[_thing] is...''
 
 Use @racket[etc] for ``@|etc|'' when it does not end a sentence, and
-include a comma after ``@|etc|'' unless it ends a sentence of is
+include a comma after ``@|etc|'' unless it ends a sentence that is
 followed by other punctuation (such as a parenthesis).
 
 @section{Section Titles}

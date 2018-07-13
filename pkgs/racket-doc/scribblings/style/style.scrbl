@@ -32,7 +32,7 @@ Many pieces of the code base don't live up to the guidelines yet.  Here is how
  workings. If doing so takes quite a while due to inconsistencies with the
  guidelines, please take the time to fix (portions of) the file. After all, if
  the inconsistencies throw you off for that much time, others are likely to
- have the same problems. If you help fixing it, you reduce future
+ have the same problems. If you help fix it, you reduce future
  maintenance time. Whoever touches the file next will be grateful to you.
  @emph{Do} run the test suites, and do @emph{not} change the behavior of
  the file.
