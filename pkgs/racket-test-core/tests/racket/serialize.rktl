@@ -635,4 +635,36 @@
 
 ;; ----------------------------------------
 
+(module interchange-deserialize racket/base
+  (provide (all-defined-out))
+  (require racket/serialize)
+  (define current-des #'interchange-des-a)
+  (define (set-current-des! val)
+    (set! current-des val))
+  (struct interchange ()
+    #:property prop:serializable
+    (make-serialize-info
+     (λ (this) (vector))
+     (λ () current-des)
+     #t
+     (or (current-load-relative-directory) (current-directory))))
+  (define interchange-des-a
+    (make-deserialize-info
+     (λ () 42)
+     (λ ()
+       (values 42
+               (λ (other) (void))))))
+  (define interchange-des-b
+    (make-deserialize-info
+     (λ () 43)
+     (λ ()
+       (values 43
+               (λ (other) (void)))))))
+(require 'interchange-deserialize)
+(test 42 'interchange-default (deserialize (serialize (interchange))))
+(set-current-des! #'interchange-des-b)
+(test 43 'interchange-alternate (deserialize (serialize (interchange))))
+
+;; ----------------------------------------
+
 (report-errs)

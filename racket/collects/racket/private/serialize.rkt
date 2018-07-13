@@ -118,43 +118,46 @@
       (hash-ref 
        cache deserialize-id
        (lambda ()
-	 (let ([id
-		(let ([path+name
-		       (cond
-			[(identifier? deserialize-id)
-			 (let ([b (identifier-binding deserialize-id (variable-reference->phase varref))])
-			   (cons
-			    (and (list? b)
-				 (if (symbol? (caddr b))
-				     (caddr b)
-				     (protect-path
-				      (collapse/resolve-module-path-index 
-				       (caddr b)
-				       (build-path (serialize-info-dir info)
-						   "here.ss"))
-                                      rel-to)))
-			    (syntax-e deserialize-id)))]
-			[(symbol? deserialize-id)
-			 (cons #f deserialize-id)]
-			[else
-			 (cons
-			  (if (symbol? (cdr deserialize-id))
-			      (cdr deserialize-id)
-			      (protect-path
-			       (collapse/resolve-module-path-index 
-				(cdr deserialize-id)
-				(build-path (serialize-info-dir info)
-					    "here.ss"))
-                               rel-to))
-			  (car deserialize-id))])])
-		  (hash-ref 
-		   mod-map path+name
-		   (lambda ()
-		     (let ([id (hash-count mod-map)])
-		       (hash-set! mod-map path+name id)
-		       id))))])
-	   (hash-set! cache deserialize-id id)
-	   id)))))
+	 (define id
+           (let ([path+name
+                  (let loop ([deserialize-id deserialize-id])
+                    (cond
+                      [(procedure? deserialize-id)
+                       (loop (deserialize-id))]
+                      [(identifier? deserialize-id)
+                       (let ([b (identifier-binding deserialize-id (variable-reference->phase varref))])
+                         (cons
+                          (and (list? b)
+                               (if (symbol? (caddr b))
+                                   (caddr b)
+                                   (protect-path
+                                    (collapse/resolve-module-path-index 
+                                     (caddr b)
+                                     (build-path (serialize-info-dir info)
+                                                 "here.ss"))
+                                    rel-to)))
+                          (syntax-e deserialize-id)))]
+                      [(symbol? deserialize-id)
+                       (cons #f deserialize-id)]
+                      [else
+                       (cons
+                        (if (symbol? (cdr deserialize-id))
+                            (cdr deserialize-id)
+                            (protect-path
+                             (collapse/resolve-module-path-index 
+                              (cdr deserialize-id)
+                              (build-path (serialize-info-dir info)
+                                          "here.ss"))
+                             rel-to))
+                        (car deserialize-id))]))])
+             (hash-ref 
+              mod-map path+name
+              (lambda ()
+                (let ([id (hash-count mod-map)])
+                  (hash-set! mod-map path+name id)
+                  id)))))
+         (hash-set! cache deserialize-id id)
+         id))))
 
   (define (is-mutable? o)
     (or (and (or (mpair? o)
