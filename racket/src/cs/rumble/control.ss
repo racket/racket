@@ -784,6 +784,68 @@
    [else mf]))
 
 ;; ----------------------------------------
+;; Continuation-mark table
+
+;; A continuation-mark table within a frame is just an association
+;; list. This works well as long as the number of marks per frame is
+;; small.
+
+(define empty-mark-table '())
+
+(define (mark-table-add mt k v)
+  (cons (cons k v) mt))
+
+(define (mark-table-remove mt k)
+  (cond
+   [(null? mt) mt]
+   [(eq? k (caar mt)) (cdr mt)]
+   [else (let ([mt-rest (mark-table-remove (cdr mt) k)])
+           (if (eq? mt-rest (cdr mt))
+               mt
+               (cons (car mt) mt-rest)))]))
+
+(define (mark-table-add/replace mt k v)
+  (mark-table-add (mark-table-remove mt k) k v))
+
+(define (mark-table-ref mt k default)
+  (let ([a (#%assq k mt)])
+    (if a
+        (cdr a)
+        default)))
+
+(define (mark-table-merge a b)
+  (cond
+   [(null? a) b]
+   [(null? b) a]
+   [else
+    (let loop ([b b] [a a])
+      (cond
+       [(null? a) b]
+       [else (let ([p (car a)])
+               (loop (mark-table-add/replace b (car p) (cdr p))
+                     (cdr a)))]))]))
+
+(define (mark-table-prune a b)
+  (cond
+   [(null? a) b]
+   [(null? b) a]
+   [else
+    (let loop ([b b] [a a])
+      (cond
+       [(null? a) b]
+       [else (let ([p (car a)])
+               (loop (mark-table-remove b (car p))
+                     (cdr a)))]))]))
+
+(define (mark-table->hash mt)
+  (let loop ([ht empty-hasheq] [mt mt])
+    (cond
+     [(null? mt) ht]
+     [else (let ([p (car mt)])
+             (loop (intmap-set ht (car p) (cdr p))
+                   (cdr mt)))])))
+
+;; ----------------------------------------
 ;; Continuation marks
 
 (define-record continuation-mark-set (mark-chain traces))
@@ -828,9 +890,9 @@
          (unless (eq? key none)
            (current-mark-stack (make-mark-stack-frame (mark-stack-frame-prev mark-stack)
                                                       k
-                                                      (intmap-set/cm-key (mark-stack-frame-table mark-stack)
-                                                                         key
-                                                                         val)
+                                                      (mark-table-add/replace* (mark-stack-frame-table mark-stack)
+                                                                               key
+                                                                               val)
                                                       #f)))
          (proc)]
         [else
@@ -841,8 +903,8 @@
               (make-mark-stack-frame mark-stack
                                      new-k
                                      (if (eq? key none)
-                                         empty-hasheq
-                                         (intmap-set/cm-key empty-hasheq key val))
+                                         empty-mark-table
+                                         (mark-table-add empty-mark-table key val))
                                      #f))
              (proc)))
           (current-mark-stack (mark-stack-frame-prev (current-mark-stack)))
@@ -856,7 +918,7 @@
   (current-mark-stack
    (make-mark-stack-frame (current-mark-stack)
                           #f
-                          (intmap-set empty-hasheq key val)
+                          (mark-table-add empty-mark-table key val)
                           #f))
   (proc)
   ;; If we're in an escape process, then `(current-mark-stack)` might not
@@ -874,7 +936,7 @@
      [(not mark-stack) null]
      [(mark-stack-frame-flat mark-stack) => (lambda (l) l)]
      [else
-      (let ([l (cons (mark-stack-frame-table mark-stack)
+      (let ([l (cons (mark-table->hash (mark-stack-frame-table mark-stack))
                      (loop (mark-stack-frame-prev mark-stack)))])
         (set-mark-stack-frame-flat! mark-stack l)
         l)])))
@@ -948,21 +1010,9 @@
    [else
     (make-mark-stack-frame #f
                            (mark-stack-frame-k mark-stack)
-                           (merge-mark-table (mark-stack-frame-table mark-stack)
+                           (mark-table-merge (mark-stack-frame-table mark-stack)
                                              (mark-stack-frame-table mark-splice))
                            #f)]))
-
-(define (merge-mark-table a b)
-  (cond
-   [(eq? empty-hasheq a) b]
-   [(eq? empty-hasheq b) a]
-   [else
-    (let loop ([b b] [i (hash-iterate-first a)])
-      (cond
-       [(not i) b]
-       [else (let-values ([(key val) (hash-iterate-key+value a i)])
-               (loop (hash-set b key val)
-                     (hash-iterate-next a i)))]))]))
 
 ;; If `mark-stack` ends with a frame that is conceptually
 ;; merged with one in `mark-splice`, then discard any keys
@@ -984,21 +1034,10 @@
            [(and (not prev) (eq? (mark-stack-frame-k mark-stack) empty-k))
             (make-mark-stack-frame #f
                                    empty-k
-                                   (prune-mark-table (mark-stack-frame-table mark-stack)
+                                   (mark-table-prune (mark-stack-frame-table mark-stack)
                                                      (mark-stack-frame-table mark-splice))
                                    #f)]
            [else (loop prev)]))]))]))
-
-(define (prune-mark-table a b)
-  (cond
-   [(eq? empty-hasheq a) b]
-   [(eq? empty-hasheq b) a]
-   [else
-    (let loop ([b b] [i (hash-iterate-first a)])
-      (cond
-       [(not i) b]
-       [else (loop (hash-remove b (hash-iterate-key a i))
-                   (hash-iterate-next a i))]))]))
 
 (define (mark-stack-starts-with? mark-stack k)
   (and mark-stack
@@ -1011,7 +1050,7 @@
    [(mark-stack-starts-with? mark-stack k)
     (make-mark-stack-frame (mark-stack-frame-prev mark-stack)
                            (mark-stack-frame-k mark-stack)
-                           empty-hasheq
+                           empty-mark-table
                            #f)]
    [else mark-stack]))
 
@@ -1057,9 +1096,9 @@
          (call/cc (lambda (k)
                     (when (eq? k (current-empty-k)) (merge-mark-splice!))
                     (if (eq? k (mark-stack-frame-k (current-mark-stack)))
-                        (|#%app| proc (let ([v (intmap-ref (mark-stack-frame-table (current-mark-stack))
-                                                           key
-                                                           none)])
+                        (|#%app| proc (let ([v (mark-table-ref (mark-stack-frame-table (current-mark-stack))
+                                                               key
+                                                               none)])
                                         (if (eq? v none)
                                             default-v
                                             (wrapper v))))
@@ -1362,8 +1401,8 @@
       (and (impersonator? v)
            (authentic-continuation-mark-key? (impersonator-val v)))))
 
-;; Like `intmap-set`, but handles continuation-mark-key impersonators
-(define (intmap-set/cm-key ht k v)
+;; Like `mark-table-add/replace`, but handles continuation-mark-key impersonators
+(define (mark-table-add/replace* ht k v)
   (cond
    [(and (impersonator? k)
          (authentic-continuation-mark-key? (impersonator-val k)))
@@ -1383,8 +1422,8 @@
        [(impersonator? k)
         (loop (impersonator-next k) v)]
        [else
-        (intmap-set ht k v)]))]
-   [else (intmap-set ht k v)]))
+        (mark-table-add/replace ht k v)]))]
+   [else (mark-table-add/replace ht k v)]))
 
 ;; Extracts the key and converts the wrapper functions into
 ;; a single function:
