@@ -1,7 +1,7 @@
 #lang racket/base
 
 (provide relative-path-elements->path
-         path->relative-path-elements)
+         make-path->relative-path-elements)
 
 (define (relative-path-elements->path elems)
   (define wrt-dir (current-load-relative-directory))
@@ -12,34 +12,50 @@
     [(null? rel-elems) (build-path 'same)]
     [else (apply build-path rel-elems)]))
 
-(define (path->relative-path-elements v
-                                      #:write-relative-directory [write-relative-directory #f]
-                                      #:exploded-base-dir [exploded-base-dir (box 'not-ready)]
-                                      #:exploded-wrt-rel-dir [exploded-wrt-rel-dir (box 'not-ready)])
-  (when (and (eq? (unbox exploded-base-dir) 'not-ready)
-             (path? v))
-    (define wr-dir (or write-relative-directory (current-write-relative-directory)))
-    (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
-    (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
-    (set-box! exploded-base-dir (and base-dir (explode-path base-dir)))
-    (set-box! exploded-wrt-rel-dir
-              (if (eq? base-dir wrt-dir)
-                  '()
-                  (list-tail (explode-path wrt-dir)
-                             (length (unbox exploded-base-dir))))))
-  (and (unbox exploded-base-dir)
-       (path? v)
-       (let ([exploded (explode-path v)])
-         (and (for/and ([base-p (in-list (unbox exploded-base-dir))]
-                        [p (in-list exploded)])
-                (equal? base-p p))
-              (let loop ([exploded-wrt-rel-dir (unbox exploded-wrt-rel-dir)]
-                         [rel (list-tail exploded (length (unbox exploded-base-dir)))])
-                (cond
-                  [(null? exploded-wrt-rel-dir) rel]
-                  [(and (pair? rel)
-                        (equal? (car rel) (car exploded-wrt-rel-dir)))
-                   (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
-                  [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
-                                  'up)
-                                rel)]))))))
+(define (make-path->relative-path-elements [wr-dir (current-write-relative-directory)]
+                                           #:who [who #f])
+  (when who
+    (unless (or (not wr-dir)
+                (and (path-string? wr-dir) (complete-path? wr-dir))
+                (and (pair? wr-dir)
+                     (path-string? (car wr-dir)) (complete-path? (car wr-dir))
+                     (path-string? (cdr wr-dir)) (complete-path? (cdr wr-dir))))
+      (raise-argument-error who
+                            (string-append
+                             "(or/c (and/c path-string? complete-path?)\n"
+                             "      (cons/c (and/c path-string? complete-path?)\n"
+                             "              (and/c path-string? complete-path?))\n"
+                             "      #f)")
+                            wr-dir)))
+  (cond
+    [(not wr-dir) (lambda (v) #f)]
+    [else
+     (define exploded-base-dir 'not-ready)
+     (define exploded-wrt-rel-dir 'not-ready)
+     (lambda (v)
+       (when (and (eq? exploded-base-dir 'not-ready)
+                  (path? v))
+         (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
+         (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
+         (set! exploded-base-dir (and base-dir (explode-path base-dir)))
+         (set! exploded-wrt-rel-dir
+               (if (eq? base-dir wrt-dir)
+                   '()
+                   (list-tail (explode-path wrt-dir)
+                              (length exploded-base-dir)))))
+       (and exploded-base-dir
+            (path? v)
+            (let ([exploded (explode-path v)])
+              (and (for/and ([base-p (in-list exploded-base-dir)]
+                             [p (in-list exploded)])
+                     (equal? base-p p))
+                   (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir]
+                              [rel (list-tail exploded (length exploded-base-dir))])
+                     (cond
+                       [(null? exploded-wrt-rel-dir) rel]
+                       [(and (pair? rel)
+                             (equal? (car rel) (car exploded-wrt-rel-dir)))
+                        (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
+                       [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
+                                       'up)
+                                     rel)]))))))]))

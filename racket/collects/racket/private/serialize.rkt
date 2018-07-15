@@ -64,13 +64,14 @@
   ;; If a module is dynamic-required through a path,
   ;;  then it can cause simplified module paths to be paths;
   ;;  keep the literal path, but marshal it to bytes.
-  (define (protect-path p rel-to)
+  (define (protect-path p deser-path->relative-path)
     (cond
-     [(path? p) (if rel-to
-                    `(relative . ,(path->relative-path-elements p #:write-relative-directory rel-to))
-                    (path->bytes p))]
+     [(path? p) (let ([rel (deser-path->relative-path p)])
+                  (if rel
+                      `(relative . ,rel)
+                      (path->bytes p)))]
      [(and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
-      `(submod ,(protect-path (cadr p) rel-to) . ,(cddr p))]
+      `(submod ,(protect-path (cadr p) deser-path->relative-path) . ,(cddr p))]
      [else p]))
   (define (unprotect-path p)
     (cond
@@ -101,8 +102,8 @@
                                                      (void))))
   (define varref (#%variable-reference varref))
 
-  (define (collapse/resolve-module-path-index mpi rel-to)
-    (let ([v (collapse-module-path-index mpi rel-to)])
+  (define (collapse/resolve-module-path-index mpi deser-path->relative-path)
+    (let ([v (collapse-module-path-index mpi deser-path->relative-path)])
       (if (path? v)
           ;; If collapsing gives a path, then we can't do any better than
           ;; resolving --- and we must resolved, because the mpi may record
@@ -113,7 +114,7 @@
                 v2))
           v)))
   
-  (define (mod-to-id info mod-map cache rel-to)
+  (define (mod-to-id info mod-map cache deser-path->relative-path)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
       (hash-ref 
        cache deserialize-id
@@ -135,7 +136,7 @@
                                      (caddr b)
                                      (build-path (serialize-info-dir info)
                                                  "here.ss"))
-                                    rel-to)))
+                                    deser-path->relative-path)))
                           (syntax-e deserialize-id)))]
                       [(symbol? deserialize-id)
                        (cons #f deserialize-id)]
@@ -148,7 +149,7 @@
                               (cdr deserialize-id)
                               (build-path (serialize-info-dir info)
                                           "here.ss"))
-                             rel-to))
+                             deser-path->relative-path))
                         (car deserialize-id))]))])
              (hash-ref 
               mod-map path+name
@@ -313,7 +314,7 @@
             (byte-regexp? v)
             (bytes? v))))
 
-  (define (serialize-one v share check-share? mod-map mod-map-cache rel-to)
+  (define (serialize-one v share check-share? mod-map mod-map-cache path->relative-path deser-path->relative-path)
     (define ((serial check-share?) v)
       (cond
        [(or (boolean? v)
@@ -340,7 +341,7 @@
         v]
        [(serializable-struct? v)
 	(let ([info (serializable-info v)])
-	  (cons (mod-to-id info mod-map mod-map-cache rel-to) 
+	  (cons (mod-to-id info mod-map mod-map-cache deser-path->relative-path) 
 		(map (serial #t)
 		     (vector->list
 		      ((serialize-info-vectorizer info) v)))))]
@@ -355,7 +356,10 @@
 	    (bytes? v))
 	(cons 'u v)]
        [(path-for-some-system? v)
-        (list* 'p+ (path->bytes v) (path-convention-type v))]
+        (let ([v-rel (and (path? v) (path->relative-path v))])
+          (if v-rel
+              (cons 'p* v-rel)
+              (list* 'p+ (path->bytes v) (path-convention-type v))))]
        [(vector? v)
         (define elems (map (serial #t) (vector->list v)))
         (if (and (immutable? v)
@@ -414,11 +418,11 @@
        [else (error 'serialize "shouldn't get here")]))
     ((serial check-share?) v))
   
-  (define (serial-shell v mod-map mod-map-cache rel-to)
+  (define (serial-shell v mod-map mod-map-cache deser-path->relative-path)
     (cond
      [(serializable-struct? v)
       (let ([info (serializable-info v)])
-	(mod-to-id info mod-map mod-map-cache rel-to))]
+	(mod-to-id info mod-map mod-map-cache deser-path->relative-path))]
      [(vector? v)
       (cons 'v (vector-length v))]
      [(mpair? v)
@@ -435,11 +439,15 @@
       (cons 'pf (cons (prefab-struct-key v)
                       (sub1 (vector-length (struct->vector v)))))]))
 
-  (define (serialize v #:relative-directory [rel-to #f])
+  (define (serialize v
+                     #:relative-directory [rel-to #f]
+                     #:deserialize-relative-directory [deser-rel-to rel-to])
     (let ([mod-map (make-hasheq)]
 	  [mod-map-cache (make-hash)]
 	  [share (make-hasheq)]
-	  [cycle (make-hasheq)])
+	  [cycle (make-hasheq)]
+          [path->relative-path (make-path->relative-path-elements rel-to #:who 'serialize)]
+          [deser-path->relative-path (make-path->relative-path-elements deser-rel-to #:who 'serialize)])
       ;; First, traverse V to find cycles and sharing
       (find-cycles-and-sharing v cycle share)
       ;; To simplify, all add the cycle records to shared.
@@ -453,19 +461,19 @@
 				  (if (hash-ref cycle v #f)
 				      ;; Box indicates cycle record allocation
 				      ;;  followed by normal serialization
-				      (box (serial-shell v mod-map mod-map-cache rel-to))
+				      (box (serial-shell v mod-map mod-map-cache deser-path->relative-path))
 				      ;; Otherwise, normal serialization
-				      (serialize-one v share #f mod-map mod-map-cache rel-to)))
+				      (serialize-one v share #f mod-map mod-map-cache path->relative-path deser-path->relative-path)))
 				ordered)]
 	      [fixups (hash-map 
 		       cycle
 		       (lambda (v n)
 			 (cons n
-			       (serialize-one v share #f mod-map mod-map-cache rel-to))))]
-	      [main-serialized (serialize-one v share #t mod-map mod-map-cache rel-to)]
+			       (serialize-one v share #f mod-map mod-map-cache path->relative-path deser-path->relative-path))))]
+	      [main-serialized (serialize-one v share #t mod-map mod-map-cache path->relative-path deser-path->relative-path)]
 	      [mod-map-l (map car (sort (hash-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
-	  (list '(3) ;; serialization-format version
+	  (list (if (or rel-to deser-rel-to) '(4) '(3)) ;; serialization-format version
                 (hash-count mod-map)
 		(map (lambda (v) (if (symbol-interned? (cdr v))
                                      v 
@@ -547,6 +555,7 @@
 		  [(bytes? x) (bytes-copy x)]))]
 	  [(p) (bytes->path (cdr v))]
 	  [(p+) (bytes->path (cadr v) (cddr v))]
+	  [(p*) (relative-path-elements->path (cdr v))]
 	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]

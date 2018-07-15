@@ -127,9 +127,8 @@
       [(prefab-struct-key v)
        (loop (struct->vector v))]
       [else (void)]))
-  (define exploded-base-dir (box 'not-ready))
-  (define exploded-wrt-rel-dir (box 'not-ready))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
+  (define path->relative-path-elements (make-path->relative-path-elements))
   ;; The fasl formal prefix:
   (write-bytes fasl-prefix o)
   ;; Write content to a string, so we can measure it
@@ -208,9 +207,7 @@
            (write-fasl-integer (if (treat-immutable? v) fasl-immutable-bytes-type fasl-bytes-type) o)
            (write-fasl-bytes v o)]
           [(path-for-some-system? v)
-           (define rel-elems (path->relative-path-elements v
-                                                           #:exploded-base-dir exploded-base-dir
-                                                           #:exploded-wrt-rel-dir exploded-wrt-rel-dir))
+           (define rel-elems (path->relative-path-elements v))
            (cond
              [rel-elems
               (write-byte fasl-relative-path-type o)
@@ -230,9 +227,7 @@
            (define new-src
              (cond
                [(and (path? src)
-                     (not (path->relative-path-elements src
-                                                        #:exploded-base-dir exploded-base-dir
-                                                        #:exploded-wrt-rel-dir exploded-wrt-rel-dir)))
+                     (not (path->relative-path-elements src)))
                 ;; Convert to a string
                 (truncate-path src)]
                [else src]))

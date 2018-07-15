@@ -17,11 +17,18 @@ See @racket[serialize] for an enumeration of serializable values.}
 @; ----------------------------------------------------------------------
 
 @defproc[(serialize [v serializable?]
-                    [#:relative-directory relative-to (or/c (and/c path? complete-path?)
-                                                            (cons/c (and/c path? complete-path?)
-                                                                    (and/c path? complete-path?))
-                                                            #f)
-                     #f])
+                    [#:relative-directory relative-to
+                     (or/c (and/c path? complete-path?)
+                           (cons/c (and/c path? complete-path?)
+                                   (and/c path? complete-path?))
+                           #f)
+                     #f]
+                    [#:deserialize-relative-directory deserialize-relative-to
+                     (or/c (and/c path? complete-path?)
+                           (cons/c (and/c path? complete-path?)
+                                   (and/c path? complete-path?))
+                           #f)
+                     relative-to])
          any]{
 
 Returns a value that encapsulates the value @racket[v]. This value
@@ -71,9 +78,16 @@ are all reachable from each other), then @racket[v] can be serialized
 only if the cycle includes a mutable value, where a @tech{prefab}
 structure counts as mutable only if all of its fields are mutable.
 
-If @racket[relative-to] is not @racket[#f], than the
-deserializer paths will be relative. See
-@racket[current-write-relative-path].
+If @racket[relative-to] is not @racket[#f], then paths to serialize
+that extend the path in @racket[relative-to] are recorded in relative
+and platform-independent form. The possible values and treatment of
+@racket[relative-to] are the same as for @racket[current-write-relative-directory].
+
+If @racket[deserialize-relative-to] is not @racket[#f], then any paths
+to deserializers as extracted via @racket[prop:serializable] are
+recorded in relative form. Note that @racket[relative-to] and
+@racket[deserialize-relative-to] are independent, but
+@racket[deserialize-relative-to] defaults to @racket[relative-to].
 
 @margin-note{The @racket[serialize] and @racket[deserialize] functions
 currently do not handle certain cyclic values that @racket[read] and
@@ -82,8 +96,9 @@ currently do not handle certain cyclic values that @racket[read] and
 See @racket[deserialize] for information on the format of serialized
 data.
 
-@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable}
-         #:changed "7.0.0.6" @elem{Added @racket[#:relative-directory] argument}]}
+@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable.}
+         #:changed "7.0.0.6" @elem{Added the @racket[#:relative-directory] and
+                                   @racket[#:deserialize-relative-directory] arguments.}]}
 
 @; ----------------------------------------------------------------------
 
@@ -98,12 +113,15 @@ elements:
 
 @itemize[
 
- @item{An optional list @racket['(1)], @racket['(2)], or @racket['(3)] that represents
+ @item{An optional list @racket['(1)], @racket['(2)], @racket['(3)],
+       or  @racket['(4)] that represents
        the version of the serialization format. If the first element
        of a representation is not a list, then the version is
        @racket[0]. Version 1 adds support for mutable pairs,
        version 2 adds support for @tech{unreadable symbols},
-       and version 3 adds support for @racket[date*] structures.}
+       version 3 adds support for @racket[date*] structures,
+       and version 4 adds support for paths that are meant to
+       be relative to the deserialization directory.}
 
  @item{A non-negative exact integer @racket[_s-count] that represents the
        number of distinct structure types represented in the
@@ -119,9 +137,11 @@ elements:
    for a module that exports the structure's deserialization
    information, or a relative path element list for a module to
    be resolved with respect to
-   @racket[current-load-relative-directory] (seen when using
-   the @racket[#:relative-directory] keyword with
-   @racket[serialize]). The @racket[cdr] of the pair is the
+   @racket[current-load-relative-directory] or (as a fallback)
+   @racket[current-directory]; the list-of-relative-elements
+   form is produced by @racket[serialize] when
+   the @racket[#:deserialize-relative-directory] argument is
+   not @racket[#f]. The @racket[cdr] of the pair is the
    name of a binding (at the top level or exported from a
    module) for deserialization information, either a symbol or
    a string representing an @tech{unreadable symbol}. These two
@@ -265,6 +285,12 @@ elements:
                   is one of the possible symbol results of 
                   @racket[system-path-convention-type]; it represents a 
                   path using the specified convention.}
+
+            @item{a pair whose @racket[car] is @racket['p*] and whose
+                  @racket[cdr] is a list of byte strings represents a 
+                  relative path; it will be converted by deserialization
+                  based on @racket[current-load-relative-directory],
+                  falling back to @racket[current-directory].}
 
             @item{a pair whose @racket[car] is @racket['c] and whose
                   @racket[cdr] is a pair of serials; it represents an

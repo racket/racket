@@ -606,32 +606,58 @@
 ;; ----------------------------------------
 
 (let ([fn (make-temporary-file)])
-  (with-output-to-file fn
-    #:exists 'truncate
-    (lambda () (display
-                (string-append "#lang racket/base\n"
-                               "(require racket/serialize)\n"
-                               "(module+ main\n"
-                               "   (provide s foo?)\n"
-                               "   (serializable-struct foo (bar))\n"
-                               "   (define s (serialize (foo 49)\n"
-                               "               #:relative-directory (find-system-path\n"
-                               "                                      'temp-dir))))\n"))))
-  (define s (dynamic-require `(submod ,fn main) 's))
-  (define foo? (dynamic-require `(submod ,fn main) 'foo?))
-  (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
-    (test #t 'relative-dir (foo? (deserialize s))))
-  (test 'correct-error 'unrelative-dir
-        (with-handlers ([exn:fail:contract?
-                          (λ (e) 'correct-error)])
-          (deserialize s)))
-  (delete-file fn))
+  (define (try rel-mode #:fail-rel? [fail-rel? #t])
+    (define ns (current-namespace))
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-attach-module ns 'racket/serialize )
+      (with-output-to-file fn
+        #:exists 'truncate
+        (lambda () (display
+                    (string-append "#lang racket/base\n"
+                                   "(require racket/serialize)\n"
+                                   "(module+ main\n"
+                                   "   (provide s foo?)\n"
+                                   "   (serializable-struct foo (bar))\n"
+                                   "   (define s (serialize (foo 49)\n"
+                                   "              #:" rel-mode "relative-directory"
+                                   "              (find-system-path 'temp-dir))))\n"))))
+      (define s (dynamic-require `(submod ,fn main) 's))
+      (define foo? (dynamic-require `(submod ,fn main) 'foo?))
+      (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+        (test #t 'relative-dir (foo? (deserialize s))))
+      (test (if fail-rel? 'correct-error 'worked)
+            'unrelative-dir
+            (with-handlers ([exn:fail:contract?
+                             (λ (e) (log-error "~s" e) 'correct-error)])
+              (and (deserialize s)
+                   'worked))))
+    (delete-file fn))
+  (try "")
+  (try "deserialize-")
+  (try "deserialize-relative-directory #f #:" #:fail-rel? #f))
 
-(test (build-path "/" "home" "hotdogs")
+;; serialize as relative
+(test (build-path (or (current-load-relative-directory)
+                      (current-directory))
+                  "hotdogs")
       'path-data
       (deserialize
-       (serialize (build-path "/" "home" "hotdogs")
-                  #:relative-directory (build-path "/" "home"))))
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:relative-directory (build-path (find-system-path 'temp-dir) "home"))))
+
+;; don't serialize as relative
+(test (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:deserialize-relative-directory (build-path (find-system-path 'temp-dir) "work"))))
+
+;; also don't serialize as relative
+(test (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:deserialize-relative-directory (build-path (find-system-path 'temp-dir) "home"))))
 
 ;; ----------------------------------------
 
