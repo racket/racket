@@ -211,8 +211,7 @@
            (cond
              [rel-elems
               (write-byte fasl-relative-path-type o)
-              (loop (for/list ([p (in-list rel-elems)])
-                      (if (path? p) (path-element->bytes p) p)))]
+              (loop rel-elems)]
              [else
               (write-byte fasl-path-type o)
               (write-fasl-bytes (path->bytes v) o)

@@ -622,9 +622,14 @@
                                    "              #:" rel-mode "relative-directory"
                                    "              (find-system-path 'temp-dir))))\n"))))
       (define s (dynamic-require `(submod ,fn main) 's))
+      (define-values (in out) (make-pipe))
+      (write s out)
+      (close-output-port out)
+      (define read-s (read in))
       (define foo? (dynamic-require `(submod ,fn main) 'foo?))
       (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
-        (test #t 'relative-dir (foo? (deserialize s))))
+        (test #t 'relative-dir (foo? (deserialize s)))
+        (test #t 'relative-dir (foo? (deserialize read-s))))
       (test (if fail-rel? 'correct-error 'worked)
             'unrelative-dir
             (with-handlers ([exn:fail:contract?
@@ -644,6 +649,18 @@
       (deserialize
        (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
                   #:relative-directory (build-path (find-system-path 'temp-dir) "home"))))
+
+;; Serialize as relative, test for readability
+(let ([s (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                    #:relative-directory (build-path (find-system-path 'temp-dir) "home"))])
+  (define-values (in out) (make-pipe))
+  (write s out)
+  (close-output-port out)
+  (test (build-path (or (current-load-relative-directory)
+                        (current-directory))
+                    "hotdogs")
+        'read-path-data
+        (deserialize (read in))))
 
 ;; don't serialize as relative
 (test (build-path (find-system-path 'temp-dir) "home" "hotdogs")
