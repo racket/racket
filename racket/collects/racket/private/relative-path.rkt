@@ -58,4 +58,5 @@
                         (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
                        [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
                                        'up)
-                                     (map path-element->bytes rel))]))))))]))
+                                     (for/list ([p (in-list rel)])
+                                       (if (path? p) (path-element->bytes p) p)))]))))))]))
