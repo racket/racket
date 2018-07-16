@@ -68,7 +68,7 @@
     (cond
      [(path? p) (let ([rel (deser-path->relative-path p)])
                   (if rel
-                      `(relative . ,rel)
+                      `(relative . ,(map path->bytes rel))
                       (path->bytes p)))]
      [(and (pair? p) (eq? (car p) 'submod) (path? (cadr p)))
       `(submod ,(protect-path (cadr p) deser-path->relative-path) . ,(cddr p))]
@@ -80,7 +80,7 @@
                                                (list? (cadr p))))
       `(submod ,(unprotect-path (cadr p)) . ,(cddr p))]
      [(and (pair? p) (eq? (car p) 'relative))
-      (relative-path-elements->path (cdr p))]
+      (relative-path-elements->path (map bytes->path (cdr p)))]
      [else p]))
 
   ;; A deserialization function is provided from a `deserialize-info`
@@ -358,7 +358,7 @@
        [(path-for-some-system? v)
         (let ([v-rel (and (path? v) (path->relative-path v))])
           (if v-rel
-              (cons 'p* v-rel)
+              (cons 'p* (map path->bytes v-rel))
               (list* 'p+ (path->bytes v) (path-convention-type v))))]
        [(vector? v)
         (define elems (map (serial #t) (vector->list v)))
@@ -555,7 +555,7 @@
 		  [(bytes? x) (bytes-copy x)]))]
 	  [(p) (bytes->path (cdr v))]
 	  [(p+) (bytes->path (cadr v) (cddr v))]
-	  [(p*) (relative-path-elements->path (cdr v))]
+	  [(p*) (relative-path-elements->path (map bytes->path (cdr v)))]
 	  [(c) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(c!) (cons (loop (cadr v)) (loop (cddr v)))]
 	  [(m) (mcons (loop (cadr v)) (loop (cddr v)))]
