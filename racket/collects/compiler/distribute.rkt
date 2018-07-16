@@ -110,6 +110,7 @@
         (install-libs lib-dir types
 		      #:extras-only? (not executables?)
 		      #:no-dlls? (and (eq? 'windows (cross-system-type))
+				      executables?
 				      ;; If all executables have "<system>" the the
 				      ;; DLL dir, then no base DLLS are needed
 				      (for/and ([f (in-list orig-binaries)])
