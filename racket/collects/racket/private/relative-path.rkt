@@ -52,10 +52,10 @@
                    (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir]
                               [rel (list-tail exploded (length exploded-base-dir))])
                      (cond
-                       [(null? exploded-wrt-rel-dir) rel]
+                       [(null? exploded-wrt-rel-dir) (map path-element->bytes rel)]
                        [(and (pair? rel)
                              (equal? (car rel) (car exploded-wrt-rel-dir)))
                         (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
                        [else (append (for/list ([p (in-list exploded-wrt-rel-dir)])
                                        'up)
-                                     rel)]))))))]))
+                                     (map path-element->bytes rel))]))))))]))
