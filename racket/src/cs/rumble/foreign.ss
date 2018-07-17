@@ -1380,7 +1380,7 @@
                           (lambda (to-wrap)
                             (,(if call? 'foreign-procedure 'foreign-callable)
                              ,conv
-                             ,@(if (or blocking? async-apply) '(__thread) '())
+                             ,@(if (or blocking? async-apply) '(__collect_safe) '())
                              to-wrap
                              ,(map (lambda (in-type id)
                                      (if id

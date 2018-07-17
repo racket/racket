@@ -114,7 +114,7 @@
              (with-syntax ([ret-type (convert-type #'orig-ret-type)]
                            [(arg-type ...) (map convert-type #'(orig-arg-type ...))]
                            [(conv ...) (if (#%memq 'blocking (map syntax->datum #'(flag ...)))
-                                           #'(__thread)
+                                           #'(__collect_safe)
                                            #'())])
                #'(let ([proc (foreign-procedure conv ... (rktio-lookup 'name)
                                                 (arg-type ...)

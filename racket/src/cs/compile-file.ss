@@ -16,7 +16,7 @@
 (check-defined 'current-generate-id)
 (check-defined 'load-compiled-from-port)
 (check-defined 'collect-rendezvous)
-(check-defined '(define-ftype T (function __thread () void)))
+(check-defined '(define-ftype T (function __collect_safe () void)))
 
 ;; ----------------------------------------
 
