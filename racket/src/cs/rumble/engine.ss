@@ -92,6 +92,17 @@
             (engine-state-thread-cell-values es)
             (engine-state-init-break-enabled-cell es)))))))))
 
+(define (engine-timeout)
+  (let ([can-block? (fx= 1 (disable-interrupts))])
+    (enable-interrupts)
+    (cond
+     [can-block?
+      (engine-block)]
+     [else
+      ;; Cause the timer to fire as soon as possible (i.e., as soon
+      ;; as interrupts are enabled)
+      (set-timer 1)])))
+
 (define (engine-return . args)
   (assert-not-in-uninterrupted)
   (timer-interrupt-handler void)

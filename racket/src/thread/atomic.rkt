@@ -45,6 +45,10 @@
      (cb)]
     [(negative? n) (internal-error "not in atomic mode to end")]
     [else
+     ;; There's a small chance that `end-atomic-callback`
+     ;; was set by the scheduler after the check and
+     ;; before we exit atomic mode. Make sure that rare
+     ;; event is ok.
      (current-atomic n)]))
 
 (define (start-atomic/no-interrupts)

@@ -88,8 +88,10 @@
                (set-thread-engine! t e))
              (select-thread!)]
             [else
-             ;; Swap out when the atomic region ends:
-             (set-end-atomic-callback! engine-block)
+             ;; Swap out when the atomic region ends and at a point
+             ;; where host-system interrupts are not disabled (i.e.,
+             ;; don't use `engine-block` instead of `engine-timeout`):
+             (set-end-atomic-callback! engine-timeout)
              (loop e)])))))))
 
 (define (maybe-done callbacks)

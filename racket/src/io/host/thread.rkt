@@ -3,7 +3,7 @@
 
 (provide atomically
          non-atomically
-         atomically/no-interrupts
+         atomically/no-interrupts/no-wind
          assert-atomic
          check-current-custodian)
 
@@ -70,8 +70,11 @@
       (let () e ...)
       (start-atomic))))
 
-;; Cannot be exited with `non-atomically`:
-(define-syntax-rule (atomically/no-interrupts e ...)
+;; Disables host interrupts, but the "no wind" part is
+;; an unforced constraint: don't use anything related
+;; to `dynamic-wind`, continuations, or continuation marks.
+;; Cannot be exited with `non-atomically`.
+(define-syntax-rule (atomically/no-interrupts/no-wind e ...)
   (begin
     (start-atomic/no-interrupts)
     (begin0

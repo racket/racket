@@ -11,6 +11,7 @@
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
                   [engine-block rumble:engine-block]
+                  [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
                   [current-engine-state rumble:current-engine-state]
                   [make-condition rumble:make-condition]
@@ -64,6 +65,7 @@
        (hash
         'make-engine rumble:make-engine
         'engine-block rumble:engine-block
+        'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
         'current-engine-state (lambda (v) (rumble:current-engine-state v))
         'set-ctl-c-handler! rumble:set-ctl-c-handler!

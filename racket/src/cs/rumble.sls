@@ -45,6 +45,7 @@
 
           make-engine
           engine-block
+          engine-timeout
           engine-return
           current-engine-state  ; not exported to Racket
           set-ctl-c-handler! ; not exported to Racket

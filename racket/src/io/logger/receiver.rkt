@@ -29,7 +29,7 @@
     ;; called in atomic mode and possibly in host interrupt handler,
     ;; so anything we touch here should only be modified with
     ;; interrupts disabled
-    (atomically/no-interrupts
+    (atomically/no-interrupts/no-wind
      (define b (queue-remove! (queue-log-receiver-waiters lr)))
      (cond
        [b
@@ -41,19 +41,20 @@
   #:property
   prop:evt
   (poller (lambda (lr ctx)
-            (define msg (atomically/no-interrupts (queue-remove! (queue-log-receiver-msgs lr))))
+            (define msg (atomically/no-interrupts/no-wind (queue-remove! (queue-log-receiver-msgs lr))))
             (cond
               [msg
                (values (list msg) #f)]
               [else
                (define b (box (poll-ctx-select-proc ctx)))
-               (define n (atomically/no-interrupts (queue-add! (queue-log-receiver-waiters lr) b)))
+               (define n (atomically/no-interrupts/no-wind (queue-add! (queue-log-receiver-waiters lr) b)))
                (values #f (control-state-evt
                            (wrap-evt async-evt (lambda (e) (unbox b)))
-                           (lambda () (atomically/no-interrupts (queue-remove-node! (queue-log-receiver-waiters lr) n)))
+                           (lambda () (atomically/no-interrupts/no-wind
+                                       (queue-remove-node! (queue-log-receiver-waiters lr) n)))
                            void
                            (lambda ()
-                             (atomically/no-interrupts
+                             (atomically/no-interrupts/no-wind
                               (define msg (queue-remove! (queue-log-receiver-msgs lr)))
                               (cond
                                 [msg
@@ -106,7 +107,7 @@
 ;; ----------------------------------------
 
 (define (add-log-receiver! logger lr)
-  (atomically/no-interrupts
+  (atomically/no-interrupts/no-wind
    ;; Add receiver to the logger's list, purning empty boxes
    ;; every time the list length doubles (roughly):
    (cond

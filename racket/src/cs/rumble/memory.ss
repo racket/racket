@@ -27,7 +27,10 @@
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
 (define allocated-after-major (* 32 1024 1024))
 
-;; Called in any thread with all other threads paused
+;; Called in any thread with all other threads paused. The Racket
+;; thread scheduler may be in atomic mode. In fact, the engine
+;; and control layer may be in uninterrupted mode, so don't
+;; do anything that might use "control.ss" (especially in logging).
 (define (collect/report g)
   (let ([this-counter (if g (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix g)) gc-counter)]
         [pre-allocated (bytes-allocated)]

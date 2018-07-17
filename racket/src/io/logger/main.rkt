@@ -101,7 +101,7 @@
   (check who #:or-false symbol? topic)
   (check who string? message)
   (define msg #f)
-  (atomically/no-interrupts
+  (atomically/no-interrupts/no-wind
    (when ((logger-max-wanted-level logger) . level>=? . level)
      (let loop ([logger logger])
        (for ([r (in-list (logger-receivers logger))])

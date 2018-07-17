@@ -29,6 +29,7 @@
 (bounce #%engine
         make-engine
         engine-block
+        engine-timeout
         engine-return
         current-engine-state
         current-process-milliseconds

@@ -307,6 +307,66 @@ FFI Differences
    not actually an array of pointers.
 
 
+Threads, Threads, Atomicity, Atomicity, and Atomicity
+-----------------------------------------------------
+
+Racket's thread layer does not use Chez Scheme threads. Chez Scheme
+threads correspond to OS threads. Racket threads are implemented in
+terms of engines at the Rumble layer. At the same time, futures and
+places will use Chez Scheme threads, and so parts of Rumble are meant
+to be thread-safe with respect to Chez Scheme and OS threads. The FFI
+also exposes elements of Chez Scheme / OS threads.
+
+As a result of these layers, there are multiple ways to implement
+atomic regions:
+
+ * For critical sections with respect to Chez Scheme / OS threads, use
+   a mutex.
+
+   For example, the implementation of `eq?` and `eqv?`-based hash
+   tables uses mutex to guard hash tables, so they can be accessed
+   concurrently from futures. In contrast, `equal?`-based hash table
+   operations are not atomic from the Racket perspective, so they
+   can't be locked by a mutex; they use Racket-thread locks, instead.
+   The "rumble/lock.ss" layer skips the `eq?`/`eqv?`-table mutex when
+   threads are not enabled at the Chez Scheme level.
+
+ * For critical sections at the Racket level, there are multiple
+   possibilities:
+
+     - The Racket "thread" layer provides `start-atomic` and
+       `end-atomic` to prevent Racket-thread swaps.
+
+       These are the same opertations as provided by
+       `ffi/unsafe/atomic`.
+
+     - Disabling Chez Scheme interrupts will also disable Racket
+       thread swaps, since a thread swap via engines depends on a
+       timer interrupt --- unless something explicitly blocks via the
+       Racket thread scheduler, such as with `(sleep)`.
+
+       Disable interrupts for atomicity only at the Rumble level where
+       no Racket-level callbacks are not involved. Also, beware that
+       disabling interrupts will prevent GC interrupts.
+
+       The Racket "thread" layer provides `start-atomic/no-interrupts`
+       and `end-atomic/no-interrupts` for both declaing atomicity at
+       the Racket level and turning off Chez Scheme interrupts. The
+       combination is useful for implementing functionality that might
+       be called in response to a GC and might also be called by
+       normal (non-atomic) code; the implementation of logging at the
+       "io" layer might be the only use case.
+
+     - The implementation of engines and continuations uses its own
+       flag to protect regions where an engine timeout should not
+       happen, such as when the metacontinuation is being manipulated.
+       That flag is managed by `start-uninterrupted` and
+       `end-uninterrupted` in "rumble/interrupt.ss".
+
+       It may be tempting to use that flag for other purposes, as a
+       cheap way to disable thread swaps. For now, don't do that.
+
+
 Status and Thoughts on Various Racket Subsystems
 ------------------------------------------------
 
@@ -315,10 +375,6 @@ Status and Thoughts on Various Racket Subsystems
    analysis in "../schemify/schemify.rkt", the indirection is not
    needed often in a typical program, and the overhead appears to be
    light when it is needed.
-
- * Racket's delimited continuations, continuation marks, threads, and
-   events are mostly in place (see "rumble/control.ss",
-   "rumble/engine.ss", and the source for "thread.rktl").
 
  * The "rktio" library fills the gap between Racket and Chez Scheme's
    native I/O. The "rktio" library provides a minimal, non-blocking,
