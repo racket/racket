@@ -633,7 +633,7 @@
       (test (if fail-rel? 'correct-error 'worked)
             'unrelative-dir
             (with-handlers ([exn:fail:contract?
-                             (λ (e) (log-error "~s" e) 'correct-error)])
+                             (λ (e) 'correct-error)])
               (and (deserialize s)
                    'worked))))
     (delete-file fn))
