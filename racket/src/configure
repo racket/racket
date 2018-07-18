@@ -1480,7 +1480,7 @@ Optional Features:
   --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
   --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
-  --enable-cify          compile startup code to C insteda of bytecode
+  --enable-cify           compile startup code to C instead of bytecode
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-stackup        assume "up" if stack direction cannot be determined
   --enable-bigendian      assume "big" if endianness cannot be determined
@@ -5982,21 +5982,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
      done
 fi
 
-
-
-if test "${endianness}" = "unknown" ; then
-  if test "${enable_bigendian}" = "yes" ; then
-    endianness=big
-  else
-    echo configure: warning: cannot determine endianness, assuming little
-  fi
-fi
-
-if test "${endianness}" = "big" ; then
-
-$as_echo "#define SCHEME_BIG_ENDIAN 1" >>confdefs.h
-
-fi
 
 
  msg="for stack direction"

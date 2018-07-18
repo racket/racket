@@ -73,7 +73,7 @@ AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
-AC_ARG_ENABLE(backtrace, [  --enable-cify          compile startup code to C insteda of bytecode])
+AC_ARG_ENABLE(backtrace, [  --enable-cify           compile startup code to C instead of bytecode])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
@@ -1257,19 +1257,6 @@ AC_CHECK_SIZEOF(bool, unused, [#include <stdbool.h>])
 
 AC_TYPE_INTPTR_T
 AC_TYPE_UINTPTR_T
-
-if test "${endianness}" = "unknown" ; then
-  if test "${enable_bigendian}" = "yes" ; then
-    endianness=big
-  else
-    echo configure: warning: cannot determine endianness, assuming little
-  fi
-fi
-
-if test "${endianness}" = "big" ; then
-  AC_DEFINE(SCHEME_BIG_ENDIAN,1,[Big endian])
-fi
-
 
 [ msg="for stack direction" ]
 AC_MSG_CHECKING($msg)
