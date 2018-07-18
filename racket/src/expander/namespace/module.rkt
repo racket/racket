@@ -502,9 +502,9 @@
        (let loop ()
          (define mis (hash-ref (namespace-available-module-instances ns) run-phase null))
          (unless (null? mis)
-           (hash-set! (namespace-available-module-instances ns) run-phase null)
            (for ([mi (in-list (reverse mis))])
              (run-module-instance! mi ns #:run-phase run-phase #:skip-run? #f #:otherwise-available? #f))
+           (hash-set! (namespace-available-module-instances ns) run-phase null)
            ;; In case instantiation added more reflectively:
            (loop)))))))
 
