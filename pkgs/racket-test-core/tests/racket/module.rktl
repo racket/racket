@@ -2706,5 +2706,31 @@ case of module-leve bindings; it doesn't cover local bindings.
   (eval 'x (module->namespace '(submod 'm check))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to provoke race conditions in the expander related
+;; to instanitiating compile-time instances on demand
+
+(test #t
+      'no-races-found
+      (for/and ([i (in-range 100)])
+        (let ([ok? #t]
+              [work 0])
+          (for-each
+           sync
+           (parameterize ([current-namespace (make-base-namespace)])
+             (for/list ([i 5])
+               (thread
+                (lambda ()
+                  ;; "make work" to try to trigger a thread swap during `expand`
+                  (for ([w (in-range (random 1000))])
+                    (set! work (add1 work)))
+                  (with-handlers ([exn? (lambda (exn)
+                                          (set! ok? #f)
+                                          (raise exn))])
+                    ;; This `expand` will force compile-time instances of
+                    ;; various modules used by `racket/base`
+                    (expand `(lambda (x) x))))))))
+          ok?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
