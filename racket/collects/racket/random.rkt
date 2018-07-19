@@ -20,7 +20,13 @@
                   (current-continuation-marks)))]))
 
 (define (random-ref seq [prng (current-pseudo-random-generator)])
-  (car (random-sample seq 1 prng)))
+  (define samples
+    (random-sample/out-replacement seq 1 prng))
+  (unless samples
+    (raise-argument-error 'random-ref "non-empty sequence" seq))
+  (vector-ref samples 0))
+
+(define not-there (gensym))
 
 (define (random-sample seq n [prng (current-pseudo-random-generator)]
                        #:replacement? [replacement? #t])
@@ -29,35 +35,44 @@
   (cond
    [(zero? n) '()]
    [(not replacement?)
-    ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
-    (define not-there (gensym))
-    (define samples (make-vector n not-there))
-    (for ([elt seq]
-          [i   (in-naturals)])
-      (cond [(< i n) ; we're not full, sample for sure
-             (vector-set! samples i elt)]
-            [(< (random (add1 i) prng) n) ; we've already seen n items; replace one?
-             (vector-set! samples (random n prng) elt)]))
+    (define samples
+      (random-sample/replacement seq n prng))
     ;; did we get enough?
     (unless (for/and ([s (in-vector samples)])
               (not (eq? s not-there)))
       (raise-argument-error 'random-sample
                             "integer less than or equal to sequence length"
-                            n))
+                            1 seq n prng))
     (vector->list samples)]
    [else
-    ;; similar to above, except each sample is independent
-    (define samples #f)
-    (for ([elt seq]
-          [i   (in-naturals)])
-      (cond [(= i 0) ; initialize samples
-             (set! samples (make-vector n elt))]
-            [else ; independently, maybe replace
-             (for ([j (in-range n)])
-               (when (zero? (random (add1 i) prng))
-                 (vector-set! samples j elt)))]))
+    (define samples
+      (random-sample/out-replacement seq n prng))
     (unless samples
       (raise-argument-error 'random-sample
                             "non-empty sequence for n>0"
-                            seq))
+                            0 seq n prng))
     (vector->list samples)]))
+
+(define (random-sample/replacement seq n prng)
+  ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
+  (define samples (make-vector n not-there))
+  (for ([elt seq]
+        [i   (in-naturals)])
+    (cond [(< i n) ; we're not full, sample for sure
+           (vector-set! samples i elt)]
+          [(< (random (add1 i) prng) n) ; we've already seen n items; replace one?
+           (vector-set! samples (random n prng) elt)]))
+  samples)
+
+(define (random-sample/out-replacement seq n prng)
+  ;; similar to above, except each sample is independent
+  (define samples #f)
+  (for ([elt seq]
+        [i   (in-naturals)])
+    (cond [(= i 0) ; initialize samples
+           (set! samples (make-vector n elt))]
+          [else ; independently, maybe replace
+           (for ([j (in-range n)])
+             (when (zero? (random (add1 i) prng))
+               (vector-set! samples j elt)))]))
+  samples)
