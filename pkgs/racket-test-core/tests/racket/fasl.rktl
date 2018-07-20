@@ -145,4 +145,18 @@
 (test (srcloc ".../a/.." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'up) 1 2 3 4)))
 (test (srcloc ".../a/." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'same) 1 2 3 4)))
 
+(let ([root (car (filesystem-root-list))])
+  (test
+   root
+   'longer-relative
+   (parameterize ([current-write-relative-directory (build-path root "a")])
+     (fasl->s-exp (s-exp->fasl root))))
+  
+  (test
+   (build-path 'same)
+   'this-dir-path
+   (parameterize ([current-write-relative-directory root]
+                  [current-load-relative-directory #f])
+     (fasl->s-exp (s-exp->fasl (build-path root 'same))))))
+
 (report-errs)

@@ -146,6 +146,7 @@
            (and (for/and ([base-p (in-list exploded-base-dir)]
                           [p (in-list exploded)])
                   (equal? base-p p))
+                ((length exploded) . >= . (length exploded-base-dir))
                 (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir ]
                            [rel (list-tail exploded (length exploded-base-dir))])
                   (cond
