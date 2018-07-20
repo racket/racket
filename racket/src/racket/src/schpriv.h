@@ -3989,6 +3989,7 @@ void scheme_sort_resolve_ir_local_array(Scheme_IR_Local **a, intptr_t count);
 Scheme_Object *scheme_place_make_async_channel();
 void scheme_place_async_channel_send(Scheme_Object *ch, Scheme_Object *uo);
 Scheme_Object *scheme_place_async_channel_receive(Scheme_Object *ch);
+int scheme_place_can_receive();
 #endif
 int scheme_is_predefined_module_path(Scheme_Object *v);
   
