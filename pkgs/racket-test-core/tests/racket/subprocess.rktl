@@ -544,6 +544,22 @@
     (close-input-port (cadddr p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check the process state for subprocesses to ensure that, for example,
+;; SIGCHLD is not blocked
+
+(unless (eq? (system-type) 'windows)
+  (let* ([dir (make-temporary-file "sub~a" 'directory)]
+         [exe (build-path dir "check")])
+    (when (system* (or (find-executable-path "cc")
+                       (find-executable-path "gcc"))
+                   "-o"
+                   exe
+                   (path->complete-path "unix_check.c" (or (current-load-relative-directory)
+                                                           (current-directory))))
+      (test #t 'subprocess-state (system* exe)))
+    (delete-directory/files dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
