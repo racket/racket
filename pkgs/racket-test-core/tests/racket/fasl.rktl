@@ -151,4 +151,11 @@
  (parameterize ([current-write-relative-directory (build-path "/" "a")])
    (fasl->s-exp (s-exp->fasl (build-path "/")))))
 
+(test
+ (build-path 'same)
+ 'this-dir-path
+ (parameterize ([current-write-relative-directory (build-path "/")]
+                [current-load-relative-directory #f])
+   (fasl->s-exp (s-exp->fasl (build-path "/" 'same)))))
+
 (report-errs)
