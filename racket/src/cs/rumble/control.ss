@@ -827,15 +827,10 @@
 
 (define (mark-table-prune a b)
   (cond
-   [(null? a) b]
+   [(null? a) '()]
    [(null? b) a]
-   [else
-    (let loop ([b b] [a a])
-      (cond
-       [(null? a) b]
-       [else (let ([p (car a)])
-               (loop (mark-table-remove b (car p))
-                     (cdr a)))]))]))
+   [else (mark-table-prune (mark-table-remove a (caar b))
+                           (cdr b))]))
 
 (define (mark-table->hash mt)
   (let loop ([ht empty-hasheq] [mt mt])
@@ -1034,8 +1029,8 @@
            [(and (not prev) (eq? (mark-stack-frame-k mark-stack) empty-k))
             (make-mark-stack-frame #f
                                    empty-k
-                                   (mark-table-prune (mark-stack-frame-table mark-stack)
-                                                     (mark-stack-frame-table mark-splice))
+                                   (mark-table-prune (mark-stack-frame-table mark-splice)
+                                                     (mark-stack-frame-table mark-stack))
                                    #f)]
            [else (loop prev)]))]))]))
 
