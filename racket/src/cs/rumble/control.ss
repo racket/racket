@@ -250,45 +250,44 @@
        (let ([r ; a list of results, or a non-list for special handling
               (call/cc
                (lambda (k)
-                 ;; Push another continuation frame so we can drop its `next`
-                 (call-as-non-tail
-                  (lambda ()
-                    ;; drop the rest of the current continuation from the
-                    ;; new metacontinuation frame:
-                    (#%$current-stack-link #%$null-continuation)
-                    (let-values ([results
-                                  (call/cc
-                                   ;; remember the "empty" continuation frame
-                                   ;; that just continues the metacontinuation:
-                                   (lambda (empty-k)
-                                     (let ([mf (make-metacontinuation-frame tag
-                                                                            k
-                                                                            (current-empty-k)
-                                                                            (current-winders)
-                                                                            (if tail?
-                                                                                (prune-immediate-frame (current-mark-stack) tail-k)
-                                                                                (current-mark-stack))
-                                                                            (current-mark-splice)
-                                                                            #f
-                                                                            #f
-                                                                            #f)])
-                                       (current-winders '())
-                                       (current-empty-k empty-k)
-                                       (current-mark-splice (and tail?
-                                                                 (keep-immediate-frame (current-mark-stack) tail-k empty-k)))
-                                       (current-mark-stack #f)
-                                       ;; push the metacontinuation:
-                                       (current-metacontinuation (cons mf (current-metacontinuation)))
-                                       ;; ready:
-                                       (proc))))])
-                      ;; Prepare to use cc-guard, if one was enabled:
-                      (let ([cc-guard (or (metacontinuation-frame-cc-guard (car (current-metacontinuation)))
-                                          values)])
-                        ;; Continue normally; the metacontinuation could be different
-                        ;; than when we captured this metafunction frame, though:
-                        (resume-metacontinuation
-                         ;; Apply the cc-guard, if any, outside of the prompt:
-                         (lambda () (apply cc-guard results)))))))))])
+                 ;; the `call/cc` to get `k` created a new stack
+                 ;; segment; By dropping the link from the current
+                 ;; segment to the return context referenced by `k`,
+                 ;; we actually delimit the current continuation:
+                 (#%$current-stack-link #%$null-continuation)
+                 (let-values ([results
+                               (call/cc
+                                ;; remember the "empty" continuation frame
+                                ;; that just continues the metacontinuation:
+                                (lambda (empty-k)
+                                  (let ([mf (make-metacontinuation-frame tag
+                                                                         k
+                                                                         (current-empty-k)
+                                                                         (current-winders)
+                                                                         (if tail?
+                                                                             (prune-immediate-frame (current-mark-stack) tail-k)
+                                                                             (current-mark-stack))
+                                                                         (current-mark-splice)
+                                                                         #f
+                                                                         #f
+                                                                         #f)])
+                                    (current-winders '())
+                                    (current-empty-k empty-k)
+                                    (current-mark-splice (and tail?
+                                                              (keep-immediate-frame (current-mark-stack) tail-k empty-k)))
+                                    (current-mark-stack #f)
+                                    ;; push the metacontinuation:
+                                    (current-metacontinuation (cons mf (current-metacontinuation)))
+                                    ;; ready:
+                                    (proc))))])
+                   ;; Prepare to use cc-guard, if one was enabled:
+                   (let ([cc-guard (or (metacontinuation-frame-cc-guard (car (current-metacontinuation)))
+                                       values)])
+                     ;; Continue normally; the metacontinuation could be different
+                     ;; than when we captured this metafunction frame, though:
+                     (resume-metacontinuation
+                      ;; Apply the cc-guard, if any, outside of the prompt:
+                      (lambda () (apply cc-guard results)))))))])
          (cond
           [(aborting? r)
            ;; Remove the prompt as we call the handler:
@@ -301,10 +300,6 @@
            ;; been popped already by `resume-metacontinuation`
            (end-uninterrupted 'resume)
            (r)]))]))))
-
-(define (call-as-non-tail proc)
-  (proc)
-  '(error 'call-as-non-tail "shouldn't get to frame that was meant to be discarded"))
 
 (define (metacontinuation-frame-update-mark-stack current-mf mark-stack mark-splice)
   (make-metacontinuation-frame (metacontinuation-frame-tag current-mf)
