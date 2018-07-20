@@ -3,6 +3,12 @@
 (provide relative-path-elements->path
          make-path->relative-path-elements)
 
+(define (truncating-list-tail lst pos)
+  (if ((length lst) . >= . pos)
+      (list-tail lst pos)
+      '()))
+
+
 (define (relative-path-elements->path elems)
   (define wrt-dir (current-load-relative-directory))
   (define rel-elems (for/list ([p (in-list elems)])
@@ -41,14 +47,15 @@
          (set! exploded-wrt-rel-dir
                (if (eq? base-dir wrt-dir)
                    '()
-                   (list-tail (explode-path wrt-dir)
-                              (length exploded-base-dir)))))
+                   (truncating-list-tail (explode-path wrt-dir)
+                                         (length exploded-base-dir)))))
        (and exploded-base-dir
             (path? v)
             (let ([exploded (explode-path v)])
               (and (for/and ([base-p (in-list exploded-base-dir)]
                              [p (in-list exploded)])
                      (equal? base-p p))
+                   ((length exploded) . >= . (length exploded-base-dir))
                    (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir]
                               [rel (list-tail exploded (length exploded-base-dir))])
                      (cond

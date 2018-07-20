@@ -145,4 +145,10 @@
 (test (srcloc ".../a/.." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'up) 1 2 3 4)))
 (test (srcloc ".../a/." 1 2 3 4) fasl->s-exp (s-exp->fasl (srcloc (build-path "a" 'same) 1 2 3 4)))
 
+(test
+ (build-path "/")
+ 'longer-relative
+ (parameterize ([current-write-relative-directory (build-path "/" "a")])
+   (fasl->s-exp (s-exp->fasl (build-path "/")))))
+
 (report-errs)
