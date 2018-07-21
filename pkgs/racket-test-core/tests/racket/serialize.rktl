@@ -724,21 +724,25 @@
 
 ;; ----------------------------------------
 
-(test
- 'right-error
- 'non-base-dir
- (with-handlers ([exn:fail:contract? (λ (e) (log-error "~s" e) 'right-error)])
-   (serialize (string->path "/x")
-              #:relative-directory (cons "/x"
-                                         "/x/y"))))
+(let ()
+  (define (test-relative data rel)
+    (test
+     'right-error
+     'non-base-dir
+     (with-handlers ([exn:fail:contract?
+                      (λ (e)
+                        (if (string-prefix?
+                             (exn-message e)
+                             (string-append "serialize: relative-directory pair's first"
+                                            " path does not extend second path"))
+                            'right-error
+                            'wrong-error))])
+       (serialize data
+                  #:relative-directory rel))))
 
-(test
- 'right-error
- 'different-base-dir
- (with-handlers ([exn:fail:contract? (λ (e) (log-error "~s" e) 'right-error)])
-   (serialize (string->path "/x")
-              #:relative-directory (cons "/x/z"
-                                         "/x/y"))))
+   (test-relative (string->path "/x") (cons "/x" "/x/y"))
+
+   (test-relative (string->path "/x") (cons "/x/z" "/x/y")))
 
 ;; ----------------------------------------
 

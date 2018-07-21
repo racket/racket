@@ -39,19 +39,23 @@
          (define exploded-wrt-dir (explode-path wrt-dir))
          (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
          (set! exploded-base-dir (and base-dir (explode-path base-dir)))
-         (cond
-           [(eq? base-dir wrt-dir) (set! exploded-wrt-rel-dir '())]
-           [(and ((length exploded-wrt-dir) . >= . (length exploded-base-dir))
-                 (for/and ([a (in-list exploded-wrt-dir)]
-                           [b (in-list exploded-base-dir)])
-                   (equal? a b)))
-            (set! exploded-wrt-rel-dir
-                      (list-tail exploded-wrt-dir
-                                 (length exploded-base-dir)))]
-           [else (raise-arguments-error (or who "make-path->relative-path-elements")
-                                        "first path does not extend second path"
-                                        "first path" wrt-dir
-                                        "second path" base-dir)]))
+         (set! exploded-wrt-rel-dir
+               (cond
+                 [(eq? base-dir wrt-dir) '()]
+                 [else
+                  (define exploded-wrt-dir (explode-path wrt-dir))
+                  (define base-len (length exploded-base-dir))
+                  (when who
+                    (unless (and 
+                             ((length exploded-wrt-dir) . >= . base-len)
+                             (for/and ([a (in-list exploded-wrt-dir)]
+                                       [b (in-list exploded-base-dir)])
+                               (equal? a b)))
+                      (raise-arguments-error who
+                                             "relative-directory pair's first path does not extend second path"
+                                             "first path" wrt-dir
+                                             "second path" base-dir)))
+                  (list-tail exploded-wrt-dir base-len)])))
        (and exploded-base-dir
             (path? v)
             (let ([exploded (explode-path v)])
