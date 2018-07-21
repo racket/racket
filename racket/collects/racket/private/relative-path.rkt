@@ -36,23 +36,38 @@
        (when (and (eq? exploded-base-dir 'not-ready)
                   (path? v))
          (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
+         (define exploded-wrt-dir (explode-path wrt-dir))
          (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
          (set! exploded-base-dir (and base-dir (explode-path base-dir)))
          (set! exploded-wrt-rel-dir
-               (if (eq? base-dir wrt-dir)
-                   '()
-                   (list-tail (explode-path wrt-dir)
-                              (length exploded-base-dir)))))
+               (cond
+                 [(eq? base-dir wrt-dir) '()]
+                 [else
+                  (define exploded-wrt-dir (explode-path wrt-dir))
+                  (define base-len (length exploded-base-dir))
+                  (when who
+                    (unless (and 
+                             ((length exploded-wrt-dir) . >= . base-len)
+                             (for/and ([a (in-list exploded-wrt-dir)]
+                                       [b (in-list exploded-base-dir)])
+                               (equal? a b)))
+                      (raise-arguments-error who
+                                             "relative-directory pair's first path does not extend second path"
+                                             "first path" wrt-dir
+                                             "second path" base-dir)))
+                  (list-tail exploded-wrt-dir base-len)])))
        (and exploded-base-dir
             (path? v)
             (let ([exploded (explode-path v)])
               (and (for/and ([base-p (in-list exploded-base-dir)]
                              [p (in-list exploded)])
                      (equal? base-p p))
+                   ((length exploded) . >= . (length exploded-base-dir))
                    (let loop ([exploded-wrt-rel-dir exploded-wrt-rel-dir]
                               [rel (list-tail exploded (length exploded-base-dir))])
                      (cond
-                       [(null? exploded-wrt-rel-dir) (map path-element->bytes rel)]
+                       [(null? exploded-wrt-rel-dir) (for/list ([p (in-list rel)])
+                                                       (if (path? p) (path-element->bytes p) p))]
                        [(and (pair? rel)
                              (equal? (car rel) (car exploded-wrt-rel-dir)))
                         (loop (cdr exploded-wrt-rel-dir) (cdr rel))]
