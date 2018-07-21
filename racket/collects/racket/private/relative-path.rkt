@@ -36,13 +36,22 @@
        (when (and (eq? exploded-base-dir 'not-ready)
                   (path? v))
          (define wrt-dir (and wr-dir (if (pair? wr-dir) (car wr-dir) wr-dir)))
+         (define exploded-wrt-dir (explode-path wrt-dir))
          (define base-dir (and wr-dir (if (pair? wr-dir) (cdr wr-dir) wr-dir)))
          (set! exploded-base-dir (and base-dir (explode-path base-dir)))
-         (set! exploded-wrt-rel-dir
-               (if (eq? base-dir wrt-dir)
-                   '()
-                   (list-tail (explode-path wrt-dir)
-                              (length exploded-base-dir)))))
+         (cond
+           [(eq? base-dir wrt-dir) (set! exploded-wrt-rel-dir '())]
+           [(and ((length exploded-wrt-dir) . >= . (length exploded-base-dir))
+                 (for/and ([a (in-list exploded-wrt-dir)]
+                           [b (in-list exploded-base-dir)])
+                   (equal? a b)))
+            (set! exploded-wrt-rel-dir
+                      (list-tail exploded-wrt-dir
+                                 (length exploded-base-dir)))]
+           [else (raise-arguments-error (or who "make-path->relative-path-elements")
+                                        "first path does not extend second path"
+                                        "first path" wrt-dir
+                                        "second path" base-dir)]))
        (and exploded-base-dir
             (path? v)
             (let ([exploded (explode-path v)])

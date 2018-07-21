@@ -724,4 +724,22 @@
 
 ;; ----------------------------------------
 
+(test
+ 'right-error
+ 'non-base-dir
+ (with-handlers ([exn:fail:contract? (λ (e) (log-error "~s" e) 'right-error)])
+   (serialize (string->path "/x")
+              #:relative-directory (cons "/x"
+                                         "/x/y"))))
+
+(test
+ 'right-error
+ 'different-base-dir
+ (with-handlers ([exn:fail:contract? (λ (e) (log-error "~s" e) 'right-error)])
+   (serialize (string->path "/x")
+              #:relative-directory (cons "/x/z"
+                                         "/x/y"))))
+
+;; ----------------------------------------
+
 (report-errs)
