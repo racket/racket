@@ -280,6 +280,17 @@ values such as procedures, non-prefab structures, etc---then an
 exception is raised instead.
 
 Equivalent to @racket[#:post (~parse syntax-pattern stx-expr)].
+
+@examples[#:eval the-eval
+(syntax-parse #'(1 2 3)
+  [(a b c)
+   #:with rev #'(c b a)
+   #'rev])
+(syntax-parse #'(['x "Ex."] ['y "Why?"] ['z "Zee!"])
+  [([stuff ...] ...)
+   #:with h #'(hash stuff ... ...)
+   #'h])
+]
 }
 
 @specsubform[(code:line #:attr attr-arity-decl expr)]{
@@ -290,6 +301,28 @@ bindings and binds it to the given attribute. The value of
 @racket[attribute] for details.
 
 Equivalent to @racket[#:and (~bind attr-arity-decl expr)].
+
+@examples[#:eval the-eval
+(syntax-parse #'("do" "mi")
+  [(a b)
+   #:attr rev #'(b a)
+   #'rev])
+(syntax-parse #'(1 2)
+  [(a:number b:number)
+   #:attr sum (+ (syntax-e #'a) (syntax-e #'b))
+   (attribute sum)])
+]
+
+The @racket[#:attr] directive is often used in syntax classes:
+
+@examples[#:eval the-eval
+(define-syntax-class ab-sum
+  [pattern (a:number b:number)
+    #:attr sum (+ (syntax-e #'a) (syntax-e #'b))])
+(syntax-parse #'(1 2)
+  [x:ab-sum
+   (attribute x.sum)])
+]
 }
 
 @specsubform[(code:line #:fail-when condition-expr message-expr)
@@ -306,6 +339,21 @@ failure message; otherwise the failure is reported in terms of the
 enclosing descriptions.
 
 Equivalent to @racket[#:post (~fail #:when condition-expr message-expr)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 4)
+   [(m x:number)
+    #:fail-when (even? (syntax-e #'x))
+    "expected an odd number"
+    #'x]))
+(eval:error
+ (syntax-parse #'(m 4)
+   [(m x:number)
+    #:fail-when (and (even? (syntax-e #'x)) #'x)
+    "expected an odd number"
+    #'x]))
+]
 }
 
 @specsubform[(code:line #:fail-unless condition-expr message-expr)
@@ -314,6 +362,15 @@ Equivalent to @racket[#:post (~fail #:when condition-expr message-expr)].
 Like @racket[#:fail-when] with the condition negated.
 
 Equivalent to @racket[#:post (~fail #:unless condition-expr message-expr)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 5)
+   [(m x:number)
+    #:fail-unless (even? (syntax-e #'x))
+    "expected an even number"
+    #'x]))
+]
 }
 
 @specsubform[(code:line #:when condition-expr)]{
@@ -324,6 +381,14 @@ backtracks. In other words, @racket[#:when] is like
 @racket[#:fail-unless] without the message argument.
 
 Equivalent to @racket[#:post (~fail #:unless condition-expr #f)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 5)
+   [(m x:number)
+    #:when (even? (syntax-e #'x))
+    #'x]))
+]
 }
 
 @specsubform[(code:line #:do [defn-or-expr ...])]{
