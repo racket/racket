@@ -932,3 +932,21 @@
 (terx #s(point 1)
       #s(point a b)
       #rx"expected more terms starting with any term")
+
+;; from Alex Knauth, issue #2164 (7/2018)
+(let ()
+  (define-syntax ~temp1
+    (pattern-expander
+     (lambda (stx)
+       (car (generate-temporaries '(tmp))))))
+  (define-syntax-class c1 (pattern (~temp1)))
+  (void))
+(let ()
+  (define-syntax ~temp2
+    (let ([counter 0])
+      (pattern-expander
+       (lambda (stx)
+         (begin0 (format-id #'here "tmp~a" counter)
+           (set! counter (add1 counter)))))))
+  (define-syntax-class c2 (pattern (~temp2)))
+  (void))
