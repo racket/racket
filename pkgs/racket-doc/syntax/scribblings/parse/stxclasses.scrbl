@@ -3,9 +3,17 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          "parse-common.rkt")
+          "parse-common.rkt"
+          (for-syntax racket/base))
 
 @(define the-eval (make-sp-eval))
+
+@(define-syntax sub-kw-form
+   (lambda (stx)
+     (syntax-case stx []
+       [(_ [kw . form-rest] . desc-rest)
+        (with-syntax ([idx-kw (syntax/loc #'kw (unsyntax (indexed-racket kw)))])
+          #'(specsubform (code:line idx-kw . form-rest) . desc-rest))])))
 
 @title[#:tag "stxparse-specifying"]{Specifying Syntax with Syntax Classes}
 
@@ -203,7 +211,7 @@ follows:
                (code:line #:do [def-or-expr ...])
                (code:line #:undo [def-or-expr ...])]
 
-@specsubform[(code:line #:declare pvar-id stxclass maybe-role)
+@sub-kw-form[[#:declare pvar-id stxclass maybe-role]
              #:grammar
              ([stxclass syntax-class-id
                         (syntax-class-id arg ...)]
@@ -242,7 +250,7 @@ pattern may be declared.
 ]
 }
 
-@specsubform[(code:line #:post action-pattern)]{
+@sub-kw-form[[#:post action-pattern]]{
 
 Executes the given @tech{@Apattern} as a ``post-traversal check''
 after matching the main pattern. That is, the following are
@@ -254,7 +262,7 @@ _main-pattern #:and (~post action-pattern)
 ]
 }
 
-@specsubform[(code:line #:and action-pattern)]{
+@sub-kw-form[[#:and action-pattern]]{
 
 Like @racket[#:post] except that no @racket[~post] wrapper is
 added. That is, the following are equivalent:
@@ -263,7 +271,7 @@ _main-pattern #:and action-pattern
 (~and _main-pattern action-pattern)
 ]}
 
-@specsubform[(code:line #:with syntax-pattern stx-expr)]{
+@sub-kw-form[[#:with syntax-pattern stx-expr]]{
 
 Evaluates the @racket[stx-expr] in the context of all previous
 attribute bindings and matches it against the pattern. If the match
@@ -293,7 +301,7 @@ Equivalent to @racket[#:post (~parse syntax-pattern stx-expr)].
 ]
 }
 
-@specsubform[(code:line #:attr attr-arity-decl expr)]{
+@sub-kw-form[[#:attr attr-arity-decl expr]]{
 
 Evaluates the @racket[expr] in the context of all previous attribute
 bindings and binds it to the given attribute. The value of
@@ -325,7 +333,7 @@ The @racket[#:attr] directive is often used in syntax classes:
 ]
 }
 
-@specsubform[(code:line #:fail-when condition-expr message-expr)
+@sub-kw-form[[#:fail-when condition-expr message-expr]
              #:contracts ([message-expr (or/c string? #f)])]{
 
 Evaluates the @racket[condition-expr] in the context of all previous
@@ -356,7 +364,7 @@ Equivalent to @racket[#:post (~fail #:when condition-expr message-expr)].
 ]
 }
 
-@specsubform[(code:line #:fail-unless condition-expr message-expr)
+@sub-kw-form[[#:fail-unless condition-expr message-expr]
              #:contracts ([message-expr (or/c string? #f)])]{
 
 Like @racket[#:fail-when] with the condition negated.
@@ -373,7 +381,7 @@ Equivalent to @racket[#:post (~fail #:unless condition-expr message-expr)].
 ]
 }
 
-@specsubform[(code:line #:when condition-expr)]{
+@sub-kw-form[[#:when condition-expr]]{
 
 Evaluates the @racket[condition-expr] in the context of all previous
 attribute bindings. If the value is @racket[#f], the matching process
@@ -391,7 +399,7 @@ Equivalent to @racket[#:post (~fail #:unless condition-expr #f)].
 ]
 }
 
-@specsubform[(code:line #:do [defn-or-expr ...])]{
+@sub-kw-form[[#:do [defn-or-expr ...]]]{
 
 Takes a sequence of definitions and expressions, which may be
 intermixed, and evaluates them in the scope of all previous attribute
@@ -405,7 +413,7 @@ in a @racket[#:do] block.
 Equivalent to @racket[#:and (~do defn-or-expr ...)].
 }
 
-@specsubform[(code:line #:undo [defn-or-expr ...])]{
+@sub-kw-form[[#:undo [defn-or-expr ...]]]{
 
 Has no effect when initially matched, but if backtracking returns to a
 point @emph{before} the @racket[#:undo] directive, the
@@ -415,7 +423,7 @@ example.
 Equivalent to @racket[#:and (~undo defn-or-expr ...)].
 }
 
-@specsubform[(code:line #:cut)]{
+@sub-kw-form[[#:cut]]{
 
 Eliminates backtracking choice points and commits parsing to the
 current branch at the current point.
