@@ -134,7 +134,14 @@
     (eval '(define-syntax with-continuation-mark
              (syntax-rules ()
                [(_ key val body)
-                (call/cm key val (lambda () body))])))
+                (call-with-current-continuation-attachment
+                 empty-mark-frame
+                 (lambda (a)
+                   (call-setting-continuation-attachment
+                    (mark-frame-update a key val)
+                    (lambda ()
+                      body))))])))
+    (eval '(define call-with-immediate-continuation-mark call-with-immediate-continuation-mark/proc))
     (eval '(define-syntax begin0
              (syntax-rules ()
                [(_ expr0 expr ...)

@@ -738,7 +738,7 @@
         (|#%app| exn:fail msg (current-continuation-marks))))))
 
 (define (call-with-exception-handler proc thunk)
-  (call/cm exception-handler-key proc thunk))
+  (with-continuation-mark exception-handler-key proc (thunk)))
 
 ;; ----------------------------------------
 

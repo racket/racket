@@ -3,7 +3,6 @@
 ;; can be used in a linklet:
 
 (define-primitive-table internal-table
-  [call/cm (known-constant)]
   [extract-procedure (known-constant)]
   [set-ctl-c-handler! (known-constant)]
   [register-linklet-instantiate-continuation! (known-constant)]

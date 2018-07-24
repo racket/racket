@@ -1,13 +1,13 @@
-(import (rumble)
-        (rename (only (chezscheme) dynamic-wind)
-                (dynamic-wind chez:dynamic-wind)))
+(import (rumble))
 
 (define-syntax check
   (syntax-rules ()
     [(_ a b)
-     (let ([v a])
-       (unless (equal? v b)
-         (error 'check (format "failed ~s => ~s" 'a v))))]))
+     (begin
+       #;(printf "try ~s\n" 'a)
+       (let ([v a])
+         (unless (equal? v b)
+           (error 'check (format "failed ~s => ~s" 'a v)))))]))
 
 (define check-abort-tag (make-continuation-prompt-tag 'check-abort))
 
@@ -406,8 +406,8 @@
                           (continuation-mark-set->list*
                            (current-continuation-marks)
                            '(x1 x2)
-                           (default-continuation-prompt-tag)
-                           'nope))))))))
+                           'nope
+                           (default-continuation-prompt-tag)))))))))
        '(#(nope 3) #(2 nope) #(1 1)))
 
 ;; Make sure caching doesn't ignore the prompt tag
@@ -432,7 +432,7 @@
 ;; Engines
 
 (define e (make-engine (lambda () 'done) #f #f))
-(check (cdr (e 20 void list vector))
+(check (cdr (e 100 void list vector))
        '(done))
 
 (define e-forever (make-engine (lambda () (let loop () (loop))) #f #f))
@@ -608,7 +608,7 @@
                             (lambda ()
                               (call-with-system-wind
                                (lambda ()
-                                 (chez:dynamic-wind
+                                 (#%dynamic-wind
                                   (lambda ()
                                     (set! pre (add1 pre)))
                                   (lambda ()
@@ -622,7 +622,7 @@
 
 (check (let ([prefixes 0])
          (let loop ([e e-sw] [i 0])
-           (e 100
+           (e 110
               (lambda () (set! prefixes (add1 prefixes)))
               (lambda (remain v) (list (> i 2)
                                        (= prefixes (add1 i))
