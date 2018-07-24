@@ -138,7 +138,7 @@ rename transformer:
  @item{A @racket[provide] of @racket[_id] provides the binding
        indicated by @racket[id-stx] instead of @racket[_id], as long
        as @racket[id-stx] does not have a true value for the
-       @indexed-racket['not-free-identifier=?] @tech{syntax property}
+       @racket['not-free-identifier=?] @tech{syntax property}
        and as long as @racket[id-stx] has a binding.}
 
  @item{If @racket[provide] exports @racket[_id], it uses a
