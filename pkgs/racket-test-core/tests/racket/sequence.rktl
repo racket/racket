@@ -159,6 +159,7 @@
                         stream-length
                         stream-ref
                         stream-tail
+                        stream-take
                         stream-append
                         stream-map
                         stream-andmap

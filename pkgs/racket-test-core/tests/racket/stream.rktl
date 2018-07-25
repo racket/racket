@@ -47,6 +47,7 @@
 (test 3 stream-length '(1 2 3))
 (test 1 stream-ref '(1 2 3) 0)
 (test '(2 3) stream-tail '(1 2 3) 1)
+(test '(1 2) stream-take '(1 2 3) 2)
 (test '(1 2 3 4 5) stream->list (stream-append '(1 2 3) '(4 5)))
 (test '(1 2 3) stream->list (stream-map values '(1 2 3)))
 (test #f stream-andmap even? '(1 2 3))

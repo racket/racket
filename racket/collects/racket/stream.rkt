@@ -120,9 +120,9 @@
   (unless (stream? st) (raise-argument-error 'stream-take "stream?" st))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'stream-take "exact-nonnegative-integer?" i))
-  (for/list ([e (in-stream st)]
-             [_i (in-range i)])
-    e))
+  (if (= i 0)
+      empty-stream
+      (stream* (stream-first st) (stream-take (stream-rest st) (sub1 i)))))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
