@@ -731,6 +731,7 @@
      'non-base-dir
      (with-handlers ([exn:fail:contract?
                       (λ (e)
+                        (log-warning e)
                         (if (string-prefix?
                              (exn-message e)
                              (string-append "serialize: relative-directory pair's first"
