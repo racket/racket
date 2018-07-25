@@ -116,13 +116,22 @@
      [else
       (loop (sub1 n) (stream-rest s))])))
 
+
+
 (define (stream-take st i)
   (unless (stream? st) (raise-argument-error 'stream-take "stream?" st))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'stream-take "exact-nonnegative-integer?" i))
-  (if (= i 0)
-      empty-stream
-      (stream* (stream-first st) (stream-take (stream-rest st) (sub1 i)))))
+  (let loop ([n i] [s st])
+    (cond
+     [(zero? n) empty-stream]
+     [(stream-empty? s)
+      (raise-arguments-error 'stream-take
+                             "stream ended before index"
+                             "index" i
+                             "stream" st)]
+     [else
+      (stream* (stream-first s) (loop (sub1 n) (stream-rest s)))])))
 
 (define (stream-append . l)
   (for ([s (in-list l)])
