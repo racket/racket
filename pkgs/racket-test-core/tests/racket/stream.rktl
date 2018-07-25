@@ -68,4 +68,17 @@
 (test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)])
                                     (define ii (sqr i)) #:break (> ii 30) i))
 
+;; stream-take works on infinite streams with lazy-delayed errors later
+(test '(1 4/3 4/2 4/1) stream->list
+      (stream-take (let loop ([i 4])
+                     (stream-cons (/ 4 i) (loop (sub1 i))))
+                   4))
+;; stream-take preserves laziness, doesn't evaluate elements too early
+(define (guarded-second s)
+  (if (stream-ref s 0) (stream-ref s 1) #f))
+(define (div a b)
+  (stream (not (zero? b)) (/ a b)))
+(test #f guarded-second (stream-take (div 1 0) 2))
+(test 3/4 guarded-second (stream-take (div 3 4) 2))
+
 (report-errs)
