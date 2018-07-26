@@ -724,14 +724,13 @@
 
 ;; ----------------------------------------
 
-(let ()
+(let ([root (car (filesystem-root-list))])
   (define (test-relative data rel)
     (test
      'right-error
      'non-base-dir
      (with-handlers ([exn:fail:contract?
                       (λ (e)
-                        (log-warning e)
                         (if (string-prefix?
                              (exn-message e)
                              (string-append "serialize: relative-directory pair's first"
@@ -741,9 +740,9 @@
        (serialize data
                   #:relative-directory rel))))
 
-   (test-relative (string->path "/x") (cons "/x" "/x/y"))
+   (test-relative (build-path root "x") (cons (build-path root "x") (build-path root "x" "y")))
 
-   (test-relative (string->path "/x") (cons "/x/z" "/x/y")))
+   (test-relative (build-path root "x") (cons (build-path root "x" "z") (build-path root "x" "y"))))
 
 ;; ----------------------------------------
 
