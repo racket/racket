@@ -150,8 +150,11 @@
     (cond
      [(find-knot-tying-alternate knot-ties lnk (car external+local) linklets)
       => (lambda (alt-lnk)
-           (unless (eq? alt-lnk 'ignore)
-             (add-subst! alt-lnk external+local knot-ties)))]
+           (if (eq? alt-lnk 'ignore)
+               ;; Map to original name:
+               (hash-set! substs (cdr external+local) (car external+local))
+               ;; Map to alt-link:
+               (add-subst! alt-lnk external+local knot-ties)))]
      [else
       (hash-set! substs
                  (cdr external+local)
@@ -180,7 +183,15 @@
                  'ignore]
                 [else
                  (define alt-lnk (link alt-path 0))
-                 (define li (hash-ref linklets alt-lnk))
+                 (define li (hash-ref linklets alt-lnk
+                                      (lambda ()
+                                        (error 'flatten
+                                               (string-append "module for knot tying is not part"
+                                                              " of the flattened module's implementation\n"
+                                                              "  module: ~a\n"
+                                                              "  attempted redirect for: ~a")
+                                               (link-name alt-lnk)
+                                               (link-name lnk)))))
                  (define exports+locals (bootstrap:s-expr-linklet-exports+locals (linklet-info-linklet li)))
                  (for/or ([export+local (in-list exports+locals)])
                    (and (eq? external (car export+local))

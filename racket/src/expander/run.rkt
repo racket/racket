@@ -108,19 +108,20 @@
    [("-B") "Print extracted bootstrap as bytecode"
     (set! extract-to-bytecode? #t)]
    #:multi
-   [("++knot") sym path "Redirect imports from <sym> to flattened from <path>"
+   [("++knot") primitive-table path ("Redirect imports from #%<primitive-table> to flattened from <path>;"
+                                     " use `-` for <path> to leave as-is, effectively redirecting to a primitive use")
     (hash-update! instance-knot-ties
-                  (string->symbol (format "#%~a" sym))
+                  (string->symbol (format "#%~a" primitive-table))
                   (lambda (l) (cons (if (equal? path "-")
 					'ignore
 					(path->complete-path (normal-case-path path)))
 				    l))
                   null)]
-   [("++direct") primitive-table "Redirect imports from #%<primitive-table> to direct references"
+   [("++direct") primitive-table "Redirect from `(primitive-table '#%<primitive-table>)` to primitive use"
     (hash-set! primitive-table-directs
                (string->symbol (string-append "#%" primitive-table))
                "")]
-   [("++direct-prefixed") primitive-table "Like ++direct, but prefixes with <primitive-table>:"
+   [("++direct-prefixed") primitive-table "Like ++direct, but prefix with <primitive-table>:"
     (hash-set! primitive-table-directs
                (string->symbol (string-append "#%" primitive-table))
                (string-append primitive-table ":"))]
