@@ -19,6 +19,7 @@
          contract-random-generate/choose
          contract-random-generate-fail
          contract-random-generate-fail?
+         contract-random-generate-env?
          contract-exercise
          get/build-val-first-projection
          contract-custom-write-property-proc)
