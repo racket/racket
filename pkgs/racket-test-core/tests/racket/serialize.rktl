@@ -724,7 +724,7 @@
 
 ;; ----------------------------------------
 
-(let ()
+(let ([root (car (filesystem-root-list))])
   (define (test-relative data rel)
     (test
      'right-error
@@ -740,9 +740,9 @@
        (serialize data
                   #:relative-directory rel))))
 
-   (test-relative (string->path "/x") (cons "/x" "/x/y"))
+   (test-relative (build-path root "x") (cons (build-path root "x") (build-path root "x" "y")))
 
-   (test-relative (string->path "/x") (cons "/x/z" "/x/y")))
+   (test-relative (build-path root "x") (cons (build-path root "x" "z") (build-path root "x" "y"))))
 
 ;; ----------------------------------------
 
