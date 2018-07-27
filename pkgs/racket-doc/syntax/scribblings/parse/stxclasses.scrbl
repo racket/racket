@@ -325,8 +325,8 @@ The @racket[#:attr] directive is often used in syntax classes:
 
 @examples[#:eval the-eval
 (define-syntax-class ab-sum
-  [pattern (a:number b:number)
-    #:attr sum (+ (syntax-e #'a) (syntax-e #'b))])
+  (pattern (a:number b:number)
+    #:attr sum (+ (syntax-e #'a) (syntax-e #'b))))
 (syntax-parse #'(1 2)
   [x:ab-sum
    (attribute x.sum)])
