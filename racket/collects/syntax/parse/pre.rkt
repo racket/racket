@@ -5,8 +5,7 @@
          "private/residual.rkt")
 (provide (except-out (all-from-out "private/sc.rkt")
                      define-integrable-syntax-class
-                     syntax-parser/template
-                     parser/rhs)
+                     syntax-parser/template)
          (all-from-out "private/litconv.rkt")
          (all-from-out "private/lib.rkt")
          syntax-parse-state-ref
