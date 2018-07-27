@@ -125,13 +125,13 @@
     [(set-implements? s 'set-empty? 'set-first 'set-rest)
      (let loop ([s s])
        (cond
-         [(stream-empty? s) empty-stream]
+         [(set-empty? s) empty-stream]
          [else (stream-cons (set-first s)
                             (loop (set-rest s)))]))]
     [(set-implements? s 'set-empty? 'set-first 'set-remove)
      (let loop ([s s])
        (cond
-         [(stream-empty? s) empty-stream]
+         [(set-empty? s) empty-stream]
          [else (stream-cons (set-first s)
                             (loop (set-remove s (set-first s))))]))]
     [(set-implements? s 'set-count 'set-first 'set-rest)
