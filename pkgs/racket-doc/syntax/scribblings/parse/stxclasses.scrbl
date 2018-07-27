@@ -3,9 +3,17 @@
           scribble/struct
           scribble/decode
           scribble/eval
-          "parse-common.rkt")
+          "parse-common.rkt"
+          (for-syntax racket/base))
 
 @(define the-eval (make-sp-eval))
+
+@(define-syntax sub-kw-form
+   (lambda (stx)
+     (syntax-case stx []
+       [(_ [kw . form-rest] . desc-rest)
+        (with-syntax ([idx-kw (syntax/loc #'kw (unsyntax (indexed-racket kw)))])
+          #'(specsubform (code:line idx-kw . form-rest) . desc-rest))])))
 
 @title[#:tag "stxparse-specifying"]{Specifying Syntax with Syntax Classes}
 
@@ -203,7 +211,7 @@ follows:
                (code:line #:do [def-or-expr ...])
                (code:line #:undo [def-or-expr ...])]
 
-@specsubform[(code:line #:declare pvar-id stxclass maybe-role)
+@sub-kw-form[[#:declare pvar-id stxclass maybe-role]
              #:grammar
              ([stxclass syntax-class-id
                         (syntax-class-id arg ...)]
@@ -242,7 +250,7 @@ pattern may be declared.
 ]
 }
 
-@specsubform[(code:line #:post action-pattern)]{
+@sub-kw-form[[#:post action-pattern]]{
 
 Executes the given @tech{@Apattern} as a ``post-traversal check''
 after matching the main pattern. That is, the following are
@@ -254,7 +262,7 @@ _main-pattern #:and (~post action-pattern)
 ]
 }
 
-@specsubform[(code:line #:and action-pattern)]{
+@sub-kw-form[[#:and action-pattern]]{
 
 Like @racket[#:post] except that no @racket[~post] wrapper is
 added. That is, the following are equivalent:
@@ -263,7 +271,7 @@ _main-pattern #:and action-pattern
 (~and _main-pattern action-pattern)
 ]}
 
-@specsubform[(code:line #:with syntax-pattern stx-expr)]{
+@sub-kw-form[[#:with syntax-pattern stx-expr]]{
 
 Evaluates the @racket[stx-expr] in the context of all previous
 attribute bindings and matches it against the pattern. If the match
@@ -280,9 +288,20 @@ values such as procedures, non-prefab structures, etc---then an
 exception is raised instead.
 
 Equivalent to @racket[#:post (~parse syntax-pattern stx-expr)].
+
+@examples[#:eval the-eval
+(syntax-parse #'(1 2 3)
+  [(a b c)
+   #:with rev #'(c b a)
+   #'rev])
+(syntax-parse #'(['x "Ex."] ['y "Why?"] ['z "Zee!"])
+  [([stuff ...] ...)
+   #:with h #'(hash stuff ... ...)
+   #'h])
+]
 }
 
-@specsubform[(code:line #:attr attr-arity-decl expr)]{
+@sub-kw-form[[#:attr attr-arity-decl expr]]{
 
 Evaluates the @racket[expr] in the context of all previous attribute
 bindings and binds it to the given attribute. The value of
@@ -290,9 +309,31 @@ bindings and binds it to the given attribute. The value of
 @racket[attribute] for details.
 
 Equivalent to @racket[#:and (~bind attr-arity-decl expr)].
+
+@examples[#:eval the-eval
+(syntax-parse #'("do" "mi")
+  [(a b)
+   #:attr rev #'(b a)
+   #'rev])
+(syntax-parse #'(1 2)
+  [(a:number b:number)
+   #:attr sum (+ (syntax-e #'a) (syntax-e #'b))
+   (attribute sum)])
+]
+
+The @racket[#:attr] directive is often used in syntax classes:
+
+@examples[#:eval the-eval
+(define-syntax-class ab-sum
+  (pattern (a:number b:number)
+    #:attr sum (+ (syntax-e #'a) (syntax-e #'b))))
+(syntax-parse #'(1 2)
+  [x:ab-sum
+   (attribute x.sum)])
+]
 }
 
-@specsubform[(code:line #:fail-when condition-expr message-expr)
+@sub-kw-form[[#:fail-when condition-expr message-expr]
              #:contracts ([message-expr (or/c string? #f)])]{
 
 Evaluates the @racket[condition-expr] in the context of all previous
@@ -306,17 +347,41 @@ failure message; otherwise the failure is reported in terms of the
 enclosing descriptions.
 
 Equivalent to @racket[#:post (~fail #:when condition-expr message-expr)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 4)
+   [(m x:number)
+    #:fail-when (even? (syntax-e #'x))
+    "expected an odd number"
+    #'x]))
+(eval:error
+ (syntax-parse #'(m 4)
+   [(m x:number)
+    #:fail-when (and (even? (syntax-e #'x)) #'x)
+    "expected an odd number"
+    #'x]))
+]
 }
 
-@specsubform[(code:line #:fail-unless condition-expr message-expr)
+@sub-kw-form[[#:fail-unless condition-expr message-expr]
              #:contracts ([message-expr (or/c string? #f)])]{
 
 Like @racket[#:fail-when] with the condition negated.
 
 Equivalent to @racket[#:post (~fail #:unless condition-expr message-expr)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 5)
+   [(m x:number)
+    #:fail-unless (even? (syntax-e #'x))
+    "expected an even number"
+    #'x]))
+]
 }
 
-@specsubform[(code:line #:when condition-expr)]{
+@sub-kw-form[[#:when condition-expr]]{
 
 Evaluates the @racket[condition-expr] in the context of all previous
 attribute bindings. If the value is @racket[#f], the matching process
@@ -324,9 +389,17 @@ backtracks. In other words, @racket[#:when] is like
 @racket[#:fail-unless] without the message argument.
 
 Equivalent to @racket[#:post (~fail #:unless condition-expr #f)].
+
+@examples[#:eval the-eval
+(eval:error
+ (syntax-parse #'(m 5)
+   [(m x:number)
+    #:when (even? (syntax-e #'x))
+    #'x]))
+]
 }
 
-@specsubform[(code:line #:do [defn-or-expr ...])]{
+@sub-kw-form[[#:do [defn-or-expr ...]]]{
 
 Takes a sequence of definitions and expressions, which may be
 intermixed, and evaluates them in the scope of all previous attribute
@@ -340,7 +413,7 @@ in a @racket[#:do] block.
 Equivalent to @racket[#:and (~do defn-or-expr ...)].
 }
 
-@specsubform[(code:line #:undo [defn-or-expr ...])]{
+@sub-kw-form[[#:undo [defn-or-expr ...]]]{
 
 Has no effect when initially matched, but if backtracking returns to a
 point @emph{before} the @racket[#:undo] directive, the
@@ -350,7 +423,7 @@ example.
 Equivalent to @racket[#:and (~undo defn-or-expr ...)].
 }
 
-@specsubform[(code:line #:cut)]{
+@sub-kw-form[[#:cut]]{
 
 Eliminates backtracking choice points and commits parsing to the
 current branch at the current point.
