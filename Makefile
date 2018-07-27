@@ -40,7 +40,7 @@ DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
 # Belongs in the "Configuration options" section, but here
 # to accomodate nmake:
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+SRC_CATALOG = "https://download.racket-lang.org/releases/7.0/catalog/"
 
 CPUS = 
 
