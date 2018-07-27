@@ -31,7 +31,7 @@ DIRECT = ++direct linklet ++direct kernel
 
 expander:
 	$(RACO) make bootstrap-run.rkt
-	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) -O $(TREE)
+	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) --local-rename -O $(TREE)
 
 expander-src:
 	$(RACO) make bootstrap-run.rkt

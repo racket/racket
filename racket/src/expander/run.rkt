@@ -46,6 +46,7 @@
 (define extract-to-c? #f)
 (define extract-to-decompiled? #f)
 (define extract-to-bytecode? #f)
+(define local-rename? #f)
 (define instance-knot-ties (make-hasheq))
 (define primitive-table-directs (make-hasheq))
 (define side-effect-free-modules (make-hash))
@@ -100,6 +101,9 @@
     (hash-set! dependencies (simplify-path (path->complete-path file)) #t)]
    [("++depend-module") mod-file "Add <mod-file> and transitive as dependencies"
     (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
+   #:once-each
+   [("--local-rename") "Use simpler names in extracted, instead of a unique name for each binding"
+    (set! local-rename? #t)]
    #:once-any
    [("-C") "Print extracted bootstrap as a C encoding"
     (set! extract-to-c? #t)]
@@ -313,6 +317,7 @@
            #:as-c? extract-to-c?
            #:as-decompiled? extract-to-decompiled?
            #:as-bytecode? extract-to-bytecode?
+           #:local-rename? local-rename?
            #:instance-knot-ties instance-knot-ties
            #:primitive-table-directs primitive-table-directs
            #:side-effect-free-modules side-effect-free-modules))

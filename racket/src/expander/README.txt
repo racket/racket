@@ -75,6 +75,13 @@ Running:
    Expands and extracts <file-path> as a single linklet to
    <outfile-path>.
 
+   Unless the `--local-rename` flag is also provided to
+   "bootstrap-run.rkt", an extracted linklet preserves a naming
+   property of the expander's compilation to linklets, which is that
+   it uses a distinct symbol for every binding. The symbol--binding
+   correspondence is useful for some further compiler passes, but
+   `--local-rename` is useful to minimize syntactic diffs.
+
  % racket bootstrap-run.rkt -c <dir> -sx -D -t <file-path> -o <outfile-path>
 
    Expands and extracts <file-path> as a single linklet, compiles and

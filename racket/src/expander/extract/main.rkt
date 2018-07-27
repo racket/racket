@@ -29,6 +29,7 @@
                  #:as-c? as-c?
                  #:as-decompiled? as-decompiled?
                  #:as-bytecode? as-bytecode?
+                 #:local-rename? local-rename?
                  ;; Table of symbol -> (listof knot-spec),
                  ;; to redirect a remaining import back to
                  ;; an implementation that is defined in the
@@ -148,9 +149,14 @@
       (exit 1))
 
     ;; Avoid gratuitous differences due to names generated during
-    ;; expansion
+    ;; expansion...
     (define re-renamed-linklet-expr
-      (simplify-underscore-numbers gced-linklet-expr))
+      (if local-rename?
+          ;; ... and allow the same name to be used in different non-shadowing
+          ;; local contextx
+          (collapse-underscore-numbers gced-linklet-expr)
+          ;; ... but use a distinct symbol for every binder's name
+          (simplify-underscore-numbers gced-linklet-expr)))
 
     ;; Prune any explicit function names (using a `quote` pattern in
     ;; the body) when they still match a name that would be inferred
