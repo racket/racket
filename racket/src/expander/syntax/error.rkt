@@ -10,7 +10,9 @@
          make-exn:fail:syntax:unbound
          
          raise-syntax-error
-         raise-unbound-syntax-error)
+         raise-unbound-syntax-error
+
+         set-current-previously-unbound!)
 
 (struct exn:fail:syntax exn:fail (exprs)
   #:extra-constructor-name make-exn:fail:syntax
@@ -57,6 +59,19 @@
     (format "~a" (or given-name
                      (extract-form-name expr)
                      '?)))
+  (define unbound-message
+    ;; If we have unbound identifiers to check, then it's possible that the
+    ;; true error is that the identifier should have been bound to a syntactic
+    ;; form. So, list those identifiers. The list will be non-empty only for
+    ;; phase >= 1.
+    (let ([ids (current-previously-unbound)])
+      (or (and (pair? ids)
+               (format "\n  after encountering unbound identifier~a (which is possibly the real problem):~a"
+                       (if (null? (cdr ids)) "" "s")
+                       (apply string-append
+                              (for/list ([id (in-list ids)])
+                                (format "\n   ~s" (syntax-e id))))))
+          "")))
   (define at-message
     (or (and sub-expr
              (error-print-source-location)
@@ -76,6 +91,7 @@
           (string-append src-loc-str
                          name ": "
                          message
+                         unbound-message
                          at-message
                          in-message
                          message-suffix)
@@ -105,3 +121,7 @@
          (and str
               (string-append str ": ")))))
 
+;; Hook for the expander:
+(define current-previously-unbound (lambda () #f))
+(define (set-current-previously-unbound! proc)
+  (set! current-previously-unbound proc))
