@@ -19,7 +19,7 @@
 ;; definition of an identifier, because that will abort the enclosing
 ;; linklet.
 
-(define (mutated-in-body l exports prim-knowns knowns imports)
+(define (mutated-in-body l exports prim-knowns knowns imports unsafe-mode?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -44,7 +44,8 @@
     ;; that information is correct, because it dynamically precedes
     ;; the `set!`
     (define-values (knowns info)
-      (find-definitions form prim-knowns prev-knowns imports mutated #f))
+      (find-definitions form prim-knowns prev-knowns imports mutated unsafe-mode?
+                        #:optimize? #f))
     (match form
       [`(define-values (,ids ...) ,rhs)
        (cond

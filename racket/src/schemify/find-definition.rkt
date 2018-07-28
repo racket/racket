@@ -11,14 +11,16 @@
 
 ;; Record top-level functions and structure types, and returns
 ;;  (values knowns struct-type-info-or-#f)
-(define (find-definitions v prim-knowns knowns imports mutated optimize?)
+(define (find-definitions v prim-knowns knowns imports mutated unsafe-mode?
+                          #:optimize? optimize?)
   (match v
     [`(define-values (,id) ,orig-rhs)
      (define rhs (if optimize?
                      (optimize orig-rhs prim-knowns knowns imports mutated)
                      orig-rhs))
      (values
-      (let ([k (infer-known rhs v #t id knowns prim-knowns imports mutated)])
+      (let ([k (infer-known rhs v #t id knowns prim-knowns imports mutated unsafe-mode?
+                            #:optimize-inline? optimize?)])
         (if k
             (hash-set knowns (unwrap id) k)
             knowns))
