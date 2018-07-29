@@ -347,6 +347,9 @@ static Scheme_Object *unsafe_make_os_semaphore(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_os_semaphore_wait(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_os_semaphore_post(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_add_collect_callbacks(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_remove_collect_callbacks(int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[]);
 static Scheme_Object *plumber_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *plumber_flush_all(int argc, Scheme_Object *argv[]);
@@ -675,6 +678,9 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-make-os-semaphore", unsafe_make_os_semaphore, 0, 0, env);
   ADD_PRIM_W_ARITY("unsafe-os-semaphore-wait", unsafe_os_semaphore_wait, 1, 1, env);
   ADD_PRIM_W_ARITY("unsafe-os-semaphore-post", unsafe_os_semaphore_post, 1, 1, env);
+
+  ADD_PRIM_W_ARITY("unsafe-add-collect-callbacks", unsafe_add_collect_callbacks, 2, 2, env);
+  ADD_PRIM_W_ARITY("unsafe-remove-collect-callbacks", unsafe_remove_collect_callbacks, 1, 1, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -8746,6 +8752,18 @@ void scheme_remove_gc_callback(Scheme_Object *key)
     desc = desc->next;
   }
 }
+
+static Scheme_Object *unsafe_add_collect_callbacks(int argc, Scheme_Object *argv[])
+{
+  return scheme_add_gc_callback(argv[0], argv[1]);
+}
+
+static Scheme_Object *unsafe_remove_collect_callbacks(int argc, Scheme_Object *argv[])
+{
+  scheme_remove_gc_callback(argv[0]);
+  return scheme_void;
+}
+
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define mzOSAPI WINAPI

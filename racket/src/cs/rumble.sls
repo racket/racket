@@ -453,6 +453,8 @@
           make-phantom-bytes
           set-phantom-bytes!
           set-garbage-collect-notify! ; not exported to Racket
+          unsafe-add-collect-callbacks
+          unsafe-remove-collect-callbacks
 
           ;; not the same as Racket will executors:
           (rename
