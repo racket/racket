@@ -129,7 +129,8 @@
                   ;; Return result in a thunk:
                   (lambda () #f)])]
               [(and (all-asynchronous? s)
-                    (not (syncing-selected s)))
+                    (not (syncing-selected s))
+                    (not (syncing-need-retry? s)))
                (suspend-syncing-thread s timeout-at)
                (set-syncing-wakeup! s void)
                (loop #f #t)]

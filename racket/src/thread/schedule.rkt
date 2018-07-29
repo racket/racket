@@ -40,7 +40,7 @@
                (all-threads-poll-done?)
                (waiting-on-external-or-idle?))
       (or (check-external-events 'slow)
-          (post-idle)
+          (try-post-idle)
           (process-sleep)))
     (define child (thread-group-next! g))
     (cond
@@ -195,6 +195,12 @@
   (sandman-sleep exts)
   ;; Maybe some thread can proceed:
   (thread-did-work!))
+
+(define (try-post-idle)
+  (and (post-idle)
+       (begin
+         (thread-did-work!)
+         #t)))
 
 ;; ----------------------------------------
 
