@@ -1464,8 +1464,8 @@
   (run #t))
 
 ;; Make sure that transitive thread-resume keeps a weak link
-;; when thread is blocked (but only test under 3m):
-(when (regexp-match #rx"3m" (path->bytes (system-library-subpath)))
+;; when thread is blocked
+(unless (eq? 'cgc (system-type 'gc))
   (let ([run
          (lambda (suspend-first?)
            (let ([done (make-semaphore)])

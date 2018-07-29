@@ -194,13 +194,8 @@
       #f ; not a tail call
       (lambda ()
         (end-uninterrupted 'prompt)
-        ;; Make room for a slicing continuation-mark frame, in case this
-        ;; metacontinuation frame is capture and composed in a context
-        ;; that already has marks:
-        (call-with-splice-k
-         (lambda ()
-           ;; Finally, apply the given function:
-           (apply proc args)))))]))
+        ;; Finally, apply the given function:
+        (apply proc args)))]))
 
 (define (make-default-abort-handler tag)
   (lambda (abort-thunk)
@@ -409,19 +404,17 @@
      (check who (procedure-arity-includes/c 1) proc)
      (check who continuation-prompt-tag? tag)
      (maybe-future-barricade tag)
-     (call-with-end-uninterrupted
-      (lambda ()
-        (call/cc
-         (lambda (k)
-           (|#%app|
-            proc
-            (make-non-composable-continuation
-             k
-             (current-winders)
-             (current-mark-stack)
-             (current-mark-splice)
-             (extract-metacontinuation 'call-with-current-continuation (strip-impersonator tag) #t)
-             tag))))))]))
+     (call/cc/end-uninterrupted
+      (lambda (k)
+        (|#%app|
+         proc
+         (make-non-composable-continuation
+          k
+          (current-winders)
+          (current-mark-stack)
+          (current-mark-splice)
+          (extract-metacontinuation 'call-with-current-continuation (strip-impersonator tag) #t)
+          tag))))]))
 
 (define/who call-with-composable-continuation
   (case-lambda
@@ -433,20 +426,18 @@
      (call-with-composable-continuation* p tag #t)]))
 
 (define (call-with-composable-continuation* p tag wind?)
-  (call-with-end-uninterrupted
-   (lambda ()
-     (call/cc
-      (lambda (k)
-        (|#%app|
-         p
-         ((if wind?
-              make-composable-continuation
-              make-composable-continuation/no-wind)
-          k
-          (current-winders)
-          (current-mark-stack)
-          (current-mark-splice)
-          (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f))))))))
+  (call/cc/end-uninterrupted
+   (lambda (k)
+     (|#%app|
+      p
+      ((if wind?
+           make-composable-continuation
+           make-composable-continuation/no-wind)
+       k
+       (current-winders)
+       (current-mark-stack)
+       (current-mark-splice)
+       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f))))))
 
 (define (unsafe-call-with-composable-continuation/no-wind p tag)
   (call-with-composable-continuation* p tag #f))
@@ -541,7 +532,7 @@
             ;; the metacontinuation won't change (except by escaping):
             (activate-and-wrap-cc-guard-for-impersonator!
              (non-composable-continuation-tag c)))
-          (apply (full-continuation-k c) args))
+          ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
         ;; If a winder changed the meta-continuation, try again for a
         ;; non-composable continuation:
         (and (non-composable-continuation? c)
@@ -555,7 +546,7 @@
                              (current-metacontinuation)))
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
-  (apply (full-continuation-k c) args))
+  ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
 
 ;; Used as a "handler" for a prompt without a tag, which is used for
 ;; composable continuations
@@ -627,14 +618,6 @@
   (end-uninterrupted 'hit-barrier)
   (raise-continuation-error '|continuation application|
                             "attempt to cross a continuation barrier"))
-
-;; Update `empty-k` for splicing to be the "inside" of a continuation prompt.
-(define (call-with-splice-k thunk)
-  (call-with-end-uninterrupted
-   (lambda ()
-     (call-setting-continuation-attachment
-      'empty
-      (lambda () (thunk))))))
 
 (define (set-continuation-applicables!)
   (let ([add (lambda (rtd)
@@ -891,34 +874,24 @@
          (lambda ()
            body))))]))
 
-;; Ensure that we have an `(end-uninterrupted)` in the immediate
-;; continuation, but keep the illusion that `thunk` is called in
-;; tail position.
-(define (call-with-end-uninterrupted thunk)
-  (call-with-current-continuation-attachment
-   empty-mark-frame
-   (lambda (a)
-     (cond
-      [(or (eq? a 'empty)
-           (and (mark-frame? a)
-                (mark-frame-end-uninterupted? a)))
-       ;; an end-uninterupted check is in place
-       (thunk)]
-      [else
-       ;; Add an uninteruped check, moving the current continuation
-       ;; marks to the more nested continuation
-       (call-setting-continuation-attachment
-        'skip
-        (lambda ()
-          (call/cc
-           (lambda (k)
-             (call-setting-continuation-attachment
-              (let ([a (coerce-to-mark-frame a)])
-                (make-mark-frame (mark-frame-table a)
-                                 #f
-                                 (mark-frame-flat a)))
-              (lambda ()
-                (thunk)))))))]))))
+;; Return a continuation that expects a thunk to resume. That way, we
+;; can can an `(end-uninterrupted)` and check for breaks in the
+;; destination continuation
+(define (call/cc/end-uninterrupted proc)
+  ((call/cc
+    (lambda (k)
+      (lambda ()
+        (proc k))))))
+
+;; Called on the arguments to return to a continuation
+;; captured by `call/cc/end-uninterrupted`:
+(define (end-uninterrupted-with-values args)
+  ;; Arguably, we should use `end-uninterrupted/hook` here to check
+  ;; for breaks, in case a jump enabled breaks and one is pending.
+  ;; The traditional Racket implementation doesn't include that
+  ;; check, and the check imposes a costs, so we leave it out for now.
+  (end-uninterrupted 'cc)
+  (apply values args))
 
 (define (current-mark-chain)
   (get-current-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
