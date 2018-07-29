@@ -262,7 +262,7 @@ The @racket[stop-ids] argument controls how far @racket[local-expand] expands @r
 
  @item{If @racket[stop-ids] is any other list, then expansion proceeds recursively until the expander
        encounters any of the forms in @racket[stop-ids], and the result is the partially-expanded
-       form. If @racket[extend-stop-ids?] is not @racket[#f] then @racket[begin], @racket[quote],
+       form. If @racket[extend-stop-ids?] is not @racket[#f], then @racket[begin], @racket[quote],
        @racket[set!], @racket[#%plain-lambda], @racket[case-lambda], @racket[let-values],
        @racket[letrec-values], @racket[if], @racket[begin0], @racket[with-continuation-mark],
        @racket[letrec-syntaxes+values], @racket[#%plain-app], @racket[#%expression], @racket[#%top],
