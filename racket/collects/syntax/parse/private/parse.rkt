@@ -489,7 +489,7 @@ Conventions:
 ;; represents the matching matrix
 ;;   [_in1_..._inN_|____]
 ;;   [ P11 ... P1N | e1 ]
-;;   [  ⋮       ⋮  |  ⋮ ]
+;;   [  :       :  |  : ]
 ;;   [ PM1 ... PMN | eM ]
 
 (define-syntax (parse:matrix stx)

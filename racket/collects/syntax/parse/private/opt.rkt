@@ -34,17 +34,42 @@
 
 ;; Can factor pattern P given clauses like
 ;;   [ P P1 ... | e1]     [  | [P1 ... | e1] ]
-;;   [ P  ⋮     |  ⋮]  => [P | [ ⋮     |  ⋮] ]
- ;   [ P PN ... | eN]     [  | [PN ... | eN] ]
+;;   [ P  :     |  :]  => [P | [ :     |  :] ]
+;;   [ P PN ... | eN]     [  | [PN ... | eN] ]
 ;; if P cannot cut and P succeeds at most once (otherwise may reorder backtracking)
 
 ;; Can unfold pair patterns as follows:
 ;;   [ (P11 . P12) P1 ... | e1 ]                [ P11 P12 P1 ... | e1 ]
-;;   [      ⋮      ⋮      |  ⋮ ] => check pair, [      ⋮         |  ⋮ ]
+;;   [      :       :     |  : ] => check pair, [      :         |  : ]
 ;;   [ (PN1 . PN2) PN ... | eN ]                [ PN1 PN2 PN ... | eN ]
 
 ;; Can unfold ~and patterns similarly; ~and patterns can hide
 ;; factoring opportunities.
+
+;; ----
+
+;; FIXME: New (unimplemented) optimization ideas
+
+;; (1) When collecting pair patterns, can reorder rows with pair vs never-pair
+;; first columns:
+;;   [ (P11 . P12) P1 ... | e1 ]      [ (P11 . P12) P1 ... | e1 ]
+;;   [     P21     P2 ... | e2 ]  =>  [ (P31 . P32) P3 ... | e3 ]
+;;   [ (P31 . P32) P3 ... | e3 ]      [     P21     P2 ... | e2 ]
+;; provided P21 does not cut and cannot match a pair term.
+;; Likewise for literals and never-symbol patterns.
+
+;; (2) If a row has a non-rejecting pattern (ie, always matches) in its first
+;; column, then the rows above it do not need to produce failure information
+;; *for their first columns*. For example, in the following matrix
+;;   [ P11 P1 ... | e1 ]
+;;   [ P21 P2 ... | e2 ]
+;;   [ P31 P3 ... | e3 ]
+;; Suppose that P21 always matches (eg _) and assume P{1,3}1 are cut-free. Then
+;; P{1,3}1 do not need to produce failure info (set es = #f, etc). Here's why.
+;; If control reaches row 2, then since P21 cannot fail, if it fails the
+;; progress must be greater than P11 or P31. FIXME: Must also check neither P11
+;; nor P31 use ~post (or call stxclass that uses ~post, etc)!
+
 
 ;; ----
 
