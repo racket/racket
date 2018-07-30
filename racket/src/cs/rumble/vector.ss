@@ -287,7 +287,7 @@
   (case-lambda
    [(dest d-start src)
     (vector-copy! dest d-start src 0 (and (vector? src) (vector-length src)))]
-   [(src s-start dest d-start)
+   [(dest d-start src s-start)
     (vector-copy! dest d-start src s-start (and (vector? src) (vector-length src)))]
    [(dest d-start src s-start s-end)
     (check who mutable-vector? :contract "(and/c vector? (not/c immutable?))" dest)
