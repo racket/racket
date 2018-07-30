@@ -6,7 +6,9 @@
            racket/pretty)
   
   (provide show-program)
-  
+
+  (define print-only (make-parameter #f))
+
   (define (show-program expand)
     (define source-files
       (command-line
@@ -18,11 +20,13 @@
             (raise-user-error (string->symbol (short-program+command-name))
                               "not a valid column count: ~a" n))
           (pretty-print-columns num))]
+       ["-p" "Print the document back out without performing expansion." (print-only #t)]
        #:args source-file
        source-file))
 
     (for ([src-file source-files])
-      (let ([src-file (path->complete-path src-file)])
+      (let ([src-file (path->complete-path src-file)]
+            [f (if (print-only) (lambda (i) i) expand)])
         (let-values ([(base name dir?) (split-path src-file)])
           (parameterize ([current-load-relative-directory base]
                          [current-namespace (make-base-namespace)]
@@ -34,7 +38,7 @@
                (let loop ()
                  (let ([e (read-syntax src-file in)])
                    (unless (eof-object? e)
-                     (pretty-write (syntax->datum (expand e)))
+                     (pretty-write (syntax->datum (f e)))
                      (loop))))))))))))
 
 (require (submod "." expand))
