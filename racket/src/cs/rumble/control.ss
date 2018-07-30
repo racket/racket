@@ -833,11 +833,13 @@
 
 (define (mark-frame-update a key val)
   (cond
-   [(not a) (cons key val)]
+   [(not a) (if (impersonator? key)
+                (mark-frame-update (make-mark-frame '() #f #f) key val)
+                (cons key val))]
    [(pair? a)
     (if (eq? key (car a))
         (cons key val)
-        (make-mark-frame (mark-table-add/replace (pair->mark-table a) key val)
+        (make-mark-frame (mark-table-add/replace* (pair->mark-table a) key val)
                          #f
                          #f))]
    [(eq? a 'empty)
@@ -846,7 +848,7 @@
     (current-mark-splice (mark-frame-update (current-mark-splice) key val))
     'empty]
    [(mark-frame? a)
-    (make-mark-frame (mark-table-add/replace (mark-frame-table a) key val)
+    (make-mark-frame (mark-table-add/replace* (mark-frame-table a) key val)
                      (mark-frame-end-uninterupted? a)
                      #f)]))
 
