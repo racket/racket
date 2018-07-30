@@ -18,6 +18,7 @@
 (check-defined 'collect-rendezvous)
 (check-defined '(define-ftype T (function __collect_safe () void)))
 (check-defined 'call-setting-continuation-attachment)
+(check-defined 'hashtable-cells)
 
 ;; ----------------------------------------
 

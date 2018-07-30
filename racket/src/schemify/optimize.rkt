@@ -38,7 +38,7 @@
      (define u-n (unwrap n))
      (cond
        [(and (symbol? u)
-             (exact-integer? n))
+             (exact-nonnegative-integer? n))
         (define k (find-known u prim-knowns knowns imports mutated))
         (if (and (known-procedure? k)
                  (bitwise-bit-set? (known-procedure-arity-mask k) u-n))
