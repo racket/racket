@@ -464,9 +464,18 @@ Returns @racket[#f] if @racket[hash] contains no elements, otherwise
 it returns an integer that is an index to the first element in the hash
 table; ``first'' refers to an unspecified ordering of the table
 elements, and the index values are not necessarily consecutive
-integers. For a mutable @racket[hash], this index is guaranteed to
-refer to the first item only as long as no items are added to or
-removed from @racket[hash].}
+integers.
+
+For a mutable @racket[hash], this index is guaranteed to refer to the
+first item only as long as no items are added to or removed from
+@racket[hash]. More generally, an index is guaranteed to be a
+@deftech{valid hash index} for a given hash table only as long it comes
+from @racket[hash-iterate-first] or @racket[hash-iterate-next], and
+only as long as the hash table is not modified. In the case of a hash
+table with weakly held keys, the hash table can be implicitly modified
+by the garbage collector (see @secref["gc-model"]) when it discovers
+that the key is not reachable.}
+
 
 @defproc[(hash-iterate-next [hash hash?]
                             [pos exact-nonnegative-integer?])
@@ -475,49 +484,105 @@ removed from @racket[hash].}
 Returns either an integer that is an index to the element in
 @racket[hash] after the element indexed by @racket[pos] (which is not
 necessarily one more than @racket[pos]) or @racket[#f] if @racket[pos]
-refers to the last element in @racket[hash]. If @racket[pos] is not a
-valid index, then the @exnraise[exn:fail:contract]. For a mutable
-@racket[hash], the result index is guaranteed to refer to its item
-only as long as no items are added to or removed from @racket[hash].}
+refers to the last element in @racket[hash].
+
+If @racket[pos] is not a @tech{valid hash index} of @racket[hash],
+then the result may be @racket[#f] or it may be the next later index
+that remains valid. The latter result is guaranteed if a hash table
+has been modified only by the removal of keys.
+
+@history[#:changed "7.0.0.10" @elem{Handle an invalid index by returning @scheme[#f]
+                                    instead of raising @racket[exn:fail:contract].}]}
 
 
+@deftogether[(
 @defproc[(hash-iterate-key [hash hash?]
                            [pos exact-nonnegative-integer?])
-         any]{
-
+         any/c]
+@defproc[#:link-target? #f
+         (hash-iterate-key [hash hash?]
+                           [pos exact-nonnegative-integer?]
+                           [bad-index-v any/c])
+         any/c]
+)]{
+         
 Returns the key for the element in @racket[hash] at index
-@racket[pos]. If @racket[pos] is not a valid index for
-@racket[hash], the @exnraise[exn:fail:contract].}
+@racket[pos].
+
+If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+the result is @racket[bad-index-v] if provided, otherwise the
+@exnraise[exn:fail:contract].
+
+@history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 
+@deftogether[(
 @defproc[(hash-iterate-value [hash hash?]
                              [pos exact-nonnegative-integer?])
-         any]{
+         any]
+@defproc[#:link-target? #f
+         (hash-iterate-value [hash hash?]
+                             [pos exact-nonnegative-integer?]
+                             [bad-index-v any/c])
+         any]
+)]{
 
 Returns the value for the element in @racket[hash] at index
-@racket[pos]. If @racket[pos] is not a valid index for
-@racket[hash], the @exnraise[exn:fail:contract].}
+@racket[pos].
 
+If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+the result is @racket[bad-index-v] if provided, otherwise the
+@exnraise[exn:fail:contract].
+
+@history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
+
+
+@deftogether[(
 @defproc[(hash-iterate-pair [hash hash?]
-                           [pos exact-nonnegative-integer?])
-         (cons any any)]{
+                            [pos exact-nonnegative-integer?])
+         (cons any/c any/c)]
+@defproc[#:link-target? #f
+         (hash-iterate-pair [hash hash?]
+                            [pos exact-nonnegative-integer?]
+                            [bad-index-v any/c])
+         (cons any/c any/c)]
+)]{
 
 Returns a pair containing the key and value for the element 
-in @racket[hash] at index
-@racket[pos]. If @racket[pos] is not a valid index for
-@racket[hash], the @exnraise[exn:fail:contract].}
+in @racket[hash] at index @racket[pos].
 
-@history[#:added "6.4.0.5"]
+If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+the result is @racket[(cons bad-index-v bad-index-v)] if
+@racket[bad-index-v] is provided, otherwise the
+@exnraise[exn:fail:contract].
 
+@history[#:added "6.4.0.5"
+         #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
+
+@deftogether[(
 @defproc[(hash-iterate-key+value [hash hash?]
-                           [pos exact-nonnegative-integer?])
-         (values any any)]{
+                                 [pos exact-nonnegative-integer?])
+         (values any/c any/c)]
+@defproc[#:link-target? #f
+         (hash-iterate-key+value [hash hash?]
+                                 [pos exact-nonnegative-integer?]
+                                 [bad-index-v any/c])
+         (values any/c any/c)]
+)]{
 
 Returns the key and value for the element in @racket[hash] at index
-@racket[pos]. If @racket[pos] is not a valid index for
-@racket[hash], the @exnraise[exn:fail:contract].}
+@racket[pos].
 
-@history[#:added "6.4.0.5"]
+If @racket[pos] is not a @tech{valid hash index} for @racket[hash],
+the result is @racket[(values bad-index-v bad-index-v)] if
+@racket[bad-index-v] is provided, otherwise the
+@exnraise[exn:fail:contract].
+
+@history[#:added "6.4.0.5"
+         #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
 
 @defproc[(hash-copy [hash hash?]) 
          (and/c hash? (not/c immutable?))]{

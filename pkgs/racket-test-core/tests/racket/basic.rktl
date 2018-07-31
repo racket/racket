@@ -2597,18 +2597,45 @@
 
 (test #f hash-iterate-first (make-hasheq))
 (test #f hash-iterate-first (make-weak-hasheq))
-(err/rt-test (hash-iterate-next (make-hasheq) 0))
-(err/rt-test (hash-iterate-next (make-weak-hasheq) 0))
+(test #f hash-iterate-next (make-hasheq) 0)
+(test #f hash-iterate-next (make-weak-hasheq) 0)
 
-(let ([check-all-bad
-       (lambda (op)
-         (err/rt-test (op #f 0))
-         (err/rt-test (op (make-hasheq) -1))
-         (err/rt-test (op (make-hasheq) (- (expt 2 100))))
-         (err/rt-test (op (make-hasheq) 1.0)))])
-  (check-all-bad hash-iterate-next)
-  (check-all-bad hash-iterate-key)
-  (check-all-bad hash-iterate-value))
+(let ([hts (list (make-hash)
+                 (make-hasheq)
+                 (make-hasheqv)
+                 (make-weak-hash)
+                 (make-weak-hasheq)
+                 (make-weak-hasheqv)
+                 (hash)
+                 (hasheq)
+                 (hasheqv))])
+  (let* ([check-all-bad
+          (lambda (op)
+            (err/rt-test (op #f 0))
+            (err/rt-test (op (make-hasheq) -1))
+            (err/rt-test (op (make-hasheq) (- (expt 2 100))))
+            (err/rt-test (op (make-hasheq) 1.0)))]
+         [check-all-bad-v
+          (lambda (op)
+            (check-all-bad op)
+            (for ([ht (in-list hts)])
+              (test 'nope op ht 17 'nope)))]
+         [check-all-bad-pair
+          (lambda (op)
+            (check-all-bad op)
+            (for ([ht (in-list hts)])
+              (test '(nope . nope) op ht 17 'nope)))]
+         [check-all-bad-values
+          (lambda (op)
+            (check-all-bad op)
+            (for ([ht (in-list hts)])
+              (test-values '(nope nope)
+                           (lambda () (op ht 17 'nope)))))])
+    (check-all-bad hash-iterate-next)
+    (check-all-bad-v hash-iterate-key)
+    (check-all-bad-v hash-iterate-value)
+    (check-all-bad-pair hash-iterate-pair)
+    (check-all-bad-values hash-iterate-key+value)))
 
 (test (list 1 2 3) sort (hash-keys #hasheq((1 . a) (2 . b) (3 . c))) <)
 (test (list 'a 'b 'c) 

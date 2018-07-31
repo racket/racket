@@ -349,8 +349,19 @@ each element in the sequence.
   that the default mode is @racket['any], whereas the default mode of
   @racket[read-bytes-line] is @racket['linefeed].}
 
-@defproc[(in-hash [hash hash?]) sequence?]{
-  Returns a sequence equivalent to @racket[hash].
+@defproc*[([(in-hash [hash hash?]) sequence?]
+           [(in-hash [hash hash?] [bad-index-v any/c]) sequence?])]{
+  Returns a sequence equivalent to @racket[hash], except when @racket[bad-index-v]
+  is supplied.
+
+  If @racket[bad-index-v] is supplied, then @racket[bad-index-v] is
+  returned as both the key and the value in the case that the
+  @racket[hash] is modified concurrently so that iteration does not have a
+  @tech{valid hash index}. Providing @racket[bad-index-v] is particularly
+  useful when iterating through a hash table with weakly held keys, since
+  entries can be removed asynchronously (i.e., after @racket[in-hash] has
+  committed to another iteration, but before it can access the entry for the
+  next iteration).
 
   @examples[
     (define table (hash 'a 1 'b 2))
@@ -358,82 +369,144 @@ each element in the sequence.
       (printf "key: ~a value: ~a\n" key value))]
 
   @info-on-seq["hashtables" "hash tables"]
-}
 
-@defproc[(in-hash-keys [hash hash?]) sequence?]{
-  Returns a sequence whose elements are the keys of @racket[hash].
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
+@defproc*[([(in-hash-keys [hash hash?]) sequence?]
+           [(in-hash-keys [hash hash?] [bad-index-v any/c]) sequence?])]{
+  Returns a sequence whose elements are the keys of @racket[hash], using
+  @racket[bad-index-v] in the same way as @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key (in-hash-keys table)])
       (printf "key: ~a\n" key))]
-}
 
-@defproc[(in-hash-values [hash hash?]) sequence?]{
-  Returns a sequence whose elements are the values of @racket[hash].
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
+@defproc*[([(in-hash-values [hash hash?]) sequence?]
+           [(in-hash-values [hash hash?] [bad-index-v any/c]) sequence?])]{
+  Returns a sequence whose elements are the values of @racket[hash], using
+  @racket[bad-index-v] in the same way as @racket[in-hash].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([value (in-hash-values table)])
       (printf "value: ~a\n" value))]
-}
 
-@defproc[(in-hash-pairs [hash hash?]) sequence?]{
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
+
+@defproc*[([(in-hash-pairs [hash hash?]) sequence?]
+           [(in-hash-pairs [hash hash?] [bad-index-v any/c]) sequence?])]{
   Returns a sequence whose elements are pairs, each containing a key
   and its value from @racket[hash] (as opposed to using @racket[hash]
   directly as a sequence to get the key and value as separate values
-  for each element).
+  for each element). 
+
+  The @racket[bad-index-v] argument, if supplied, is used in the same
+  way as by @racket[in-hash]. When an invalid index is encountered,
+  the pair in the sequence with have @racket[bad-index-v] as both its
+  @racket[car] and @racket[cdr].
 
   @examples[
     (define table (hash 'a 1 'b 2))
     (for ([key+value (in-hash-pairs table)])
       (printf "key and value: ~a\n" key+value))]
-}
+
+  @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 @deftogether[(
 @defproc[(in-mutable-hash 
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-mutable-hash 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c]) 
+	  sequence?]
 @defproc[(in-mutable-hash-keys
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-mutable-hash-keys
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-values
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-mutable-hash-values
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
+	  sequence?]
 @defproc[(in-mutable-hash-pairs
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-mutable-hash-pairs
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash 
           [hash (and/c hash? immutable?)])
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-immutable-hash 
+          [hash (and/c hash? immutable?)] [bad-index-v any/c])
+	  sequence?]
 @defproc[(in-immutable-hash-keys
           [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-immutable-hash-keys
+          [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash-values
           [hash (and/c hash? immutable?)])
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-immutable-hash-values
+          [hash (and/c hash? immutable?)] [bad-index-v any/c])
+	  sequence?]
 @defproc[(in-immutable-hash-pairs
           [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-immutable-hash-pairs
+          [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash 
           [hash (and/c hash? hash-weak?)]) 
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-weak-hash 
+          [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
+	  sequence?]
 @defproc[(in-weak-hash-keys
           [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[#:link-target? #f
+         (in-weak-hash-keys
+          [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-values
           [hash (and/c hash? hash-weak?)]) 
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-weak-hash-keys
+          [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
+	  sequence?]
 @defproc[(in-weak-hash-pairs
           [hash (and/c hash? hash-weak?)]) 
 	  sequence?]
+@defproc[#:link-target? #f
+         (in-weak-hash-pairs
+          [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
+	  sequence?]
 )]{
    Sequence constructors for specific kinds of hash tables.
-   
    These may perform better than the analogous @racket[in-hash] 
-   forms. However, they may consume more space to help with iteration.
+   forms.
    
-   @history[#:added "6.4.0.6"]
+   @history[#:added "6.4.0.6"
+            #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]
 }
 
 

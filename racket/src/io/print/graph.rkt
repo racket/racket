@@ -43,9 +43,12 @@
             (not (hash-weak? v))
             (config-get config print-hash-table))
        (and (not print-graph?)
-            (for/fold ([fuel (sub1 fuel)]) ([(k v) (in-hash v)]
+            ;; Using `(in-hash-keys v #f)` and `(hash-ref v k #f)`
+            ;; defends against misbehaving hash tables
+            (for/fold ([fuel (sub1 fuel)]) ([k (in-hash-keys v #f)]
                                             #:break (not fuel))
-              (quick-no-graph? v (quick-no-graph? k fuel))))]
+              (define val (hash-ref v k #f))
+              (quick-no-graph? val (quick-no-graph? k fuel))))]
       [(mpair? v)
        (and (not print-graph?)
             (not (eq? mode PRINT-MODE/UNQUOTED))
@@ -149,9 +152,10 @@
             (config-get config print-hash-table))
        (checking! v)
        (define unquoted?
-         (for/fold ([unquoted? #f]) ([(k v) (in-hash v)])
+         (for/fold ([unquoted? #f]) ([k (in-hash-keys v)])
+           (define val (hash-ref v k #f))
            (define k-unquoted? (build-graph k mode))
-           (or (build-graph v mode)
+           (or (build-graph val mode)
                k-unquoted?
                unquoted?)))
        (done! v unquoted?)]

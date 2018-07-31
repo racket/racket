@@ -645,6 +645,15 @@
              exn:fail:contract:arity?
              #rx"expected number of values not received")
 
+(err/rt-test (for ([x (in-hash 1 2 3)]) x)
+             exn:fail:contract:arity?)
+(err/rt-test (for ([x (in-hash-keys 1 2 3)]) x)
+             exn:fail:contract:arity?)
+(err/rt-test (for ([x (in-hash-values 1 2 3)]) x)
+             exn:fail:contract:arity?)
+(err/rt-test (for ([x (in-hash-pairs 1 2 3)]) x)
+             exn:fail:contract:arity?)
+
 (err/rt-test (for/sum ([x (in-vector (vector 1 2) 2 -1 -1)]) x) ; pr 15227
              exn:fail:contract?
              #rx"starting index is out of range")
