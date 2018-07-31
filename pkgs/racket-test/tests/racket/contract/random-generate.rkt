@@ -435,12 +435,20 @@
      #:late-neg-projection
      (λ (ctc) (λ (b) (λ (v np) v)))))
   (define impersonate-any/c (impersonate-any/c-struct))
+  (struct chaperone-proc?/c-struct ()
+    #:property prop:chaperone-contract
+    (build-chaperone-contract-property
+     #:late-neg-projection
+     (λ (ctc) (λ (b) (λ (v np) v)))))
+  (define chaperone-proc?/c (chaperone-proc?/c-struct))
   (check-exn cannot-generate-exn? (λ () (test-contract-generation impersonate-any/c)))
   (check-exn cannot-generate-exn?
              (λ ()
                (test-contract-generation
                 (->i ([n integer?])
-                     [_ (n) (λ (r) (eq? r (even? n)))])))))
+                     [_ (n) (λ (r) (eq? r (even? n)))]))))
+  ;; Testing the default return value for contract-struct-generate
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation chaperone-proc?/c))))
 
 (check-exercise
  10
