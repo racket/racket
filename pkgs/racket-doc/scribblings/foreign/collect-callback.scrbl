@@ -80,7 +80,7 @@ foreign function and then an element for each of the function's
 arguments. Pointer values are represented as for the @racket[_pointer]
 representation defined by @racketmodname[ffi/unsafe].
 
-The result is a key for use with @cpp{scheme_remove_gc_callback}. If
+The result is a key for use with @racket[unsafe-remove-collect-callbacks]. If
 the key becomes inaccessible, then the callback will be removed
 automatically (but beware that the pre-callback will have executed and
 the post-callback will not have executed)
