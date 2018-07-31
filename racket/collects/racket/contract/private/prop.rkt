@@ -298,7 +298,7 @@
          #:late-neg-projection [get-late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
-         #:generate [generate (λ (ctc) (λ () #f))]
+         #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (c) #f)])
   (unless (or get-first-order
@@ -476,8 +476,8 @@
          #:late-neg-projection [late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
-         #:generate [generate (λ (ctc) (λ () #f))]
-         #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
+         #:generate [generate (λ (fuel) #f)]
+         #:exercise [exercise (λ (fuel) (values void '()))]
          #:list-contract? [list-contract? #f])
 
   (unless (or first-order

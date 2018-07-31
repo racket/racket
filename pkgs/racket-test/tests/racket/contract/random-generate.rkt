@@ -413,11 +413,34 @@
   (check-exercise 2 void? even-list/c)
   (check-exercise 2 void? even-list/c/generate))
 
-(check-false
- (contract-random-generate
-  (make-chaperone-contract
-   #:late-neg-projection
-   (λ (b) (λ (f v np) v)))))
+(let () ;; test the default value of generate / exercise for make-chaperone-contract
+  (define custom-any/c
+    (make-chaperone-contract
+     #:late-neg-projection
+     (λ (b) (λ (v np) v))))
+  (define any->any/c
+    (make-chaperone-contract
+     #:late-neg-projection
+     (λ (b)
+       (λ (v np)
+         (chaperone-procedure v values impersonator-prop:contracted any->any/c)))))
+  (define/contract proc any->any/c values)
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation custom-any/c)))
+  (check-not-exn (λ () (contract-exercise proc))))
+
+(let ()
+  (struct impersonate-any/c-struct ()
+    #:property prop:contract
+    (build-contract-property
+     #:late-neg-projection
+     (λ (ctc) (λ (b) (λ (v np) v)))))
+  (define impersonate-any/c (impersonate-any/c-struct))
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation impersonate-any/c)))
+  (check-exn cannot-generate-exn?
+             (λ ()
+               (test-contract-generation
+                (->i ([n integer?])
+                     [_ (n) (λ (r) (eq? r (even? n)))])))))
 
 (check-exercise
  10
