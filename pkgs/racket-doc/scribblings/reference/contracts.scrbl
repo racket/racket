@@ -2745,11 +2745,11 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:generate
            generate
            (->i ([c contract?])
-                ([generator
-                  (c)
-                  (-> (and/c positive? real?)
-                      (or/c (-> (or/c contract-random-generate-fail? c))
-                            #f))]))
+                [generator
+                 (c)
+                 (-> (and/c positive? real?)
+                     (or/c (-> (or/c contract-random-generate-fail? c))
+                           #f))])
            (λ (c) (λ (fuel) #f))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          flat-contract-property?]
@@ -2791,21 +2791,21 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:generate
            generate
            (->i ([c contract?])
-                ([generator
-                  (c)
-                  (-> (and/c positive? real?)
-                      (or/c (-> (or/c contract-random-generate-fail? c))
-                            #f))]))
+                [generator
+                 (c)
+                 (-> (and/c positive? real?)
+                     (or/c (-> (or/c contract-random-generate-fail? c))
+                           #f))])
            (λ (c) (λ (fuel) #f))]
           [#:exercise
            exercise
            (->i ([c contract?])
-                ([result
-                  (c)
-                  (-> (and/c positive? real?)
-                      (values
-                       (-> c void?)
-                       (listof contract?)))]))
+                [result
+                 (c)
+                 (-> (and/c positive? real?)
+                     (values
+                      (-> c void?)
+                      (listof contract?)))])
            (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          chaperone-contract-property?]
@@ -2847,21 +2847,21 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:generate
            generate
            (->i ([c contract?])
-                ([generator
-                  (c)
-                  (-> (and/c positive? real?)
-                      (or/c (-> (or/c contract-random-generate-fail? c))
-                            #f))]))
+                [generator
+                 (c)
+                 (-> (and/c positive? real?)
+                     (or/c (-> (or/c contract-random-generate-fail? c))
+                           #f))])
            (λ (c) (λ (fuel) #f))]
           [#:exercise
            exercise
            (->i ([c contract?])
-                ([result
-                  (c)
-                  (-> (and/c positive? real?)
-                      (values
-                       (-> c void?)
-                       (listof contract?)))]))
+                [result
+                 (c)
+                 (-> (and/c positive? real?)
+                     (values
+                      (-> c void?)
+                      (listof contract?)))])
            (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          contract-property?])]{
