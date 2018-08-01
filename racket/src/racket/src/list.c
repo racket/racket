@@ -2603,9 +2603,10 @@ static Scheme_Object *hash_failed(int argc, Scheme_Object *argv[])
 
   if (argc == 3) {
     v = argv[2];
-    if (SCHEME_PROCP(v))
+    if (SCHEME_PROCP(v)) {
+      scheme_check_proc_arity("hash-ref", 0, 2, argc, argv);
       return _scheme_tail_apply(v, 0, NULL);
-    else
+    } else
       return v;
   } else {
     scheme_contract_error("hash-ref",
