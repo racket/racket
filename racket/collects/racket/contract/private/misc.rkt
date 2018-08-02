@@ -644,7 +644,7 @@
   (raise-blame-error
    blame #:missing-party neg-party
    val
-   '("~s accepts no values" given: "~e")
+   '("~s allows no values" given: "~e")
    (none/c-name ctc)
    val))
 
