@@ -61,7 +61,9 @@
                           [(null? exers) (void)]
                           [(null? vals) (loop exers orig-vals)]
                           [else
-                           ((car exers) (car vals))
+                           (let/ec k
+                             (parameterize ([fail-escape (λ () (k))])
+                               ((car exers) (car vals))))
                            (loop (cdr exers) (cdr vals))])))
                     available-ctcs)]
            [else
