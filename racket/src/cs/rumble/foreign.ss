@@ -1192,11 +1192,11 @@
             (duplicate-argument "source for copy" copy-from (car args))
             (loop (cdr args) count type (car args) mode fail-mode))]
        [(malloc-mode? (car args))
-        (if copy-from
+        (if mode
             (duplicate-argument "mode" mode (car args))
             (loop (cdr args) count type copy-from (car args) fail-mode))]
        [(eq? (car args) 'failok)
-        (if copy-from
+        (if fail-mode
             (duplicate-argument "failure mode" fail-mode (car args))
             (loop (cdr args) count type copy-from mode (car args)))]
        [else
