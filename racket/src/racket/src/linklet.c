@@ -1520,7 +1520,7 @@ static Scheme_Hash_Tree *push_prefix(Scheme_Linklet *linklet, Scheme_Instance *i
 
       if (v) {
         if (!((Scheme_Bucket *)v)->val) {
-          bad_reason = "is unintialized";
+          bad_reason = "is uninitialized";
           v = NULL;
         } else if (linklet->import_shapes) {
           Scheme_Object *shape = SCHEME_VEC_ELS(linklet->import_shapes)[pos-1];
