@@ -87,7 +87,10 @@ int main() {
   const char *vers = "100";
   int i;
 
-#if _MSC_VER >= 1900
+#if _MSC_VER >= 1914
+  /* VS 2017 */
+  vers = "141";
+#elif _MSC_VER >= 1900
   /* VS 2015 */
   vers = "140";
 #elif _MSC_VER >= 1800
