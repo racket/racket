@@ -2762,6 +2762,35 @@ case of module-leve bindings; it doesn't cover local bindings.
                     (expand `(lambda (x) x))))))))
           ok?)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that an import that is already shadowed by a definition
+;; does not prevent importing other things
+
+;; We want enough bindings here to trigger bulk mode
+(module provides-a-through-m racket/base
+  (define a 1)
+  (define b 2)
+  (define c 3)
+  (define d 4)
+  (define e 5)
+  (define f 6)
+  (define g 7)
+  (define h 8)
+  (define i 9)
+  (define j 10)
+  (define k 11)
+  (define l 12)
+  (define m 13)
+  (provide a b c d e f g h i j k l m))
+
+(module shaodws-c-and-imports-the-rest racket/base
+  (define c -3)
+  (require (except-in 'provides-a-through-m a b d e))
+  (define result f)
+  (provide result))
+
+(test 6 dynamic-require ''shaodws-c-and-imports-the-rest 'result)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
