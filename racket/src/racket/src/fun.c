@@ -2803,7 +2803,7 @@ void scheme_init_reduced_proc_struct(Scheme_Startup_Env *env)
     scheme_reduced_procedure_struct = scheme_make_struct_type2(NULL,
                                                                NULL,
                                                                (Scheme_Object *)insp,
-                                                               4, 0,
+                                                               5, 0,
                                                                scheme_false,
                                                                scheme_null,
                                                                scheme_make_integer(0),
@@ -2811,9 +2811,50 @@ void scheme_init_reduced_proc_struct(Scheme_Startup_Env *env)
   }
 }
 
+static Scheme_Object *arity_to_fast_check_mask(Scheme_Object *aty)
+{
+  if (SCHEME_INTP(aty)) {
+    intptr_t n = SCHEME_INT_VAL(aty);
+    if (n <= SCHEME_MAX_FAST_ARITY_CHECK)
+      return scheme_make_integer(1 << n);
+    else
+      return scheme_make_integer(0);
+  } else if (SCHEME_STRUCTP(aty)) {
+    Scheme_Object *mask;
+    intptr_t n;
+
+    mask = arity_to_fast_check_mask(scheme_struct_ref(aty, 0));
+    n = SCHEME_INTP(mask);
+    if (!n)
+      return mask;
+    else {
+      /* Set all bits above highest-set bit */
+      int i;
+      for (i = SCHEME_MAX_FAST_ARITY_CHECK; ; i--) {
+        if (n & (1 << i))
+          break;
+        n |= (1 << i);
+      }
+      return scheme_make_integer(n);
+    }
+  } else if (SCHEME_PAIRP(aty)) {
+    Scheme_Object *mask;
+    intptr_t n = 0;
+    while (SCHEME_PAIRP(aty)) {
+      mask = arity_to_fast_check_mask(SCHEME_CAR(aty));
+      n |= SCHEME_INT_VAL(mask);
+      aty = SCHEME_CDR(aty);
+    }
+    return scheme_make_integer(n);
+  } else
+    return scheme_make_integer(0);
+}
+
+
 static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty, Scheme_Object *name, Scheme_Object *is_meth)
 {
-  Scheme_Object *a[4];
+  Scheme_Object *mask;
+  Scheme_Structure *inst;
   
   if (SCHEME_STRUCTP(proc)
       && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
@@ -2825,12 +2866,22 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty,
     proc = ((Scheme_Structure *)proc)->slots[0];
   }
 
-  a[0] = proc;
-  a[1] = aty;
-  a[2] = (name ? name : scheme_false);
-  a[3] = (is_meth ? is_meth : scheme_false);
+  /* A fast-check bitmap, where a bitmap is set in a fixnum if that
+     many arguments are allowed: */
+  mask = arity_to_fast_check_mask(aty);
 
-  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 4, a);
+  inst = (Scheme_Structure *)scheme_malloc_tagged(sizeof(Scheme_Structure)
+                                                  + ((5 - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+  inst->so.type = scheme_proc_struct_type;
+  inst->stype = (Scheme_Struct_Type *)scheme_reduced_procedure_struct;
+
+  inst->slots[0] = proc;
+  inst->slots[1] = aty;
+  inst->slots[2] = (name ? name : scheme_false);
+  inst->slots[3] = (is_meth ? is_meth : scheme_false);
+  inst->slots[4] = mask;
+
+  return (Scheme_Object *)inst;
 }
 
 static int is_subarity(Scheme_Object *req, Scheme_Object *orig, int req_delta)

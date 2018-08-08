@@ -3434,6 +3434,8 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode);
 
+#define SCHEME_MAX_FAST_ARITY_CHECK 29
+
 struct Scheme_Logger {
   Scheme_Object so;
   Scheme_Object *name;

@@ -79,13 +79,20 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
      then we can't just apply the struct's procedure. */
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
   jit_ldi_p(JIT_R2, &scheme_reduced_procedure_struct);
-  ref3 = jit_bner_p(jit_forward(), JIT_R1, JIT_R2);
+  if (num_rands <= SCHEME_MAX_FAST_ARITY_CHECK) {
+    ref3 = jit_bner_p(jit_forward(), JIT_R1, JIT_R2);
 
-  /* Matches reduced arity in a simple way? */
-  jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Structure *)0x0)->slots[1]);
-  refz3 = jit_bnei_p(jit_forward(), JIT_R2, scheme_make_integer(num_rands));
+    /* Matches reduced arity in a simple way? */
+    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Structure *)0x0)->slots[4]);
+    refz3 = jit_bmci_l(jit_forward(), JIT_R2, (1 << (num_rands + 1)));
 
-  mz_patch_branch(ref3);
+    /* Yes, matches */
+    mz_patch_branch(ref3);
+  } else {
+    /* Too many arguments for fast check, so assume it desn't match */
+    refz3 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R2);
+  }
+
   /* It's an applicable struct that is not an arity reduce or the
      arity matches. We can extract the procedure if it's in a field: */
   jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Struct_Type *)0x0)->proc_attr);
