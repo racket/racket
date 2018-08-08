@@ -1105,7 +1105,9 @@ as follows.
    (list num-eggs num-chicks)
    (weak-eval 'num-eggs)
    (eval:error (weak-eval 'num-chicks))
- ]}
+ ]
+
+ See also @secref["code-inspectors+protect" #:doc '(lib "scribblings/guide/guide.scrbl")].}
 
  @specsubform[#:literals (for-meta) 
               (for-meta phase-level provide-spec ...)]{ Like the union of the
