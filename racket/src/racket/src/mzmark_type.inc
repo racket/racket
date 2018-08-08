@@ -160,7 +160,7 @@ static int toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
 
 static int static_toplevel_obj_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 #else
   return 0;
 #endif
@@ -173,7 +173,7 @@ static int static_toplevel_obj_MARK(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 # endif
 #endif
 }
@@ -185,7 +185,7 @@ static int static_toplevel_obj_FIXUP(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Static_Toplevel));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Toplevel));
 # endif
 #endif
 }
@@ -3507,6 +3507,7 @@ static int linklet_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->bodies, gc);
   gcMARK2(l->constants, gc);
   gcMARK2(l->static_prefix, gc);
+  gcMARK2(l->native_lambdas, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -3528,6 +3529,7 @@ static int linklet_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->bodies, gc);
   gcFIXUP2(l->constants, gc);
   gcFIXUP2(l->static_prefix, gc);
+  gcFIXUP2(l->native_lambdas, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

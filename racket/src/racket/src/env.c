@@ -190,6 +190,7 @@ Scheme_Env *scheme_basic_env()
   scheme_init_validate();
 #ifdef MZ_USE_JIT
   scheme_init_jit();
+  scheme_init_jitprep();
 #endif
 
   scheme_init_process_globals();

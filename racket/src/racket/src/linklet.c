@@ -1411,6 +1411,36 @@ static void *instantiate_linklet_k(void)
   if (!multi)
     v = scheme_check_one_value(v);
 
+  if (linklet->native_lambdas) {
+    int mc;
+    Scheme_Object **mv, *l;
+
+    if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+      p = scheme_current_thread;
+      mv = p->ku.multiple.array;
+      mc = p->ku.multiple.count;
+      if (SAME_OBJ(mv, p->values_buffer))
+        p->values_buffer = NULL;
+    } else {
+      mv = NULL;
+      mc = 0;
+    }
+
+    l = linklet->native_lambdas;
+    linklet->native_lambdas = NULL;
+
+    while (SCHEME_PAIRP(l)) {
+      scheme_force_jit_generate((Scheme_Native_Lambda *)SCHEME_CAR(l));
+      l = SCHEME_CDR(l);
+    }
+
+    if (mv) {
+      p = scheme_current_thread;
+      p->ku.multiple.array = mv;
+      p->ku.multiple.count = mc;
+    }
+  }
+
   scheme_performance_record_end("instantiate", &perf_state);
 
   return (void *)v;
@@ -1912,7 +1942,7 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
     }
   }
 
-  if (!depth)
+  if (!depth) {
     fprintf(stderr, ";; %stotal%s  %s%"PRIdPTR " [%s%"PRIdPTR"] ms\n",
             tab_number(total, tab, len),
             tab_string("total", name_tab, name_len),
@@ -1920,6 +1950,12 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
             total,
             tab_number(gc_total, gc_tab, gc_len),
             gc_total);
+#ifdef MZ_PRECISE_GC
+    fprintf(stderr, ";; [JIT code: %"PRIdPTR" bytes   JIT code+admin: %"PRIdPTR" bytes]\n",
+            scheme_code_total,
+            scheme_code_page_total);
+#endif
+  }
 }
 
 static void show_all_perf()

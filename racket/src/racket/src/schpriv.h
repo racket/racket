@@ -313,6 +313,7 @@ void scheme_init_stack_check(void);
 void scheme_init_overflow(void);
 #ifdef MZ_USE_JIT
 void scheme_init_jit(void);
+void scheme_init_jitprep(void);
 #endif
 #ifdef MZ_PRECISE_GC
 void scheme_register_traversers(void);
@@ -2995,6 +2996,7 @@ void scheme_jit_fill_threadlocal_table();
 
 #ifdef MZ_USE_JIT
 void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv, int delta);
+void scheme_force_jit_generate(Scheme_Native_Lambda *nlam);
 #endif
 
 struct Start_Module_Args;
@@ -3292,6 +3294,8 @@ struct Scheme_Linklet
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
 
   Scheme_Prefix *static_prefix; /* non-NULL for a linklet compiled in static mode */
+
+  Scheme_Object *native_lambdas; /* non-NULL => native lambdas to force-JIT on instantiation */
 };
 
 #define SCHEME_DEFN_VAR_COUNT(d) (SCHEME_VEC_SIZE(d)-1)

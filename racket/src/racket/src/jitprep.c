@@ -33,7 +33,18 @@
 #include "schpriv.h"
 #include "schrunst.h"
 
+THREAD_LOCAL_DECL(static Scheme_Object *current_linklet_native_lambdas);
+static int force_jit;
+
 #ifdef MZ_USE_JIT
+
+void scheme_init_jitprep()
+{
+  REGISTER_SO(current_linklet_native_lambdas);
+
+  if (getenv("PLT_EAGER_JIT"))
+    force_jit = 1;
+}
 
 static Scheme_Object *jit_expr(Scheme_Object *expr);
 
@@ -434,6 +445,8 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
       ((Scheme_Lambda *)val)->name = name;
       if (((Scheme_Lambda *)val)->closure_size)
 	all_closed = 0;
+      if (current_linklet_native_lambdas)
+        current_linklet_native_lambdas = scheme_make_pair(val, current_linklet_native_lambdas);
     }
 
     /* Generating the code may cause empty closures to be formed: */
@@ -561,6 +574,10 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
     ndata = scheme_generate_lambda(data2, 1, NULL);
     data2->u.native_code = ndata;
 
+    if (current_linklet_native_lambdas)
+      current_linklet_native_lambdas = scheme_make_pair((Scheme_Object *)ndata,
+                                                        current_linklet_native_lambdas);
+
     if (!context)
       data->u.jit_clone = data2;
   }
@@ -664,6 +681,9 @@ Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
     return new_linklet;
   }
 
+  if (force_jit)
+    current_linklet_native_lambdas = scheme_null;
+
   i = SCHEME_VEC_SIZE(linklet->bodies);
   bodies = scheme_make_vector(i, NULL);
   while (i--) {
@@ -674,6 +694,9 @@ Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
   new_linklet->bodies = bodies;
 
   new_linklet->jit_ready = 2;
+
+  new_linklet->native_lambdas = current_linklet_native_lambdas;
+  current_linklet_native_lambdas = NULL;
 
   return new_linklet;
 }

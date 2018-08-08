@@ -943,6 +943,7 @@ START_XFORM_SKIP;
 THREAD_LOCAL_DECL(static void *code_allocation_page_list);
 
 THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
+THREAD_LOCAL_DECL(intptr_t scheme_code_total);
 
 #if defined(MZ_CODE_ALLOC_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
@@ -1161,6 +1162,7 @@ void *scheme_malloc_code(intptr_t size)
     sz = (sz + page_size - 1) & ~(page_size - 1);
     pg = malloc_page(sz);
     scheme_code_page_total += sz;
+    scheme_code_total += sz;
     *(intptr_t *)pg = sz;
     chain_page(pg);
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
@@ -1169,6 +1171,8 @@ void *scheme_malloc_code(intptr_t size)
   } else {
     bucket = free_list_find_bucket(size);
     size2 = free_list[bucket].size;
+
+    scheme_code_total += size2;
 
     if (!free_list[bucket].elems) {
       /* add a new page's worth of items to the free list */
@@ -1266,6 +1270,7 @@ void scheme_free_code(void *p)
   if (size >= page_size) {
     /* it was a large object on its own page(s) */
     scheme_code_page_total -= size;
+    scheme_code_total -= size;
     LOG_CODE_MALLOC(1, printf("freeing large %p (%ld) [%ld left]\n", 
                               p, size, scheme_code_page_total));
     unchain_page((char *)p - CODE_HEADER_SIZE);
@@ -1279,6 +1284,7 @@ void scheme_free_code(void *p)
     }
 
     size2 = free_list[bucket].size;
+    scheme_code_total -= size2;
 
     LOG_CODE_MALLOC(0, printf("freeing %ld / %ld\n", size2, bucket));
 
