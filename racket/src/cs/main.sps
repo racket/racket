@@ -42,7 +42,13 @@
 
  (define-syntax seq (syntax-rules () [(_ expr ...) (define dummy (let () expr ... (void)))]))
 
- (define (run the-command-line-arguments)
+ (define (run the-command-line-arguments/maybe-bytes)
+   (define the-command-line-arguments
+     (map (lambda (s) (if (bytes? s)
+                          (bytes->string/locale s #\?)
+                          s))
+          the-command-line-arguments/maybe-bytes))
+
    (seq
     (unless (>= (length the-command-line-arguments) 5)
       (error 'racket "expected `self`, `collects`, and `libs` paths plus `segment-offset` and `is-gui?` to start"))
@@ -518,8 +524,7 @@
 
  (define the-command-line-arguments
    (or (and (top-level-bound? 'bytes-command-line-arguments)
-            (map (lambda (s) (bytes->string/locale s #\?))
-                 (top-level-value 'bytes-command-line-arguments)))
+            (top-level-value 'bytes-command-line-arguments))
        (command-line-arguments)))
 
  (if (null? the-command-line-arguments)
