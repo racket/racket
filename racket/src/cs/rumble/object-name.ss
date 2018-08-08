@@ -38,7 +38,7 @@
      [(arity-wrapper-procedure? v)
       (extract-jit-procedure-name v)]
      [else
-      (let ([name (((inspect/object v) 'code) 'name)])
+      (let ([name (#%$code-name (#%$closure-code v))])
         (and name
              (string->symbol name)))])]
    [(impersonator? v)

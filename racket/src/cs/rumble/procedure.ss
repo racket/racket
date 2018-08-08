@@ -251,16 +251,39 @@
                              "arity of procedure does not include requested arity"
                              "procedure" proc
                              "requested arity" a))
-    (make-reduced-arity-procedure
-     (lambda args
-       (unless (bitwise-bit-set? mask (length args))
-         (apply raise-arity-error
-                (or (object-name proc) 'procedure)
-                (mask->arity mask)
-                args))
-       (apply proc args))
-     mask
-     (object-name proc))))
+    (let ([name (object-name proc)])
+      (case mask
+        [(1) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                               (lambda () (proc))
+                                               (lambda () (|#%app| proc)))
+                                           mask
+                                           name)]
+        [(2) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                               (lambda (x) (proc x))
+                                               (lambda (x) (|#%app| proc x)))
+                                           mask
+                                           name)]
+        [(4) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                               (lambda (x y) (proc x y))
+                                               (lambda (x y) (|#%app| proc x y)))
+                                           mask
+                                           name)]
+        [(8) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                               (lambda (x y z) (proc x y z))
+                                               (lambda (x y z) (|#%app| proc x y z)))
+                                           mask
+                                           name)]
+        [else
+         (make-reduced-arity-procedure
+          (lambda args
+            (unless (bitwise-bit-set? mask (length args))
+              (apply raise-arity-error
+                     (or (object-name proc) 'procedure)
+                     (mask->arity mask)
+                     args))
+            (apply proc args))
+          mask
+          name)]))))
 
 ;; ----------------------------------------
 
@@ -279,7 +302,9 @@
    [else
     (check who procedure? proc)
     (check who symbol? name)
-    (make-named-procedure proc name)]))
+    (if (#%procedure? proc)
+        (make-arity-wrapper-procedure proc (procedure-arity-mask proc) name)
+        (make-named-procedure proc name))]))
 
 (define (procedure-maybe-rename proc name)
   (if name
