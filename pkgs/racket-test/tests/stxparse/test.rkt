@@ -150,6 +150,14 @@
              [+ (void)]
              [_ (error 'wrong)]))
 
+(test-case "literal after colon"
+  (check-equal?
+   (convert-syntax-error
+    (syntax-parse #'else #:literals (else)
+      [e:else (syntax->datum #'e)]
+      [_ #f]))
+   'else))
+
 (test-case "datum literals"
   (syntax-parse #'one #:datum-literals (one)
     [one (void)]))
@@ -157,6 +165,14 @@
   (let ([one 1])
     (syntax-parse (let ([one 2]) #'one) #:datum-literals (one)
       [one (void)])))
+
+(test-case "datum literal after colon"
+  (check-equal?
+   (convert-syntax-error
+    (syntax-parse #'else #:datum-literals (else)
+      [e:else (syntax->datum #'e)]
+      [_ #f]))
+   'else))
 
 ;; compound patterns
 (tok (a b c) (x y z)

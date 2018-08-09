@@ -695,7 +695,7 @@
                (declenv-check-unbound decls name (syntax-e suffix) #:blame-declare? #t)
                (define entry (declenv-lookup decls suffix))
                (cond [(or (den:lit? entry) (den:datum-lit? entry))
-                      (pat:and (pat:svar name) (parse-pat:id/entry id allow-head? entry))]
+                      (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
                      [else (parse-stxclass-use id allow-head? name suffix no-arguments #f)])])]
         [(declenv-apply-conventions decls id)
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
