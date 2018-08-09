@@ -328,7 +328,14 @@
      (expected-arity-string arity)
      "  given: " (number->string (length args)))
     (current-continuation-marks))))
-  
+
+(define/who (raise-arity-mask-error name mask . args)
+  (check who (lambda (p) (or (symbol? name) (procedure? name)))
+         :contract "(or/c symbol? procedure?)"
+         name)
+  (check who exact-integer? mask)
+  (apply raise-arity-error name (mask->arity mask) args))
+
 (define (expected-arity-string arity)
   (let ([expected
          (lambda (s) (string-append "  expected: " s "\n"))])

@@ -1399,57 +1399,6 @@
 
 
 ;; ------------------------------------------------------------
-;; Check arity reporting for methods.
-;;  (This is really a Racket test, not a class.rkt test.)
-
-(map
- (lambda (jit?)
-   (parameterize ([eval-jit-enabled jit?])
-     (let ([mk-f (lambda ()
-		   (eval (syntax-property #'(lambda (a b) a) 'method-arity-error #t)))]
-	   [check-arity-error
-	    (lambda (f cl?)
-	      (test (if cl? '("given: 0")  '("expected: 1\n"))
-                    regexp-match #rx"expected: 1\n|given: 0$"
-		    (exn-message (with-handlers ([values values])
-				   ;; Use `apply' to avoid triggering
-				   ;; compilation of f:
-				   (apply f '(1))))))])
-       (test 2 procedure-arity (mk-f))
-       (check-arity-error (mk-f) #f)
-       (test 1 (mk-f) 1 2)
-       (let ([f (mk-f)])
-	 (test 1 (mk-f) 1 2)
-	 (check-arity-error (mk-f) #f))
-       (let ([mk-f (lambda ()
-		     (eval (syntax-property #'(case-lambda [(a b) a][(c d) c]) 'method-arity-error #t)))])
-	 (test 2 procedure-arity (mk-f))
-	 (check-arity-error (mk-f) #t)
-	 (test 1 (mk-f) 1 2)
-	 (let ([f (mk-f)])
-	   (test 1 (mk-f) 1 2)
-	   (check-arity-error (mk-f) #t))))
-     (let* ([f (lambda (a b) a)]
-            [meth (procedure->method f)]
-            [check-arity-error
-             (lambda (f cl?)
-               (test (if cl? '("given: 0")  '("expected: 1\n"))
-                    regexp-match #rx"expected: 1\n|given: 0$"
-                     (exn-message (with-handlers ([values values])
-                                    ;; Use `apply' to avoid triggering
-                                    ;; compilation of f:
-                                    (apply f '(1))))))])
-       (test 2 procedure-arity meth)
-       (check-arity-error meth #f)
-       (test 1 meth 1 2)
-       (let* ([f (case-lambda [(a b) a] [(c d) c])]
-              [meth (procedure->method f)])
-	 (test 2 procedure-arity meth)
-	 (check-arity-error meth #t)
-	 (test 1 meth 1 2)))))
- '(#t #f))
-
-;; ------------------------------------------------------------
 ;; Check define-member-name, etc.:
 
 (let ([mk

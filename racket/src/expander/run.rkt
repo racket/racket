@@ -50,6 +50,7 @@
 (define instance-knot-ties (make-hasheq))
 (define primitive-table-directs (make-hasheq))
 (define side-effect-free-modules (make-hash))
+(define disallows null)
 (define quiet-load? #f)
 (define startup-module main.rkt)
 (define submod-name #f)
@@ -100,7 +101,9 @@
    [("++depend") file "Record <file> as a dependency"
     (hash-set! dependencies (simplify-path (path->complete-path file)) #t)]
    [("++depend-module") mod-file "Add <mod-file> and transitive as dependencies"
-    (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
+                        (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
+   [("++disallow") id "If <id> is defined in the flattened version, explain why"
+                   (set! disallows (cons (string->symbol id) disallows))]
    #:once-each
    [("--local-rename") "Use simpler names in extracted, instead of a unique name for each binding"
     (set! local-rename? #t)]
@@ -320,7 +323,8 @@
            #:local-rename? local-rename?
            #:instance-knot-ties instance-knot-ties
            #:primitive-table-directs primitive-table-directs
-           #:side-effect-free-modules side-effect-free-modules))
+           #:side-effect-free-modules side-effect-free-modules
+           #:disallows disallows))
 
 (when load-file
   (load load-file))

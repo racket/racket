@@ -2624,7 +2624,7 @@ static const char *startup_source =
 "(begin"
 "(if(if(procedure? f_0)(procedure-arity-includes? f_0 1) #f)"
 "(void)"
-"                            (let-values () (raise-argument-error 'assf \"(any/c any/c . -> . any/c)\" f_0)))"
+"                            (let-values () (raise-argument-error 'assf \"(any/c . -> . any/c)\" f_0)))"
 "((letrec-values(((loop_142)"
 "(lambda(l_1 t_0)"
 "(begin"

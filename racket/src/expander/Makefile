@@ -22,6 +22,10 @@ KNOT = ++knot read read/api.rkt \
 # a direct use of the primitive name:
 DIRECT = ++direct linklet ++direct kernel
 
+# Make sure that the flattened form doesn't use
+# `make-optional-keyword-procedure`
+DISALLOW = ++disallow make-optional-keyword-procedure
+
 # Set `BUILDDIR` as a prefix on "compiled" output (defaults to empty).
 # Set `DEPENDSDIR` as the same sort of prefix in the generated
 # makefile-dependency file (also defaults to empty). The `BUILDDIR`
@@ -31,7 +35,7 @@ DIRECT = ++direct linklet ++direct kernel
 
 expander:
 	$(RACO) make bootstrap-run.rkt
-	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) --local-rename -O $(TREE)
+	$(RACKET) bootstrap-run.rkt -c compiled/cache-src $(KNOT) $(DIRECT) $(DISALLOW) --local-rename -O $(TREE)
 
 expander-src:
 	$(RACO) make bootstrap-run.rkt

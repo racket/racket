@@ -132,7 +132,7 @@
                                           err-n)
                                   (exn-message exn))))]))
 
-(let ()
+(define (run-procedure-tests procedure-arity procedure-reduce-arity)
   (define (get-maybe p n)
     (and ((length p) . > . n) (list-ref p n)))
   (define (try-combos procs add-chaperone) 
@@ -360,6 +360,93 @@
     (try-combos procs add-chaperone)
     (try-combos (map add-chaperone procs) values)
     (try-combos (map add-chaperone procs) add-chaperone)))
+
+(define (mask->arity mask)
+  (let loop ([mask mask] [pos 0])
+    (cond
+     [(= mask 0) null]
+     [(= mask -1) (arity-at-least pos)]
+     [(bitwise-bit-set? mask 0)
+      (let ([rest (loop (arithmetic-shift mask -1) (add1 pos))])
+        (cond
+         [(null? rest) pos]
+         [(pair? rest) (cons pos rest)]
+         [else (list pos rest)]))]
+     [else
+      (loop (arithmetic-shift mask -1) (add1 pos))])))
+
+(define (arity->mask a)
+  (cond
+   [(exact-nonnegative-integer? a)
+    (arithmetic-shift 1 a)]
+   [(arity-at-least? a)
+    (bitwise-xor -1 (sub1 (arithmetic-shift 1 (arity-at-least-value a))))]
+   [(list? a)
+    (let loop ([mask 0] [l a])
+      (cond
+       [(null? l) mask]
+       [else
+        (let ([a (car l)])
+          (cond
+           [(or (exact-nonnegative-integer? a)
+                (arity-at-least? a))
+            (loop (bitwise-ior mask (arity->mask a)) (cdr l))]
+           [else #f]))]))]
+   [else #f]))
+
+(run-procedure-tests procedure-arity procedure-reduce-arity)
+(run-procedure-tests (lambda (p) (mask->arity (procedure-arity-mask p)))
+                     (lambda (p a [name #f]) (procedure-reduce-arity-mask p (arity->mask a) name)))
+
+;; ------------------------------------------------------------
+;; Check arity reporting for methods.
+
+(map
+ (lambda (jit?)
+   (parameterize ([eval-jit-enabled jit?])
+     (let ([mk-f (lambda ()
+		   (eval (syntax-property #'(lambda (a b) a) 'method-arity-error #t)))]
+	   [check-arity-error
+	    (lambda (f cl?)
+	      (test (if cl? '("given: 0")  '("expected: 1\n"))
+                    regexp-match #rx"expected: 1\n|given: 0$"
+		    (exn-message (with-handlers ([values values])
+				   ;; Use `apply' to avoid triggering
+				   ;; compilation of f:
+				   (apply f '(1))))))])
+       (test 2 procedure-arity (mk-f))
+       (check-arity-error (mk-f) #f)
+       (test 1 (mk-f) 1 2)
+       (let ([f (mk-f)])
+	 (test 1 (mk-f) 1 2)
+	 (check-arity-error (mk-f) #f))
+       (let ([mk-f (lambda ()
+		     (eval (syntax-property #'(case-lambda [(a b) a] [(c d e) c]) 'method-arity-error #t)))])
+	 (test '(2 3) procedure-arity (mk-f))
+	 (check-arity-error (mk-f) #t)
+	 (test 1 (mk-f) 1 2)
+	 (let ([f (mk-f)])
+	   (test 1 (mk-f) 1 2)
+	   (check-arity-error (mk-f) #t))))
+     (let* ([f (lambda (a b) a)]
+            [meth (procedure->method f)]
+            [check-arity-error
+             (lambda (f cl?)
+               (test (if cl? '("given: 0")  '("expected: 1\n"))
+                    regexp-match #rx"expected: 1\n|given: 0$"
+                     (exn-message (with-handlers ([values values])
+                                    ;; Use `apply' to avoid triggering
+                                    ;; compilation of f:
+                                    (apply f '(1))))))])
+       (test 2 procedure-arity meth)
+       (check-arity-error meth #f)
+       (test 1 meth 1 2)
+       (let* ([f (case-lambda [(a b) a] [(c d e) c])]
+              [meth (procedure->method f)])
+	 (test '(2 3) procedure-arity meth)
+	 (check-arity-error meth #t)
+	 (test 1 meth 1 2)))))
+ '(#t #f))
 
 ;; ----------------------------------------
 ;; Check error for non-procedures

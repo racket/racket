@@ -2446,6 +2446,11 @@ int scheme_bin_lt_eq(const Scheme_Object *n1, const Scheme_Object *n2);
 
 Scheme_Object *scheme_bin_quotient_remainder(const Scheme_Object *n1, const Scheme_Object *n2, Scheme_Object **_rem);
 
+Scheme_Object *scheme_bin_bitwise_or(Scheme_Object *a, Scheme_Object *b);
+Scheme_Object *scheme_bin_bitwise_xor(Scheme_Object *a, Scheme_Object *b);
+Scheme_Object *scheme_bin_bitwise_and(Scheme_Object *a, Scheme_Object *b);
+int scheme_bin_bitwise_bit_set_p (Scheme_Object *so, Scheme_Object *sb);
+
 Scheme_Object *scheme_sub1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_add1(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_odd_p(int argc, Scheme_Object *argv[]);
@@ -3411,7 +3416,9 @@ int scheme_any_string_has_null(Scheme_Object *o);
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_make_arity(mzshort minc, mzshort maxc);
+Scheme_Object *scheme_make_arity_mask(intptr_t minc, intptr_t maxc);
 Scheme_Object *scheme_arity(Scheme_Object *p);
+Scheme_Object *scheme_arity_mask_to_arity(Scheme_Object *mask, int mode);
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -3431,6 +3438,7 @@ Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
 
 XFORM_NONGCING int scheme_fast_check_arity(Scheme_Object *v, int a);
 Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);
+Scheme_Object *scheme_get_arity_mask(Scheme_Object *p);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode);
 

@@ -241,49 +241,70 @@
 
 (define-record reduced-arity-procedure (proc mask name))
 
-(define/who (procedure-reduce-arity proc a)
-  (check who procedure? proc)
-  (let ([mask (arity->mask a)])
-    (unless mask
-      (raise-arguments-error who "procedure-arity?" a))
-    (unless (= mask (bitwise-and mask (procedure-arity-mask proc)))
-      (raise-arguments-error who
-                             "arity of procedure does not include requested arity"
-                             "procedure" proc
-                             "requested arity" a))
-    (let ([name (object-name proc)])
-      (case mask
-        [(1) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                               (lambda () (proc))
-                                               (lambda () (|#%app| proc)))
-                                           mask
-                                           name)]
-        [(2) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                               (lambda (x) (proc x))
-                                               (lambda (x) (|#%app| proc x)))
-                                           mask
-                                           name)]
-        [(4) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                               (lambda (x y) (proc x y))
-                                               (lambda (x y) (|#%app| proc x y)))
-                                           mask
-                                           name)]
-        [(8) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                               (lambda (x y z) (proc x y z))
-                                               (lambda (x y z) (|#%app| proc x y z)))
-                                           mask
-                                           name)]
-        [else
-         (make-reduced-arity-procedure
-          (lambda args
-            (unless (bitwise-bit-set? mask (length args))
-              (apply raise-arity-error
-                     (or (object-name proc) 'procedure)
-                     (mask->arity mask)
-                     args))
-            (apply proc args))
-          mask
-          name)]))))
+(define/who procedure-reduce-arity
+  (case-lambda
+    [(proc a name)
+     (check who procedure? proc)
+     (let ([mask (arity->mask a)])
+       (unless mask
+         (raise-arguments-error who "procedure-arity?" a))
+       (check who symbol? :or-false name)
+       (unless (= mask (bitwise-and mask (procedure-arity-mask proc)))
+         (raise-arguments-error who
+                                "arity of procedure does not include requested arity"
+                                "procedure" proc
+                                "requested arity" a))
+       (do-procedure-reduce-arity-mask proc mask name))]
+    [(proc a) (procedure-reduce-arity proc a #f)]))
+
+(define/who procedure-reduce-arity-mask
+  (case-lambda
+    [(proc mask name)
+     (check who procedure? proc)
+     (check who exact-integer? mask)
+     (check who symbol? :or-false name)
+     (unless (= mask (bitwise-and mask (procedure-arity-mask proc)))
+       (raise-arguments-error who
+                              "arity mask of procedure does not include requested arity mask"
+                              "procedure" proc
+                              "requested arity mask" mask))
+     (do-procedure-reduce-arity-mask proc mask name)]
+    [(proc mask) (procedure-reduce-arity-mask proc mask #f)]))
+
+(define (do-procedure-reduce-arity-mask proc mask name)
+  (let ([name (object-name proc)])
+    (case mask
+      [(1) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda () (proc))
+                                             (lambda () (|#%app| proc)))
+                                         mask
+                                         name)]
+      [(2) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x) (proc x))
+                                             (lambda (x) (|#%app| proc x)))
+                                         mask
+                                         name)]
+      [(4) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x y) (proc x y))
+                                             (lambda (x y) (|#%app| proc x y)))
+                                         mask
+                                         name)]
+      [(8) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x y z) (proc x y z))
+                                             (lambda (x y z) (|#%app| proc x y z)))
+                                         mask
+                                         name)]
+      [else
+       (make-reduced-arity-procedure
+        (lambda args
+          (unless (bitwise-bit-set? mask (length args))
+            (apply raise-arity-error
+                   (or (object-name proc) 'procedure)
+                   (mask->arity mask)
+                   args))
+          (apply proc args))
+        mask
+        name)])))
 
 ;; ----------------------------------------
 

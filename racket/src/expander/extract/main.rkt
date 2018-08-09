@@ -44,7 +44,10 @@
                  ;; Override linklet compiler's simple inference
                  ;; of side-effects to remove a module from the
                  ;; flattened form if it's not otherwise referenced:
-                 #:side-effect-free-modules side-effect-free-modules)
+                 #:side-effect-free-modules side-effect-free-modules
+                 ;; A list of symbols that should not be defined in the
+                 ;; flattened, GCed form:
+                 #:disallows disallows)
   ;; Located modules:
   (define compiled-modules (make-hash))
 
@@ -134,7 +137,8 @@
 
     ;; Remove unreferenced definitions
     (define gced-linklet-expr
-      (garbage-collect-definitions simplified-expr))
+      (garbage-collect-definitions simplified-expr
+                                   #:disallows disallows))
 
     (log-status "Checking that references outside the runtime were removed by simplification...")
     (define really-used-names (all-used-symbols gced-linklet-expr))

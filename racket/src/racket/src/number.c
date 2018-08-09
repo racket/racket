@@ -4229,6 +4229,21 @@ GEN_BIN_INT_OP(bin_bitwise_and, "bitwise-and", &, scheme_bignum_and)
 GEN_BIN_INT_OP(bin_bitwise_or, "bitwise-ior", |, scheme_bignum_or)
 GEN_BIN_INT_OP(bin_bitwise_xor, "bitwise-xor", ^, scheme_bignum_xor)
 
+Scheme_Object *scheme_bin_bitwise_or(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_or(a, b);
+}
+
+Scheme_Object *scheme_bin_bitwise_xor(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_xor(a, b);
+}
+
+Scheme_Object *scheme_bin_bitwise_and(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_and(a, b);
+}
+
 #define MZ_PUBLIC /**/
 
 GEN_NARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, -1, SCHEME_EXACT_INTEGERP, "exact-integer?", GEN_IDENT)
@@ -4315,16 +4330,12 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   return scheme_bignum_shift(v, shift);
 }
 
-static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
+static Scheme_Object *bin_bitwise_bit_set_p (Scheme_Object *so, Scheme_Object *sb, int argc, Scheme_Object **argv)
 {
-  Scheme_Object *so, *sb;
-
-  so = argv[0];
   if (!SCHEME_EXACT_INTEGERP(so)) {
     scheme_wrong_contract("bitwise-bit-set?", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
-  sb = argv[1];
   if (SCHEME_INTP(sb)) {
     intptr_t v;
     v = SCHEME_INT_VAL(sb);
@@ -4366,6 +4377,16 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
     scheme_wrong_contract("bitwise-bit-set?", "exact-nonnegative-integer?", 1, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
+}
+
+int scheme_bin_bitwise_bit_set_p (Scheme_Object *so, Scheme_Object *sb)
+{
+  return SCHEME_TRUEP(bin_bitwise_bit_set_p(so, sb, 0, NULL));
+}
+
+static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
+{
+  return bin_bitwise_bit_set_p(argv[0], argv[1], argc, argv);
 }
 
 static Scheme_Object *slow_bitwise_bit_field (int argc, Scheme_Object *argv[],

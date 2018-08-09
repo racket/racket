@@ -4474,8 +4474,8 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
   cnt = ((Scheme_Native_Closure *)closure)->code->closure_size;
   if (cnt < 0) {
     /* Case-lambda */
-    Scheme_Object *l = scheme_null, *a;
-    int i, has_rest, is_method;
+    Scheme_Object *l = scheme_make_integer(0);
+    int i, is_method;
     mzshort *arities, v;
 
     arities = ((Scheme_Native_Closure *)closure)->code->u.arities;
@@ -4483,20 +4483,16 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
     is_method = arities[cnt];
     for (i = cnt; i--; ) {
       v = arities[i];
-      if (v < 0) {
-	v = -(v + 1);
-	has_rest = 1;
-      } else 
-	has_rest = 0;
-      if (mode == -3) {
-        if (has_rest) v = -(v+1);
-        a = scheme_make_integer(v);
-      } else
-        a = scheme_make_arity(v, has_rest ? -1 : v);
-      l = scheme_make_pair(a, l);
+      if (v < 0)
+        l = scheme_bin_bitwise_or(scheme_make_arity_mask(-(v+1), -1), l);
+      else
+        l = scheme_bin_bitwise_or(scheme_make_arity_mask(v, v), l);
     }
-    if (is_method)
-      l = scheme_box(l);
+    if (mode != -4) {
+      l = scheme_arity_mask_to_arity(l, mode);
+      if (is_method)
+        l = scheme_box(l);
+    }
     return l;
   }
 
@@ -4505,13 +4501,30 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
     Scheme_Object *a;
     c.so.type = scheme_closure_type;
     c.code = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
-    a = scheme_get_or_check_arity((Scheme_Object *)&c, -1);
-    if (SCHEME_LAMBDA_FLAGS(c.code) & LAMBDA_IS_METHOD)
-      a = scheme_box(a);
-    return a;
+    if (mode == -4) {
+      return scheme_get_arity_mask((Scheme_Object *)&c);
+    } else {
+      a = scheme_get_or_check_arity((Scheme_Object *)&c, -1);
+      if (SCHEME_LAMBDA_FLAGS(c.code) & LAMBDA_IS_METHOD)
+        a = scheme_box(a);
+      return a;
+    }
   }
 
-  return sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
+  if (mode == -4) {
+    Scheme_Object *a;
+    intptr_t n;
+    a = sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
+    if (SCHEME_BOXP(a)) a = SCHEME_BOX_VAL(a);
+    n = SCHEME_INT_VAL(a);
+    if (n < 0)
+      return scheme_make_arity_mask(-(n+1), -1);
+    else if (n < SCHEME_MAX_FAST_ARITY_CHECK)
+      return scheme_make_integer(1 << n);
+    else
+      return scheme_make_arity_mask(n, n);
+  } else
+    return sjc.get_arity_code(closure, 0, 0 EXTRA_NATIVE_ARGUMENT);
 }
 
 /**********************************************************************/

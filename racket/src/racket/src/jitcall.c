@@ -70,7 +70,7 @@ static Scheme_Object *clear_runstack(Scheme_Object **rs, intptr_t amt, Scheme_Ob
 
 static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
 {
-  GC_CAN_IGNORE jit_insn *ref2, *ref3, *refz1, *refz2, *refz3, *refz4, *refz5;
+  GC_CAN_IGNORE jit_insn *ref2, *ref3, *refz1, *refz2, *refz3, *refy3, *refz4, *refz5;
   GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8, *refz9, *ref9, *ref10;
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
@@ -83,7 +83,8 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
     ref3 = jit_bner_p(jit_forward(), JIT_R1, JIT_R2);
 
     /* Matches reduced arity in a simple way? */
-    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Structure *)0x0)->slots[4]);
+    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Structure *)0x0)->slots[1]);
+    refy3 = jit_bmci_l(jit_forward(), JIT_R2, 1); /* not a fixnum? */
     refz3 = jit_bmci_l(jit_forward(), JIT_R2, (1 << (num_rands + 1)));
 
     /* Yes, matches */
@@ -91,6 +92,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   } else {
     /* Too many arguments for fast check, so assume it desn't match */
     refz3 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R2);
+    refy3 = NULL;
   }
 
   /* It's an applicable struct that is not an arity reduce or the
@@ -176,6 +178,8 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   mz_patch_branch(refz1);
   mz_patch_branch(refz2);
   mz_patch_branch(refz3);
+  if (refy3)
+    mz_patch_branch(refy3);
   mz_patch_branch(refz4);
   mz_patch_branch(refz5);
   mz_patch_branch(refz6);

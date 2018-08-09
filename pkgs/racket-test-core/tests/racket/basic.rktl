@@ -2149,6 +2149,16 @@
 (err/rt-test (raise-result-arity-error 'f -7 #f) exn:fail:contract:arity?/#f)
 (err/rt-test (raise-result-arity-error 'f 7 #"oops") exn:fail:contract:arity?/#f)
 
+
+(err/rt-test (raise-arity-mask-error 'f 4) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-mask-error 'f -8) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-mask-error 'f 5) exn:fail:contract:arity?)
+(err/rt-test (raise-arity-mask-error 'f -5) exn:fail:contract:arity?)
+
+(err/rt-test (raise-arity-mask-error 'f (arity-at-least 7)) exn:fail:contract:arity?/#f)
+(err/rt-test (raise-arity-mask-error 'f -5.0) exn:fail:contract?)
+(err/rt-test (raise-arity-mask-error 1 1) exn:fail:contract?)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; continuations
 
@@ -2944,8 +2954,7 @@
                    not-inc)))
           (list proc (procedure-reduce-arity proc ar))))]
       [representable-arity? (lambda (a)
-                          (or (not (eq? 'chez-scheme (system-type 'vm)))
-                              (a . < . 4096)))])
+                              (a . < . 4096))])
   (let ([check-all-but-one
          (lambda (+)
            (check-ok + 0 '(0) '(1))
