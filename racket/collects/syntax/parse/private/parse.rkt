@@ -539,11 +539,8 @@ Conventions:
   (syntax-case stx ()
     [(parse:S x cx pattern0 pr es k)
      (syntax-case #'pattern0 ()
-       [#s(internal-rest-pattern rest-x rest-cx rest-pr)
-        #`(let ([rest-x x]
-                [rest-cx cx]
-                [rest-pr pr])
-            k)]
+       [#s(internal-rest-pattern)
+        #`(k x cx pr)]
        [#s(pat:any)
         #'k]
        [#s(pat:svar name)
@@ -924,8 +921,8 @@ Conventions:
         (with-syntax ([pattern
                        (convert-list-pattern
                         #'pattern
-                        #'#s(internal-rest-pattern rest-x rest-cx rest-pr))])
-          #'(parse:S x cx pattern pr es k))]
+                        #'#s(internal-rest-pattern))])
+          #'(parse:S x cx pattern pr es (lambda (rest-x rest-cx rest-pr) k)))]
        [#s(hpat:action action subpattern)
         #'(parse:A x cx action pr es (parse:H x cx rest-x rest-cx rest-pr subpattern pr es k))]
        [#s(hpat:delimit pattern)
@@ -975,8 +972,8 @@ Conventions:
        [_
         #'(parse:S x cx
                    ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
-                   #s(pat:pair head #s(internal-rest-pattern rest-x rest-cx rest-pr))
-                   pr es k)])]))
+                   #s(pat:pair head #s(internal-rest-pattern))
+                   pr es (lambda (rest-x rest-cx rest-pr) k))])]))
 
 ;; (parse:dots x cx EH-pattern S-pattern pr es k) : expr[Ans]
 ;; In k: attrs(EH-pattern, S-pattern) are bound.
