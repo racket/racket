@@ -40,7 +40,7 @@ of matching is unpredictable. See also @racket[failure-cont], which is
 a lower-level mechanism achieving the same ends.
 
 An optional @racket[(=> id)] between a @racket[pat] and the
-@racket[body]s is bound to a @defterm{failure procedure} of zero
+@racket[body]s is bound to a @deftech{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
