@@ -874,9 +874,8 @@
      (let* ([chunks (parse-keyword-options/eol #'more phase-directive-table
                                                #:no-duplicates? #t
                                                #:context stx)]
-            [phase (options-select-value chunks '#:phase
-                                         #:default #'(syntax-local-phase-level))])
-       ;; FIXME: Duplicates phase expr!
+            [phase (options-select-value chunks '#:phase #:default #f)]
+            [phase (if phase (txlift phase) #'(syntax-local-phase-level))])
        (pat:literal #'lit phase phase))]
     [_
      (wrong-syntax stx "bad ~~literal pattern")]))
@@ -1036,12 +1035,11 @@
                                           #:incompatible '((#:when #:unless))
                                           #:no-duplicates? #t)])
        (let ([condition
-              (if (null? chunks)
-                  #'#t
-                  (let ([chunk (car chunks)])
-                    (if (eq? (car chunk) '#:when)
-                        (caddr chunk)
-                        #`(not #,(caddr chunk)))))])
+              (cond [(options-select-value chunks '#:when #:default #f)
+                     => values]
+                    [(options-select-value chunks '#:unless #:default #f)
+                     => (lambda (expr) #`(not #,expr))]
+                    [else #'#t])])
          (syntax-case rest ()
            [(message)
             (action:fail condition #'message)]
@@ -1562,9 +1560,8 @@
                                                #:no-duplicates? #t
                                                #:context ctx)]
             [lctx (options-select-value chunks '#:at #:default #'litset)]
-            [phase (options-select-value chunks '#:phase
-                                         #:default #'(syntax-local-phase-level))])
-       (elaborate #'litset lctx (txlift phase)))]
+            [phase (options-select-value chunks '#:phase #:default #f)])
+       (elaborate #'litset lctx (if phase (txlift phase) #'(syntax-local-phase-level))))]
     [litset
      (identifier? #'litset)
      (elaborate #'litset #'litset #'(syntax-local-phase-level))]
