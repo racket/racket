@@ -42,11 +42,6 @@
    definitions  ;; (Listof Stx)
    ) #:prefab)
 
-;; make-dummy-stxclass : identifier -> SC
-;; Dummy stxclass for calculating attributes of recursive stxclasses.
-(define (make-dummy-stxclass name)
-  (stxclass (syntax-e name) #f null #f #f (scopts 0 #t #t #f) #f))
-
 ;; Environments
 
 #|
