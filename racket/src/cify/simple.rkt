@@ -33,18 +33,23 @@
                (simple? e)))))
   (simple? e))
 
-(define (call-with-simple-shared e runstack state proc)
+(define (call-with-simple-shared e runstack state proc
+                                 #:about-to-sync? [about-to-sync? #f])
   ;; If a runstack variable is referenced twice, lift out and share
   ;; the reference to avoid relying on an order within the simple
-  ;; expression
+  ;; expression. If `about-to-sync?` is #t, then also lift out any
+  ;; reference to variables.
   (define-values (saw shared)
     (let loop ([e e] [saw #hasheq()] [shared #hasheq()])
       (cond
         [(ref? e)
          (define id (ref-id e))
-         (if (hash-ref saw id #f)
-             (values saw (hash-set shared id (genid 'c_simple)))
-             (values (hash-set saw id e) shared))]
+         (define saw-e (hash-ref saw id #f))
+         (define new-saw (if saw-e saw (hash-set saw id e)))
+         (values new-saw
+                 (if (or saw-e about-to-sync?)
+                     (hash-set shared id (genid 'c_simple))
+                     shared))]
         [(pair? e)
          (for/fold ([saw saw] [shared shared]) ([e (cdr e)])
            (loop e saw shared))]

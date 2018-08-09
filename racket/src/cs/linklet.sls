@@ -462,7 +462,7 @@
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
                                              (performance-region
-                                              'compile
+                                              'compile-nested
                                               (let ([code ((if serializable? compile*-to-bytevector compile*)
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
@@ -479,7 +479,7 @@
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (performance-region
-        'compile
+        'compile-linklet
         ;; Create the linklet:
         (let ([lk (make-linklet (call-with-system-wind
                                  (lambda ()

@@ -318,15 +318,16 @@
                        (format "~a =" (cify tst-id))
                        (make-runstack-assign runstack tst-id))
                    tst env))
-       (when sync-for-gc?
-         (runstack-sync! runstack))
        (call-with-simple-shared
         (cons 'begin (for/list ([tst-id (in-list tst-ids)]
                                 [tst (in-list tsts)]
                                 #:when (not tst-id))
                        tst))
         runstack state
+        #:about-to-sync? sync-for-gc?
         (lambda (shared)
+          (when sync-for-gc?
+            (runstack-sync! runstack))
           (out-open "if (~a) {"
                     (wrapper (apply string-append
                                     (add-between
@@ -566,15 +567,16 @@
       (when tmp-id
         (generate (make-runstack-assign runstack tmp-id)
                   rand env)))
-    (when need-sync?
-      (runstack-sync! runstack))
     (define inline-app (cons rator (for/list ([tmp-id (in-list tmp-ids)]
                                               [rand (in-list rands)])
                                      (or tmp-id rand))))
     (call-with-simple-shared
      inline-app
      runstack state
+     #:about-to-sync? need-sync?
      (lambda (shared)
+       (when need-sync?
+         (runstack-sync! runstack))
        (define s (generate-simple inline-app shared env runstack in-lam state top-names knowns prim-names))
        (return ret runstack #:can-pre-pop? #t s)
        (runstack-pop! runstack tmp-count)))

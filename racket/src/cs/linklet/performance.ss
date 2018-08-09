@@ -57,7 +57,8 @@
            [gc-len (string-length (number->string gc-total))]
            [categories '((read (read-bundle faslin-code))
                          (comp-ffi (comp-ffi-call comp-ffi-back))
-                         (run (instantiate outer)))]
+                         (run (instantiate outer))
+                         (compile (compile-linklet compile-nested)))]
            [region-subs (make-eq-hashtable)]
            [region-gc-subs (make-eq-hashtable)])
       (define (pad v w combine)
