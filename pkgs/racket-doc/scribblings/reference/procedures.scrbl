@@ -698,25 +698,35 @@ of arguments have been accumulated, at which point the original
 (((curry list) 1 2) 3)
 (((curry list) 1) 3)
 ((((curry foldl) +) 0) '(1 2 3))
+(define foo (curry (lambda (x y z) (list x y z))))
+(foo 1 2 3)
+(((((foo) 1) 2)) 3)
 ]
 
 A function call @racket[(curry proc v ...)] is equivalent to
 @racket[((curry proc) v ...)]. In other words, @racket[curry] itself
 is curried.
 
-The @racket[curry] function provides limited support for keyworded
-functions: only the @racket[curry] call itself can receive keyworded
-arguments to be propagated eventually to @racket[proc].
-
 @mz-examples[#:eval fun-eval
   (map ((curry +) 10) '(1 2 3))
   (map (curry + 10) '(1 2 3))
   (map (compose (curry * 2) (curry + 10)) '(1 2 3))
-  (define foo (curry (lambda (x y z) (list x y z))))
-  (foo 1 2 3)
-  (((((foo) 1) 2)) 3)
-]}
+]
 
+The @racket[curry] function also supports functions with keyword arguments:
+keyword arguments will be accumulated in the same way as positional arguments
+until all required keyword arguments have been supplied.
+
+@mz-examples[#:eval fun-eval
+  (eval:no-prompt
+   (define (f #:a a #:b b #:c c)
+     (list a b c)))
+  (eval:check ((((curry f) #:a 1) #:b 2) #:c 3) (list 1 2 3))
+  (eval:check ((((curry f) #:b 1) #:c 2) #:a 3) (list 3 1 2))
+  (eval:check ((curry f #:a 1 #:c 2) #:b 3) (list 1 3 2))
+]
+
+@history[#:changed "7.0.0.7" @elem{Added support for keyword arguments.}]}
 
 @defproc*[([(curryr [proc procedure?]) procedure?]
            [(curryr [proc procedure?] [v any/c] ...+) any/c])]{

@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base racket/list syntax/name)
-         racket/match racket/private/arity)
+         racket/list racket/match racket/private/arity)
 
 (provide identity const thunk thunk* negate curry curryr
          (all-from-out racket/private/arity)
@@ -40,56 +40,152 @@
       [else (compose1 not f)]))) ; keyworded or more args => just compose
 
 (define (make-curry right?)
-  ;; The real code is here
-  (define (curry* f args kws kvs)
-    (unless (procedure? f)
-      (raise-argument-error (if right? 'curryr 'curry) "procedure?" f))
-    (let* ([arity (procedure-arity f)]
-           [max-arity (cond [(integer? arity) arity]
-                            [(arity-at-least? arity) #f]
-                            [(ormap arity-at-least? arity) #f]
-                            [else (apply max arity)])]
-           [n (length args)])
-      (define (loop args n)
-        (cond
-          [(procedure-arity-includes? f n)
-           (if (null? kws) (apply f args) (keyword-apply f kws kvs args))]
-          [(and max-arity (n . > . max-arity))
-           (apply raise-arity-error f arity args)]
-          [else
-           (letrec [(curried
-                     (case-lambda
-                       [() curried] ; return itself on zero arguments
-                       [more (loop (if right?
-                                     (append more args) (append args more))
-                                   (+ n (length more)))]))]
-             curried)]))
-      ;; take at least one step if we can continue (there is a higher arity)
-      (if (equal? n max-arity)
-        (if (null? kws) (apply f args) (keyword-apply f kws kvs args))
-        (letrec ([curried
-                  (lambda more
-                    (let ([args (if right?
-                                  (append more args) (append args more))])
-                      (loop args (+ n (length more)))))])
-          curried))))
-  ;; curry is itself curried -- if we get args then they're the first step
-  (define curry
-    (case-lambda
-      [(f)
-       (unless (procedure? f)
-         (raise-argument-error (if right? 'curryr 'curry) "procedure?" f))
-       (define (curried . args) (curry* f args '() '()))
-       curried]
-      [(f . args)
-       (curry* f args '() '())]))
+  ; arity-mask? -> (or/c exact-nonnegative-integer? +inf.0 #f)
+  ;
+  ; Calculates the maximum number of arguments a function with the given arity may be applied to. If
+  ; an unbounded number of arguments are permitted, returns +inf.0. If no number of arguments is valid
+  ; (that is, the procedure is uninvokable), returns #f.
+  (define (arity-upper-bound mask)
+    (cond
+      [(eqv? mask 0) #f]
+      [(negative? mask) +inf.0]
+      [else (integer-length (sub1 mask))]))
 
-  (make-keyword-procedure (lambda (kws kvs f . args) (curry* f args kws kvs))
-                          curry))
+  ; arity-mask? exact-nonnegative-integer? -> arity-mask?
+  ;
+  ; Calculates the positional argument arity for a function produced by `curry` that has already been
+  ; applied to num-args-so-far arguments.
+  (define (partially-applied-procedure-arity-mask mask num-args-so-far)
+    (if (negative? mask)
+        -1
+        (sub1 (arithmetic-shift 1 (- (integer-length mask) num-args-so-far)))))
+
+  (define who (if right? 'curryr 'curry))
+
+  (define incorporate-new-pos-args
+    (if right?
+        (lambda (pos-args-so-far new-pos-args) (append new-pos-args pos-args-so-far))
+        (lambda (pos-args-so-far new-pos-args) (append pos-args-so-far new-pos-args))))
+
+  ;; the actual implementation of curry[r] is here
+  (define (do-curry f)
+    (unless (procedure? f)
+      (raise-argument-error who "procedure?" f))
+    (let*-values ([(name) (object-name f)]
+                  [(curried-name) (if (symbol? name)
+                                      (string->symbol (string-append "curried:"
+                                                                     (symbol->string name)))
+                                      'curried)]
+                  [(arity-mask) (procedure-arity-mask f)]
+                  [(max-arity) (arity-upper-bound arity-mask)]
+                  [(required-kws allowed-kws) (procedure-keywords f)])
+      (cond
+        ;; fast path for functions that don't accept any keywords
+        [(null? allowed-kws)
+         (define (reduce-arity/rename proc num-args-so-far)
+           (procedure-reduce-arity-mask
+            proc
+            (partially-applied-procedure-arity-mask arity-mask num-args-so-far)
+            curried-name))
+
+         (define (make-curried args-so-far)
+           (reduce-arity/rename
+            (lambda new-args
+              (let ([args (incorporate-new-pos-args args-so-far new-args)])
+                (if (procedure-arity-includes? f (length args))
+                    (apply f args)
+                    (make-curried args))))
+            (length args-so-far)))
+
+         (reduce-arity/rename
+          (lambda args
+            (if (= (length args) max-arity)
+                (apply f args)
+                (make-curried args)))
+          0)]
+
+        ;; slow path for functions that accept keywords
+        [else
+         (define (incorporate-new-kws+args kws+args-so-far new-kws+args)
+           (for/fold ([kws+args kws+args-so-far])
+                     ([(kw arg) (in-hash new-kws+args)])
+             (if (hash-has-key? kws+args kw)
+                 (raise-arguments-error
+                  curried-name
+                  "duplicate keyword for procedure"
+                  "keyword" kw
+                  "first value" (hash-ref kws+args kw)
+                  "second value" arg)
+                 (hash-set kws+args kw arg))))
+
+         (define (reduce-arity/rename proc num-args-so-far kw+args-so-far)
+           (procedure-reduce-keyword-arity-mask
+            proc
+            (partially-applied-procedure-arity-mask arity-mask num-args-so-far)
+            '()
+            (and allowed-kws
+                 (filter (lambda (kw) (not (hash-has-key? kw+args-so-far kw))) allowed-kws))
+            curried-name))
+
+         (define (make-curried pos-args-so-far kws+args-so-far)
+           (reduce-arity/rename
+            (make-keyword-procedure
+             (lambda (new-kws new-kw-args . new-pos-args)
+               (step (incorporate-new-pos-args pos-args-so-far new-pos-args)
+                     (incorporate-new-kws+args
+                      kws+args-so-far
+                      (make-immutable-hasheq (map cons new-kws new-kw-args)))))
+             (lambda new-pos-args
+               (step (incorporate-new-pos-args pos-args-so-far new-pos-args) kws+args-so-far)))
+            (length pos-args-so-far)
+            kws+args-so-far))
+
+         ; handles a curried application and applies f if enough arguments have been accumulated,
+         ; otherwise produces a new curried function
+         (define (step pos-args-so-far kw+args-so-far)
+           (if (and (procedure-arity-includes? f (length pos-args-so-far) #t)
+                    (for/and ([required-kw (in-list required-kws)])
+                      (hash-has-key? kw+args-so-far required-kw)))
+               (let* ([sorted-kw+args (sort (hash->list kw+args-so-far) keyword<? #:key car)]
+                      [kws (map car sorted-kw+args)]
+                      [kw-args (map cdr sorted-kw+args)])
+                 (keyword-apply f kws kw-args pos-args-so-far))
+               (make-curried pos-args-so-far kw+args-so-far)))
+
+         (reduce-arity/rename
+          (make-keyword-procedure
+           (lambda (kws kw-args . pos-args)
+             (if (and (= (length pos-args) max-arity)
+                      allowed-kws
+                      ; we're protected by procedure-reduce-arity, so the same number of keywords
+                      ; means the call must be fully-saturated
+                      (= (length kws) (length allowed-kws)))
+                 (keyword-apply f kws kw-args pos-args)
+                 (make-curried pos-args (make-immutable-hasheq (map cons kws kw-args)))))
+           (lambda pos-args
+             ; a non-keyword application can't possibly be fully-saturated, since we're on the keyword
+             ; path, so just produce a curried function
+             (make-curried pos-args #hasheq())))
+          0
+          #hasheq())])))
+
+  ;; curry itself is curried; if we get any args, immediately invoke the curried function with them
+  (procedure-rename
+   (make-keyword-procedure
+    (lambda (kws kw-args f . args)
+      (let ([curried (do-curry f)])
+        (if (null? kws)
+            (if (null? args)
+                curried
+                (apply curried args))
+            (keyword-apply curried kws kw-args args))))
+    (case-lambda
+      [(f) (do-curry f)]
+      [(f . args) (apply (do-curry f) args)]))
+   who))
 
 (define curry  (make-curry #f))
 (define curryr (make-curry #t))
-
 
 ;; Originally from `unstable/function`.
 ;; Originally written by Carl Eastlund
