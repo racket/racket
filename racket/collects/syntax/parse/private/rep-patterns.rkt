@@ -146,7 +146,9 @@ A RepConstraint is one of
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
 
-(define (pattern? x)
+;; ============================================================
+
+(define (single-pattern? x)
   (or (pat:any? x)
       (pat:svar? x)
       (pat:var/p? x)
@@ -202,11 +204,104 @@ A RepConstraint is one of
 (define (ellipsis-head-pattern? x)
   (ehpat? x))
 
-(define single-pattern? pattern?)
-
 (define (single-or-head-pattern? x)
   (or (single-pattern? x)
       (head-pattern? x)))
+
+;; ============================================================
+
+(define (wf-S? x)
+  (match x
+    [(pat:any) #t]
+    [(pat:svar name) #t]
+    [(pat:var/p name parser argu nested-attrs role opts) #t]
+    [(pat:literal id input-phase lit-phase) #t]
+    [(pat:datum datum) #t]
+    [(pat:action ap sp) (and (wf-A? ap) (wf-S? sp))]
+    [(pat:head headp tailp) (and (wf-H? headp) (wf-S? tailp))]
+    [(pat:dots heads tailp) (and (andmap wf-EH? heads) (wf-S? tailp))]
+    [(pat:and ps) (andmap wf-S? ps)]
+    [(pat:or attrs ps attrss) (andmap wf-S? ps)]
+    [(pat:not sp) (wf-S? sp)]
+    [(pat:pair headp tailp) (and (wf-S? headp) (wf-S? tailp))]
+    [(pat:vector sp) (wf-S? sp)]
+    [(pat:box sp) (wf-S? sp)]
+    [(pat:pstruct key sp) (wf-S? sp)]
+    [(pat:describe sp description transparent? role) (wf-S? sp)]
+    [(pat:delimit sp) (wf-S? sp)]
+    [(pat:commit sp) (wf-S? sp)]
+    [(pat:reflect obj argu attr-decls name nested-attrs) #t]
+    [(pat:ord sp group index) (wf-S? sp)]
+    [(pat:post sp) (wf-S? sp)]
+    [(pat:integrated name predicate description role) #t]
+    [(pat:fixup stx bind varname scname argu sep role parser*) #t]
+    [(pat:and/fixup stx ps) (andmap wf-A/S/H? ps)]
+    [_ #f]))
+
+(define (wf-L? x)
+  (match x
+    [(pat:datum '()) #t]
+    [(pat:action ap sp) (and (wf-A? ap) (wf-L? sp))]
+    [(pat:head headp tailp) (and (wf-H? headp) (wf-L? tailp))]
+    [(pat:dots heads tailp) (and (andmap wf-EH? heads) (wf-L? tailp))]
+    [(pat:pair headp tailp) (and (wf-S? headp) (wf-L? tailp))]
+    [_ #f]))
+
+(define (wf-A? x)
+  (match x
+    [(action:cut) #t]
+    [(action:fail cnd msg) #t]
+    [(action:bind attr expr) #t]
+    [(action:and ps) (andmap wf-A? ps)]
+    [(action:parse sp expr) (wf-S? sp)]
+    [(action:do stmts) #t]
+    [(action:undo stmts) #t]
+    [(action:ord sp group index) (wf-A? sp)]
+    [(action:post sp) (wf-A? sp)]
+    [_ #f]))
+
+(define (wf-H? x)
+  (match x
+    [(hpat:single sp) (wf-S? sp)]
+    [(hpat:var/p name parser argu nested-attrs role scopts) #t]
+    [(hpat:seq sp) (wf-L? sp)]
+    [(hpat:action ap sp) (and (wf-A? ap) (wf-H? sp))]
+    [(hpat:and hp sp) (and (wf-H? hp) (wf-S? sp))]
+    [(hpat:or attrs ps attrss) (andmap wf-H? ps)]
+    [(hpat:describe sp description transparent? role) (wf-H? sp)]
+    [(hpat:delimit sp) (wf-H? sp)]
+    [(hpat:commit sp) (wf-H? sp)]
+    [(hpat:reflect obj argu attr-decls name nested-attrs) #t]
+    [(hpat:ord sp group index) (wf-H? sp)]
+    [(hpat:post sp) (wf-H? sp)]
+    [(hpat:peek sp) (wf-H? sp)]
+    [(hpat:peek-not sp) (wf-H? sp)]
+    [_ #f]))
+
+(define (wf-EH? x)
+  (match x
+    [(ehpat _ hp _ _) (wf-H? hp)]
+    [_ #f]))
+
+(define (wf-A/S? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(single-pattern? p) (wf-S? p)]
+        [else #f]))
+
+(define (wf-A/H? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(head-pattern? p) (wf-H? p)]
+        [else #f]))
+
+(define (wf-A/S/H? p)
+  (cond [(action-pattern? p) (wf-A? p)]
+        [(single-pattern? p) (wf-S? p)]
+        [(head-pattern? p) (wf-H? p)]
+        [else #f]))
+
+;; ============================================================
+
+(define pattern? single-pattern?)
 
 (define (coerce-head-pattern p)
   (if (head-pattern? p) p (hpat:single p)))
