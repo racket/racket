@@ -416,7 +416,7 @@
 
 ;; parse-head-pattern : stx DeclEnv -> HeadPattern
 (define (parse-head-pattern stx decls)
-  (parse-*-pattern stx decls #t #f))
+  (coerce-head-pattern (parse-*-pattern stx decls #t #f)))
 
 ;; parse-action-pattern : Stx DeclEnv -> ActionPattern
 (define (parse-action-pattern stx decls)
@@ -978,7 +978,7 @@
          (car patterns)]
         [else
          (cond [(ormap head-pattern? patterns)
-                (create-hpat:or patterns)]
+                (create-hpat:or (map coerce-head-pattern patterns))]
                [else
                 (create-pat:or patterns)])]))
 
@@ -1204,25 +1204,25 @@
 ;; ============================================================
 ;; Fixup pass
 
-(define (fixup-rhs the-rhs allow-head? expected-attrs)
+(define (fixup-rhs the-rhs head? expected-attrs)
   (match the-rhs
     [(rhs attrs tr? desc vs defs commit? delimit-cut?)
-     (define vs* (for/list ([v (in-list vs)]) (fixup-variant v allow-head? expected-attrs)))
+     (define vs* (for/list ([v (in-list vs)]) (fixup-variant v head? expected-attrs)))
      (rhs attrs tr? desc vs* defs commit? delimit-cut?)]))
 
-(define (fixup-variant v allow-head? expected-attrs)
+(define (fixup-variant v head? expected-attrs)
   (match v
     [(variant stx sattrs p defs)
      (parameterize ((current-syntax-context stx))
        (define p*
          (parameterize ((stxclass-lookup-config 'yes))
-           (fixup-pattern p allow-head?)))
+           (fixup-pattern p head?)))
        ;; (eprintf "~v\n===>\n~v\n\n" p p*)
        ;; Called just for error-reporting
        (reorder-iattrs expected-attrs (pattern-attrs p*))
        (variant stx sattrs p* defs))]))
 
-(define (fixup-pattern p0 allow-head?)
+(define (fixup-pattern p0 head?)
   (define (S p) (fixup p #f))
   (define (S* p) (fixup p #t))
   (define (A/S* p) (if (action-pattern? p) (A p) (S* p)))
@@ -1304,7 +1304,7 @@
       [(pat:and/fixup stx ps)
        (let ([ps (for/list ([p (in-list ps)])
                    (cond [(action-pattern? p) (A p)]
-                         [allow-head? (H p)]
+                         [(head-pattern? p) (H p)]
                          [else (I p)]))])
          (parse-pat:and/k stx ps))]
       [(pat:or _ ps _)
@@ -1326,6 +1326,9 @@
 
   (define (H p)
     (match p
+      [(hpat:single sp)
+       (let ([sp (fixup sp #t)])
+         (if (head-pattern? sp) sp (hpat:single sp)))]
       ;; [(hpat:var/p name parser argu nested-attrs role scopts)
       ;;  (hpat:var/p name parser argu nested-attrs role scopts)]
       ;; [(hpat:reflect obj argu attr-decls name nested-attrs)
@@ -1360,7 +1363,7 @@
       ;; Default: no sub-patterns, just return
       [p p]))
 
-  (if allow-head? (H p0) (S p0)))
+  (if head? (H p0) (S p0)))
 
 
 ;; ============================================================

@@ -223,6 +223,8 @@
     [(pat:post pattern)
      (pattern-factorable? pattern)]
     ;; ----
+    [(hpat:single inner)
+     (pattern-factorable? inner)]
     [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _))
      commit?]
     [(hpat:seq inner)
@@ -303,6 +305,8 @@
           [(and (pat:post? a) (pat:post? b))
            (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
           ;; ---
+          [(and (hpat:single? a) (hpat:single? b))
+           (pattern-equal? (hpat:single-pattern a) (hpat:single-pattern b))]
           [(and (hpat:var/p? a) (hpat:var/p? b))
            (and (free-id/f-equal? (hpat:var/p-parser a) (hpat:var/p-parser b))
                 (bound-id/f-equal? (hpat:var/p-name a) (hpat:var/p-name b))
@@ -460,6 +464,7 @@
     [(action:undo stmts) (list '~undo)]
     [(action:ord ap _ _) (list '~ord (pattern->sexpr ap))]
     [(action:post ap) (list '~post (pattern->sexpr ap))]
+    [(hpat:single sp) (pattern->sexpr sp)]
     [(hpat:var/p name parser _ _ _ _)
      (cond [(and parser (regexp-match #rx"^parser-(.*)$" (symbol->string (syntax-e parser))))
             => (lambda (m) (format-symbol "~a:~a" (or name '_) (cadr m)))]

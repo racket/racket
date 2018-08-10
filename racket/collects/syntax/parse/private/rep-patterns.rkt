@@ -99,6 +99,7 @@ A SideClause is just an ActionPattern
 
 #|
 A HeadPattern is one of 
+  (hpat:single SinglePattern)
   (hpat:var/p Id Id Arguments (Listof IAttr) Stx scopts)
   (hpat:seq ListPattern)
   (hpat:action ActionPattern HeadPattern)
@@ -114,6 +115,7 @@ A HeadPattern is one of
   (hpat:peek-not HeadPattern)
 |#
 
+(define-struct hpat:single (pattern) #:prefab)
 (define-struct hpat:var/p (name parser argu nested-attrs role scopts) #:prefab)
 (define-struct hpat:seq (inner) #:prefab)
 (define-struct hpat:action (action inner) #:prefab)
@@ -182,7 +184,8 @@ A RepConstraint is one of
       (action:post? x)))
 
 (define (head-pattern? x)
-  (or (hpat:var/p? x)
+  (or (hpat:single? x)
+      (hpat:var/p? x)
       (hpat:seq? x)
       (hpat:action? x)
       (hpat:and? x)
@@ -204,6 +207,12 @@ A RepConstraint is one of
 (define (single-or-head-pattern? x)
   (or (single-pattern? x)
       (head-pattern? x)))
+
+(define (coerce-head-pattern p)
+  (if (head-pattern? p) p (hpat:single p)))
+
+(define (head-pattern-not-single? hp)
+  (and (head-pattern? hp) (not (hpat:single? hp))))
 
 ;; check-pattern : *Pattern -> *Pattern
 ;; Does attr computation to catch errors, but returns same pattern.
@@ -291,6 +300,8 @@ A RepConstraint is one of
      (pattern-attrs sp)]
 
     ;; -- H patterns
+    [(hpat:single sp)
+     (pattern-attrs sp)]
     [(hpat:var/p name _ _ nested-attrs _ _)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
     [(hpat:reflect _ _ _ name nested-attrs)
@@ -367,6 +378,7 @@ A RepConstraint is one of
     [(action:post sp) (pattern-has-cut? sp)]
 
     ;; -- H patterns
+    [(hpat:single sp) (pattern-has-cut? sp)]
     [(hpat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
     [(hpat:reflect _ _ _ name nested-attrs) #f]
     [(hpat:seq lp) (pattern-has-cut? lp)]
@@ -570,6 +582,7 @@ A RepConstraint is one of
 ;; hpat-nullable : HeadPattern -> AbsNullable
 (define/memo (hpat-nullable hp)
   (match hp
+    [(hpat:single sp) 'no]
     [(hpat:seq lp) (lpat-nullable lp)]
     [(hpat:action ap hp) (hpat-nullable hp)]
     [(hpat:and hp sp) (3and (hpat-nullable hp) (lpat-nullable sp))]
@@ -579,7 +592,6 @@ A RepConstraint is one of
     [(hpat:commit hp) (hpat-nullable hp)]
     [(hpat:ord hp _ _) (hpat-nullable hp)]
     [(hpat:post hp) (hpat-nullable hp)]
-    [(? pattern? hp) 'no]
     [_ 'unknown]))
 
 ;; ehpat-nullable : EllipsisHeadPattern -> AbsNullable

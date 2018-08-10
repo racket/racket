@@ -748,6 +748,7 @@ Conventions:
   (syntax-case stx ()
     [(fdh hpat)
      (syntax-case #'hpat ()
+       [#s(hpat:single sp) #'(first-desc:S sp)]
        [#s(hpat:var/p _ _ _ _ _ #s(scopts _ _ _ desc)) #'(quote desc)]
        [#s(hpat:seq lp) #'(first-desc:L lp)]
        [#s(hpat:describe _hp desc _t? _r)
@@ -756,7 +757,7 @@ Conventions:
        [#s(hpat:commit hp) #'(first-desc:H hp)]
        [#s(hpat:ord hp _ _) #'(first-desc:H hp)]
        [#s(hpat:post hp) #'(first-desc:H hp)]
-       [_ #'(first-desc:S hpat)])]))
+       [_ #'#f])]))
 
 (define-syntax (first-desc:L stx)
   (syntax-case stx ()
@@ -845,6 +846,11 @@ Conventions:
   (syntax-case stx ()
     [(parse:H x cx rest-x rest-cx rest-pr head pr es k)
      (syntax-case #'head ()
+       [#s(hpat:single pattern)
+        #'(parse:S x cx
+                   ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
+                   #s(pat:pair pattern #s(internal-rest-pattern))
+                   pr es (lambda (rest-x rest-cx rest-pr) k))]
        [#s(hpat:describe pattern description transparent? role)
         #`(let ([es* (es-add-thing pr description transparent? role es)]
                 [pr* (if 'transparent? pr (ps-add-opaque pr))])
@@ -968,12 +974,7 @@ Conventions:
             (with ([fail-handler fail-to-succeed]
                    [cut-prompt fail-to-succeed]) ;; to be safe
               (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
-                       (fh0 undo-stack (failure* pr0 es0)))))]
-       [_
-        #'(parse:S x cx
-                   ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
-                   #s(pat:pair head #s(internal-rest-pattern))
-                   pr es (lambda (rest-x rest-cx rest-pr) k))])]))
+                       (fh0 undo-stack (failure* pr0 es0)))))])]))
 
 ;; (parse:dots x cx EH-pattern S-pattern pr es k) : expr[Ans]
 ;; In k: attrs(EH-pattern, S-pattern) are bound.
@@ -981,14 +982,14 @@ Conventions:
   (syntax-case stx ()
     ;; == Specialized cases
     ;; -- (x ... . ())
-    [(parse:dots x cx (#s(ehpat (attr0) #s(pat:svar name) #f #f))
+    [(parse:dots x cx (#s(ehpat (attr0) #s(hpat:single #s(pat:svar name)) #f #f))
                  #s(pat:datum ()) pr es k)
      #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es void #f #f)])
          (case status
            ((ok) (let-attributes ([attr0 result]) k))
            (else (fail result))))]
     ;; -- (x:sc ... . ()) where sc is an integrable stxclass like id or expr
-    [(parse:dots x cx (#s(ehpat (attr0) #s(pat:integrated _name pred? desc role) #f #f))
+    [(parse:dots x cx (#s(ehpat (attr0) #s(hpat:single #s(pat:integrated _name pred? desc role)) #f #f))
                  #s(pat:datum ()) pr es k)
      #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es pred? desc role)])
          (case status
