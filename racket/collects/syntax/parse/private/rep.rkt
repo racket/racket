@@ -163,9 +163,7 @@
 ;;   otherwise, just a var
 (define stxclass-colon-notation? (make-parameter #t))
 
-
-;; ---
-
+;; disappeared! : (U Identifier (Stxpair Identifier Any)) -> Void
 (define (disappeared! x)
   (cond [(identifier? x)
          (record-disappeared-uses (list x))]
@@ -180,7 +178,9 @@
   (cond [(and (syntax? stx) (syntax-property stx 'disappeared-use))
          => (lambda (xs) (record-disappeared-uses (filter identifier? (flatten xs)) #f))]))
 
-;; ---
+
+;; ============================================================
+;; Entry points to pattern/rhs parsing
 
 ;; parse-rhs : Syntax Boolean #:context Syntax #:default-description (U String #f) -> RHS
 (define (parse-rhs stx splicing? #:context ctx #:default-description [default-description #f])
@@ -222,8 +222,6 @@
   (define-values (decls defs) (get-decls+defs chunks))
   (values rest description transparent? attributes auto-nested? colon-notation?
           decls defs commit? delimit-cut?))
-
-;; ----
 
 (define (parse-variants rest decls splicing?)
   (define (gather-variants stx)
@@ -408,7 +406,9 @@
   (set! gensym*-counter (add1 gensym*-counter))
   (string->uninterned-symbol (format "group~a" gensym*-counter)))
 
-;; ----
+
+;; ============================================================
+;; Parsing patterns
 
 ;; parse-single-pattern : stx DeclEnv -> SinglePattern
 (define (parse-single-pattern stx decls)
@@ -1202,6 +1202,7 @@
 
 
 ;; ============================================================
+;; Fixup pass
 
 (define (fixup-rhs the-rhs allow-head? expected-attrs)
   (match the-rhs
@@ -1361,7 +1362,9 @@
 
   (if allow-head? (H p0) (S p0)))
 
+
 ;; ============================================================
+;; Parsing pattern directives
 
 ;; parse-pattern-directives : stxs(PatternDirective) <kw-args>
 ;;                         -> stx DeclEnv (listof stx) (listof SideClause)
@@ -1461,8 +1464,99 @@
   (loop chunks decls0))
 
 
-;; ----
+;; ============================================================
+;; Arguments and Arities
 
+;; parse-argu : (listof stx) -> Arguments
+(define (parse-argu args #:context [ctx (current-syntax-context)])
+  (parameterize ((current-syntax-context ctx))
+    (define (loop args rpargs rkws rkwargs)
+      (cond [(null? args)
+             (arguments (reverse rpargs) (reverse rkws) (reverse rkwargs))]
+            [(keyword? (syntax-e (car args)))
+             (let ([kw (syntax-e (car args))]
+                   [rest (cdr args)])
+               (cond [(memq kw rkws)
+                      (wrong-syntax (car args) "duplicate keyword")]
+                     [(null? rest)
+                      (wrong-syntax (car args)
+                                    "missing argument expression after keyword")]
+                     #| Overzealous, perhaps?
+                     [(keyword? (syntax-e (car rest)))
+                      (wrong-syntax (car rest) "expected expression following keyword")]
+                     |#
+                     [else
+                      (loop (cdr rest) rpargs (cons kw rkws) (cons (car rest) rkwargs))]))]
+            [else
+             (loop (cdr args) (cons (car args) rpargs) rkws rkwargs)]))
+    (loop args null null null)))
+
+;; parse-kw-formals : stx -> Arity
+(define (parse-kw-formals formals #:context [ctx (current-syntax-context)])
+  (parameterize ((current-syntax-context ctx))
+    (define id-h (make-bound-id-table))
+    (define kw-h (make-hasheq)) ;; keyword => 'mandatory or 'optional
+    (define pos 0)
+    (define opts 0)
+    (define (add-id! id)
+      (when (bound-id-table-ref id-h id #f)
+        (wrong-syntax id "duplicate formal parameter" ))
+      (bound-id-table-set! id-h id #t))
+    (define (loop formals)
+      (cond [(and (stx-pair? formals) (keyword? (syntax-e (stx-car formals))))
+             (let* ([kw-stx (stx-car formals)]
+                    [kw (syntax-e kw-stx)]
+                    [rest (stx-cdr formals)])
+               (cond [(hash-ref kw-h kw #f)
+                      (wrong-syntax kw-stx "duplicate keyword")]
+                     [(stx-null? rest)
+                      (wrong-syntax kw-stx "missing formal parameter after keyword")]
+                     [else
+                      (let-values ([(formal opt?) (parse-formal (stx-car rest))])
+                        (add-id! formal)
+                        (hash-set! kw-h kw (if opt? 'optional 'mandatory)))
+                      (loop (stx-cdr rest))]))]
+            [(stx-pair? formals)
+             (let-values ([(formal opt?) (parse-formal (stx-car formals))])
+               (when (and (positive? opts) (not opt?))
+                 (wrong-syntax (stx-car formals)
+                               "mandatory argument may not follow optional argument"))
+               (add-id! formal)
+               (set! pos (add1 pos))
+               (when opt? (set! opts (add1 opts)))
+               (loop (stx-cdr formals)))]
+            [(identifier? formals)
+             (add-id! formals)
+             (finish #t)]
+            [(stx-null? formals)
+             (finish #f)]
+            [else
+             (wrong-syntax formals "bad argument sequence")]))
+    (define (finish has-rest?)
+      (arity (- pos opts)
+             (if has-rest? +inf.0 pos)
+             (sort (for/list ([(k v) (in-hash kw-h)]
+                              #:when (eq? v 'mandatory))
+                     k)
+                   keyword<?)
+             (sort (hash-map kw-h (lambda (k v) k))
+                   keyword<?)))
+    (loop formals)))
+
+;; parse-formal : stx -> (values id bool)
+(define (parse-formal formal)
+  (syntax-case formal ()
+    [param
+     (identifier? #'param)
+     (values #'param #f)]
+    [(param default)
+     (identifier? #'param)
+     (values #'param #t)]
+    [_
+     (wrong-syntax formal
+                   "expected formal parameter with optional default")]))
+
+;; ============================================================
 ;; Keyword Options & Checkers
 
 ;; check-attr-arity-list : stx stx -> (listof SAttr)
@@ -1659,99 +1753,9 @@
      (syntax->list #'(e ...))]
     [_
      (raise-syntax-error #f "expected list of expressions and definitions" ctx stx)]))
+     
 
-;; Arguments and Arities
-
-;; parse-argu : (listof stx) -> Arguments
-(define (parse-argu args #:context [ctx (current-syntax-context)])
-  (parameterize ((current-syntax-context ctx))
-    (define (loop args rpargs rkws rkwargs)
-      (cond [(null? args)
-             (arguments (reverse rpargs) (reverse rkws) (reverse rkwargs))]
-            [(keyword? (syntax-e (car args)))
-             (let ([kw (syntax-e (car args))]
-                   [rest (cdr args)])
-               (cond [(memq kw rkws)
-                      (wrong-syntax (car args) "duplicate keyword")]
-                     [(null? rest)
-                      (wrong-syntax (car args)
-                                    "missing argument expression after keyword")]
-                     #| Overzealous, perhaps?
-                     [(keyword? (syntax-e (car rest)))
-                      (wrong-syntax (car rest) "expected expression following keyword")]
-                     |#
-                     [else
-                      (loop (cdr rest) rpargs (cons kw rkws) (cons (car rest) rkwargs))]))]
-            [else
-             (loop (cdr args) (cons (car args) rpargs) rkws rkwargs)]))
-    (loop args null null null)))
-
-;; parse-kw-formals : stx -> Arity
-(define (parse-kw-formals formals #:context [ctx (current-syntax-context)])
-  (parameterize ((current-syntax-context ctx))
-    (define id-h (make-bound-id-table))
-    (define kw-h (make-hasheq)) ;; keyword => 'mandatory or 'optional
-    (define pos 0)
-    (define opts 0)
-    (define (add-id! id)
-      (when (bound-id-table-ref id-h id #f)
-        (wrong-syntax id "duplicate formal parameter" ))
-      (bound-id-table-set! id-h id #t))
-    (define (loop formals)
-      (cond [(and (stx-pair? formals) (keyword? (syntax-e (stx-car formals))))
-             (let* ([kw-stx (stx-car formals)]
-                    [kw (syntax-e kw-stx)]
-                    [rest (stx-cdr formals)])
-               (cond [(hash-ref kw-h kw #f)
-                      (wrong-syntax kw-stx "duplicate keyword")]
-                     [(stx-null? rest)
-                      (wrong-syntax kw-stx "missing formal parameter after keyword")]
-                     [else
-                      (let-values ([(formal opt?) (parse-formal (stx-car rest))])
-                        (add-id! formal)
-                        (hash-set! kw-h kw (if opt? 'optional 'mandatory)))
-                      (loop (stx-cdr rest))]))]
-            [(stx-pair? formals)
-             (let-values ([(formal opt?) (parse-formal (stx-car formals))])
-               (when (and (positive? opts) (not opt?))
-                 (wrong-syntax (stx-car formals)
-                               "mandatory argument may not follow optional argument"))
-               (add-id! formal)
-               (set! pos (add1 pos))
-               (when opt? (set! opts (add1 opts)))
-               (loop (stx-cdr formals)))]
-            [(identifier? formals)
-             (add-id! formals)
-             (finish #t)]
-            [(stx-null? formals)
-             (finish #f)]
-            [else
-             (wrong-syntax formals "bad argument sequence")]))
-    (define (finish has-rest?)
-      (arity (- pos opts)
-             (if has-rest? +inf.0 pos)
-             (sort (for/list ([(k v) (in-hash kw-h)]
-                              #:when (eq? v 'mandatory))
-                     k)
-                   keyword<?)
-             (sort (hash-map kw-h (lambda (k v) k))
-                   keyword<?)))
-    (loop formals)))
-
-;; parse-formal : stx -> (values id bool)
-(define (parse-formal formal)
-  (syntax-case formal ()
-    [param
-     (identifier? #'param)
-     (values #'param #f)]
-    [(param default)
-     (identifier? #'param)
-     (values #'param #t)]
-    [_
-     (wrong-syntax formal
-                   "expected formal parameter with optional default")]))
-
-
+;; ============================================================
 ;; Directive tables
 
 ;; common-parse-directive-table
