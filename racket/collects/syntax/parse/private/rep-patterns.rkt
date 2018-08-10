@@ -352,7 +352,7 @@ A RepConstraint is one of
     [(pat:ord sp _ _) (pattern-has-cut? sp)]
     [(pat:post sp) (pattern-has-cut? sp)]
     [(pat:integrated name _ _ _) #f]
-    [(pat:fixup _ _ _ _ _ _) #t]
+    [(pat:fixup _ _ _ _ _ _ _) #t]
     [(pat:and/fixup _ ps) (ormap pattern-has-cut? ps)]
 
     ;; -- A patterns

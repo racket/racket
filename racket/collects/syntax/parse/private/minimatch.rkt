@@ -75,6 +75,8 @@
               [accessors (reverse (list-ref si 3))])
          (unless (andmap identifier? accessors)
            (raise-syntax-error #f "struct has incomplete information" #'S))
+         (unless (= (length accessors) (length (syntax->list #'(p ...))))
+           (raise-syntax-error #f "struct pattern has incorrect number of subpatterns" #'S))
          (with-syntax ([predicate predicate]
                        [(accessor ...) accessors])
            #'(if (predicate x)
