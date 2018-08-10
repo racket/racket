@@ -1299,7 +1299,10 @@
        (let ([ps (map I ps)])
          (pat:and ps))]
       [(pat:and/fixup stx ps)
-       (let ([ps (for/list ([p (in-list ps)]) (if (action-pattern? p) (A p) (I p)))])
+       (let ([ps (for/list ([p (in-list ps)])
+                   (cond [(action-pattern? p) (A p)]
+                         [allow-head? (H p)]
+                         [else (I p)]))])
          (parse-pat:and/k stx ps))]
       [(pat:or _ ps _)
        (let ([ps (map I ps)])

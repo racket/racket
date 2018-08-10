@@ -966,3 +966,10 @@
            (set! counter (add1 counter)))))))
   (define-syntax-class c2 (pattern (~temp2)))
   (void))
+(let ()
+  (define-splicing-syntax-class ids
+    (pattern (~and (~seq stuff ...) (~seq k:id ...))))
+  (check-equal? (syntax-parse #'(a b c)
+                  [(:ids) (syntax->datum #'(k ...))]
+                  [_ #f])
+                '(a b c)))
