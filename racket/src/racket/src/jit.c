@@ -1153,12 +1153,15 @@ static int finish_branch_with_true(mz_jit_state *jitter, Branch_Info *for_branch
 static int finish_branch_with_false(mz_jit_state *jitter, Branch_Info *for_branch)
 {
   GC_CAN_IGNORE jit_insn *ref;
+  int reg_valid;
 
   scheme_prepare_branch_jump(jitter, for_branch);
   CHECK_LIMIT();
   
   __START_SHORT_JUMPS__(for_branch->branch_short);
+  reg_valid = mz_CURRENT_REG_STATUS_VALID();
   ref = jit_jmpi(jit_forward());
+  mz_SET_REG_STATUS_VALID(reg_valid);
   add_branch(for_branch, ref, BRANCH_ADDR_FALSE, BRANCH_ADDR_UCBRANCH);
   __END_SHORT_JUMPS__(for_branch->branch_short);
 
@@ -1170,8 +1173,12 @@ void scheme_branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch)
 {
   if (for_branch->true_needs_jump) {
     GC_CAN_IGNORE jit_insn *ref;
+    int reg_valid;
 
+    reg_valid = mz_CURRENT_REG_STATUS_VALID();
     ref = jit_jmpi(jit_forward());
+    mz_SET_REG_STATUS_VALID(reg_valid);
+
     add_branch(for_branch, ref, BRANCH_ADDR_TRUE, BRANCH_ADDR_UCBRANCH);
   }
 }
@@ -1179,13 +1186,17 @@ void scheme_branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch)
 static int finish_branch(mz_jit_state *jitter, int target, Branch_Info *for_branch)
 {
   GC_CAN_IGNORE jit_insn *ref;
+  int reg_valid;
 
   scheme_prepare_branch_jump(jitter, for_branch);
   CHECK_LIMIT();
 
   __START_SHORT_JUMPS__(for_branch->branch_short);
 
+  reg_valid = mz_CURRENT_REG_STATUS_VALID();
   ref = jit_beqi_p(jit_forward(), target, scheme_false);
+  mz_SET_REG_STATUS_VALID(reg_valid);
+
   add_branch(for_branch, ref, BRANCH_ADDR_FALSE, BRANCH_ADDR_BRANCH);
   
   scheme_branch_for_true(jitter, for_branch);
