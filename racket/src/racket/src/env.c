@@ -445,7 +445,9 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
   scheme_init_compenv_places();
 
+#ifdef MZ_USE_JIT
   scheme_init_jitprep();
+#endif
 
 #ifdef TIME_STARTUP_PROCESS
   printf("pre-process @ %" PRIdPTR "\n", scheme_get_process_milliseconds());

@@ -1414,6 +1414,7 @@ static void *instantiate_linklet_k(void)
   if (!multi)
     v = scheme_check_one_value(v);
 
+#ifdef MZ_USE_JIT
   if (linklet->native_lambdas) {
     int mc;
     Scheme_Object **mv, *l;
@@ -1443,6 +1444,7 @@ static void *instantiate_linklet_k(void)
       p->ku.multiple.count = mc;
     }
   }
+#endif
 
   scheme_performance_record_end("instantiate", &perf_state);
 
