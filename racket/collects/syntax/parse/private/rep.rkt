@@ -38,7 +38,7 @@
       #:decls DeclEnv/c
       #:context syntax?
       any)]
- [parse*-ellipsis-head-pattern
+ [parse-EH-variant
   (-> syntax? DeclEnv/c boolean?
       #:context syntax?
       any)]
@@ -339,6 +339,7 @@
     [(pattern p . rest)
      (let-values ([(rest pattern defs)
                    (parse-pattern+sides #'p #'rest
+                                        #:simplify? #f
                                         #:splicing? splicing?
                                         #:decls decls0
                                         #:context stx)])
@@ -350,19 +351,26 @@
               [sattrs (iattrs->sattrs attrs)])
          (make variant stx sattrs pattern defs)))]))
 
+;; parse-EH-variant : Syntax DeclEnv Boolean
+;;                 -> (Listof (list EllipsisHeadPattern Syntax/EH-Alternative))
+(define (parse-EH-variant stx decls allow-or? #:context [ctx (current-syntax-context)])
+  (parse*-ellipsis-head-pattern stx decls allow-or? #:context ctx))
+
 ;; parse-pattern+sides : stx stx <options> -> (values stx Pattern (listof stx))
 ;; Parses pattern, side clauses; desugars side clauses & merges with pattern
 (define (parse-pattern+sides p-stx s-stx
                              #:splicing? splicing?
                              #:decls decls0
-                             #:context ctx)
+                             #:context ctx
+                             #:simplify? [simplify? #t])
   (let-values ([(rest decls defs sides)
                 (parse-pattern-directives s-stx
                                           #:allow-declare? #t
                                           #:decls decls0
                                           #:context ctx)])
     (let* ([pattern0 (parse-whole-pattern p-stx decls splicing? #:context ctx #:kind 'main)]
-           [pattern (combine-pattern+sides pattern0 sides splicing?)])
+           [pattern (combine-pattern+sides pattern0 sides splicing?)]
+           [pattern (if simplify? (simplify-pattern pattern) pattern)])
       (values rest pattern defs))))
 
 ;; parse-whole-pattern : stx DeclEnv boolean -> Pattern
@@ -389,15 +397,8 @@
 ;; combine-pattern+sides : Pattern (listof SideClause) -> Pattern
 (define (combine-pattern+sides pattern sides splicing?)
   (check-pattern
-   (cond [(pair? sides)
-          (define actions-pattern
-            (create-action:and (ord-and-patterns sides (gensym*))))
-          (define and-patterns
-            (ord-and-patterns (list pattern (pat:action actions-pattern (pat:any)))
-                              (gensym*)))
-          (cond [splicing? (apply hpat:and and-patterns)]
-                [else (pat:and and-patterns)])]
-         [else pattern])))
+   (cond [splicing? (hpat:andu (cons pattern sides))]
+         [else (pat:andu (cons pattern sides))])))
 
 ;; gensym* : -> UninternedSymbol
 ;; Like gensym, but with deterministic name from compilation-local counter.
@@ -590,9 +591,7 @@
            [tailp (parse-single-pattern #'tail decls)])
        (cond [(action-pattern? headp)
               (pat:action headp tailp)]
-             [(head-pattern? headp)
-              (pat:head headp tailp)]
-             [else (pat:pair headp tailp)]))]
+             [else (pat:head (coerce-head-pattern headp) tailp)]))]
     [#(a ...)
      (let ([lp (parse-single-pattern (syntax/loc stx (a ...)) decls)])
        (pat:vector lp))]
@@ -701,7 +700,7 @@
                (declenv-check-unbound decls name (syntax-e suffix) #:blame-declare? #t)
                (define entry (declenv-lookup decls suffix))
                (cond [(or (den:lit? entry) (den:datum-lit? entry))
-                      (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
+                      (pat:andu (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
                      [else (parse-stxclass-use id allow-head? name suffix no-arguments "." #f)])])]
         [(declenv-apply-conventions decls id)
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
@@ -917,46 +916,28 @@
 (define (parse-pat:and stx decls allow-head? allow-action?)
   ;; allow-action? = allowed to *return* pure action pattern;
   ;; all ~and patterns are allowed to *contain* action patterns
-  (define patterns0 (parse-cdr-patterns stx decls allow-head? #t))
-  (cond [(andmap action-pattern? patterns0)
+  (define patterns (parse-cdr-patterns stx decls allow-head? #t))
+  (cond [(andmap action-pattern? patterns)
          (cond [allow-action?
-                (define patterns1 (ord-and-patterns patterns0 (gensym*)))
-                (action:and patterns1)]
+                (action:and patterns)]
                [allow-head?
                 (wrong-syntax stx "expected at least one head or single-term pattern")]
                [else
                 (wrong-syntax stx "expected at least one single-term pattern")])]
         [(memq (stxclass-lookup-config) '(no try))
-         (pat:and/fixup stx patterns0)]
-        [else (parse-pat:and/k stx patterns0)]))
+         (pat:and/fixup stx patterns)]
+        [else (parse-pat:and/k stx patterns)]))
 
-(define (parse-pat:and/k stx patterns0)
-  ;; PRE: patterns0 not all action patterns
-  (define patterns1 (ord-and-patterns patterns0 (gensym*)))
-  (define-values (actions patterns) (split-prefix patterns1 action-pattern?))
-  (add-actions actions (parse-pat:and/k* stx (length actions) patterns)))
-
-(define (parse-pat:and/k* stx actions-len patterns)
-  ;; PRE: patterns non-empty, starts with non-action pattern
-  (cond [(null? (cdr patterns))
-         (car patterns)]
-        [(ormap head-pattern? patterns)
-         ;; Check to make sure *all* are head patterns
+(define (parse-pat:and/k stx patterns)
+  ;; PRE: patterns not all action patterns
+  (cond [(ormap head-pattern? patterns)
+         ;; Check to make sure *all* are head patterns (and action patterns)
          (for ([pattern (in-list patterns)]
-               [pattern-stx (in-list (drop (stx->list (stx-cdr stx)) actions-len))])
+               [pattern-stx (in-list (stx->list (stx-cdr stx)))])
            (unless (or (action-pattern? pattern) (head-pattern? pattern))
-             (wrong-syntax
-              pattern-stx
-              "single-term pattern not allowed after head pattern")))
-         (let ([p0 (car patterns)]
-               [lps (map action/head-pattern->list-pattern (cdr patterns))])
-           (hpat:and p0 (pat:and lps)))]
-        [else
-         (pat:and
-          (for/list ([p (in-list patterns)])
-            (if (action-pattern? p)
-                (action-pattern->single-pattern p)
-                p)))]))
+             (wrong-syntax pattern-stx "single-term pattern not allowed after head pattern")))
+         (hpat:andu patterns)]
+        [else (pat:andu patterns)]))
 
 (define (split-prefix xs pred)
   (let loop ([xs xs] [rprefix null])
@@ -1024,7 +1005,7 @@
   (syntax-case stx ()
     [(_ clause ...)
      (let ([clauses (check-bind-clause-list #'(clause ...) stx)])
-       (create-action:and clauses))]))
+       (action:and clauses))]))
 
 (define (parse-pat:fail stx decls)
   (syntax-case stx ()
@@ -1105,7 +1086,7 @@
     (parse*-optional-pattern stx decls h-optional-directive-table))
   (create-hpat:or
    (list head
-         (hpat:action (create-action:and defaults)
+         (hpat:action (action:and defaults)
                       (hpat:seq (pat:datum '()))))))
 
 ;; parse*-optional-pattern : stx DeclEnv table
@@ -1202,7 +1183,7 @@
 
 
 ;; ============================================================
-;; Fixup pass
+;; Fixup pass (also does simplify-pattern)
 
 (define (fixup-rhs the-rhs head? expected-attrs)
   (match the-rhs
@@ -1214,12 +1195,14 @@
   (match v
     [(variant stx sattrs p defs)
      (parameterize ((current-syntax-context stx))
-       (define p*
+       (define p1
          (parameterize ((stxclass-lookup-config 'yes))
            (fixup-pattern p head?)))
-       ;; (eprintf "~v\n===>\n~v\n\n" p p*)
-       (unless (if head? (wf-H? p*) (wf-S? p*))
+       ;; (eprintf "~v\n===>\n~v\n\n" p p1)
+       (unless (if head? (wf-H? p1) (wf-S? p1))
          (error 'fixup-variant "result is not well-formed"))
+       (define p* (simplify-pattern p1))
+       ;; (eprintf "=2=>\n~v\n\n" p*)
        ;; Called just for error-reporting
        (reorder-iattrs expected-attrs (pattern-attrs p*))
        (variant stx sattrs p* defs))]))
@@ -1227,7 +1210,8 @@
 (define (fixup-pattern p0 head?)
   (define (S p) (fixup p #f))
   (define (S* p) (fixup p #t))
-  (define (A/S* p) (if (action-pattern? p) (A p) (S* p)))
+  (define (A/S p) (if (action-pattern? p) (A p) (S p)))
+  (define (A/H p) (if (action-pattern? p) (A p) (H p)))
 
   (define (A p)
     (match p
@@ -1291,18 +1275,16 @@
       [(pat:head headp tailp)
        (pat:head (H headp) (S tailp))]
       ;; --- The following patterns may change if a subpattern switches to head pattern ----
-      [(pat:pair headp tailp)
-       (let ([headp (S* headp)] [tailp (S tailp)])
-         (if (head-pattern? headp) (pat:head headp tailp) (pat:pair headp tailp)))]
+      [(pat:pair headp tailp) (error 'fixup-pattern "internal error: pat:pair in stage 0")]
       [(pat:action a sp)
        (let ([a (A a)] [sp (I sp)])
          (if (head-pattern? sp) (hpat:action a sp) (pat:action a sp)))]
       [(pat:describe sp desc tr? role)
        (let ([sp (I sp)])
          (if (head-pattern? sp) (hpat:describe sp desc tr? role) (pat:describe sp desc tr? role)))]
-      [(pat:and ps)
-       (let ([ps (map I ps)])
-         (pat:and ps))]
+      [(pat:andu ps)
+       (let ([ps (map A/S ps)])
+         (pat:andu ps))]
       [(pat:and/fixup stx ps)
        (let ([ps (for/list ([p (in-list ps)])
                    (cond [(action-pattern? p) (A p)]
@@ -1341,8 +1323,9 @@
        (hpat:action (A a) (H hp))]
       [(hpat:describe hp desc tr? role)
        (hpat:describe (H hp) desc tr? role)]
-      [(hpat:and hp sp)
-       (hpat:and (H hp) (S sp))]
+      [(hpat:andu ps)
+       (let ([ps (map A/H ps)])
+         (hpat:andu ps))]
       [(hpat:or _ ps _)
        (create-hpat:or (map H ps))]
       [(hpat:delimit hp)
@@ -1367,6 +1350,145 @@
 
   (if head? (H p0) (S p0)))
 
+
+;; ============================================================
+;; Simplify pattern
+
+;;(begin (require racket/pretty) (pretty-print-columns 160))
+
+;; simplify-pattern : *Pattern -> *Pattern
+(define (simplify-pattern p0)
+  ;;(eprintf "-- simplify --\n")
+  ;;(eprintf "~a\n" (pretty-format p0))
+  (define p1 (simplify:specialize-pairs p0))
+  ;; (eprintf "=1=>\n~a\n" (pretty-format p1))
+  (define p2 (simplify:normalize-and p1))
+  ;;(eprintf "=2=>\n~a\n" (pretty-format p2))
+  (define p3 (simplify:order-and p2))
+  ;;(eprintf "=3=>\n~a\n" (pretty-format p3))
+  (define p4 (simplify:add-seq-end p3))
+  ;;(eprintf "=4=>\n~a\n" (pretty-format p4))
+  p4)
+
+;; ----------------------------------------
+;; Add pair patterns
+
+(define (simplify:specialize-pairs p)
+  (define (for-pattern p)
+    (match p
+      [(pat:head (hpat:single headp) tailp)
+       (pat:pair headp tailp)]
+      [(pat:head (hpat:seq lp) tailp)
+       (list-pattern-replace-end lp tailp)]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; list-pattern-replace-end : ListPattern {L,S}Pattern -> {L,S}Pattern
+(define (list-pattern-replace-end lp endp)
+  (let loop ([lp lp])
+    (match lp
+      [(pat:datum '()) endp]
+      [(pat:seq-end) endp]
+      [(pat:action ap sp) (pat:action ap (loop sp))]
+      [(pat:head hp tp) (pat:head hp (loop tp))]
+      [(pat:dots hs tp) (pat:dots hs (loop tp))]
+      [(pat:pair hp tp) (pat:pair hp (loop tp))])))
+
+;; ----------------------------------------
+;; Normalize *:andu patterns, drop useless actions
+
+(define (simplify:normalize-and p)
+  (define (pattern->list p)
+    (match p
+      [(pat:any) null]
+      [(pat:action ap sp) (append (pattern->list ap) (pattern->list sp))]
+      [(pat:andu ps) (apply append (map pattern->list ps))]
+      [(hpat:action ap hp) (append (pattern->list ap) (pattern->list hp))]
+      [(hpat:andu ps) (apply append (map pattern->list ps))]
+      [(action:and as) (apply append (map pattern->list as))]
+      [(action:do '()) null]
+      [(action:undo '()) null]
+      [_ (list p)]))
+  (define (for-pattern p)
+    (match p
+      [(pat:action ap sp)
+       (pat:andu (append (pattern->list ap) (pattern->list sp)))]
+      [(pat:andu ps)
+       (pat:andu (apply append (map pattern->list ps)))]
+      [(hpat:action ap hp)
+       (hpat:andu (append (pattern->list ap) (pattern->list hp)))]
+      [(hpat:andu ps)
+       (hpat:andu (apply append (map pattern->list ps)))]
+      [(action:post ap)
+       (match (pattern->list ap)
+         ['() (action:and '())]
+         [(list ap*) (action:post ap*)]
+         [as* (action:post (action:and as*))])]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; ----------------------------------------
+;; Add *:ord and translate back to *:and, *:action
+
+(define (simplify:order-and p)
+  (define (A->S p) (if (action-pattern? p) (pat:action p (pat:any)) p))
+  (define (for-pattern p)
+    (match p
+      [(pat:andu ps0)
+       (define ord-ps (ord-and-patterns ps0 (gensym*)))
+       (define-values (as ps) (split-pred action-pattern? ord-ps))
+       (define sp* (list->single-pattern (map A->S ps)))
+       (add-action-patterns as sp*)]
+      [(hpat:andu ps0)
+       (define ord-ps (ord-and-patterns ps0 (gensym*)))
+       (define-values (as ps) (split-pred action-pattern? ord-ps))
+       (match ps
+         ['() (error 'simplify:order-ands "internal error: no head pattern")]
+         [(list hp) (add-action-patterns as hp)]
+         [(cons hp1 hps)
+          (define sp* (list->single-pattern (map action/head-pattern->list-pattern hps)))
+          (define hp* (hpat:and hp1 sp*))
+          (add-action-patterns as hp*)])]
+      [_ p]))
+  (pattern-transform p for-pattern))
+
+;; add-action-patterns : (Listof ActionPattern) *Pattern -> *Pattern
+(define (add-action-patterns as p)
+  (if (pair? as)
+      (let ([ap (list->action-pattern as)])
+        (cond [(single-pattern? p) (pat:action ap p)]
+              [(head-pattern? p) (hpat:action ap p)]))
+      p))
+
+;; list->action-pattern : (Listof ActionPattern) -> ActionPattern
+(define (list->action-pattern as)
+  (match as
+    [(list ap) ap]
+    [_ (action:and as)]))
+
+;; list->single-pattern : (Listof SinglePattern) -> SinglePattern
+(define (list->single-pattern ps)
+  (match ps
+    ['() (pat:any)]
+    [(list p) p]
+    [_ (pat:and ps)]))
+
+(define (split-pred pred? xs)
+  (let loop ([xs xs] [acc null])
+    (if (and (pair? xs) (pred? (car xs)))
+        (loop (cdr xs) (cons (car xs) acc))
+        (values (reverse acc) xs))))
+
+;; ----------------------------------------
+;; Add pat:seq-end to end of list-patterns in seq
+
+(define (simplify:add-seq-end p)
+  (define (for-pattern p)
+    (match p
+      [(hpat:seq lp)
+       (hpat:seq (list-pattern-replace-end lp (pat:seq-end)))]
+      [_ p]))
+  (pattern-transform p for-pattern))
 
 ;; ============================================================
 ;; Parsing pattern directives

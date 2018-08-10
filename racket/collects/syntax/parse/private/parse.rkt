@@ -539,7 +539,7 @@ Conventions:
   (syntax-case stx ()
     [(parse:S x cx pattern0 pr es k)
      (syntax-case #'pattern0 ()
-       [#s(internal-rest-pattern)
+       [#s(pat:seq-end)
         #`(k x cx pr)]
        [#s(pat:any)
         #'k]
@@ -821,27 +821,6 @@ Conventions:
             (parse:A x cx pattern pr* es k))]
        [_ (wrong-syntax stx "internal error: bad A pattern: ~e" #'pattern0)])]))
 
-(begin-for-syntax
- ;; convert-list-pattern : ListPattern id -> SinglePattern
- ;; Converts '() datum pattern at end of list to bind (cons stx index)
- ;; to rest-var.
- (define (convert-list-pattern pattern end-pattern)
-   (syntax-case pattern ()
-     [#s(pat:datum ())
-      end-pattern]
-     [#s(pat:action action tail)
-      (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
-        #'#s(pat:action action tail))]
-     [#s(pat:head head tail)
-      (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
-        #'#s(pat:head head tail))]
-     [#s(pat:dots head tail)
-      (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
-        #'#s(pat:dots head tail))]
-     [#s(pat:pair head-part tail-part)
-      (with-syntax ([tail-part (convert-list-pattern #'tail-part end-pattern)])
-        #'#s(pat:pair head-part tail-part))])))
-
 ;; (parse:H x cx rest-x rest-cx rest-pr H-pattern pr es k)
 ;; In k: rest, rest-pr, attrs(H-pattern) are bound.
 (define-syntax (parse:H stx)
@@ -851,7 +830,7 @@ Conventions:
        [#s(hpat:single pattern)
         #'(parse:S x cx
                    ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
-                   #s(pat:pair pattern #s(internal-rest-pattern))
+                   #s(pat:pair pattern #s(pat:seq-end))
                    pr es (lambda (rest-x rest-cx rest-pr) k))]
        [#s(hpat:describe pattern description transparent? role)
         #`(let ([es* (es-add-thing pr description transparent? role es)]
@@ -926,11 +905,7 @@ Conventions:
                             (disjunct subattrs success (rest-x rest-cx rest-pr) (id ...)))
                    ...)))]
        [#s(hpat:seq pattern)
-        (with-syntax ([pattern
-                       (convert-list-pattern
-                        #'pattern
-                        #'#s(internal-rest-pattern))])
-          #'(parse:S x cx pattern pr es (lambda (rest-x rest-cx rest-pr) k)))]
+        #'(parse:S x cx pattern pr es (lambda (rest-x rest-cx rest-pr) k))]
        [#s(hpat:action action subpattern)
         #'(parse:A x cx action pr es (parse:H x cx rest-x rest-cx rest-pr subpattern pr es k))]
        [#s(hpat:delimit pattern)
@@ -1188,7 +1163,7 @@ Conventions:
               [ehpat+hstx-list
                (apply append
                       (for/list ([alt (in-list alts)])
-                        (parse*-ellipsis-head-pattern alt decls #t #:context stx)))]
+                        (parse-EH-variant alt decls #t #:context stx)))]
               [eh-alt+defs-list
                (for/list ([ehpat+hstx (in-list ehpat+hstx-list)])
                  (let ([ehpat (car ehpat+hstx)]

@@ -222,6 +222,7 @@
      (pattern-factorable? pattern)]
     [(pat:post pattern)
      (pattern-factorable? pattern)]
+    [(pat:seq-end) #t]
     ;; ----
     [(hpat:single inner)
      (pattern-factorable? inner)]
@@ -304,6 +305,7 @@
                 (equal? (pat:ord-index a) (pat:ord-index b)))]
           [(and (pat:post? a) (pat:post? b))
            (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
+          [(and (pat:seq-end? a) (pat:seq-end? b)) #t]
           ;; ---
           [(and (hpat:single? a) (hpat:single? b))
            (pattern-equal? (hpat:single-pattern a) (hpat:single-pattern b))]
@@ -455,6 +457,7 @@
     [(pat:commit sp) (list '~commit (pattern->sexpr sp))]
     [(pat:ord pattern _ _) (list '~ord (pattern->sexpr pattern))]
     [(pat:post sp) (list '~post (pattern->sexpr sp))]
+    [(pat:seq-end) '()]
     [(action:cut) '~!]
     [(action:fail cnd msg) (list '~fail)]
     [(action:bind attr expr) (list '~bind)]
