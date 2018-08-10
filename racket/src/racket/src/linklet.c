@@ -45,6 +45,9 @@ static Scheme_Object *omitable_symbol;
 static Scheme_Object *folding_symbol;
 
 THREAD_LOCAL_DECL(Scheme_Hash_Table *local_primitive_tables);
+THREAD_LOCAL_DECL(extern intptr_t scheme_code_page_total);
+THREAD_LOCAL_DECL(extern intptr_t scheme_code_total);
+THREAD_LOCAL_DECL(extern intptr_t scheme_code_count);
 
 static Scheme_Object *primitive_table(int argc, Scheme_Object **argv);
 static Scheme_Object *primitive_to_position(int argc, Scheme_Object **argv);
@@ -1951,7 +1954,8 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
             tab_number(gc_total, gc_tab, gc_len),
             gc_total);
 #ifdef MZ_PRECISE_GC
-    fprintf(stderr, ";; [JIT code: %"PRIdPTR" bytes   JIT code+admin: %"PRIdPTR" bytes]\n",
+    fprintf(stderr, ";; [JIT code: %"PRIdPTR" procs  %"PRIdPTR" bytes   JIT code+admin: %"PRIdPTR" bytes]\n",
+            scheme_code_count,
             scheme_code_total,
             scheme_code_page_total);
 #endif
