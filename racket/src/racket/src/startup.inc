@@ -48224,7 +48224,7 @@ static const char *startup_source =
 " 4"
 " 0"
 " #f"
-"(list(cons prop:readtable #t))"
+"(list(cons prop:authentic #t)(cons prop:readtable #t))"
 "(current-inspector)"
 " #f"
 " '(0 1 2 3)"
