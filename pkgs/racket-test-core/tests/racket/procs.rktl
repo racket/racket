@@ -42,6 +42,11 @@
 (define (f1:a?:b? x #:a [a 0] #:b [b 1]) (list x a b))
 (define (f1+:a:b? x #:a a #:b [b 1] . args) (list* x a b args))
 (define (f1+:a?:b? x #:a [a 0] #:b [b 1] . args) (list* x a b args))
+(define (f1+2:a:b x [y #f] #:a a #:b b) (if y
+                                            (if (number? x)
+                                                (list x y a b)
+                                                (list y a b))
+                                            (list x a b)))
 (define f_ (case-lambda))
 (define f_1_2 (case-lambda
                [(x) (list x)]
@@ -89,6 +94,8 @@
     (,(wrap-m f1+:a/drop) ,(make-arity-at-least 0) (#:a) (#:a))
     (,(wrap-m f1+:a?/drop) ,(make-arity-at-least 0) () (#:a))
     (,(procedure->method (wrap f1+:a?)) ,(make-arity-at-least 1) () (#:a) #t)
+    (,f1+2:a:b (1 2) (#:a #:b) (#:a #:b))
+    (,(wrap-m f1+2:a:b) (0 1) (#:a #:b) (#:a #:b))
     (,f0:a:b 0 (#:a #:b) (#:a #:b))
     (,f0:a?:b 0 (#:b) (#:a #:b))
     (,f1:a:b 1 (#:a #:b) (#:a #:b))

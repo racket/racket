@@ -1880,7 +1880,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     }
 
     if ((a == -1) || (a == -3) || (a == -4)) {
-      if (drop && (a == -4))
+      if (drop)
         mask = shift_for_drop(mask, drop);
       if (a != -4)
         return mask_to_arity(mask, a);
