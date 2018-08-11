@@ -458,8 +458,8 @@ A RepConstraint is one of
 (define AF-POST 2)  ;; can fail with progress >= POST
 (define AF-ANY  3)  ;; can fail with progress either < or >= POST
 
-;; AF-nz? : AbsFail -> {0, 1}
-(define (AF-nz? af) (if (= af AF-NONE) 0 1))
+;; AF-nz? : AbsFail -> Boolean
+(define (AF-nz? af) (not (= af AF-NONE)))
 
 ;; AF<? : AbsFail AbsFail -> Boolean
 ;; True if every failure in af1 has strictly less progress than any failure in af2.
