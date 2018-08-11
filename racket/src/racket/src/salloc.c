@@ -110,6 +110,11 @@ static void init_allocation_callback(void);
 #endif
 
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+/* For this option to work, the `si->si_addr` value provided
+   to the signal handler on a no-execute-permission signal
+   must be the address that isn't executable, as opposed to
+   the address of an instruction that tried to call or jump to
+   a non-executable address. */
 static void install_w_xor_x_handler();
 static void register_as_executable(void *p, size_t len, int can_exec);
 #endif
