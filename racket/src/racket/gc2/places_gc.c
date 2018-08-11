@@ -354,6 +354,15 @@ void GC_destruct_child_gc() {
     }
   } while (waiting == 1);
 
+  if (gc->parent_gc) {
+    /* update parent's view of memory use */
+    intptr_t delta = -gc->previously_reported_total;
+    mzrt_mutex_lock(gc->parent_gc->child_total_lock);
+    gc->parent_gc->child_gc_total += delta;
+    mzrt_mutex_unlock(gc->parent_gc->child_total_lock);
+    gc->previously_reported_total = 0;
+  }
+
   free_child_gc();
 }
 

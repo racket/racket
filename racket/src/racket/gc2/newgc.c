@@ -963,6 +963,20 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
                           (Fixup2_Proc)fixup, constant_Size, atomic);
 }
 
+static uintptr_t get_place_child_memory_use()
+{
+#ifdef MZ_USE_PLACES
+  NewGC *gc = GC_get_GC();
+  uintptr_t amt;
+  mzrt_mutex_lock(gc->child_total_lock);
+  amt = gc->child_gc_total;
+  mzrt_mutex_unlock(gc->child_total_lock);
+  return amt;
+#else
+  return 0;
+#endif
+}
+
 intptr_t GC_get_memory_use(void *o) 
 {
   NewGC *gc = GC_get_GC();
@@ -975,9 +989,7 @@ intptr_t GC_get_memory_use(void *o)
   amt = add_no_overflow(gen0_size_in_use(gc), gc->memory_in_use);
   amt = add_no_overflow(amt, gc->gen0_phantom_count);
 #ifdef MZ_USE_PLACES
-  mzrt_mutex_lock(gc->child_total_lock);
-  amt = add_no_overflow(amt, gc->child_gc_total);
-  mzrt_mutex_unlock(gc->child_total_lock);
+  amt = add_no_overflow(amt, get_place_child_memory_use());
 #endif
   
   return (intptr_t)amt;
@@ -6286,6 +6298,7 @@ void GC_dump_with_traces(int flags,
 
     GCWARN((GCOUTF,"\n"));
     GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
+    GCWARN((GCOUTF," part current use from child places: %" PRIdPTR "\n", get_place_child_memory_use()));
     GCWARN((GCOUTF,"Peak memory use before a collection: %" PRIdPTR "\n", gc->peak_pre_memory_use));
     GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
     GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
