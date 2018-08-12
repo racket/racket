@@ -39,7 +39,23 @@
    #:failure-prefix (format "~a stdout" filename)
    whole-output => modular-output
    #:failure-prefix (format "~a stderr" filename)
-   whole-error => modular-error))
+   whole-error => modular-error)
+
+  (when (null? exceptions)
+    ;; try creating an executable
+    (define exe-filename (build-path
+                          (find-system-path 'temp-dir)
+                          (if (eq? (system-type) 'windows)
+                              "demod-exe.exe"
+                              "demod-exe")))
+    (system* (find-exe) "-l-" "raco" "exe" "-o" exe-filename demod-filename)
+    (define-values (whole-exe-output whole-exe-error)
+      (capture-output exe-filename))
+    (test
+     #:failure-prefix (format "~a exe stdout" filename)
+     whole-exe-output => modular-output
+     #:failure-prefix (format "~a exe stderr" filename)
+     whole-exe-error => modular-error)))
 
 (define-runtime-path tests "tests")
 
