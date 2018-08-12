@@ -712,7 +712,8 @@ Conventions:
               (if (predicate x*)
                   (let-attributes (name-attr ...) k)
                   (let ([es* (es-add-thing pr 'description #t role es)])
-                    (fail (failure* pr es*))))))])]))
+                    (fail (failure* pr es*))))))]
+       [_ (wrong-syntax stx "internal error: bad S pattern: ~e" #'pattern0)])]))
 
 ;; (first-desc:S S-pattern) : expr[FirstDesc]
 (define-syntax (first-desc:S stx)
@@ -817,7 +818,8 @@ Conventions:
             (parse:A x cx pattern pr* es k))]
        [#s(action:post pattern)
         #'(let ([pr* (ps-add-post pr)])
-            (parse:A x cx pattern pr* es k))])]))
+            (parse:A x cx pattern pr* es k))]
+       [_ (wrong-syntax stx "internal error: bad A pattern: ~e" #'pattern0)])]))
 
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern
@@ -974,7 +976,8 @@ Conventions:
             (with ([fail-handler fail-to-succeed]
                    [cut-prompt fail-to-succeed]) ;; to be safe
               (parse:H x cx rest-x rest-cx rest-pr subpattern pr es
-                       (fh0 undo-stack (failure* pr0 es0)))))])]))
+                       (fh0 undo-stack (failure* pr0 es0)))))]
+       [_ (wrong-syntax stx "internal error: bad H pattern: ~e" #'head)])]))
 
 ;; (parse:dots x cx EH-pattern S-pattern pr es k) : expr[Ans]
 ;; In k: attrs(EH-pattern, S-pattern) are bound.

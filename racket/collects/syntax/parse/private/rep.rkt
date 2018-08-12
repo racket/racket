@@ -1218,6 +1218,8 @@
          (parameterize ((stxclass-lookup-config 'yes))
            (fixup-pattern p head?)))
        ;; (eprintf "~v\n===>\n~v\n\n" p p*)
+       (unless (if head? (wf-H? p*) (wf-S? p*))
+         (error 'fixup-variant "result is not well-formed"))
        ;; Called just for error-reporting
        (reorder-iattrs expected-attrs (pattern-attrs p*))
        (variant stx sattrs p* defs))]))
