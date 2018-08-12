@@ -80,8 +80,8 @@
                  (rename-vars formals replacements base-counts))
                `[,new-formals . ,(collapse-in-body body new-replacements new-base-counts)]))]
       [`(quote . ,_) e]
-      [`(let-values . _) (collapse-in-let e #f replacements base-counts)]
-      [`(letrec-values . _) (collapse-in-let e #t replacements base-counts)]
+      [`(let-values . ,_) (collapse-in-let e #f replacements base-counts)]
+      [`(letrec-values . ,_) (collapse-in-let e #t replacements base-counts)]
       [`(,pseudo-es ...) ; catch-all for remaining syntactic forms
        (collapse-in-body pseudo-es replacements base-counts)]
       [_ (if (symbol? e)
@@ -96,7 +96,7 @@
     (match e
       [`(,let-form ([,idss ,rhss] ...) ,body ...)
        (define-values (new-idss body-replacements body-base-counts)
-         (rename-vars idss replacements body-base-counts))
+         (rename-vars idss replacements base-counts))
        (define-values (rhs-replacements rhs-base-counts)
          (if rec?
              (values body-replacements body-base-counts)

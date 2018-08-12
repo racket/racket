@@ -76,7 +76,7 @@
     (define keys
       (for/list ([id (in-list ids)])
         (define key (add-local-binding! id phase counter))
-        (set-box! lift-env (hash-set (unbox lift-env) key variable))
+        (set-box! lift-env (env-extend (unbox lift-env) key variable))
         key))
     (values ids (lifted-bind ids keys rhs))))
 

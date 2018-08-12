@@ -92,7 +92,7 @@
       (define input-s (flip-introduction-scopes (add-intdef-scopes s all-intdefs) ctx))
       (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)]
                                                                   [intdef-id (in-list intdef-ids)])
-                        (hash-set env sym (local-variable intdef-id))))
+                        (env-extend env sym (local-variable intdef-id))))
       (log-expand ctx 'enter-bind)
       (define vals
         (eval-for-syntaxes-binding 'syntax-local-bind-syntaxes
