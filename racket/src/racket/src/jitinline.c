@@ -1271,7 +1271,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 {
   Scheme_Object *rator = app->rator;
 
-  rator = scheme_specialize_to_constant(rator, jitter, 1);
+  rator = scheme_specialize_to_constant(rator, jitter, 1, 0);
 
   {
     int k;
@@ -2577,8 +2577,8 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 {
   int simple1, simple2, direction = 1;
 
-  rand1 = scheme_specialize_to_constant(rand1, jitter, skipped);
-  rand2 = scheme_specialize_to_constant(rand2, jitter, skipped);
+  rand1 = scheme_specialize_to_constant(rand1, jitter, skipped, 1);
+  rand2 = scheme_specialize_to_constant(rand2, jitter, skipped, 1);
   
   simple1 = scheme_is_relatively_constant_and_avoids_r1(rand1, rand2);
   simple2 = scheme_is_relatively_constant_and_avoids_r1(rand2, rand1);
@@ -3042,7 +3042,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 {
   Scheme_Object *rator = app->rator;
 
-  rator = scheme_specialize_to_constant(rator, jitter, 2);
+  rator = scheme_specialize_to_constant(rator, jitter, 2, 0);
 
   if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "ptr-ref")) {
     Scheme_App_Rec *app2;
@@ -4549,7 +4549,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 {
   Scheme_Object *rator = app->args[0];
 
-  rator = scheme_specialize_to_constant(rator, jitter, app->num_args);
+  rator = scheme_specialize_to_constant(rator, jitter, app->num_args, 0);
 
   if (!for_branch) {
     int k;

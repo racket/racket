@@ -1818,7 +1818,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   rator = (alt_rands ? alt_rands[0] : app->args[0]);
 
-  rator = scheme_specialize_to_constant(rator, jitter, num_pushes);
+  rator = scheme_specialize_to_constant(rator, jitter, num_pushes, 0);
 
   if (no_call == 2) {
     direct_prim = 1;

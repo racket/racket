@@ -489,39 +489,41 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
 }
 
 
-Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
+Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push, int extract_static)
 {
   Scheme_Object *c;
 
   if (PAST_LIMIT()) return obj;
 
-  if (!jitter->nc) return obj;
+  /* We can always specialize static toplevel references */
+  if (extract_static
+      && SAME_TYPE(SCHEME_TYPE(obj), scheme_static_toplevel_type)
+      && (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
+    c = SCHEME_STATIC_TOPLEVEL_PREFIX(obj)->a[SCHEME_TOPLEVEL_POS(obj)];
+    c = ((Scheme_Bucket *)c)->val;
+    if (c)
+      return c;
+  }
 
-  if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
-    if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
-      c = scheme_extract_closure_local(obj, jitter, extra_push, 1);
-      if (c) {
-        MZ_ASSERT(SCHEME_TYPE(c) != scheme_prefix_type);
-        return c;
-      }
-    }
-
-    if (SAME_TYPE(SCHEME_TYPE(obj), scheme_toplevel_type)
-        && (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
-      c = scheme_extract_global(obj, jitter->nc, 0);
-      if (c) {
-        c = ((Scheme_Bucket *)c)->val;
-        if (c)
+  if (jitter->nc) {
+    if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+      if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
+        c = scheme_extract_closure_local(obj, jitter, extra_push, 1);
+        if (c) {
+          MZ_ASSERT(SCHEME_TYPE(c) != scheme_prefix_type);
           return c;
+        }
       }
-    }
 
-    if (SAME_TYPE(SCHEME_TYPE(obj), scheme_static_toplevel_type)
-        && (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
-      c = SCHEME_STATIC_TOPLEVEL_PREFIX(obj)->a[SCHEME_TOPLEVEL_POS(obj)];
-      c = ((Scheme_Bucket *)c)->val;
-      if (c)
-        return c;
+      if (SAME_TYPE(SCHEME_TYPE(obj), scheme_toplevel_type)
+          && (SCHEME_TOPLEVEL_FLAGS(obj) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_FIXED) {
+        c = scheme_extract_global(obj, jitter->nc, 0);
+        if (c) {
+          c = ((Scheme_Bucket *)c)->val;
+          if (c)
+            return c;
+        }
+      }
     }
   }
 
@@ -547,7 +549,7 @@ int scheme_native_closure_preserves_marks(Scheme_Object *p)
 
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
 {
-  a = scheme_specialize_to_constant(a, jitter, stack_start);
+  a = scheme_specialize_to_constant(a, jitter, stack_start, 0);
 
   if (SCHEME_PRIMP(a)) {
     int opts;
@@ -677,7 +679,8 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     {
       Scheme_Object *rator;
       rator = scheme_specialize_to_constant(((Scheme_App_Rec *)obj)->args[0], jitter,
-                                            stack_start + ((Scheme_App_Rec *)obj)->num_args);
+                                            stack_start + ((Scheme_App_Rec *)obj)->num_args,
+                                            0);
       if (scheme_inlined_nary_prim(rator, obj, jitter)
           && !SAME_OBJ(rator, scheme_values_proc))
         return 1;
@@ -690,7 +693,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
   case scheme_application2_type:
     {
       Scheme_Object *rator;
-      rator = scheme_specialize_to_constant(((Scheme_App2_Rec *)obj)->rator, jitter, stack_start + 1);
+      rator = scheme_specialize_to_constant(((Scheme_App2_Rec *)obj)->rator, jitter, stack_start + 1, 0);
       if (scheme_inlined_unary_prim(rator, obj, jitter))
         return 1;
       else if (just_markless) {
@@ -701,7 +704,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
   case scheme_application3_type:
     {
       Scheme_Object *rator;
-      rator = scheme_specialize_to_constant(((Scheme_App3_Rec *)obj)->rator, jitter, stack_start + 2);
+      rator = scheme_specialize_to_constant(((Scheme_App3_Rec *)obj)->rator, jitter, stack_start + 2, 0);
       if (scheme_inlined_binary_prim(rator, obj, jitter)
           && !SAME_OBJ(rator, scheme_values_proc)) 
         return 1;
@@ -991,7 +994,7 @@ int scheme_native_closure_is_single_result(Scheme_Object *rator)
 
 static int produces_single_value(Scheme_Object *rator, int num_args, mz_jit_state *jitter)
 {
-  rator = scheme_specialize_to_constant(rator, jitter, num_args);
+  rator = scheme_specialize_to_constant(rator, jitter, num_args, 1);
 
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_native_closure_type))
     return scheme_native_closure_is_single_result(rator);
@@ -2104,7 +2107,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   }
 #endif
 
-  obj = scheme_specialize_to_constant(obj, jitter, 0);
+  obj = scheme_specialize_to_constant(obj, jitter, 0, 0);
 
   orig_target = target;
   result_ignored = (target < 0);
@@ -2504,8 +2507,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       v = SCHEME_PTR1_VAL(obj);
       p = SCHEME_PTR2_VAL(obj);
 
-      v = scheme_specialize_to_constant(v, jitter, 0);
-      p = scheme_specialize_to_constant(p, jitter, 0);
+      v = scheme_specialize_to_constant(v, jitter, 0, 1);
+      p = scheme_specialize_to_constant(p, jitter, 0, 1);
 
       if (is_single_valued(p, jitter)) {
         /* We might discover late that `v` produces a single value,
@@ -2965,7 +2968,15 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     }
   case scheme_branch_type:
     {
-      return generate_branch(obj, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, result_ignored, for_branch);
+      Scheme_Branch_Rec *branch = (Scheme_Branch_Rec *)obj;
+      Scheme_Object *tst;
+      tst = scheme_specialize_to_constant(branch->test, jitter, 0, 1);
+      if (SCHEME_TYPE(tst) > _scheme_values_types_) {
+        return scheme_generate((SCHEME_TRUEP(tst) ? branch->tbranch : branch->fbranch),
+                               jitter, is_tail, wcm_may_replace, 
+                               multi_ok, orig_target, for_branch, for_values);
+      } else
+        return generate_branch(obj, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, result_ignored, for_branch);
     }
   case scheme_lambda_type:
     {

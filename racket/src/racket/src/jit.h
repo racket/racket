@@ -1612,7 +1612,7 @@ int scheme_jit_check_closure_extflonum_bit(Scheme_Lambda *data, int pos, int del
 
 Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only);
 Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push, int get_constant);
-Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
+Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push, int extract_static);
 
 void scheme_jit_register_traversers(void);
 #ifdef MZ_USE_LWC
