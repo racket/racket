@@ -175,68 +175,36 @@
              [else (values p onto)]))]
     [_ (values p onto)]))
 
-(define (pattern-factorable? p)
-  ;; Can factor out p if p can succeed at most once, does not cut
-  ;;  - if p can succeed multiple times, then factoring changes success order
-  ;;  - if p can cut, then factoring changes which choice points are discarded (too few)
-  (match p
-    [(pat:any) #t]
-    [(pat:svar _n) #t]
-    [(pat:var/p _ _ _ _ _ (scopts _ commit? _ _))
-     ;; commit? implies delimit-cut
-     commit?]
-    [(? pat:integrated?) #t]
-    [(pat:literal _lit _ip _lp) #t]
-    [(pat:datum _datum) #t]
-    [(pat:action _act _pat) #f]
-    [(pat:head head tail)
-     (and (pattern-factorable? head)
-          (pattern-factorable? tail))]
-    [(pat:dots heads tail)
-     ;; Conservative approximation for common case: one head pattern
-     ;; In general, check if heads don't overlap, don't overlap with tail.
-     (and (= (length heads) 1)
-          (let ([head (car heads)])
-            (and (pattern-factorable? head)))
-          (equal? tail (pat:datum '())))]
-    [(pat:and patterns)
-     (andmap pattern-factorable? patterns)]
-    [(pat:or _ patterns _) #f]
-    [(pat:not pattern) #f] ;; FIXME: ?
-    [(pat:pair head tail)
-     (and (pattern-factorable? head)
-          (pattern-factorable? tail))]
-    [(pat:vector pattern)
-     (pattern-factorable? pattern)]
-    [(pat:box pattern)
-     (pattern-factorable? pattern)]
-    [(pat:pstruct key pattern)
-     (pattern-factorable? pattern)]
-    [(pat:describe pattern _desc _trans _role)
-     (pattern-factorable? pattern)]
-    [(pat:delimit pattern)
-     (pattern-factorable? pattern)]
-    [(pat:commit pattern) #t]
-    [(? pat:reflect?) #f]
-    [(pat:ord pattern _ _)
-     (pattern-factorable? pattern)]
-    [(pat:post pattern)
-     (pattern-factorable? pattern)]
-    [(pat:seq-end) #t]
-    ;; ----
-    [(hpat:single inner)
-     (pattern-factorable? inner)]
-    [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _))
-     commit?]
-    [(hpat:seq inner)
-     (pattern-factorable? inner)]
-    [(hpat:commit inner) #t]
-    ;; ----
-    [(ehpat _ head repc _)
-     (and (equal? repc #f)
-          (pattern-factorable? head))]
-    ;; ----
-    [else #f]))
+;; pattern-factorable? : *Pattern -> Boolean
+(define (pattern-factorable? p) (not (pattern-unfactorable? p)))
+
+;; pattern-unfactorable? : *Pattern -> Boolean
+(define (pattern-unfactorable? p)
+  ;; Cannot factor out p if
+  ;; - if p can succeed multiple times (factoring changes success order)
+  ;; - if p can cut (factoring changes which choice points are discarded (too few))
+  ;; Note: presence of sub-expressions handled by pattern-equal?.
+  (define (for-pattern p recur)
+    (match p
+      [(pat:var/p _ _ _ _ _ (scopts _ commit? _ _)) (not commit?)]
+      [(pat:action _act _pat) #t]
+      [(pat:dots heads tail)
+       ;; Conservative approximation for common case: one head pattern
+       ;; In general, check if heads don't overlap, don't overlap with tail.
+       (or (> (length heads) 1)
+           (not (equal? tail (pat:datum '())))
+           (recur))]
+      [(pat:or _ patterns _) #t]
+      [(pat:not pattern) #t]
+      [(pat:commit pattern) #f]
+      [(? pat:reflect?) #t]
+      [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _)) (not commit?)]
+      [(hpat:commit inner) #f]
+      [(ehpat _ head repc _)
+       (or (not (equal? repc #f))
+           (recur))]
+      [_ (recur)]))
+  (pattern-ormap p for-pattern))
 
 (define (subpatterns-equal? as bs)
   (and (= (length as) (length bs))
