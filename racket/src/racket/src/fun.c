@@ -3715,6 +3715,8 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   }
 
   if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_PROC_CHAPERONE_CALL_DIRECT) {
+    if (auto_val)
+      return argv[0];
     simple_call = SCHEME_VEC_ELS(px->redirects)[0];
     /* no redirection procedure */
     if (SCHEME_IMMUTABLEP(px->redirects)) {

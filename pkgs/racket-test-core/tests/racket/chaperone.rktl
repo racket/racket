@@ -3375,5 +3375,22 @@
   (test #f f (posn 0 #f)))
 
 ;; ----------------------------------------
+;; Check no-op impersonation of a parameter procedure
+
+(let ()
+  (define-values [impersonator-prop:x impersonator-x? impersonator-x]
+    (make-impersonator-property 'x))
+  
+  (define impersonated-current-pseudo-random-generator
+    (impersonate-procedure current-pseudo-random-generator #f 
+                           impersonator-prop:x #f))
+
+  (define gen (make-pseudo-random-generator))
+  (parameterize ([impersonated-current-pseudo-random-generator
+                  gen])
+    (test gen current-pseudo-random-generator)
+    (test gen impersonated-current-pseudo-random-generator)))
+
+;; ----------------------------------------
 
 (report-errs)
