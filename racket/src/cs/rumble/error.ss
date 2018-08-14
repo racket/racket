@@ -452,47 +452,47 @@
 ;; traversal, so that it's amortized constant time.
 (define cached-traces (make-ephemeron-eq-hashtable))
 (define (continuation->trace k)
-  (let ([i (inspect/object k)])
-    (call-with-values
-     (lambda ()
-       (let loop ([i i] [slow-i i] [move? #f])
-         (cond
-          [(not (eq? (i 'type) 'continuation))
-           (values (slow-i 'value) '())]
-          [else
-           (let ([k (i 'value)])
-             (cond
-              [(hashtable-ref cached-traces k #f)
-               => (lambda (l)
-                    (values slow-i l))]
-              [else
-               (let* ([name (or (let ([n (hashtable-ref link-instantiate-continuations
-                                                        k
-                                                        #f)])
-                                  (and n
-                                       (string->symbol (format "body of ~a" n))))
-                                (let* ([c (i 'code)]
-                                       [n (c 'name)])
-                                  n))]
-                      [desc
-                       (let* ([src (or
-                                    ;; when per-expression inspector info is available:
-                                    (i 'source-object)
-                                    ;; when only per-function source location is available:
-                                    ((i 'code) 'source-object))])
-                         (and (or name src)
-                              (cons name src)))])
-                 (call-with-values
-                     (lambda () (loop (i 'link) (if move? (slow-i 'link) slow-i) (not move?)))
-                   (lambda (slow-k l)
-                     (let ([l (if desc
-                                  (cons desc l)
-                                  l)])
-                       (when (eq? k slow-k)
-                         (hashtable-set! cached-traces (i 'value) l))
-                       (values slow-k l)))))]))])))
-     (lambda (slow-k l)
-       l))))
+  (call-with-values
+   (lambda ()
+     (let loop ([k k] [slow-k k] [move? #f])
+       (cond
+         [(or (not (#%$continuation? k))
+              (eq? k #%$null-continuation))
+          (values slow-k '())]
+         [(hashtable-ref cached-traces k #f)
+          => (lambda (l)
+               (values slow-k l))]
+         [else
+          (let* ([name (or (let ([n (hashtable-ref link-instantiate-continuations
+                                                   k
+                                                   #f)])
+                             (and n
+                                  (string->symbol (format "body of ~a" n))))
+                           (let* ([c (#%$continuation-return-code k)]
+                                  [n (#%$code-name c)])
+                             n))]
+                 [desc
+                  (let* ([ci (#%$code-info (#%$continuation-return-code k))]
+                         [src (and
+                               (code-info? ci)
+                               (or
+                                ;; when per-expression inspector info is available:
+                                (find-rpi (#%$continuation-return-offset k) (code-info-rpis ci))
+                                ;; when only per-function source location is available:
+                                (code-info-src ci)))])
+                    (and (or name src)
+                         (cons name src)))])
+            (call-with-values
+             (lambda () (loop (#%$continuation-link k) (if move? (#%$continuation-link slow-k) slow-k) (not move?)))
+             (lambda (slow-k l)
+               (let ([l (if desc
+                            (cons desc l)
+                            l)])
+                 (when (eq? k slow-k)
+                   (hashtable-set! cached-traces k l))
+                 (values slow-k l)))))])))
+   (lambda (slow-k l)
+     l)))
 
 (define (traces->context ls)
   (let loop ([l '()] [ls ls])

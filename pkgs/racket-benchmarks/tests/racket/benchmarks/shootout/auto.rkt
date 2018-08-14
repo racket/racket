@@ -34,17 +34,19 @@ exec racket -qu "$0" ${1+"$@"}
       (load script)))
 
   (define (mk-racket bm)
-    (unless (directory-exists? "compiled")
-      (make-directory "compiled"))
+    (define compiled (car (use-compiled-file-paths)))
+    (unless (directory-exists? compiled)
+      (make-directory* compiled))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
       (let ([name (format "~a.rkt" bm)])
         (compile-file name
-                      "compiled/current-bm_rkt.zo"))))
+                      (build-path compiled "current-bm_rkt.zo")))))
 
   (define (clean-up-zo bm)
-    (when (file-exists? "compiled/current-bm_rkt.zo")
-      (delete-file "compiled/current-bm_rkt.zo")))
+    (define compiled (car (use-compiled-file-paths)))
+    (when (file-exists? (build-path compiled "current-bm_rkt.zo"))
+      (delete-file (build-path compiled "current-bm_rkt.zo"))))
 
   (define (mk-typed-racket-non-optimizing bm)
     (unless (directory-exists? "typed/compiled")

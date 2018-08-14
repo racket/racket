@@ -700,6 +700,7 @@
   (include "rumble/interrupt.ss")
   (include "rumble/parameter.ss")
   (include "rumble/engine.ss")
+  (include "rumble/source.ss")
   (include "rumble/error.ss")
   (include "rumble/srcloc.ss")
   (include "rumble/boolean.ss")
