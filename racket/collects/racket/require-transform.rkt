@@ -290,9 +290,9 @@
                       (let ([mode (car names)])
                         (map (lambda (name)
                                (make-import (datum->syntax
-                                             stx
-                                             name
-                                             stx)
+                                                stx
+                                                name
+                                                stx)
                                             name
                                             (if (equal? (syntax->datum #'simple) mod-path)
                                                 #'simple

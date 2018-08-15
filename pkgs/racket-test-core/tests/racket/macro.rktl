@@ -2262,6 +2262,52 @@
 (test '(#t #t) dynamic-require ''uses-definition-context-and-local-expand-to-replace 'result)
 
 ;; ----------------------------------------
+;; Check that local-expand applies use-site scopes
+;; with 'expression as context
+
+(module local-expand-expression-apply-use-site racket/base
+  (require (for-syntax racket/base))
+
+  (define-syntax (my-letrec-syntax stx)
+    (syntax-case stx ()
+      [(_ ([var estx]) ebody)
+       (let ()
+         (define ctx (syntax-local-make-definition-context))
+         (syntax-local-bind-syntaxes (list #'var) #'estx ctx)
+         (local-expand #'ebody 'expression null ctx))]))
+
+  (define x 'good)
+  (define result
+    (my-letrec-syntax
+      ([m2 (syntax-rules ()
+             [(_ arg) (let ([arg 'bad]) x)])])
+      (m2 x)))
+
+  (provide result))
+
+(test 'good dynamic-require ''local-expand-expression-apply-use-site 'result)
+
+;; ----------------------------------------
+;; Check that use-site scopes from nested local-expansions
+;; within local-expand 'expression are recorded for removal.
+
+(module local-expand-expression-record-use-site racket/base
+  (require (for-syntax racket/base) racket/block)
+  (define-syntax (le-expression stx)
+    (syntax-case stx ()
+      [(_ arg) (local-expand #'arg 'expression null)]))
+
+  (define-syntax-rule (my-define arg val)
+    (define arg val))
+
+  (define x 'bad)
+  (define result (le-expression (block (my-define x 'good) x)))
+
+  (provide result))
+
+(test 'good dynamic-require ''local-expand-expression-record-use-site 'result)
+
+;; ----------------------------------------
 ;; Check that a rename transformer mapped to a
 ;; primitive is ok in the result of a local expansion
 

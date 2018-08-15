@@ -202,7 +202,7 @@
      (parse-quote disarmed-stx rearm+parse)]
     [x
      (identifier? #'x)
-     (parse-id (rearm #'x))]
+     (parse-id (rearm (syntax-local-identifier-as-binding #'x)))]
     [v
      (or (parse-literal (syntax-e #'v))
          (raise-syntax-error 'match "syntax error in pattern" disarmed-stx))]))

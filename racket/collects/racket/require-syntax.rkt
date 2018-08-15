@@ -15,7 +15,7 @@
 (define-for-syntax (make-require-macro proc)
   (make-require-transformer
    (lambda (stx)
-     (expand-import (local-apply-transformer proc stx 'expression)))))
+     (expand-import (local-apply-transformer proc stx (list (gensym)))))))
 
 (define-syntax (define-require-syntax stx)
   (syntax-case stx ()

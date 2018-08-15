@@ -178,7 +178,7 @@
                          (transformer-proc expander* stx)
                          (transformer-proc stx)))
             stx
-            'expression))))
+            (list (gensym))))))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)
