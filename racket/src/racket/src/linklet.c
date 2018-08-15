@@ -1856,11 +1856,11 @@ static void sort_perf(Performance_Entry *pref_entries, int lo, int hi)
 }
 
 static void show_perf(Performance_Entry *perf_entries, int perf_count,
-                      int len, int name_len,
+                      int len, int name_len, int gc_len,
                       int depth)
 {
   intptr_t total = 0, gc_total = 0;
-  int i, j, k, m, n, gc_len;
+  int i, j, k, m, n;
   char name_tab[16], tab[10], gc_tab[10], pre_indent[8], post_indent[8];
   Performance_Cat cats[MAX_PERF_CATS];
   int num_cats = 0;
@@ -1888,7 +1888,7 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
           if (perf_count <= k) perf_count = k+1;
           perf_entries[k].accum += perf_entries[i].accum;
           perf_entries[k].gc_accum += perf_entries[i].gc_accum;
-          perf_entries[k].count += perf_entries[i].count;
+          perf_entries[k].count = -1;
 
           n = cats[m].perf_count++;
           cats[m].perf_entries[n] = perf_entries[i];
@@ -1911,7 +1911,8 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
 
   n = numlen(total);
   if (n > len) len = n;
-  gc_len = numlen(gc_total);
+  n = numlen(gc_total);
+  if (n > gc_len) gc_len = n;
 
   if (name_len >= sizeof(name_tab))
     name_len = sizeof(name_tab) - 1;
@@ -1928,45 +1929,57 @@ static void show_perf(Performance_Entry *perf_entries, int perf_count,
     post_indent[i] = ' ';
   }
   post_indent[i] = 0;
-  
+
+  if (!depth)
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0, ";;");
+
+#define BASE_TIMES_TEMPLATE ";; %s%s%s%s  %s%ld [%s%ld] ms"
+#define FULL_TIMES_TEMPLATE BASE_TIMES_TEMPLATE " ; %ld times"
+
   for (i = 0; i < perf_count; i++) {
     if (perf_entries[i].count)
-      fprintf(stderr, ";; %s%s%s%s  %s%"PRIdPTR " [%s%"PRIdPTR"] ms ; %"PRIdPTR" times\n",
-              pre_indent,
-              perf_entries[i].name,
-              tab_string(perf_entries[i].name, name_tab, name_len),
-              post_indent,
-              tab_number(perf_entries[i].accum, tab, len),
-              perf_entries[i].accum,
-              tab_number(perf_entries[i].gc_accum, gc_tab, gc_len),
-              perf_entries[i].gc_accum,
-              perf_entries[i].count);
+      scheme_log(NULL, SCHEME_LOG_ERROR, 0,
+                 ((perf_entries[i].count < 0)
+                  ? BASE_TIMES_TEMPLATE
+                  : FULL_TIMES_TEMPLATE),
+                 pre_indent,
+                 perf_entries[i].name,
+                 tab_string(perf_entries[i].name, name_tab, name_len),
+                 post_indent,
+                 tab_number(perf_entries[i].accum, tab, len),
+                 perf_entries[i].accum,
+                 tab_number(perf_entries[i].gc_accum, gc_tab, gc_len),
+                 perf_entries[i].gc_accum,
+                 perf_entries[i].count);
     for (m = 0; m < num_cats; m++) {
       if (!strcmp(perf_entries[i].name, cats[m].name))
-        show_perf(cats[m].perf_entries, cats[m].perf_count, len, name_len, depth+1);
+        show_perf(cats[m].perf_entries, cats[m].perf_count, len, name_len, gc_len, depth+1);
     }
   }
 
   if (!depth) {
-    fprintf(stderr, ";; %stotal%s  %s%"PRIdPTR " [%s%"PRIdPTR"] ms\n",
-            tab_number(total, tab, len),
-            tab_string("total", name_tab, name_len),
-            post_indent,
-            total,
-            tab_number(gc_total, gc_tab, gc_len),
-            gc_total);
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0,
+               ";; %stotal%s  %s%ld [%s%ld] ms",
+               tab_number(total, tab, len),
+               tab_string("total", name_tab, name_len),
+               post_indent,
+               total,
+               tab_number(gc_total, gc_tab, gc_len),
+               gc_total);
 #ifdef MZ_PRECISE_GC
-    fprintf(stderr, ";; [JIT code: %"PRIdPTR" procs  %"PRIdPTR" bytes   JIT code+admin: %"PRIdPTR" bytes]\n",
-            scheme_code_count,
-            scheme_code_total,
-            scheme_code_page_total);
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0, ";;");
+    scheme_log(NULL, SCHEME_LOG_ERROR, 0,
+               ";; [JIT code: %d procs  %d bytes  code+admin: %d bytes]",
+               scheme_code_count,
+               scheme_code_total,
+               scheme_code_page_total);
 #endif
   }
 }
 
 static void show_all_perf()
 {
-  return show_perf(perf_entries, perf_count, 0, 0, 0);
+  return show_perf(perf_entries, perf_count, 0, 0, 0, 0);
 }
 
 void scheme_performance_record_start(GC_CAN_IGNORE Scheme_Performance_State *perf_state)

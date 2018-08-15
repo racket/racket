@@ -12775,7 +12775,7 @@ static const char *startup_source =
 "(define-values(set-current-previously-unbound!)(lambda(proc_0)(begin(set! current-previously-unbound proc_0))))"
 "(define-values"
 "(log-performance?)"
-"  (if (environment-variables-ref (current-environment-variables) #\"PLT_EXPAND_TIMES\") #t #f))"
+"  (if (environment-variables-ref (current-environment-variables) #\"PLT_EXPANDER_TIMES\") #t #f))"
 "(define-values(region-stack) #f)"
 "(define-values(accums)(make-hasheq))"
 "(define-values"

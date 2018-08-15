@@ -36,7 +36,7 @@
 
 (define log-performance? (and (environment-variables-ref
                                (current-environment-variables)
-                               #"PLT_EXPAND_TIMES")
+                               #"PLT_EXPANDER_TIMES")
                               #t))
 
 (define-syntax-rule (performance-region [tag0-expr tag-expr ...] body ...)

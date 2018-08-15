@@ -61,21 +61,23 @@
                          (compile (compile-linklet compile-nested)))]
            [region-subs (make-eq-hashtable)]
            [region-gc-subs (make-eq-hashtable)])
+      (define (lprintf fmt . args)
+        (log-message root-logger 'error (apply #%format fmt args) #f))
       (define (pad v w combine)
-        (let ([s (chez:format "~a" v)])
+        (let ([s (#%format "~a" v)])
           (combine (make-string (max 0 (- w (string-length s))) #\space)
                    s)))
       (define (pad-left v w) (pad v w string-append))
       (define (pad-right v w) (pad v w (lambda (p s) (string-append s p))))
       (define (report level label n n-extra units extra)
-        (chez:printf ";; ~a~a~a  ~a~a ~a~a\n"
-                     (make-string (* level 2) #\space)
-                     (pad-right label name-len)
-                     (make-string (* (- 3 level) 2) #\space)
-                     (pad-left (round (inexact->exact n)) len)
-                     n-extra
-                     units
-                     extra))
+        (lprintf ";; ~a~a~a  ~a~a ~a~a"
+                 (make-string (* level 2) #\space)
+                 (pad-right label name-len)
+                 (make-string (* (- 3 level) 2) #\space)
+                 (pad-left (round (inexact->exact n)) len)
+                 n-extra
+                 units
+                 extra))
       (define (ht->sorted-list ht)
         (list-sort (lambda (a b) (< (cdr a) (cdr b)))
                    (hash-table-map ht cons)))
@@ -93,12 +95,12 @@
               (+ v (loop (cdr keys))))])))
       (define (report-time level label n gc-ht)
         (report level label n
-                (chez:format " [~a]" (pad-left (hashtable-ref gc-ht label 0) gc-len))
+                (#%format " [~a]" (pad-left (hashtable-ref gc-ht label 0) gc-len))
                 'ms
                 (let ([c (hashtable-ref region-counts label 0)])
                   (if (zero? c)
                       ""
-                      (chez:format " ; ~a times" c)))))
+                      (#%format " ; ~a times" c)))))
       (for-each (lambda (l)
                   (let* ([cat (car l)]
                          [subs (cadr l)]
@@ -119,6 +121,6 @@
                           (loop sub-ht sub-gc-ht (add1 level))))))
                   (ht->sorted-list ht)))
       (report 0 'total total (#%format " [~a]" gc-total) 'ms "")
-      (chez:printf ";;\n")
+      (lprintf ";;")
       (for-each (lambda (p) (report 0 (car p) (/ (cdr p) 1024 1024) "" 'MB ""))
                 (ht->sorted-list region-memories)))))
