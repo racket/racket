@@ -58,9 +58,17 @@
     (void)))
 
 (define (do-display who v o [max-length #f])
-  (define config (make-print-config))
-  (dots (p who v DISPLAY-MODE o (sub3 max-length) (detect-graph v DISPLAY-MODE config) config) o)
-  (void))
+  (cond
+    [(and (bytes? v) (not max-length))
+     (write-bytes v o)
+     (void)]
+    [(and (string? v) (not max-length))
+     (write-string v o)
+     (void)]
+    [else
+     (define config (make-print-config))
+     (dots (p who v DISPLAY-MODE o (sub3 max-length) (detect-graph v DISPLAY-MODE config) config) o)
+     (void)]))
 
 (define/who (write v [o (current-output-port)])
   (check who output-port? o)

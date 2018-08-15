@@ -7,6 +7,10 @@ RACO = $(RACKET) -N raco -l- raco
 # Can be set to empty to avoid building rktio
 RKTIO_DEP=../build/so-rktio/Makefile
 
+# When flattening, replace a dynamic lookup from a primitive table to
+# a direct use of the primitive name:
+DIRECT = ++direct thread
+
 io-src: $(RKTIO_DEP)
 	$(RACO) make ../expander/bootstrap-run.rkt
 	$(MAKE) io-src-generate
@@ -18,7 +22,7 @@ GENERATE_ARGS = -t main.rkt --submod main \
                 --depends $(BUILDDIR)compiled/io-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/io.rktl $(BUILDDIR)compiled/io.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. -s -x \
+                -k ../.. -s -x $(DIRECT) \
                 -o $(BUILDDIR)compiled/io.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

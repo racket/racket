@@ -96,8 +96,8 @@
                          'async-evt async-evt
                          'schedule-info-current-exts schedule-info-current-exts
                          'current-sandman current-sandman
-                         'start-atomic start-atomic
-                         'end-atomic end-atomic
+                         'unsafe-start-atomic start-atomic
+                         'unsafe-end-atomic end-atomic
                          'start-atomic/no-interrupts start-atomic
                          'end-atomic/no-interrupts end-atomic
                          'in-atomic-mode? in-atomic-mode?

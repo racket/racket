@@ -4,8 +4,8 @@
 ;; Replace
 ;;  (hash-ref (or (primitive-table '<table>) ...) <id> [default])
 ;; with just <id> if <table> is in `primitive-table-directs`.
-(define (substitute-primitive-table-access s primitive-table-directs)
-  (let loop ([s s])
+(define (substitute-primitive-table-access l primitive-table-directs)
+  (define (subst s)
     (cond
       [(primitive-table-lookup-match s)
        => (lambda (tables+id)
@@ -17,8 +17,25 @@
                (string->symbol (string-append prefix (symbol->string (cdr tables+id))))]
               [else s]))]
       [(pair? s)
-       (cons (loop (car s)) (loop (cdr s)))]
-      [else s])))
+       (cons (subst (car s)) (subst (cdr s)))]
+      [else s]))
+  (let loop ([l l])
+    (cond
+      [(null? l) null]
+      [else
+       (let ([s (car l)])
+         ;; Watch out for `(define x x)` and drop it
+         (cond
+           [(and (pair? s)
+                 (eq? 'define-values (car s))
+                 (pair? (cadr s))
+                 (null? (cdadr s)))
+            (define rhs (subst (caddr s)))
+            (if (eq? rhs (caadr s))
+                (loop (cdr l))
+                (cons `(define-values ,(cadr s) ,rhs)
+                      (loop (cdr l))))]
+           [else (cons (subst s) (loop (cdr l)))]))])))
 
 (define (primitive-table-lookup-match s)
   (cond
