@@ -240,7 +240,7 @@ as for @racket[proc].
                                       [name (or/c symbol? #f) #f])
          procedure?]{
 
-The same as @racket[procedure-reduce-arity-mask], but using the
+The same as @racket[procedure-reduce-arity], but using the
 representation of arity described with @racket[procedure-arity-mask].
 
 The mask encoding of an arity is often easier to test and manipulate,
@@ -363,6 +363,20 @@ must require no more keywords than the ones listed in
 (eval:error (show 1))
 (eval:error (show #:init 0 1 2 3 #:extra 4 #:more 7))
 ]}
+
+
+@defproc[(procedure-reduce-keyword-arity-mask [proc procedure?]
+                                              [mask exact-integer?]
+                                              [required-kws (listof keyword?)]
+                                              [allowed-kws (or/c (listof keyword?)
+                                                                  #f)])
+         procedure?]{
+
+The same as @racket[procedure-reduce-keyword-arity], but using the
+representation of arity described with @racket[procedure-arity-mask].
+
+@history[#:added "7.0.0.11"]}
+
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
 
