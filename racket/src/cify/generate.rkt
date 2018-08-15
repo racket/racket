@@ -286,10 +286,14 @@
        (out-open "if (~a_count != 1)" vals-id)
        (return ret runstack #:can-omit? #t
                (format "scheme_values(~a_count, (Scheme_Object **)~a)" vals-id (runstack-ref runstack vals-id)))
-       (out-close+open "else")
-       (return ret runstack #:can-omit? #t #:can-pre-pop? #t
-               (runstack-ref runstack vals-id))
-       (out-close!)
+       (cond
+         [(return-can-omit-single? ret)
+          (out-close!)]
+         [else
+          (out-close+open "else")
+          (return ret runstack #:can-omit? #t #:can-pre-pop? #t
+                  (runstack-ref runstack vals-id))
+          (out-close!)])
        (runstack-pop! runstack)
        (out-close "}")]
       [`(if ,orig-tst ,thn ,els)
@@ -402,7 +406,7 @@
                                     (hash-ref top-names id #f)))
                               "/*needed*/"
                               ""))
-       (generate (multiple-return values-ret) `(begin . ,body1) env)
+       (generate (only-multiple-return values-ret) `(begin . ,body1) env)
        (out-open "{")
        (define bind-count
          (for/sum ([id (in-list ids)]
@@ -1041,7 +1045,7 @@
        (generate (format "~a =" (top-ref #f id)) rhs #f #hasheq()
                  runstack knowns top-names state lambdas prim-names prim-knowns)]
       [`(define-values (,ids ...) ,rhs)
-       (generate (multiple-return "/*needed*/") rhs #f #hasheq()
+       (generate (only-multiple-return "/*needed*/") rhs #f #hasheq()
                  runstack knowns top-names state lambdas prim-names prim-knowns)
        (generate-multiple-value-binds ids runstack #f state top-names)]
       [`,_
