@@ -482,6 +482,7 @@
                                 (code-info-src ci)))])
                     (and (or name src)
                          (cons name src)))])
+            (#%$split-continuation k 0)
             (call-with-values
              (lambda () (loop (#%$continuation-link k) (if move? (#%$continuation-link slow-k) slow-k) (not move?)))
              (lambda (slow-k l)
