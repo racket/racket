@@ -79,7 +79,12 @@
                       syntax-disarm
                       syntax-rearm
                       syntax-taint
-                      
+
+                      syntax-binding-set
+                      syntax-binding-set?
+                      syntax-binding-set-extend
+                      syntax-binding-set->syntax
+
                       raise-syntax-error
                       struct:exn:fail:syntax
                       exn:fail:syntax

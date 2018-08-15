@@ -12,7 +12,8 @@
              "cert.rkt"
              "submodule.rkt"
              "generic-interfaces.rkt"
-             "kw-syntax-local.rkt" ; shadows local-expand and variants
+             "kw-syntax-local.rkt" ; shadows `local-expand` and variants
+             "kw-syntax-binding.rkt" ; shadows `syntax-binding-set-extend`
              (for-syntax "stxcase-scheme.rkt"))
 
   (#%provide (all-from-except "pre-base.rkt"
@@ -40,6 +41,7 @@
              (all-from "submodule.rkt")
              (all-from "generic-interfaces.rkt")
              (all-from "kw-syntax-local.rkt")
+             (all-from "kw-syntax-binding.rkt")
              (for-syntax syntax-rules syntax-id-rules ... _)
              (rename -open-input-file open-input-file)
              (rename -open-output-file open-output-file)

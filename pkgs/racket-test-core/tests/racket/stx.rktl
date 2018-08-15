@@ -1923,6 +1923,61 @@
   (error-test #'(a-rule-pattern 1) no-match?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Explicit binding sets
+
+(let ([bs (syntax-binding-set-extend
+           (syntax-binding-set-extend
+            (syntax-binding-set-extend
+             (syntax-binding-set)
+             'car 0 (module-path-index-join ''#%runtime #f))
+            'cdr 1 (module-path-index-join ''#%runtime #f)
+            #:source-phase 0
+            #:nominal-require-phase 1)
+           'items 0 (module-path-index-join ''#%runtime #f)
+           #:source-symbol 'list)])
+  (test #t free-identifier=?
+        (syntax-binding-set->syntax bs 'car)
+        #'car)
+  (test #f free-identifier=?
+        (syntax-binding-set->syntax bs 'cdr)
+        #'cdr)
+  (test #t free-identifier=?
+        (syntax-binding-set->syntax bs 'cdr)
+        #'cdr
+        1)
+  (test #f free-identifier=?
+        (syntax-binding-set->syntax bs 'list)
+        #'list)
+  (test #t free-identifier=?
+        (syntax-binding-set->syntax bs 'items)
+        #'list))
+
+(module synthesizes-self-reference racket/base
+  (require (for-syntax racket/base))
+  (provide results)
+
+  (define x 5)
+  
+  (define-syntax (f stx)
+    (define the-x
+      (syntax-binding-set->syntax
+       (syntax-binding-set-extend
+        (syntax-binding-set)
+        'x 0 (variable-reference->module-path-index
+              (#%variable-reference)))
+       'x))
+  
+    #`(list #,the-x
+            x
+            (eval (quote-syntax #,the-x))
+            (eval (quote-syntax x))))
+
+  (define results (f)))
+
+(dynamic-require ''synthesizes-self-reference 0)
+(test '(5 5 5 5) dynamic-require ''synthesizes-self-reference 'results)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Extra taint tests
 
 (define (syntax-touch s) (datum->syntax s (syntax-e s)))

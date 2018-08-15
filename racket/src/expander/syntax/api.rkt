@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/phase.rkt"
+         "../common/module-path.rkt"
          (rename-in "syntax.rkt"
                     [syntax->datum raw:syntax->datum]
                     [datum->syntax raw:datum->syntax])
@@ -17,6 +18,10 @@
                     [identifier-binding-symbol raw:identifier-binding-symbol])
          (rename-in "track.rkt"
                     [syntax-track-origin raw:syntax-track-origin])
+         (rename-in "binding-set.rkt"
+                    [syntax-binding-set raw:syntax-binding-set]
+                    [syntax-binding-set-extend raw:syntax-binding-set-extend]
+                    [syntax-binding-set->syntax raw:syntax-binding-set->syntax])
          "../expand/syntax-local.rkt"
          "srcloc.rkt"
          "../common/contract.rkt"
@@ -38,6 +43,10 @@
          syntax->datum
          maybe-syntax->datum
          datum->syntax
+         syntax-binding-set?
+         syntax-binding-set
+         syntax-binding-set-extend
+         syntax-binding-set->syntax
          syntax->list
          identifier?
          bound-identifier=?
@@ -90,6 +99,38 @@
   (unless (or (not stx-p) (syntax? stx-p))
     (raise-argument-error who "(or #f syntax?)" stx-p))
   (raw:datum->syntax stx-c s (to-srcloc-stx stx-l) stx-p))
+
+(define/who (syntax-binding-set)
+  (raw:syntax-binding-set null))
+
+(define/who (syntax-binding-set-extend bs as-sym as-phase mpi
+                                       [sym as-sym]
+                                       [phase as-phase]
+                                       [nominal-mpi mpi]
+                                       [nominal-phase phase]
+                                       [nominal-sym sym]
+                                       [nominal-require-phase 0]
+                                       [insp #f])
+  (check who syntax-binding-set? bs)
+  (check who symbol? as-sym)
+  (check who phase? #:contract phase?-string as-phase)
+  (check who module-path-index? mpi)
+  (check who symbol? sym)
+  (check who phase? #:contract phase?-string phase)
+  (check who module-path-index? nominal-mpi)
+  (check who phase? #:contract phase?-string nominal-phase)
+  (check who symbol? nominal-sym)
+  (check who phase? #:contract phase?-string nominal-require-phase)
+  (check who inspector? #:or-false insp)
+  (raw:syntax-binding-set-extend bs as-sym as-phase mpi
+                                 sym phase
+                                 nominal-mpi nominal-phase nominal-sym
+                                 nominal-require-phase
+                                 insp))
+
+(define/who (syntax-binding-set->syntax bs datum)
+  (check who syntax-binding-set? bs)
+  (raw:syntax-binding-set->syntax bs datum))
 
 (define/who (syntax->list s)
   (check who syntax? s)

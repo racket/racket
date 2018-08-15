@@ -109,8 +109,9 @@
 
          compile-keep-source-locations! ; to enable if the back end wants them
 
-         ;; This functions are provided for basic testing
+         ;; The remaining functions are provided for basic testing
          ;; (such as "demo.rkt")
+
          syntax? syntax-e
          identifier?
          syntax-property
@@ -118,7 +119,7 @@
          module-compiled-exports
          module-compiled-indirect-exports
          read-accept-compiled
-         
+
          syntax-shift-phase-level
          bound-identifier=?)
 

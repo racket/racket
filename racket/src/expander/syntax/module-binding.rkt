@@ -22,7 +22,6 @@
 ;; ----------------------------------------
 
 (define (make-module-binding module phase sym
-                             #:wrt [wrt-sym sym]
                              #:nominal-module [nominal-module module]
                              #:nominal-phase [nominal-phase phase]
                              #:nominal-sym [nominal-sym sym]
