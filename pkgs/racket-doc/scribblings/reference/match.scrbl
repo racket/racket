@@ -306,12 +306,8 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(racketidfont "or") _pat ...)] --- matches if any of
-       the @racket[_pat]s match. @bold{Beware}: the result expression
-       can be duplicated once for each @racket[_pat]! Identifiers in
-       @racket[_pat] are bound only in the corresponding copy of the
-       result expression; in a module context, if the result
-       expression refers to a binding, then all @racket[_pat]s
-       must include the binding.
+       the @racket[_pat]s match. Each @racket[_pat] must bind the same set
+       of identifiers.
 
        @examples[
        #:eval match-eval
