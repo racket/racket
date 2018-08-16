@@ -300,7 +300,7 @@ and has no effect on the returned syntax object.}
 A @deftech{syntax binding set} supports explicit construction of
 binding information for a syntax object. Start by creating an empty
 binding set with @racket[syntax-binding-set], add bindings with
-@racket[binding-set-extend], and create a syntax object that hash the
+@racket[binding-set-extend], and create a syntax object that has the
 bindings as its @tech{lexical information} using
 @racket[syntax-binding-set->syntax].
 
