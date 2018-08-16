@@ -1208,7 +1208,7 @@ use a dictionary for speed.
 ]
 
 @history[#:added "6.3"
-         #:changed "6.11.0.2" @elem{Addede the @racket[#:default] optional argument.}]}
+         #:changed "6.11.0.2" @elem{Added the @racket[#:default] optional argument.}]}
 
 @defproc[(remove-duplicates [lst list?]
                             [same? (any/c any/c . -> . any/c) equal?]
