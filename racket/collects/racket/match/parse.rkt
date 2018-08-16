@@ -223,5 +223,3 @@
     (raise-syntax-error 'list-no-order "unexpected duplicate identifier" dup)))
 
 ;; --------------------------------------------------------------
-
-;; (trace parse)

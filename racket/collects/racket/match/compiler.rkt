@@ -14,6 +14,8 @@
 ;; should we reorder stuff?
 (define can-reorder? (make-parameter #t))
 
+(define inside-GSeq? (make-parameter #f))
+
 ;; for non-linear patterns
 (define vars-seen (make-parameter null))
 
@@ -175,7 +177,7 @@
                      (and (bound-identifier=? v v*) (or id (list v v*)))))
                  =>
                  (lambda (id)
-                   (if (identifier? id)
+                   (if (and (identifier? id) (not (inside-GSeq?)))
                        (make-Row ps
                                  #`(if ((match-equality-test) #,x #,id)
                                        #,(Row-rhs row)
@@ -183,8 +185,13 @@
                                  (Row-unmatch row)
                                  seen)
                        (begin
-                         (log-error "non-linear pattern used in `match` with ... at ~a and ~a"
-                                    (car id) (cadr id)) 
+                         (log-error
+                          (string-append
+                           "repeated use of identifier pattern in `match` with ... at"
+                           (if (pair? id)
+                               (format  "~a and ~a" (car id) (cadr id))
+                               (format "~a" v))
+                           ";\nto constrain these variables to be the same use an explicit `#:when` clause"))
                          (let ([v* (free-identifier-mapping-get
                                     (current-renaming) v (lambda () v))])
                            (make-Row ps
@@ -329,6 +336,7 @@
     [(GSeq? first)
      (unless (null? (cdr block))
        (error 'compile-one "GSeq block with multiple rows: ~a" block))
+     (parameterize ([inside-GSeq? #t])
      (let* ([headss (GSeq-headss first)]
             [mins (GSeq-mins first)]
             [maxs (GSeq-maxs first)]
@@ -436,7 +444,7 @@
                                                heads-seen
                                                (Row-vars-seen
                                                 (car block))))))
-                             #'failkv))))))]
+                             #'failkv)))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
 (define (compile* vars rows esc [reorder? (can-reorder?)])

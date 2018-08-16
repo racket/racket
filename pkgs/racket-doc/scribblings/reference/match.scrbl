@@ -61,12 +61,19 @@ In more detail, patterns match as follows:
        @racketidfont{..}@racket[_k], and
        @racketidfont{..}@racket[_k] for non-negative integers
        @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[_id] to the
-       matching values. If an @racket[_id] is used multiple times
+       matching values.
+
+       If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
        according to @racket[(match-equality-test)], except that
        instances of an @racket[_id] in different @racketidfont{or} and
        @racketidfont{not} sub-patterns are independent. The binding for @racket[_id] is
        not available in other parts of the same pattern.
+
+       If @racket[_id] is used multiple times, but one of
+       those uses is within the scope of a @racketidfont{...} pattern
+       or a @racketidfont{list-no-order} pattern then the
+       @racket[match-equality-test] check is not applied.
 
        @examples[
        #:eval match-eval
