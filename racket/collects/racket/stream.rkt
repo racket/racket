@@ -70,10 +70,15 @@
 
 (define-syntax stream*
   (syntax-rules ()
-    [(_ hd tl)
-     (stream-cons hd tl)]
+    [(_ tl)
+     (assert-stream? 'stream* tl)]
     [(_ hd tl ...)
      (stream-cons hd (stream* tl ...))]))
+
+(define (assert-stream? who st)
+  (if (stream? st)
+    st
+    (raise-argument-error who "stream?" st)))
 
 (define (stream->list s)
   (for/list ([v (in-stream s)]) v))

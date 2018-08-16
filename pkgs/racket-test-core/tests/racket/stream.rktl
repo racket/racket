@@ -35,10 +35,14 @@
 (test 4 stream-ref one-to-four 3)
 (test 2 'stream (stream-length (stream 1 (/ 0))))
 (test 'a 'stream (stream-first (stream 'a (/ 0))))
+(test 1 'stream* (stream-first (stream* (stream 1))))
 (test 2 'stream* (stream-length (stream* 1 (stream (/ 0)))))
 (test 'a 'stream* (stream-first (stream* 'a (stream (/ 0)))))
 (test 4 'stream* (stream-length (stream* 'a 'b 'c (stream (/ 0)))))
 (test 'c 'stream* (stream-first (stream-rest (stream-rest (stream* 'a 'b 'c (stream (/ 0)))))))
+(err/rt-test (stream* 2) exn:fail:contract? "stream*")
+(test #true 'stream* (stream? (stream* 1 0)))
+(err/rt-test (stream-length (stream* 1 2)) exn:fail:contract? "stream*")
 
 ;; make sure stream operations work on lists
 (test #t stream-empty? '())

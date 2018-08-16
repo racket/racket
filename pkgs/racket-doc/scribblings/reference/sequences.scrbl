@@ -1073,8 +1073,8 @@ stream, but plain lists can be used as streams, and functions such as
   @racket[empty-stream].
 }
 
-@defform[(stream* expr ...)]{
-  A shorthand for nested @racket[stream-cons]es, but the final @racket[expr]
+@defform[(stream* expr ... rest-expr)]{
+  A shorthand for nested @racket[stream-cons]es, but the @racket[rest-expr]
   must be a stream, and it is used as the rest of the stream instead of
   @racket[empty-stream]. Similar to @racket[list*] but for streams.
 
