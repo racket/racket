@@ -243,7 +243,7 @@
                                (regexp-replace* #rx"/" file "_"))])
              (with-handlers ([exn? (lambda (e) (rm temp) (raise e))])
                ;; always copy so we never change the running executable
-               (rm temp)
+               (and (file-exists? temp)(rm temp))
                (copy-file file temp)
                (fix-binary temp)
                (rm file)
