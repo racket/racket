@@ -335,6 +335,7 @@ typedef struct NewGC {
   void (*GC_collect_end_callback)(void);
   GC_collect_inform_callback_Proc GC_collect_inform_callback;
   uintptr_t (*GC_get_thread_stack_base)(void);
+  GC_Out_Of_Memory_Proc out_of_memory;
   GC_Post_Propagate_Hook_Proc GC_post_propagate_hook;
   GC_Treat_As_Incremental_Mark_Proc treat_as_incremental_mark_hook;
   short treat_as_incremental_mark_tag;

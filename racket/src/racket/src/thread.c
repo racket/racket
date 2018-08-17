@@ -2397,6 +2397,8 @@ XFORM_NONGCING static void unschedule_in_set(Scheme_Object *s, Scheme_Thread_Set
 	t_set->current = t_set->first;
       }
     }
+    if (t_set->search_start == s)
+      t_set->search_start = t_set->current;
     
     if (t_set->current)
       break;

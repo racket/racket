@@ -736,7 +736,11 @@ THREAD_LOCAL_DECL(static void (*save_oom)(void));
 
 static void raise_out_of_memory(void)
 {
+#ifdef MZ_PRECISE_GC
+  GC_set_out_of_memory(save_oom);
+#else
   GC_out_of_memory = save_oom;
+#endif
   scheme_raise_out_of_memory(NULL, NULL);
 }
 
@@ -755,10 +759,21 @@ void *scheme_malloc_fail_ok(void *(*f)(size_t), size_t s)
 {
   void *v;
 
+#ifdef MZ_PRECISE_GC
+  save_oom = GC_get_out_of_memory();
+  GC_set_out_of_memory(raise_out_of_memory);
+#else
   save_oom = GC_out_of_memory;
   GC_out_of_memory = raise_out_of_memory;
+#endif
+
   v = f(s);
+
+#ifdef MZ_PRECISE_GC
+  GC_set_out_of_memory(save_oom);
+#else
   GC_out_of_memory = save_oom;
+#endif
 
   return v;
 }
@@ -779,15 +794,21 @@ void *scheme_malloc_eternal(size_t n)
 
   s = MALLOC(n);
   if (!s) {
+#ifdef MZ_PRECISE_GC
+    GC_Out_Of_Memory_Proc oom;
+    oom = GC_get_out_of_memory();
+    if (oom)
+      oom();
+#endif
+
     if (GC_out_of_memory)
       GC_out_of_memory();
-    else {
-      if (scheme_console_printf)
-	scheme_console_printf("out of memory\n");
-      else
-	printf("out of memory\n");
-      exit(1);
-    }
+
+    if (scheme_console_printf)
+      scheme_console_printf("out of memory\n");
+    else
+      printf("out of memory\n");
+    exit(1);
   }
 	
 
