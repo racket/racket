@@ -392,6 +392,13 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
         ls = (Scheme_Object *)make_deferred_expr_closure(o, frame);
         ls = scheme_make_pair(ls, outer_frame->def[dpos]);
         outer_frame->def[dpos] = ls;
+
+        /* But if we're trying to propagate to a variable that was
+           already referenced, we need to treat this one as
+           referenced, too */
+        if ((outer_frame->ref[dpos] & LET_APPLY_USE)
+            && in_frame->ref)
+          in_frame->ref[in_position] |= LET_APPLY_USE;
       }
     }
   }

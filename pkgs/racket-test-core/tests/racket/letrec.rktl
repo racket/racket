@@ -159,5 +159,13 @@
                         ((offsets) (map quad-super-type (list 1))))
           offsets)))
 
+(err/rt-test
+ (let ()
+   (define (wrap x) x)
+   (letrec ([f (wrap (lambda () (g)))]
+            [g (let ([g2 (lambda () (letrec ([x x]) x))])
+                 g2)])
+     (f)))
+ letrec-exn?)
 
 (report-errs)
