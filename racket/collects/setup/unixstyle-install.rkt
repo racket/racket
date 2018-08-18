@@ -126,7 +126,7 @@
 
 ;; removes a file or a directory (recursively)
 (define (rm path)
-  (delete-directory/files path))
+  (delete-directory/files path #:must-exist? #f))
 
 ;; removes "compiled" subdirectories recursively
 (define (rm-compiled path)
