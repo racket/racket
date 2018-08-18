@@ -85,6 +85,7 @@
       (finish-expanding-body body-ctx frame-id def-ctx-scopes
                              (reverse val-idss) (reverse val-keyss) (reverse val-rhss) (reverse track-stxs)
                              (reverse stx-clauses) (reverse done-bodys)
+                             #:original-bodys init-bodys
                              #:source s
                              #:stratified? stratified?
                              #:name name
@@ -228,12 +229,15 @@
 (define (finish-expanding-body body-ctx frame-id def-ctx-scopes
                                val-idss val-keyss val-rhss track-stxs
                                stx-clauses done-bodys
+                               #:original-bodys init-bodys
                                #:source s
                                #:stratified? stratified?
                                #:name name
                                #:disappeared-transformer-bindings disappeared-transformer-bindings)
   (when (null? done-bodys)
-    (raise-syntax-error #f "no expression after a sequence of internal definitions" s))
+    (raise-syntax-error (string->symbol "begin (possibly implicit)")
+                        "no expression after a sequence of internal definitions"
+                        (datum->syntax #f (cons 'begin init-bodys) s)))
   ;; As we finish expanding, we're no longer in a definition context
   (define finish-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes body-ctx def-ctx-scopes)
                                    [context 'expression]
