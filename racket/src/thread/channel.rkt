@@ -12,7 +12,8 @@
          channel-get
          
          channel-put-evt
-         channel-put-evt?)
+         channel-put-evt?
+         channel-put-do)
 
 (module+ for-sync
   (provide set-sync-on-channel!))
@@ -193,6 +194,10 @@
   (define old-ch (car ch+put-proc))
   (define new-v ((cdr ch+put-proc) old-ch v))
   (channel-put old-ch new-v))
+
+(define (channel-put-do v)
+  (channel-put (channel-put-evt*-ch v)
+               (channel-put-evt*-v v)))
 
 ;; ----------------------------------------
 
