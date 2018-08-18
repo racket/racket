@@ -286,7 +286,7 @@
                [(aborting? r)
                 ;; Remove the prompt as we call the handler:
                 (pop-metacontinuation-frame)
-                (end-uninterrupted 'handle)
+                (end-uninterrupted/call-hook 'handle)
                 (apply handler
                        (aborting-args r))]
                [else
@@ -888,11 +888,7 @@
 ;; Called on the arguments to return to a continuation
 ;; captured by `call/cc/end-uninterrupted`:
 (define (end-uninterrupted-with-values args)
-  ;; Arguably, we should use `end-uninterrupted/hook` here to check
-  ;; for breaks, in case a jump enabled breaks and one is pending.
-  ;; The traditional Racket implementation doesn't include that
-  ;; check, and the check imposes a costs, so we leave it out for now.
-  (end-uninterrupted 'cc)
+  (end-uninterrupted/call-hook 'cc)
   (apply values args))
 
 (define (current-mark-chain)

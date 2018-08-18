@@ -4276,6 +4276,7 @@ do_call_ec (int argc, Scheme_Object *argv[], Scheme_Object *_for_cc)
       reset_cjs(&p2->cjs);
       scheme_restore_env_stack_w_thread(cont->envss, p2);
       p2->suspend_break = 0;
+      scheme_check_break_now();
       if (n != 1)
         v = scheme_values(n, (Scheme_Object **)v);
     } else {

@@ -725,7 +725,11 @@
 ;; `check-for-break` should be called.
 (define (check-for-break)
   (define t (current-thread))
-  (when t ; allow `check-for-break` before threads are running
+  (when (and
+         ;; allow `check-for-break` before threads are running:
+         t
+         ;; quick pre-test before going atomic:
+         (thread-pending-break t))
     ((atomically
       (cond
         [(and (thread-pending-break t)

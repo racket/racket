@@ -197,6 +197,49 @@
 (err/rt-test (break-thread (current-thread) 'hang-up) exn:break:hang-up?)
 (err/rt-test (break-thread (current-thread) 'terminate) exn:break:terminate?)
 
+(let ([bad? #f])
+  (define t
+    (thread
+     (lambda ()
+       (let/ec k
+         (parameterize-break #f
+           (break-thread (current-thread))
+           (k #f)))
+       (set! bad? #t))))
+  (sync t)
+  (test #f 'escape bad?))
+
+(let ([bad? #f])
+  (define t
+    (thread
+     (lambda ()
+       (let/cc k
+         (parameterize-break #f
+           (break-thread (current-thread))
+           (k #f)))
+       (set! bad? #t))))
+  (sync t)
+  (test #f 'escape/cc bad?))
+
+(let ([bad? #f])
+  (define t
+    (thread
+     (lambda ()
+       (define jump-k #f)
+       (parameterize-break #f
+         ((let/cc k
+            (set! jump-k k)
+            void)
+          #f))
+       (let/cc k
+         (parameterize-break #f
+           (break-thread (current-thread))
+           (jump-k k)))
+       (set! bad? #t))))
+  (sync t)
+  (test #f 'jump-in bad?))
+
+
 (let ([ex? #f]
       [s (make-semaphore)])
   (define (go)
