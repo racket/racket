@@ -692,7 +692,7 @@
             (not (non-continuable-violation? v)))
        (log-system-message 'warning (exn->string exn))]
       [else
-       (let ([hs (continuation-mark-set->list (current-continuation-marks the-root-continuation-prompt-tag)
+       (let ([hs (continuation-mark-set->list (current-continuation-marks/no-trace)
                                               exception-handler-key
                                               the-root-continuation-prompt-tag)]
              [init-v (condition->exn v)])

@@ -1226,6 +1226,9 @@
                                     (cons (continuation->trace k)
                                           (get-metacontinuation-traces (current-metacontinuation))))))]))
 
+(define/who (current-continuation-marks/no-trace)
+  (make-continuation-mark-set (current-mark-chain) null))
+
 ;; Wrapped a threads layer to handle thread arguments:
 (define/who continuation-marks
   (case-lambda
