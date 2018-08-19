@@ -1474,6 +1474,7 @@ int scheme_generate_unboxing(mz_jit_state *jitter, int target);
 int scheme_generate_pop_unboxed(mz_jit_state *jitter);
 int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
                                int arith, int cmp, Branch_Info *for_branch, int branch_short,
+                               int unsafe_fx, int unsafe_fl,
                                int dest);
 int scheme_generate_alloc_double(mz_jit_state *jitter, int inline_retry, int dest);
 int scheme_generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Object *rand, Scheme_Object *rand2, 

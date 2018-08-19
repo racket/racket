@@ -190,84 +190,104 @@ _i)] is the character produced by @racket[(proc _i)].
 @section{String Comparisons}
 
 
-@defproc[(string=? [str1 string?] [str2 string?] ...+) boolean?]{ Returns
- @racket[#t] if all of the arguments are @racket[equal?].}
+@defproc[(string=? [str1 string?] [str2 string?] ...) boolean?]{ Returns
+ @racket[#t] if all of the arguments are @racket[equal?].
 
 @mz-examples[(string=? "Apple" "apple")
              (string=? "a" "as" "a")]
+
+@history/arity[]}
 
 @(define (string-sort direction folded?)
 (if folded?
   @elem{Like @racket[string-ci<?], but checks whether the arguments would be @direction after case-folding.}
   @elem{Like @racket[string<?], but checks whether the arguments are @|direction|.}))
 
-@defproc[(string<? [str1 string?] [str2 string?] ...+) boolean?]{
+@defproc[(string<? [str1 string?] [str2 string?] ...) boolean?]{
  Returns @racket[#t] if the arguments are lexicographically sorted
  increasing, where individual characters are ordered by
  @racket[char<?], @racket[#f] otherwise.
 
 @mz-examples[(string<? "Apple" "apple")
              (string<? "apple" "Apple")
-             (string<? "a" "b" "c")]}
+             (string<? "a" "b" "c")]
 
-@defproc[(string<=? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string<=? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["nondecreasing" #f]
 
 @mz-examples[(string<=? "Apple" "apple")
              (string<=? "apple" "Apple")
-             (string<=? "a" "b" "b")]}
+             (string<=? "a" "b" "b")]
 
-@defproc[(string>? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string>? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["decreasing" #f]
 
 @mz-examples[(string>? "Apple" "apple")
              (string>? "apple" "Apple")
-             (string>? "c" "b" "a")]}
+             (string>? "c" "b" "a")]
 
-@defproc[(string>=? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string>=? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["nonincreasing" #f]
 
 @mz-examples[(string>=? "Apple" "apple")
              (string>=? "apple" "Apple")
-             (string>=? "c" "b" "b")]}
+             (string>=? "c" "b" "b")]
+
+@history/arity[]}
 
 
-@defproc[(string-ci=? [str1 string?] [str2 string?] ...+) boolean?]{
+@defproc[(string-ci=? [str1 string?] [str2 string?] ...) boolean?]{
  Returns @racket[#t] if all of the arguments are @racket[equal?] after
  locale-insensitive case-folding via @racket[string-foldcase].
 
 @mz-examples[(string-ci=? "Apple" "apple")
-             (string-ci=? "a" "a" "a")]}
+             (string-ci=? "a" "a" "a")]
 
-@defproc[(string-ci<? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string-ci<? [str1 string?] [str2 string?] ...) boolean?]{
  Like @racket[string<?], but checks whether the arguments would be in
  increasing order if each was first case-folded using
  @racket[string-foldcase] (which is locale-insensitive).
 
 @mz-examples[(string-ci<? "Apple" "apple")
              (string-ci<? "apple" "banana")
-             (string-ci<? "a" "b" "c")]}
+             (string-ci<? "a" "b" "c")]
 
-@defproc[(string-ci<=? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string-ci<=? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["nondecreasing" #t]
 
 @mz-examples[(string-ci<=? "Apple" "apple")
              (string-ci<=? "apple" "Apple")
-             (string-ci<=? "a" "b" "b")]}
+             (string-ci<=? "a" "b" "b")]
 
-@defproc[(string-ci>? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string-ci>? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["decreasing" #t]
 
 @mz-examples[(string-ci>? "Apple" "apple")
              (string-ci>? "banana" "Apple")
-             (string-ci>? "c" "b" "a")]}
+             (string-ci>? "c" "b" "a")]
 
-@defproc[(string-ci>=? [str1 string?] [str2 string?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(string-ci>=? [str1 string?] [str2 string?] ...) boolean?]{
  @string-sort["nonincreasing" #t]
 
 @mz-examples[(string-ci>=? "Apple" "apple")
              (string-ci>=? "apple" "Apple")
-             (string-ci>=? "c" "b" "b")]}
+             (string-ci>=? "c" "b" "b")]
+
+@history/arity[]}
 
 @; ----------------------------------------
 @section{String Conversions}
@@ -335,34 +355,46 @@ allocated string).}
 @; ----------------------------------------
 @section{Locale-Specific String Operations}
 
-@defproc[(string-locale=? [str1 string?] [str2 string?] ...+)
+@defproc[(string-locale=? [str1 string?] [str2 string?] ...)
  boolean?]{  Like @racket[string=?], but the strings are compared in a
  locale-specific way, based on the value of @racket[current-locale]. See
- @secref["encodings"] for more information on locales.}
+ @secref["encodings"] for more information on locales.
+
+@history/arity[]}
 
 @defproc[(string-locale<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @racket[string<?], but the sort order compares strings in a
  locale-specific way, based on the value of @racket[current-locale]. In
  particular, the sort order may not be simply a lexicographic
- extension of character ordering.}
+ extension of character ordering.
 
-@defproc[(string-locale>? [str1 string?] [str2 string?] ...+)
+@history/arity[]}
+
+@defproc[(string-locale>? [str1 string?] [str2 string?] ...)
  boolean?]{  Like @racket[string>?], but locale-specific like
- @racket[string-locale<?].}
+ @racket[string-locale<?].
 
-@defproc[(string-locale-ci=? [str1 string?] [str2 string?] ...+)
+@history/arity[]}
+
+@defproc[(string-locale-ci=? [str1 string?] [str2 string?] ...)
  boolean?]{  Like @racket[string-locale=?], but strings are compared
  using rules that are both locale-specific and case-insensitive
  (depending on what ``case-insensitive'' means for the current
- locale).}
+ locale).
 
-@defproc[(string-locale-ci<? [str1 string?] [str2 string?] ...+)
+@history/arity[]}
+
+@defproc[(string-locale-ci<? [str1 string?] [str2 string?] ...)
  boolean?]{  Like @racket[string<?], but both locale-sensitive and
- case-insensitive like @racket[string-locale-ci=?].}
+ case-insensitive like @racket[string-locale-ci=?].
 
-@defproc[(string-locale-ci>? [str1 string?] [str2 string?] ...+)
+@history/arity[]}
+
+@defproc[(string-locale-ci>? [str1 string?] [str2 string?] ...)
  boolean?]{  Like @racket[string>?], but both locale-sensitive and
- case-insensitive like @racket[string-locale-ci=?].}
+ case-insensitive like @racket[string-locale-ci=?].
+
+@history/arity[]}
 
 @defproc[(string-locale-upcase [string string?]) string?]{ Like
  @racket[string-upcase], but using locale-specific case-conversion

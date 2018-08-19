@@ -64,12 +64,14 @@ not including the leading @litchar{#:}.}
 Returns a keyword whose @racket[display]ed form is the same as that of
 @racket[str], but with a leading @litchar{#:}.}
 
-@defproc[(keyword<? [a-keyword keyword?] [b-keyword keyword?] ...+) boolean?]{
+@defproc[(keyword<? [a-keyword keyword?] [b-keyword keyword?] ...) boolean?]{
 
 Returns @racket[#t] if the arguments are sorted, where the comparison
 for each pair of keywords is the same as using
 @racket[keyword->string] with @racket[string->bytes/utf-8] and
-@racket[bytes<?].}
+@racket[bytes<?].
+
+@history/arity[]}
 
 @; ----------------------------------------------------------------------
 @include-section["pairs.scrbl"]

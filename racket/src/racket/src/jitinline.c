@@ -2197,6 +2197,18 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "-")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_SUB, 0, 0, NULL, 1, 0, 0, NULL, dest);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx-")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_SUB, 0, 0, NULL, 1, -1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fl-")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_SUB, 0, 0, NULL, 1, 0, -1, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx-")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_SUB, 0, 0, NULL, 1, 1, 0, NULL, dest);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fl-")) {
+      scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_SUB, 0, 0, NULL, 1, 0, 1, NULL, dest);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "abs")) {
       scheme_generate_arith(jitter, rator, app->rand, NULL, 1, ARITH_ABS, 0, 0, NULL, 1, 0, 0, NULL, dest);
       return 1;
@@ -4580,19 +4592,79 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   scheme_direct_call_count++;
 
   if (IS_NAMED_PRIM(rator, "=")) {
-    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, dest);
+    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, 0, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, -1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fl=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, 0, -1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fx=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, 1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fl=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_EQUAL, for_branch, branch_short, 0, 1, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "<")) {
-    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, dest);
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, 0, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx<")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, -1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fl<")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, 0, -1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fx<")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, 1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fl<")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LT, for_branch, branch_short, 0, 1, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, ">")) {
-    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, dest);
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, 0, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx>")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, -1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fl>")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, 0, -1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fx>")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, 1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fl>")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GT, for_branch, branch_short, 0, 1, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "<=")) {
-    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, dest);
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, 0, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx<=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, -1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fl<=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, 0, -1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fx<=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, 1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fl<=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_LEQ, for_branch, branch_short, 0, 1, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, ">=")) {
-    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, dest);
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, 0, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx>=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, -1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fl>=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, 0, -1, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fx>=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, 1, 0, dest);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-fl>=")) {
+    scheme_generate_nary_arith(jitter, app, 0, CMP_GEQ, for_branch, branch_short, 0, 1, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "current-future")) { 
     mz_rs_sync();
@@ -5252,23 +5324,79 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "+")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fx+")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fl+")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx+")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, 1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fl+")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_ADD, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "-")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fx-")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fl-")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx-")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, 1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fl-")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_SUB, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "*")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fx*")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fl*")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx*")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, 1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fl*")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MUL, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "/")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_DIV, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_DIV, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fl/")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_DIV, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fl/")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_DIV, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "bitwise-and")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_AND, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_AND, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fxand")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_AND, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxand")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_AND, 0, NULL, 1, 1, 0, dest);
     } else if (IS_NAMED_PRIM(rator, "bitwise-ior")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_IOR, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_IOR, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fxior")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_IOR, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxior")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_IOR, 0, NULL, 1, 1, 0, dest);
     } else if (IS_NAMED_PRIM(rator, "bitwise-xor")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_XOR, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_XOR, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fxxor")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_XOR, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxxor")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_XOR, 0, NULL, 1, 1, 0, dest);
     } else if (IS_NAMED_PRIM(rator, "min")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fxmin")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "flmin")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxmin")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, 1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-flmin")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MIN, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "max")) {
-      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, dest);
+      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, 0, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "fxmax")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, -1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "flmax")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, 0, -1, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxmax")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, 1, 0, dest);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-flmax")) {
+      return scheme_generate_nary_arith(jitter, app, ARITH_MAX, 0, NULL, 1, 0, 1, dest);
     } else if (IS_NAMED_PRIM(rator, "checked-procedure-check-and-extract")) {
       scheme_generate_app(app, NULL, 5, 5, jitter, 0, 0, 0, 2);  /* sync'd below */
       CHECK_LIMIT();

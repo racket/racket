@@ -21,30 +21,35 @@ operations like @racket[+].
 @section{Flonum Arithmetic}
 
 @deftogether[(
-@defproc[(fl+ [a flonum?] [b flonum?]) flonum?]
-@defproc[(fl- [a flonum?] [b flonum?]) flonum?]
-@defproc[(fl* [a flonum?] [b flonum?]) flonum?]
-@defproc[(fl/ [a flonum?] [b flonum?]) flonum?]
+@defproc[(fl+ [a flonum?] ...) flonum?]
+@defproc[(fl- [a flonum?] [b flonum?] ...) flonum?]
+@defproc[(fl* [a flonum?] ...) flonum?]
+@defproc[(fl/ [a flonum?] [b flonum?] ...) flonum?]
 @defproc[(flabs [a flonum?]) flonum?]
 )]{
 
 Like @racket[+], @racket[-], @racket[*], @racket[/], and @racket[abs],
 but constrained to consume @tech{flonums}. The result is always a
-@tech{flonum}.}
+@tech{flonum}.
+
+@history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[fl+] and @racket[fl*]
+                                    and one or more arguments for @racket[fl-] and @racket[fl/].}]}
 
 @deftogether[(
-@defproc[(fl=   [a flonum?] [b flonum?]) boolean?]
-@defproc[(fl<   [a flonum?] [b flonum?]) boolean?]
-@defproc[(fl>   [a flonum?] [b flonum?]) boolean?]
-@defproc[(fl<=  [a flonum?] [b flonum?]) boolean?]
-@defproc[(fl>=  [a flonum?] [b flonum?]) boolean?]
-@defproc[(flmin [a flonum?] [b flonum?]) flonum?]
-@defproc[(flmax [a flonum?] [b flonum?]) flonum?]
+@defproc[(fl=   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(fl<   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(fl>   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(fl<=  [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(fl>=  [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(flmin [a flonum?] [b flonum?] ...) flonum?]
+@defproc[(flmax [a flonum?] [b flonum?] ...) flonum?]
 )]{
 
 Like @racket[=], @racket[<], @racket[>], @racket[<=], @racket[>=],
 @racket[min], and @racket[max], but constrained to consume
-@tech{flonums}.}
+@tech{flonums}.
+
+@history/arity[]}
 
 @deftogether[(
 @defproc[(flround    [a flonum?]) flonum?]

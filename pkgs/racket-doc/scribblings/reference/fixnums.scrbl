@@ -37,9 +37,9 @@ the @racketmodname[racket/fixnum] library to help debug the problems.
 @section{Fixnum Arithmetic}
 
 @deftogether[(
-@defproc[(fx+ [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fx- [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fx* [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fx+ [a fixnum?] ...) fixnum?]
+@defproc[(fx- [a fixnum?] [b fixnum?] ...) fixnum?]
+@defproc[(fx* [a fixnum?] ...) fixnum?]
 @defproc[(fxquotient  [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fxremainder [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fxmodulo    [a fixnum?] [b fixnum?]) fixnum?]
@@ -51,13 +51,16 @@ Safe versions of @racket[unsafe-fx+], @racket[unsafe-fx-],
 @racket[unsafe-fxremainder], @racket[unsafe-fxmodulo], and
 @racket[unsafe-fxabs]. The
 @exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
-result would not be a fixnum.}
+result would not be a fixnum.
+
+@history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[fx+] and @racket[fx*]
+                                    and one or more arguments for @racket[fx-].}]}
 
 
 @deftogether[(
-@defproc[(fxand [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxior [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxxor [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fxand [a fixnum?] ...) fixnum?]
+@defproc[(fxior [a fixnum?] ...) fixnum?]
+@defproc[(fxxor [a fixnum?] ...) fixnum?]
 @defproc[(fxnot [a fixnum?]) fixnum?]
 @defproc[(fxlshift [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(fxrshift [a fixnum?] [b fixnum?]) fixnum?]
@@ -67,22 +70,27 @@ Safe versions of @racket[unsafe-fxand], @racket[unsafe-fxior],
 @racket[unsafe-fxxor], @racket[unsafe-fxnot],
 @racket[unsafe-fxlshift], and @racket[unsafe-fxrshift].  The
 @exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
-result would not be a fixnum.}
+result would not be a fixnum.
+
+@history[#:changed "7.0.0.13" @elem{Allow any number of arguments for @racket[fxand], @racket[fxior],
+                                    and @racket[fxxor].}]}
 
 
 @deftogether[(
-@defproc[(fx=   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx<   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx>   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx<=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fx>=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(fxmin [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(fxmax [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(fx=   [a fixnum?] ...) boolean?]
+@defproc[(fx<   [a fixnum?] ...) boolean?]
+@defproc[(fx>   [a fixnum?] ...) boolean?]
+@defproc[(fx<=  [a fixnum?] ...) boolean?]
+@defproc[(fx>=  [a fixnum?] ...) boolean?]
+@defproc[(fxmin [a fixnum?] ...) fixnum?]
+@defproc[(fxmax [a fixnum?] ...) fixnum?]
 )]{
 
 Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
  @racket[unsafe-fx>], @racket[unsafe-fx<=], @racket[unsafe-fx>=],
- @racket[unsafe-fxmin], and @racket[unsafe-fxmax].}
+ @racket[unsafe-fxmin], and @racket[unsafe-fxmax].
+
+@history/arity[]}
 
 @deftogether[(
 @defproc[(fx->fl [a fixnum?]) flonum?]

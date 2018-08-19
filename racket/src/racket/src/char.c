@@ -118,36 +118,36 @@ void scheme_init_char (Scheme_Startup_Env *env)
   scheme_interned_char_p_proc = p;
   scheme_addto_prim_instance("interned-char?", p, env);
 
-  p = scheme_make_folding_prim(char_eq, "char=?", 2, -1, 1);
+  p = scheme_make_folding_prim(char_eq, "char=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("char=?", p, env);
 
-  p = scheme_make_folding_prim(char_lt, "char<?", 2, -1, 1);
+  p = scheme_make_folding_prim(char_lt, "char<?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("char<?", p, env);
 
-  p = scheme_make_folding_prim(char_gt, "char>?", 2, -1, 1);
+  p = scheme_make_folding_prim(char_gt, "char>?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("char>?", p, env);
 
-  p = scheme_make_folding_prim(char_lt_eq, "char<=?", 2, -1, 1);
+  p = scheme_make_folding_prim(char_lt_eq, "char<=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("char<=?", p, env);
 
-  p = scheme_make_folding_prim(char_gt_eq, "char>=?", 2, -1, 1);
+  p = scheme_make_folding_prim(char_gt_eq, "char>=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("char>=?", p, env);
 
-  ADD_FOLDING_PRIM("char-ci=?",             char_eq_ci,            2, -1, 1, env);
-  ADD_FOLDING_PRIM("char-ci<?",             char_lt_ci,            2, -1, 1, env);
-  ADD_FOLDING_PRIM("char-ci>?",             char_gt_ci,            2, -1, 1, env);
-  ADD_FOLDING_PRIM("char-ci<=?",            char_lt_eq_ci,         2, -1, 1, env);
-  ADD_FOLDING_PRIM("char-ci>=?",            char_gt_eq_ci,         2, -1, 1, env);
+  ADD_FOLDING_PRIM("char-ci=?",             char_eq_ci,            1, -1, 1, env);
+  ADD_FOLDING_PRIM("char-ci<?",             char_lt_ci,            1, -1, 1, env);
+  ADD_FOLDING_PRIM("char-ci>?",             char_gt_ci,            1, -1, 1, env);
+  ADD_FOLDING_PRIM("char-ci<=?",            char_lt_eq_ci,         1, -1, 1, env);
+  ADD_FOLDING_PRIM("char-ci>=?",            char_gt_eq_ci,         1, -1, 1, env);
   ADD_FOLDING_PRIM("char-alphabetic?",      char_alphabetic,       1, 1, 1, env);
   ADD_FOLDING_PRIM("char-numeric?",         char_numeric,          1, 1, 1, env);
   ADD_FOLDING_PRIM("char-symbolic?",        char_symbolic,         1, 1, 1, env);

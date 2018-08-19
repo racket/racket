@@ -434,10 +434,13 @@
 (test #f keyword? 'a)
 (test '#:apple string->keyword "apple")
 (test "apple" keyword->string '#:apple)
+(test #t keyword<? '#:a)
 (test #t keyword<? '#:a '#:b)
 (test #f keyword<? '#:b '#:b)
 (test #t keyword<? '#:b '#:bb)
 (test #f keyword<? '#:b '#:)
+(test #t keyword<? '#:b '#:c '#:d)
+(test #f keyword<? '#:b '#:c '#:c)
 (test #t keyword<? (string->keyword "a") (string->keyword "\uA0"))
 (test #t keyword<? (string->keyword "a") (string->keyword "\uFF"))
 (test #f keyword<? (string->keyword "\uA0") (string->keyword "a"))
@@ -447,7 +450,7 @@
 (test #f keyword<? (string->keyword "\uA0") (string->keyword "\uA0"))
 
 (arity-test keyword? 1 1)
-(arity-test keyword<? 2 -1)
+(arity-test keyword<? 1 -1)
 
 (define (char-tests)
   (test #t eqv? '#\  #\Space)
@@ -482,7 +485,7 @@
   (test #t char=? #\370 #\370)
   (test #f char=? #\371 #\370)
   (test #f char=? #\370 #\371)
-  (arity-test char=? 2 -1)
+  (arity-test char=? 1 -1)
   (err/rt-test (char=? #\a 1)) 
   (err/rt-test (char=? #\a #\b 1)) 
   (err/rt-test (char=? 1 #\a))
@@ -497,7 +500,7 @@
   (test #f char<? #\370 #\370)
   (test #f char<? #\371 #\370)
   (test #t char<? #\370 #\371)
-  (arity-test char<? 2 -1)
+  (arity-test char<? 1 -1)
   (err/rt-test (char<? #\a 1)) 
   (err/rt-test (char<? #\a #\a 1)) 
   (err/rt-test (char<? 1 #\a))
@@ -513,7 +516,7 @@
   (test #f char>? #\370 #\370)
   (test #t char>? #\371 #\370)
   (test #f char>? #\370 #\371)
-  (arity-test char>? 2 -1)
+  (arity-test char>? 1 -1)
   (err/rt-test (char>? #\a 1)) 
   (err/rt-test (char>? #\a #\a 1)) 
   (err/rt-test (char>? 1 #\a))
@@ -529,7 +532,7 @@
   (test #t char<=? #\370 #\370)
   (test #f char<=? #\371 #\370)
   (test #t char<=? #\370 #\371)
-  (arity-test char<=? 2 -1)
+  (arity-test char<=? 1 -1)
   (err/rt-test (char<=? #\a 1)) 
   (err/rt-test (char<=? #\b #\a 1)) 
   (err/rt-test (char<=? 1 #\a))
@@ -541,7 +544,7 @@
   (test #t char>=? #\370 #\370)
   (test #t char>=? #\371 #\370)
   (test #f char>=? #\370 #\371)
-  (arity-test char>=? 2 -1)
+  (arity-test char>=? 1 -1)
   (err/rt-test (char>=? #\a 1)) 
   (err/rt-test (char>=? #\a #\b 1)) 
   (err/rt-test (char>=? 1 #\a))
@@ -558,7 +561,7 @@
   (test #t char-ci=? #\370 #\370)
   (test #f char-ci=? #\371 #\370)
   (test #f char-ci=? #\370 #\371)
-  (arity-test char-ci=? 2 -1)
+  (arity-test char-ci=? 1 -1)
   (err/rt-test (char-ci=? #\a 1)) 
   (err/rt-test (char-ci=? #\a #\b 1)) 
   (err/rt-test (char-ci=? 1 #\a))
@@ -576,7 +579,7 @@
   (test #f char-ci<? #\370 #\370)
   (test #f char-ci<? #\371 #\370)
   (test #t char-ci<? #\370 #\371)
-  (arity-test char-ci<? 2 -1)
+  (arity-test char-ci<? 1 -1)
   (err/rt-test (char-ci<? #\a 1)) 
   (err/rt-test (char-ci<? #\b #\a 1)) 
   (err/rt-test (char-ci<? 1 #\a))
@@ -594,7 +597,7 @@
   (test #f char-ci>? #\370 #\370)
   (test #t char-ci>? #\371 #\370)
   (test #f char-ci>? #\370 #\371)
-  (arity-test char-ci>? 2 -1)
+  (arity-test char-ci>? 1 -1)
   (err/rt-test (char-ci>? #\a 1)) 
   (err/rt-test (char-ci>? #\a #\b 1)) 
   (err/rt-test (char-ci>? 1 #\a))
@@ -611,7 +614,7 @@
   (test #t char-ci<=? #\370 #\370)
   (test #f char-ci<=? #\371 #\370)
   (test #t char-ci<=? #\370 #\371)
-  (arity-test char-ci<=? 2 -1)
+  (arity-test char-ci<=? 1 -1)
   (err/rt-test (char-ci<=? #\a 1)) 
   (err/rt-test (char-ci<=? #\b #\a 1)) 
   (err/rt-test (char-ci<=? 1 #\a))
@@ -628,7 +631,7 @@
   (test #t char-ci>=? #\370 #\370)
   (test #t char-ci>=? #\371 #\370)
   (test #f char-ci>=? #\370 #\371)
-  (arity-test char-ci>=? 2 -1)
+  (arity-test char-ci>=? 1 -1)
   (err/rt-test (char-ci>=? #\a 1)) 
   (err/rt-test (char-ci>=? #\a #\b 1)) 
   (err/rt-test (char-ci>=? 1 #\a)))
@@ -855,6 +858,9 @@
 (define ay (string #\a #\nul #\371 #\x))
 
 (define (string-tests)
+  (test #t string=? "")
+  (test #t string=? "A")
+
   (test #t string=? "" "")
   (test #f string<? "" "")
   (test #f string>? "" "")
@@ -876,6 +882,7 @@
   (test #f string=? ax ay)
   (test #f string=? ay ax)
 
+  (test #t string<? "A")
   (test #t string<? "A" "B")
   (test #t string<? "a" "b")
   (test #f string<? "9" "0")
@@ -886,6 +893,7 @@
   (test #t string<? ax ay)
   (test #f string<? ay ax)
 
+  (test #t string>? "A")
   (test #f string>? "A" "B")
   (test #f string>? "a" "b")
   (test #t string>? "9" "0")
@@ -896,6 +904,7 @@
   (test #f string>? ax ay)
   (test #t string>? ay ax)
 
+  (test #t string<=? "A")
   (test #t string<=? "A" "B")
   (test #t string<=? "a" "b")
   (test #f string<=? "9" "0")
@@ -906,6 +915,7 @@
   (test #t string<=? ax ay)
   (test #f string<=? ay ax)
 
+  (test #t string>=? "A")
   (test #f string>=? "A" "B")
   (test #f string>=? "a" "b")
   (test #t string>=? "9" "0")
@@ -916,6 +926,7 @@
   (test #f string>=? ax ay)
   (test #t string>=? ay ax)
 
+  (test #t string-ci=? "A")
   (test #f string-ci=? "A" "B")
   (test #f string-ci=? "a" "B")
   (test #f string-ci=? "A" "b")
@@ -931,6 +942,7 @@
   (test #f string-ci=? abigx ay)
   (test #f string-ci=? ay abigx)
 
+  (test #t string-ci<? "A")
   (test #t string-ci<? "A" "B")
   (test #t string-ci<? "a" "B")
   (test #t string-ci<? "A" "b")
@@ -947,6 +959,7 @@
   (test #t string-ci<? abigx ay)
   (test #f string-ci<? ay abigx)
 
+  (test #t string-ci>? "A")
   (test #f string-ci>? "A" "B")
   (test #f string-ci>? "a" "B")
   (test #f string-ci>? "A" "b")
@@ -963,6 +976,7 @@
   (test #f string-ci>? abigx ay)
   (test #t string-ci>? ay abigx)
 
+  (test #t string-ci<=? "A")
   (test #t string-ci<=? "A" "B")
   (test #t string-ci<=? "a" "B")
   (test #t string-ci<=? "A" "b")
@@ -979,6 +993,7 @@
   (test #t string-ci<=? abigx ay)
   (test #f string-ci<=? ay abigx)
 
+  (test #t string-ci>=? "A")
   (test #f string-ci>=? "A" "B")
   (test #f string-ci>=? "a" "B")
   (test #f string-ci>=? "A" "b")
@@ -998,7 +1013,7 @@
 (string-tests)
 
 (map (lambda (pred)
-       (arity-test pred 2 -1)
+       (arity-test pred 1 -1)
        (err/rt-test (pred "a" 1))
        (err/rt-test (pred "a" "b" 5))
        (err/rt-test (pred 1 "a")))
@@ -1018,7 +1033,6 @@
 	   string-locale-ci=? 
 	   string-locale-ci>? 
 	   string-locale-ci<?))
-
 
 (test #t byte? 10)
 (test #t byte? 0)
@@ -1990,7 +2004,7 @@
 
 (test 1 procedure-arity procedure-arity)
 (test 2 procedure-arity cons)
-(test (make-arity-at-least 2) procedure-arity >)
+(test (make-arity-at-least 1) procedure-arity >)
 (test (list 0 1) procedure-arity current-output-port)
 (test (list 1 3 (make-arity-at-least 5))
       procedure-arity (case-lambda [(x) 0] [(x y z) 1] [(x y z w u . rest) 2]))

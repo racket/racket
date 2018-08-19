@@ -348,7 +348,7 @@ scheme_init_symbol (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("symbol-interned?", p, env);
 
-  ADD_FOLDING_PRIM("symbol<?",                 symbol_lt,                       2, -1, 1, env);  
+  ADD_FOLDING_PRIM("symbol<?",                 symbol_lt,                       1, -1, 1, env);
 
   p = scheme_make_folding_prim(string_to_symbol_prim, "string->symbol", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
@@ -369,7 +369,7 @@ scheme_init_symbol (Scheme_Startup_Env *env)
   scheme_keyword_p_proc = p;
   scheme_addto_prim_instance("keyword?", p, env);
 
-  ADD_FOLDING_PRIM("keyword<?",                keyword_lt,                       2, -1, 1, env);
+  ADD_FOLDING_PRIM("keyword<?",                keyword_lt,                       1, -1, 1, env);
   
   p = scheme_make_folding_prim(string_to_keyword_prim, "string->keyword", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);

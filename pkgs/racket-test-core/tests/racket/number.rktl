@@ -234,6 +234,12 @@
   (test-lh m hi)
   (test-hl -m -hi)
 
+  (test #t > m)
+  (test #t < m)
+  (test #t = m)
+  (test #t >= m)
+  (test #t <= m)
+
   (test #f > m m)
   (test #f < m m)
   (test #t = m m)
@@ -401,11 +407,11 @@
 (err/rt-test (<= 0.5+0.1i 1))
 (err/rt-test (<= 1 0.5+0.1i))
 
-(arity-test = 2 -1)
-(arity-test < 2 -1)
-(arity-test > 2 -1)
-(arity-test <= 2 -1)
-(arity-test >= 2 -1)
+(arity-test = 1 -1)
+(arity-test < 1 -1)
+(arity-test > 1 -1)
+(arity-test <= 1 -1)
+(arity-test >= 1 -1)
 
 (test #t zero? 0)
 (test #t zero? 0.0)
