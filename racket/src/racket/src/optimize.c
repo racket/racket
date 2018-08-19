@@ -705,7 +705,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
         && (SCHEME_LOCAL_POS(sb->var) == SCHEME_LOCAL_POS(sb->val)))
       return 1;
     else if (SAME_TYPE(scheme_ir_local_type, SCHEME_TYPE(sb->var))
-             && SAME_OBJ(sb->var, sb->val))
+             && SAME_OBJ(sb->var, sb->val)
+             && ((((Scheme_IR_Local *)sb->var)->mode != SCHEME_VAR_MODE_COMPILE)
+                 || !((Scheme_IR_Local *)sb->var)->compile.keep_assignment))
       return 1;
   }
 

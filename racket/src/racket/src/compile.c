@@ -994,7 +994,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
     use_box = MALLOC_N_ATOMIC(int, 1);
     *use_box = -1;
   } else
-    use_box = 0;
+    use_box = NULL;
   
   scheme_begin_dup_symbol_check(&r);
 
@@ -1061,6 +1061,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
         var->mode = SCHEME_VAR_MODE_COMPILE;
         var->compile.use_box = use_box;
         var->compile.use_position = m;
+        var->compile.keep_assignment = 1;
       }
       vars[m-pre_k] = var;
       frame = scheme_extend_comp_env(frame, names[m], (Scheme_Object *)var, mutate_frame, 0);
@@ -1074,7 +1075,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
                      (recursive ? SCHEME_LET_RECURSIVE : 0));
 
   if (recursive) {
-    int prev_might_invoke = 0;
+    int prev_might_invoke = 0, j;
     int group_clauses = 0;
     Scheme_Object *rhs;
 
@@ -1088,6 +1089,10 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
         rhs_env = scheme_set_comp_env_name(frame, NULL);
       rhs = compile_expr(rhs, rhs_env, 0);
       lv->value = rhs;
+
+      for (j = lv->count; j--; ) {
+        lv->vars[j]->compile.keep_assignment = 0;
+      }
         
       /* Record when this binding doesn't use any or later bindings in
          the same set. Break bindings into smaller sets based on this

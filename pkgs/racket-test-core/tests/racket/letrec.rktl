@@ -168,4 +168,9 @@
      (f)))
  letrec-exn?)
 
+;; Make sure a useless `set!` isn't discarded early
+(err/rt-test
+ (letrec ((B (begin (set! B B) 1))) 1)
+ letrec-exn?)
+
 (report-errs)

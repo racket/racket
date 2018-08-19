@@ -1414,6 +1414,7 @@ typedef struct Scheme_IR_Local
       /* To detect uses on right-hand sides in `letrec` */
       int *use_box;
       int use_position;
+      int keep_assignment; /* don't optimize away an assignment to this variable */
     } compile;
     struct {
       /* Maps the variable into the letrec-check pass's frames: */
