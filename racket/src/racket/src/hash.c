@@ -1739,8 +1739,11 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 
 #     include "mzhashchk.inc"
 
+      /* mult to counteract potential explosion due to old_depth reset */
+#     define GROW_RESET_DEPTH(n) ((n * 2) + 1)
+
       k = (k << 1) + 3;
-      hi->depth *= 2; /* mult to counteract potential explosion due to old_depth reset */
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
       
       keys = ht->keys;
@@ -1777,7 +1780,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 #     include "mzhashchk.inc"
 
       k = (k << 1) + 3;
-      hi->depth += 2;
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
 
       /* hash tree holds pre-computed hashes for keys, so use those: */
@@ -1811,7 +1814,7 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 
       buckets = ht->buckets;
       weak = ht->weak;
-      hi->depth += 2;
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
       
       k = (k << 1) + 7;
@@ -2228,7 +2231,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
 #     include "mzhashchk.inc"
 
-      hi->depth *= 2; /* mult to counteract potential explosion due to old_depth reset */
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
 
       keys = ht->keys;
@@ -2267,7 +2270,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
 #     include "mzhashchk.inc"
 
-      hi->depth += 2;
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
 
       /* hash tree holds pre-computed hashes for keys, so use those: */
@@ -2298,7 +2301,7 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       buckets = ht->buckets;
       weak = ht->weak;
       
-      hi->depth += 2;
+      hi->depth = GROW_RESET_DEPTH(hi->depth);
       old_depth = hi->depth;
 
       for (i = ht->size; i--; ) {

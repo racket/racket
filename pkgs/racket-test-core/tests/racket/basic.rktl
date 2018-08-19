@@ -2261,7 +2261,7 @@
                      (hash-set! h1 (save a) 'struct)
                      (hash-set! h1 (save an-ax) 'structx)
                      (hash-set! h1 (save b) 'box)
-                     (hash-set! h1 cyclic-list 'cyclic-list))])
+                     (hash-set! h1 (save cyclic-list) 'cyclic-list))])
         (if reorder?
           (begin
             (puts2)
