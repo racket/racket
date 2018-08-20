@@ -39,6 +39,19 @@ matched before calling the failure procedure, otherwise the behavior
 of matching is unpredictable. See also @racket[failure-cont], which is
 a lower-level mechanism achieving the same ends.
 
+@examples[
+#:eval match-eval
+(define (m x)
+  (match x
+    [(list a b c)
+     #:when (= 6 (+ a b c))
+     'sum-is-six]
+    [(list a b c) 'sum-is-not-six]))
+
+(m '(1 2 3))
+(m '(2 3 4))
+]
+
 An optional @racket[(=> id)] between a @racket[pat] and the
 @racket[body]s is bound to a @defterm{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
@@ -46,6 +59,24 @@ pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
 otherwise the behavior of matching is unpredictable. 
+
+@examples[
+#:eval match-eval
+(define (m x)
+  (match x
+    [(list a b c)
+     (=> exit)
+     (f x exit)]
+    [(list a b c) 'sum-is-not-six]))
+
+(define (f x exit)
+  (if (= 6 (apply + x))
+      'sum-is-six
+      (exit)))
+
+(m '(1 2 3))
+(m '(2 3 4))
+]
 
 The grammar of @racket[pat] is as follows, where non-italicized
 identifiers are recognized symbolically (i.e., not by binding).
