@@ -438,15 +438,23 @@
       (lock-release (locked-iterable-hash-lock ht))
       vec]
      [else
-      (let ([new-vec (get-locked-iterable-hash-cells
+      (let ([weak? (locked-iterable-hash-weak? ht)]
+            [new-vec (get-locked-iterable-hash-cells
                       ht
                       (fxmax (if vec
                                  (fx* 2 (#%vector-length vec))
                                  0)
                              32))])
-        (when (= (#%vector-length new-vec) (hash-count ht))
-          (set-locked-iterable-hash-retry?! ht #f))
-        (let ([vec (cells-merge vec new-vec)])
+        (let ([len (#%vector-length new-vec)])
+          (when (= len (hash-count ht))
+            (set-locked-iterable-hash-retry?! ht #f))
+          (when weak?
+            (let loop ([i 0])
+              (unless (fx= i len)
+                (let ([p (#%vector-ref new-vec i)])
+                  (#%vector-set! new-vec i (ephemeron/fl-cons (car p) p)))
+                (loop (fx+ i 1))))))
+        (let ([vec (cells-merge vec new-vec weak?)])
           (set-locked-iterable-hash-cells! ht vec)
           (lock-release (locked-iterable-hash-lock ht))
           vec))])))
@@ -456,11 +464,16 @@
    [(mutable-hash? ht) (hashtable-cells (mutable-hash-ht ht) n)]
    [else (weak-equal-hash-cells ht n)]))
 
+(define (locked-iterable-hash-weak? ht)
+  (cond
+    [(mutable-hash? ht) (hashtable-weak? (mutable-hash-ht ht))]
+    [else #t]))
+
 ;; Separate calls to `hashtable-cells` may return the
 ;; cells in a different order, so we have to merge the
 ;; tables. The resulting vector starts with the same
 ;; elements as `vec`.
-(define (cells-merge vec new-vec)
+(define (cells-merge vec new-vec weak?)
   (cond
    [(not vec)
     ;; Nothing to merge
@@ -470,14 +483,16 @@
       (and (fx= len (#%vector-length new-vec))
            (let loop ([i 0])
              (or (fx= i len)
-                 (and (eq? (#%vector-ref vec i) (#%vector-ref new-vec i))
+                 (and (if weak?
+                          (eq? (cdr (#%vector-ref vec i)) (cdr (#%vector-ref new-vec i)))
+                          (eq? (#%vector-ref vec i) (#%vector-ref new-vec i)))
                       (loop (fx+ i 1)))))))
     new-vec]
    [else
     ;; General case
     (let ([new-ht (make-eq-hashtable)])
-      (vector-for-each (lambda (p) (hashtable-set! new-ht p #t)) new-vec)
-      (vector-for-each (lambda (p) (hashtable-delete! new-ht p)) vec)
+      (vector-for-each (lambda (p) (hashtable-set! new-ht (if weak? (cdr p) p) #t)) new-vec)
+      (vector-for-each (lambda (p) (hashtable-delete! new-ht (if weak? (cdr p) p))) vec)
       (let ([merge-vec (make-vector (fx+ (#%vector-length vec) (hashtable-size new-ht)))])
         (let loop ([i (#%vector-length vec)])
           (unless (fx= i 0)
@@ -489,7 +504,7 @@
             (unless (fx= i new-len)
               (let ([p (#%vector-ref new-vec i)])
                 (cond
-                 [(hashtable-contains? new-ht p)
+                 [(hashtable-contains? new-ht (if weak? (cdr p) p))
                   (#%vector-set! merge-vec j p)
                   (loop (fx+ i 1) (fx+ j 1))]
                  [else
@@ -541,7 +556,13 @@
        [(= i len)
         #f]
        [else
-        (let* ([p (#%vector-ref vec i)]
+        (let* ([p (let ([p (#%vector-ref vec i)])
+                    (if (locked-iterable-hash-weak? ht)
+                        (let ([p (cdr p)])
+                          (if (bwp-object? p)
+                              '(#!bwp . #!bwp)
+                              p))
+                        p))]
                [key (car p)])
           (cond
            [(bwp-object? key)
@@ -570,7 +591,13 @@
     (let* ([vec (prepare-iterate! ht i)]
            [len (#%vector-length vec)]
            [p (if (fx< i len)
-                  (#%vector-ref vec i)
+                  (let ([p (#%vector-ref vec i)])
+                    (if (locked-iterable-hash-weak? ht)
+                        (let ([p (cdr p)])
+                          (if (bwp-object? p)
+                              '(#!bwp . #!bwp)
+                              p))
+                        p))
                   '(#!bwp . #!bwp))]
            [key (car p)]
            [v (if (bwp-object? key)
@@ -938,6 +965,11 @@
   (if (flonum? key)
       (cons key d)
       (weak-cons key d)))
+
+(define (ephemeron/fl-cons key d)
+  (if (flonum? key)
+      (cons key d)
+      (ephemeron-cons key d)))
 
 ;; ----------------------------------------
 
