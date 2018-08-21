@@ -273,6 +273,8 @@
      (print-named "struct-type" v mode o max-length)]
     [(struct-type-property? v)
      (print-named "struct-type-property" v mode o max-length)]
+    [(thread? v)
+     (print-named "thread" v mode o max-length)]
     [(eof-object? v)
      (write-string/max "#<eof>" o max-length)]
     [(core-input-port? v)

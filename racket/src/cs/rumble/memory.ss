@@ -177,19 +177,20 @@
       (enable-object-backreferences #f)
       (chez:fprintf (current-error-port) "Begin Dump\n")
       (chez:fprintf (current-error-port) "Current memory use: ~a\n" (bytes-allocated))
-      (chez:fprintf (current-error-port) "Begin RacketCS\n")
-      (for-each (lambda (e)
-                  (chez:fprintf (current-error-port)
-                                (layout-line (chez:format "~a" (car e))
-                                             ((get-count #f) e) ((get-bytes #f) e)
-                                             ((get-count #t) e) ((get-bytes #t) e))))
-                (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
-      (chez:fprintf (current-error-port) (layout-line "total"
-                                                      (apply + (map (get-count #f) counts))
-                                                      (apply + (map (get-bytes #f) counts))
-                                                      (apply + (map (get-count #t) counts))
-                                                      (apply + (map (get-bytes #t) counts))))
-      (chez:fprintf (current-error-port) "End RacketCS\n")
+      (unless (#%memq 'only args)
+        (chez:fprintf (current-error-port) "Begin RacketCS\n")
+        (for-each (lambda (e)
+                    (chez:fprintf (current-error-port)
+                                  (layout-line (chez:format "~a" (car e))
+                                               ((get-count #f) e) ((get-bytes #f) e)
+                                               ((get-count #t) e) ((get-bytes #t) e))))
+                  (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
+        (chez:fprintf (current-error-port) (layout-line "total"
+                                                        (apply + (map (get-count #f) counts))
+                                                        (apply + (map (get-bytes #f) counts))
+                                                        (apply + (map (get-count #t) counts))
+                                                        (apply + (map (get-bytes #t) counts))))
+        (chez:fprintf (current-error-port) "End RacketCS\n"))
       (when backtrace-predicate
         (when (and use-prev? (not prev-stats-objects))
           (set! prev-stats-objects (make-weak-eq-hashtable)))
@@ -248,11 +249,17 @@
        (lambda (o)
          (and (#%$record? o)
               (eq? (record-type-name (#%$record-type-descriptor o)) struct-name))))]
+    [(weak-box? (car args))
+     (let ([v (weak-box-value (car args))])
+       (lambda (o) (eq? o v)))]
     [(eq? 'code (car args))
      #%$code?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
     [(symbol? (car args))
+     #f
+     ;; This is disaterously slow, so don't try it:
+     #;
      (let ([type (car args)])
        (lambda (o)
          (eq? ((inspect/object o) 'type) type)))]

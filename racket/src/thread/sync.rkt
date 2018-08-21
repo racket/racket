@@ -170,6 +170,8 @@
   (case-lambda
     [(evt)
      (cond
+       [(evt-impersonator? evt)
+        (do-sync 'sync #f (list evt))]
        [(semaphore? evt)
         (semaphore-wait evt)
         evt]
@@ -187,6 +189,8 @@
   (case-lambda
     [(timeout evt)
      (cond
+       [(evt-impersonator? evt)
+        (do-sync 'sync/timeout timeout (list evt))]
        [(and (semaphore? evt)
              (eqv? timeout 0))
         (if (semaphore-try-wait? evt)

@@ -122,7 +122,8 @@
    #:suspend! (lambda (t i-cb r-cb) (thread-deschedule! t #f i-cb r-cb))
    #:resume! (lambda (t v) (thread-reschedule! t) v))
   #:property prop:evt (lambda (t) (wrap-evt (get-thread-dead-evt t)
-                                            (lambda (v) t))))
+                                            (lambda (v) t)))
+  #:property prop:object-name (struct-field-index name))
 
 (define root-thread #f)
 
@@ -148,7 +149,7 @@
   (define t (thread 'none ; node prev
                     'none ; node next
                     
-                    (gensym)
+                    (object-name proc)
                     e
                     p
                     #f ; sleeping

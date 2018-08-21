@@ -1245,7 +1245,7 @@
            (make-continuation-mark-set
             (prune-mark-chain-suffix
              tag
-             (get-current-mark-chain #f #f mc))
+             (get-current-mark-chain '() #f mc))
             (get-metacontinuation-traces mc)))]
         [(full-continuation? k)
          (make-continuation-mark-set
