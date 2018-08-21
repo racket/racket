@@ -845,7 +845,8 @@ as constructed by @racket[pregexp], @litchar{#rx#} as constructed by
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
-has graph structure.
+has graph structure. Neither form is allowed in
+@racket[read-syntax] mode.
 
 For a specific @graph-tag[] in a single read result, each @graph-ref[]
 reference is replaced by the datum read for the corresponding
