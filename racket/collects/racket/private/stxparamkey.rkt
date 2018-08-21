@@ -1,11 +1,16 @@
 
 (module stxparamkey '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" 
-             "stxcase.rkt" "stxloc.rkt" "with-stx.rkt")
+             "stxcase.rkt" "stxloc.rkt" "with-stx.rkt"
+             (only '#%unsafe unsafe-root-continuation-prompt-tag))
   
   ;; Consulted before the expander's table, for use by compile-time
   ;; code wrapped by a run-time-phased `syntax-parameterize`:
-  (define current-parameter-environment (make-parameter #hasheq()))
+  (define (current-parameter-environment)
+    ;; Implemented with continuation marks, not parameters, so that the
+    ;; "state" is not inherited by new threads
+    (continuation-mark-set-first #f current-parameter-environment #hasheq()
+                                 (unsafe-root-continuation-prompt-tag)))
 
   ;; Wrap the value for a syntax parameter in a `parameter-value` struct,
   ;; so that we can distinguish it from rename transformers that arrive

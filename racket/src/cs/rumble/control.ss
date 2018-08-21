@@ -134,7 +134,7 @@
      (create-continuation-prompt-tag name)]))
 
 (define (default-continuation-prompt-tag) the-default-continuation-prompt-tag)
-(define (root-continuation-prompt-tag) the-root-continuation-prompt-tag)
+(define (unsafe-root-continuation-prompt-tag) the-root-continuation-prompt-tag)
 
 ;; To support special treatment of break parameterizations, and also
 ;; to initialize disabled breaks for `dynamic-wind` pre and post

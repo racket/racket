@@ -15,7 +15,7 @@
           make-continuation-prompt-tag
           continuation-prompt-tag?
           default-continuation-prompt-tag
-          root-continuation-prompt-tag
+          unsafe-root-continuation-prompt-tag
           call-with-continuation-prompt
           call-with-continuation-barrier
           abort-current-continuation

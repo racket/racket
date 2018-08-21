@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/inline.rkt"
+         "../common/parameter-like.rkt"
          "config.rkt"
          "coerce.rkt"
          "parameter.rkt"
@@ -159,13 +160,15 @@
   (define v
     (cond
      [(not for-syntax?)
-      (parameterize ([current-read-config config])
-        (if (procedure-arity-includes? handler 2)
-            (handler c in)
-            (handler c in #f line col pos)))]
+      (parameterize-like
+       #:with ([current-read-config config])
+       (if (procedure-arity-includes? handler 2)
+           (handler c in)
+           (handler c in #f line col pos)))]
      [else
-      (parameterize ([current-read-config config])
-        (handler c in (read-config-source config) line col pos))]))
+      (parameterize-like
+       #:with ([current-read-config config])
+       (handler c in (read-config-source config) line col pos))]))
   (if (special-comment? v)
       v
       (coerce v in config)))

@@ -37,6 +37,7 @@
                      unsafe-set-on-atomic-timeout!
                      unsafe-abort-current-continuation/no-wind
                      unsafe-call-with-composable-continuation/no-wind
+                     unsafe-root-continuation-prompt-tag
                      unsafe-os-thread-enabled?
                      unsafe-call-in-os-thread
                      unsafe-make-os-semaphore

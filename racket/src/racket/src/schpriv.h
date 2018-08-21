@@ -676,6 +676,7 @@ extern Scheme_Hash_Tree *scheme_source_stx_props;
 
 extern Scheme_Object *scheme_stack_dump_key;
 
+extern Scheme_Object *scheme_root_prompt_tag;
 extern Scheme_Object *scheme_default_prompt_tag;
 
 THREAD_LOCAL_DECL(extern Scheme_Object *scheme_system_idle_channel);

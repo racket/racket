@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/promise.rkt"
          "../common/struct-star.rkt"
+         "../common/parameter-like.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
@@ -130,7 +131,7 @@
                 [binding-layer (root-expand-context-frame-id root-ctx)]))
 
 ;; An expand-context or a delayed expand context (so use `force`):
-(define current-expand-context (make-parameter #f))
+(define-parameter-like current-expand-context #f)
 
 (define (get-current-expand-context [who 'unexpected]
                                      #:fail-ok? [fail-ok? #f])

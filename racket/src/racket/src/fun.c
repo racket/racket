@@ -60,6 +60,7 @@ READ_ONLY Scheme_Object *scheme_call_with_immed_mark_proc;
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
+READ_ONLY Scheme_Object *scheme_root_prompt_tag;
 READ_ONLY Scheme_Object *scheme_chaperone_undefined_property;
 
 /* READ ONLY SHARABLE GLOBALS */
@@ -177,6 +178,7 @@ static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv)
 
 static Scheme_Object *unsafe_abort_continuation_no_dws(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_call_with_control_no_dws(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_root_continuation_prompt_tag(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
@@ -689,6 +691,14 @@ scheme_init_fun (Scheme_Startup_Env *env)
     (void)scheme_hash_key(SCHEME_PTR_VAL(scheme_default_prompt_tag));
   }
 
+  REGISTER_SO(scheme_root_prompt_tag);
+  {
+    Scheme_Object *a[1];
+    a[0] = scheme_intern_symbol("root");
+    scheme_root_prompt_tag = make_prompt_tag(1, a);
+    (void)scheme_hash_key(SCHEME_PTR_VAL(scheme_root_prompt_tag));
+  }
+
   REGISTER_SO(original_default_prompt);
   original_default_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
   original_default_prompt->so.type = scheme_prompt_type;
@@ -736,6 +746,8 @@ scheme_init_unsafe_fun (Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("unsafe-abort-current-continuation/no-wind", unsafe_abort_continuation_no_dws, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-call-with-composable-continuation/no-wind", unsafe_call_with_control_no_dws, 2, 2, env);
+
+  ADD_PRIM_W_ARITY("unsafe-root-continuation-prompt-tag", unsafe_root_continuation_prompt_tag, 0, 0, env);
 }
 
 void
@@ -5314,6 +5326,11 @@ static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
   return copied_cms;
 }
 
+static void root_prompt_tag_misuse(const char *who)
+{
+  scheme_signal_error("%s: misuse of root prompt tag", who);
+}
+
 static Scheme_Object *
 call_cc (int argc, Scheme_Object *argv[])
 {
@@ -5923,6 +5940,13 @@ internal_call_cc (int argc, Scheme_Object *argv[])
     pt = prompt_tag;
 
   composable = (argc > 2);
+
+  if (SAME_OBJ(pt, scheme_root_prompt_tag)) {
+    root_prompt_tag_misuse(composable
+                           ? "call-with-composable-continuation"
+                           : "call-with-current-continuation");
+    return NULL;
+  }
 
   prompt = scheme_get_prompt(SCHEME_PTR_VAL(pt), &prompt_cont, &prompt_pos);
   if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, pt)) {
@@ -6974,11 +6998,15 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
         prompt_tag = SCHEME_CHAPERONE_VAL(in_argv[1]);
       } else {
         scheme_wrong_contract("call-with-continuation-prompt", "continuation-prompt-tag?",
-                          1, in_argc, in_argv);
+                              1, in_argc, in_argv);
         return NULL;
       }
     } else
       prompt_tag = in_argv[1];
+    if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag)) {
+      root_prompt_tag_misuse("call-with-continuation-prompt");
+      return NULL;
+    }
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -7426,11 +7454,16 @@ static Scheme_Object *do_abort_continuation (int argc, Scheme_Object *argv[], in
       prompt_tag = SCHEME_CHAPERONE_VAL(argv[0]);
     } else {
       scheme_wrong_contract("abort-current-continuation", "continuation-prompt-tag?",
-                        0, argc, argv);
+                            0, argc, argv);
       return NULL;
     }
   } else
     prompt_tag = argv[0];
+
+  if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag)) {
+    root_prompt_tag_misuse("abort-current-continuation");
+    return NULL;
+  }
 
   prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag));
   if (!prompt && SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
@@ -7518,10 +7551,14 @@ static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int
         prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
       else {
         scheme_wrong_contract("call-with-composable-continuation", "continuation-prompt-tag?",
-                          1, argc, argv);
+                              1, argc, argv);
         return NULL;
       }
-    } 
+    }
+    if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag)) {
+      root_prompt_tag_misuse("abort-current-continuation");
+      return NULL;
+    }
   } else
     prompt_tag = scheme_default_prompt_tag;
 
@@ -7556,6 +7593,11 @@ static Scheme_Object *unsafe_call_with_control_no_dws(int argc, Scheme_Object *a
   return do_call_with_control(argc, argv, 1);
 }
 
+static Scheme_Object *unsafe_root_continuation_prompt_tag(int argc, Scheme_Object *argv[])
+{
+  return scheme_root_prompt_tag;
+}
+
 static Scheme_Cont_Mark *copy_cm_shared_on_write(Scheme_Meta_Continuation *mc)
 {
   Scheme_Cont_Mark *cp;
@@ -7584,6 +7626,9 @@ static Scheme_Object *continuation_marks(Scheme_Thread *p,
   intptr_t findpos, bottom;
   intptr_t cmpos, first_cmpos = 0, cdelta = 0;
   int found_tag = 0, at_mc_boundary = 0;
+
+  if (SAME_OBJ(prompt_tag, scheme_root_prompt_tag))
+    prompt_tag = NULL;
 
   if (cont && SAME_OBJ(cont->prompt_tag, prompt_tag))
     found_tag = 1;
@@ -7903,10 +7948,11 @@ cc_marks(int argc, Scheme_Object *argv[])
         prompt_tag = SCHEME_CHAPERONE_VAL(prompt_tag);
       else
         scheme_wrong_contract("current-continuation-marks", "continuation-prompt-tag?",
-                          0, argc, argv);
+                              0, argc, argv);
     }
 
-    if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
+    if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)
+        && !SAME_OBJ(scheme_root_prompt_tag, prompt_tag))
       if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag))) {
         scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
                          "current-continuation-marks: no corresponding prompt in the continuation\n"
@@ -8023,7 +8069,7 @@ extract_cc_marks(int argc, Scheme_Object *argv[])
         prompt_tag = SCHEME_CHAPERONE_VAL(argv[2]);
       else {
         scheme_wrong_contract("continuation-mark-set->list", "continuation-prompt-tag?",
-                          2, argc, argv);
+                              2, argc, argv);
         return NULL;
       }
     } else
@@ -8274,6 +8320,9 @@ scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key
 {
   Scheme_Object *key = key_arg;
 
+  if (prompt_tag && SAME_OBJ(prompt_tag, SCHEME_PTR_VAL(scheme_root_prompt_tag)))
+    prompt_tag = NULL;
+
   if (SCHEME_NP_CHAPERONEP(key)
       && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
     key = SCHEME_CHAPERONE_VAL(key);
@@ -8470,7 +8519,7 @@ extract_one_cc_mark_fast(Scheme_Object *key, int *_conclusive)
   Scheme_Cont_Mark *seg;
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Meta_Continuation *mc = NULL;
- 
+
   do {
     if (mc) {
       startpos = mc->cont_mark_total;
@@ -8612,7 +8661,7 @@ Scheme_Object *
 scheme_extract_one_cc_mark(Scheme_Object *mark_set, Scheme_Object *key)
 {
   Scheme_Object *v;
-  
+
   if (!mark_set) {
     int conclusive = 0;
     v = extract_one_cc_mark_fast(key, &conclusive);
@@ -8661,7 +8710,8 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
     } else
       prompt_tag = argv[3];
 
-    if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
+    if (!SAME_OBJ(scheme_default_prompt_tag, prompt_tag)
+        && !SAME_OBJ(scheme_root_prompt_tag, prompt_tag)) {
       if (SCHEME_FALSEP(argv[0])) {
         if (!scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag))) {
           scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
@@ -8723,7 +8773,8 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
       } else {
         Scheme_Meta_Continuation *mc;
 
-        if (SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
+        if (SAME_OBJ(scheme_default_prompt_tag, prompt_tag)
+            || SAME_OBJ(scheme_root_prompt_tag, prompt_tag))
           return scheme_true;
 
         mc = scheme_get_meta_continuation(argv[1]);
@@ -8740,7 +8791,8 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
                         1, argc, argv);
     }
   } else {
-    if (SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
+    if (SAME_OBJ(scheme_default_prompt_tag, prompt_tag)
+        || SAME_OBJ(scheme_root_prompt_tag, prompt_tag))
       return scheme_true;
 
     if (scheme_extract_one_cc_mark(NULL, SCHEME_PTR_VAL(prompt_tag)))

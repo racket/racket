@@ -267,7 +267,7 @@
   [date? (known-procedure/succeeds 2)]
   [datum->syntax (known-procedure 60)]
   [datum-intern-literal (known-procedure 2)]
-  [default-continuation-prompt-tag (known-procedure 1)]
+  [default-continuation-prompt-tag (known-procedure/succeeds 1)]
   [delete-directory (known-procedure 2)]
   [delete-file (known-procedure 2)]
   [denominator (known-procedure 2)]

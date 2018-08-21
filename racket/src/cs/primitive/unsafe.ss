@@ -125,6 +125,7 @@
   [unsafe-port->socket (known-procedure 2)]
   [unsafe-register-process-global (known-procedure 4)]
   [unsafe-remove-collect-callbacks (known-procedure 2)]
+  [unsafe-root-continuation-prompt-tag (known-procedure/succeeds 1)]
   [unsafe-s16vector-ref (known-procedure 4)]
   [unsafe-s16vector-set! (known-procedure 8)]
   [unsafe-set-box! (known-procedure 4)]

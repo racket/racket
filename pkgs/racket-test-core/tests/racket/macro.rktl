@@ -2294,5 +2294,20 @@
                            (complain-about-this-one (not-about-this-one)))))
 
 ;; ----------------------------------------
+;; Make sure "currently expanding" is not propagated to threads
+
+(let ()
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ e)
+       (let ([ok? #t])
+         (sync (thread (lambda ()
+                         (local-expand #'e 'expression null)
+                         (set! ok? #f))))
+         (if ok? #''ok #''oops))]))
+  
+  (test 'ok values (m 1)))
+  
+;; ----------------------------------------
 
 (report-errs)

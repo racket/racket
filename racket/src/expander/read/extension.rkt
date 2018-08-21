@@ -1,5 +1,6 @@
 #lang racket/base
-(require "config.rkt"
+(require "../common/parameter-like.rkt"
+         "config.rkt"
          "special.rkt"
          "consume.rkt"
          "error.rkt"
@@ -195,16 +196,18 @@
        [(and for-syntax? (not get-info?))
         (cond
          [(procedure-arity-includes? extension 6)
-          (parameterize ([current-read-config config])
-            (extension (read-config-source config)
-                       in
-                       mod-path-wrapped
-                       (read-config-line config)
-                       (read-config-col config)
-                       (read-config-pos config)))]
+          (parameterize-like
+           #:with ([current-read-config config])
+           (extension (read-config-source config)
+                      in
+                      mod-path-wrapped
+                      (read-config-line config)
+                      (read-config-col config)
+                      (read-config-pos config)))]
          [(procedure-arity-includes? extension 2)
-          (parameterize ([current-read-config config])
-            (extension (read-config-source config) in))]
+          (parameterize-like
+           #:with ([current-read-config config])
+           (extension (read-config-source config) in))]
          [else
           (raise-argument-error who
                                 "(or/c (procedure-arity-includes?/c 2) (procedure-arity-includes?/c 6))"
@@ -212,19 +215,21 @@
        [else
         (cond
          [(procedure-arity-includes? extension 5)
-          (parameterize ([current-read-config config])
-            (extension in
-                       mod-path-wrapped
-                       (read-config-line config)
-                       (read-config-col config)
-                       (read-config-pos config)))]
+          (parameterize-like
+           #:with ([current-read-config config])
+           (extension in
+                      mod-path-wrapped
+                      (read-config-line config)
+                      (read-config-col config)
+                      (read-config-pos config)))]
          [get-info?
           (raise-argument-error who
                                 "(procedure-arity-includes?/c 5)"
                                 extension)]
          [(procedure-arity-includes? extension 1)
-          (parameterize ([current-read-config config])
-            (extension in))]
+          (parameterize-like
+           #:with ([current-read-config config])
+           (extension in))]
          [else
           (raise-argument-error who
                                 "(or/c (procedure-arity-includes?/c 1) (procedure-arity-includes?/c 5))"

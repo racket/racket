@@ -2,6 +2,7 @@
 (require "../common/set.rkt"
          "../common/phase.rkt"
          "../common/performance.rkt"
+         "../common/parameter-like.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../compile/module-use.rkt"
@@ -167,9 +168,10 @@
           [else
            (define ns-1 (namespace->namespace-at-phase phase-ns (sub1 phase)))
            (lambda (tail?)
-             (parameterize ([current-expand-context (make-expand-context ns-1)]
-                            [current-namespace phase-ns])
-               (instantiate tail?)))])]
+             (parameterize ([current-namespace phase-ns])
+               (parameterize-like
+                #:with ([current-expand-context (make-expand-context ns-1)])
+                (instantiate tail?))))])]
         [else void])))
    
    ;; Call last thunk tail position --- maybe, since using a prompt if not `as-tail?`

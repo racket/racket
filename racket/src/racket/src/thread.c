@@ -8766,7 +8766,6 @@ static Scheme_Object *unsafe_remove_collect_callbacks(int argc, Scheme_Object *a
   return scheme_void;
 }
 
-
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define mzOSAPI WINAPI
 #else

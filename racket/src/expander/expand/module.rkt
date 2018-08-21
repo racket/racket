@@ -2,6 +2,7 @@
 (require "../common/promise.rkt"
          "../common/struct-star.rkt"
          "../common/performance.rkt"
+         "../common/parameter-like.rkt"
          "../syntax/syntax.rkt"
          "../syntax/debug.rkt"
          "../syntax/property.rkt"
@@ -1300,13 +1301,14 @@
       (void)]
      [else
       ;; an expression
-      (parameterize ([current-expand-context ctx]
-                     [current-namespace m-ns])
-        (eval-single-top
-         (compile-single p (make-compile-context
-                            #:namespace m-ns
-                            #:phase phase))
-         m-ns))])))
+      (parameterize ([current-namespace m-ns])
+        (parameterize-like
+         #:with ([current-expand-context ctx])
+         (eval-single-top
+          (compile-single p (make-compile-context
+                             #:namespace m-ns
+                             #:phase phase))
+          m-ns)))])))
 
 ;; ----------------------------------------
 

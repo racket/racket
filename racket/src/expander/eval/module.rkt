@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/promise.rkt"
          "../common/performance.rkt"
+         "../common/parameter-like.rkt"
          "../namespace/namespace.rkt"
          "../namespace/module.rkt"
          "../namespace/inspector.rkt"
@@ -211,11 +212,12 @@
                                      ;; For phase level 1 and up, set the expansion context
                                      ;; to point back to the module's info:
                                      (define ns-1 (namespace->namespace-at-phase ns (phase+ phase-shift (sub1 phase-level))))
-                                     (parameterize ([current-expand-context (delay (make-expand-context ns-1))]
-                                                    [current-namespace ns]
-                                                    [current-module-code-inspector insp])
-                                       (instantiate-body))]))))))
-       
+                                     (parameterize ([current-namespace ns])
+                                       (parameterize-like
+                                        #:with ([current-expand-context (delay (make-expand-context ns-1))]
+                                                [current-module-code-inspector insp])
+                                        (instantiate-body)))]))))))
+
        (define declare-name (substitute-module-declare-name default-name))
        
        (when with-submodules?
