@@ -20,7 +20,7 @@
        (define p (open-input-file "compiled/io.scm"))
        (port-count-lines! p)
        (let loop ()
-         (unless (eof-object? (read-byte p))
+         (unless (eof-object? (read-char p))
            (loop)))
        (close-input-port p)
        (loop (sub1 j))))))

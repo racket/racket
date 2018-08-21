@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/fixnum.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -18,7 +19,7 @@
 
 (define/who (open-input-bytes bstr [name 'string])
   (check who bytes? bstr)
-  (define i 0)
+  (define-fixnum i 0)
   (define alt-pos #f)
   (define len (bytes-length bstr))
 

@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/fixnum.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -49,9 +50,9 @@
   (check who #:or-false exact-positive-integer? limit)
   (define bstr (make-bytes (min+1 limit 16)))
   (define len (bytes-length bstr))
-  (define peeked-amt 0) ; peeked but not yet read effectively extends `limit`
-  (define start 0)
-  (define end 0)
+  (define-fixnum peeked-amt 0) ; peeked but not yet read effectively extends `limit`
+  (define-fixnum start 0)
+  (define-fixnum end 0)
   (define write-pos #f) ; to adjust the write position via `file-position` on a string port
   (define input-closed? #f)
   (define output-closed? #f)
@@ -168,10 +169,12 @@
          [else
           (define pos start)
           (check-output-unblocking)
-          (set! start (add1 pos))
-          (set! peeked-amt (max 0 (sub1 peeked-amt)))
-          (when (= start len)
-            (set! start 0))
+          (unless (eqv? 0 peeked-amt)
+            (set! peeked-amt (max 0 (sub1 peeked-amt))))
+          (define new-pos (add1 pos))
+          (if (= new-pos len)
+              (set! start 0)
+              (set! start new-pos))
           (check-input-blocking)
           (progress!)
           (bytes-ref bstr pos)]))
