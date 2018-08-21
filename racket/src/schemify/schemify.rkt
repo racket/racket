@@ -186,7 +186,8 @@
   ;; corresponding exported `variable` records, but delay those
   ;; installs to the end, if possible
   (define schemified
-    (let loop ([l l] [accum-exprs null] [accum-ids null])
+    (let loop ([l l] [in-mut-l l] [accum-exprs null] [accum-ids null])
+      (define mut-l (update-mutated-state! l in-mut-l mutated))
       (cond
        [(null? l)
         (define set-vars
@@ -218,7 +219,7 @@
              schemified 
              (let id-loop ([ids ids] [accum-exprs null] [accum-ids accum-ids])
                (cond
-                [(wrap-null? ids) (loop (wrap-cdr l) accum-exprs accum-ids)]
+                [(wrap-null? ids) (loop (wrap-cdr l) mut-l accum-exprs accum-ids)]
                 [(or (or for-jitify? for-cify?)
                      (via-variable-mutated-state? (hash-ref mutated (unwrap (wrap-car ids)) #f)))
                  (define id (unwrap (wrap-car ids)))
@@ -233,7 +234,7 @@
                 [else
                  (id-loop (wrap-cdr ids) accum-exprs (cons (unwrap (wrap-car ids)) accum-ids))]))))]
           [`,_
-           (loop (wrap-cdr l) (cons schemified accum-exprs) accum-ids)])])))
+           (loop (wrap-cdr l) mut-l (cons schemified accum-exprs) accum-ids)])])))
   ;; Return both schemified and known-binding information, where
   ;; the later is used for cross-linklet optimization
   (values schemified knowns mutated))

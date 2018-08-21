@@ -8,6 +8,9 @@
 ;;  * 'too-early - the identifier may be referenced before it is
 ;;                 defined
 ;;
+;;  * 'too-early/ready - a variant of 'too-early where the variable
+;;                 is now definitely ready
+;;
 ;;  * 'not-ready - the identifier's value is not yet ready, so a
 ;;                 reference transitions to 'too-early
 ;;
@@ -28,6 +31,7 @@
 (provide delayed-mutated-state?
          simple-mutated-state?
          not-ready-mutated-state?
+         too-early-mutated-state?
          via-variable-mutated-state?
          set!ed-mutated-state?)
 
@@ -35,10 +39,14 @@
 
 (define (simple-mutated-state? v)
   (or (not v)
-      (delayed-mutated-state? v)))
+      (delayed-mutated-state? v)
+      (eq? v 'too-early/ready)))
 
 (define (not-ready-mutated-state? v)
   (eq? v 'not-ready))
+
+(define (too-early-mutated-state? v)
+  (eq? v 'too-early))
 
 ;; When referecing an exported identifier, we need to consistently go
 ;; through a `variable` record when it can be `set!`ed. We don't need
