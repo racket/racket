@@ -901,6 +901,7 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
         vars = MALLOC_N(Scheme_IR_Local*, 1);
         vars[0] = var;
         var->use_count = 1;
+        var->non_app_count = 1;
 
         lv = MALLOC_ONE_TAGGED(Scheme_IR_Let_Value);
         lv->iso.so.type = scheme_ir_let_value_type;
