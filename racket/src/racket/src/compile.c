@@ -656,6 +656,9 @@ static Scheme_Object *set_compile (Scheme_Object *form, Scheme_Comp_Env *env)
     if (((Scheme_IR_Toplevel *)var)->instance_pos != -1)
       scheme_wrong_syntax(NULL, form, name, "cannot mutate imported variable");
     SCHEME_IR_TOPLEVEL_FLAGS(((Scheme_IR_Toplevel *)var)) |= SCHEME_IR_TOPLEVEL_MUTATED;
+  } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_ir_local_type)) {
+    if (((Scheme_IR_Local *)var)->compile.keep_assignment)
+      ((Scheme_IR_Local *)var)->compile.keep_assignment = 2; /* keep permanently */
   }
   
   env = scheme_set_comp_env_name(env, SCHEME_STX_SYM(name));
@@ -1091,7 +1094,8 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
       lv->value = rhs;
 
       for (j = lv->count; j--; ) {
-        lv->vars[j]->compile.keep_assignment = 0;
+        if (lv->vars[j]->compile.keep_assignment < 2)
+          lv->vars[j]->compile.keep_assignment = 0;
       }
         
       /* Record when this binding doesn't use any or later bindings in

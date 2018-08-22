@@ -173,4 +173,10 @@
  (letrec ((B (begin (set! B B) 1))) 1)
  letrec-exn?)
 
+(err/rt-test
+ (list (begin
+         (letrec ((x (set! x x))) 0)
+         0))
+ letrec-exn?)
+
 (report-errs)
