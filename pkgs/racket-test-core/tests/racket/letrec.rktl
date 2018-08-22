@@ -179,4 +179,27 @@
          0))
  letrec-exn?)
 
+(err/rt-test
+ (letrec ((x (set! x (/ 0)))) 'ok)
+ exn:fail:contract:divide-by-zero?)
+
+(err/rt-test
+ (letrec ((x (set! x (values 1 0)))) 'ok)
+ exn:fail:contract:arity?)
+
+(err/rt-test
+ (let ([indirect (lambda (f) (f))])
+   (letrec ((x (indirect (lambda () (set! x (+ 1 0)) x))))
+     'ok))
+ letrec-exn?)
+
+(test 8
+      'ok
+      (let ([save #f])
+        (let ([indirect (lambda (f) (set! save f))]
+              [also-indirect (lambda () 8)])
+          (letrec ((x (indirect (lambda () (set! x (also-indirect)) x))))
+            'ok)
+          (save))))
+
 (report-errs)
