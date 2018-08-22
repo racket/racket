@@ -16,7 +16,20 @@ See @racket[serialize] for an enumeration of serializable values.}
 
 @; ----------------------------------------------------------------------
 
-@defproc[(serialize [v serializable?]) any]{
+@defproc[(serialize [v serializable?]
+                    [#:relative-directory relative-to
+                     (or/c (and/c path? complete-path?)
+                           (cons/c (and/c path? complete-path?)
+                                   (and/c path? complete-path?))
+                           #f)
+                     #f]
+                    [#:deserialize-relative-directory deserialize-relative-to
+                     (or/c (and/c path? complete-path?)
+                           (cons/c (and/c path? complete-path?)
+                                   (and/c path? complete-path?))
+                           #f)
+                     relative-to])
+         any]{
 
 Returns a value that encapsulates the value @racket[v]. This value
 includes only readable values, so it can be written to a stream with
@@ -65,6 +78,17 @@ are all reachable from each other), then @racket[v] can be serialized
 only if the cycle includes a mutable value, where a @tech{prefab}
 structure counts as mutable only if all of its fields are mutable.
 
+If @racket[relative-to] is not @racket[#f], then paths to serialize
+that extend the path in @racket[relative-to] are recorded in relative
+and platform-independent form. The possible values and treatment of
+@racket[relative-to] are the same as for @racket[current-write-relative-directory].
+
+If @racket[deserialize-relative-to] is not @racket[#f], then any paths
+to deserializers as extracted via @racket[prop:serializable] are
+recorded in relative form. Note that @racket[relative-to] and
+@racket[deserialize-relative-to] are independent, but
+@racket[deserialize-relative-to] defaults to @racket[relative-to].
+
 @margin-note{The @racket[serialize] and @racket[deserialize] functions
 currently do not handle certain cyclic values that @racket[read] and
 @racket[write] can handle, such as @racket['@#,read[(open-input-string "#0=(#0#)")]].}
@@ -72,7 +96,9 @@ currently do not handle certain cyclic values that @racket[read] and
 See @racket[deserialize] for information on the format of serialized
 data.
 
-@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable}]}
+@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable.}
+         #:changed "7.0.0.6" @elem{Added the @racket[#:relative-directory] and
+                                   @racket[#:deserialize-relative-directory] arguments.}]}
 
 @; ----------------------------------------------------------------------
 
@@ -87,33 +113,43 @@ elements:
 
 @itemize[
 
- @item{An optional list @racket['(1)], @racket['(2)], or @racket['(3)] that represents
+ @item{An optional list @racket['(1)], @racket['(2)], @racket['(3)],
+       or  @racket['(4)] that represents
        the version of the serialization format. If the first element
        of a representation is not a list, then the version is
        @racket[0]. Version 1 adds support for mutable pairs,
        version 2 adds support for @tech{unreadable symbols},
-       and version 3 adds support for @racket[date*] structures.}
+       version 3 adds support for @racket[date*] structures,
+       and version 4 adds support for paths that are meant to
+       be relative to the deserialization directory.}
 
  @item{A non-negative exact integer @racket[_s-count] that represents the
        number of distinct structure types represented in the
        serialized data.}
 
- @item{A list @racket[_s-types] of length @racket[_s-count], where
-       each element represents a structure type. Each structure type
-       is encoded as a pair. The @racket[car] of the pair is
-       @racket[#f] for a structure whose deserialization information
-       is defined at the top level, otherwise it is a quoted
-       @tech{module path} or a byte string (to be converted into a
-       platform-specific path using @racket[bytes->path]) for a module
-       that exports the structure's deserialization information.  The
-       @racket[cdr] of the pair is the name of a binding (at the top
-       level or exported from a module) for deserialization
-       information, either a symbol or a string representing an
-       @tech{unreadable symbol}. These two are used with either
-       @racket[namespace-variable-binding] or @racket[dynamic-require]
-       to obtain deserialization information. See
-       @racket[make-deserialize-info] for more information on the
-       binding's value. See also @racket[deserialize-module-guard].}
+ @item{A list @racket[_s-types] of length @racket[_s-count],
+   where each element represents a structure type. Each
+   structure type is encoded as a pair. The @racket[car] of the
+   pair is @racket[#f] for a structure whose deserialization
+   information is defined at the top level, otherwise it is a
+   quoted @tech{module path}, a byte string (to be converted
+   into a platform-specific path using @racket[bytes->path])
+   for a module that exports the structure's deserialization
+   information, or a relative path element list for a module to
+   be resolved with respect to
+   @racket[current-load-relative-directory] or (as a fallback)
+   @racket[current-directory]; the list-of-relative-elements
+   form is produced by @racket[serialize] when
+   the @racket[#:deserialize-relative-directory] argument is
+   not @racket[#f]. The @racket[cdr] of the pair is the
+   name of a binding (at the top level or exported from a
+   module) for deserialization information, either a symbol or
+   a string representing an @tech{unreadable symbol}. These two
+   are used with either @racket[namespace-variable-binding] or
+   @racket[dynamic-require] to obtain deserialization
+   information. See @racket[make-deserialize-info] for more
+   information on the binding's value. See also
+   @racket[deserialize-module-guard].}
 
  @item{A non-negative exact integer, @racket[_g-count] that represents the
        number of graph points contained in the following list.}
@@ -249,6 +285,12 @@ elements:
                   is one of the possible symbol results of 
                   @racket[system-path-convention-type]; it represents a 
                   path using the specified convention.}
+
+            @item{a pair whose @racket[car] is @racket['p*] and whose
+                  @racket[cdr] is a list of byte strings represents a 
+                  relative path; it will be converted by deserialization
+                  based on @racket[current-load-relative-directory],
+                  falling back to @racket[current-directory].}
 
             @item{a pair whose @racket[car] is @racket['c] and whose
                   @racket[cdr] is a pair of serials; it represents an
@@ -540,7 +582,8 @@ serializable. The property value should be constructed with
                               [deserialize-id (or identifier?
                                                   symbol?
                                                   (cons/c symbol?
-                                                          module-path-index?))]
+                                                          module-path-index?)
+                                                  (-> any/c))]
                               [can-cycle? any/c]
                               [dir path-string?])
          any]{
@@ -574,6 +617,10 @@ must be one of the following:
  a symbol to name an exported identifier, and the @racket[cdr] must be
  a module path index to specify the exporting module.}
 
+ @item{If @racket[deserialize-id] is a procedure, then it is
+ applied during serialization and its result is used for
+ @racket[deserialize-id].}
+                                                      
 ]
 
 See @racket[make-deserialize-info] and @racket[deserialize] for more
@@ -589,7 +636,9 @@ resolve a module reference for the binding of @racket[deserialize-id].
 This directory path is used as a last resort when
 @racket[deserialize-id] indicates a module that was loaded through a
 relative path with respect to the top level. Usually, it should be
-@racket[(or (current-load-relative-directory) (current-directory))].}
+@racket[(or (current-load-relative-directory) (current-directory))].
+
+@history[#:changed "7.0.0.6" @elem{Allow @racket[deserialize-id] to be a procedure.}]}
 
 @examples[
  #:eval ser-eval

@@ -2722,5 +2722,75 @@ case of module-leve bindings; it doesn't cover local bindings.
                   #:extend-stop-ids? #f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that re-expansion of a `(module _name #f ....)`
+;; submodule doesn't lose track of the base scope of the
+;; submodule --- which would, for example, cause a definition
+;; of `x` in the original submodule to be mapped to an
+;; inaccessible `x.1`.
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval-syntax (expand '(module m racket/base
+                          (require syntax/location)
+                          (module* check #f
+                            (define x 42)))))
+  (dynamic-require '(submod 'm check) #f)
+  (eval 'x (module->namespace '(submod 'm check))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try to provoke race conditions in the expander related
+;; to instanitiating compile-time instances on demand
+
+(test #t
+      'no-races-found
+      (for/and ([i (in-range 100)])
+        (let ([ok? #t]
+              [work 0])
+          (for-each
+           sync
+           (parameterize ([current-namespace (make-base-namespace)])
+             (for/list ([i 5])
+               (thread
+                (lambda ()
+                  ;; "make work" to try to trigger a thread swap during `expand`
+                  (for ([w (in-range (random 1000))])
+                    (set! work (add1 work)))
+                  (with-handlers ([exn? (lambda (exn)
+                                          (set! ok? #f)
+                                          (raise exn))])
+                    ;; This `expand` will force compile-time instances of
+                    ;; various modules used by `racket/base`
+                    (expand `(lambda (x) x))))))))
+          ok?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that an import that is already shadowed by a definition
+;; does not prevent importing other things
+
+;; We want enough bindings here to trigger bulk mode
+(module provides-a-through-m racket/base
+  (define a 1)
+  (define b 2)
+  (define c 3)
+  (define d 4)
+  (define e 5)
+  (define f 6)
+  (define g 7)
+  (define h 8)
+  (define i 9)
+  (define j 10)
+  (define k 11)
+  (define l 12)
+  (define m 13)
+  (provide a b c d e f g h i j k l m))
+
+(module shaodws-c-and-imports-the-rest racket/base
+  (define c -3)
+  (require (except-in 'provides-a-through-m a b d e))
+  (define result f)
+  (provide result))
+
+(test 6 dynamic-require ''shaodws-c-and-imports-the-rest 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

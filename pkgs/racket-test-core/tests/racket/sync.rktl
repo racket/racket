@@ -1235,7 +1235,8 @@
 	     should-post-break?
 	     should-done-break?)
       ;; print the state for this test:
-      (test #t list? (list 'go 
+      (test #t list? (list 'go
+                           mk-t* break-off?
 			   pre-thunk act-thunk post-thunk
 			   pre-semaphore-wait act-semaphore-wait post-semaphore-wait
 			   try-pre-break 
@@ -1354,8 +1355,8 @@
 				       no-capture no-capture no-capture
 				       args))))])
        (list plain-mk-t
-	     (mk-capturing 'pre)
-	     (mk-capturing 'act))))))
+	     (procedure-rename (mk-capturing 'pre) 'pre-capturing)
+	     (procedure-rename (mk-capturing 'act) 'act-capturing))))))
 
 ;; ----------------------------------------
 ;; Check wrap-evt result superceded by internally

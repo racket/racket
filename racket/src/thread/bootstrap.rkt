@@ -83,6 +83,9 @@
 (define (engine-block)
   (thread-suspend (current-thread)))
 
+(define (engine-timeout)
+  (void))
+
 (define ctl-c-handler #f)
 
 (define (set-ctl-c-handler! proc)
@@ -144,6 +147,7 @@
                  (hash 
                   'make-engine make-engine
                   'engine-block engine-block
+                  'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
                   'current-process-milliseconds current-process-milliseconds

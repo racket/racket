@@ -392,6 +392,10 @@ void centralized_block_child_signal()
 
 void centralized_unblock_child_signal()
 {
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigprocmask(SIG_UNBLOCK, &set, NULL);
 }
 
 void centralized_start_child_signal_handler()

@@ -46,7 +46,9 @@
     (log-info "Bundling linklet")
     (define bundle (wrap-bundle new-body new-internals new-lifts
                                 excluded-module-mpis
-                                get-merge-info))
+                                get-merge-info
+                                (let-values ([(base name dir?) (split-path input-file)])
+                                  (string->symbol (path->string name)))))
 
     (log-info "Writing bytecode")
     (define output-file (or given-output-file

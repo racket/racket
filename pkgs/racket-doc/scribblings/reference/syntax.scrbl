@@ -1003,7 +1003,7 @@ as follows.
  @defsubform[(rename-out [orig-id export-id] ...)]{ Exports each
  @racket[orig-id], which must be @tech{bound} within the module at
  the relevant @tech{phase level}.  The symbolic name for each export is
- @racket[export-id] instead @racket[orig-d].
+ @racket[export-id] instead of @racket[orig-id].
 
  @examples[#:eval (syntax-eval) #:once
    (module nest racket
@@ -1105,7 +1105,9 @@ as follows.
    (list num-eggs num-chicks)
    (weak-eval 'num-eggs)
    (eval:error (weak-eval 'num-chicks))
- ]}
+ ]
+
+ See also @secref["code-inspectors+protect" #:doc '(lib "scribblings/guide/guide.scrbl")].}
 
  @specsubform[#:literals (for-meta) 
               (for-meta phase-level provide-spec ...)]{ Like the union of the

@@ -57,15 +57,19 @@
         (define k (hash-ref knowns rator #f))
         (cond
           [(and (struct-accessor? k) (= n 1))
-           (lambda (s)
-             (if (struct-info-authentic? (struct-accessor-si k))
-                 (format "c_authentic_struct_ref(~a, ~a)" s (struct-accessor-pos k))
-                 (and can-gc? (format "c_struct_ref(~a, ~a)" s (struct-accessor-pos k)))))]
+           (define authentic? (struct-info-authentic? (struct-accessor-si k)))
+           (and (or can-gc? authentic?)
+                (lambda (s)
+                  (if authentic?
+                      (format "c_authentic_struct_ref(~a, ~a)" s (struct-accessor-pos k))
+                      (and can-gc? (format "c_struct_ref(~a, ~a)" s (struct-accessor-pos k))))))]
           [(and (struct-mutator? k) (= n 2))
-           (lambda (s)
-             (if (struct-info-authentic? (struct-mutator-si k))
-                 (format "c_authentic_struct_set(~a, ~a)" s (struct-mutator-pos k))
-                 (and can-gc? (format "c_struct_set(~a, ~a)" s (struct-mutator-pos k)))))]
+           (define authentic? (struct-info-authentic? (struct-mutator-si k)))
+           (and (or can-gc? authentic?)
+                (lambda (s)
+                  (if authentic?
+                      (format "c_authentic_struct_set(~a, ~a)" s (struct-mutator-pos k))
+                      (format "c_struct_set(~a, ~a)" s (struct-mutator-pos k)))))]
           [(and (struct-property-accessor? k) (= n 1))
            (and can-gc?
                 (lambda (s top-ref)

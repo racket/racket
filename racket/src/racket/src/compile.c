@@ -656,6 +656,9 @@ static Scheme_Object *set_compile (Scheme_Object *form, Scheme_Comp_Env *env)
     if (((Scheme_IR_Toplevel *)var)->instance_pos != -1)
       scheme_wrong_syntax(NULL, form, name, "cannot mutate imported variable");
     SCHEME_IR_TOPLEVEL_FLAGS(((Scheme_IR_Toplevel *)var)) |= SCHEME_IR_TOPLEVEL_MUTATED;
+  } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_ir_local_type)) {
+    if (((Scheme_IR_Local *)var)->compile.keep_assignment)
+      ((Scheme_IR_Local *)var)->compile.keep_assignment = 2; /* keep permanently */
   }
   
   env = scheme_set_comp_env_name(env, SCHEME_STX_SYM(name));
@@ -994,7 +997,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
     use_box = MALLOC_N_ATOMIC(int, 1);
     *use_box = -1;
   } else
-    use_box = 0;
+    use_box = NULL;
   
   scheme_begin_dup_symbol_check(&r);
 
@@ -1061,6 +1064,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
         var->mode = SCHEME_VAR_MODE_COMPILE;
         var->compile.use_box = use_box;
         var->compile.use_position = m;
+        var->compile.keep_assignment = 1;
       }
       vars[m-pre_k] = var;
       frame = scheme_extend_comp_env(frame, names[m], (Scheme_Object *)var, mutate_frame, 0);
@@ -1074,7 +1078,7 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
                      (recursive ? SCHEME_LET_RECURSIVE : 0));
 
   if (recursive) {
-    int prev_might_invoke = 0;
+    int prev_might_invoke = 0, j;
     int group_clauses = 0;
     Scheme_Object *rhs;
 
@@ -1088,6 +1092,11 @@ static Scheme_Object *do_let_compile (Scheme_Object *form, Scheme_Comp_Env *orig
         rhs_env = scheme_set_comp_env_name(frame, NULL);
       rhs = compile_expr(rhs, rhs_env, 0);
       lv->value = rhs;
+
+      for (j = lv->count; j--; ) {
+        if (lv->vars[j]->compile.keep_assignment < 2)
+          lv->vars[j]->compile.keep_assignment = 0;
+      }
         
       /* Record when this binding doesn't use any or later bindings in
          the same set. Break bindings into smaller sets based on this

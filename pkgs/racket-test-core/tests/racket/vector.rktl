@@ -341,9 +341,9 @@
   (err/rt-test (vector-sort! (vector 1) (λ (x) x)) (check-regs #rx"vector-sort!" #rx"any/c any/c . -> . any/c"))
   (err/rt-test (vector-sort (vector 1) (λ (x) x)) (check-regs #rx"vector-sort" #rx"any/c any/c . -> . any/c"))
   (err/rt-test (vector-sort! (vector 1) < #:key 42) (check-regs #rx"vector-sort!" #rx"any/c . -> . any/c"))
-  (err/rt-test (vector-sort! (vector 1) < #:key <) (check-regs #rx"vector-sort!" #rx"any/c . -> . any/c"))
+  (err/rt-test (vector-sort! (vector 1) < #:key cons) (check-regs #rx"vector-sort!" #rx"any/c . -> . any/c"))
   (err/rt-test (vector-sort (vector 1) < #:key 42) (check-regs #rx"vector-sort" #rx"any/c . -> . any/c"))
-  (err/rt-test (vector-sort (vector 1) < #:key <) (check-regs #rx"vector-sort" #rx"any/c . -> . any/c")))
+  (err/rt-test (vector-sort (vector 1) < #:key cons) (check-regs #rx"vector-sort" #rx"any/c . -> . any/c")))
 
 ;; ---------- vector-sort! actually mutates arg, and vector-sort does not  ----------
 ;; verify underlying vector is sorted

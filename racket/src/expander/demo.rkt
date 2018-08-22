@@ -1407,3 +1407,17 @@
              'kar)
 (check-value (cadr (identifier-binding s-also-in-alt))
              'car) ; because using combined scopes is ambiguous
+
+;; ----------------------------------------
+;; Explicitly constructed binding sets
+
+(eval-expression
+ #:check '(#t #f)
+ '(let-values ([(bs) (syntax-binding-set-extend
+                      (syntax-binding-set)
+                      'car 0 (module-path-index-join ''#%runtime #f))])
+    (list
+     (free-identifier=? (syntax-binding-set->syntax bs 'car)
+                        (quote-syntax car))
+     (free-identifier=? (syntax-binding-set->syntax bs 'cdr)
+                        (quote-syntax cdr)))))

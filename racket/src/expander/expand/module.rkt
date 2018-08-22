@@ -2,6 +2,7 @@
 (require "../common/promise.rkt"
          "../common/struct-star.rkt"
          "../common/performance.rkt"
+         "../common/parameter-like.rkt"
          "../syntax/syntax.rkt"
          "../syntax/debug.rkt"
          "../syntax/property.rkt"
@@ -85,7 +86,6 @@
 (define (expand-module s init-ctx enclosing-self
                        #:always-produce-compiled? [always-produce-compiled? #f]
                        #:keep-enclosing-scope-at-phase [keep-enclosing-scope-at-phase #f]
-                       #:enclosing-all-scopes-stx [enclosing-all-scopes-stx #f]
                        #:enclosing-is-cross-phase-persistent? [enclosing-is-cross-phase-persistent? #f]
                        #:enclosing-requires+provides [enclosing-r+p #f]
                        #:mpis-for-enclosing-reset [mpis-for-enclosing-reset #f]
@@ -129,11 +129,7 @@
 
    ;; Initial require name provides the module's base scopes
    (define initial-require-s (apply-module-scopes (m 'initial-require)))
-   (define all-scopes-s (if enclosing-all-scopes-stx
-                            (apply-module-scopes
-                             (syntax-shift-phase-level enclosing-all-scopes-stx
-                                                       keep-enclosing-scope-at-phase))
-                            initial-require-s))
+   (define all-scopes-s initial-require-s)
 
    (define root-ctx (make-root-expand-context
                      #:self-mpi self
@@ -1040,7 +1036,7 @@
 (define (check-defined-by-now need-eventually-defined self ctx requires+provides)
   ;; If `need-eventually-defined` is not empty, report an error
   (for ([(phase l) (in-hash need-eventually-defined)])
-    (for ([id (in-list l)])
+    (for ([id (in-list (reverse l))])
       (define b (resolve+shift id phase))
       (define bound-here? (and b
                                (module-binding? b)
@@ -1240,7 +1236,6 @@
                  (expand-submodule shifted-s self submod-ctx
                                    #:is-star? #t
                                    #:keep-enclosing-scope-at-phase neg-phase
-                                   #:enclosing-all-scopes-stx all-scopes-s
                                    #:enclosing-requires+provides requires+provides
                                    #:enclosing-is-cross-phase-persistent? enclosing-is-cross-phase-persistent?
                                    #:mpis-to-reset mpis-to-reset
@@ -1306,13 +1301,14 @@
       (void)]
      [else
       ;; an expression
-      (parameterize ([current-expand-context ctx]
-                     [current-namespace m-ns])
-        (eval-single-top
-         (compile-single p (make-compile-context
-                            #:namespace m-ns
-                            #:phase phase))
-         m-ns))])))
+      (parameterize ([current-namespace m-ns])
+        (parameterize-like
+         #:with ([current-expand-context ctx])
+         (eval-single-top
+          (compile-single p (make-compile-context
+                             #:namespace m-ns
+                             #:phase phase))
+          m-ns)))])))
 
 ;; ----------------------------------------
 
@@ -1321,7 +1317,6 @@
                           #:keep-enclosing-scope-at-phase [keep-enclosing-scope-at-phase #f]
                           #:enclosing-requires+provides [enclosing-r+p #f]
                           #:enclosing-is-cross-phase-persistent? [enclosing-is-cross-phase-persistent? #f]
-                          #:enclosing-all-scopes-stx [enclosing-all-scopes-stx #f]
                           #:mpis-to-reset mpis-to-reset
                           #:declared-submodule-names declared-submodule-names
                           #:compiled-submodules compiled-submodules
@@ -1347,7 +1342,6 @@
                    self
                    #:always-produce-compiled? #t
                    #:keep-enclosing-scope-at-phase keep-enclosing-scope-at-phase
-                   #:enclosing-all-scopes-stx enclosing-all-scopes-stx
                    #:enclosing-requires+provides enclosing-r+p
                    #:enclosing-is-cross-phase-persistent? enclosing-is-cross-phase-persistent?
                    #:mpis-for-enclosing-reset mpis-to-reset

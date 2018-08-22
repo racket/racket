@@ -867,20 +867,23 @@ void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
   scheme_addto_prim_instance("fl->exact-integer", p, env);
 
-  p = scheme_make_folding_prim(fx_and, "fxand", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_and, "fxand", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fxand", p, env);
 
-  p = scheme_make_folding_prim(fx_or, "fxior", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_or, "fxior", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fxior", p, env);
 
-  p = scheme_make_folding_prim(fx_xor, "fxxor", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_xor, "fxxor", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fxxor", p, env);
@@ -1325,24 +1328,27 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
   Scheme_Object *p;
   int flags;
 
-  p = scheme_make_folding_prim(unsafe_fx_and, "unsafe-fxand", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_and, "unsafe-fxand", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fxand", p, env);
   REGISTER_SO(scheme_unsafe_fxand_proc);
   scheme_unsafe_fxand_proc = p;
 
-  p = scheme_make_folding_prim(unsafe_fx_or, "unsafe-fxior", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_or, "unsafe-fxior", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fxior", p, env);
   REGISTER_SO(scheme_unsafe_fxior_proc);
   scheme_unsafe_fxior_proc = p;
 
-  p = scheme_make_folding_prim(unsafe_fx_xor, "unsafe-fxxor", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_xor, "unsafe-fxxor", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fxxor", p, env);
@@ -4229,6 +4235,21 @@ GEN_BIN_INT_OP(bin_bitwise_and, "bitwise-and", &, scheme_bignum_and)
 GEN_BIN_INT_OP(bin_bitwise_or, "bitwise-ior", |, scheme_bignum_or)
 GEN_BIN_INT_OP(bin_bitwise_xor, "bitwise-xor", ^, scheme_bignum_xor)
 
+Scheme_Object *scheme_bin_bitwise_or(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_or(a, b);
+}
+
+Scheme_Object *scheme_bin_bitwise_xor(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_xor(a, b);
+}
+
+Scheme_Object *scheme_bin_bitwise_and(Scheme_Object *a, Scheme_Object *b)
+{
+  return bin_bitwise_and(a, b);
+}
+
 #define MZ_PUBLIC /**/
 
 GEN_NARY_OP(MZ_PUBLIC, scheme_bitwise_and, "bitwise-and", bin_bitwise_and, -1, SCHEME_EXACT_INTEGERP, "exact-integer?", GEN_IDENT)
@@ -4315,16 +4336,12 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   return scheme_bignum_shift(v, shift);
 }
 
-static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
+static Scheme_Object *bin_bitwise_bit_set_p (Scheme_Object *so, Scheme_Object *sb, int argc, Scheme_Object **argv)
 {
-  Scheme_Object *so, *sb;
-
-  so = argv[0];
   if (!SCHEME_EXACT_INTEGERP(so)) {
     scheme_wrong_contract("bitwise-bit-set?", "exact-integer?", 0, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
-  sb = argv[1];
   if (SCHEME_INTP(sb)) {
     intptr_t v;
     v = SCHEME_INT_VAL(sb);
@@ -4366,6 +4383,16 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
     scheme_wrong_contract("bitwise-bit-set?", "exact-nonnegative-integer?", 1, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
+}
+
+int scheme_bin_bitwise_bit_set_p (Scheme_Object *so, Scheme_Object *sb)
+{
+  return SCHEME_TRUEP(bin_bitwise_bit_set_p(so, sb, 0, NULL));
+}
+
+static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
+{
+  return bin_bitwise_bit_set_p(argv[0], argv[1], argc, argv);
 }
 
 static Scheme_Object *slow_bitwise_bit_field (int argc, Scheme_Object *argv[],
@@ -5232,20 +5259,27 @@ static Scheme_Object *neg_bitwise_shift(int argc, Scheme_Object *argv[])
   return scheme_bitwise_shift(argc, a);
 }
 
-#define SAFE_FX(name, s_name, scheme_op, sec_p, sec_t)      \
+#define SAFE_FX(name, s_name, scheme_op, sec_p, sec_t, no_args) \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    Scheme_Object *o;                                         \
+   int i;                                                               \
+   if (!argc) return no_args;                                           \
    if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
-   if (!sec_p(argv[1])) scheme_wrong_contract(s_name, sec_t, 1, argc, argv); \
-   o = scheme_op(argc, argv);                                \
-   if (!SCHEME_INTP(o)) scheme_non_fixnum_result(s_name, o); \
+   o = argv[0];                                                         \
+   for (i = 1; i < argc; i++) {                                         \
+     if (!sec_p(argv[i])) scheme_wrong_contract(s_name, sec_t, i, argc, argv); \
+     argv[0] = o;                                                       \
+     argv[1] = argv[i];                                                 \
+     o = scheme_op(2, argv);                                            \
+     if (!SCHEME_INTP(o)) scheme_non_fixnum_result(s_name, o);          \
+   }                                                                    \
    return o;                            \
  }
 
-SAFE_FX(fx_and, "fxand", scheme_bitwise_and, SCHEME_INTP, "fixnum?")
-SAFE_FX(fx_or, "fxior", bitwise_or, SCHEME_INTP, "fixnum?")
-SAFE_FX(fx_xor, "fxxor", bitwise_xor, SCHEME_INTP, "fixnum?")
+SAFE_FX(fx_and, "fxand", scheme_bitwise_and, SCHEME_INTP, "fixnum?", scheme_make_integer(-1))
+SAFE_FX(fx_or, "fxior", bitwise_or, SCHEME_INTP, "fixnum?", scheme_make_integer(0))
+SAFE_FX(fx_xor, "fxxor", bitwise_xor, SCHEME_INTP, "fixnum?", scheme_make_integer(0))
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define FIXNUM_WIDTH_P(v) (SCHEME_INTP(v) && (SCHEME_INT_VAL(v) >= 0) && (SCHEME_INT_VAL(v) <= 64))
@@ -5255,8 +5289,8 @@ SAFE_FX(fx_xor, "fxxor", bitwise_xor, SCHEME_INTP, "fixnum?")
 # define FIXNUM_WIDTH_TYPE "(integer-in 0 31)"
 #endif
 
-SAFE_FX(fx_lshift, "fxlshift", scheme_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_TYPE)
-SAFE_FX(fx_rshift, "fxrshift", neg_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_TYPE)
+SAFE_FX(fx_lshift, "fxlshift", scheme_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_TYPE, scheme_false)
+SAFE_FX(fx_rshift, "fxrshift", neg_bitwise_shift, FIXNUM_WIDTH_P, FIXNUM_WIDTH_TYPE, scheme_false)
 
 static Scheme_Object *fx_not (int argc, Scheme_Object *argv[])
 {
@@ -5454,20 +5488,25 @@ static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
   }
 }
 
-#define UNSAFE_FX(name, op, fold, type)                           \
+#define UNSAFE_FX(name, op, fold, type, no_args)             \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   intptr_t v;                                                   \
+   intptr_t v;                                               \
+   int i;                                                    \
+   if (!argc) return no_args;                                \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
-   v = (type)SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]);            \
+   v = (type)SCHEME_INT_VAL(argv[0]);                        \
+   for (i = 1; i < argc; i++) {                              \
+     v = v op SCHEME_INT_VAL(argv[i]);                       \
+   }                                                         \
    return scheme_make_integer(v);                            \
  }
 
-UNSAFE_FX(unsafe_fx_and, &, scheme_bitwise_and, intptr_t)
-UNSAFE_FX(unsafe_fx_or, |, bitwise_or, intptr_t)
-UNSAFE_FX(unsafe_fx_xor, ^, bitwise_xor, intptr_t)
-UNSAFE_FX(unsafe_fx_lshift, <<, fold_fixnum_bitwise_shift, uintptr_t)
-UNSAFE_FX(unsafe_fx_rshift, >>, neg_bitwise_shift, intptr_t)
+UNSAFE_FX(unsafe_fx_and, &, scheme_bitwise_and, intptr_t, scheme_make_integer(-1))
+UNSAFE_FX(unsafe_fx_or, |, bitwise_or, intptr_t, scheme_make_integer(0))
+UNSAFE_FX(unsafe_fx_xor, ^, bitwise_xor, intptr_t, scheme_make_integer(0))
+UNSAFE_FX(unsafe_fx_lshift, <<, fold_fixnum_bitwise_shift, uintptr_t, scheme_false)
+UNSAFE_FX(unsafe_fx_rshift, >>, neg_bitwise_shift, intptr_t, scheme_false)
 
 static Scheme_Object *unsafe_fx_not (int argc, Scheme_Object *argv[])
 {

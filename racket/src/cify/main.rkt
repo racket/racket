@@ -19,7 +19,8 @@
          "union.rkt"
          "debug.rkt")
 
-(provide (rename-out [main-cify cify]))
+(provide (rename-out [main-cify cify])
+         re-unique)
 
 (define (main-cify out-file exports in-e prim-knowns
                    #:debug? [debug? #f]

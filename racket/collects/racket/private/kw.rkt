@@ -27,7 +27,9 @@
              keyword-apply
              procedure-keywords
              new:procedure-reduce-arity
+             new:procedure-reduce-arity-mask
              procedure-reduce-keyword-arity
+             procedure-reduce-keyword-arity-mask
              new-prop:procedure
              new:procedure->method
              new:procedure-rename
@@ -412,7 +414,7 @@
      [(proc plain-proc)
       (make-optional-keyword-procedure
        (make-keyword-checker null #f (and (procedure? proc) ; reundant check helps purity inference
-                                          (procedure-arity proc)))
+                                          (procedure-arity-mask proc)))
        proc
        null
        #f
@@ -1386,20 +1388,13 @@
         [else (values #f (car kws))])))
 
   ;; Generates a keyword an arity checker dynamically:
-  (define (make-keyword-checker req-kws allowed-kws arity)
+  (define (make-keyword-checker req-kws allowed-kws arity-mask)
     ;; If min-args is #f, then max-args is an arity value.
     ;; If max-args is #f, then >= min-args is accepted.
     (define-syntax (arity-check-lambda stx)
       (syntax-case stx ()
         [(_ (kws) kw-body)
-         #'(cond
-            [(integer? arity)
-             (lambda (kws a) (and kw-body (= a arity)))]
-            [(arity-at-least? arity)
-             (let ([arity (arity-at-least-value arity)])
-               (lambda (kws a) (and kw-body (a . >= . arity))))]
-            [else
-             (lambda (kws a) (and kw-body (arity-includes? arity a)))])]))
+         #'(lambda (kws a) (and kw-body (bitwise-bit-set? arity-mask a)))]))
     (cond
      [(not allowed-kws)
       ;; All allowed
@@ -1436,14 +1431,6 @@
              (kws) 
              ;; Required is a subset of allowed
              (subsets? req-kws kws allowed-kws)))])]))
-  
-  (define (arity-includes? arity a)
-    (cond
-     [(integer? arity) (= arity a)]
-     [(arity-at-least? arity)
-      (a . >= . (arity-at-least-value a))]
-     [else
-      (ormap (lambda (ar) (arity-includes? ar a)) arity)]))
   
   (define (subset? l1 l2)
     ;; l1 and l2 are sorted
@@ -1565,11 +1552,26 @@
     (keyword-procedure-extract/method kws n p 0))
 
   ;; setting procedure arity
-  (define (procedure-reduce-keyword-arity proc arity req-kw allowed-kw)
-    (let* ([plain-proc (procedure-reduce-arity (if (okp? proc) 
-                                                   (okp-ref proc 0)
-                                                   proc)
-                                               arity)])
+  (define procedure-reduce-keyword-arity 
+    (case-lambda
+      [(proc arity req-kw allowed-kw name)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f name req-kw allowed-kw)]
+      [(proc arity req-kw allowed-kw)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity proc arity #f #f req-kw allowed-kw)]))
+  (define procedure-reduce-keyword-arity-mask
+    (case-lambda
+      [(proc mask req-kw allowed-kw name)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask name req-kw allowed-kw)]
+      [(proc mask req-kw allowed-kw)
+       (do-procedure-reduce-keyword-arity 'procedure-reduce-keyword-arity-mask proc #f mask #f req-kw allowed-kw)]))
+  
+  (define (do-procedure-reduce-keyword-arity who proc arity mask name req-kw allowed-kw)
+    (let* ([plain-proc (let ([p (if (okp? proc) 
+                                    (okp-ref proc 0)
+                                    proc)])
+                         (if arity
+                             (procedure-reduce-arity p arity)
+                             (procedure-reduce-arity-mask p mask name)))])
       (define (sorted? kws)
         (let loop ([kws kws])
           (cond
@@ -1580,51 +1582,44 @@
 
       (unless (and (list? req-kw) (andmap keyword? req-kw)
                    (sorted? req-kw))
-        (raise-argument-error 'procedure-reduce-keyword-arity "(and/c (listof? keyword?) sorted? distinct?)"
-                              2 proc arity req-kw allowed-kw))
+        (raise-argument-error who "(and/c (listof? keyword?) sorted? distinct?)"
+                              2 proc (or arity mask) req-kw allowed-kw))
       (when allowed-kw
         (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
                      (sorted? allowed-kw))
-          (raise-argument-error 'procedure-reduce-keyword-arity "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
-                                3 proc arity req-kw allowed-kw))
+          (raise-argument-error who "(or/c (and/c (listof? keyword?) sorted? distinct?) #f)"
+                                3 proc (or arity mask) req-kw allowed-kw))
         (unless (subset? req-kw allowed-kw)
-          (raise-arguments-error 'procedure-reduce-keyword-arity 
+          (raise-arguments-error who
                                  "allowed-keyword list does not include all required keywords"
                                  "allowed-keyword list" allowed-kw
                                  "required keywords" req-kw)))
       (let-values ([(old-req old-allowed) (procedure-keywords proc)])
         (unless (subset? old-req req-kw)
-          (raise-arguments-error 'procedure-reduce-keyword-arity
+          (raise-arguments-error who
                                  "cannot reduce required keyword set"
                                  "required keywords" old-req
                                  "requested required keywords" req-kw))
         (when old-allowed
           (unless (subset? req-kw old-allowed)
-            (raise-arguments-error 'procedure-reduce-keyword-arity
+            (raise-arguments-error who
                                    "cannot require keywords not in original allowed set"
                                    "original allowed keywords" old-allowed
                                    "requested required keywords" req-kw))
           (unless (or (not allowed-kw)
                       (subset? allowed-kw old-allowed))
-            (raise-arguments-error 'procedure-reduce-keyword-arity
+            (raise-arguments-error who
                                    "cannot allow keywords not in original allowed set"
                                    "original allowed keywords" old-allowed
                                    "requested allowed keywords" allowed-kw))))
       (if (null? allowed-kw)
           plain-proc
-          (let* ([inc-arity (lambda (arity delta)
-                              (let loop ([a arity])
-                                (cond
-                                 [(integer? a) (+ a delta)]
-                                 [(arity-at-least? a)
-                                  (arity-at-least (+ (arity-at-least-value a) delta))]
-                                 [else
-                                  (map loop a)])))]
-                 [new-arity (inc-arity arity 2)]
-                 [kw-checker (make-keyword-checker req-kw allowed-kw new-arity)]
+          (let* ([mask (or mask (arity->mask arity))]
+                 [new-mask (arithmetic-shift mask 2)]
+                 [kw-checker (make-keyword-checker req-kw allowed-kw new-mask)]
                  [proc (normalize-proc proc)]
-                 [new-kw-proc (procedure-reduce-arity (keyword-procedure-proc proc)
-                                                      new-arity)])
+                 [new-kw-proc (procedure-reduce-arity-mask (keyword-procedure-proc proc)
+                                                           new-mask)])
             (if (null? req-kw)
                 ;; All keywords are optional:
                 ((if (okm? proc)
@@ -1640,9 +1635,9 @@
                 ((make-required (or (and (named-keyword-procedure? proc)
                                          (car (keyword-procedure-name+fail proc)))
                                     (object-name proc))
-                                (procedure-reduce-arity
+                                (procedure-reduce-arity-mask
                                  missing-kw
-                                 (inc-arity arity 1))
+                                 (arithmetic-shift mask 1))
                                 (or (okm? proc)
                                     (keyword-method? proc))
                                 #f)
@@ -1651,20 +1646,63 @@
                  req-kw
                  allowed-kw))))))
 
+  (define (arity->mask a)
+    (cond
+      [(exact-nonnegative-integer? a)
+       (arithmetic-shift 1 a)]
+      [(arity-at-least? a)
+       (bitwise-xor -1 (sub1 (arithmetic-shift 1 (arity-at-least-value a))))]
+      [(list? a)
+       (let loop ([mask 0] [l a])
+         (cond
+           [(null? l) mask]
+           [else
+            (let ([a (car l)])
+              (cond
+                [(or (exact-nonnegative-integer? a)
+                     (arity-at-least? a))
+                 (loop (bitwise-ior mask (arity->mask a)) (cdr l))]
+                [else #f]))]))]
+      [else #f]))
+
   (define new:procedure-reduce-arity
     (let ([procedure-reduce-arity
-           (lambda (proc arity)
-             (if (and (procedure? proc)
-                      (let-values ([(req allows) (procedure-keywords proc)])
-                        (pair? req))
-                      (not (null? arity)))
-                 (raise-arguments-error 'procedure-reduce-arity
-                                        "procedure has required keyword arguments"
-                                        "procedure" proc)
-                 (procedure-reduce-arity (if (okm? proc)
-                                             (procedure->method proc)
-                                             proc)
-                                         arity)))])
+           (case-lambda
+             [(proc arity name)
+              (if (and (procedure? proc)
+                       (let-values ([(req allows) (procedure-keywords proc)])
+                         (pair? req))
+                       (not (null? arity)))
+                  (raise-arguments-error 'procedure-reduce-arity
+                                         "procedure has required keyword arguments"
+                                         "procedure" proc)
+                  (procedure-reduce-arity (if (okm? proc)
+                                              (procedure->method proc)
+                                              proc)
+                                          arity
+                                          name))]
+             [(proc arity)
+              (new:procedure-reduce-arity proc arity #f)])])
+      procedure-reduce-arity))
+
+  (define new:procedure-reduce-arity-mask
+    (let ([procedure-reduce-arity
+           (case-lambda
+             [(proc mask name)
+              (if (and (procedure? proc)
+                       (let-values ([(req allows) (procedure-keywords proc)])
+                         (pair? req))
+                       (not (eqv? mask 0)))
+                  (raise-arguments-error 'procedure-reduce-arity
+                                         "procedure has required keyword arguments"
+                                         "procedure" proc)
+                  (procedure-reduce-arity-mask (if (okm? proc)
+                                                   (procedure->method proc)
+                                                   proc)
+                                               mask
+                                               name))]
+             [(proc mask)
+              (new:procedure-reduce-arity-mask proc mask #f)])])
       procedure-reduce-arity))
     
   (define new:procedure->method

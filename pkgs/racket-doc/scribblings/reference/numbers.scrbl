@@ -464,42 +464,52 @@ Among the real numbers within @racket[(abs tolerance)] of @racket[x],
 @; ----------------------------------------
 @subsection{Number Comparison}
 
-@defproc[(= [z number?] [w number?] ...+) boolean?]{ Returns
+@defproc[(= [z number?] [w number?] ...) boolean?]{ Returns
  @racket[#t] if all of the arguments are numerically equal,
  @racket[#f] otherwise.  An inexact number is numerically equal to an
  exact number when the exact coercion of the inexact number is the
  exact number. Also, @racket[0.0] and @racket[-0.0] are numerically
  equal, but @racket[+nan.0] is not numerically equal to itself.
 
-@mz-examples[(= 1 1.0) (= 1 2) (= 2+3i 2+3i 2+3i)]}
+@mz-examples[(= 1 1.0) (= 1 2) (= 2+3i 2+3i 2+3i) (= 1)]
+
+@history/arity[]}
 
 
-@defproc[(< [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t] if
+@defproc[(< [x real?] [y real?] ...) boolean?]{ Returns @racket[#t] if
  the arguments in the given order are strictly increasing,
  @racket[#f] otherwise.
 
-@mz-examples[(< 1 1) (< 1 2 3) (< 1 +inf.0) (< 1 +nan.0)]}
+@mz-examples[(< 1 1) (< 1 2 3) (< 1) (< 1 +inf.0) (< 1 +nan.0)]
+
+@history/arity[]}
 
 
-@defproc[(<= [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t]
+@defproc[(<= [x real?] [y real?] ...) boolean?]{ Returns @racket[#t]
  if the arguments in the given order are non-decreasing,
  @racket[#f] otherwise.
 
-@mz-examples[(<= 1 1) (<= 1 2 1)]}
+@mz-examples[(<= 1 1) (<= 1 2 1)]
+
+@history/arity[]}
 
 
 @defproc[(> [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t] if
  the arguments in the given order are strictly decreasing,
  @racket[#f] otherwise.
 
-@mz-examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (> +nan.0 1)]}
+@mz-examples[(> 1 1) (> 3 2 1) (> +inf.0 1) (> +nan.0 1)]
+
+@history/arity[]}
 
 
-@defproc[(>= [x real?] [y real?] ...+) boolean?]{ Returns @racket[#t]
+@defproc[(>= [x real?] [y real?] ...) boolean?]{ Returns @racket[#t]
  if the arguments in the given order are non-increasing,
  @racket[#f] otherwise.
 
-@mz-examples[(>= 1 1) (>= 1 2 1)]}
+@mz-examples[(>= 1 1) (>= 1 2 1)]
+
+@history/arity[]}
 
 
 @; ------------------------------------------------------------------------

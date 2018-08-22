@@ -7,6 +7,7 @@
          "atomic.rkt"
          "custodian.rkt"
          "thread.rkt"
+         "unsafe.rkt"
          "time.rkt")
 
 ;; Unsafe scheduler-cooperation functions are made available to
@@ -39,8 +40,8 @@
           'current-sandman current-sandman
           'schedule-info-current-exts schedule-info-current-exts
           'schedule-info-did-work! schedule-info-did-work!
-          'start-atomic start-atomic
-          'end-atomic end-atomic
+          'unsafe-start-atomic unsafe-start-atomic
+          'unsafe-end-atomic unsafe-end-atomic
           'start-atomic/no-interrupts start-atomic/no-interrupts
           'end-atomic/no-interrupts end-atomic/no-interrupts
           'in-atomic-mode? in-atomic-mode?

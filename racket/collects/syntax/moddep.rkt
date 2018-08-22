@@ -12,12 +12,12 @@
 
   (define (show-import-tree module-path
                             #:dag? [dag? #f]
-                            #:path-to [given-path-to #f])
+                            #:path-to [given-path-to #f]
+                            #:show [show (lambda (indent path require-mode phase)
+                                           (printf "~a~a~a ~a\n" indent path require-mode phase))])
     (define path-to (and given-path-to (simplify-path (resolve-module-path given-path-to #f))))
     (define seen (and dag? (make-hash)))
     (let loop ([path (resolve-module-path module-path #f)] [indent ""] [fs ""] [phase 0] [accum '()])
-      (unless path-to
-        (printf "~a~a~a ~a\n" indent path fs phase))
       (when (equal? path-to path)
         (let ([accum (let loop ([accum (cons (list indent path fs phase) accum)])
                        (cond
@@ -27,8 +27,10 @@
                           (hash-set! seen accum #t)
                           (cons (car accum) (loop (cdr accum)))]))])
           (for ([i (in-list (reverse accum))])
-            (apply printf "~a~a~a ~a\n" i))))
+            (apply show i))))
       (unless (and seen (hash-ref seen (cons path phase) #f))
+        (unless path-to
+          (show indent path fs phase))
         (when seen (hash-set! seen (cons path phase) #t))
         (define plain-path (if (pair? path) (cadr path) path))
         (let ([code (get-module-code plain-path

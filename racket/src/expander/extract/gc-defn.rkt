@@ -13,8 +13,12 @@
 
 (provide garbage-collect-definitions)
 
-(define (garbage-collect-definitions linklet-expr)
+(define (garbage-collect-definitions linklet-expr
+                                     #:disallows disallows)
   (log-status "Removing unused definitions...")
+
+  (define disallow-ht (for/hasheq ([s (in-list disallows)])
+                        (values s #t)))
 
   (define body (bootstrap:s-expr-linklet-body linklet-expr))
 
@@ -33,12 +37,34 @@
       (for ([sym (in-list (defn-syms e))])
         (hash-set! sym-to-rhs sym (defn-rhs e)))]))
 
+  ;; To track dependencies for reporting
+  (define use-deps (make-hasheq))
+  (define (track-and-check-disallowed! sym used-by)
+    (when (hash-ref disallow-ht sym #f)
+      (apply raise-arguments-error
+             'flatten "disallowed identifier's definition preserved"
+             "identifier" sym
+             (let loop ([used-by used-by])
+               (cond
+                 [(not used-by) null]
+                 [else
+                  (or (and (list? used-by)
+                           (for/or ([used-by (in-list used-by)])
+                             (define next (hash-ref use-deps used-by #f))
+                             (and next
+                                  (list* "due to" used-by
+                                         (loop next)))))
+                      (list* "due to" used-by
+                             (loop (hash-ref use-deps used-by #f))))]))))
+    (hash-set! use-deps sym used-by))
+
   ;; A "mark"-like traversal of an expression:
-  (define (set-all-used! e)
+  (define (set-all-used! e used-by)
     (for ([sym (in-set (all-used-symbols e))])
       (unless (hash-ref used-syms sym #f)
         (hash-set! used-syms sym #t)
-        (set-all-used! (hash-ref sym-to-rhs sym #f)))))
+        (track-and-check-disallowed! sym used-by)
+        (set-all-used! (hash-ref sym-to-rhs sym #f) sym))))
 
   ;; Helper to check for side-effects at a definition
   (define (defn-side-effects? e)
@@ -59,8 +85,9 @@
         ;; definition and mark everything as used:
         (for ([sym (in-list (defn-syms defn))])
           (unless (hash-ref used-syms sym #f)
+            (track-and-check-disallowed! sym '#:rhs-effect)
             (hash-set! used-syms sym #t)))
-        (set-all-used! (defn-rhs defn))
+        (set-all-used! (defn-rhs defn) (defn-syms defn))
         ;; Afterward, these identifiers are defined.
         ;; (It's ok if delayed types refer to these,
         ;; because they're apparently used later if they're
@@ -68,7 +95,7 @@
         (for ([sym (in-list (defn-syms defn))])
           (hash-set! seen-defns sym (known-defined)))]
        [else
-        ;; The definition itself doesn't have a side effect, so dont
+        ;; The definition itself doesn't have a side effect, so don't
         ;; mark it as used right away, and delay analysis to make it
         ;; independent of order within a group without side effects
         (define thunk
@@ -83,12 +110,12 @@
           (hash-set! seen-defns sym thunk))])
       (loop (cdr body))]
      [else
-      (set-all-used! (car body))
+      (set-all-used! (car body) '#:effect)
       (loop (cdr body))]))
 
   ;; Mark each export:
   (for ([ex+sym (in-list (bootstrap:s-expr-linklet-exports+locals linklet-expr))])
-    (set-all-used! (cdr ex+sym)))
+    (set-all-used! (cdr ex+sym) '#:export))
 
   (define can-remove-count
     (for/sum ([e (in-list body)])

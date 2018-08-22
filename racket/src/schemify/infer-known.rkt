@@ -7,7 +7,8 @@
          "pthread-parameter.rkt"
          "literal.rkt"
          "inline.rkt"
-         "mutated-state.rkt")
+         "mutated-state.rkt"
+         "optimize.rkt")
 
 (provide infer-known
          lambda?)
@@ -15,7 +16,8 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early.
-(define (infer-known rhs defn rec? id knowns prim-knowns imports mutated)
+(define (infer-known rhs defn rec? id knowns prim-knowns imports mutated unsafe-mode?
+                     #:optimize-inline? [optimize-inline? #f])
   (cond
     [(lambda? rhs)
      (define-values (lam inlinable?) (extract-lambda rhs))
@@ -23,7 +25,10 @@
      (if (and inlinable?
               (or (can-inline? lam)
                   (wrap-property defn 'compiler-hint:cross-module-inline)))
-         (known-procedure/can-inline arity-mask lam)
+         (let ([lam (if optimize-inline?
+                        (optimize* lam prim-knowns knowns imports mutated unsafe-mode?)
+                        lam)])
+           (known-procedure/can-inline arity-mask lam))
          (known-procedure arity-mask))]
     [(and (literal? rhs)
           (not (hash-ref mutated (unwrap id) #f)))

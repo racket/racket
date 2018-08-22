@@ -27,7 +27,10 @@
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
 (define allocated-after-major (* 32 1024 1024))
 
-;; Called in any thread with all other threads paused
+;; Called in any thread with all other threads paused. The Racket
+;; thread scheduler may be in atomic mode. In fact, the engine
+;; and control layer may be in uninterrupted mode, so don't
+;; do anything that might use "control.ss" (especially in logging).
 (define (collect/report g)
   (let ([this-counter (if g (bitwise-arithmetic-shift-left 1 (* log-collect-generation-radix g)) gc-counter)]
         [pre-allocated (bytes-allocated)]
@@ -49,6 +52,7 @@
                     [(zero? (bitwise-and c collect-generation-radix-mask))
                      (loop (bitwise-arithmetic-shift-right c log-collect-generation-radix) (add1 gen))]
                     [else gen]))])])
+      (run-collect-callbacks car)
       (collect gen)
       (let ([post-allocated (bytes-allocated)])
         (when (= gen (collect-maximum-generation))
@@ -56,7 +60,8 @@
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  (current-memory-bytes) (real-time) (cpu-time)))
-      (poll-foreign-guardian))))
+      (poll-foreign-guardian)
+      (run-collect-callbacks cdr))))
 
 (define collect-garbage
   (case-lambda
@@ -172,19 +177,20 @@
       (enable-object-backreferences #f)
       (chez:fprintf (current-error-port) "Begin Dump\n")
       (chez:fprintf (current-error-port) "Current memory use: ~a\n" (bytes-allocated))
-      (chez:fprintf (current-error-port) "Begin RacketCS\n")
-      (for-each (lambda (e)
-                  (chez:fprintf (current-error-port)
-                                (layout-line (chez:format "~a" (car e))
-                                             ((get-count #f) e) ((get-bytes #f) e)
-                                             ((get-count #t) e) ((get-bytes #t) e))))
-                (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
-      (chez:fprintf (current-error-port) (layout-line "total"
-                                                      (apply + (map (get-count #f) counts))
-                                                      (apply + (map (get-bytes #f) counts))
-                                                      (apply + (map (get-count #t) counts))
-                                                      (apply + (map (get-bytes #t) counts))))
-      (chez:fprintf (current-error-port) "End RacketCS\n")
+      (unless (#%memq 'only args)
+        (chez:fprintf (current-error-port) "Begin RacketCS\n")
+        (for-each (lambda (e)
+                    (chez:fprintf (current-error-port)
+                                  (layout-line (chez:format "~a" (car e))
+                                               ((get-count #f) e) ((get-bytes #f) e)
+                                               ((get-count #t) e) ((get-bytes #t) e))))
+                  (list-sort (lambda (a b) (< ((get-bytes #f) a) ((get-bytes #f) b))) counts))
+        (chez:fprintf (current-error-port) (layout-line "total"
+                                                        (apply + (map (get-count #f) counts))
+                                                        (apply + (map (get-bytes #f) counts))
+                                                        (apply + (map (get-count #t) counts))
+                                                        (apply + (map (get-bytes #t) counts))))
+        (chez:fprintf (current-error-port) "End RacketCS\n"))
       (when backtrace-predicate
         (when (and use-prev? (not prev-stats-objects))
           (set! prev-stats-objects (make-weak-eq-hashtable)))
@@ -243,11 +249,17 @@
        (lambda (o)
          (and (#%$record? o)
               (eq? (record-type-name (#%$record-type-descriptor o)) struct-name))))]
+    [(weak-box? (car args))
+     (let ([v (weak-box-value (car args))])
+       (lambda (o) (eq? o v)))]
     [(eq? 'code (car args))
      #%$code?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
     [(symbol? (car args))
+     #f
+     ;; This is disaterously slow, so don't try it:
+     #;
      (let ([type (car args)])
        (lambda (o)
          (eq? ((inspect/object o) 'type) type)))]
@@ -292,3 +304,90 @@
   (check who phantom-bytes? phantom-bstr)
   (check who exact-nonnegative-integer? k)
   (phantom-bytes-size-set! phantom-bstr k))
+
+;; ----------------------------------------
+
+;; List of (cons <pre> <post>)
+(define collect-callbacks '())
+
+(define (unsafe-add-collect-callbacks pre post)
+  (let ([p (cons pre post)])
+    (with-interrupts-disabled
+     (set! collect-callbacks (cons p collect-callbacks)))
+    p))
+
+(define (unsafe-remove-collect-callbacks p)
+  (with-interrupts-disabled
+   (set! collect-callbacks (#%remq p collect-callbacks))))
+
+(define (run-collect-callbacks sel)
+  (let loop ([l collect-callbacks])
+    (unless (null? l)
+      (let ([v (sel (car l))])
+        (let loop ([i 0] [save #f])
+          (unless (fx= i (#%vector-length v))
+            (loop (fx+ i 1)
+                  (run-one-collect-callback (#%vector-ref v i) save sel))))
+        (loop (cdr l))))))
+
+(define-syntax (osapi-foreign-procedure stx)
+  (syntax-case stx ()
+    [(_ s ...)
+     (case (machine-type)
+       [(a6nt ta6nt i3nt ti3nt) #'(foreign-procedure _stdcall s ...)]
+       [else #'(foreign-procedure s ...)])]))
+
+;; This is an inconvenient callback interface, certainly, but it
+;; accomodates a limitatuon of the traditional Racket implementation
+(define (run-one-collect-callback v save sel)
+  (let ([protocol (#%vector-ref v 0)]
+        [proc (cpointer-address (#%vector-ref v 1))]
+        [ptr (lambda (i)
+               (cpointer*-address (#%vector-ref v (fx+ 2 i))))]
+        [val (lambda (i)
+               (#%vector-ref v (fx+ 2 i)))])
+    (case protocol
+      [(int->void)
+       ((foreign-procedure proc (int) void) (val 0))
+       save]
+      [(ptr_ptr_ptr_int->void)
+       ((foreign-procedure proc (void* void* void* int) void) (ptr 0) (ptr 1) (ptr 2) (val 3))
+       save]
+      [(ptr_ptr->save)
+       ((foreign-procedure proc (void* void*) void*) (ptr 0) (ptr 1))]
+      [(save!_ptr->void)
+       (and save (not (eqv? save 0))
+            ((foreign-procedure proc (void* void*) void*) save (ptr 0))
+            save)]
+      [(ptr_ptr_ptr->void)
+       ((foreign-procedure proc (void* void* void*) void) (ptr 0) (ptr 1) (ptr 2))
+       save]
+      [(ptr_ptr_float->void)
+       ((foreign-procedure proc (void* void* float) void) (ptr 0) (ptr 1) (val 2))
+       save]
+      [(ptr_ptr_double->void)
+       ((foreign-procedure proc (void* void* double) void) (ptr 0) (ptr 1) (val 2))
+       save]
+      [(float_float_float_float->void)
+       ((foreign-procedure proc (float float float float) void) (val 0) (val 1) (val 2) (val 3))
+       save]
+      [(ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void)
+       ((foreign-procedure proc (void* void* void* int int int int int int int int int) void)
+        (ptr 0) (ptr 2) (ptr 2)
+        (val 3) (val 4) (val 5) (val 6)
+        (val 7) (val 8) (val 9) (val 10) (val 11))
+       save]
+      [(osapi_ptr_ptr->void)
+       ((osapi-foreign-procedure proc (void* void*) void) (ptr 0) (ptr 1))
+       save]
+      [(osapi_ptr_int->void)
+       ((osapi-foreign-procedure proc (void* int) void) (ptr 0) (val 1))
+       save]
+      [(osapi_ptr_int_int_int_int_ptr_int_int_long->void)
+       ((osapi-foreign-procedure proc (void* int int int int void* int int long) void)
+        (ptr 0) (val 1) (val 2) (val 3) (val 4)
+        (ptr 5) (val 6) (val 7) (val 8))
+       save]
+      [else
+       (eprintf "unrecognized collect-callback protocol: ~s\n" protocol)
+       save])))

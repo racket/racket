@@ -1,9 +1,11 @@
 #lang racket/base
 (require "../common/promise.rkt"
          "../common/struct-star.rkt"
+         "../common/parameter-like.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
+         "../syntax/error.rkt"
          "env.rkt"
          "free-id-set.rkt"
          "../namespace/namespace.rkt"
@@ -129,7 +131,7 @@
                 [binding-layer (root-expand-context-frame-id root-ctx)]))
 
 ;; An expand-context or a delayed expand context (so use `force`):
-(define current-expand-context (make-parameter #f))
+(define-parameter-like current-expand-context #f)
 
 (define (get-current-expand-context [who 'unexpected]
                                      #:fail-ok? [fail-ok? #f])
@@ -202,3 +204,13 @@
                 [to-parsed? #t]
                 [observer #f]
                 [should-not-encounter-macros? #t]))
+
+;; ----------------------------------------
+
+;; Register a callback for `raise-syntax-error`
+(set-current-previously-unbound!
+ (lambda ()
+   (define ctx (current-expand-context))
+   (define phase-to-ids (and ctx (expand-context-need-eventually-defined ctx)))
+   (and phase-to-ids
+        (hash-ref phase-to-ids (expand-context-phase ctx) null))))

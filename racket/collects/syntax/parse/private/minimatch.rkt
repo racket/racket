@@ -1,6 +1,18 @@
 #lang racket/base
 (require (for-syntax racket/base racket/struct-info))
-(provide match ?)
+(provide match match-lambda ?)
+
+(define-syntax (match-lambda stx)
+  (syntax-case stx ()
+    [(match-lambda clause ...)
+     #`(lambda (x)
+         (match-c x
+           clause ...
+           [_ (error 'minimatch-lambda "match at ~s:~s:~s failed: ~e"
+                     '#,(syntax-source stx)
+                     '#,(syntax-line stx)
+                     '#,(syntax-column stx)
+                     x)]))]))
 
 (define-syntax (match stx)
   (syntax-case stx ()
@@ -63,6 +75,8 @@
               [accessors (reverse (list-ref si 3))])
          (unless (andmap identifier? accessors)
            (raise-syntax-error #f "struct has incomplete information" #'S))
+         (unless (= (length accessors) (length (syntax->list #'(p ...))))
+           (raise-syntax-error #f "struct pattern has incorrect number of subpatterns" #'S))
          (with-syntax ([predicate predicate]
                        [(accessor ...) accessors])
            #'(if (predicate x)

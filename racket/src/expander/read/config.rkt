@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/struct-star.rkt"
+         "../common/parameter-like.rkt"
          "readtable-parameter.rkt")
 
 (provide (struct*-out read-config)
@@ -36,7 +37,7 @@
 (struct read-config-state ([accum-str #:mutable] ; string-buffer cache
                            [graph #:mutable]))   ; #f or hash of number -> value
 
-(define current-read-config (make-parameter #f)) ; for `read/recursive`
+(define-parameter-like current-read-config #f) ; for `read/recursive`
 
 (define (make-read-config
          #:source [source #f]

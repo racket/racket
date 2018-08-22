@@ -18,18 +18,8 @@
         (list (lambda (v) (fl->fx (exact->inexact x)))
               (lambda (v) (unsafe-fl->fx (exact->inexact x))))))
 
-(define binary-table
-  (list (list fx+ unsafe-fx+)
-        (list fx- unsafe-fx-)
-        (list fx* unsafe-fx*)
-
-        (list fxquotient unsafe-fxquotient)
-        (list fxremainder unsafe-fxremainder)
-        (list fxmodulo unsafe-fxmodulo)
-        
-        (list fxand unsafe-fxand)
-        (list fxior unsafe-fxior)
-        (list fxxor unsafe-fxxor)
+(define 1nary-table
+  (list (list fx- unsafe-fx-)
 
         (list fx>= unsafe-fx>=)
         (list fx> unsafe-fx>)
@@ -39,14 +29,24 @@
         (list fxmin unsafe-fxmin)
         (list fxmax unsafe-fxmax)))
 
+(define 0nary-table
+  (list (list fx+ unsafe-fx+)
+        (list fx* unsafe-fx*)
+
+        (list fxand unsafe-fxand)
+        (list fxior unsafe-fxior)
+        (list fxxor unsafe-fxxor)))
+
+(define binary-table
+  (list (list fxquotient unsafe-fxquotient)
+        (list fxremainder unsafe-fxremainder)
+        (list fxmodulo unsafe-fxmodulo)))
+
 (define binary/small-second-arg-table
   (list (list fxlshift unsafe-fxlshift)
         (list fxrshift unsafe-fxrshift)))
 
-(define nary-table
-  (list))
-
-(define table (append binary/small-second-arg-table binary-table unary-table nary-table))
+(define table (append binary/small-second-arg-table binary-table unary-table 1nary-table 0nary-table))
   
 (define (check-arity fx unsafe-fx)
   (let ([same-arities? (λ (x y) (equal? (procedure-arity x)
@@ -95,7 +95,8 @@
   
   (for ([line (in-list (append binary/small-second-arg-table 
                                binary-table
-                               nary-table))])
+                               1nary-table
+                               0nary-table))])
     (for ([i (in-range (- (expt 2 4)) (expt 2 4))])
       (for ([j (in-range (- (expt 2 4)) (expt 2 4))])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i j))))))
@@ -108,7 +109,8 @@
     
     (for ([line (in-list (append binary/small-second-arg-table
                                  binary-table
-                                 nary-table))])
+                                 1nary-table
+                                 0nary-table))])
       (for ([i (in-list interesting-values)])
         (for ([j (in-list interesting-values)])
           (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))))))
@@ -123,14 +125,19 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i)))
       (for ([line (in-list binary-table)])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))
+      (for ([line (in-list 0nary-table)])
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))
+      (for ([line (in-list 1nary-table)])
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))
       (for ([line (in-list binary/small-second-arg-table)])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i k)))
-      (for ([line (in-list nary-table)])
-        (test #t same-results (list-ref line 0) (list-ref line 1) (list i))
-        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j))
+      (for ([line (in-list (append 0nary-table 1nary-table))])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i j k))
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i k j))
-        (test #t same-results (list-ref line 0) (list-ref line 1) more-fixnums)))))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (cons i more-fixnums))))))
 
 (define (random-fixnum)
   (inexact->exact (floor (+ (least-fixnum) (* (random) (+ (- (greatest-fixnum) (least-fixnum)) 1))))))

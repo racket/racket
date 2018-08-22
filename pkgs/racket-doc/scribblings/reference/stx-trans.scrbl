@@ -138,7 +138,7 @@ rename transformer:
  @item{A @racket[provide] of @racket[_id] provides the binding
        indicated by @racket[id-stx] instead of @racket[_id], as long
        as @racket[id-stx] does not have a true value for the
-       @indexed-racket['not-free-identifier=?] @tech{syntax property}
+       @racket['not-free-identifier=?] @tech{syntax property}
        and as long as @racket[id-stx] has a binding.}
 
  @item{If @racket[provide] exports @racket[_id], it uses a
@@ -262,7 +262,7 @@ The @racket[stop-ids] argument controls how far @racket[local-expand] expands @r
 
  @item{If @racket[stop-ids] is any other list, then expansion proceeds recursively until the expander
        encounters any of the forms in @racket[stop-ids], and the result is the partially-expanded
-       form. If @racket[extend-stop-ids?] is not @racket[#f], @racket[begin], @racket[quote],
+       form. If @racket[extend-stop-ids?] is not @racket[#f], then @racket[begin], @racket[quote],
        @racket[set!], @racket[#%plain-lambda], @racket[case-lambda], @racket[let-values],
        @racket[letrec-values], @racket[if], @racket[begin0], @racket[with-continuation-mark],
        @racket[letrec-syntaxes+values], @racket[#%plain-app], @racket[#%expression], @racket[#%top],
@@ -654,7 +654,7 @@ the binding creates a binding alias that effectively routes around the
 
 Returns the @tech{transformer} binding value of the identifier @racket[id-stx] in the context of the
 current expansion. If @racket[intdef-ctx] is not @racket[#f], bindings from all provided definition
-contexts are also considered. @emph{Unlike} the fourth argument to @racket[local-expand], the
+contexts are also considered. Unlike the fourth argument to @racket[local-expand], the
 @tech{scopes} associated with the provided definition contexts are @emph{not} used to enrich
 @racket[id-stx]’s @tech{lexical information}.
 
@@ -721,7 +721,17 @@ and @racket[#f].
 If @racket[id-stx] has no transformer binding, then
 @racket[failure-thunk] is called (and it can return any number of
 values), or an exception is raised if @racket[failure-thunk] is
-@racket[#f].}
+@racket[#f].
+
+@examples[#:eval (make-base-eval '(require (for-syntax racket/base syntax/parse)))
+          #:escape unsyntax-splicing
+  (define-syntax agent-007 (make-rename-transformer #'james-bond))
+  (define-syntax (show-secret-identity stx)
+    (syntax-parse stx
+      [(_ name:id)
+       (define-values [_ orig-name] (syntax-local-value/immediate #'name))
+       #`'(name #,orig-name)]))
+  (show-secret-identity agent-007)]}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])
@@ -914,9 +924,7 @@ being expanded. Otherwise, the result is @racket[0].
 
 
 @defproc[(syntax-local-module-exports [mod-path (or/c module-path?
-                                                      (and/c syntax?
-                                                             (lambda (stx)
-                                                               (module-path? (syntax->datum stx)))))])
+                                                      (syntax/c module-path?))])
          (listof (cons/c (or/c exact-integer? #f) (listof symbol?)))]{
 
 Returns an association list from @tech{phase-level} numbers (or
@@ -1025,7 +1033,14 @@ macro-introduction scope and the use-site scope, if any---is flipped
 on all parts of the syntax object. See @secref["transformer-model"] for information
 on macro-introduction and use-site @tech{scopes}.
 
-@transform-time[]}
+@transform-time[]
+
+@examples[#:eval (make-base-eval)
+  (module example racket
+    (define-syntax (require-math stx)
+      (syntax-local-introduce #'(require racket/math)))
+    (require-math)
+    pi)]}
 
 
 @defproc[(make-syntax-introducer [as-use-site? any/c #f])
@@ -1268,9 +1283,7 @@ Returns @racket[#t] if @racket[v] has the
 @defstruct[import ([local-id identifier?]
                    [src-sym symbol?]
                    [src-mod-path (or/c module-path?
-                                       (and/c syntax?
-                                              (lambda (stx)
-                                                (module-path? (syntax->datum stx)))))]
+                                       (syntax/c module-path?))]
                    [mode (or/c exact-integer? #f)]
                    [req-mode (or/c exact-integer? #f)]
                    [orig-mode (or/c exact-integer? #f)]
@@ -1304,9 +1317,7 @@ A structure representing a single imported identifier:
 ]}
 
 
-@defstruct[import-source ([mod-path-stx (and/c syntax?
-                                               (lambda (x)
-                                                 (module-path? (syntax->datum x))))]
+@defstruct[import-source ([mod-path-stx (syntax/c module-path?)]
                           [mode (or/c exact-integer? #f)])]{
 
 A structure representing an imported module, which must be
@@ -1343,13 +1354,9 @@ to a given module path.}
 
 @defproc[(convert-relative-module-path [module-path
                                         (or/c module-path?
-                                              (and/c syntax?
-                                                     (lambda (stx)
-                                                       (module-path? (syntax-e stx)))))])
+                                              (syntax/c module-path?))])
           (or/c module-path?
-                (and/c syntax?
-                       (lambda (stx)
-                         (module-path? (syntax-e stx)))))]{
+                (syntax/c module-path?))]{
 
 Converts @racket[module-path] according to @racket[current-require-module-path].
 

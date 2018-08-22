@@ -346,7 +346,7 @@ scheme_init_string (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("string-set!", p, env);
 
-  p = scheme_make_immed_prim(string_eq, "string=?", 2, -1);
+  p = scheme_make_immed_prim(string_eq, "string=?", 1, -1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
@@ -355,77 +355,77 @@ scheme_init_string (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("string-locale=?",
 			     scheme_make_immed_prim(string_locale_eq,
 						    "string-locale=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-ci=?",
 			     scheme_make_immed_prim(string_ci_eq,
 						    "string-ci=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-locale-ci=?",
 			     scheme_make_immed_prim(string_locale_ci_eq,
 						    "string-locale-ci=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string<?",
 			     scheme_make_immed_prim(string_lt,
 						    "string<?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-locale<?",
 			     scheme_make_immed_prim(string_locale_lt,
 						    "string-locale<?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string>?",
 			     scheme_make_immed_prim(string_gt,
 						    "string>?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-locale>?",
 			     scheme_make_immed_prim(string_locale_gt,
 						    "string-locale>?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string<=?",
 			     scheme_make_immed_prim(string_lt_eq,
 						    "string<=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string>=?",
 			     scheme_make_immed_prim(string_gt_eq,
 						    "string>=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-ci<?",
 			     scheme_make_immed_prim(string_ci_lt,
 						    "string-ci<?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-locale-ci<?",
 			     scheme_make_immed_prim(string_locale_ci_lt,
 						    "string-locale-ci<?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-ci>?",
 			     scheme_make_immed_prim(string_ci_gt,
 						    "string-ci>?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-locale-ci>?",
 			     scheme_make_immed_prim(string_locale_ci_gt,
 						    "string-locale-ci>?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-ci<=?",
 			     scheme_make_immed_prim(string_ci_lt_eq,
 						    "string-ci<=?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("string-ci>=?",
 			     scheme_make_immed_prim(string_ci_gt_eq,
 						    "string-ci>=?",
-						    2, -1),
+						    1, -1),
 			     env);
 
   scheme_addto_prim_instance("substring",
@@ -631,7 +631,7 @@ scheme_init_string (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bytes-set!", p, env);
 
-  p = scheme_make_immed_prim(byte_string_eq, "bytes=?", 2, -1);
+  p = scheme_make_immed_prim(byte_string_eq, "bytes=?", 1, -1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_BOOL);
   scheme_addto_prim_instance("bytes=?", p, env);
@@ -639,12 +639,12 @@ scheme_init_string (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("bytes<?",
 			     scheme_make_immed_prim(byte_string_lt,
 						    "bytes<?",
-						    2, -1),
+						    1, -1),
 			     env);
   scheme_addto_prim_instance("bytes>?",
 			     scheme_make_immed_prim(byte_string_gt,
 						    "bytes>?",
-						    2, -1),
+						    1, -1),
 			     env);
 
   scheme_addto_prim_instance("subbytes",
@@ -823,7 +823,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("path<?",
 			     scheme_make_immed_prim(path_lt,
 						    "path<?",
-						    2, -1),
+						    1, -1),
 			     env);
 
 #ifdef MZ_PRECISE_GC

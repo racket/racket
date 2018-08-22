@@ -228,18 +228,18 @@
                     (performance-region
                      'uncompress
                      (bytevector-uncompress c-bv))))])
-      (add-performance-memory! 'faslin (bytevector-length bv))
+      (add-performance-memory! 'faslin-code (bytevector-length bv))
       (cond
        [(eq? format 'interpret)
         (let ([r (performance-region
-                  'faslin
+                  'faslin-code
                   (fasl-read (open-bytevector-input-port bv)))])
           (performance-region
            'outer
            (outer-eval r format)))]
        [else
         (performance-region
-         'faslin
+         'faslin-code
          (code-from-bytevector bv))])))
 
   (define (code-from-bytevector bv)
@@ -462,7 +462,7 @@
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
                                              (performance-region
-                                              'compile
+                                              'compile-nested
                                               (let ([code ((if serializable? compile*-to-bytevector compile*)
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
@@ -479,7 +479,7 @@
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (performance-region
-        'compile
+        'compile-linklet
         ;; Create the linklet:
         (let ([lk (make-linklet (call-with-system-wind
                                  (lambda ()

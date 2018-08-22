@@ -234,6 +234,12 @@
   (test-lh m hi)
   (test-hl -m -hi)
 
+  (test #t > m)
+  (test #t < m)
+  (test #t = m)
+  (test #t >= m)
+  (test #t <= m)
+
   (test #f > m m)
   (test #f < m m)
   (test #t = m m)
@@ -401,11 +407,11 @@
 (err/rt-test (<= 0.5+0.1i 1))
 (err/rt-test (<= 1 0.5+0.1i))
 
-(arity-test = 2 -1)
-(arity-test < 2 -1)
-(arity-test > 2 -1)
-(arity-test <= 2 -1)
-(arity-test >= 2 -1)
+(arity-test = 1 -1)
+(arity-test < 1 -1)
+(arity-test > 1 -1)
+(arity-test <= 1 -1)
+(arity-test >= 1 -1)
 
 (test #t zero? 0)
 (test #t zero? 0.0)
@@ -2926,6 +2932,10 @@
 (test (expt 2 256) inexact->exact 1.157920892373162d+77)
 (test 115792089237316195423570985008687907853269984665640564039457584007913129639936 inexact->exact 1.157920892373162d+77)
 
+(test 521335/89202980794122492566142873090593446023921664 inexact->exact 5.844367f-39)
+(test 5.844367f-39 real->single-flonum (inexact->exact 5.844367f-39))
+(test (real->double-flonum 5.844367f-39) exact->inexact (inexact->exact 5.844367f-39))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test (integer-bytes->integer #"\1\2" #f) integer-bytes->integer #"\1\2" #f (system-big-endian?))
@@ -3374,7 +3384,7 @@
       (random (expt 2 28)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check roun-to-even of rationale conversion (thanks to Robby)
+;; Check round-to-even of rational conversion (thanks to Robby)
 
 (let ()
   (define l (floating-point-bytes->real #"\x1a\xd8\x9c\x17\x21\x2e\xfd\x25" #t))

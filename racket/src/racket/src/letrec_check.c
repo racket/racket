@@ -392,6 +392,13 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
         ls = (Scheme_Object *)make_deferred_expr_closure(o, frame);
         ls = scheme_make_pair(ls, outer_frame->def[dpos]);
         outer_frame->def[dpos] = ls;
+
+        /* But if we're trying to propagate to a variable that was
+           already referenced, we need to treat this one as
+           referenced, too */
+        if ((outer_frame->ref[dpos] & LET_APPLY_USE)
+            && in_frame->ref)
+          in_frame->ref[in_position] |= LET_APPLY_USE;
       }
     }
   }
@@ -857,22 +864,62 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
       Scheme_App3_Rec *app3;
       Scheme_Object *name;
       Scheme_Sequence *seq;
-      
+      Scheme_IR_Let_Header *head;
+      Scheme_IR_Let_Value *lv;
+      Scheme_IR_Local *var, **vars;
+
+      /* Change
+           (set! <id> <rhs>)
+
+         to
+
+           (let ([<tmp> <rhs>])
+             (begin
+               <check>
+               (set! <id> <tmp>)))
+      */
+
       name = record_checked((Scheme_IR_Local *)sb->var, frame);
-      
+
       app3 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
       app3->iso.so.type = scheme_application3_type;
       app3->rator = scheme_check_assign_not_undefined_proc;
       app3->rand1 = sb->var;
       app3->rand2 = name;
-      
+
       seq = scheme_malloc_sequence(2);
       seq->so.type = scheme_sequence_type;
       seq->count = 2;
       seq->array[0] = (Scheme_Object *)app3;
       seq->array[1] = (Scheme_Object *)sb;
 
-      return (Scheme_Object *)seq;
+      if (SCHEME_TYPE(sb->val) > _scheme_ir_values_types_) {
+        /* obviously simple enough to not need a `let` wrapper */
+        return (Scheme_Object *)seq;
+      } else {
+        var = scheme_make_ir_local(scheme_intern_symbol("tmp"));
+        vars = MALLOC_N(Scheme_IR_Local*, 1);
+        vars[0] = var;
+        var->use_count = 1;
+        var->non_app_count = 1;
+
+        lv = MALLOC_ONE_TAGGED(Scheme_IR_Let_Value);
+        lv->iso.so.type = scheme_ir_let_value_type;
+        lv->count = 1;
+        lv->value = sb->val;
+        lv->body = (Scheme_Object *)seq;
+        lv->vars = vars;
+
+        head = MALLOC_ONE_TAGGED(Scheme_IR_Let_Header);
+        head->iso.so.type = scheme_ir_let_header_type;
+        head->count = 1;
+        head->num_clauses = 1;
+        head->body = (Scheme_Object *)lv;
+
+        sb->val = (Scheme_Object *)var;
+
+        return (Scheme_Object *)head;
+      }
     }
   }
 

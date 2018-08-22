@@ -67,6 +67,9 @@
       [`(let . ,_) (re-unique-let e env)]
       [`(letrec . ,_) (re-unique-let e env)]
       [`(letrec* . ,_) (re-unique-let e env)]
+      ;; Recognize `values` form so we can use this on schemify input, too
+      [`(let-values . ,_) (re-unique-let-values e env)]
+      [`(letrec-values . ,_) (re-unique-let-values e env)]
       [`(set! ,id ,rhs)
        `(set! ,(re-unique id env) ,(re-unique rhs env))]
       [`(,rator ,rands ...)
@@ -91,6 +94,20 @@
                              [rhs (in-list rhss)])
                     `[,id ,(re-unique rhs rhs-env)])
                  . ,(re-unique-body body body-env))]))
+
+  (define (re-unique-let-values e env)
+    (match e
+      [`(,let-values-id ([(,idss ...) ,rhss] ...) . ,body)
+       (define rec? (not (eq? let-values-id 'let-values)))
+       (define new-idss (map select-unique idss))
+       (define body-env (for/fold ([env env]) ([ids (in-list idss)]
+                                               [new-ids (in-list new-idss)])
+                          (env-add env ids new-ids)))
+       (define rhs-env (if rec? body-env env))
+       `(,let-values-id ,(for/list ([ids (in-list new-idss)]
+                                    [rhs (in-list rhss)])
+                           `[,ids ,(re-unique rhs rhs-env)])
+                        . ,(re-unique-body body body-env))]))
 
   (define (env-add env ids new-ids)
     (cond

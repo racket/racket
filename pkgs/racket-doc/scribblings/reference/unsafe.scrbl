@@ -356,91 +356,168 @@ is analogous to @racket[box-cas!] to perform an atomic compare-and-set.
 
 @deftogether[(
 @defproc[(unsafe-mutable-hash-iterate-first
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-next
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i any/c])
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c])
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-key
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i any/c]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-mutable-hash-iterate-key
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-mutable-hash-iterate-value
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i any/c]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-mutable-hash-iterate-value
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-mutable-hash-iterate-key+value
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i any/c]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]) 
+	  (values any/c any/c)]
+@defproc[#:link-target? #f
+         (unsafe-mutable-hash-iterate-key+value
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]
+          [bad-index-v any/c])
 	  (values any/c any/c)]
 @defproc[(unsafe-mutable-hash-iterate-pair
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i any/c]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]) 
+	  pair?]
+@defproc[#:link-target? #f
+         (unsafe-mutable-hash-iterate-pair
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  pair?]
 @defproc[(unsafe-immutable-hash-iterate-first
-          [h (and/c hash? immutable?)])
+          [hash (and/c hash? immutable?)])
 	  (or/c #f any/c)]
 @defproc[(unsafe-immutable-hash-iterate-next
-          [h (and/c hash? immutable?)]
-	  [i any/c])
+          [hash (and/c hash? immutable?)]
+	  [pos any/c])
 	  (or/c #f any/c)]
 @defproc[(unsafe-immutable-hash-iterate-key
-          [h (and/c hash? immutable?)]
-	  [i any/c]) 
+          [hash (and/c hash? immutable?)]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-immutable-hash-iterate-key
+          [hash (and/c hash? immutable?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-immutable-hash-iterate-value
-          [h (and/c hash? immutable?)]
-	  [i any/c])
+          [hash (and/c hash? immutable?)]
+	  [pos any/c])
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-immutable-hash-iterate-value
+          [hash (and/c hash? immutable?)]
+	  [pos any/c]
+          [bad-index-v any/c])
 	  any/c]
 @defproc[(unsafe-immutable-hash-iterate-key+value
-          [h (and/c hash? immutable?)]
-	  [i any/c])
+          [hash (and/c hash? immutable?)]
+	  [pos any/c])
+	  (values any/c any/c)]
+@defproc[#:link-target? #f
+         (unsafe-immutable-hash-iterate-key+value
+          [hash (and/c hash? immutable?)]
+	  [pos any/c]
+          [bad-index-v any/c])
 	  (values any/c any/c)]
 @defproc[(unsafe-immutable-hash-iterate-pair
-          [h (and/c hash? immutable?)]
-	  [i any/c])
+          [hash (and/c hash? immutable?)]
+	  [pos any/c])
+	  pair?]
+@defproc[#:link-target? #f
+         (unsafe-immutable-hash-iterate-pair
+          [hash (and/c hash? immutable?)]
+	  [pos any/c]
+          [bad-index-v any/c])
 	  pair?]
 @defproc[(unsafe-weak-hash-iterate-first
-          [h (and/c hash? hash-weak?)])
+          [hash (and/c hash? hash-weak?)])
 	  (or/c #f any/c)]
 @defproc[(unsafe-weak-hash-iterate-next
-          [h (and/c hash? hash-weak?)]
-	  [i any/c])
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c])
 	  (or/c #f any/c)]
 @defproc[(unsafe-weak-hash-iterate-key
-          [h (and/c hash? hash-weak?)]
-	  [i any/c]) 
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-weak-hash-iterate-key
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-weak-hash-iterate-value
-          [h (and/c hash? hash-weak?)]
-	  [i any/c]) 
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]) 
+	  any/c]
+@defproc[#:link-target? #f
+         (unsafe-weak-hash-iterate-value
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  any/c]
 @defproc[(unsafe-weak-hash-iterate-key+value
-          [h (and/c hash? hash-weak?)]
-	  [i any/c]) 
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]) 
+	  (values any/c any/c)]
+@defproc[#:link-target? #f
+         (unsafe-weak-hash-iterate-key+value
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  (values any/c any/c)]
 @defproc[(unsafe-weak-hash-iterate-pair
-          [h (and/c hash? hash-weak?)]
-	  [i any/c]) 
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]) 
+	  pair?]
+@defproc[#:link-target? #f
+         (unsafe-weak-hash-iterate-pair
+          [hash (and/c hash? hash-weak?)]
+	  [pos any/c]
+          [bad-index-v any/c]) 
 	  pair?]
 )]{
-Unsafe versions of @racket[hash-iterate-key] and similar ops. These operations
-support @tech{chaperones} and @tech{impersonators}.
+Unsafe versions of @racket[hash-iterate-key] and similar procedures.
+These operations support @tech{chaperones} and @tech{impersonators}.
 
-Each unsafe @code{-first} and @code{-next} operation may not return a number
-index but rather an internal representation of a view into the hash structure,
-enabling faster iteration. 
+Each unsafe ...@code{-first} and ...@code{-next} procedure may return,
+instead of a number index, an internal representation of a view into
+the hash structure, enabling faster iteration. The result of these
+...@code{-first} and ...@code{-next} functions should be given as
+@racket[pos] to the corresponding unsafe accessor functions.
 
-The result of these @code{-first} and @code{-next}] functions should be given
-to the corresponding unsafe accessor functions.
+If the @racket[pos] provided to an accessor function for a mutable
+@racket[hash] was formerly a @tech{valid hash index} but is no longer
+a @tech{valid hash index} for @racket[hash], and if
+@racket[bad-index-v] is not provided, then the
+@exnraise[exn:fail:contract]. No behavior is specified for a
+@racket[pos] that was never a @tech{valid hash index} for
+@racket[hash]. Note that @racket[bad-index-v] argument is technically
+not useful for the @code{unsafe-immutable-hash-iterate-} functions,
+since an index cannot become invalid for an immutable @racket[hash].
 
-If the key or value at the position returned by the @code{-first} and
-@code{-next} ops becomes invalid (e.g., because of mutation or garbage
-collection), then the operations @exnraise[exn:fail:contract].
-
-@history[#:added "6.4.0.6"]
-}
+@history[#:added "6.4.0.6"
+         #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 @; ------------------------------------------------------------------------
 

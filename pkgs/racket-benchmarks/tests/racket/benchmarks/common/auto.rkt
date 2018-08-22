@@ -40,17 +40,19 @@ exec racket -qu "$0" ${1+"$@"}
     (delete-file (format "~a.o1" bm)))
 
   (define (mk-racket bm)
-    (unless (directory-exists? "compiled")
-      (make-directory "compiled"))
+    (define compiled (car (use-compiled-file-paths)))
+    (unless (directory-exists? compiled)
+      (make-directory* compiled))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t])
       (let ([name (format "~a.rkt" bm)])
         (compile-file name
-                      "compiled/current-bm_rkt.zo"))))
+                      (build-path compiled "current-bm_rkt.zo")))))
 
   (define (mk-errortrace bm)
-    (unless (directory-exists? "compiled")
-      (make-directory "compiled"))
+    (define compiled (car (use-compiled-file-paths)))
+    (unless (directory-exists? compiled)
+      (make-directory* compiled))
     (parameterize ([current-namespace (make-base-namespace)]
                    [read-accept-reader #t]
                    [current-compile (current-compile)]
@@ -59,7 +61,7 @@ exec racket -qu "$0" ${1+"$@"}
       (dynamic-require 'errortrace #f)
       (let ([name (format "~a.rkt" bm)])
         (compile-file name
-                      "compiled/current-bm_rkt.zo"))))
+                      (build-path compiled "current-bm_rkt.zo")))))
 
   (define (compiled-path bm)
     "current-bm.rkt")
@@ -68,8 +70,9 @@ exec racket -qu "$0" ${1+"$@"}
     (system (format "mz-old -l- raco make ~a.rkt" bm)))
 
   (define (clean-up-zo bm)
-    (when (file-exists? "compiled/current-bm_rkt.zo")
-      (delete-file "compiled/current-bm_rkt.zo")))
+    (define compiled (car (use-compiled-file-paths)))
+    (when (file-exists? (build-path compiled "current-bm_rkt.zo"))
+      (delete-file (build-path compiled "current-bm_rkt.zo"))))
 
   (define (mk-typed-racket-non-optimizing bm)
     (unless (directory-exists? "typed/compiled")

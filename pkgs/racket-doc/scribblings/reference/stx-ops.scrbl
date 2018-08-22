@@ -279,6 +279,41 @@ then the @exnraise[exn:fail:contract].
 The @racket[ignored] argument is allowed for backward compatibility
 and has no effect on the returned syntax object.}
 
+@deftogether[(
+@defproc[(syntax-binding-set? [v any/c]) boolean?]
+@defproc[(syntax-binding-set) syntax-binding-set?]
+@defproc[(syntax-binding-set->syntax [binding-set syntax-binding-set?] [datum any/c]) syntax-binding-set?]
+@defproc[(syntax-binding-set-extend [binding-set syntax-binding-set?]
+                                    [symbol symbol?]
+                                    [phase (or/c exact-integer? #f)]
+                                    [mpi module-path-index?]
+                                    [#:source-symbol source-symbol symbol? symbol]
+                                    [#:source-phase source-phase (or/c exact-integer? #f) phase]
+                                    [#:nominal-module nominal-mpi module-path-index? mpi]
+                                    [#:nominal-phase nominal-phase (or/c exact-integer? #f) source-phase]
+                                    [#:nominal-symbol nominal-symbol symbol? source-symbol]
+                                    [#:nominal-require-phase nominal-require-phase (or/c exact-integer? #f) 0]
+                                    [#:inspector inspector (or/c inspector? #f) #f])
+         syntax-binding-set?]
+)]{
+
+A @deftech{syntax binding set} supports explicit construction of
+binding information for a syntax object. Start by creating an empty
+binding set with @racket[syntax-binding-set], add bindings with
+@racket[binding-set-extend], and create a syntax object that has the
+bindings as its @tech{lexical information} using
+@racket[syntax-binding-set->syntax].
+
+The first three arguments to @racket[syntax-binding-set-extend]
+establish a binding of @racket[symbol] at @racket[phase] to an
+identifier that is defined in the module referenced by @racket[mpi].
+Supply @racket[source-symbol] to make the binding of @racket[symbol]
+refer to a different provided variable from @racket[mpi], and so on;
+the optional arguments correspond to the results of
+@racket[identifier-binding].
+
+@history[#:added "7.0.0.12"]}
+
 
 @defproc[(datum-intern-literal [v any/c]) any/c]{
 

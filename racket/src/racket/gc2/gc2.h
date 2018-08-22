@@ -126,10 +126,13 @@ GC2_EXTERN void GC_set_treat_as_incremental_mark(short tag, GC_Treat_As_Incremen
    Racket to zero out some data and record collection times. The end
    procedure should be called before finalizations are performed. */
 
-GC2_EXTERN void (*GC_out_of_memory)(void);
+typedef void (*GC_Out_Of_Memory_Proc)(void);
+GC2_EXTERN GC_Out_Of_Memory_Proc GC_out_of_memory;
+GC2_EXTERN GC_Out_Of_Memory_Proc GC_get_out_of_memory(void);
+GC2_EXTERN void GC_set_out_of_memory(GC_Out_Of_Memory_Proc GC_out_of_memory);
 /*
    Called by GC when it can't satify a memory request. GC_out_of_memory()
-   might perform a longjmp. */
+   might perform a longjmp. The get/set variant sets a thread-local procedure. */
 
 GC2_EXTERN void (*GC_report_out_of_memory)(void);
 /*

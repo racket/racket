@@ -37,11 +37,14 @@
                      unsafe-set-on-atomic-timeout!
                      unsafe-abort-current-continuation/no-wind
                      unsafe-call-with-composable-continuation/no-wind
+                     unsafe-root-continuation-prompt-tag
                      unsafe-os-thread-enabled?
                      unsafe-call-in-os-thread
                      unsafe-make-os-semaphore
                      unsafe-os-semaphore-post
-                     unsafe-os-semaphore-wait)
+                     unsafe-os-semaphore-wait
+                     unsafe-add-collect-callbacks
+                     unsafe-remove-collect-callbacks)
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-

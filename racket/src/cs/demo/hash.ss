@@ -259,7 +259,7 @@
                         (set! count (add1 count))
                         (hash-remove! ht k)))
        (unless (= count (hash-count mut-numbers))
-         (error 'mutable-for-each-remove! "bad count")))
+         (error 'mutable-for-each-remove! (format "bad count ~s vs. ~s" count (hash-count mut-numbers)))))
      (loop (sub1 j)))))
 
 ;; ----------------------------------------

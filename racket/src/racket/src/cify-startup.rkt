@@ -66,10 +66,15 @@
 (define-values (bodys/constants-lifted lifted-constants)
   (time (convert-for-serialize l #t)))
 
+;; Startup code reuses names to keep it compact; make
+;; te names unique again
+(define bodys/re-uniqued
+  (cdr (re-unique `(begin . ,bodys/constants-lifted))))
+
 (printf "Schemify...\n")
 (define body
   (time
-   (schemify-body bodys/constants-lifted prim-knowns #hasheq() #hasheq()
+   (schemify-body bodys/re-uniqued prim-knowns #hasheq() #hasheq()
                   ;; for cify:
                   #t
                   ;; unsafe mode:

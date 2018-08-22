@@ -57,8 +57,8 @@
                         "`#...~a` forms not ~a"
                         c
                         (if (read-config-for-syntax? config)
-                            "enabled"
-                            "allowed in `read-syntax` mode")))
+                            "allowed in `read-syntax` mode"
+                            "enabled")))
         (unless ((accum-string-count accum-str) . <= . 8)
           (reader-error in config
                         "graph ID too long in `~a~a~a`"

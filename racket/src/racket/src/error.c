@@ -105,6 +105,7 @@ static Scheme_Object *raise_mismatch_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arguments_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_range_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[]);
+static Scheme_Object *raise_arity_mask_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[]);
 static Scheme_Object *error_escape_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_display_handler(int, Scheme_Object *[]);
@@ -817,6 +818,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
 
   scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
   scheme_addto_prim_instance("raise-arity-error",  scheme_raise_arity_error_proc, env);
+  ESCAPING_NONCM_PRIM("raise-arity-mask-error",     raise_arity_mask_error, 2, -1, env);
   ESCAPING_NONCM_PRIM("raise-result-arity-error",   raise_result_arity_error, 2, -1, env);
 
   ADD_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
@@ -2970,20 +2972,29 @@ static int is_arity_list(Scheme_Object *l)
   return 1;
 }
 
-static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
+static Scheme_Object *do_raise_arity_error(const char *who, int argc, Scheme_Object *argv[], int as_arity)
 {
-  Scheme_Object **args;
+  Scheme_Object **args, *arity;
   const char *name;
   int minc, maxc;
 
   if (!SCHEME_SYMBOLP(argv[0]) && !SCHEME_PROCP(argv[0]))
-    scheme_wrong_contract("raise-arity-error", "(or/c symbol? procedure?)", 0, argc, argv);
-  if (!scheme_nonneg_exact_p(argv[1]) 
-      && !is_arity_at_least(argv[1])
-      && !is_arity_list(argv[1]))
-    scheme_wrong_contract("raise-arity-error", 
-                          "(or/c exact-nonnegative-integer? arity-at-least? (listof (or/c exact-nonnegative-integer? arity-at-least?)))", 
-                          1, argc, argv);
+    scheme_wrong_contract(who, "(or/c symbol? procedure?)", 0, argc, argv);
+  if (as_arity) {
+    arity = argv[1];
+    if (!scheme_nonneg_exact_p(arity) 
+        && !is_arity_at_least(arity)
+        && !is_arity_list(arity))
+      scheme_wrong_contract(who,
+                            "(or/c exact-nonnegative-integer? arity-at-least? (listof (or/c exact-nonnegative-integer? arity-at-least?)))", 
+                            1, argc, argv);
+  } else {
+    if (!scheme_exact_p(argv[1]))
+      scheme_wrong_contract(who,
+                            "exact-integer?", 
+                            1, argc, argv);
+    arity = scheme_arity_mask_to_arity(argv[1], -1);
+  }
 
   args = MALLOC_N(Scheme_Object*, argc - 2);
   memcpy(args, argv + 2, sizeof(Scheme_Object*) * (argc - 2));
@@ -2995,11 +3006,11 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
     name = scheme_get_proc_name(argv[0], &len, 1);
   }
 
-  if (SCHEME_INTP(argv[1])) {
-    minc = maxc = SCHEME_INT_VAL(argv[1]);
-  } else if (is_arity_at_least(argv[1])) {
+  if (SCHEME_INTP(arity)) {
+    minc = maxc = SCHEME_INT_VAL(arity);
+  } else if (is_arity_at_least(arity)) {
     Scheme_Object *v;
-    v = scheme_struct_ref(argv[1], 0);
+    v = scheme_struct_ref(arity, 0);
     if (SCHEME_INTP(v)) {
       minc = SCHEME_INT_VAL(v);
       maxc = -1;
@@ -3015,6 +3026,16 @@ static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
   scheme_wrong_count_m(name, minc, maxc, argc - 2, args, 0);
 
   return NULL;
+}
+
+static Scheme_Object *raise_arity_error(int argc, Scheme_Object *argv[])
+{
+  return do_raise_arity_error("raise-arity-error", argc, argv, 1);
+}
+
+static Scheme_Object *raise_arity_mask_error(int argc, Scheme_Object *argv[])
+{
+  return do_raise_arity_error("raise-arity-mask-error", argc, argv, 0);
 }
 
 static Scheme_Object *raise_result_arity_error(int argc, Scheme_Object *argv[])

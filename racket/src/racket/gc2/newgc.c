@@ -184,8 +184,20 @@ extern double scheme_get_inexact_milliseconds(void);
 /* Callbacks and hooks                                                       */
 /*****************************************************************************/
 
-void (*GC_out_of_memory)(void);
+GC_Out_Of_Memory_Proc GC_out_of_memory;
 void (*GC_report_out_of_memory)(void);
+
+GC_Out_Of_Memory_Proc GC_get_out_of_memory(void)
+{
+  NewGC *gc = GC_get_GC();
+  return gc->out_of_memory;
+}
+
+void GC_set_out_of_memory(GC_Out_Of_Memory_Proc out_of_memory)
+{
+  NewGC *gc = GC_get_GC();
+  gc->out_of_memory = out_of_memory;
+}
 
 GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
   NewGC *gc = GC_get_GC();
@@ -308,9 +320,12 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
         if (gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated.
            * Inform the thunk and then die semi-gracefully */
-          if (GC_out_of_memory) {
+          if (GC_out_of_memory || gc->out_of_memory) {
             gc->used_pages -= page_count;
-            GC_out_of_memory();
+            if (gc->out_of_memory)
+              gc->out_of_memory();
+            else
+              GC_out_of_memory();
           }
           out_of_memory();
         }
@@ -358,7 +373,9 @@ static void *malloc_pages_maybe_fail(NewGC *gc, size_t len, size_t alignment, in
         gc->gen0.current_size += account_size;
       }
       tried_gc = 1;
-    } else if (GC_out_of_memory)
+    } else if (gc->out_of_memory)
+      gc->out_of_memory();
+    else if (GC_out_of_memory)
       GC_out_of_memory();
     else
       out_of_memory();
@@ -963,6 +980,20 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
                           (Fixup2_Proc)fixup, constant_Size, atomic);
 }
 
+static uintptr_t get_place_child_memory_use()
+{
+#ifdef MZ_USE_PLACES
+  NewGC *gc = GC_get_GC();
+  uintptr_t amt;
+  mzrt_mutex_lock(gc->child_total_lock);
+  amt = gc->child_gc_total;
+  mzrt_mutex_unlock(gc->child_total_lock);
+  return amt;
+#else
+  return 0;
+#endif
+}
+
 intptr_t GC_get_memory_use(void *o) 
 {
   NewGC *gc = GC_get_GC();
@@ -975,9 +1006,7 @@ intptr_t GC_get_memory_use(void *o)
   amt = add_no_overflow(gen0_size_in_use(gc), gc->memory_in_use);
   amt = add_no_overflow(amt, gc->gen0_phantom_count);
 #ifdef MZ_USE_PLACES
-  mzrt_mutex_lock(gc->child_total_lock);
-  amt = add_no_overflow(amt, gc->child_gc_total);
-  mzrt_mutex_unlock(gc->child_total_lock);
+  amt = add_no_overflow(amt, get_place_child_memory_use());
 #endif
   
   return (intptr_t)amt;
@@ -1295,14 +1324,17 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   if (GC_gen0_alloc_only) return NULL;
 
 #ifdef NEWGC_BTC_ACCOUNT
-  if (GC_out_of_memory || gc->alternate_accounting_custodian) {
+  if (GC_out_of_memory || gc->out_of_memory || gc->alternate_accounting_custodian) {
     if (premaster_or_place_gc(gc)) {
       if (BTC_single_allocation_limit(gc, request_size_bytes)) {
         /* We're allowed to fail. Check for allocations that exceed a single-time
            limit. See BTC_single_allocation_limit() for more information. */
         if (gc->alternate_accounting_custodian)
           return NULL;
-        GC_out_of_memory();
+        if (gc->out_of_memory)
+          gc->out_of_memory();
+        else
+          GC_out_of_memory();
       }
     }
   }
@@ -6286,6 +6318,7 @@ void GC_dump_with_traces(int flags,
 
     GCWARN((GCOUTF,"\n"));
     GCWARN((GCOUTF,"Current memory use: %" PRIdPTR "\n", GC_get_memory_use(NULL)));
+    GCWARN((GCOUTF," part current use from child places: %" PRIdPTR "\n", get_place_child_memory_use()));
     GCWARN((GCOUTF,"Peak memory use before a collection: %" PRIdPTR "\n", gc->peak_pre_memory_use));
     GCWARN((GCOUTF,"Peak memory use after a collection: %" PRIdPTR "\n", gc->peak_memory_use));
     GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",

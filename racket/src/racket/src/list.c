@@ -696,22 +696,22 @@ scheme_init_list (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("hash-iterate-value",
 			     scheme_make_noncm_prim(scheme_hash_table_iterate_value,
 						    "hash-iterate-value",
-                                                    2, 2),
+                                                    2, 3),
 			     env);
   scheme_addto_prim_instance("hash-iterate-key",
 			     scheme_make_noncm_prim(scheme_hash_table_iterate_key,
 						    "hash-iterate-key",
-                                                    2, 2),
+                                                    2, 3),
 			     env);
   scheme_addto_prim_instance("hash-iterate-pair",
 			     scheme_make_immed_prim(scheme_hash_table_iterate_pair,
 						    "hash-iterate-pair",
-                                                    2, 2),
+                                                    2, 3),
 			     env);
   scheme_addto_prim_instance("hash-iterate-key+value",
 			     scheme_make_prim_w_arity2(scheme_hash_table_iterate_key_value,
-						    "hash-iterate-key+value",
-                                                    2, 2, 2, 2),
+                                                       "hash-iterate-key+value",
+                                                       2, 3, 2, 2),
 			     env);
 
   scheme_addto_prim_instance("hash-keys-subset?",
@@ -1000,21 +1000,21 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
 
   /* unsafe-hash-iterate-key ---------------------------------------- */
   p = scheme_make_noncm_prim(unsafe_hash_table_iterate_key,
-			     "unsafe-mutable-hash-iterate-key", 2, 2);
+			     "unsafe-mutable-hash-iterate-key", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_addto_prim_instance ("unsafe-mutable-hash-iterate-key", p, env);
   
   p = scheme_make_noncm_prim(unsafe_hash_tree_iterate_key,
-			     "unsafe-immutable-hash-iterate-key", 2, 2);
+			     "unsafe-immutable-hash-iterate-key", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_addto_prim_instance ("unsafe-immutable-hash-iterate-key", p, env);
   
   p = scheme_make_noncm_prim(unsafe_bucket_table_iterate_key,
-			     "unsafe-weak-hash-iterate-key", 2, 2);
+			     "unsafe-weak-hash-iterate-key", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -1022,21 +1022,21 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
 
   /* unsafe-hash-iterate-value ---------------------------------------- */
   p = scheme_make_noncm_prim(unsafe_hash_table_iterate_value,
-			     "unsafe-mutable-hash-iterate-value", 2, 2);
+			     "unsafe-mutable-hash-iterate-value", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_addto_prim_instance ("unsafe-mutable-hash-iterate-value", p, env);
 
   p = scheme_make_noncm_prim(unsafe_hash_tree_iterate_value,
-			     "unsafe-immutable-hash-iterate-value", 2, 2);
+			     "unsafe-immutable-hash-iterate-value", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_addto_prim_instance ("unsafe-immutable-hash-iterate-value", p, env);
 
   p = scheme_make_noncm_prim(unsafe_bucket_table_iterate_value,
-			     "unsafe-weak-hash-iterate-value", 2, 2);
+			     "unsafe-weak-hash-iterate-value", 2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -1045,7 +1045,7 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
   /* unsafe-hash-iterate-key+value ---------------------------------------- */
   p = scheme_make_prim_w_arity2(unsafe_hash_table_iterate_key_value,
 				"unsafe-mutable-hash-iterate-key+value", 
-				2, 2, 2, 2);
+				2, 3, 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -1053,7 +1053,7 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
   
   p = scheme_make_prim_w_arity2(unsafe_hash_tree_iterate_key_value,
 				"unsafe-immutable-hash-iterate-key+value", 
-				2, 2, 2, 2);
+				2, 3, 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
@@ -1061,7 +1061,7 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
 
   p = scheme_make_prim_w_arity2(unsafe_bucket_table_iterate_key_value,
 				"unsafe-weak-hash-iterate-key+value", 
-				2, 2, 2, 2);
+				2, 3, 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -1070,7 +1070,7 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
   /* unsafe-hash-iterate-pair ---------------------------------------- */
   p = scheme_make_immed_prim(unsafe_hash_table_iterate_pair,
 			     "unsafe-mutable-hash-iterate-pair", 
-			     2, 2);
+			     2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -1078,14 +1078,14 @@ scheme_init_unsafe_hash (Scheme_Startup_Env *env)
   
   p = scheme_make_immed_prim(unsafe_hash_tree_iterate_pair,
 			     "unsafe-immutable-hash-iterate-pair", 
-			     2, 2);
+			     2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_addto_prim_instance ("unsafe-immutable-hash-iterate-pair", p, env);
 
   p = scheme_make_immed_prim(unsafe_bucket_table_iterate_pair,
 			     "unsafe-weak-hash-iterate-pair", 
-			     2, 2);
+			     2, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
@@ -2603,9 +2603,10 @@ static Scheme_Object *hash_failed(int argc, Scheme_Object *argv[])
 
   if (argc == 3) {
     v = argv[2];
-    if (SCHEME_PROCP(v))
+    if (SCHEME_PROCP(v)) {
+      scheme_check_proc_arity("hash-ref", 0, 2, argc, argv);
       return _scheme_tail_apply(v, 0, NULL);
-    else
+    } else
       return v;
   } else {
     scheme_contract_error("hash-ref",
@@ -3047,13 +3048,18 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("hash-iterate-next", 
 			  "exact-nonnegative-integer?", 1, argc, argv);  
 
-  scheme_contract_error("hash-iterate-next", "no element at index", 
-                        "index", 1, argv[1],
-                        NULL);
-  return NULL;
+  if (0) {
+    scheme_contract_error("hash-iterate-next", "no element at index", 
+                          "index", 1, argv[1],
+                          NULL);
+    return NULL;
+  } else
+    return scheme_false;
 }
 
-static int hash_table_index(const char *name, int argc, Scheme_Object *argv[], Scheme_Object **_k, Scheme_Object **_v)
+static int hash_table_index(const char *name, int argc, Scheme_Object *argv[],
+                            Scheme_Object **_k, Scheme_Object **_v,
+                            Scheme_Object *bad_index_v)
 {
   Scheme_Object *p = argv[1], *obj = argv[0];
   mzlonglong pos;
@@ -3082,10 +3088,16 @@ static int hash_table_index(const char *name, int argc, Scheme_Object *argv[], S
        && (SCHEME_INT_VAL(p) >= 0))
       || (SCHEME_BIGNUMP(p)
           && SCHEME_BIGPOS(p))) {
-    scheme_contract_error(name, "no element at index",
-                          "index", 1, p,
-                          NULL);
-    return 0;
+    if (bad_index_v) {
+      if (_k) *_k = bad_index_v;
+      if (_v) *_v = bad_index_v;
+      return 0;
+    } else {
+      scheme_contract_error(name, "no element at index",
+                            "index", 1, p,
+                            NULL);
+      return 0;
+    }
   }
 
   scheme_wrong_contract(name, "exact-nonnegative-integer?", 1, argc, argv);  
@@ -3096,21 +3108,19 @@ Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[])
 {
   const char *name = "hash-iterate-key";
   Scheme_Object *key;
-  if (hash_table_index(name, argc, argv, &key, NULL)) {
+  if (hash_table_index(name, argc, argv, &key, NULL, ((argc > 2) ? argv[2] : NULL))) {
     Scheme_Object *obj = argv[0];
     if (SCHEME_NP_CHAPERONEP(obj))
       return chaperone_hash_key(name, obj, key);
-    else
-      return key;
   }
-  return NULL;
+  return key;
 }
 
 Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[])
 {
   const char *name = "hash-iterate-value";
   Scheme_Object *key, *val;
-  if (hash_table_index(name, argc, argv, &key, &val)) {
+  if (hash_table_index(name, argc, argv, &key, &val, ((argc > 2) ? argv[2] : NULL))) {
     Scheme_Object *obj = argv[0];
     if (SCHEME_NP_CHAPERONEP(obj)) {
       Scheme_Object *chap_key, *chap_val;
@@ -3118,17 +3128,15 @@ Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[])
       chaperone_hash_key_value(name, obj, key, &chap_key, &chap_val, ischap);
       return chap_val;
     }
-    else
-      return val;
   }
-  return NULL;
+  return val;
 }
 
 Scheme_Object *scheme_hash_table_iterate_pair(int argc, Scheme_Object *argv[])
 {
   const char *name = "hash-iterate-pair";
   Scheme_Object *key, *val;
-  if (hash_table_index(name, argc, argv, &key, &val)) {
+  if (hash_table_index(name, argc, argv, &key, &val, ((argc > 2) ? argv[2] : NULL))) {
     Scheme_Object *obj = argv[0];
     if (SCHEME_NP_CHAPERONEP(obj)) {
       Scheme_Object *chap_key, *chap_val;
@@ -3136,29 +3144,24 @@ Scheme_Object *scheme_hash_table_iterate_pair(int argc, Scheme_Object *argv[])
       chaperone_hash_key_value(name, obj, key, &chap_key, &chap_val, ischap);
       return scheme_make_pair(chap_key, chap_val);
     }
-    else
-      return scheme_make_pair(key, val);
   }
-  return NULL;
+  return scheme_make_pair(key, val);
 }
 
 Scheme_Object *scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv[])
 {
   const char *name = "hash-iterate-key+value";
-  Scheme_Object *key, *val;
-  if (hash_table_index(name, argc, argv, &key, &val)) {
-    Scheme_Object *res[2], *obj = argv[0];
+  Scheme_Object *key, *val, *res[2];
+  if (hash_table_index(name, argc, argv, &key, &val, ((argc > 2) ? argv[2] : NULL))) {
+    Scheme_Object *obj = argv[0];
     if (SCHEME_NP_CHAPERONEP(obj)) {
       int ischap = SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj));
-      chaperone_hash_key_value(name, obj, key, &res[0], &res[1], ischap);
+      chaperone_hash_key_value(name, obj, key, &key, &val, ischap);
     }
-    else {
-      res[0] = key;
-      res[1] = val;
-    }
-    return scheme_values(2, res);
   }
-  return NULL;
+  res[0] = key;
+  res[1] = val;
+  return scheme_values(2, res);
 }
 
 static Scheme_Object *hash_keys_subset_p_slow(int argc, Scheme_Object *argv[])
@@ -4242,12 +4245,14 @@ Scheme_Object *unsafe_hash_table_iterate_next(int argc, Scheme_Object *argv[])
   
   if (res)
     return res;
-  else
+  else if (0) {
     scheme_contract_error("unsafe-mutable-hash-iterate-next", 
 			  "no element at index", 
 			  "index", 1, argv[1],
 			  NULL);
-  return NULL;
+    return NULL;
+  } else
+    return scheme_false;
 }
 
 Scheme_Object *unsafe_hash_table_iterate_key(int argc, Scheme_Object *argv[])
@@ -4265,8 +4270,13 @@ Scheme_Object *unsafe_hash_table_iterate_key(int argc, Scheme_Object *argv[])
     if (scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &key, NULL))
       return key;
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return argv[2];
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 static Scheme_Object *unsafe_hash_table_iterate_value_slow(int argc, Scheme_Object *argv[])
@@ -4283,11 +4293,16 @@ static Scheme_Object *unsafe_hash_table_iterate_value_slow(int argc, Scheme_Obje
       return chap_val;
     }
   } else {
-    if(scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &key, &val))
+    if (scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &key, &val))
       return val;
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return argv[2];
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 Scheme_Object *unsafe_hash_table_iterate_value(int argc, Scheme_Object *argv[])
@@ -4320,8 +4335,13 @@ Scheme_Object *unsafe_hash_table_iterate_pair(int argc, Scheme_Object *argv[])
     if (scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &key, &val))
       return scheme_make_pair(key, val);
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return scheme_make_pair(argv[2], argv[2]);
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 Scheme_Object *unsafe_hash_table_iterate_key_value(int argc, Scheme_Object *argv[])
@@ -4341,8 +4361,15 @@ Scheme_Object *unsafe_hash_table_iterate_key_value(int argc, Scheme_Object *argv
     if (scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &res[0], &res[1]))
       return scheme_values(2, res);
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+  
+  if (argc > 2) {
+    res[0] = argv[2];
+    res[1] = argv[2];
+    return scheme_values(2, res);
+  } else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 /* unsafe_hash_tree, ie SCHEME_HASHTRP, ops */
@@ -4469,12 +4496,14 @@ Scheme_Object *unsafe_bucket_table_iterate_next(int argc, Scheme_Object *argv[])
 				 SCHEME_INT_VAL(argv[1]));
   if (res)
     return res;
-  else
+  else if (0) {
     scheme_contract_error("unsafe-weak-hash-iterate-next", 
 			  "no element at index", 
 			  "index", 1, argv[1],
 			  NULL);
-  return NULL;
+    return NULL;
+  } else
+    return scheme_false;
 }
 
 Scheme_Object *unsafe_bucket_table_iterate_key(int argc, Scheme_Object *argv[])
@@ -4488,11 +4517,16 @@ Scheme_Object *unsafe_bucket_table_iterate_key(int argc, Scheme_Object *argv[])
     if (scheme_bucket_table_index(ht, pos, &key, NULL))
       return chaperone_hash_key(name, obj, key);
   } else {
-    if(scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, &key, NULL))
+    if (scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, &key, NULL))
       return key;
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return argv[2];
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 Scheme_Object *unsafe_bucket_table_iterate_value(int argc, Scheme_Object *argv[])
@@ -4509,11 +4543,16 @@ Scheme_Object *unsafe_bucket_table_iterate_value(int argc, Scheme_Object *argv[]
       return chap_val;
     }
   } else {
-    if(scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, &key, &val))
+    if (scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, &key, &val))
       return val;
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return argv[2];
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 Scheme_Object *unsafe_bucket_table_iterate_pair(int argc, Scheme_Object *argv[])
@@ -4533,8 +4572,13 @@ Scheme_Object *unsafe_bucket_table_iterate_pair(int argc, Scheme_Object *argv[])
     if(scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, &key, &val))
       return scheme_make_pair(key, val);
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2)
+    return scheme_make_pair(argv[2], argv[2]);
+  else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }
 
 Scheme_Object *unsafe_bucket_table_iterate_key_value(int argc, Scheme_Object *argv[])
@@ -4552,9 +4596,16 @@ Scheme_Object *unsafe_bucket_table_iterate_key_value(int argc, Scheme_Object *ar
     }
   } else {
     Scheme_Bucket_Table *ht = (Scheme_Bucket_Table *)obj;
-    if(scheme_bucket_table_index(ht, pos, &res[0], &res[1]))
+    if (scheme_bucket_table_index(ht, pos, &res[0], &res[1]))
       return scheme_values(2, res);
   }
-  scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
-  return NULL;  
+
+  if (argc > 2) {
+    res[0] = argv[2];
+    res[1] = argv[2];
+    return scheme_values(2, res);
+  } else {
+    scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
+    return NULL;
+  }
 }

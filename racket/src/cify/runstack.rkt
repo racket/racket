@@ -99,9 +99,12 @@
         (set-runstack-depth! rs (- (runstack-depth rs) 1))
         (hash-remove! (runstack-need-inits rs) var)
         (when (hash-ref (runstack-unsynced rs) var #f)
-          (when track-local?
-            (hash-set! (runstack-rs-state rs) var 'local))
           (hash-remove! (runstack-unsynced rs) var))
+        (when (and track-local?
+                   ;; If all references were pre-sync, it can be local
+                   (for/and ([state (in-hash-values (hash-ref (runstack-all-refs rs) var '#hasheq()))])
+                     (eq? state 'pre-sync)))
+          (hash-set! (runstack-rs-state rs) var 'local))
         (let ([refs (hash-ref (runstack-unsynced-refs rs) var '())])
           (hash-remove! (runstack-unsynced-refs rs) var)
           (for ([ref (in-list refs)])
@@ -132,7 +135,10 @@
       s))
 
 (define (runstack-ref-use! rs ref)
-  (set-runstack-all-refs! rs (hash-set2 (runstack-all-refs rs) (ref-id ref) ref #t)))
+  (set-runstack-all-refs! rs (hash-set2 (runstack-all-refs rs) (ref-id ref) ref
+                                        (if (hash-ref (runstack-unsynced rs) (ref-id ref) #f)
+                                            'pre-sync
+                                            'post-sync))))
 
 (define (runstack-assign rs id)
   (hash-remove! (runstack-need-inits rs) id)
@@ -283,5 +289,6 @@
 
 (define (runstack-generate-staged-clears! rs)
   (for ([(id get-pos) (in-sorted-hash (runstack-staged-clears rs) symbol<?)])
-    (out "c_no_use(c_runbase, ~a);" (get-pos)))
+    (unless (eq? (hash-ref (runstack-var-depths rs) id) 'local)
+      (out "c_no_use(c_runbase, ~a);" (get-pos))))
   (set-runstack-staged-clears! rs #hasheq()))

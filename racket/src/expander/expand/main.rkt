@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/set.rkt"
          "../common/struct-star.rkt"
+         "../common/parameter-like.rkt"
          "../syntax/syntax.rkt"
          "../syntax/property.rkt"
          "../syntax/scope.rkt"
@@ -427,15 +428,16 @@
                                     ;; lose them at the point where expansion stops
                                     (expand-context-def-ctx-scopes ctx))]))
   (define transformed-s
-    (parameterize ([current-expand-context m-ctx]
-                   [current-namespace (namespace->namespace-at-phase
+    (parameterize ([current-namespace (namespace->namespace-at-phase
                                        (expand-context-namespace ctx)
-                                       (add1 (expand-context-phase ctx)))]
-                   [current-module-code-inspector (or insp-of-t #;(current-module-code-inspector))])
-      (call-with-continuation-barrier
-       (lambda ()
-         ;; Call the transformer!
-         ((transformer->procedure t) cleaned-s)))))
+                                       (add1 (expand-context-phase ctx)))])
+      (parameterize-like
+       #:with ([current-expand-context m-ctx]
+               [current-module-code-inspector (or insp-of-t #;(current-module-code-inspector))])
+       (call-with-continuation-barrier
+        (lambda ()
+          ;; Call the transformer!
+          ((transformer->procedure t) cleaned-s))))))
   (log-expand ctx 'macro-post-x transformed-s cleaned-s)
   (unless (syntax? transformed-s)
     (raise-arguments-error (syntax-e id)
@@ -671,12 +673,13 @@
                                           #:phase phase))))
   (define vals
     (call-with-values (lambda ()
-                        (parameterize ([current-expand-context ctx]
-                                       [current-namespace ns]
+                        (parameterize ([current-namespace ns]
                                        [eval-jit-enabled #f])
-                          (if compiled
-                              (eval-single-top compiled ns)
-                              (direct-eval p ns (root-expand-context-self-mpi ctx)))))
+                          (parameterize-like
+                           #:with ([current-expand-context ctx])
+                           (if compiled
+                               (eval-single-top compiled ns)
+                               (direct-eval p ns (root-expand-context-self-mpi ctx))))))
       list))
   (unless (= (length vals) (length ids))
     (apply raise-result-arity-error
@@ -772,16 +775,18 @@
 ;; as a function, and that fnuction might want to use
 ;; `syntax-local-value`, etc.
 (define (rename-transformer-target-in-context t ctx)
-  (parameterize ([current-expand-context ctx])
-    (rename-transformer-target t)))
+  (parameterize-like
+   #:with ([current-expand-context ctx])
+   (rename-transformer-target t)))
 
 ;; In case the rename-transformer has a callback, ensure that the
 ;; current expansion context is available while installing a
 ;; `free-identifier=?` equivalence
 (define (maybe-install-free=id-in-context! val id phase ctx)
   (when (rename-transformer? val)
-    (parameterize ([current-expand-context ctx])
-      (maybe-install-free=id! val id phase))))
+    (parameterize-like
+     #:with ([current-expand-context ctx])
+     (maybe-install-free=id! val id phase))))
 
 ;; Transfer the original ID's source location, if any, when expanding
 ;; a reference to a rename transformer

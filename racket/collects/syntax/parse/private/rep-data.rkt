@@ -59,7 +59,6 @@ DeclEntry =
 - (den:datum-lit Id Symbol)
 - (den:class Id Id Arguments)
 - (den:magic-class Id Id Arguments Stx)
-- (den:parser Id (Listof SAttr) Bool scopts)
 - (den:delayed Id Id)
 
 Arguments is defined in rep-patterns.rkt
@@ -74,7 +73,7 @@ A DeclEnv is built up in stages:
   2) pattern directives
      #:declare -> den:magic-class
   3) create-aux-def creates aux parser defs
-     den:class -> den:parser or den:delayed
+     den:class -> den:delayed
 
 == Scoping ==
 
@@ -89,7 +88,6 @@ expressions are duplicated, and may be evaluated in different scopes.
 
 (define-struct den:class (name class argu))
 (define-struct den:magic-class (name class argu role))
-(define-struct den:parser (parser attrs splicing? opts))
 ;; and from residual.rkt:
 ;;  (define-struct den:lit (internal external input-phase lit-phase))
 ;;  (define-struct den:datum-lit (internal external))
@@ -134,8 +132,6 @@ expressions are duplicated, and may be evaluated in different scopes.
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(den:parser _p _a _sp _opts)
-       (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
 (define (declenv-put-stxclass env id stxclass-name argu [role #f])
@@ -166,7 +162,7 @@ expressions are duplicated, and may be evaluated in different scopes.
   (define idbm (make-bound-id-table))
   (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
-             #:when (or (den:class? v) (den:magic-class? v) (den:parser? v))
+             #:when (or (den:class? v) (den:magic-class? v))
              #:unless (bound-id-table-ref idbm k #f))
     k))
 
@@ -182,11 +178,10 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define DeclEnv/c declenv?)
 
 (define DeclEntry/c 
-  (or/c den:lit? den:datum-lit? den:class? den:magic-class? den:parser? den:delayed?))
+  (or/c den:lit? den:datum-lit? den:class? den:magic-class? den:delayed?))
 
 (provide (struct-out den:class)
          (struct-out den:magic-class)
-         (struct-out den:parser)
          ;; from residual.rkt:
          (struct-out den:lit)
          (struct-out den:datum-lit)
@@ -195,10 +190,6 @@ expressions are duplicated, and may be evaluated in different scopes.
 (provide/contract
  [DeclEnv/c contract?]
  [DeclEntry/c contract?]
-
- [make-dummy-stxclass (-> identifier? stxclass?)]
- [stxclass-lookup-config (parameter/c (symbols 'no 'try 'yes))]
- [stxclass-colon-notation? (parameter/c boolean?)]
 
  [new-declenv
   (->* [(listof (or/c den:lit? den:datum-lit?))]
@@ -219,84 +210,35 @@ expressions are duplicated, and may be evaluated in different scopes.
       (-> (or/c identifier? regexp?) DeclEntry/c any/c (values DeclEntry/c any/c))
       any/c
       (values DeclEnv/c any/c))]
+ [declenv-check-unbound
+  (->* [DeclEnv/c identifier?] [symbol? #:blame-declare? boolean?] any)]
 
  [get-stxclass
-  (-> identifier? stxclass?)]
+  (->* [identifier?] [boolean?] (or/c stxclass? #f))]
+ [check-stxclass-arity
+  (-> stxclass? syntax? exact-nonnegative-integer? (listof keyword?) any)]
  [get-stxclass/check-arity
   (-> identifier? syntax? exact-nonnegative-integer? (listof keyword?)
-      stxclass?)]
- [split-id/get-stxclass
-  (-> identifier? DeclEnv/c
-      (values identifier? (or/c stxclass? den:lit? den:datum-lit? #f)))])
+      stxclass?)])
 
-;; stxclass-lookup-config : (parameterof (U 'no 'try 'yes))
-;;  'no means don't lookup, always use dummy (no nested attrs)
-;;  'try means lookup, but on failure use dummy (-> nested attrs only from prev.)
-;;  'yes means lookup, raise error on failure
-(define stxclass-lookup-config (make-parameter 'yes))
-
-;; stxclass-colon-notation? : (parameterof boolean)
-;;   if #t, then x:sc notation means (~var x sc)
-;;   otherwise, just a var
-(define stxclass-colon-notation? (make-parameter #t))
-
-;; get-stxclass : Identifier -> Stxclass
+;; get-stxclass : Identifier [Boolean] -> stxclass/#f
 ;; Stxclasses are primarily bound by env / syntax-local-value, but a few
 ;; are attached to existing bindings via alt-stxclass-mapping.
+(define (get-stxclass id [allow-undef? #f])
+  (cond [(syntax-local-value/record id stxclass?) => values]
+        [(assoc id (unbox alt-stxclass-mapping) free-identifier=?) => cdr]
+        [allow-undef? #f]
+        [else (wrong-syntax id "not defined as syntax class")]))
 
-(define (get-stxclass id)
-  (define config (stxclass-lookup-config))
-  (if (eq? config 'no)
-      (make-dummy-stxclass id)
-      (cond [(syntax-local-value/record id stxclass?) => values]
-            [(assoc id (unbox alt-stxclass-mapping) free-identifier=?)
-             => cdr]
-            [(eq? config 'try)
-             (make-dummy-stxclass id)]
-            [else (wrong-syntax id "not defined as syntax class")])))
+;; check-stxclass-arity : stxclass Syntax Nat (Listof Keyword) -> Void
+(define (check-stxclass-arity sc stx pos-count keywords)
+  (check-arity (stxclass-arity sc) pos-count keywords
+               (lambda (msg) (raise-syntax-error #f msg stx))))
 
 (define (get-stxclass/check-arity id stx pos-count keywords)
-  (let ([sc (get-stxclass id)])
-    (unless (memq (stxclass-lookup-config) '(try no))
-      (check-arity (stxclass-arity sc) pos-count keywords
-                   (lambda (msg)
-                     (raise-syntax-error #f msg stx))))
-    sc))
-
-(define (split-id/get-stxclass id0 decls)
-  (cond [(and (stxclass-colon-notation?)
-              (regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0))))
-         => (lambda (m)
-              (define-values [src ln col pos span]
-                (syntax-srcloc-values id0))
-              (define id-str (cadr m))
-              (define id-len (string-length id-str))
-              (define suffix-str (caddr m))
-              (define suffix-len (string-length suffix-str))
-              (define id
-                (datum->syntax id0 (string->symbol id-str)
-                  (list src ln col pos id-len)
-                  id0))
-              (define suffix
-                (datum->syntax id0 (string->symbol suffix-str)
-                  (list src ln (and col (+ col id-len 1)) (and pos (+ pos id-len 1)) suffix-len)
-                  id0))
-              (declenv-check-unbound decls id (syntax-e suffix)
-                                     #:blame-declare? #t)
-              (let ([suffix-entry (declenv-lookup decls suffix)])
-                (cond [(or (den:lit? suffix-entry) (den:datum-lit? suffix-entry))
-                       (values id suffix-entry)]
-                      [else
-                       (let ([sc (get-stxclass/check-arity suffix id0 0 null)])
-                         (values id sc))])))]
-        [else (values id0 #f)]))
-
-(define (syntax-srcloc-values stx)
-  (values (syntax-source stx)
-          (syntax-line stx)
-          (syntax-column stx)
-          (syntax-position stx)
-          (syntax-span stx)))
+  (define sc (get-stxclass id))
+  (check-stxclass-arity sc stx pos-count keywords)
+  sc)
 
 ;; ----
 

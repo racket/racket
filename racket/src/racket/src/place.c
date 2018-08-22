@@ -3394,6 +3394,11 @@ Scheme_Object *scheme_place_async_channel_receive(Scheme_Object *ch) {
   return place_async_receive((Scheme_Place_Async_Channel *)ch);
 }
 
+int scheme_place_can_receive()
+{
+  return !!place_object;
+}
+
 /*========================================================================*/
 /*                       precise GC traversers                            */
 /*========================================================================*/

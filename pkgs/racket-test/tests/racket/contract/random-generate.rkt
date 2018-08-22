@@ -413,8 +413,64 @@
   (check-exercise 2 void? even-list/c)
   (check-exercise 2 void? even-list/c/generate))
 
-(check-false
- (contract-random-generate
-  (make-chaperone-contract
-   #:late-neg-projection
-   (λ (b) (λ (f v np) v)))))
+(let () ;; test the default value of generate / exercise for make-chaperone-contract
+  (define custom-any/c
+    (make-chaperone-contract
+     #:late-neg-projection
+     (λ (b) (λ (v np) v))))
+  (define any->any/c
+    (make-chaperone-contract
+     #:late-neg-projection
+     (λ (b)
+       (λ (v np)
+         (chaperone-procedure v values impersonator-prop:contracted any->any/c)))))
+  (define/contract proc any->any/c values)
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation custom-any/c)))
+  (check-not-exn (λ () (contract-exercise proc))))
+
+(let ()
+  (struct impersonate-any/c-struct ()
+    #:property prop:contract
+    (build-contract-property
+     #:late-neg-projection
+     (λ (ctc) (λ (b) (λ (v np) v)))))
+  (define impersonate-any/c (impersonate-any/c-struct))
+  (struct chaperone-proc?/c-struct ()
+    #:property prop:chaperone-contract
+    (build-chaperone-contract-property
+     #:late-neg-projection
+     (λ (ctc) (λ (b) (λ (v np) v)))))
+  (define chaperone-proc?/c (chaperone-proc?/c-struct))
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation impersonate-any/c)))
+  (check-exn cannot-generate-exn?
+             (λ ()
+               (test-contract-generation
+                (->i ([n integer?])
+                     [_ (n) (λ (r) (eq? r (even? n)))]))))
+  ;; Testing the default return value for contract-struct-generate
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation chaperone-proc?/c))))
+
+(check-exercise
+ 10
+ pos-exn?
+ (contract (-> integer? (-> integer? integer?))
+           (λ (x) (λ (y) #f))
+           'pos
+           'neg))
+
+(check-exercise
+ 10
+ pos-exn?
+ (contract (->i ([m integer?])
+                [result (-> integer? integer?)])
+           (λ (x) (λ (y) #f))
+           'pos
+           'neg))
+
+(check-exercise
+ 5
+ void?
+ (contract (-> (and/c #f #t) any)
+           (λ (_) 'thing)
+           'pos
+           'neg))

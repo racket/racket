@@ -110,6 +110,11 @@ static void init_allocation_callback(void);
 #endif
 
 #ifdef IMPLEMENT_WRITE_XOR_EXECUTE_BY_SIGNAL_HANDLER
+/* For this option to work, the `si->si_addr` value provided
+   to the signal handler on a no-execute-permission signal
+   must be the address that isn't executable, as opposed to
+   the address of an instruction that tried to call or jump to
+   a non-executable address. */
 static void install_w_xor_x_handler();
 static void register_as_executable(void *p, size_t len, int can_exec);
 #endif
@@ -731,7 +736,11 @@ THREAD_LOCAL_DECL(static void (*save_oom)(void));
 
 static void raise_out_of_memory(void)
 {
+#ifdef MZ_PRECISE_GC
+  GC_set_out_of_memory(save_oom);
+#else
   GC_out_of_memory = save_oom;
+#endif
   scheme_raise_out_of_memory(NULL, NULL);
 }
 
@@ -750,10 +759,21 @@ void *scheme_malloc_fail_ok(void *(*f)(size_t), size_t s)
 {
   void *v;
 
+#ifdef MZ_PRECISE_GC
+  save_oom = GC_get_out_of_memory();
+  GC_set_out_of_memory(raise_out_of_memory);
+#else
   save_oom = GC_out_of_memory;
   GC_out_of_memory = raise_out_of_memory;
+#endif
+
   v = f(s);
+
+#ifdef MZ_PRECISE_GC
+  GC_set_out_of_memory(save_oom);
+#else
   GC_out_of_memory = save_oom;
+#endif
 
   return v;
 }
@@ -774,15 +794,21 @@ void *scheme_malloc_eternal(size_t n)
 
   s = MALLOC(n);
   if (!s) {
+#ifdef MZ_PRECISE_GC
+    GC_Out_Of_Memory_Proc oom;
+    oom = GC_get_out_of_memory();
+    if (oom)
+      oom();
+#endif
+
     if (GC_out_of_memory)
       GC_out_of_memory();
-    else {
-      if (scheme_console_printf)
-	scheme_console_printf("out of memory\n");
-      else
-	printf("out of memory\n");
-      exit(1);
-    }
+
+    if (scheme_console_printf)
+      scheme_console_printf("out of memory\n");
+    else
+      printf("out of memory\n");
+    exit(1);
   }
 	
 
@@ -943,6 +969,8 @@ START_XFORM_SKIP;
 THREAD_LOCAL_DECL(static void *code_allocation_page_list);
 
 THREAD_LOCAL_DECL(intptr_t scheme_code_page_total);
+THREAD_LOCAL_DECL(intptr_t scheme_code_total);
+THREAD_LOCAL_DECL(intptr_t scheme_code_count);
 
 #if defined(MZ_CODE_ALLOC_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
@@ -1161,6 +1189,8 @@ void *scheme_malloc_code(intptr_t size)
     sz = (sz + page_size - 1) & ~(page_size - 1);
     pg = malloc_page(sz);
     scheme_code_page_total += sz;
+    scheme_code_total += sz;
+    scheme_code_count++;
     *(intptr_t *)pg = sz;
     chain_page(pg);
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
@@ -1169,6 +1199,9 @@ void *scheme_malloc_code(intptr_t size)
   } else {
     bucket = free_list_find_bucket(size);
     size2 = free_list[bucket].size;
+
+    scheme_code_total += size2;
+    scheme_code_count++;
 
     if (!free_list[bucket].elems) {
       /* add a new page's worth of items to the free list */
@@ -1266,6 +1299,8 @@ void scheme_free_code(void *p)
   if (size >= page_size) {
     /* it was a large object on its own page(s) */
     scheme_code_page_total -= size;
+    scheme_code_total -= size;
+    --scheme_code_count;
     LOG_CODE_MALLOC(1, printf("freeing large %p (%ld) [%ld left]\n", 
                               p, size, scheme_code_page_total));
     unchain_page((char *)p - CODE_HEADER_SIZE);
@@ -1279,6 +1314,8 @@ void scheme_free_code(void *p)
     }
 
     size2 = free_list[bucket].size;
+    scheme_code_total -= size2;
+    --scheme_code_count;
 
     LOG_CODE_MALLOC(0, printf("freeing %ld / %ld\n", size2, bucket));
 

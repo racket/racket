@@ -1192,11 +1192,11 @@
             (duplicate-argument "source for copy" copy-from (car args))
             (loop (cdr args) count type (car args) mode fail-mode))]
        [(malloc-mode? (car args))
-        (if copy-from
+        (if mode
             (duplicate-argument "mode" mode (car args))
             (loop (cdr args) count type copy-from (car args) fail-mode))]
        [(eq? (car args) 'failok)
-        (if copy-from
+        (if fail-mode
             (duplicate-argument "failure mode" fail-mode (car args))
             (loop (cdr args) count type copy-from mode (car args)))]
        [else
@@ -1380,7 +1380,7 @@
                           (lambda (to-wrap)
                             (,(if call? 'foreign-procedure 'foreign-callable)
                              ,conv
-                             ,@(if (or blocking? async-apply) '(__thread) '())
+                             ,@(if (or blocking? async-apply) '(__collect_safe) '())
                              to-wrap
                              ,(map (lambda (in-type id)
                                      (if id
@@ -1407,7 +1407,7 @@
                         (weak-hash-ref ffi-expr->code expr #f))]
                    [code (if wb (car wb) #!bwp)])
               (if (eq? code #!bwp)
-                  (let ([code (eval/foreign expr (if call? 'comp-ffi 'comp-ffi-back))])
+                  (let ([code (eval/foreign expr (if call? 'comp-ffi-call 'comp-ffi-back))])
                     (hashtable-set! ffi-code->expr (car code) expr)
                     (with-interrupts-disabled
                      (weak-hash-set! ffi-expr->code expr (weak-cons code #f)))

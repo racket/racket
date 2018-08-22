@@ -159,5 +159,47 @@
                         ((offsets) (map quad-super-type (list 1))))
           offsets)))
 
+(err/rt-test
+ (let ()
+   (define (wrap x) x)
+   (letrec ([f (wrap (lambda () (g)))]
+            [g (let ([g2 (lambda () (letrec ([x x]) x))])
+                 g2)])
+     (f)))
+ letrec-exn?)
+
+;; Make sure a useless `set!` isn't discarded early
+(err/rt-test
+ (letrec ((B (begin (set! B B) 1))) 1)
+ letrec-exn?)
+
+(err/rt-test
+ (list (begin
+         (letrec ((x (set! x x))) 0)
+         0))
+ letrec-exn?)
+
+(err/rt-test
+ (letrec ((x (set! x (/ 0)))) 'ok)
+ exn:fail:contract:divide-by-zero?)
+
+(err/rt-test
+ (letrec ((x (set! x (values 1 0)))) 'ok)
+ exn:fail:contract:arity?)
+
+(err/rt-test
+ (let ([indirect (lambda (f) (f))])
+   (letrec ((x (indirect (lambda () (set! x (+ 1 0)) x))))
+     'ok))
+ letrec-exn?)
+
+(test 8
+      'ok
+      (let ([save #f])
+        (let ([indirect (lambda (f) (set! save f))]
+              [also-indirect (lambda () 8)])
+          (letrec ((x (indirect (lambda () (set! x (also-indirect)) x))))
+            'ok)
+          (save))))
 
 (report-errs)

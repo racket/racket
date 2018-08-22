@@ -2,7 +2,9 @@
 ;; Enabling uninterrupted mode defers a timer callback
 ;; until leaving uninterrupted mode. This is the same
 ;; as disabling and enabling interrupts at the Chez
-;; level, but cheaper and more limited.
+;; level, but cheaper and more limited. Uninterrupted
+;; mode should be used only by the implementation of
+;; engines and control in "engine.ss" and "control.ss".
 
 (define-virtual-register current-in-uninterrupted #f)
 (define-virtual-register pending-interrupt-callback #f)

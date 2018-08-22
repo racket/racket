@@ -21,4 +21,5 @@
   (hash-set! seen-defns 'arity-at-least? (known-predicate 'arity-at-least))
   (hash-set! seen-defns 'arity-at-least-value (known-function-of-satisfying '(arity-at-least)))
   (hash-set! seen-defns 'procedure? (known-predicate 'procedure))
-  (hash-set! seen-defns 'procedure-arity (known-function-of-satisfying '(procedure))))
+  (hash-set! seen-defns 'procedure-arity (known-function-of-satisfying '(procedure)))
+  (hash-set! seen-defns 'procedure-arity-mask (known-function-of-satisfying '(procedure))))

@@ -7,6 +7,7 @@
          "../syntax/binding.rkt"
          "../namespace/core.rkt"
          "../namespace/module.rkt"
+         "../namespace/namespace.rkt"
          "context.rkt"
          "main.rkt"
          "syntax-local.rkt"

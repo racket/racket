@@ -306,12 +306,13 @@
   (syntax-case stx ()
     [(_ binds orig-ids body)
      (let ([ctx (syntax-local-make-definition-context #f #f)])
-       (let ([body (parameterize ([current-parameter-environment
-                                   (extend-parameter-environment (current-parameter-environment) #'binds)])
-                     (local-expand #'(force-expand body)
-                                   (syntax-local-context)
-                                   null ;; `force-expand' actually determines stopping places
-                                   ctx))])
+       (let ([body (with-continuation-mark
+                    current-parameter-environment
+                    (extend-parameter-environment (current-parameter-environment) #'binds)
+                    (local-expand #'(force-expand body)
+                                  (syntax-local-context)
+                                  null ;; `force-expand' actually determines stopping places
+                                  ctx))])
          (let ([body
                 ;; Extract expanded body out of `body':
                 (syntax-case body (quote)
@@ -359,10 +360,11 @@
      (unless (eq? (syntax-local-context) 'module-begin)
        (raise-syntax-error #f "only allowed in module-begin context" stx))
      (with-syntax ([new-binds (update-parameter-keys #'orig-ids #'binds)])
-       (parameterize ([current-parameter-environment
-                       (extend-parameter-environment (current-parameter-environment)
-                                                     #'new-binds)])
-         (let* ([forms (syntax->list #'(body-form ...))]
+       (with-continuation-mark
+        current-parameter-environment
+        (extend-parameter-environment (current-parameter-environment)
+                                      #'new-binds)
+        (let* ([forms (syntax->list #'(body-form ...))]
                 ;; emulate how the macroexpander expands module bodies and introduces #%module-begin
                 [body (if (= (length forms) 1)
                           (let ([body (local-expand (car forms) 'module-begin #f)])
@@ -407,9 +409,10 @@
      [(_ e binds)
       (let ([as-expression
              (lambda ()
-               #'(parameterize ([current-parameter-environment
-                                 (extend-parameter-environment (current-parameter-environment) (quote-syntax binds))])
-                   e))])
+               #'(with-continuation-mark
+                  current-parameter-environment
+                  (extend-parameter-environment (current-parameter-environment) (quote-syntax binds))
+                  e))])
         (if (eq? (syntax-local-context) 'expression)
             (as-expression)
             (let ([e (local-expand #'e

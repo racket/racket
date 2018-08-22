@@ -60,19 +60,21 @@ Produces the same result as @racket[(bytes-length (string->bytes/utf-8
 @; ----------------------------------------
 @section{Character Comparisons}
 
-@defproc[(char=? [char1 char?] [char2 char?] ...+) boolean?]{
+@defproc[(char=? [char1 char?] [char2 char?] ...) boolean?]{
 
 Returns @racket[#t] if all of the arguments are @racket[eqv?].
 
 @mz-examples[(char=? #\a #\a)
-          (char=? #\a #\A #\a)]}
+          (char=? #\a #\A #\a)]
+
+@history/arity[]}
 
 @(define (char-sort direction folded?)
    (if folded?
      @elem{Like @racket[char-ci<?], but checks whether the arguments would be @direction after case-folding.}
      @elem{Like @racket[char<?], but checks whether the arguments are @|direction|.}))
 
-@defproc[(char<? [char1 char?] [char2 char?] ...+) boolean?]{
+@defproc[(char<? [char1 char?] [char2 char?] ...) boolean?]{
 
 Returns @racket[#t] if the arguments are sorted increasing, where
 two characters are ordered by their scalar values, @racket[#f]
@@ -80,66 +82,84 @@ otherwise.
 
 @mz-examples[(char<? #\A #\a)
              (char<? #\a #\A)
-             (char<? #\a #\b #\c)]}
+             (char<? #\a #\b #\c)]
 
-@defproc[(char<=? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char<=? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["nondecreasing" #f]
 
 @mz-examples[(char<=? #\A #\a)
              (char<=? #\a #\A)
-             (char<=? #\a #\b #\b)]}
+             (char<=? #\a #\b #\b)]
 
-@defproc[(char>? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char>? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["decreasing" #f]
 
 @mz-examples[(char>? #\A #\a)
              (char>? #\a #\A)
-             (char>? #\c #\b #\a)]}
+             (char>? #\c #\b #\a)]
 
-@defproc[(char>=? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char>=? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["nonincreasing" #f]
 
 @mz-examples[(char>=? #\A #\a)
              (char>=? #\a #\A)
-             (char>=? #\c #\b #\b)]}
+             (char>=? #\c #\b #\b)]
+
+@history/arity[]}
 
 
-@defproc[(char-ci=? [char1 char?] [char2 char?] ...+) boolean?]{
+@defproc[(char-ci=? [char1 char?] [char2 char?] ...) boolean?]{
  Returns @racket[#t] if all of the arguments are @racket[eqv?] after
  locale-insensitive case-folding via @racket[char-foldcase].
 
 @mz-examples[(char-ci=? #\A #\a)
-             (char-ci=? #\a #\a #\a)]}
+             (char-ci=? #\a #\a #\a)]
 
-@defproc[(char-ci<? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char-ci<? [char1 char?] [char2 char?] ...) boolean?]{
  Like @racket[char<?], but checks whether the arguments would be in
  increasing order if each was first case-folded using
  @racket[char-foldcase] (which is locale-insensitive).
 
 @mz-examples[(char-ci<? #\A #\a)
              (char-ci<? #\a #\b)
-             (char-ci<? #\a #\b #\c)]}
+             (char-ci<? #\a #\b #\c)]
 
-@defproc[(char-ci<=? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char-ci<=? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["nondecreasing" #t]
 
 @mz-examples[(char-ci<=? #\A #\a)
              (char-ci<=? #\a #\A)
-             (char-ci<=? #\a #\b #\b)]}
+             (char-ci<=? #\a #\b #\b)]
 
-@defproc[(char-ci>? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char-ci>? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["decreasing" #t]
 
 @mz-examples[(char-ci>? #\A #\a)
              (char-ci>? #\b #\A)
-             (char-ci>? #\c #\b #\a)]}
+             (char-ci>? #\c #\b #\a)]
 
-@defproc[(char-ci>=? [char1 char?] [char2 char?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(char-ci>=? [char1 char?] [char2 char?] ...) boolean?]{
  @char-sort["nonincreasing" #t]
 
 @mz-examples[(char-ci>=? #\A #\a)
              (char-ci>=? #\a #\A)
-             (char-ci>=? #\c #\b #\b)]}
+             (char-ci>=? #\c #\b #\b)]
+
+@history/arity[]}
 
 @; ----------------------------------------
 @section{Classifications}

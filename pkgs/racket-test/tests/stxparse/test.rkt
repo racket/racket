@@ -150,6 +150,14 @@
              [+ (void)]
              [_ (error 'wrong)]))
 
+(test-case "literal after colon"
+  (check-equal?
+   (convert-syntax-error
+    (syntax-parse #'else #:literals (else)
+      [e:else (syntax->datum #'e)]
+      [_ #f]))
+   'else))
+
 (test-case "datum literals"
   (syntax-parse #'one #:datum-literals (one)
     [one (void)]))
@@ -157,6 +165,14 @@
   (let ([one 1])
     (syntax-parse (let ([one 2]) #'one) #:datum-literals (one)
       [one (void)])))
+
+(test-case "datum literal after colon"
+  (check-equal?
+   (convert-syntax-error
+    (syntax-parse #'else #:datum-literals (else)
+      [e:else (syntax->datum #'e)]
+      [_ #f]))
+   'else))
 
 ;; compound patterns
 (tok (a b c) (x y z)
@@ -932,3 +948,28 @@
 (terx #s(point 1)
       #s(point a b)
       #rx"expected more terms starting with any term")
+
+;; from Alex Knauth, issue #2164 (7/2018)
+(let ()
+  (define-syntax ~temp1
+    (pattern-expander
+     (lambda (stx)
+       (car (generate-temporaries '(tmp))))))
+  (define-syntax-class c1 (pattern (~temp1)))
+  (void))
+(let ()
+  (define-syntax ~temp2
+    (let ([counter 0])
+      (pattern-expander
+       (lambda (stx)
+         (begin0 (format-id #'here "tmp~a" counter)
+           (set! counter (add1 counter)))))))
+  (define-syntax-class c2 (pattern (~temp2)))
+  (void))
+(let ()
+  (define-splicing-syntax-class ids
+    (pattern (~and (~seq stuff ...) (~seq k:id ...))))
+  (check-equal? (syntax-parse #'(a b c)
+                  [(:ids) (syntax->datum #'(k ...))]
+                  [_ #f])
+                '(a b c)))

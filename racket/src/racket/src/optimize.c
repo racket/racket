@@ -705,7 +705,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
         && (SCHEME_LOCAL_POS(sb->var) == SCHEME_LOCAL_POS(sb->val)))
       return 1;
     else if (SAME_TYPE(scheme_ir_local_type, SCHEME_TYPE(sb->var))
-             && SAME_OBJ(sb->var, sb->val))
+             && SAME_OBJ(sb->var, sb->val)
+             && ((((Scheme_IR_Local *)sb->var)->mode != SCHEME_VAR_MODE_COMPILE)
+                 || !((Scheme_IR_Local *)sb->var)->compile.keep_assignment))
       return 1;
   }
 
@@ -4417,7 +4419,9 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     rator = scheme_values_proc;
   }
 
-  if (SCHEME_PRIMP(rator)) {
+  if (SCHEME_PRIMP(rator)
+      && (1 >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (1 <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)) {
     /* Check for things like (cXr (cons X Y)): */
     switch (SCHEME_TYPE(rand)) {
     case scheme_application2_type:
@@ -5080,7 +5084,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
-  if (SCHEME_PRIMP(app->rator)) {
+  if (SCHEME_PRIMP(app->rator)
+      && (2 >= ((Scheme_Primitive_Proc *)app->rator)->mina)
+      && (2 <= ((Scheme_Primitive_Proc *)app->rator)->mu.maxa)) {
     Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->rator, *rand1 = app->rand1, *rand2 = app->rand2;
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_AD_HOC_OPT) {

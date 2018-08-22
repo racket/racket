@@ -40,7 +40,7 @@
                (all-threads-poll-done?)
                (waiting-on-external-or-idle?))
       (or (check-external-events 'slow)
-          (post-idle)
+          (try-post-idle)
           (process-sleep)))
     (define child (thread-group-next! g))
     (cond
@@ -88,8 +88,10 @@
                (set-thread-engine! t e))
              (select-thread!)]
             [else
-             ;; Swap out when the atomic region ends:
-             (set-end-atomic-callback! engine-block)
+             ;; Swap out when the atomic region ends and at a point
+             ;; where host-system interrupts are not disabled (i.e.,
+             ;; don't use `engine-block` instead of `engine-timeout`):
+             (set-end-atomic-callback! engine-timeout)
              (loop e)])))))))
 
 (define (maybe-done callbacks)
@@ -193,6 +195,12 @@
   (sandman-sleep exts)
   ;; Maybe some thread can proceed:
   (thread-did-work!))
+
+(define (try-post-idle)
+  (and (post-idle)
+       (begin
+         (thread-did-work!)
+         #t)))
 
 ;; ----------------------------------------
 

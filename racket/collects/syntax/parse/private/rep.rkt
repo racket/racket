@@ -29,7 +29,7 @@
   (-> syntax?
       boolean?)]
  [parse-rhs
-  (-> syntax? (or/c false/c (listof sattr?)) boolean?
+  (-> syntax? boolean?
       #:context (or/c false/c syntax?)
       rhs?)]
  [parse-pattern+sides
@@ -44,7 +44,7 @@
       any)]
  [parse-directive-table any/c]
  [get-decls+defs
-  (-> list? boolean? #:context (or/c false/c syntax?)
+  (-> list? #:context (or/c false/c syntax?)
       (values DeclEnv/c (listof syntax?)))]
  [create-aux-def
   (-> DeclEntry/c
@@ -71,7 +71,11 @@
       (listof den:datum-lit?))]
  [check-attr-arity-list
   (-> syntax? syntax?
-      (listof sattr?))])
+      (listof sattr?))]
+ [stxclass-colon-notation?
+  (parameter/c boolean?)]
+ [fixup-rhs
+  (-> rhs? boolean? (listof sattr?) rhs?)])
 
 ;; ----
 
@@ -146,6 +150,20 @@
 ;; (Also #:no-delimit-cut stxclass within ~not)
 (define cut-allowed? (make-parameter #t))
 
+;; A LookupConfig is one of 'no, 'try, 'yes
+;;  'no means don't lookup, always use dummy (no nested attrs)
+;;  'try means lookup, but on failure use dummy (-> nested attrs only from prev.)
+;;  'yes means lookup, raise error on failure
+
+;; stxclass-lookup-config : parameterof LookupConfig
+(define stxclass-lookup-config (make-parameter 'yes))
+
+;; stxclass-colon-notation? : (parameterof boolean)
+;;   if #t, then x:sc notation means (~var x sc)
+;;   otherwise, just a var
+(define stxclass-colon-notation? (make-parameter #t))
+
+
 ;; ---
 
 (define (disappeared! x)
@@ -160,32 +178,27 @@
 
 ;; ---
 
-;; parse-rhs : stx boolean (or #f (listof SAttr)) stx -> RHS
-;; If expected-attrs is true, then referenced stxclasses must be defined and
-;; literals must be bound. Set to #f for pass1 (attr collection);
-;; parser requires stxclasses to be bound.
-(define (parse-rhs stx expected-attrs splicing? #:context ctx)
+;; parse-rhs : Syntax Boolean #:context Syntax -> RHS
+(define (parse-rhs stx splicing? #:context ctx)
   (call/txlifts
    (lambda ()
      (parameterize ((current-syntax-context ctx))
        (define-values (rest description transp? attributes auto-nested? colon-notation?
                             decls defs commit? delimit-cut?)
-         (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
+         (parse-rhs/part1 stx splicing?))
        (define variants
-         (parameterize ((stxclass-lookup-config
-                         (cond [expected-attrs 'yes]
-                               [auto-nested? 'try]
-                               [else 'no]))
+         (parameterize ((stxclass-lookup-config (if auto-nested? 'try 'no))
                         (stxclass-colon-notation? colon-notation?))
-           (parse-variants rest decls splicing? expected-attrs)))
-       (let ([sattrs
-              (or attributes
-                  (intersect-sattrss (map variant-attrs variants)))])
-         (make rhs sattrs transp? description variants
-               (append (get-txlifts-as-definitions) defs)
-               commit? delimit-cut?))))))
+           (parse-variants rest decls splicing?)))
+       (define sattrs
+         (or attributes
+             (filter (lambda (a) (symbol-interned? (attr-name a)))
+                     (intersect-sattrss (map variant-attrs variants)))))
+       (make rhs sattrs transp? description variants
+             (append (get-txlifts-as-definitions) defs)
+             commit? delimit-cut?)))))
 
-(define (parse-rhs/part1 stx splicing? strict?)
+(define (parse-rhs/part1 stx splicing?)
   (define-values (chunks rest)
     (parse-keyword-options stx rhs-directive-table
                            #:context (current-syntax-context)
@@ -202,18 +215,18 @@
   (define delimit-cut?
     (not (assq '#:no-delimit-cut chunks)))
   (define attributes (options-select-value chunks '#:attributes #:default #f))
-  (define-values (decls defs) (get-decls+defs chunks strict?))
+  (define-values (decls defs) (get-decls+defs chunks))
   (values rest description transparent? attributes auto-nested? colon-notation?
           decls defs commit? delimit-cut?))
 
 ;; ----
 
-(define (parse-variants rest decls splicing? expected-attrs)
+(define (parse-variants rest decls splicing?)
   (define (gather-variants stx)
     (syntax-case stx (pattern)
       [((pattern . _) . rest)
        (begin (disappeared! (stx-car stx))
-              (cons (parse-variant (stx-car stx) splicing? decls expected-attrs)
+              (cons (parse-variant (stx-car stx) splicing? decls)
                     (gather-variants #'rest)))]
       [(bad-variant . rest)
        (wrong-syntax #'bad-variant "expected syntax-class variant")]
@@ -222,15 +235,14 @@
   (gather-variants rest))
 
 ;; get-decls+defs : chunks boolean -> (values DeclEnv (listof syntax))
-(define (get-decls+defs chunks strict?
-                        #:context [ctx (current-syntax-context)])
+(define (get-decls+defs chunks #:context [ctx (current-syntax-context)])
   (parameterize ((current-syntax-context ctx))
-    (let*-values ([(decls defs1) (get-decls chunks strict?)]
+    (let*-values ([(decls defs1) (get-decls chunks)]
                   [(decls defs2) (decls-create-defs decls)])
       (values decls (append defs1 defs2)))))
 
 ;; get-decls : chunks -> (values DeclEnv (listof syntax))
-(define (get-decls chunks strict?)
+(define (get-decls chunks)
   (define lits (options-select-value chunks '#:literals #:default null))
   (define datum-lits (options-select-value chunks '#:datum-literals #:default null))
   (define litsets (options-select-value chunks '#:literal-sets #:default null))
@@ -277,30 +289,10 @@
      (values entry null)]
     [(? den:magic-class?)
      (values entry null)]
-    [(den:class name class argu)
-     ;; FIXME: integrable syntax classes?
-     ;; FIXME: what if no-arity, no-args?
-     (cond [(identifier? name)
-            (let* ([pos-count (length (arguments-pargs argu))]
-                   [kws (arguments-kws argu)]
-                   [sc (get-stxclass/check-arity class class pos-count kws)])
-              (with-syntax ([sc-parser (stxclass-parser sc)])
-                (with-syntax ([parser (generate-temporary class)])
-                  (values (make den:parser #'parser
-                                (stxclass-attrs sc) (stxclass/h? sc)
-                                (stxclass-opts sc))
-                          (list #`(define-values (parser)
-                                    (curried-stxclass-parser #,class #,argu)))))))]
-           [(regexp? name)
-            ;; Conventions rule; delay class lookup until module/intdefs pass2
-            ;; to allow forward references
-            (with-syntax ([parser (generate-temporary class)]
-                          [description (generate-temporary class)])
-              (values (make den:delayed #'parser class)
-                      (list #`(define-values (parser)
-                                (curried-stxclass-parser #,class #,argu)))))])]
-    [(? den:parser?)
-     (values entry null)]
+    [(den:class name scname argu)
+     (with-syntax ([parser (generate-temporary scname)])
+       (values (make den:delayed #'parser scname)
+               (list #`(define-values (parser) (curried-stxclass-parser #,scname #,argu)))))]
     [(? den:delayed?)
      (values entry null)]))
 
@@ -339,8 +331,8 @@
             datum-lit)])
     (apply append lits* datum-lits* litsets*)))
 
-;; parse-variant : stx boolean DeclEnv #f/(listof Sattr) -> RHS
-(define (parse-variant stx splicing? decls0 expected-attrs)
+;; parse-variant : stx boolean DeclEnv -> RHS
+(define (parse-variant stx splicing? decls0)
   (syntax-case stx (pattern)
     [(pattern p . rest)
      (let-values ([(rest pattern defs)
@@ -354,10 +346,6 @@
                        "unexpected terms after pattern directives"))
        (let* ([attrs (pattern-attrs pattern)]
               [sattrs (iattrs->sattrs attrs)])
-         (when expected-attrs
-           (parameterize ((current-syntax-context stx))
-             ;; Called just for error-reporting
-             (reorder-iattrs expected-attrs attrs)))
          (make variant stx sattrs pattern defs)))]))
 
 ;; parse-pattern+sides : stx stx <options> -> (values stx Pattern (listof stx))
@@ -687,7 +675,8 @@
     [(eh-alternative repc _attrs parser)
      (eh-alternative repc sattrs parser)]))
 
-;; ----
+;; ----------------------------------------
+;; Identifiers, ~var, and stxclasses
 
 (define (check-no-delimit-cut-in-not id delimit-cut?)
   (unless (or delimit-cut? (cut-allowed?))
@@ -700,17 +689,40 @@
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
         [(not (safe-name? id))
          (wrong-syntax id "expected identifier not starting with ~~ character")]
-        [else
-         (let-values ([(name suffix) (split-id/get-stxclass id decls)])
-           (cond [(stxclass? suffix)
-                  (parse-pat:var/sc id allow-head? name suffix no-arguments "." #f #f)]
-                 [(or (den:lit? suffix) (den:datum-lit? suffix))
-                  (pat:and
-                   (list (pat:svar name)
-                         (parse-pat:id/entry id allow-head? suffix)))]
-                 [(declenv-apply-conventions decls id)
-                  => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
-                 [else (pat:svar name)]))]))
+        [(and (stxclass-colon-notation?) (split-id id))
+         => (match-lambda
+              [(cons name suffix)
+               (declenv-check-unbound decls name (syntax-e suffix) #:blame-declare? #t)
+               (define entry (declenv-lookup decls suffix))
+               (cond [(or (den:lit? entry) (den:datum-lit? entry))
+                      (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
+                     [else (parse-stxclass-use id allow-head? name suffix no-arguments #f)])])]
+        [(declenv-apply-conventions decls id)
+         => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
+        [else (pat:svar id)]))
+
+(define (split-id id0)
+  (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
+         => (lambda (m)
+              (define src (syntax-source id0))
+              (define ln (syntax-line id0))
+              (define col (syntax-column id0))
+              (define pos (syntax-position id0))
+              (define span (syntax-span id0))
+              (define id-str (cadr m))
+              (define id-len (string-length id-str))
+              (define suffix-str (caddr m))
+              (define suffix-len (string-length suffix-str))
+              (define id
+                (datum->syntax id0 (string->symbol id-str)
+                               (list src ln col pos id-len)
+                               id0))
+              (define suffix
+                (datum->syntax id0 (string->symbol suffix-str)
+                               (list src ln (and col (+ col id-len 1)) (and pos (+ pos id-len 1)) suffix-len)
+                               id0))
+              (cons id suffix))]
+        [else #f]))
 
 ;; parse-pat:id/entry : Identifier .... DeclEntry -> SinglePattern
 ;; Handle when meaning of identifier pattern is given by declenv entry.
@@ -720,26 +732,14 @@
      (pat:literal literal input-phase lit-phase)]
     [(den:datum-lit internal sym)
      (pat:datum sym)]
-    [(den:magic-class name class argu role)
-     (let* ([pos-count (length (arguments-pargs argu))]
-            [kws (arguments-kws argu)]
-            [sc (get-stxclass/check-arity class class pos-count kws)])
-       (parse-pat:var/sc id allow-head? id sc argu "." role #f))]
+    [(den:magic-class name scname argu role)
+     (parse-stxclass-use scname allow-head? id scname argu role)]
     [(den:class _n _c _a)
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
-    [(den:parser parser attrs splicing? opts)
-     (check-no-delimit-cut-in-not id (scopts-delimit-cut? opts))
-     (cond [splicing?
-            (unless allow-head?
-              (wrong-syntax id "splicing syntax class not allowed here"))
-            (parse-pat:id/h id parser no-arguments attrs "." #f opts)]
-           [else
-            (parse-pat:id/s id parser no-arguments attrs "." #f opts)])]
-    [(den:delayed parser class)
-     (let ([sc (get-stxclass class)])
-       (parse-pat:var/sc id allow-head? id sc no-arguments "." #f parser))]))
+    [(den:delayed parser scname)
+     (parse-stxclass-use id allow-head? id scname no-arguments #f parser)]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -773,52 +773,43 @@
         [(and (wildcard? name0) (not scname))
          (pat:any)]
         [scname
-         (let ([sc (get-stxclass/check-arity scname sc+args-stx
-                                             (length (arguments-pargs argu))
-                                             (arguments-kws argu))])
-           (parse-pat:var/sc stx allow-head? name0 sc argu pfx role #f))]
+         (parse-stxclass-use stx allow-head? name0 scname argu role)]
         [else ;; Just proper name
          (pat:svar name0)]))
 
-(define (parse-pat:var/sc stx allow-head? name sc argu pfx role parser*)
+;; ----
+
+(define (parse-stxclass-use stx allow-head? varname scname argu role [parser* #f])
+  (cond [(and (memq (stxclass-lookup-config) '(yes try)) (get-stxclass scname #t))
+         => (lambda (sc)
+              (unless parser*
+                (check-stxclass-arity sc stx (length (arguments-pargs argu)) (arguments-kws argu)))
+              (parse-stxclass-use* stx allow-head? varname sc argu "." role parser*))]
+        [(memq (stxclass-lookup-config) '(try no))
+         (define bind (name->bind varname))
+         (pat:fixup stx bind varname scname argu role parser*)]
+        [else (wrong-syntax scname "not defined as syntax class (config=~s)"
+                            ;; XXX FIXME
+                            (stxclass-lookup-config))]))
+
+;; ----
+
+(define (parse-stxclass-use* stx allow-head? name sc argu pfx role parser*)
   ;; if parser* not #f, overrides sc parser
   (check-no-delimit-cut-in-not stx (scopts-delimit-cut? (stxclass-opts sc)))
-  (cond [(and (stxclass/s? sc)
-              (stxclass-inline sc)
-              (equal? argu no-arguments))
-         (parse-pat:id/s/integrate name (stxclass-inline sc) (scopts-desc (stxclass-opts sc)) role)]
+  (define bind (name->bind name))
+  (define prefix (name->prefix name pfx))
+  (define parser (or parser* (stxclass-parser sc)))
+  (define nested-attrs (id-pattern-attrs (stxclass-attrs sc) prefix))
+  (define opts (stxclass-opts sc))
+  (cond [(and (stxclass/s? sc) (stxclass-inline sc) (equal? argu no-arguments))
+         (pat:integrated bind (stxclass-inline sc) (scopts-desc opts) role)]
         [(stxclass/s? sc)
-         (parse-pat:id/s name
-                         (or parser* (stxclass-parser sc))
-                         argu
-                         (stxclass-attrs sc)
-                         pfx
-                         role
-                         (stxclass-opts sc))]
+         (pat:var/p bind parser argu nested-attrs role opts)]
         [(stxclass/h? sc)
          (unless allow-head?
            (wrong-syntax stx "splicing syntax class not allowed here"))
-         (parse-pat:id/h name
-                         (or parser* (stxclass-parser sc))
-                         argu
-                         (stxclass-attrs sc)
-                         pfx
-                         role
-                         (stxclass-opts sc))]))
-
-(define (parse-pat:id/s name parser argu attrs pfx role opts)
-  (define prefix (name->prefix name pfx))
-  (define bind (name->bind name))
-  (pat:var/p bind parser argu (id-pattern-attrs attrs prefix) role opts))
-
-(define (parse-pat:id/s/integrate name predicate description role)
-  (define bind (name->bind name))
-  (pat:integrated bind predicate description role))
-
-(define (parse-pat:id/h name parser argu attrs pfx role opts)
-  (define prefix (name->prefix name pfx))
-  (define bind (name->bind name))
-  (hpat:var/p bind parser argu (id-pattern-attrs attrs prefix) role opts))
+         (hpat:var/p bind parser argu nested-attrs role opts)]))
 
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]
@@ -850,7 +841,8 @@
 (define (orig stx)
   (syntax-property stx 'original-for-check-syntax #t))
 
-;; ----
+;; ----------------------------------------
+;; Other pattern forms
 
 (define (parse-pat:reflect stx decls splicing?)
   (syntax-case stx ()
@@ -869,8 +861,6 @@
        (define ctor (if splicing? hpat:reflect pat:reflect))
        (ctor #'obj (parse-argu (syntax->list #'(arg ...))) attr-decls bind
              (id-pattern-attrs attr-decls prefix)))]))
-
-;; ---
 
 (define (parse-pat:literal stx decls)
   (syntax-case stx ()
@@ -921,42 +911,36 @@
            (hpat:commit p)
            (pat:commit p)))]))
 
-(define (split-prefix xs pred)
-  (let loop ([xs xs] [rprefix null])
-    (cond [(and (pair? xs) (pred (car xs)))
-           (loop (cdr xs) (cons (car xs) rprefix))]
-          [else
-           (values (reverse rprefix) xs)])))
-
 (define (parse-pat:and stx decls allow-head? allow-action?)
   ;; allow-action? = allowed to *return* pure action pattern;
   ;; all ~and patterns are allowed to *contain* action patterns
   (define patterns0 (parse-cdr-patterns stx decls allow-head? #t))
-  (define patterns1 (ord-and-patterns patterns0 (gensym*)))
-  (define-values (actions patterns) (split-prefix patterns1 action-pattern?))
-  (cond [(null? patterns)
+  (cond [(andmap action-pattern? patterns0)
          (cond [allow-action?
-                (action:and actions)]
+                (define patterns1 (ord-and-patterns patterns0 (gensym*)))
+                (action:and patterns1)]
                [allow-head?
-                (wrong-syntax stx "expected at least one head pattern")]
+                (wrong-syntax stx "expected at least one head or single-term pattern")]
                [else
                 (wrong-syntax stx "expected at least one single-term pattern")])]
-        [else
-         (let ([p (parse-pat:and* stx patterns)])
-           (if (head-pattern? p)
-               (for/fold ([p p]) ([action (in-list (reverse actions))])
-                 (hpat:action action p))
-               (for/fold ([p p]) ([action (in-list (reverse actions))])
-                 (pat:action action p))))]))
+        [(memq (stxclass-lookup-config) '(no try))
+         (pat:and/fixup stx patterns0)]
+        [else (parse-pat:and/k stx patterns0)]))
 
-(define (parse-pat:and* stx patterns)
-  ;; patterns is non-empty (empty case handled above)
+(define (parse-pat:and/k stx patterns0)
+  ;; PRE: patterns0 not all action patterns
+  (define patterns1 (ord-and-patterns patterns0 (gensym*)))
+  (define-values (actions patterns) (split-prefix patterns1 action-pattern?))
+  (add-actions actions (parse-pat:and/k* stx (length actions) patterns)))
+
+(define (parse-pat:and/k* stx actions-len patterns)
+  ;; PRE: patterns non-empty, starts with non-action pattern
   (cond [(null? (cdr patterns))
          (car patterns)]
         [(ormap head-pattern? patterns)
          ;; Check to make sure *all* are head patterns
          (for ([pattern (in-list patterns)]
-               [pattern-stx (in-list (stx->list (stx-cdr stx)))])
+               [pattern-stx (in-list (drop (stx->list (stx-cdr stx)) actions-len))])
            (unless (or (action-pattern? pattern) (head-pattern? pattern))
              (wrong-syntax
               pattern-stx
@@ -970,6 +954,20 @@
             (if (action-pattern? p)
                 (action-pattern->single-pattern p)
                 p)))]))
+
+(define (split-prefix xs pred)
+  (let loop ([xs xs] [rprefix null])
+    (cond [(and (pair? xs) (pred (car xs)))
+           (loop (cdr xs) (cons (car xs) rprefix))]
+          [else
+           (values (reverse rprefix) xs)])))
+
+(define (add-actions actions p)
+  (if (head-pattern? p)
+      (for/fold ([p p]) ([action (in-list (reverse actions))])
+        (hpat:action action p))
+      (for/fold ([p p]) ([action (in-list (reverse actions))])
+        (pat:action action p))))
 
 (define (parse-pat:or stx decls allow-head?)
   (define patterns (parse-cdr-patterns stx decls allow-head? #f))
@@ -1058,7 +1056,7 @@
                     [else (wrong-syntax stx "action pattern not allowed here")])]
              [(head-pattern? p)
               (cond [allow-head? (hpat:post p)]
-                    [else (wrong-syntax stx "head pattern now allowed here")])]
+                    [else (wrong-syntax stx "head pattern not allowed here")])]
              [else (pat:post p)]))]))
 
 (define (parse-pat:peek stx decls)
@@ -1200,7 +1198,168 @@
                              #'p)
                #'p)))]))
 
-;; -----
+
+;; ============================================================
+
+(define (fixup-rhs the-rhs allow-head? expected-attrs)
+  (match the-rhs
+    [(rhs attrs tr? desc vs defs commit? delimit-cut?)
+     (define vs* (for/list ([v (in-list vs)]) (fixup-variant v allow-head? expected-attrs)))
+     (rhs attrs tr? desc vs* defs commit? delimit-cut?)]))
+
+(define (fixup-variant v allow-head? expected-attrs)
+  (match v
+    [(variant stx sattrs p defs)
+     (parameterize ((current-syntax-context stx))
+       (define p*
+         (parameterize ((stxclass-lookup-config 'yes))
+           (fixup-pattern p allow-head?)))
+       ;; (eprintf "~v\n===>\n~v\n\n" p p*)
+       ;; Called just for error-reporting
+       (reorder-iattrs expected-attrs (pattern-attrs p*))
+       (variant stx sattrs p* defs))]))
+
+(define (fixup-pattern p0 allow-head?)
+  (define (S p) (fixup p #f))
+  (define (S* p) (fixup p #t))
+  (define (A/S* p) (if (action-pattern? p) (A p) (S* p)))
+
+  (define (A p)
+    (match p
+      ;; [(action:cut)
+      ;;  (action:cut)]
+      ;; [(action:fail when msg)
+      ;;  (action:fail when msg)]
+      ;; [(action:bind attr expr)
+      ;;  (action:bind attr expr)]
+      [(action:and ps)
+       (action:and (map A ps))]
+      [(action:parse sp expr)
+       (action:parse (S sp) expr)]
+      ;; [(action:do stmts)
+      ;;  (action:do stmts)]
+      ;; [(action:undo stmts)
+      ;;  (action:undo stmts)]
+      [(action:ord sp group index)
+       (create-ord-pattern (A sp) group index)]
+      [(action:post sp)
+       (create-post-pattern (A sp))]
+      ;; ----
+      ;; Default: no sub-patterns, just return
+      [p p]))
+  (define (EH p)
+    (match p
+      [(ehpat iattrs hp repc check-null?)
+       (create-ehpat (H hp) repc #f)]))
+
+  (define (fixup p allow-head?)
+    (define (I p) (fixup p allow-head?))
+    (match p
+      [(pat:fixup stx bind varname scname argu role parser*)
+       (parse-stxclass-use stx allow-head? varname scname argu role parser*)]
+      ;; ----
+      ;; [(pat:any)
+      ;;  (pat:any)]
+      ;; [(pat:svar name)
+      ;;  (pat:svar name)]
+      ;; [(pat:var/p name parser argu nested-attrs role opts)
+      ;;  (pat:var/p name parser argu nested-attrs role opts)]
+      ;; [(pat:integrated name predicate desc role)
+      ;;  (pat:integrated name predicate desc role)]
+      ;; [(pat:reflect obj argu attr-decls name nested-attrs)
+      ;;  (pat:reflect obj argu attr-decls name nested-attrs)]
+      ;; [(pat:datum d)
+      ;;  (pat:datum d)]
+      ;; [(pat:literal id input-phase lit-phase)
+      ;;  (pat:literal id input-phase lit-phase)]
+      [(pat:vector sp)
+       (pat:vector (S sp))]
+      [(pat:box sp)
+       (pat:box (S sp))]
+      [(pat:pstruct key sp)
+       (pat:pstruct key (S sp))]
+      [(pat:not sp)
+       (parameterize ((cut-allowed? #f))
+         (pat:not (S sp)))]
+      [(pat:dots headps tailp)
+       (pat:dots (map EH headps) (S tailp))]
+      [(pat:head headp tailp)
+       (pat:head (H headp) (S tailp))]
+      ;; --- The following patterns may change if a subpattern switches to head pattern ----
+      [(pat:pair headp tailp)
+       (let ([headp (S* headp)] [tailp (S tailp)])
+         (if (head-pattern? headp) (pat:head headp tailp) (pat:pair headp tailp)))]
+      [(pat:action a sp)
+       (let ([a (A a)] [sp (I sp)])
+         (if (head-pattern? sp) (hpat:action a sp) (pat:action a sp)))]
+      [(pat:describe sp desc tr? role)
+       (let ([sp (I sp)])
+         (if (head-pattern? sp) (hpat:describe sp desc tr? role) (pat:describe sp desc tr? role)))]
+      [(pat:and ps)
+       (let ([ps (map I ps)])
+         (pat:and ps))]
+      [(pat:and/fixup stx ps)
+       (let ([ps (for/list ([p (in-list ps)])
+                   (cond [(action-pattern? p) (A p)]
+                         [allow-head? (H p)]
+                         [else (I p)]))])
+         (parse-pat:and/k stx ps))]
+      [(pat:or _ ps _)
+       (let ([ps (map I ps)])
+         (if (ormap head-pattern? ps) (create-hpat:or ps) (create-pat:or ps)))]
+      [(pat:delimit sp)
+       (let ([sp (parameterize ((cut-allowed? #t)) (I sp))])
+         (if (head-pattern? sp) (hpat:delimit sp) (pat:delimit sp)))]
+      [(pat:commit sp)
+       (let ([sp (parameterize ((cut-allowed? #t)) (I sp))])
+         (if (head-pattern? sp) (hpat:commit sp) (pat:commit sp)))]
+      [(pat:ord sp group index)
+       (create-ord-pattern (I sp) group index)]
+      [(pat:post sp)
+       (create-post-pattern (I sp))]
+      ;; ----
+      ;; Default: no sub-patterns, just return
+      [p p]))
+
+  (define (H p)
+    (match p
+      ;; [(hpat:var/p name parser argu nested-attrs role scopts)
+      ;;  (hpat:var/p name parser argu nested-attrs role scopts)]
+      ;; [(hpat:reflect obj argu attr-decls name nested-attrs)
+      ;;  (hpat:reflect obj argu attr-decls name nested-attrs)]
+      [(hpat:seq lp)
+       (hpat:seq (S lp))]
+      [(hpat:action a hp)
+       (hpat:action (A a) (H hp))]
+      [(hpat:describe hp desc tr? role)
+       (hpat:describe (H hp) desc tr? role)]
+      [(hpat:and hp sp)
+       (hpat:and (H hp) (S sp))]
+      [(hpat:or _ ps _)
+       (create-hpat:or (map H ps))]
+      [(hpat:delimit hp)
+       (parameterize ((cut-allowed? #t))
+         (hpat:delimit (H hp)))]
+      [(hpat:commit hp)
+       (parameterize ((cut-allowed? #t))
+         (hpat:commit (H hp)))]
+      [(hpat:ord hp group index)
+       (create-ord-pattern (H hp) group index)]
+      [(hpat:post hp)
+       (create-post-pattern (H hp))]
+      [(hpat:peek hp)
+       (hpat:peek (H hp))]
+      [(hpat:peek-not hp)
+       (hpat:peek-not (H hp))]
+      [(? pattern? sp)
+       (S* sp)]
+      ;; ----
+      ;; Default: no sub-patterns, just return
+      [p p]))
+
+  (if allow-head? (H p0) (S p0)))
+
+;; ============================================================
 
 ;; parse-pattern-directives : stxs(PatternDirective) <kw-args>
 ;;                         -> stx DeclEnv (listof stx) (listof SideClause)

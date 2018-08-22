@@ -53,7 +53,7 @@
   (unless (fx<= (fx+ d-start s-len) d-len)
     (raise-arguments-error who (string-append "not enough room in target " what)
                            "target length" d-len
-                           "needed length" s-len)))
+                           "needed length" (fx+ d-start s-len))))
 
 (define (check-range who what in-value start end len)
   (unless (<= start len)

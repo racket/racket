@@ -5,6 +5,8 @@
 
 (require racket/hash)
 
+;; ----------------------------------------
+
 (test #hash([4 . four] [3 . three] [1 . one] [2 . two])
       hash-union #hash([1 . one] [2 . two]) #hash([3 . three] [4 . four]))
 (test #hash([four . 4] [three . 3] [one . 1] [two . 2])
@@ -295,16 +297,16 @@
     (test #t equal? 
           (call-with-values (lambda () (hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
-    (test #t boolean? (hash-iterate-next ht i))
+    (test #f hash-iterate-next ht i)
 
     ;; collect key, everything should error
-    (collect-garbage)(collect-garbage)(collect-garbage)
+    (collect-garbage)
     (test #t boolean? (hash-iterate-first ht))
     (err/rt-test (hash-iterate-key ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-next ht i) exn:fail:contract? err-msg))    
+    (test #f hash-iterate-next ht i))
 
 ;; Check that unsafe mutable hash table operations do not segfault
 ;; after getting valid index from unsafe-mutable-hash-iterate-first and -next.
@@ -331,7 +333,7 @@
     (err/rt-test (hash-iterate-value ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-pair ht i) exn:fail:contract? err-msg)
     (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract? err-msg)
-    (err/rt-test (hash-iterate-next ht i) exn:fail:contract? err-msg))    
+    (test #f hash-iterate-next ht i))
     
 
   (let ()
@@ -356,6 +358,61 @@
     (err/rt-test (hash-iterate-value ht i) exn:fail:contract?)
     (err/rt-test (hash-iterate-pair ht i) exn:fail:contract?)
     (err/rt-test (hash-iterate-key+value ht i) exn:fail:contract?)
-    (err/rt-test (hash-iterate-next ht i) exn:fail:contract?)))
+    (test #f hash-iterate-next ht i)))
+
+;; ----------------------------------------
+
+(define-syntax-rule (hash-remove-iterate-test make-hash (X ...) in-hash-X sel)
+  (let ([ht (make-hash)])
+    (arity-test in-hash-X 1 2)
+    (test 'in-hash-X object-name in-hash-X)
+    (define keys (for/list ([k (in-range 10)])
+                   (gensym)))
+    (define (add-keys!)
+      (for ([k (in-list keys)]
+            [i (in-naturals)])
+        (hash-set! ht k i)))
+    (add-keys!)
+    (test 5 '(remove-during-loop make-hash in-hash-X)
+          (for/sum ([(X ...) (in-hash-X ht #f)]
+                    [i (in-naturals)])
+            (when (= i 4)
+              (for ([k (in-list keys)])
+                (hash-remove! ht k)))
+            (if (sel X ...) 1 0)))
+    (add-keys!)
+    (test 'ok '(remove-during-loop make-hash in-hash-X)
+          (for/fold ([v 'ok]) ([(X ...) (in-hash-X ht #f)]
+                               [i (in-naturals)])
+            (when (= i 4)
+              (set! keys #f)
+              (collect-garbage))
+            v))))
+
+(define-syntax-rule (hash-remove-iterate-test* [make-hash ...] (X ...) in-hash-X in-Y-hash-X sel)
+  (begin
+    (hash-remove-iterate-test make-hash (X ...) in-hash-X sel) ...
+    (hash-remove-iterate-test make-hash (X ...) in-Y-hash-X sel) ...))
+
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+                          (k v) in-hash in-mutable-hash and)
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+                          (k) in-hash-keys in-mutable-hash-keys values)
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+                          (v) in-hash-values in-mutable-hash-values values)
+(hash-remove-iterate-test* [make-hash make-hasheq make-hasheqv]
+                           (p) in-hash-pairs in-mutable-hash-pairs car)
+
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+                          (k v) in-hash in-weak-hash and)
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+                          (k) in-hash-keys in-weak-hash-keys values)
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+                          (v) in-hash-values in-weak-hash-values values)
+(hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
+                           (p) in-hash-pairs in-weak-hash-pairs car)
+
+
+;; ----------------------------------------
 
 (report-errs)

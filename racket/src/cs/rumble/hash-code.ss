@@ -125,6 +125,15 @@
                 (vec-loop (fx+ i 1)
                           burn
                           (+/fx (mix2 hc) hc0)))]))]))]
+     [(hash? x)
+      ;; Treat hash-table hashing specially, so it can be order-insensitive
+      (let ([burn (fx* (fxmax burn 1) 2)])
+        (let ([hc (+/fx hc (->fx (hash-hash-code
+                                  x
+                                  (lambda (x)
+                                    (let-values ([(hc0 burn0) (equal-hash-loop x burn 0)])
+                                      hc0)))))])
+          (values hc burn)))]
      [(and (#%$record? x) (#%$record-hash-procedure x))
       => (lambda (rec-hash)
            (let ([burn (fx+ burn 2)])

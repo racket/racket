@@ -39,6 +39,8 @@
 (define empty-env #hasheq())
 (define (env-extend env key val)
   (hash-set env key val))
+(define (lookup env key default)
+  (hash-ref env key default))
 
 ;; `variable` is a token to represent a binding to a run-time variable
 (define variable (gensym 'variable))
@@ -134,13 +136,13 @@
     (define insp (and mi (module-instance-module mi) (module-inspector (module-instance-module mi))))
     (values t primitive? insp protected?)]
    [(local-binding? b)
-    (define t (hash-ref env (local-binding-key b) missing))
+    (define t (lookup env (local-binding-key b) missing))
     (cond
      [(eq? t missing)
       (values (or
                ;; check in lift envs, if any
                (for/or ([lift-env (in-list lift-envs)])
-                 (hash-ref (unbox lift-env) (local-binding-key b) #f))
+                 (lookup (unbox lift-env) (local-binding-key b) #f))
                (if out-of-context-as-variable?
                    variable
                    (error "identifier used out of context:" id)))

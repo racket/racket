@@ -174,8 +174,8 @@
   (define sym-to-reqds (hash-ref! at-mod phase-shift make-hasheq))
   (define prefix-len (if bulk-prefix (string-length (symbol->string bulk-prefix)) 0))
   (define br (bulk-required provides prefix-len s provide-phase-level can-be-shadowed?))
-  (for/or ([(out-sym binding/p) (in-hash provides)]
-           #:unless (not (symbol-interned? out-sym)))
+  (for/fold ([any-already-defined? #f]) ([(out-sym binding/p) (in-hash provides)]
+                                         #:unless (not (symbol-interned? out-sym)))
     (when symbols-accum (hash-set! symbols-accum out-sym #t))
     (cond
       [(hash-ref bulk-excepts out-sym #f)
@@ -206,7 +206,7 @@
            [else #f]))
        (unless already-defined?
          (hash-set! sym-to-reqds sym (cons-ish br (hash-ref sym-to-reqds sym null))))
-       already-defined?])))
+       (or any-already-defined? already-defined?)])))
 
 ;; Convert a combination of a symbol and `bulk-required` to a
 ;; `required` on demand

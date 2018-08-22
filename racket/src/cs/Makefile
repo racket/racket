@@ -247,6 +247,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/control.ss \
               rumble/interrupt.ss \
               rumble/engine.ss \
+              rumble/source.ss \
               rumble/error.ss \
               rumble/srcloc.ss \
               rumble/boolean.ss \

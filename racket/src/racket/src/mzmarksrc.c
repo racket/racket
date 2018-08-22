@@ -992,6 +992,7 @@ linklet_val {
   gcMARK2(l->bodies, gc);
   gcMARK2(l->constants, gc);
   gcMARK2(l->static_prefix, gc);
+  gcMARK2(l->native_lambdas, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Linklet));
 }

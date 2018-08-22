@@ -184,7 +184,7 @@
             [assf
              (lambda (f l)
                (unless (and (procedure? f) (procedure-arity-includes? f 1))
-                 (raise-argument-error 'assf "(any/c any/c . -> . any/c)" f))
+                 (raise-argument-error 'assf "(any/c . -> . any/c)" f))
                (assoc-loop 'assf #f l (lambda (_ a) (f a))))])
         (values assq assv assoc assf))))
 

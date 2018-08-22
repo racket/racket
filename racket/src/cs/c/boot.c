@@ -9,6 +9,8 @@
 #include "rktio.h"
 #include "boot.h"
 
+#define RACKET_AS_BOOT
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 # define BOOT_O_BINARY O_BINARY
 #endif
@@ -70,13 +72,21 @@ static void racket_exit(int v)
   exit(v);
 }
 
+static void init_foreign()
+{
+# include "rktio.inc"
+  Sforeign_symbol("racket_exit", (void *)racket_exit);
+}
+
 void racket_boot(int argc, char **argv, char *self, long segment_offset,
                  char *coldir, char *configdir,
                  int pos1, int pos2, int pos3,
                  int is_gui)
 /* exe argument already stripped from argv */
 {
-  int fd; 
+#if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
+  int fd;
+#endif
 #ifdef RACKET_USE_FRAMEWORK
   const char *fw_path;
 #endif
@@ -87,6 +97,9 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
   fw_path = get_framework_path();
   Sregister_boot_file(path_append(fw_path, "petite.boot"));
   Sregister_boot_file(path_append(fw_path, "scheme.boot"));
+# ifdef RACKET_AS_BOOT
+  Sregister_boot_file(path_append(fw_path, "racket.boot"));
+# endif
 #else
   fd = open(self, O_RDONLY | BOOT_O_BINARY);
 
@@ -100,13 +113,16 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     fd2 = open(self, O_RDONLY | BOOT_O_BINARY);
     lseek(fd2, pos2, SEEK_SET);
     Sregister_boot_file_fd("scheme", fd2);
+
+# ifdef RACKET_AS_BOOT
+    fd = open(self, O_RDONLY | BOOT_O_BINARY);
+    lseek(fd, pos3, SEEK_SET);
+    Sregister_boot_file_fd("racket", fd);
+# endif
   }
 #endif
-  
-  Sbuild_heap(NULL, NULL);
 
-# include "rktio.inc"
-  Sforeign_symbol("racket_exit", (void *)racket_exit);
+  Sbuild_heap(NULL, init_foreign);
   
   {
     ptr l = Snil;
@@ -122,13 +138,25 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     l = Scons(Sbytevector(configdir), l);
     l = Scons(Sbytevector(coldir), l);
     l = Scons(Sbytevector(self), l);
+
+#ifdef RACKET_AS_BOOT
+    {
+      ptr c, start, apply;
+      c = Stop_level_value(Sstring_to_symbol("scheme-start"));
+      start = Scall0(c);
+      apply = Stop_level_value(Sstring_to_symbol("apply"));
+      Scall2(apply, start, l);
+    }
+#else
     Sset_top_level_value(Sstring_to_symbol("bytes-command-line-arguments"), l);
+#endif
   }
 
-#ifdef RACKET_USE_FRAMEWORK
+#ifndef RACKET_AS_BOOT
+# ifdef RACKET_USE_FRAMEWORK
   fd = open(path_append(fw_path, "racket.so"), O_RDONLY);
   pos3 = 0;
-#endif
+# endif
   
   {
     ptr c, p;
@@ -143,4 +171,5 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     c = Stop_level_value(Sstring_to_symbol("load-compiled-from-port"));
     Scall1(c, p);
   }
+#endif
 }

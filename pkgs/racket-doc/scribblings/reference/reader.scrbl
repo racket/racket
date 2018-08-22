@@ -760,15 +760,15 @@ one of the following forms:
 
 @itemize[
 
- @item{ @litchar{#\nul} or @litchar{#\null}: NUL (ASCII 0)@nonalpha[]}
- @item{ @litchar{#\backspace}: backspace  (ASCII 8)@nonalpha[]}
- @item{ @litchar{#\tab}: tab (ASCII 9)@nonalpha[]}
- @item{ @litchar{#\newline} or @litchar{#\linefeed}: linefeed (ASCII 10)@nonalpha[]}
- @item{ @litchar{#\vtab}: vertical tab (ASCII 11)@nonalpha[]}
- @item{ @litchar{#\page}: page break (ASCII 12)@nonalpha[]}
- @item{ @litchar{#\return}: carriage return (ASCII 13)@nonalpha[]}
- @item{ @litchar{#\space}: space (ASCII 32)@nonalpha[]}
- @item{ @litchar{#\rubout}: delete (ASCII 127)@nonalpha[]}
+ @item{ @as-index{@litchar{#\nul}} or @as-index{@litchar{#\null}}: NUL (ASCII 0)@nonalpha[]}
+ @item{ @as-index{@litchar{#\backspace}}: backspace  (ASCII 8)@nonalpha[]}
+ @item{ @as-index{@litchar{#\tab}}: tab (ASCII 9)@nonalpha[]}
+ @item{ @as-index{@litchar{#\newline}} or @as-index{@litchar{#\linefeed}}: linefeed (ASCII 10)@nonalpha[]}
+ @item{ @as-index{@litchar{#\vtab}}: vertical tab (ASCII 11)@nonalpha[]}
+ @item{ @as-index{@litchar{#\page}}: page break (ASCII 12)@nonalpha[]}
+ @item{ @as-index{@litchar{#\return}}: carriage return (ASCII 13)@nonalpha[]}
+ @item{ @as-index{@litchar{#\space}}: space (ASCII 32)@nonalpha[]}
+ @item{ @as-index{@litchar{#\rubout}}: delete (ASCII 127)@nonalpha[]}
 
  @item{@litchar{#\}@kleenerange[3 3]{@nonterm{digit@sub{8}}}:
        Unicode for the octal number specified by three octal digits---as in string escapes (see
@@ -845,7 +845,8 @@ as constructed by @racket[pregexp], @litchar{#rx#} as constructed by
 
 A @graph-defn[] tags the following datum for reference via
 @graph-ref[], which allows the reader to produce a datum that
-has graph structure.
+has graph structure. Neither form is allowed in
+@racket[read-syntax] mode.
 
 For a specific @graph-tag[] in a single read result, each @graph-ref[]
 reference is replaced by the datum read for the corresponding

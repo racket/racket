@@ -15,7 +15,7 @@
           make-continuation-prompt-tag
           continuation-prompt-tag?
           default-continuation-prompt-tag
-          root-continuation-prompt-tag
+          unsafe-root-continuation-prompt-tag
           call-with-continuation-prompt
           call-with-continuation-barrier
           abort-current-continuation
@@ -28,8 +28,10 @@
           unsafe-call-with-composable-continuation/no-wind
 
           with-continuation-mark
-          call/cm ; not exported to Racket
-          call-with-immediate-continuation-mark
+          (rename [call-with-immediate-continuation-mark/inline
+                   call-with-immediate-continuation-mark]
+                  [call-with-immediate-continuation-mark
+                   call-with-immediate-continuation-mark/proc])
           continuation-mark-set-first
           continuation-mark-set->list
           continuation-mark-set->list*
@@ -45,6 +47,7 @@
 
           make-engine
           engine-block
+          engine-timeout
           engine-return
           current-engine-state  ; not exported to Racket
           set-ctl-c-handler! ; not exported to Racket
@@ -136,10 +139,12 @@
           extract-procedure ; not exported to Racket
           procedure-arity-includes?
           procedure-arity
+          procedure-arity-mask
           procedure-result-arity
           procedure-extract-target
           procedure-closure-contents-eq?
           procedure-reduce-arity
+          procedure-reduce-arity-mask
           procedure-rename
           procedure->method
           procedure-arity?
@@ -182,6 +187,7 @@
           raise-mismatch-error
           raise-range-error
           raise-arity-error
+          raise-arity-mask-error
           raise-result-arity-error
           raise-type-error
           raise-binding-result-arity-error ; not exported to Racket
@@ -450,6 +456,8 @@
           make-phantom-bytes
           set-phantom-bytes!
           set-garbage-collect-notify! ; not exported to Racket
+          unsafe-add-collect-callbacks
+          unsafe-remove-collect-callbacks
 
           ;; not the same as Racket will executors:
           (rename
@@ -692,6 +700,7 @@
   (include "rumble/interrupt.ss")
   (include "rumble/parameter.ss")
   (include "rumble/engine.ss")
+  (include "rumble/source.ss")
   (include "rumble/error.ss")
   (include "rumble/srcloc.ss")
   (include "rumble/boolean.ss")

@@ -325,7 +325,9 @@ compiler to generate code that avoids boxing and unboxing intermediate
 results. Besides results within immediate combinations,
 flonum-specific results that are bound with @racket[let] and consumed
 by a later flonum-specific operation are unboxed within temporary
-storage. Finally, the compiler can detect some flonum-valued loop
+storage. @margin-note*{Unboxing applies most reliably to uses of a
+flonum-specific operation with two arguments.}
+Finally, the compiler can detect some flonum-valued loop
 accumulators and avoid boxing of the accumulator. The bytecode
 decompiler (see @secref[#:doc '(lib "scribblings/raco/raco.scrbl")
 "decompile"]) annotates combinations where the JIT can avoid boxes with

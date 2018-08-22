@@ -11,6 +11,7 @@
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
                   [engine-block rumble:engine-block]
+                  [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
                   [current-engine-state rumble:current-engine-state]
                   [make-condition rumble:make-condition]
@@ -25,7 +26,7 @@
                   [threaded? rumble:threaded?]
                   [get-thread-id rumble:get-thread-id]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
-                  [root-continuation-prompt-tag rumble:root-continuation-prompt-tag]
+                  [unsafe-root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]))
 
   ;; Special handling of `current-atomic`: use the last virtual register.
@@ -64,10 +65,11 @@
        (hash
         'make-engine rumble:make-engine
         'engine-block rumble:engine-block
+        'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
         'current-engine-state (lambda (v) (rumble:current-engine-state v))
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
-        'root-continuation-prompt-tag rumble:root-continuation-prompt-tag
+        'root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag
         'poll-will-executors poll-will-executors
         'make-will-executor rumble:make-will-executor
         'make-stubborn-will-executor rumble:make-stubborn-will-executor

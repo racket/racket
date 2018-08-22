@@ -3256,6 +3256,11 @@ static void wait_ffi_lock(Scheme_Object *lock)
                  (uintptr_t)scheme_make_integer(scheme_current_place_id))) {
       /* obtained lock the fast way */
       break;
+    } else if (!scheme_place_can_receive()) {
+      /* We can get here while trying to terminate a place and run
+         custodian callbacks or other shutdown actions, and since
+         the place is shutting down, we can't commuincate with other
+         places; since we can't pause nicely, just spin */
     } else {
       Scheme_Object *owner, *new_val;
       owner = SCHEME_VEC_ELS(lock)[1];
@@ -3786,7 +3791,7 @@ static Scheme_Object *ffi_call_or_curry(const char *who, int curry, int argc, Sc
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   a[0] = data;
 
-  scheme_performance_record_end("comp-ffi", &perf_state);
+  scheme_performance_record_end("comp-ffi-call", &perf_state);
 
   if (curry) {
     return scheme_make_prim_closure_w_arity(make_ffi_call_from_curried,

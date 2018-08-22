@@ -135,8 +135,8 @@ the @exnraise[exn:fail:contract].
 @defproc[(procedure-arity [proc procedure?]) normalized-arity?]{
 
 Returns information about the number of by-position arguments accepted
-by @racket[proc]. See also @racket[procedure-arity?] and
-@racket[normalized-arity?].}
+by @racket[proc]. See also @racket[procedure-arity?],
+@racket[normalized-arity?], and @racket[procedure-arity-mask].}
 
 @defproc[(procedure-arity? [v any/c]) boolean?]{
 
@@ -169,6 +169,19 @@ The result of @racket[procedure-arity] is always normalized in the sense of
 (procedure-arity (case-lambda [(x) 0] [(x y) 1]))
 ]}
 
+@defproc[(procedure-arity-mask [proc procedure?]) exact-integer?]{
+
+Returns the same information as @racket[procedure-arity], but encoded
+differently. The arity is encoded as an exact integer @racket[_mask]
+where @racket[(bitwise-bit-set? _mask _n)] returns true if @racket[proc]
+accepts @racket[_n] arguments.
+
+The mask encoding of an arity is often easier to test and manipulate,
+and @racket[procedure-arity-mask] is sometimes faster than
+@racket[procedure-arity] while always being at least as fast.
+
+@history[#:added "7.0.0.11"]}
+
 @defproc[(procedure-arity-includes? [proc procedure?]
                                     [k exact-nonnegative-integer?]
                                     [kws-ok? any/c #f])
@@ -187,7 +200,8 @@ keyword arguments.
 ]}
 
 @defproc[(procedure-reduce-arity [proc procedure?]
-                                 [arity procedure-arity?])
+                                 [arity procedure-arity?]
+                                 [name (or/c symbol? #f) #f])
          procedure?]{
 
 Returns a procedure that is the same as @racket[proc] (including
@@ -195,7 +209,7 @@ the same name returned by @racket[object-name]), but that accepts
 only arguments consistent with @racket[arity]. In particular,
 when @racket[procedure-arity] is applied to the generated
 procedure, it returns a value that is @racket[equal?] to
-@racket[arity].
+the normalized form of @racket[arity].
 
 If the @racket[arity] specification allows arguments that are not in
 @racket[(procedure-arity proc)], the @exnraise[exn:fail:contract].  If
@@ -205,11 +219,35 @@ arity-reduced procedure) or @racket[arity] must be the empty list
 (which makes a procedure that cannot be called); otherwise, the
 @exnraise[exn:fail:contract].
 
+If @racket[name] is not @racket[#f], then @racket[object-name] of the
+result procedure produces @racket[name]. Otherwise,
+@racket[object-name] of the result procedure produces the same result
+as for @racket[proc].
+
 @examples[
-(define my+ (procedure-reduce-arity + 2))
+(define my+ (procedure-reduce-arity + 2 ))
 (my+ 1 2)
 (eval:error (my+ 1 2 3))
-]}
+(define also-my+ (procedure-reduce-arity + 2 'also-my+))
+(eval:error (also-my+ 1 2 3))
+]
+
+@history[#:changed "7.0.0.11" @elem{Added the optional @racket[name]
+                                    argument.}]}
+
+@defproc[(procedure-reduce-arity-mask [proc procedure?]
+                                      [mask exact-integer?]
+                                      [name (or/c symbol? #f) #f])
+         procedure?]{
+
+The same as @racket[procedure-reduce-arity], but using the
+representation of arity described with @racket[procedure-arity-mask].
+
+The mask encoding of an arity is often easier to test and manipulate,
+and @racket[procedure-reduce-arity-mask] is sometimes faster than
+@racket[procedure-reduce-arity] while always being at least as fast.
+
+@history[#:added "7.0.0.11"]}
 
 @defproc[(procedure-keywords [proc procedure?])
          (values
@@ -325,6 +363,20 @@ must require no more keywords than the ones listed in
 (eval:error (show 1))
 (eval:error (show #:init 0 1 2 3 #:extra 4 #:more 7))
 ]}
+
+
+@defproc[(procedure-reduce-keyword-arity-mask [proc procedure?]
+                                              [mask exact-integer?]
+                                              [required-kws (listof keyword?)]
+                                              [allowed-kws (or/c (listof keyword?)
+                                                                  #f)])
+         procedure?]{
+
+The same as @racket[procedure-reduce-keyword-arity], but using the
+representation of arity described with @racket[procedure-arity-mask].
+
+@history[#:added "7.0.0.11"]}
+
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
 
@@ -660,25 +712,35 @@ of arguments have been accumulated, at which point the original
 (((curry list) 1 2) 3)
 (((curry list) 1) 3)
 ((((curry foldl) +) 0) '(1 2 3))
+(define foo (curry (lambda (x y z) (list x y z))))
+(foo 1 2 3)
+(((((foo) 1) 2)) 3)
 ]
 
 A function call @racket[(curry proc v ...)] is equivalent to
 @racket[((curry proc) v ...)]. In other words, @racket[curry] itself
 is curried.
 
-The @racket[curry] function provides limited support for keyworded
-functions: only the @racket[curry] call itself can receive keyworded
-arguments to be propagated eventually to @racket[proc].
-
 @mz-examples[#:eval fun-eval
   (map ((curry +) 10) '(1 2 3))
   (map (curry + 10) '(1 2 3))
   (map (compose (curry * 2) (curry + 10)) '(1 2 3))
-  (define foo (curry (lambda (x y z) (list x y z))))
-  (foo 1 2 3)
-  (((((foo) 1) 2)) 3)
-]}
+]
 
+The @racket[curry] function also supports functions with keyword arguments:
+keyword arguments will be accumulated in the same way as positional arguments
+until all required keyword arguments have been supplied.
+
+@mz-examples[#:eval fun-eval
+  (eval:no-prompt
+   (define (f #:a a #:b b #:c c)
+     (list a b c)))
+  (eval:check ((((curry f) #:a 1) #:b 2) #:c 3) (list 1 2 3))
+  (eval:check ((((curry f) #:b 1) #:c 2) #:a 3) (list 3 1 2))
+  (eval:check ((curry f #:a 1 #:c 2) #:b 3) (list 1 3 2))
+]
+
+@history[#:changed "7.0.0.7" @elem{Added support for keyword arguments.}]}
 
 @defproc*[([(curryr [proc procedure?]) procedure?]
            [(curryr [proc procedure?] [v any/c] ...+) any/c])]{

@@ -34,10 +34,10 @@
       (raise-argument-error 'extend-parameterization "parameter?" (car args))])))
 
 (define (call-with-parameterization parameter value thunk)
-  (call/cm
+  (with-continuation-mark
    parameterization-key
    (extend-parameterization (current-parameterization) parameter value)
-   thunk))
+   (thunk)))
 
 (define (current-parameterization)
   (continuation-mark-set-first

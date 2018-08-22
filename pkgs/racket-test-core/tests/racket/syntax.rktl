@@ -868,6 +868,15 @@
 
 (test 5 'implicit-begin (let () (begin) 10 5))
 
+;; Check that expansion-introduced `let-values` is not mentioned in
+;; the error message
+(define (exn:begin-possibly-implicit? x)
+  (and (exn? x)
+       (regexp-match? #rx"begin .possibly implicit." (exn-message x))))
+(error-test #'(let () (define x 0)) exn:begin-possibly-implicit?)
+(error-test #'(let () (struct a ())) exn:begin-possibly-implicit?)
+(error-test #'(cond [#t (define x 0)]) exn:begin-possibly-implicit?)
+
 ;; Weird test: check that `eval` does not wrap its last argument
 ;; in a prompt, which means that `(foo 10)` replaces the continuation
 ;; that would check for an error

@@ -46,9 +46,11 @@
 (define extract-to-c? #f)
 (define extract-to-decompiled? #f)
 (define extract-to-bytecode? #f)
+(define local-rename? #f)
 (define instance-knot-ties (make-hasheq))
 (define primitive-table-directs (make-hasheq))
 (define side-effect-free-modules (make-hash))
+(define disallows null)
 (define quiet-load? #f)
 (define startup-module main.rkt)
 (define submod-name #f)
@@ -99,7 +101,12 @@
    [("++depend") file "Record <file> as a dependency"
     (hash-set! dependencies (simplify-path (path->complete-path file)) #t)]
    [("++depend-module") mod-file "Add <mod-file> and transitive as dependencies"
-    (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
+                        (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
+   [("++disallow") id "If <id> is defined in the flattened version, explain why"
+                   (set! disallows (cons (string->symbol id) disallows))]
+   #:once-each
+   [("--local-rename") "Use simpler names in extracted, instead of a unique name for each binding"
+    (set! local-rename? #t)]
    #:once-any
    [("-C") "Print extracted bootstrap as a C encoding"
     (set! extract-to-c? #t)]
@@ -108,19 +115,20 @@
    [("-B") "Print extracted bootstrap as bytecode"
     (set! extract-to-bytecode? #t)]
    #:multi
-   [("++knot") sym path "Redirect imports from <sym> to flattened from <path>"
+   [("++knot") primitive-table path ("Redirect imports from #%<primitive-table> to flattened from <path>;"
+                                     " use `-` for <path> to leave as-is, effectively redirecting to a primitive use")
     (hash-update! instance-knot-ties
-                  (string->symbol (format "#%~a" sym))
+                  (string->symbol (format "#%~a" primitive-table))
                   (lambda (l) (cons (if (equal? path "-")
 					'ignore
 					(path->complete-path (normal-case-path path)))
 				    l))
                   null)]
-   [("++direct") primitive-table "Redirect imports from #%<primitive-table> to direct references"
+   [("++direct") primitive-table "Redirect from `(primitive-table '#%<primitive-table>)` to primitive use"
     (hash-set! primitive-table-directs
                (string->symbol (string-append "#%" primitive-table))
                "")]
-   [("++direct-prefixed") primitive-table "Like ++direct, but prefixes with <primitive-table>:"
+   [("++direct-prefixed") primitive-table "Like ++direct, but prefix with <primitive-table>:"
     (hash-set! primitive-table-directs
                (string->symbol (string-append "#%" primitive-table))
                (string-append primitive-table ":"))]
@@ -312,9 +320,11 @@
            #:as-c? extract-to-c?
            #:as-decompiled? extract-to-decompiled?
            #:as-bytecode? extract-to-bytecode?
+           #:local-rename? local-rename?
            #:instance-knot-ties instance-knot-ties
            #:primitive-table-directs primitive-table-directs
-           #:side-effect-free-modules side-effect-free-modules))
+           #:side-effect-free-modules side-effect-free-modules
+           #:disallows disallows))
 
 (when load-file
   (load load-file))

@@ -74,7 +74,7 @@
   (define (read-byte)
     (define b ((core-input-port-read-byte peek-pipe-i)))
     (cond
-      [(not (evt? b))
+      [(or (fixnum? b) (eof-object? b))
        b]
       [peeked-eof?
        (set! peeked-eof? #f)

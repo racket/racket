@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
-         "private/truncate-path.rkt")
+         "private/truncate-path.rkt"
+         "private/relative-path.rkt")
 
 (provide s-exp->fasl
          fasl->s-exp)
@@ -126,20 +127,8 @@
       [(prefab-struct-key v)
        (loop (struct->vector v))]
       [else (void)]))
-  (define exploded-wrt-dir 'not-ready)
-  (define (path->relative-path-elements v)
-    (when (and (eq? exploded-wrt-dir 'not-ready)
-               (path? v))
-      (define wrt-dir (current-write-relative-directory))
-      (set! exploded-wrt-dir (and wrt-dir (explode-path wrt-dir))))
-    (and exploded-wrt-dir
-         (path? v)
-         (let ([exploded (explode-path v)])
-           (and (for/and ([wrt-p (in-list exploded-wrt-dir)]
-                          [p (in-list exploded)])
-                  (equal? wrt-p p))
-                (list-tail exploded (length exploded-wrt-dir))))))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
+  (define path->relative-path-elements (make-path->relative-path-elements))
   ;; The fasl formal prefix:
   (write-bytes fasl-prefix o)
   ;; Write content to a string, so we can measure it
@@ -222,8 +211,7 @@
            (cond
              [rel-elems
               (write-byte fasl-relative-path-type o)
-              (loop (for/list ([p (in-list rel-elems)])
-                      (if (path? p) (path-element->bytes p) p)))]
+              (loop rel-elems)]
              [else
               (write-byte fasl-path-type o)
               (write-fasl-bytes (path->bytes v) o)

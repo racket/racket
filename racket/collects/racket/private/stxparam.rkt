@@ -64,13 +64,14 @@
         (let-values ([(expr opaque-expr)
                       (syntax-case stx ()
                         [(_ ([local-key id] ...) body ...)
-                         (parameterize ([current-parameter-environment
-                                          (extend-parameter-environment
-                                            (current-parameter-environment)
-                                            #'([local-key id] ...))])
-                           (syntax-local-expand-expression
-                            #'(let-values () body ...)
-                            #t))])])
+                         (with-continuation-mark
+                          current-parameter-environment
+                          (extend-parameter-environment
+                           (current-parameter-environment)
+                           #'([local-key id] ...))
+                          (syntax-local-expand-expression
+                           #'(let-values () body ...)
+                           #t))])])
           opaque-expr)
         (with-syntax ([stx stx])
           #'(#%expression stx)))))

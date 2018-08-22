@@ -12,7 +12,6 @@
    syntax-parser
    define/syntax-parse
    syntax-parser/template
-   parser/rhs
    define-eh-alternative-set)])
 
 (provide define-syntax-class
@@ -30,5 +29,4 @@
          this-syntax
 
          syntax-parser/template
-         parser/rhs
          define-eh-alternative-set)

@@ -5,6 +5,7 @@
                      syntax/keyword
                      racket/syntax
                      "minimatch.rkt"
+                     "datum-to-expr.rkt"
                      "rep-attrs.rkt"
                      "rep-data.rkt"
                      "rep-patterns.rkt"
@@ -53,7 +54,7 @@
         (let-values ([(name formals arity)
                       (let ([p (check-stxclass-header #'header stx)])
                         (values (car p) (cadr p) (caddr p)))])
-          (let ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)])
+          (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx)])
             (with-syntax ([name name]
                           [formals formals]
                           [desc (cond [(rhs-description the-rhs) => constant-desc]
@@ -62,7 +63,8 @@
                           [arity arity]
                           [attrs (rhs-attrs the-rhs)]
                           [commit? (rhs-commit? the-rhs)]
-                          [delimit-cut? (rhs-delimit-cut? the-rhs)])
+                          [delimit-cut? (rhs-delimit-cut? the-rhs)]
+                          [the-rhs-expr (datum->expression the-rhs)])
               #`(begin (define-syntax name
                          (stxclass 'name 'arity
                                    'attrs
@@ -71,7 +73,7 @@
                                    (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
                                    #f))
                        (define-values (parser)
-                         (parser/rhs name formals attrs rhss #,splicing? #,stx)))))))])))
+                         (parser/rhs name formals attrs the-rhs-expr #,splicing? #,stx)))))))])))
 
 (define-syntax define-syntax-class
   (lambda (stx) (tx:define-*-syntax-class stx #f)))
@@ -97,13 +99,14 @@
 
 (define-syntax (parser/rhs stx)
   (syntax-case stx ()
-    [(parser/rhs name formals relsattrs rhss splicing? ctx)
+    [(parser/rhs name formals relsattrs the-rhs-expr splicing? ctx)
      (with-disappeared-uses
       (let ()
         (define the-rhs
           (parameterize ((current-syntax-context #'ctx))
-            (parse-rhs #'rhss (syntax->datum #'relsattrs) (syntax-e #'splicing?)
-                       #:context #'ctx)))
+            (fixup-rhs (syntax-local-eval #'the-rhs-expr)
+                       (syntax-e #'splicing?)
+                       (syntax->datum #'relsattrs))))
         (rhs->parser #'name #'formals #'relsattrs the-rhs (syntax-e #'splicing?) #'ctx)))]))
 
 (begin-for-syntax
@@ -410,7 +413,7 @@ Conventions:
           (or (assq '#:track-literals chunks)
               (eq? (syntax-e #'body-mode) 'one-template)))
         (define-values (decls0 defs)
-          (get-decls+defs chunks #t #:context #'ctx))
+          (get-decls+defs chunks #:context #'ctx))
         ;; for-clause : stx -> (values pattern stx (listof stx))
         (define (for-clause clause)
           (syntax-case clause ()
@@ -1189,14 +1192,16 @@ Conventions:
                  (let ([ehpat (car ehpat+hstx)]
                        [hstx (cadr ehpat+hstx)])
                    (cond [(syntax? hstx)
-                          (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))])
-                            (let ([attrs (iattrs->sattrs (pattern-attrs (ehpat-head ehpat)))])
-                              (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)
-                                    (list #`(define parser
-                                              (parser/rhs parser () #,attrs
-                                                          [#:description #f (pattern #,hstx)]
-                                                          #t
-                                                          #,stx))))))]
+                          (define the-pattern (ehpat-head ehpat))
+                          (define attrs (iattrs->sattrs (pattern-attrs the-pattern)))
+                          (define the-variant (variant hstx attrs the-pattern null))
+                          (define the-rhs (rhs attrs #f #f (list the-variant) null #f #f))
+                          (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))]
+                                        [the-rhs-expr (datum->expression the-rhs)])
+                            (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)
+                                  (list #`(define parser
+                                            (parser/rhs parser () #,attrs
+                                                        the-rhs-expr #t #,stx)))))]
                          [(eh-alternative? hstx)
                           (list hstx null)]
                          [else

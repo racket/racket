@@ -21,6 +21,9 @@
 
 (define/who keyword<?
   (case-lambda
+   [(a)
+    (check who keyword? a)
+    #t]
    [(a b)
     (check who keyword? a)
     (check who keyword? b)

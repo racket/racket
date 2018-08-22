@@ -9,11 +9,11 @@
  #:once-each
  [("--compress") "Leave compiled code files as compressed"
   (enable-compress!)]
- #:args (src-file dest-file boot-dir racket.so)
+ #:args (src-file dest-file boot-dir racket.boot)
 
  (define bstr1 (adjust-compress (file->bytes (build-path boot-dir "petite.boot"))))
  (define bstr2 (adjust-compress (file->bytes (build-path boot-dir "scheme.boot"))))
- (define bstr3 (adjust-compress (file->bytes racket.so)))
+ (define bstr3 (adjust-compress (file->bytes racket.boot)))
 
  (with-handlers ([exn? (lambda (x)
                          (when (file-exists? dest-file)

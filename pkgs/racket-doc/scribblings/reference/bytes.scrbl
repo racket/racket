@@ -195,30 +195,36 @@ For communication among @tech{places}, the new byte string is allocated in the
 @; ----------------------------------------
 @section{Byte String Comparisons}
 
-@defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{ Returns
- @racket[#t] if all of the arguments are @racket[eqv?].}
+@defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...) boolean?]{ Returns
+ @racket[#t] if all of the arguments are @racket[eqv?].
 
 @mz-examples[(bytes=? #"Apple" #"apple")
              (bytes=? #"a" #"as" #"a")]
 
+@history/arity[]}
+
 @(define (bytes-sort direction)
    @elem{Like @racket[bytes<?], but checks whether the arguments are @|direction|.})
 
-@defproc[(bytes<? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
+@defproc[(bytes<? [bstr1 bytes?] [bstr2 bytes?] ...) boolean?]{
  Returns @racket[#t] if the arguments are lexicographically sorted
  increasing, where individual bytes are ordered by @racket[<],
  @racket[#f] otherwise.
 
 @mz-examples[(bytes<? #"Apple" #"apple")
              (bytes<? #"apple" #"Apple")
-             (bytes<? #"a" #"b" #"c")]}
+             (bytes<? #"a" #"b" #"c")]
 
-@defproc[(bytes>? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
+@history/arity[]}
+
+@defproc[(bytes>? [bstr1 bytes?] [bstr2 bytes?] ...) boolean?]{
  @bytes-sort["decreasing"]
 
 @mz-examples[(bytes>? #"Apple" #"apple")
              (bytes>? #"apple" #"Apple")
-             (bytes>? #"c" #"b" #"a")]}
+             (bytes>? #"c" #"b" #"a")]
+
+@history/arity[]}
 
 @; ----------------------------------------
 @section{Bytes to/from Characters, Decoding and Encoding}

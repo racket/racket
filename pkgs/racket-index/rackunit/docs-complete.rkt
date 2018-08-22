@@ -9,7 +9,7 @@
 
 ;; checks to make sure that all of the exports of
 ;; the 'what' library are documented
-(provide/contract [check-docs (->* (symbol?) 
+(provide/contract [check-docs (->* (module-path?) 
                                    (#:skip (or/c regexp? 
                                                  symbol? 
                                                  #f

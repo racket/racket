@@ -75,6 +75,13 @@ Running:
    Expands and extracts <file-path> as a single linklet to
    <outfile-path>.
 
+   Unless the `--local-rename` flag is also provided to
+   "bootstrap-run.rkt", an extracted linklet preserves a naming
+   property of the expander's compilation to linklets, which is that
+   it uses a distinct symbol for every binding. The symbol--binding
+   correspondence is useful for some further compiler passes, but
+   `--local-rename` is useful to minimize syntactic diffs.
+
  % racket bootstrap-run.rkt -c <dir> -sx -D -t <file-path> -o <outfile-path>
 
    Expands and extracts <file-path> as a single linklet, compiles and
@@ -137,8 +144,6 @@ Roadmap to the implementation:
 
  common/ - utilities
    module-path.rkt - [resolved] module path [indexes]
-   performance.rkt - performance instrumentation; enable statistic
-                     gathering and reporting by changing this module
 
  compile/ - from expanded to S-expression linklet
    main.rkt - compiler functions called from "eval/main.rkt"
@@ -185,6 +190,22 @@ Beware that names are routinely shadowed when they are provided by
 example, `syntax?` is shadowed, and any part of the expander that
 needs `syntax?` must import "syntax/syntax.rkt" or
 "syntax/checked-syntax.rkt".
+
+----------------------------------------
+
+Performance measurements:
+
+Set the `PLT_EXPANDER_TIMES` environment variable for a summary of
+performance information (written via `log-error`, which normally goes
+to stderr) on exit. In the output, a category that is nested under
+another category contributes to the latter's recorded time and memory
+use, but not to its counts. Beware that taking measurements can slow
+down the expander slightly.
+
+Set the `PLT_LINKLET_TIMES` environment variable to get similar
+information from the underlying runtime system. Except for compile
+times, linklet-level times generally will be disjoint from the times
+reported by the expander.
 
 ----------------------------------------
 

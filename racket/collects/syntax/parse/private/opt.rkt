@@ -189,7 +189,7 @@
           (equal? tail (pat:datum '())))]
     [(pat:and patterns)
      (andmap pattern-factorable? patterns)]
-    [(pat:or patterns) #f]
+    [(pat:or _ patterns _) #f]
     [(pat:not pattern) #f] ;; FIXME: ?
     [(pat:pair head tail)
      (and (pattern-factorable? head)
@@ -217,7 +217,7 @@
      (pattern-factorable? inner)]
     [(hpat:commit inner) #t]
     ;; ----
-    [(ehpat head repc)
+    [(ehpat _ head repc _)
      (and (equal? repc #f)
           (pattern-factorable? head))]
     ;; ----

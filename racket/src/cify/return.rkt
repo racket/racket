@@ -3,12 +3,15 @@
 
 (provide (struct-out tail-return)
          (struct-out multiple-return)
+         (struct-out only-multiple-return)
          (struct-out multiple-return/suffix)
          return
-         return-can-omit?)
+         return-can-omit?
+         return-can-omit-single?)
 
 (struct tail-return (function-id lam self-args leaf?))
 (struct multiple-return (prefix))
+(struct only-multiple-return multiple-return ())
 (struct multiple-return/suffix multiple-return (generate-suffix))
 
 (define (return ret runstack s
@@ -41,3 +44,5 @@
       (and (multiple-return? ret)
            (equal? (multiple-return-prefix ret) ""))))
 
+(define (return-can-omit-single? ret)
+  (only-multiple-return? ret))

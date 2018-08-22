@@ -39,13 +39,44 @@ matched before calling the failure procedure, otherwise the behavior
 of matching is unpredictable. See also @racket[failure-cont], which is
 a lower-level mechanism achieving the same ends.
 
+@examples[
+#:eval match-eval
+(define (m x)
+  (match x
+    [(list a b c)
+     #:when (= 6 (+ a b c))
+     'sum-is-six]
+    [(list a b c) 'sum-is-not-six]))
+
+(m '(1 2 3))
+(m '(2 3 4))
+]
+
 An optional @racket[(=> id)] between a @racket[pat] and the
-@racket[body]s is bound to a @defterm{failure procedure} of zero
+@racket[body]s is bound to a @deftech{failure procedure} of zero
 arguments.  If this procedure is invoked, it escapes back to the
 pattern matching expression, and resumes the matching process as if
 the pattern had failed to match.  The @racket[body]s must not mutate
 the object being matched before calling the failure procedure,
 otherwise the behavior of matching is unpredictable. 
+
+@examples[
+#:eval match-eval
+(define (m x)
+  (match x
+    [(list a b c)
+     (=> exit)
+     (f x exit)]
+    [(list a b c) 'sum-is-not-six]))
+
+(define (f x exit)
+  (if (= 6 (apply + x))
+      'sum-is-six
+      (exit)))
+
+(m '(1 2 3))
+(m '(2 3 4))
+]
 
 The grammar of @racket[pat] is as follows, where non-italicized
 identifiers are recognized symbolically (i.e., not by binding).
@@ -306,12 +337,8 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(racketidfont "or") _pat ...)] --- matches if any of
-       the @racket[_pat]s match. @bold{Beware}: the result expression
-       can be duplicated once for each @racket[_pat]! Identifiers in
-       @racket[_pat] are bound only in the corresponding copy of the
-       result expression; in a module context, if the result
-       expression refers to a binding, then all @racket[_pat]s
-       must include the binding.
+       the @racket[_pat]s match. Each @racket[_pat] must bind the same set
+       of identifiers.
 
        @examples[
        #:eval match-eval

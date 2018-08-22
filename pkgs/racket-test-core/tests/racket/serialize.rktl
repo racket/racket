@@ -605,4 +605,145 @@
 
 ;; ----------------------------------------
 
+(let ([fn (make-temporary-file)])
+  (define (try rel-mode #:fail-rel? [fail-rel? #t])
+    (define ns (current-namespace))
+    (parameterize ([current-namespace (make-base-namespace)])
+      (namespace-attach-module ns 'racket/serialize )
+      (with-output-to-file fn
+        #:exists 'truncate
+        (lambda () (display
+                    (string-append "#lang racket/base\n"
+                                   "(require racket/serialize)\n"
+                                   "(module+ main\n"
+                                   "   (provide s foo?)\n"
+                                   "   (serializable-struct foo (bar))\n"
+                                   "   (define s (serialize (foo 49)\n"
+                                   "              #:" rel-mode "relative-directory"
+                                   "              (find-system-path 'temp-dir))))\n"))))
+      (define s (dynamic-require `(submod ,fn main) 's))
+      (define-values (in out) (make-pipe))
+      (write s out)
+      (close-output-port out)
+      (define read-s (read in))
+      (define foo? (dynamic-require `(submod ,fn main) 'foo?))
+      (parameterize ([current-load-relative-directory (find-system-path 'temp-dir)])
+        (test #t 'relative-dir (foo? (deserialize s)))
+        (test #t 'relative-dir (foo? (deserialize read-s))))
+      (test (if fail-rel? 'correct-error 'worked)
+            'unrelative-dir
+            (with-handlers ([exn:fail:contract?
+                             (λ (e) 'correct-error)])
+              (and (deserialize s)
+                   'worked))))
+    (delete-file fn))
+  (try "")
+  (try "deserialize-")
+  (try "deserialize-relative-directory #f #:" #:fail-rel? #f))
+
+;; serialize as relative
+(test (build-path (or (current-load-relative-directory)
+                      (current-directory))
+                  "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:relative-directory (build-path (find-system-path 'temp-dir) "home"))))
+
+;; Serialize as relative, test for readability
+(let ([s (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                    #:relative-directory (build-path (find-system-path 'temp-dir) "home"))])
+  (define-values (in out) (make-pipe))
+  (write s out)
+  (close-output-port out)
+  (test (build-path (or (current-load-relative-directory)
+                        (current-directory))
+                    "hotdogs")
+        'read-path-data
+        (deserialize (read in))))
+
+;; don't serialize as relative
+(test (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:deserialize-relative-directory (build-path (find-system-path 'temp-dir) "work"))))
+
+;; also don't serialize as relative
+(test (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+      'path-data
+      (deserialize
+       (serialize (build-path (find-system-path 'temp-dir) "home" "hotdogs")
+                  #:deserialize-relative-directory (build-path (find-system-path 'temp-dir) "home"))))
+
+;; ----------------------------------------
+
+(module interchange-deserialize racket/base
+  (provide (all-defined-out))
+  (require racket/serialize)
+  (define current-des #'interchange-des-a)
+  (define (set-current-des! val)
+    (set! current-des val))
+  (struct interchange ()
+    #:property prop:serializable
+    (make-serialize-info
+     (λ (this) (vector))
+     (λ () current-des)
+     #t
+     (or (current-load-relative-directory) (current-directory))))
+  (define interchange-des-a
+    (make-deserialize-info
+     (λ () 42)
+     (λ ()
+       (values 42
+               (λ (other) (void))))))
+  (define interchange-des-b
+    (make-deserialize-info
+     (λ () 43)
+     (λ ()
+       (values 43
+               (λ (other) (void)))))))
+(require 'interchange-deserialize)
+(test 42 'interchange-default (deserialize (serialize (interchange))))
+(set-current-des! #'interchange-des-b)
+(test 43 'interchange-alternate (deserialize (serialize (interchange))))
+
+;; ----------------------------------------
+
+(let ([root (car (filesystem-root-list))])
+  (test
+   root
+   'longer-relative
+   (deserialize (serialize root #:relative-directory (build-path root "a"))))
+
+  (test
+   (build-path 'same)
+   'this-dir-path
+   (parameterize ([current-load-relative-directory #f])
+     (deserialize (serialize (build-path root 'same) #:relative-directory root)))))
+
+;; ----------------------------------------
+
+(let ([root (car (filesystem-root-list))])
+  (define (test-relative data rel)
+    (test
+     'right-error
+     'non-base-dir
+     (with-handlers ([exn:fail:contract?
+                      (λ (e)
+                        (if (string-prefix?
+                             (exn-message e)
+                             (string-append "serialize: relative-directory pair's first"
+                                            " path does not extend second path"))
+                            'right-error
+                            'wrong-error))])
+       (serialize data
+                  #:relative-directory rel))))
+
+   (test-relative (build-path root "x") (cons (build-path root "x") (build-path root "x" "y")))
+
+   (test-relative (build-path root "x") (cons (build-path root "x" "z") (build-path root "x" "y"))))
+
+;; ----------------------------------------
+
 (report-errs)

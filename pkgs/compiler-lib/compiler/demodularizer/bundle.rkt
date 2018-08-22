@@ -7,7 +7,7 @@
 
 (provide wrap-bundle)
 
-(define (wrap-bundle body internals lifts excluded-module-mpis get-merge-info)
+(define (wrap-bundle body internals lifts excluded-module-mpis get-merge-info name)
   (define-values (runs
                   import-keys
                   ordered-importss
@@ -166,4 +166,5 @@
 
   (linkl-bundle (hasheq 0 new-linkl
                         'data data-linkl
-                        'decl decl-linkl)))
+                        'decl decl-linkl
+                        'name name)))

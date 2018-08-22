@@ -7,6 +7,7 @@
                              "raco")))
 
 (define tmp (make-temporary-file))
+(define tmp-dir (make-temporary-file "mztmp~a" 'directory))
 
 (system* raco
          "ctool"
@@ -16,4 +17,15 @@
          "++lib"
          "racket")
 
+(system* raco
+         "ctool"
+         "--3m"
+         "--c-mods"
+         tmp
+         "++lib"
+         "racket/promise"
+         "--runtime"
+         tmp-dir)
+
 (delete-file tmp)
+(delete-directory/files tmp-dir)

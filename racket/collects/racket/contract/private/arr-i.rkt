@@ -130,6 +130,13 @@
                                    #:when (and (not (->i-arg-optional? arg-ctc))
                                                (->i-arg-kwd arg-ctc)))
                           (->i-arg-kwd arg-ctc)))
+       (define rng-ctcs (map cdr (->i-rng-ctcs ctc)))
+       (define rng-exers
+         (and rng-ctcs
+              (for/list ([rng-ctc (in-list rng-ctcs)])
+                (define-values (exer ctcs)
+                  ((contract-struct-exercise rng-ctc) fuel))
+                exer)))
        (cond
          [(andmap values gens)
           (define env (contract-random-generate-get-current-environment))
@@ -149,13 +156,14 @@
                         regular-args))
                      (λ results
                        (void)
-                       ;; what to do here? (nothing, for now)
-                       ;; better: if we did actually stash the results we knew about.
-                       '(for ([res-ctc (in-list rng-ctcs)]
-                              [result (in-list results)])
-                          (contract-random-generate-stash env res-ctc result)))))
-                  ;; better here: if we promised the results we knew we could deliver
-                  '())]
+                       (when rng-ctcs
+                         (for ([res-ctc (in-list rng-ctcs)]
+                               [result (in-list results)])
+                           (contract-random-generate-stash env res-ctc result))
+                         (for ([exer (in-list rng-exers)]
+                               [result (in-list results)])
+                           (exer result))))))
+                  (or rng-ctcs '()))]
          [else
           (values void '())]))]
     [else

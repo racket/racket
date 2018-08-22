@@ -5,9 +5,11 @@
          racket/syntax)
 (provide (all-defined-out))
 
-#|
-Uses Arguments from kws.rkt
-|#
+;; Pattern parsing is done (in rep.rkt) in two passes. In pass 1, stxclass refs
+;; are not required to be bound, and so patterns like `x:sc` and `(~var x sc)`
+;; are left as "fixup" patterns to be resolved in pass 2.
+
+;; Uses Arguments from kws.rkt
 
 #|
 A SinglePattern is one of
@@ -33,6 +35,8 @@ A SinglePattern is one of
   (pat:ord SinglePattern UninternedSymbol Nat)
   (pat:post SinglePattern)
   (pat:integrated id/#f id string stx)
+* (pat:fixup Syntax Identifier/#f Identifier Identifier Arguments Syntax/#f Id/#f)
+* (pat:and/fixup Syntax (Listof *Pattern))
 
 A ListPattern is a subtype of SinglePattern; one of
   (pat:datum '())
@@ -64,6 +68,8 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:ord (pattern group index) #:prefab)
 (define-struct pat:post (pattern) #:prefab)
 (define-struct pat:integrated (name predicate description role) #:prefab)
+(define-struct pat:fixup (stx bind varname scname argu role parser*) #:prefab)
+(define-struct pat:and/fixup (stx patterns) #:prefab)
 
 #|
 A ActionPattern is one of
@@ -160,7 +166,9 @@ A RepConstraint is one of
       (pat:reflect? x)
       (pat:ord? x)
       (pat:post? x)
-      (pat:integrated? x)))
+      (pat:integrated? x)
+      (pat:fixup? x)
+      (pat:and/fixup? x)))
 
 (define (action-pattern? x)
   (or (action:cut? x)
@@ -257,6 +265,10 @@ A RepConstraint is one of
      (pattern-attrs sp)]
     [(pat:integrated name _ _ _)
      (if name (list (attr name 0 #t)) null)]
+    [(pat:fixup _ bind _ _ _ _ _)
+     (if bind (list (attr bind 0 #t)) null)]
+    [(pat:and/fixup _ ps)
+     (append-iattrs (map pattern-attrs ps))]
 
     ;; -- A patterns
     [(action:cut)
@@ -340,6 +352,8 @@ A RepConstraint is one of
     [(pat:ord sp _ _) (pattern-has-cut? sp)]
     [(pat:post sp) (pattern-has-cut? sp)]
     [(pat:integrated name _ _ _) #f]
+    [(pat:fixup _ _ _ _ _ _ _) #t]
+    [(pat:and/fixup _ ps) (ormap pattern-has-cut? ps)]
 
     ;; -- A patterns
     [(action:cut) #t]

@@ -1386,6 +1386,12 @@
        (define kwd-gens
          (for/list ([kwd-info (in-list dom-kwd-infos)])
            (contract-random-generate/choose (kwd-info-ctc kwd-info) fuel)))
+       (define rng-exers
+         (and rng-ctcs
+              (for/list ([rng-ctc (in-list rng-ctcs)])
+                (define-values (exer ctcs)
+                  ((contract-struct-exercise rng-ctc) fuel))
+                exer)))
        (define env (contract-random-generate-get-current-environment))
        (cond
          [(and (andmap values gens)
@@ -1405,7 +1411,10 @@
                 (when rng-ctcs
                   (for ([res-ctc (in-list rng-ctcs)]
                         [result (in-list results)])
-                    (contract-random-generate-stash env res-ctc result))))))
+                    (contract-random-generate-stash env res-ctc result))
+                  (for ([exer (in-list rng-exers)]
+                        [result (in-list results)])
+                    (exer result))))))
            (or rng-ctcs '()))]
          [else
           (values void '())]))]

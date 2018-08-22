@@ -8,9 +8,11 @@
          "struct-type-info.rkt"
          "mutated-state.rkt"
          "find-known.rkt"
+         "infer-known.rkt"
          "letrec.rkt")
 
-(provide mutated-in-body)
+(provide mutated-in-body
+         update-mutated-state!)
 
 ;; See "mutated-state.rkt" for information on the content of the
 ;; `mutated` table.
@@ -19,7 +21,7 @@
 ;; definition of an identifier, because that will abort the enclosing
 ;; linklet.
 
-(define (mutated-in-body l exports prim-knowns knowns imports)
+(define (mutated-in-body l exports prim-knowns knowns imports unsafe-mode?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -44,7 +46,8 @@
     ;; that information is correct, because it dynamically precedes
     ;; the `set!`
     (define-values (knowns info)
-      (find-definitions form prim-knowns prev-knowns imports mutated #f))
+      (find-definitions form prim-knowns prev-knowns imports mutated unsafe-mode?
+                        #:optimize? #f))
     (match form
       [`(define-values (,ids ...) ,rhs)
        (cond
@@ -189,3 +192,31 @@
                 [else
                  (hash-remove! mutated v)
                  (state)])])))])))
+
+(define (update-mutated-state! l mut-l mutated)
+  (cond
+    [(wrap-null? mut-l) '()]
+    [(eq? l mut-l)
+     ;; Check for function definitions at the start of `l`, because we
+     ;; can mark all 'too-early variable uses as being ready from now
+     ;; on
+     (define new-mut-l
+       (let loop ([mut-l mut-l])
+         (cond
+           [(wrap-null? mut-l) '()]
+           [else
+            (match (wrap-car mut-l)
+              [`(define-values (,ids ...) ,rhs)
+               (cond
+                 [(lambda? rhs #:simple? #t)
+                  (for ([id (in-list ids)])
+                    (define u-id (unwrap id))
+                    (when (too-early-mutated-state? (hash-ref mutated u-id #f))
+                      (hash-set! mutated u-id 'too-early/ready)))
+                  (loop (wrap-cdr mut-l))]
+                 [else mut-l])]
+              [`,_ mut-l])])))
+     (if (eq? mut-l l)
+         (wrap-cdr mut-l)
+         l)]
+    [else mut-l]))

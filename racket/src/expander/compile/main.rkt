@@ -8,9 +8,9 @@
 ;; Compilation of expanded code produces an S-expression (but enriched
 ;; with source locations and properties) where run-time primitive are
 ;; accessed directly, and all linklet imports and local variables are
-;; renamed to avoid collisions with the primitive names and to avoid
-;; all shadowing (but the same variable might be used in
-;; non-overlapping local contexts). A `compile-linklet` function
+;; renamed to avoid collisions with the primitive names and to make
+;; every binding have a unique symbolic name (within the linklet) that
+;; does not shadow a primitive. A `compile-linklet` function
 ;; (currently provided by the runtime system) then compiles the
 ;; enriched S-expression to bytecode.
 

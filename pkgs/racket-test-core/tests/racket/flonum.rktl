@@ -3,7 +3,45 @@
 (Section 'flonum)
 
 (require racket/flonum
+         scheme/unsafe/ops
          "for-util.rkt")
+
+(define 1nary-table
+  (list (list fl- unsafe-fl-)
+        (list fl/ unsafe-fl/)
+
+        (list fl>= unsafe-fl>=)
+        (list fl> unsafe-fl>)
+        (list fl= unsafe-fl=)
+        (list fl<= unsafe-fl<=)
+        (list fl< unsafe-fl<)
+        (list flmin unsafe-flmin)
+        (list flmax unsafe-flmax)))
+
+(define 0nary-table
+  (list (list fl+ unsafe-fl+)
+        (list fl* unsafe-fl*)))
+
+(let ()
+  (define (same-results fl unsafe-fl args)
+    (test (apply fl args) apply unsafe-fl args))
+
+  (for ([ignore (in-range 0 800)])
+    (let ([i (random)]
+          [j (random)]
+          [k (random)]
+          [more-flonums (build-list (random 20) (λ (i) (random)))])
+      (for ([line (in-list 0nary-table)])
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))
+      (for ([line (in-list 1nary-table)])
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j)))
+      (for ([line (in-list (append 0nary-table 1nary-table))])
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i j k))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (list i k j))
+        (test #t same-results (list-ref line 0) (list-ref line 1) (cons i more-flonums))))))
 
 (define (flonum-close? fl1 fl2)
   (<= (flabs (fl- fl1 fl2))

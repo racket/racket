@@ -220,17 +220,27 @@
                       (and iv
                            (predicate iv)))))]
              [accessor
-              (lambda (v)
+              (case-lambda
+               [(v default)
+                (let ([fail (lambda ()
+                              (cond
+                               [(eq? default none)
+                                (raise-argument-error accessor-name
+                                                      (format "~a?" name)
+                                                      v)]
+                               [(procedure? default)
+                                (default)]
+                               [else default]))])
                 (if (impersonator? v)
                     (let ([pv (hash-ref (impersonator-props v) p none)])
                       (if (eq? none pv)
-                          (raise-argument-error accessor-name
-                                                (format "~a?" name)
-                                                v)
+                          (fail)
                           pv))
                     (let ([iv (extract-impersonator-of accessor-name v)])
-                      (and iv
-                           (accessor iv)))))])
+                      (if iv
+                          (accessor iv default)
+                          (fail)))))]
+               [(v) (accessor v none)])])
       (values p
               (make-named-procedure predicate predicate-name)
               (make-impersonator-property-accessor-procedure accessor accessor-name)))))
@@ -561,7 +571,10 @@
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor impersonator-property-accessor-procedure)
-                        0))
+                        0)
+  (struct-property-set! prop:object-name
+                        (record-type-descriptor impersonator-property-accessor-procedure)
+                        1))
 
 (define (set-impersonator-hash!)
   (let ([struct-impersonator-hash-code

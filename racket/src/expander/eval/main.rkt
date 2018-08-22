@@ -11,7 +11,8 @@
          "../common/phase.rkt"
          "../syntax/match.rkt"
          "../expand/context.rkt"
-         (rename-in "../expand/main.rkt" [expand expand-in-context])
+         (rename-in "../expand/main.rkt"
+                    [expand expand-in-context])
          "../compile/main.rkt"
          "../compile/compiled-in-memory.rkt"
          "top.rkt"
@@ -134,7 +135,7 @@
 (define (expand s [ns (current-namespace)] [observable? #f] [to-parsed? #f] [serializable? #f])
   (define observer (and observable? (current-expand-observe)))
   (when observer (...log-expand observer ['start-top]))
-  (parameterize ((current-expand-observe #f))
+  (parameterize ([current-expand-observe #f])
     (per-top-level s ns
                    #:single (lambda (s ns as-tail?) (expand-single s ns observer to-parsed? serializable?))
                    #:combine cons
@@ -201,7 +202,7 @@
   ;; but `#:single #f` makes it return immediately
   (define observer (current-expand-observe))
   (when observer (...log-expand observer ['start-top]))
-  (parameterize ((current-expand-observe #f))
+  (parameterize ([current-expand-observe #f])
     (per-top-level s ns
                    #:single #f
                    #:quick-immediate? #f

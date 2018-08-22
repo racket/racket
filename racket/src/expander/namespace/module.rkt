@@ -372,7 +372,9 @@
                                        #:seen [seen #hasheq()])
   (unless (module-path-index? mpi)
     (error "not a module path index:" mpi))
-  (define name (module-path-index-resolve mpi #t))
+  (define name (performance-region
+                ['eval 'resolve]
+                (module-path-index-resolve mpi #t)))
   (define m (namespace->module ns name))
   (unless m (raise-unknown-module-error 'instantiate name))
   (define (instantiate! instance-phase run-phase ns)
@@ -492,19 +494,17 @@
   (namespace-run-available-modules! ns (add1 run-phase)))
 
 (define (namespace-run-available-modules! ns [run-phase (namespace-phase ns)])
-  ;; For a quick check, we can rely on the atomicity of `eqv?`-based hash tables
-  (unless (null? (hash-ref (namespace-available-module-instances ns) run-phase null))
-    (registry-call-with-lock
-     (namespace-module-registry ns)
-     (lambda ()
-       (let loop ()
-         (define mis (hash-ref (namespace-available-module-instances ns) run-phase null))
-         (unless (null? mis)
-           (hash-set! (namespace-available-module-instances ns) run-phase null)
-           (for ([mi (in-list (reverse mis))])
-             (run-module-instance! mi ns #:run-phase run-phase #:skip-run? #f #:otherwise-available? #f))
-           ;; In case instantiation added more reflectively:
-           (loop)))))))
+  (registry-call-with-lock
+   (namespace-module-registry ns)
+   (lambda ()
+     (let loop ()
+       (define mis (hash-ref (namespace-available-module-instances ns) run-phase null))
+       (unless (null? mis)
+         (hash-set! (namespace-available-module-instances ns) run-phase null)
+         (for ([mi (in-list (reverse mis))])
+           (run-module-instance! mi ns #:run-phase run-phase #:skip-run? #f #:otherwise-available? #f))
+         ;; In case instantiation added more reflectively:
+         (loop))))))
 
 (define (namespace-primitive-module-visit! ns name)
   (define mi (hash-ref (namespace-module-instances ns) (make-resolved-module-path name)))

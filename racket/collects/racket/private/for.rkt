@@ -734,14 +734,24 @@
   ;; hash sequences
   
   ;; assembles hash iterator functions to give to make-do-sequence
-  (define (:hash-gen ht -get -first -next)
-    (values (lambda (pos) (-get ht pos))
-            #f
-            (lambda (pos) (-next ht pos))
-            (-first ht)
-            (lambda (pos) pos) ; #f position means stop
-            #f
-            #f))
+  (define :hash-gen
+    (case-lambda
+      [(ht -get -first -next)
+       (values (lambda (pos) (-get ht pos))
+               #f
+               (lambda (pos) (-next ht pos))
+               (-first ht)
+               (lambda (pos) pos) ; #f position means stop
+               #f
+               #f)]
+      [(ht -get -first -next bad-v)
+       (values (lambda (pos) (-get ht pos bad-v))
+               #f
+               (lambda (pos) (-next ht pos))
+               (-first ht)
+               (lambda (pos) pos) ; #f position means stop
+               #f
+               #f)]))
 
   (define (mutable? ht) (not (immutable? ht)))
   (define (not-weak? ht) (not (hash-weak? ht)))
@@ -796,34 +806,47 @@
                      (define (CHECK-SEQ ht)
                        (unless (HASHTYPE? ht)
                          (raise-argument-error 'IN-HASH-SEQ ERR-STR ht))))
-                   (define (AS-EXPR-SEQ ht)
-                     (CHECK-SEQ ht)
-                     (make-do-sequence (lambda () (:hash-gen ht -VAL -first -next))))
+                   (define AS-EXPR-SEQ
+                     (let ([IN-HASH-SEQ
+                            (case-lambda
+                              [(ht)
+                               (CHECK-SEQ ht)
+                               (make-do-sequence (lambda () (:hash-gen ht -VAL -first -next)))]
+                              [(ht bad-v)
+                               (CHECK-SEQ ht)
+                               (make-do-sequence (lambda () (:hash-gen ht -VAL -first -next bad-v)))])])
+                       IN-HASH-SEQ))
                    (define-sequence-syntax IN-HASH-SEQ
                     (lambda () #'AS-EXPR-SEQ)
                     (lambda (stx)
-                     (syntax-case stx ()
-                      [[(V ...) (_ ht-expr)]
-                       (for-clause-syntax-protect
-                        #'[(V ...)
-                           (:do-in
-                            ;;outer bindings
-                            ([(ht) ht-expr])
-                            ;; outer check
-                            (unless-unsafe (CHECK-SEQ ht))
-                            ;; loop bindings
-                            ([i (-first ht)])
-                            ;; pos check
-                            i
-                            ;; inner bindings
-                            ([(V ...) (-VAL ht i)])
-                            ;; pre guard
-                            #t
-                            ;; post guard
-                            #t
-                            ;; loop args
-                            ((-next ht i)))])]
-                      [_ #f]))))))]))
+                      (define (transform stx)
+                        (syntax-case stx ()
+                          [[(V ...) (_ ht-expr . extra-args)]
+                           (for-clause-syntax-protect
+                            #'[(V ...)
+                               (:do-in
+                                ;;outer bindings
+                                ([(ht) ht-expr])
+                                ;; outer check
+                                (unless-unsafe (CHECK-SEQ ht))
+                                ;; loop bindings
+                                ([i (-first ht)])
+                                ;; pos check
+                                i
+                                ;; inner bindings
+                                ([(V ...) (-VAL ht i . extra-args)])
+                                ;; pre guard
+                                #t
+                                ;; post guard
+                                #t
+                                ;; loop args
+                                ((-next ht i)))])]))
+                      (syntax-case stx ()
+                        [[(V ...) (_ ht-expr)]
+                         (transform stx)]
+                        [[(V ...) (_ ht-expr bad-index-expr)]
+                         (transform stx)]
+                        [_ #f]))))))]))
           ;; 2) define sequence syntaxes (using just-defined definer):
           (IN-HASH-DEFINER hash-type: hash)
           (IN-HASH-DEFINER hash-type: mutable-hash   checks: mutable? not-weak?)

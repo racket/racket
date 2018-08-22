@@ -23,6 +23,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define base-link-filename (make-parameter #f))
   (define full-page-mode (make-parameter #f))
   (define include-links (make-parameter #f))
+  (define note-r5rs (make-parameter #f))
   (define nongc (make-parameter #f))
   (define subtract-nothing (make-parameter #f))
   (define subtract-nothing-run (make-parameter #f))
@@ -36,10 +37,12 @@ exec racket -qu "$0" ${1+"$@"}
    (once-each
     [("--graph") "generate graphs instead of tables (unless --multi)"
      (generate-graph #t)]
-    [("--links") "benchmark links to git"
-     (include-links #t)]
     [("--multi") name "generate multiple pages for different views of data"
      (base-link-filename name)]
+    [("--links") "benchmark links to git"
+     (include-links #t)]
+    [("--r5rs") "note R5RS benchmarks"
+     (note-r5rs #t)]
     [("--no-compile-time") "do not show compile times"
      (no-compile-time #t)]
     [("--nongc") "show times not including GC"
@@ -201,6 +204,16 @@ exec racket -qu "$0" ${1+"$@"}
                           ps)))))
         `(html (nbody ,@ps))))
 
+  (define (r5rs-note sep bm)
+    (if (and (note-r5rs)
+             (let ([fn (format "~a.rkt" bm)])
+               (and (file-exists? fn)
+                    (call-with-input-file
+                     fn
+                     (lambda (i) (regexp-match? #rx"r5rs" i))))))
+        `(,sep (span ((style "font-size: small; font-weight: bold")) "R5RS"))
+        '()))
+
   (define forever 1000000000)
 
   (define (ntime v)
@@ -299,7 +312,7 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define (bar-group name content)
     `(tr ((style "background-color: #eeeeee"))
-         (td ((valign "top")) ,(symbol->string name))
+         (td ((valign "top")) ,(symbol->string name) ,@(r5rs-note '(br) name))
          (td
           (table
            ((style "border-spacing: 0px;"))
@@ -404,11 +417,13 @@ exec racket -qu "$0" ${1+"$@"}
                        (lambda (fastest n-fastest c-fastest relative-to
                                         base n-base c-base)
                          `(tr (td ,(if (include-links)
-                                       `(a ((href ,(format (string-append "http://git.racket-lang.org/plt/tree/HEAD:/collects/"
+                                       `(a ((href ,(format (string-append "http://github.com/racket/racket/tree/master/"
+                                                                          "pkgs/racket-benchmarks/"
                                                                           "tests/racket/benchmarks/common/~a.sch")
                                                            (car bm-run))))
                                            ,(symbol->string (car bm-run)))
-                                       (symbol->string (car bm-run))))
+                                       (symbol->string (car bm-run)))
+                                  ,@(r5rs-note " " (car bm-run)))
                               ,@(if (no-compile-time)
                                     null
                                     `((td ((align "right"))

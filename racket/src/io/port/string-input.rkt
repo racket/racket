@@ -202,15 +202,17 @@
       (check-not-closed who in)
       (define b (read-byte))
       (cond
-        [(evt? b)
+        [(fixnum? b)
+         (port-count-byte! in b)
+         (end-atomic)
+         b]
+        [(eof-object? b)
+         (end-atomic)
+         eof]
+        [else
          (end-atomic)
          (sync b)
-         (loop)]
-        [else
-         (unless (eof-object? b)
-           (port-count-byte! in b))
-         (end-atomic)
-         b])))
+         (loop)])))
   (cond
     [(eof-object? b) b]
     [else

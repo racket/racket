@@ -186,20 +186,24 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
   Scheme_Object *p;
   int flags;
 
-  p = scheme_make_folding_prim(fx_plus, "fx+", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_plus, "fx+", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx+", p, env);
 
-  p = scheme_make_folding_prim(fx_minus, "fx-", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+  p = scheme_make_folding_prim(fx_minus, "fx-", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx-", p, env);
 
-  p = scheme_make_folding_prim(fx_mult, "fx*", 2, 2, 1);
+  p = scheme_make_folding_prim(fx_mult, "fx*", 0, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("fx*", p, env);
@@ -224,9 +228,9 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM;
   scheme_addto_prim_instance("fxabs", p, env);
 
-  p = scheme_make_folding_prim(fl_plus, "fl+", 2, 2, 1);
+  p = scheme_make_folding_prim(fl_plus, "fl+", 0, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -234,9 +238,10 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("fl+", p, env);
 
-  p = scheme_make_folding_prim(fl_minus, "fl-", 2, 2, 1);
+  p = scheme_make_folding_prim(fl_minus, "fl-", 1, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED
+             | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -244,9 +249,9 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("fl-", p, env);
 
-  p = scheme_make_folding_prim(fl_mult, "fl*", 2, 2, 1);
+  p = scheme_make_folding_prim(fl_mult, "fl*", 0, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -254,9 +259,9 @@ void scheme_init_flfxnum_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("fl*", p, env);
 
-  p = scheme_make_folding_prim(fl_div, "fl/", 2, 2, 1);
+  p = scheme_make_folding_prim(fl_div, "fl/", 1, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -358,25 +363,29 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
   int flags;
 
   REGISTER_SO(scheme_unsafe_fx_plus_proc);
-  p = scheme_make_folding_prim(unsafe_fx_plus, "unsafe-fx+", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_plus, "unsafe-fx+", 0, -1, 1);
   scheme_unsafe_fx_plus_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx+", p, env);
 
   REGISTER_SO(scheme_unsafe_fx_minus_proc);
-  p = scheme_make_folding_prim(unsafe_fx_minus, "unsafe-fx-", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_minus, "unsafe-fx-", 1, -2, 1);
   scheme_unsafe_fx_minus_proc = p;
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx-", p, env);
 
   REGISTER_SO(scheme_unsafe_fx_times_proc);
-  p = scheme_make_folding_prim(unsafe_fx_mult, "unsafe-fx*", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fx_mult, "unsafe-fx*", 0, -1, 1);
   scheme_unsafe_fx_times_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("unsafe-fx*", p, env);
@@ -406,9 +415,9 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("unsafe-fxabs", p, env);
 
 
-  p = scheme_make_folding_prim(unsafe_fl_plus, "unsafe-fl+", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fl_plus, "unsafe-fl+", 0, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -417,9 +426,10 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("unsafe-fl+", p, env);
 
-  p = scheme_make_folding_prim(unsafe_fl_minus, "unsafe-fl-", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fl_minus, "unsafe-fl-", 1, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED
+             | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -428,9 +438,9 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("unsafe-fl-", p, env);
 
-  p = scheme_make_folding_prim(unsafe_fl_mult, "unsafe-fl*", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fl_mult, "unsafe-fl*", 0, -1, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -439,9 +449,9 @@ void scheme_init_unsafe_numarith(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_WANTS_FLONUM_BOTH);
   scheme_addto_prim_instance("unsafe-fl*", p, env);
 
-  p = scheme_make_folding_prim(unsafe_fl_div, "unsafe-fl/", 2, 2, 1);
+  p = scheme_make_folding_prim(unsafe_fl_div, "unsafe-fl/", 1, -2, 1);
   if (scheme_can_inline_fp_op())
-    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+    flags = (SCHEME_PRIM_IS_BINARY_INLINED | SCHEME_PRIM_IS_NARY_INLINED);
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
@@ -1216,8 +1226,10 @@ static void check_always_fixnum(const char *name, Scheme_Object *o)
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    Scheme_Object *o;                                         \
-   if (!SCHEME_INTP(argv[0])) scheme_wrong_contract(s_name, "fixnum?", 0, argc, argv); \
-   if (!SCHEME_INTP(argv[1])) scheme_wrong_contract(s_name, "fixnum?", 1, argc, argv); \
+   int i;                                                               \
+   for (i = 0; i < argc; i++) {                                         \
+     if (!SCHEME_INTP(argv[i])) scheme_wrong_contract(s_name, "fixnum?", i, argc, argv); \
+   } \
    EXTRA_CHECK                                               \
    o = scheme_op(argc, argv);                                \
    mzWHEN_64_BITS(if (scheme_current_thread->constant_folding) check_always_fixnum(s_name, o);) \
@@ -1241,20 +1253,26 @@ static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
   return o;
 }
 
-#define UNSAFE_FX(name, op, fold)                            \
+#define UNSAFE_FX(name, op, fold, zero_args, PRE_CHECK)                \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   intptr_t v;                                                   \
-   if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
-   v = SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]);   \
-   return scheme_make_integer(v);                            \
+   intptr_t v;                                                          \
+   int i;                                                               \
+   if (scheme_current_thread->constant_folding) return fold(argc, argv); \
+   if (!argc) return zero_args;                                         \
+   v = SCHEME_INT_VAL(argv[0]);                                         \
+   PRE_CHECK                                                            \
+   for (i = 1; i < argc; i++) {                                         \
+     v = v op SCHEME_INT_VAL(argv[i]);                                  \
+   }                                                                    \
+   return scheme_make_integer(v);                                       \
  }
 
-UNSAFE_FX(unsafe_fx_plus, +, fx_plus)
-UNSAFE_FX(unsafe_fx_minus, -, fx_minus)
-UNSAFE_FX(unsafe_fx_mult, *, fx_mult)
-UNSAFE_FX(unsafe_fx_div, /, fx_div)
-UNSAFE_FX(unsafe_fx_rem, %, fx_rem)
+UNSAFE_FX(unsafe_fx_plus, +, fx_plus, scheme_make_integer(0), )
+UNSAFE_FX(unsafe_fx_minus, -, fx_minus, scheme_false, if (argc == 1) v = -v;)
+UNSAFE_FX(unsafe_fx_mult, *, fx_mult, scheme_make_integer(1), )
+UNSAFE_FX(unsafe_fx_div, /, fx_div, scheme_false, )
+UNSAFE_FX(unsafe_fx_rem, %, fx_rem, scheme_false, )
 
 static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
 {
@@ -1293,19 +1311,30 @@ static Scheme_Object *unsafe_fx_abs(int argc, Scheme_Object *argv[])
   return scheme_make_integer(v);
 }
 
-#define UNSAFE_FL(name, op, fold)                            \
- static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+#define UNSAFE_FL(name, op, fold, zero_args, PRE_CHECK)                \
+  static Scheme_Object *name(int argc, Scheme_Object *argv[])          \
  {                                                           \
    double v;                                                 \
+   if (!argc) return zero_args;                                         \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
-   v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);   \
-   return scheme_make_double(v);                             \
+   if (argc == 2) {                                                     \
+     v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);            \
+     return scheme_make_double(v);                                      \
+   } else {                                                             \
+     int i;                                                             \
+     v = SCHEME_DBL_VAL(argv[0]);                                       \
+     PRE_CHECK                                                          \
+     for (i = 1; i < argc; i++) {                                       \
+       v = v op SCHEME_DBL_VAL(argv[i]);                                \
+     }                                                                  \
+     return scheme_make_double(v);                                      \
+   }                                                                    \
  }
 
-UNSAFE_FL(unsafe_fl_plus, +, plus)
-UNSAFE_FL(unsafe_fl_minus, -, minus)
-UNSAFE_FL(unsafe_fl_mult, *, mult)
-UNSAFE_FL(unsafe_fl_div, /, div_prim)
+UNSAFE_FL(unsafe_fl_plus, +, plus, scheme_zerod, )
+UNSAFE_FL(unsafe_fl_minus, -, minus, scheme_false, if (argc == 1) v = 0.0 - v;)
+UNSAFE_FL(unsafe_fl_mult, *, mult, scheme_make_double(1.0), )
+UNSAFE_FL(unsafe_fl_div, /, div_prim, scheme_false, if (argc == 1) v = 1.0 / v;)
 
 #define UNSAFE_FL1(name, op, fold) \
  static Scheme_Object *name(int argc, Scheme_Object *argv[])  \
@@ -1328,20 +1357,26 @@ static Scheme_Object *pos_sqrt(int argc, Scheme_Object **argv)
 
 UNSAFE_FL1(unsafe_fl_sqrt, sqrt, pos_sqrt)
 
-#define SAFE_FL(name, sname, op)                              \
+#define SAFE_FL(name, sname, op, zero_args, PRE_CHECK)      \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    double v;                                                 \
+   int i;                                                               \
+   if (!argc) return zero_args;                                          \
    if (!SCHEME_DBLP(argv[0])) scheme_wrong_contract(sname, "flonum?", 0, argc, argv); \
-   if (!SCHEME_DBLP(argv[1])) scheme_wrong_contract(sname, "flonum?", 1, argc, argv); \
-   v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);   \
+   v = SCHEME_DBL_VAL(argv[0]);                                            \
+   PRE_CHECK                                                            \
+   for (i = 1; i < argc; i++) {                                            \
+     if (!SCHEME_DBLP(argv[i])) scheme_wrong_contract(sname, "flonum?", i, argc, argv); \
+     v = v op SCHEME_DBL_VAL(argv[i]);   \
+   }                                                         \
    return scheme_make_double(v);                             \
  }
 
-SAFE_FL(fl_plus, "fl+", +)
-SAFE_FL(fl_minus, "fl-", -)
-SAFE_FL(fl_mult, "fl*", *)
-SAFE_FL(fl_div, "fl/", /)
+SAFE_FL(fl_plus, "fl+", +, scheme_zerod, )
+SAFE_FL(fl_minus, "fl-", -, scheme_false, if (argc == 1) v = 0.0 - v;)
+SAFE_FL(fl_mult, "fl*", *, scheme_make_double(1.0), )
+SAFE_FL(fl_div, "fl/", /, scheme_false, if (argc == 1) v = 1.0 / v;)
 
 #define SAFE_FL1(name, sname, op)                      \
  static Scheme_Object *name(int argc, Scheme_Object *argv[])  \
