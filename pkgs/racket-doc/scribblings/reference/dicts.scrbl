@@ -938,7 +938,7 @@ See @racket[define-custom-hash-types] for an example.
            (or/c (any/c . -> . exact-integer?)
                  (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
            (const 1)]
-          [#:key? key? (any/c . -> . boolean?) (const #true)])
+          [#:key? key? (any/c . -> . boolean?) (λ (x) #true)])
          dict?]
 @defproc[(make-weak-custom-hash
           [eql?
@@ -952,7 +952,7 @@ See @racket[define-custom-hash-types] for an example.
            (or/c (any/c . -> . exact-integer?)
                  (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
            (const 1)]
-          [#:key? key? (any/c . -> . boolean?) (const #true)])
+          [#:key? key? (any/c . -> . boolean?) (λ (x) #true)])
          dict?]
 @defproc[(make-immutable-custom-hash
           [eql?
@@ -966,15 +966,44 @@ See @racket[define-custom-hash-types] for an example.
            (or/c (any/c . -> . exact-integer?)
                  (any/c (any/c . -> . exact-integer?) . -> . exact-integer?))
            (const 1)]
-          [#:key? key? (any/c . -> . boolean?) (const #true)])
+          [#:key? key? (any/c . -> . boolean?) (λ (x) #true)])
          dict?]
 )]{
 
-Constructs an instance of a new dictionary type based on the given comparison
-function @racket[eql?], hash functions @racket[hash1] and @racket[hash2], and
-key predicate @racket[key?].
+ Creates an instance of a new dictionary type, implemented
+ in terms of a hash table where keys are compared with
+ @racket[eql?], hashed with @racket[hash1] and
+ @racket[hash2], and where the key predicate is
+ @racket[key?]. See @racket[gen:equal+hash] for information
+ on suitable equality and hashing functions.
 
-These procedures are deprecated; use @racket[define-custom-hash-types] instead.
+The @racket[make-custom-hash] and @racket[make-weak-custom-hash]
+functions create a mutable dictionary that does not support functional
+update, while @racket[make-immutable-custom-hash] creates an immutable
+dictionary that supports functional update. The dictionary created by
+@racket[make-weak-custom-hash] retains its keys weakly, like the result
+of @racket[make-weak-hash].
+
+Dictionaries created by @racket[make-custom-hash] and company are
+@racket[equal?] when they have the same mutability and key strength,
+the associated procedures are @racket[equal?], and the key--value
+mappings are the same when keys and values are compared with
+@racket[equal?].
+
+See also @racket[define-custom-hash-types].
+
+@examples[
+#:eval dict-eval
+(define h (make-custom-hash (lambda (a b)
+                              (string=? (format "~a" a)
+                                        (format "~a" b)))
+                            (lambda (a)
+                              (equal-hash-code 
+                               (format "~a" a)))))
+(dict-set! h 1 'one)
+(dict-ref h "1")
+]
+
 
 }
 
