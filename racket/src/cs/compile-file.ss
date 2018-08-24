@@ -2,12 +2,15 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 
-(define (check-defined expr)
-  (unless (guard (x [else #f]) (eval expr))
+(define (check-ok what thunk)
+  (unless (guard (x [else #f]) (thunk))
     (error 'compile-file
            (format
             "failed trying `~a`; probably you need a newer Chez Scheme"
-            expr))))
+            what))))
+
+(define (check-defined expr)
+  (check-ok expr (lambda () (eval expr))))
 
 (check-defined 'box-cas!)
 (check-defined 'make-arity-wrapper-procedure)
@@ -19,6 +22,16 @@
 (check-defined '(define-ftype T (function __collect_safe () void)))
 (check-defined 'call-setting-continuation-attachment)
 (check-defined 'hashtable-cells)
+(check-ok "fxvector-set!"
+          (lambda ()
+            (parameterize ([optimize-level 3]
+                           [run-cp0 (lambda (cp0 x) x)])
+
+              (eval '(define (op x)
+                       (if (fx- 0) 0 0)))
+              (eval '(define (f x)
+                       (fxvector-set! x 0 (op 0))))
+              (eval '(f (fxvector 0))))))
 
 ;; ----------------------------------------
 
