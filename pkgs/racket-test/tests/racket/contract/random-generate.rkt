@@ -43,6 +43,7 @@
 
 (check-not-exn (λ () (test-contract-generation exact-nonnegative-integer?)))
 (check-not-exn (λ () (test-contract-generation natural?)))
+(check-not-exn (λ () (test-contract-generation symbol?)))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 100))))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 (expt 2 1000)))))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 #f))))
