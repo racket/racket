@@ -112,6 +112,7 @@
     [`(eqv? ,e1 ,e2) (simple "scheme_eqv(~a)" e1 e2)]
     [`(equal? ,e1 ,e2) (simple #:can-gc? #t "scheme_equal(~a)"e1 e2)]
     [`(char=? ,e1 ,e2) (simple "c_scheme_char_eq(~a)" e1 e2)]
+    [`(unsafe-char=? ,e1 ,e2) (simple "c_scheme_char_eq(~a)" e1 e2)]
     [`(char-whitespace? ,e) (simple "c_scheme_char_whitespacep(~a)" e)]
     [`(unsafe-fx< ,e1 ,e2) (simple "c_int_lt(~a)" e1 e2)]
     [`(fx< ,e1 ,e2) (simple "c_int_lt(~a)" e1 e2)]
