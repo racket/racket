@@ -2372,8 +2372,12 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 #endif
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "char->integer")) { 
+    } else if (IS_NAMED_PRIM(rator, "char->integer")
+               || IS_NAMED_PRIM(rator, "unsafe-char->integer")) {
       GC_CAN_IGNORE jit_insn *ref, *reffail;
+      int unsafe;
+
+      unsafe = IS_NAMED_PRIM(rator, "unsafe-char->integer");
 
       mz_runstack_skipped(jitter, 1);
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
@@ -2382,16 +2386,18 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_rs_sync();
 
-      __START_TINY_JUMPS__(1);
-
-      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = jit_get_ip();
-      __END_TINY_JUMPS__(1);
-      (void)jit_calli(sjc.bad_char_to_integer_code);
-      __START_TINY_JUMPS__(1);
-      mz_patch_branch(ref);
-      (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R1);
-      __END_TINY_JUMPS__(1);
+      if (!unsafe) {
+        __START_TINY_JUMPS__(1);
+        
+        ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+        reffail = jit_get_ip();
+        __END_TINY_JUMPS__(1);
+        (void)jit_calli(sjc.bad_char_to_integer_code);
+        __START_TINY_JUMPS__(1);
+        mz_patch_branch(ref);
+        (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R1);
+        __END_TINY_JUMPS__(1);
+      }
 
       (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_CHAR_VAL(0x0));
       CHECK_LIMIT();
@@ -2693,19 +2699,38 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 }
 
 static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int cmp,
-                                Branch_Info *for_branch, int branch_short, int dest)
+                                Branch_Info *for_branch, int branch_short, int dest,
+                                int unsafe)
 /* de-sync'd ok */
 {
   Scheme_Object *r1, *r2, *rator = app->rator;
   GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
-  int direct = 0, direction;
+  int direction;
 
   LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
 
   r1 = app->rand1;
   r2 = app->rand2;
-  direction = scheme_generate_two_args(r1, r2, jitter, 0, 2);
-  CHECK_LIMIT();
+  
+  if (SCHEME_CHARP(r2)) {
+    if (!SCHEME_CHARP(r1)) {
+      mz_runstack_skipped(jitter, 2);
+      scheme_generate_non_tail(r1, jitter, 0, 1, 0);
+      mz_runstack_unskipped(jitter, 2);
+    } else {
+      /* We could perform the comparison statically, but we don't
+         bother, because this seems unlikely to happen. */
+    }
+    direction = 1;
+  } else if (SCHEME_CHARP(r1)) {
+    mz_runstack_skipped(jitter, 2);
+    scheme_generate_non_tail(r2, jitter, 0, 1, 0);
+    mz_runstack_unskipped(jitter, 2);
+    direction = -1;
+  } else {
+    direction = scheme_generate_two_args(r1, r2, jitter, 0, 2);
+    CHECK_LIMIT();
+  }
 
   if (direction < 0) {
     /* reverse sense of comparison */
@@ -2731,12 +2756,14 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
   mz_rs_sync();
 
   __START_SHORT_JUMPS__(branch_short);
-  
-  if (!SCHEME_CHARP(r1)) {
+
+  if (!SCHEME_CHARP(r1) && !unsafe) {
     GC_CAN_IGNORE jit_insn *pref;
     pref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
     reffail = jit_get_ip();
     (void)jit_movi_p(JIT_R2, ((Scheme_Primitive_Proc *)rator)->prim_val);
+    if (SCHEME_CHARP(r2))
+      scheme_mz_load_retained(jitter, JIT_R1, r2);
     __END_SHORT_JUMPS__(branch_short);
     if (direction > 0) {
       (void)jit_calli(sjc.call_original_binary_rev_arith_code);
@@ -2747,11 +2774,9 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
     mz_patch_branch(pref);
     (void)mz_bnei_t(reffail, JIT_R0, scheme_char_type, JIT_R2);
     CHECK_LIMIT();
-  } else {
-    if (!direct)
-      direct = (SCHEME_CHAR_VAL(r1) < 256);
   }
-  if (!SCHEME_CHARP(r2)) {
+
+  if (!SCHEME_CHARP(r2) && !unsafe) {
     if (!reffail) {
       GC_CAN_IGNORE jit_insn *pref;
       pref = jit_bmci_ul(jit_forward(), JIT_R1, 0x1);
@@ -2770,9 +2795,22 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
     }
     (void)mz_bnei_t(reffail, JIT_R1, scheme_char_type, JIT_R2);
     CHECK_LIMIT();
+  }
+
+  /* Now that checks are done, extract character value */
+  if (!SCHEME_CHARP(r1)) {
+    /* Extract character value */
+    jit_ldxi_i(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
   } else {
-    if (!direct)
-      direct = (SCHEME_CHAR_VAL(r2) < 256);
+    /* Unlikely, due to folding, but possible due to specialization */
+    jit_ldi_i(JIT_R0, SCHEME_CHAR_VAL(r1));
+  }
+
+  if (!SCHEME_CHARP(r2)) {
+      /* Extract character value */
+    jit_ldxi_i(JIT_R1, JIT_R1, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
+  } else {
+    /* Generate comparsion below to an immediate number */
   }
 
   if (for_branch) {
@@ -2780,11 +2818,7 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
     CHECK_LIMIT();
   }
 
-  if (!direct || (cmp != CMP_EQUAL)) {
-    /* Extract character value */
-    jit_ldxi_i(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
-    jit_ldxi_i(JIT_R1, JIT_R1, (intptr_t)&SCHEME_CHAR_VAL((Scheme_Object *)0x0));
-
+  if (!SCHEME_CHARP(r2)) {
     switch (cmp) {
     case CMP_EQUAL:
       ref = jit_bner_i(jit_forward(), JIT_R0, JIT_R1);
@@ -2805,15 +2839,28 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app, int 
       ref = NULL; /* never happens */
     }
   } else {
-    /* Equality on small chars can compare pointers */
-    switch(cmp) {
+    int ch = SCHEME_CHAR_VAL(r2);
+    switch (cmp) {
     case CMP_EQUAL:
-      ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
+      ref = jit_bnei_i(jit_forward(), JIT_R0, ch);
+      break;
+    case CMP_LEQ:
+      ref = jit_bgti_i(jit_forward(), JIT_R0, ch);
+      break;
+    case CMP_GEQ:
+      ref = jit_blti_i(jit_forward(), JIT_R0, ch);
+      break;
+    case CMP_GT:
+      ref = jit_blei_i(jit_forward(), JIT_R0, ch);
+      break;
+    case CMP_LT:
+      ref = jit_bgei_i(jit_forward(), JIT_R0, ch);
       break;
     default:
       ref = NULL; /* never happens */
     }
   }
+
   CHECK_LIMIT();
   if (for_branch) {
     scheme_add_branch_false(for_branch, ref);
@@ -3598,19 +3645,34 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_BIT, 0, for_branch, branch_short, 0, 0, NULL, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char=?")) {
-    generate_binary_char(jitter, app, CMP_EQUAL, for_branch, branch_short, dest);
+    generate_binary_char(jitter, app, CMP_EQUAL, for_branch, branch_short, dest, 0);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-char=?")) {
+    generate_binary_char(jitter, app, CMP_EQUAL, for_branch, branch_short, dest, 1);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char<=?")) {
-    generate_binary_char(jitter, app, CMP_LEQ, for_branch, branch_short, dest);
+    generate_binary_char(jitter, app, CMP_LEQ, for_branch, branch_short, dest, 0);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-char<=?")) {
+    generate_binary_char(jitter, app, CMP_LEQ, for_branch, branch_short, dest, 1);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char>=?")) {
-    generate_binary_char(jitter, app, CMP_GEQ, for_branch, branch_short, dest);
+    generate_binary_char(jitter, app, CMP_GEQ, for_branch, branch_short, dest, 0);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-char>=?")) {
+    generate_binary_char(jitter, app, CMP_GEQ, for_branch, branch_short, dest, 1);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char>?")) {
-    generate_binary_char(jitter, app, CMP_GT, for_branch, branch_short, dest);
+    generate_binary_char(jitter, app, CMP_GT, for_branch, branch_short, dest, 0);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-char>?")) {
+    generate_binary_char(jitter, app, CMP_GT, for_branch, branch_short, dest, 1);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char<?")) {
-    generate_binary_char(jitter, app, CMP_LT, for_branch, branch_short, dest);
+    generate_binary_char(jitter, app, CMP_LT, for_branch, branch_short, dest, 0);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "unsafe-char<?")) {
+    generate_binary_char(jitter, app, CMP_LT, for_branch, branch_short, dest, 1);
     return 1;
   } else if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "+")) {

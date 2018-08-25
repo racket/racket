@@ -9,7 +9,8 @@
          (prefix-in host: "../host/string-to-number.rkt")
          "parameter.rkt")
 
-(provide string->number)
+(provide string->number
+         unchecked-string->number)
 
 ;; The `string->number` parser is responsible for handling Racket's
 ;; elaborate number syntax (mostly inherited from Scheme). It relies
@@ -37,7 +38,9 @@
                              (eq? p 'decimal-as-exact)))
          #:contract "(or/c 'decimal-as-inexact decimal-as-exact)"
          decimal-mode)
+  (unchecked-string->number s radix convert-mode decimal-mode))
 
+(define (unchecked-string->number s radix convert-mode decimal-mode)
   (do-string->number s 0 (string-length s)
                      radix #:radix-set? #f
                      decimal-mode
@@ -295,7 +298,7 @@
           (cond
             [exp-pos
              (fail convert-mode "misplaced `~a` in `~.a`" c (substring s start end))]
-            ;; Dont count a sign in something like 1e+2 as `sign-pos`
+            ;; Don't count a sign in something like 1e+2 as `sign-pos`
             [(and ((add1 i) . < . end)
                   (char-sign? (string-ref s (add1 i))))
              (loop (+ i 2) any-digits? any-hashes? i-pos @-pos
@@ -398,7 +401,7 @@
          (inexact->exact p)
          p)]))
 
-;; Parse a real number that might be a faction, have `.`, or have `#`s
+;; Parse a real number that might be a fraction, have `.`, or have `#`s
 (define (string->real-number s start end
                              dot-pos slash-pos exp-pos
                              any-hashes? ; can be false-positive

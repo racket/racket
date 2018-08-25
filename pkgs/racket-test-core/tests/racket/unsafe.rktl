@@ -219,6 +219,28 @@
   (test-tri 30 unsafe-fxmax 3 30 -90)
   (test-tri 90 unsafe-fxmax 3 30 90)
 
+  (test-bin #f unsafe-char=? #\1 #\2 #:branch? #t)
+  (test-bin #t unsafe-char=? #\2 #\2 #:branch? #t)
+  (test-bin #f unsafe-char=? #\2 #\1 #:branch? #t)
+
+  (test-bin #t unsafe-char<? #\1 #\2 #:branch? #t)
+  (test-bin #f unsafe-char<? #\2 #\2 #:branch? #t)
+  (test-bin #f unsafe-char<? #\2 #\1 #:branch? #t)
+
+  (test-bin #f unsafe-char>? #\1 #\2 #:branch? #t)
+  (test-bin #f unsafe-char>? #\2 #\2 #:branch? #t)
+  (test-bin #t unsafe-char>? #\2 #\1 #:branch? #t)
+
+  (test-bin #t unsafe-char<=? #\1 #\2 #:branch? #t)
+  (test-bin #t unsafe-char<=? #\2 #\2 #:branch? #t)
+  (test-bin #f unsafe-char<=? #\2 #\1 #:branch? #t)
+
+  (test-bin #f unsafe-char>=? #\1 #\2 #:branch? #t)
+  (test-bin #t unsafe-char>=? #\2 #\2 #:branch? #t)
+  (test-bin #t unsafe-char>=? #\2 #\1 #:branch? #t)
+
+  (test-un 49 unsafe-char->integer #\1)
+
   (test-un -7.8 'unsafe-fl- 7.8)
   (test-bin 7.9 'unsafe-fl- 10.0 2.1)
   (test-bin 3.7 'unsafe-fl- 1.0 -2.7)

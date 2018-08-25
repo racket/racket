@@ -42,9 +42,9 @@ operations can be prevented by adjusting the code inspector (see
 @section{Unsafe Numeric Operations}
 
 @deftogether[(
-@defproc[(unsafe-fx+ [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fx- [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fx* [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx+ [a fixnum?] ...) fixnum?]
+@defproc[(unsafe-fx- [a fixnum?] [b fixnum?] ...) fixnum?]
+@defproc[(unsafe-fx* [a fixnum?] ...) fixnum?]
 @defproc[(unsafe-fxquotient  [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxremainder [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxmodulo    [a fixnum?] [b fixnum?]) fixnum?]
@@ -57,13 +57,16 @@ For @tech{fixnums}: Like @racket[+], @racket[-], @racket[*],
 @tech{fixnum} result. The mathematical operation on @racket[a] and
 @racket[b] must be representable as a @tech{fixnum}. In the case of
 @racket[unsafe-fxquotient], @racket[unsafe-fxremainder], and
-@racket[unsafe-fxmodulo], @racket[b] must not be @racket[0].}
+@racket[unsafe-fxmodulo], @racket[b] must not be @racket[0].
+
+@history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[unsafe-fx+] and @racket[unsafe-fx*]
+                                    and allow one or more arguments for @racket[unsafe-fx-].}]}
 
 
 @deftogether[(
-@defproc[(unsafe-fxand [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fxior [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fxxor [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fxand [a fixnum?] ...) fixnum?]
+@defproc[(unsafe-fxior [a fixnum?] ...) fixnum?]
+@defproc[(unsafe-fxxor [a fixnum?] ...) fixnum?]
 @defproc[(unsafe-fxnot [a fixnum?]) fixnum?]
 @defproc[(unsafe-fxlshift [a fixnum?] [b fixnum?]) fixnum?]
 @defproc[(unsafe-fxrshift [a fixnum?] [b fixnum?]) fixnum?]
@@ -80,49 +83,62 @@ the result is always a @tech{fixnum}. The @racket[unsafe-fxlshift] and
 number of bits to shift must be no more than the number of bits used to
 represent a @tech{fixnum}. In the case of @racket[unsafe-fxlshift],
 bits in the result beyond the number of bits used to represent a
-@tech{fixnum} are effectively replaced with a copy of the high bit.}
+@tech{fixnum} are effectively replaced with a copy of the high bit.
+
+@history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for
+                                    @racket[unsafe-fxand], @racket[unsafe-fxior],
+                                    and @racket[unsafe-fxxor].}]}
 
 
 @deftogether[(
-@defproc[(unsafe-fx=   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(unsafe-fx<   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(unsafe-fx>   [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(unsafe-fx<=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(unsafe-fx>=  [a fixnum?] [b fixnum?]) boolean?]
-@defproc[(unsafe-fxmin [a fixnum?] [b fixnum?]) fixnum?]
-@defproc[(unsafe-fxmax [a fixnum?] [b fixnum?]) fixnum?]
+@defproc[(unsafe-fx=   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(unsafe-fx<   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(unsafe-fx>   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(unsafe-fx<=  [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(unsafe-fx>=  [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(unsafe-fxmin [a fixnum?] [b fixnum?] ...) fixnum?]
+@defproc[(unsafe-fxmax [a fixnum?] [b fixnum?] ...) fixnum?]
 )]{
 
 For @tech{fixnums}: Like @racket[=], @racket[<], @racket[>],
 @racket[<=], @racket[>=], @racket[min], and @racket[max], but
-constrained to consume @tech{fixnums}.}
+constrained to consume @tech{fixnums}.
+
+@history[#:changed "7.0.0.13" @elem{Allow one or more argument,
+                                    instead of allowing just two.}]}
 
 
 @deftogether[(
-@defproc[(unsafe-fl+   [a flonum?] [b flonum?]) flonum?]
-@defproc[(unsafe-fl-   [a flonum?] [b flonum?]) flonum?]
-@defproc[(unsafe-fl*   [a flonum?] [b flonum?]) flonum?]
-@defproc[(unsafe-fl/   [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-fl+   [a flonum?] ...) flonum?]
+@defproc[(unsafe-fl-   [a flonum?] [b flonum?] ...) flonum?]
+@defproc[(unsafe-fl*   [a flonum?] ...) flonum?]
+@defproc[(unsafe-fl/   [a flonum?] [b flonum?] ...) flonum?]
 @defproc[(unsafe-flabs [a flonum?]) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[fl+], @racket[fl-],
-@racket[fl*], @racket[fl/], and @racket[flabs].}
+@racket[fl*], @racket[fl/], and @racket[flabs].
+
+@history[#:changed "7.0.0.13" @elem{Allow zero or more arguments for @racket[unsafe-fl+] and @racket[unsafe-fl*]
+                                    and one or more arguments for @racket[unsafe-fl-] and @racket[unsafe-fl/].}]}
 
 
 @deftogether[(
-@defproc[(unsafe-fl=   [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-fl<   [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-fl>   [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-fl<=  [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-fl>=  [a flonum?] [b flonum?]) boolean?]
-@defproc[(unsafe-flmin [a flonum?] [b flonum?]) flonum?]
-@defproc[(unsafe-flmax [a flonum?] [b flonum?]) flonum?]
+@defproc[(unsafe-fl=   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(unsafe-fl<   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(unsafe-fl>   [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(unsafe-fl<=  [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(unsafe-fl>=  [a flonum?] [b flonum?] ...) boolean?]
+@defproc[(unsafe-flmin [a flonum?] [b flonum?] ...) flonum?]
+@defproc[(unsafe-flmax [a flonum?] [b flonum?] ...) flonum?]
 )]{
 
 For @tech{flonums}: Unchecked versions of @racket[fl=], @racket[fl<],
 @racket[fl>], @racket[fl<=], @racket[fl>=], @racket[flmin], and
-@racket[flmax].}
+@racket[flmax].
+
+@history[#:changed "7.0.0.13" @elem{Allow one or more argument,
+                                    instead of allowing just two.}]}
 
 
 @deftogether[(
@@ -189,6 +205,24 @@ but further constrained to consume or produce a fixnum.
 
 Unchecked version of @racket[flrandom].
 }
+
+
+@section{Unsafe Character Operations}
+
+@deftogether[(
+@defproc[(unsafe-char=?   [a char?] [b char?] ...) boolean?]
+@defproc[(unsafe-char<?   [a char?] [b char?] ...) boolean?]
+@defproc[(unsafe-char>?   [a char?] [b char?] ...) boolean?]
+@defproc[(unsafe-char<=?  [a char?] [b char?] ...) boolean?]
+@defproc[(unsafe-char>=?  [a char?] [b char?] ...) boolean?]
+@defproc[(unsafe-char->integer [a char?]) fixnum?]
+)]{
+
+Unchecked versions of @racket[char=?], @racket[char<?], @racket[char>?],
+@racket[char<=?], @racket[char>=?], and @racket[char->integer].
+
+@history[#:added "7.0.0.14"]}
+
 
 
 @section{Unsafe Data Extraction}

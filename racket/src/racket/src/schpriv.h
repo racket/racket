@@ -377,6 +377,7 @@ void scheme_init_compile(Scheme_Startup_Env *env);
 void scheme_init_symbol(Scheme_Startup_Env *env);
 void scheme_init_char_constants(void);
 void scheme_init_char(Scheme_Startup_Env *env);
+void scheme_init_unsafe_char(Scheme_Startup_Env *env);
 void scheme_init_bool(Scheme_Startup_Env *env);
 void scheme_init_syntax(Scheme_Startup_Env *env);
 void scheme_init_marshal(Scheme_Startup_Env *env);
@@ -638,6 +639,13 @@ extern Scheme_Object *scheme_unsafe_fx_max_proc;
 extern Scheme_Object *scheme_unsafe_fx_plus_proc;
 extern Scheme_Object *scheme_unsafe_fx_minus_proc;
 extern Scheme_Object *scheme_unsafe_fx_times_proc;
+
+extern Scheme_Object *scheme_unsafe_char_eq_proc;
+extern Scheme_Object *scheme_unsafe_char_lt_proc;
+extern Scheme_Object *scheme_unsafe_char_gt_proc;
+extern Scheme_Object *scheme_unsafe_char_lt_eq_proc;
+extern Scheme_Object *scheme_unsafe_char_gt_eq_proc;
+extern Scheme_Object *scheme_unsafe_char_to_integer_proc;
 
 extern Scheme_Object *scheme_not_proc;
 extern Scheme_Object *scheme_true_object_p_proc;

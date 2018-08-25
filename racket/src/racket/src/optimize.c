@@ -4009,9 +4009,9 @@ static void check_known_both_try(Optimize_Info *info, Scheme_Object *app,
       reset_rator(app, unsafe);
     } else {
       pred1 = expr_implies_predicate(rand1, info); 
-      if (pred1 && SAME_OBJ(pred1, expect_pred)) { 
+      if (pred1 && predicate_implies(pred1, expect_pred)) { 
         pred2 = expr_implies_predicate(rand2, info);
-        if (pred2 && SAME_OBJ(pred2, expect_pred)) { 
+        if (pred2 && predicate_implies(pred2, expect_pred)) { 
           reset_rator(app, unsafe);
         }
       }
@@ -4637,6 +4637,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         check_known(info, app_o, rator, rand, "symbol->string", scheme_symbol_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "string->keyword", scheme_string_p_proc, scheme_true, info->unsafe_mode);
         check_known(info, app_o, rator, rand, "keyword->string", scheme_keyword_p_proc, scheme_true, info->unsafe_mode);
+
+        check_known(info, app_o, rator, rand, "char->integer", scheme_char_p_proc, scheme_unsafe_char_to_integer_proc, info->unsafe_mode);
       }
       
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
@@ -5123,6 +5125,12 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       check_known_both_try(info, app_o, rator, rand1, rand2, "fx+", scheme_fixnum_p_proc, scheme_unsafe_fx_plus_proc, info->unsafe_mode);
       check_known_both_try(info, app_o, rator, rand1, rand2, "fx-", scheme_fixnum_p_proc, scheme_unsafe_fx_minus_proc, info->unsafe_mode);
       check_known_both_try(info, app_o, rator, rand1, rand2, "fx*", scheme_fixnum_p_proc, scheme_unsafe_fx_times_proc, info->unsafe_mode);
+
+      check_known_both_try(info, app_o, rator, rand1, rand2, "char=?", scheme_char_p_proc, scheme_unsafe_char_eq_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "char<?", scheme_char_p_proc, scheme_unsafe_char_lt_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "char>?", scheme_char_p_proc, scheme_unsafe_char_gt_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "char<=?", scheme_char_p_proc, scheme_unsafe_char_lt_eq_proc, info->unsafe_mode);
+      check_known_both_try(info, app_o, rator, rand1, rand2, "char>=?", scheme_char_p_proc, scheme_unsafe_char_gt_eq_proc, info->unsafe_mode);
 
       rator = app->rator; /* in case it was updated */
 

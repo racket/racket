@@ -34,6 +34,13 @@ READ_ONLY static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES]
 READ_ONLY Scheme_Object *scheme_char_p_proc;
 READ_ONLY Scheme_Object *scheme_interned_char_p_proc;
 
+READ_ONLY Scheme_Object *scheme_unsafe_char_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_char_lt_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_char_gt_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_char_lt_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_char_gt_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_char_to_integer_proc;
+
 /* locals */
 static Scheme_Object *char_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *interned_char_p (int argc, Scheme_Object *argv[]);
@@ -42,6 +49,12 @@ static Scheme_Object *char_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_gt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lt_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_gt_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_lt (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_gt (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_lt_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_gt_eq (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_char_to_integer (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_eq_ci (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lt_ci (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_gt_ci (int argc, Scheme_Object *argv[]);
@@ -120,27 +133,32 @@ void scheme_init_char (Scheme_Startup_Env *env)
 
   p = scheme_make_folding_prim(char_eq, "char=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char=?", p, env);
 
   p = scheme_make_folding_prim(char_lt, "char<?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char<?", p, env);
 
   p = scheme_make_folding_prim(char_gt, "char>?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char>?", p, env);
 
   p = scheme_make_folding_prim(char_lt_eq, "char<=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char<=?", p, env);
 
   p = scheme_make_folding_prim(char_gt_eq, "char>=?", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_PRODUCES_BOOL);
+                                                            | SCHEME_PRIM_PRODUCES_BOOL
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char>=?", p, env);
 
   ADD_FOLDING_PRIM("char-ci=?",             char_eq_ci,            1, -1, 1, env);
@@ -166,7 +184,8 @@ void scheme_init_char (Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
 
   p = scheme_make_folding_prim(scheme_checked_char_to_integer, "char->integer", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("char->integer", p, env);
   p = scheme_make_folding_prim(scheme_checked_integer_to_char, "integer->char", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
@@ -179,6 +198,57 @@ void scheme_init_char (Scheme_Startup_Env *env)
   ADD_FOLDING_PRIM("char-general-category", char_general_category, 1, 1, 1, env);
   ADD_FOLDING_PRIM("char-utf-8-length",     char_utf8_length,      1, 1, 1, env);
   ADD_IMMED_PRIM("make-known-char-range-list", char_map_list, 0, 0, env);
+}
+
+void scheme_init_unsafe_char(Scheme_Startup_Env *env)
+{
+  Scheme_Object *p;
+
+  REGISTER_SO(scheme_unsafe_char_eq_proc);
+  p = scheme_make_folding_prim(unsafe_char_eq, "unsafe-char=?", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_addto_prim_instance("unsafe-char=?", p, env);
+  scheme_unsafe_char_eq_proc = p;
+
+  REGISTER_SO(scheme_unsafe_char_lt_proc);
+  p = scheme_make_folding_prim(unsafe_char_lt, "unsafe-char<?", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_addto_prim_instance("unsafe-char<?", p, env);
+  scheme_unsafe_char_lt_proc = p;
+
+  REGISTER_SO(scheme_unsafe_char_gt_proc);
+  p = scheme_make_folding_prim(unsafe_char_gt, "unsafe-char>?", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_addto_prim_instance("unsafe-char>?", p, env);
+  scheme_unsafe_char_gt_proc = p;
+
+  REGISTER_SO(scheme_unsafe_char_lt_eq_proc);
+  p = scheme_make_folding_prim(unsafe_char_lt_eq, "unsafe-char<=?", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_addto_prim_instance("unsafe-char<=?", p, env);
+  scheme_unsafe_char_lt_eq_proc = p;
+  
+  REGISTER_SO(scheme_unsafe_char_gt_eq_proc);
+  p = scheme_make_folding_prim(unsafe_char_gt_eq, "unsafe-char>=?", 1, -1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_addto_prim_instance("unsafe-char>=?", p, env);
+  scheme_unsafe_char_gt_eq_proc = p;
+
+  REGISTER_SO(scheme_unsafe_char_to_integer_proc);
+  p = scheme_make_folding_prim(unsafe_char_to_integer, "unsafe-char->integer", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_addto_prim_instance("unsafe-char->integer", p, env);
+  scheme_unsafe_char_to_integer_proc = p;
 }
 
 Scheme_Object *scheme_make_char(mzchar ch)
@@ -252,6 +322,25 @@ GEN_CHAR_COMP(char_gt_ci, char-ci>?, >, charSTD_FOLDCASE)
 GEN_CHAR_COMP(char_lt_eq_ci, char-ci<=?, <=, charSTD_FOLDCASE)
 GEN_CHAR_COMP(char_gt_eq_ci, char-ci>=?, >=, charSTD_FOLDCASE)
 
+#define GEN_UNSAFE_CHAR_COMP(func_name, scheme_name, comp, fold)      \
+ static Scheme_Object *func_name(int argc, Scheme_Object *argv[])     \
+ { int c, prev, i; Scheme_Object *rv = scheme_true; \
+   if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
+   prev = SCHEME_CHAR_VAL(argv[0]);     \
+   for (i = 1; i < argc; i++) {     \
+     c = SCHEME_CHAR_VAL(argv[i]);     \
+     if (!(prev comp c)) rv = scheme_false;   \
+     prev = c;     \
+   }     \
+   return rv;     \
+ }
+
+GEN_UNSAFE_CHAR_COMP(unsafe_char_eq, unsafe-char=?, ==, char_eq)
+GEN_UNSAFE_CHAR_COMP(unsafe_char_lt, unsafe-char<?, <, char_lt)
+GEN_UNSAFE_CHAR_COMP(unsafe_char_gt, unsafe-char>?, >, char_gt)
+GEN_UNSAFE_CHAR_COMP(unsafe_char_lt_eq, unsafe-char<=?, <=, char_lt_eq)
+GEN_UNSAFE_CHAR_COMP(unsafe_char_gt_eq, unsafe-char>=?, >=, char_gt_eq)
+
 #define GEN_CHAR_TEST(func_name, scheme_name, pred) \
 static Scheme_Object *func_name (int argc, Scheme_Object *argv[]) \
 { \
@@ -281,6 +370,19 @@ scheme_checked_char_to_integer (int argc, Scheme_Object *argv[])
 
   if (!SCHEME_CHARP(argv[0]))
     scheme_wrong_contract("char->integer", "char?", 0, argc, argv);
+
+  c = SCHEME_CHAR_VAL(argv[0]);
+
+  return scheme_make_integer_value(c);
+}
+
+Scheme_Object *
+unsafe_char_to_integer (int argc, Scheme_Object *argv[])
+{
+  mzchar c;
+
+  if (scheme_current_thread->constant_folding)
+    return scheme_checked_char_to_integer(argc, argv);
 
   c = SCHEME_CHAR_VAL(argv[0]);
 
