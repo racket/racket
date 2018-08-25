@@ -1,5 +1,6 @@
 #lang racket/base
-(require "config.rkt")
+(require racket/fixnum
+         "config.rkt")
 
 ;; An `accum-string` is a buffer for accumulating characters.
 ;; We cache the buffer in the config record so that it can
@@ -33,15 +34,15 @@
   (define str (accum-string-str a))
   (define str2
     (cond
-     [(pos . < . (string-length str))
+     [(pos . fx< . (string-length str))
       str]
      [else
-      (define str2 (make-string (* (string-length str) 2)))
+      (define str2 (make-string (fx* (string-length str) 2)))
       (string-copy! str2 0 str)
       (set-accum-string-str! a str2)
       str2]))
   (string-set! str2 pos c)
-  (set-accum-string-pos! a (add1 pos)))
+  (set-accum-string-pos! a (fx+ 1 pos)))
 
 (define (accum-string-count a)
   (accum-string-pos a))
@@ -58,12 +59,12 @@
                         start-pos
                         (accum-string-pos a))))
   (define len (string-length s))
-  (unless ((+ len start-pos) . < . (string-length str))
-    (define str2 (make-string (+ start-pos len)))
+  (unless ((fx+ len start-pos) . fx< . (string-length str))
+    (define str2 (make-string (fx+ start-pos len)))
     (string-copy! str2 0 str 0 start-pos)
     (set-accum-string-str! a str2))
   (string-copy! (accum-string-str a) start-pos s)
-  (set-accum-string-pos! a (+ start-pos len)))
+  (set-accum-string-pos! a (fx+ start-pos len)))
 
 (define (accum-string-get! a config #:start-pos [start-pos 0])
   (define s (substring (accum-string-str a)

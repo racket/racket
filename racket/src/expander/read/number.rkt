@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/private/check
+         racket/fixnum
          racket/extflonum
          ;; Call the host `string->number` function only
          ;; on valid fixnum, bignum, {single-,double-,ext}flonum
@@ -66,16 +67,16 @@
                            #:in-complex [in-complex #f] ; #f, 'i, or '@
                            convert-mode)
   (cond
-    [(= start end)
+    [(fx= start end)
      (fail convert-mode "no digits")]
     [else
      (define c (string-ref s start))
      (cond
        ;; `#e`, `#x`, etc.
        [(char=? #\# c)
-        (define next (add1 start))
+        (define next (fx+ 1 start))
         (cond
-          [(= next end)
+          [(fx= next end)
            (fail convert-mode "no character after `#` indicator in `~.a`" s)]
           [else
            (define i (string-ref s next))
@@ -85,7 +86,7 @@
                 [(or (exactness-set? exactness) in-complex)
                  (fail convert-mode "misplaced exactness specification at `~.a`" (substring s start end))]
                 [else
-                 (do-string->number s (add1 next) end
+                 (do-string->number s (fx+ 1 next) end
                                     radix #:radix-set? radix-set?
                                     (if (or (char=? i #\e) (char=? i #\E)) 'exact 'inexact)
                                     (if (eq? convert-mode 'read) 'must-read convert-mode))])]
@@ -100,7 +101,7 @@
                      [(#\o #\O) 8]
                      [(#\d #\D) 10]
                      [else 16]))
-                 (do-string->number s (add1 next) end
+                 (do-string->number s (fx+ 1 next) end
                                     radix #:radix-set? #t
                                     exactness
                                     (if (eq? convert-mode 'read) 'must-read convert-mode))])]
@@ -119,13 +120,13 @@
        ;; +inf.0+...i, etc.
        [(and (char-sign? c)
              (not in-complex)
-             ((- end start) . > . 7)
-             (char=? #\i (string-ref s (sub1 end)))
+             ((fx- end start) . fx> . 7)
+             (char=? #\i (string-ref s (fx- end 1)))
              (char-sign? (string-ref s 6))
-             (read-special-number s start (+ start 6) convert-mode))
+             (read-special-number s start (fx+ start 6) convert-mode))
         =>
         (lambda (v)
-          (read-for-special-compound s (+ start 6) (sub1 end)
+          (read-for-special-compound s (fx+ start 6) (fx- end 1)
                                      radix
                                      exactness
                                      convert-mode
@@ -134,18 +135,18 @@
                                          (make-rectangular v v2))))]
        ;; ...+inf.0i, etc.
        [(and (not in-complex)
-             ((- end start) . >= . 7) ; allow `+inf.0i`
-             (char=? #\i (string-ref s (sub1 end)))
-             (char-sign? (string-ref s (- end 7)))
-             (read-special-number s (- end 7) (sub1 end) convert-mode))
+             ((fx- end start) . fx>= . 7) ; allow `+inf.0i`
+             (char=? #\i (string-ref s (fx- end 1)))
+             (char-sign? (string-ref s (fx- end 7)))
+             (read-special-number s (fx- end 7) (fx- end 1) convert-mode))
         =>
         (lambda (v2)
           (cond
-            [(and (= start (- end 7))
+            [(and (fx= start (fx- end 7))
                   (not (extflonum? v2)))
              (make-rectangular 0 v2)]
             [else
-             (read-for-special-compound s start (- end 7)
+             (read-for-special-compound s start (fx- end 7)
                                         radix
                                         exactness
                                         convert-mode
@@ -156,12 +157,12 @@
        ;; +inf.0@..., etc.
        [(and (char-sign? c)
              (not in-complex)
-             ((- end start) . > . 7)
-             (char=? #\@ (string-ref s (+ start 6)))
-             (read-special-number s start (+ start 6) convert-mode))
+             ((fx- end start) . fx> . 7)
+             (char=? #\@ (string-ref s (fx+ start 6)))
+             (read-special-number s start (fx+ start 6) convert-mode))
         =>
         (lambda (v)
-          (read-for-special-compound s (+ start 7) end
+          (read-for-special-compound s (fx+ start 7) end
                                      radix
                                      exactness
                                      convert-mode
@@ -170,12 +171,12 @@
                                          (make-polar v v2))))]
        ;; ...@+inf.0, etc.
        [(and (not in-complex)
-             ((- end start) . > . 7)
-             (char=? #\@ (string-ref s (- end 7)))
-             (read-special-number s (- end 6) end convert-mode))
+             ((fx- end start) . fx> . 7)
+             (char=? #\@ (string-ref s (fx- end 7)))
+             (read-special-number s (fx- end 6) end convert-mode))
         =>
         (lambda (v2)
-          (read-for-special-compound s start (- end 7)
+          (read-for-special-compound s start (fx- end 7)
                                      radix
                                      exactness
                                      convert-mode
@@ -207,7 +208,7 @@
              [sign-pos #f] [dot-pos #f] [slash-pos #f] [exp-pos #f]
              [must-i? #f])
     (cond
-      [(= i end)
+      [(fx= i end)
        ;; We've finished looking, so dispatch on the kind of number parsing
        ;;  based on found `@`, etc.
        ;; If we saw `@`, then we discarded other positions at that point.
@@ -223,18 +224,18 @@
          [(and must-i? (not i-pos))
           (fail convert-mode "too many signs in `~.a`" (substring s start end))]
          [(and sign-pos
-               (or (and dot-pos (dot-pos . < . sign-pos))
-                   (and slash-pos (slash-pos . < . sign-pos))))
+               (or (and dot-pos (dot-pos . fx< . sign-pos))
+                   (and slash-pos (slash-pos . fx< . sign-pos))))
           (fail convert-mode "misplaced sign in `~.a`" (substring s start end))]
          [i-pos
-          (string->complex-number s start sign-pos sign-pos (sub1 end)
+          (string->complex-number s start sign-pos sign-pos (fx- end 1)
                                   i-pos sign-pos
                                   radix #:radix-set? radix-set?
                                   exactness
                                   #:in-complex 'i
                                   convert-mode)]
          [@-pos
-          (string->complex-number s start @-pos (add1 @-pos) end
+          (string->complex-number s start @-pos (fx+ 1 @-pos) end
                                   i-pos sign-pos
                                   radix #:radix-set? radix-set?
                                   exactness
@@ -251,11 +252,11 @@
        (define c (string-ref s i))
        (cond
          [(digit? c radix)
-          (loop (add1 i) #t any-hashes? i-pos @-pos
+          (loop (fx+ 1 i) #t any-hashes? i-pos @-pos
                 sign-pos dot-pos slash-pos exp-pos
                 must-i?)]
          [(char=? c #\#) ; treat like a digit
-          (loop (add1 i) #t #t i-pos @-pos
+          (loop (fx+ 1 i) #t #t i-pos @-pos
                 sign-pos dot-pos slash-pos exp-pos
                 must-i?)]
          [(char-sign? c)
@@ -263,30 +264,30 @@
             [(and sign-pos must-i?)
              (fail convert-mode "too many signs in `~.a`" (substring s start end))]
             [else
-             (loop (add1 i) any-digits? any-hashes? i-pos @-pos
+             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
                    i dot-pos slash-pos #f
                    ;; must be complex if sign isn't at start
-                   (and (> i start) (or (not @-pos) (> i (add1 @-pos)))))])]
+                   (and (fx> i start) (or (not @-pos) (fx> i (fx+ 1 @-pos)))))])]
          [(char=? c #\.)
           (cond
-            [(or (and exp-pos (or (not sign-pos) (exp-pos . > . sign-pos)))
-                 (and dot-pos (or (not sign-pos) (dot-pos . > . sign-pos))))
+            [(or (and exp-pos (or (not sign-pos) (exp-pos . fx> . sign-pos)))
+                 (and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos))))
              (fail convert-mode "misplaced `.` in `~.a`" (substring s start end))]
-            [(and slash-pos (or (not sign-pos) (slash-pos . > . sign-pos)))
+            [(and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos)))
              (fail convert-mode "decimal points and fractions annot be mixed `~.a`" (substring s start end))]
             [else
-             (loop (add1 i) any-digits? any-hashes? i-pos @-pos
+             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
                    sign-pos i #f #f
                    must-i?)])]
          [(char=? c #\/)
           (cond
-            [(and dot-pos (or (not sign-pos) (dot-pos . > . sign-pos)))
+            [(and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos)))
              (fail convert-mode "decimal points and fractions annot be mixed `~.a`" (substring s start end))]
-            [(or (and exp-pos (or (not sign-pos) (exp-pos . > . sign-pos)))
-                 (and slash-pos (or (not sign-pos) (slash-pos . > . sign-pos))))
+            [(or (and exp-pos (or (not sign-pos) (exp-pos . fx> . sign-pos)))
+                 (and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos))))
              (fail convert-mode "misplaced `/` in `~.a`" (substring s start end))]
             [else
-             (loop (add1 i) any-digits? any-hashes? i-pos @-pos
+             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
                    sign-pos #f i #f
                    must-i?)])]
          [(or (char=? c #\e) (char=? c #\E)
@@ -299,13 +300,13 @@
             [exp-pos
              (fail convert-mode "misplaced `~a` in `~.a`" c (substring s start end))]
             ;; Don't count a sign in something like 1e+2 as `sign-pos`
-            [(and ((add1 i) . < . end)
-                  (char-sign? (string-ref s (add1 i))))
-             (loop (+ i 2) any-digits? any-hashes? i-pos @-pos
+            [(and ((fx+ 1 i) . fx< . end)
+                  (char-sign? (string-ref s (fx+ 1 i))))
+             (loop (fx+ i 2) any-digits? any-hashes? i-pos @-pos
                    sign-pos dot-pos slash-pos (or exp-pos i)
                    must-i?)]
             [else
-             (loop (+ i 1) any-digits? any-hashes? i-pos @-pos
+             (loop (fx+ i 1) any-digits? any-hashes? i-pos @-pos
                    sign-pos dot-pos slash-pos (or exp-pos i)
                    must-i?)])]
          [(char=? c #\@)
@@ -314,12 +315,12 @@
              (fail convert-mode "cannot mix `@` and `i` in `~.a`" (substring s start end))]
             [(or @-pos (eq? in-complex '@))
              (fail convert-mode "too many `@`s in `~.a`" (substring s start end))]
-            [(= i start)
+            [(fx= i start)
              (fail convert-mode "`@` cannot be at start in `~.a`" (substring s start end))]
             [must-i?
              (fail convert-mode "too many signs in `~.a`" (substring s start end))]
             [else
-             (loop (add1 i) any-digits? any-hashes? i-pos i
+             (loop (fx+ 1 i) any-digits? any-hashes? i-pos i
                    #f #f #f #f
                    must-i?)])]
          [(and (or (char=? c #\i) (char=? c #\I))
@@ -327,10 +328,10 @@
           (cond
             [(or @-pos (eq? in-complex '@))
              (fail convert-mode "cannot mix `@` and `i` in `~.a`" (substring s start end))]
-            [(or ((add1 i) . < . end) (eq? in-complex 'i))
+            [(or ((fx+ 1 i) . fx< . end) (eq? in-complex 'i))
              (fail convert-mode "`i` must be at the end in `~.a`" (substring s start end))]
             [else
-             (loop (add1 i) any-digits? any-hashes? i @-pos
+             (loop (fx+ 1 i) any-digits? any-hashes? i @-pos
                    sign-pos #f #f #f
                    #f)])]
          [else
@@ -350,7 +351,7 @@
                                 #:in-complex in-complex ; 'i or '@
                                 convert-mode)
   (define v1 (cond
-               [(= start1 end1)
+               [(fx= start1 end1)
                 ;; The input was "[+-]<num>i", so the real part
                 ;; is implicitly "0"
                 (if (eq? exactness 'inexact)
@@ -364,7 +365,7 @@
                                    convert-mode)]))
   (define v2 (cond
                [(and (eq? in-complex 'i)
-                     (= (- end2 start2) 1))
+                     (fx= (fx- end2 start2) 1))
                 ;; The input ends "[+-]i", so the number is implicitly
                 ;; "1"
                 (define neg? (char=? (string-ref s start2) #\-))
@@ -420,22 +421,22 @@
              (not (eq? convert-mode 'number-or-false))
              (not (extfl-mark?)))
          (not (and any-hashes? (hashes? s start end)))))
-  (define has-sign? (and (end . > . start) (char-sign? (string-ref s start))))
+  (define has-sign? (and (end . fx> . start) (char-sign? (string-ref s start))))
   (cond
-    [(= (- end start) (+ (if dot-pos 1 0) (if exp-pos 1 0) (if has-sign? 1 0)))
-     (if (= end start)
+    [(fx= (fx- end start) (fx+ (if dot-pos 1 0) (if exp-pos 1 0) (if has-sign? 1 0)))
+     (if (fx= end start)
          (fail convert-mode "missing digits")
          (fail convert-mode "missing digits in `~.a`" (substring s start end)))]
     [simple?
      (cond
-       [(and exp-pos (= (- exp-pos start)
-                        (+ (if (and dot-pos (< dot-pos exp-pos)) 1 0)
-                           (if has-sign? 1 0))))
+       [(and exp-pos (fx= (fx- exp-pos start)
+                          (fx+ (if (and dot-pos (fx< dot-pos exp-pos)) 1 0)
+                               (if has-sign? 1 0))))
         (fail convert-mode "missing digits before exponent marker in `~.a`" (substring s start end))]
        [(and exp-pos
-             (or (= exp-pos (sub1 end))
-                 (and (= exp-pos (- end 2))
-                      (char-sign? (string-ref s (sub1 end))))))
+             (or (fx= exp-pos (fx- end 1))
+                 (and (fx= exp-pos (fx- end 2))
+                      (char-sign? (string-ref s (fx- end 1))))))
         (fail convert-mode "missing digits after exponent marker in `~.a`" (substring s start end))]
        [else
         (define n (host:string->number (maybe-substring s start end) radix
@@ -465,7 +466,7 @@
                                       radix
                                       'exact
                                       convert-mode))
-     (define e-v (string->exact-integer-number s (+ exp-pos 1) end
+     (define e-v (string->exact-integer-number s (fx+ exp-pos 1) end
                                                radix
                                                convert-mode))
      (define (real->precision-inexact r)
@@ -524,7 +525,7 @@
                                       radix
                                       'exact
                                       convert-mode))
-     (define d-v (string->real-number s (add1 slash-pos) end
+     (define d-v (string->real-number s (fx+ 1 slash-pos) end
                                       #f #f #f
                                       any-hashes?
                                       radix
@@ -542,7 +543,7 @@
        [(string? d-v) d-v]
        [(eqv? d-v 0)
         (cond
-          [(get-inexact? (add1 slash-pos))
+          [(get-inexact? (fx+ 1 slash-pos))
            (if (negative? n-v)
                -inf.0
                +inf.0)]
@@ -571,13 +572,13 @@
                                 exactness
                                 convert-mode)
   (define get-exact? (or (eq? exactness 'exact) (eq? exactness 'decimal-as-exact)))
-  (define new-str (make-string (- end start (if (and dot-pos get-exact?) 1 0))))
-  (let loop ([i (sub1 end)] [j (sub1 (string-length new-str))] [hashes-pos end])
+  (define new-str (make-string (fx- end start (if (and dot-pos get-exact?) 1 0))))
+  (let loop ([i (fx- end 1)] [j (fx- (string-length new-str) 1)] [hashes-pos end])
     (cond
-      [(i . < . start)
+      [(i . fx< . start)
        ;; Convert `new-str` to an integer and finish up
        (cond
-         [(= hashes-pos start)
+         [(fx= hashes-pos start)
           (fail convert-mode "misplaced `#` in `~.a`" (substring s start end))]
          [else
           (define n (host:string->number new-str radix))
@@ -590,7 +591,7 @@
                  -0.0
                  (exact->inexact n))]
             [(and dot-pos get-exact?)
-             (/ n (expt 10 (- end dot-pos 1)))]
+             (/ n (expt 10 (fx- end dot-pos 1)))]
             [else n])])]
       [else
        (define c (string-ref s i))
@@ -598,23 +599,23 @@
          [(char=? c #\.)
           (cond
             [get-exact?
-             (loop (sub1 i) j (if (= hashes-pos (add1 i)) i hashes-pos))]
+             (loop (fx- i 1) j (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))]
             [else
              (string-set! new-str j c)
-             (loop (sub1 i) (sub1 j) (if (= hashes-pos (add1 i)) i hashes-pos))])]
+             (loop (fx- i 1) (fx- j 1) (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))])]
          [(or (char=? c #\-) (char=? c #\+))
           (string-set! new-str j c)
-          (loop (sub1 i) (sub1 j) (if (= hashes-pos (add1 i)) i hashes-pos))]
+          (loop (fx- i 1) (fx- j 1) (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))]
          [(char=? c #\#)
           (cond
-            [(= hashes-pos (add1 i))
+            [(fx= hashes-pos (fx+ 1 i))
              (string-set! new-str j #\0)
-             (loop (sub1 i) (sub1 j) i)]
+             (loop (fx- i 1) (fx- j 1) i)]
             [else
              (fail convert-mode "misplaced `#` in `~.a`" (substring s start end))])]
          [else
           (string-set! new-str j c)
-          (loop (sub1 i) (sub1 j) hashes-pos)])])))
+          (loop (fx- i 1) (fx- j 1) hashes-pos)])])))
 
 ;; Parse an integer that might have `#` and a leading `+` or `-`, but
 ;; no other non-digit characters
@@ -634,40 +635,40 @@
 ;; Try to read as `+inf.0`, etc.
 (define (read-special-number s start end convert-mode)
   (and
-   (= (- end start) 6)
+   (fx= (fx- end start) 6)
    (or (char=? (string-ref s start) #\+)
        (char=? (string-ref s start) #\-))
    (or
-    (and (char=? (char-downcase (string-ref s (+ start 1))) #\i)
-         (char=? (char-downcase (string-ref s (+ start 2))) #\n)
-         (char=? (char-downcase (string-ref s (+ start 3))) #\f)
-         (char=? (char-downcase (string-ref s (+ start 4))) #\.)
+    (and (char=? (char-downcase (string-ref s (fx+ start 1))) #\i)
+         (char=? (char-downcase (string-ref s (fx+ start 2))) #\n)
+         (char=? (char-downcase (string-ref s (fx+ start 3))) #\f)
+         (char=? (char-downcase (string-ref s (fx+ start 4))) #\.)
          (or
           (and
-           (char=? (char-downcase (string-ref s (+ start 5))) #\0)
+           (char=? (char-downcase (string-ref s (fx+ start 5))) #\0)
            (if (char=? (string-ref s start) #\+)
                +inf.0
                -inf.0))
           (and
-           (char=? (char-downcase (string-ref s (+ start 5))) #\f)
+           (char=? (char-downcase (string-ref s (fx+ start 5))) #\f)
            (if (char=? (string-ref s start) #\+)
                +inf.f
                -inf.f))
           (and
-           (char=? (char-downcase (string-ref s (+ start 5))) #\t)
+           (char=? (char-downcase (string-ref s (fx+ start 5))) #\t)
            (not (eq? convert-mode 'number-or-false))
            (if (char=? (string-ref s start) #\+)
                +inf.t
                -inf.t))))
-    (and (char=? (char-downcase (string-ref s (+ start 1))) #\n)
-         (char=? (char-downcase (string-ref s (+ start 2))) #\a)
-         (char=? (char-downcase (string-ref s (+ start 3))) #\n)
-         (char=? (char-downcase (string-ref s (+ start 4))) #\.)
-         (or (and (char=? (char-downcase (string-ref s (+ start 5))) #\0)
+    (and (char=? (char-downcase (string-ref s (fx+ start 1))) #\n)
+         (char=? (char-downcase (string-ref s (fx+ start 2))) #\a)
+         (char=? (char-downcase (string-ref s (fx+ start 3))) #\n)
+         (char=? (char-downcase (string-ref s (fx+ start 4))) #\.)
+         (or (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\0)
                   +nan.0)
-             (and (char=? (char-downcase (string-ref s (+ start 5))) #\f)
+             (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\f)
                   +nan.f)
-             (and (char=? (char-downcase (string-ref s (+ start 5))) #\t)
+             (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\t)
                   (not (eq? convert-mode 'number-or-false))
                   +nan.t))))))
 
@@ -709,7 +710,7 @@
     (char=? c #\#)))
 
 (define (replace-hashes s start end)
-  (define new-s (make-string (- end start)))
+  (define new-s (make-string (fx- end start)))
   (for ([c (in-string s start end)]
         [i (in-naturals)])
     (if (char=? c #\#)
@@ -718,8 +719,8 @@
   new-s)
 
 (define (maybe-substring s start end)
-  (if (and (= 0 start)
-           (= end (string-length s)))
+  (if (and (fx= 0 start)
+           (fx= end (string-length s)))
       s
       (substring s start end)))
 
@@ -731,15 +732,15 @@
 
 (define (digit? c radix)
   (define v (char->integer c)) 
-  (or (and (v . >= . (char->integer #\0))
-           ((- v (char->integer #\0)) . < . radix))
-      (and (radix . > . 10)
+  (or (and (v . fx>= . (char->integer #\0))
+           ((fx- v (char->integer #\0)) . fx< . radix))
+      (and (radix . fx> . 10)
            (or (and
-                (v . >= . (char->integer #\a))
-                ((- v (- (char->integer #\a) 10)) . < . radix))
+                (v . fx>= . (char->integer #\a))
+                ((fx- v (fx- (char->integer #\a) 10)) . fx< . radix))
                (and
-                (v . >= . (char->integer #\A))
-                ((- v (- (char->integer #\A) 10)) . < . radix))))))
+                (v . fx>= . (char->integer #\A))
+                ((fx- v (fx- (char->integer #\A) 10)) . fx< . radix))))))
 
 (define (fail-bad-number convert-mode s start end)
   (fail convert-mode "bad number `~.a`" (substring s start end)))

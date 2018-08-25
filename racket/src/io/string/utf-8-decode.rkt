@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/fixnum)
 
 (provide utf-8-decode!
          utf-8-max-aborts-amt
@@ -42,7 +43,7 @@
                        #:state [state #f])        ; state that was returned in place of a previous 'aborts result
   (define base-i ; start of current encoding sequence
     (if state
-        (- in-start (utf-8-state-pending-amt state))
+        (fx- in-start (utf-8-state-pending-amt state))
         in-start))
   (define accum ; accumulated value for encoding
     (if state
@@ -61,29 +62,29 @@
       (cond
        [error-ch
         (when out-str (string-set! out-str j error-ch))
-        (define next-j (add1 j))
-        (define next-i (add1 base-i))
+        (define next-j (fx+ j 1))
+        (define next-i (fx+ base-i 1))
         (cond
-         [(and out-end (= next-j out-end))
-          (values (- next-i in-start)
-                  (- next-j out-start)
+         [(and out-end (fx= next-j out-end))
+          (values (fx- next-i in-start)
+                  (fx- next-j out-start)
                   'continues)]
          [else
           (loop next-i next-j next-i 0 0)])]
        [else
-        (values (- base-i in-start)
-                (- j out-start)
+        (values (fx- base-i in-start)
+                (fx- j out-start)
                 'error)]))
     
     ;; Shared handling for decoding success:
     (define (continue)
-      (define next-j (add1 j))
-      (define next-i (add1 i))
+      (define next-j (fx+ j 1))
+      (define next-i (fx+ i 1))
       (cond
-       [(and out-end (= next-j out-end))
-        (values (- next-i in-start)
-                (- next-j out-start)
-                (if (= next-i in-end)
+       [(and out-end (fx= next-j out-end))
+        (values (fx- next-i in-start)
+                (fx- next-j out-start)
+                (if (fx= next-i in-end)
                     'complete
                     'continues))]
        [else
@@ -91,24 +92,24 @@
     
     ;; Dispatch on byte:
     (cond
-     [(= i in-end)
+     [(fx= i in-end)
       ;; End of input
       (cond
-       [(zero? remaining)
-        (values (- base-i in-start)
-                (- j out-start)
+       [(fx= remaining 0)
+        (values (fx- base-i in-start)
+                (fx- j out-start)
                 'complete)]
        [(eq? abort-mode 'error)
         (encoding-failure)]
        [(eq? abort-mode 'state)
-        (values (- i in-start) ; all bytes used
-                (- j out-start)
-                (utf-8-state accum remaining (- i base-i)))]
+        (values (fx- i in-start) ; all bytes used
+                (fx- j out-start)
+                (utf-8-state accum remaining (fx- i base-i)))]
        [else
-        (values (- base-i in-start) 
-                (- j out-start)
+        (values (fx- base-i in-start) 
+                (fx- j out-start)
                 'aborts)])]
-     [(i . < . in-start)
+     [(i . fx< . in-start)
       ;; Happens only if we resume decoding with some state
       ;; and hit a decoding error; treat the byte as another
       ;; encoding error
@@ -116,9 +117,9 @@
      [else
       (define b (bytes-ref in-bstr i))
       (cond
-       [(b . < . 128)
+       [(b . fx< . 128)
         (cond
-         [(zero? remaining)
+         [(fx= remaining 0)
           ;; Found ASCII
           (when out-str (string-set! out-str j (integer->char b)))
           (continue)]
@@ -129,14 +130,14 @@
        [else
         ;; Encoding...
         (cond
-          [(= #b10000000 (bitwise-and b #b11000000))
+          [(fx= #b10000000 (fxand b #b11000000))
            ;; A continuation byte
           (cond
-           [(zero? remaining)
+           [(fx= remaining 0)
             ;; We weren't continuing
             (encoding-failure)]
            [else
-            (define next (bitwise-and b #b00111111))
+            (define next (fxand b #b00111111))
             (define next-accum (bitwise-ior (arithmetic-shift accum 6) next))
             (cond
               [(= 1 remaining)
@@ -150,38 +151,38 @@
                  [else
                   ;; Not a valid character
                   (encoding-failure)])]
-              [(and (= 2 remaining)
+              [(and (fx= 2 remaining)
                     (next-accum . <= . #b11111))
                ;; A shorter byte sequence would work, so this is an
                ;; encoding mistae.
                (encoding-failure)]
-              [(and (= 3 remaining)
+              [(and (fx= 3 remaining)
                     (next-accum . <= . #b1111))
                ;; A shorter byte sequence would work
                (encoding-failure)]
               [else
                ;; Continue an encoding.
-               (loop (add1 i) j base-i next-accum (sub1 remaining))])])]
-          [(not (zero? remaining))
+               (loop (fx+ i 1) j base-i next-accum (fx- remaining 1))])])]
+          [(not (fx= remaining 0))
            ;; Trying to start a new encoding while one is in
            ;; progress
            (encoding-failure)]
-          [(= #b11000000 (bitwise-and b #b11100000))
+          [(fx= #b11000000 (fxand b #b11100000))
            ;; Start a two-byte encoding
-           (define accum (bitwise-and b #b11111))
+           (define accum (fxand b #b11111))
            ;; If `accum` is zero, that's an encoding mistake,
            ;; because a shorted byte sequence would work.
            (cond
-             [(zero? accum) (encoding-failure)]
-             [else (loop (add1 i) j i accum 1)])]
-         [(= #b11100000 (bitwise-and b #b11110000))
+             [(fx= accum 0) (encoding-failure)]
+             [else (loop (fx+ i 1) j i accum 1)])]
+         [(fx= #b11100000 (fxand b #b11110000))
           ;; Start a three-byte encoding
-          (define accum (bitwise-and b #b1111))
-          (loop (add1 i) j i accum 2)]
-         [(= #b11110000 (bitwise-and b #b11111000))
+          (define accum (fxand b #b1111))
+          (loop (fx+ i 1) j i accum 2)]
+         [(fx= #b11110000 (fxand b #b11111000))
           ;; Start a four-byte encoding
-          (define accum (bitwise-and b #b111))
-          (loop (add1 i) j i  accum 3)]
+          (define accum (fxand b #b111))
+          (loop (fx+ i 1) j i  accum 3)]
          [else
           ;; Five- or six-byte encodings don't produce valid
           ;; characters
