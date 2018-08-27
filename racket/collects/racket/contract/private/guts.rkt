@@ -366,12 +366,14 @@
     [(and (procedure? x) (procedure-arity-includes? x 1))
      (cond
        [(chaperone-of? x null?) list/c-empty]
+       [(chaperone-of? x empty?) list/c-empty]
        [(chaperone-of? x list?)
         (unless listof-any
           (error 'coerce-contract/f::listof-any "too soon!"))
         listof-any]
        [(chaperone-of? x boolean?) boolean?/c]
-       [(chaperone-of? x pair?)
+       [(or (chaperone-of? x pair?)
+            (chaperone-of? x cons?))
         (unless consc-anyany
           (error 'coerce-contract/f::consc-anyany "too soon!"))
         consc-anyany]
