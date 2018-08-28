@@ -892,7 +892,7 @@
   (apply values args))
 
 (define (current-mark-chain)
-  (get-current-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
+  (get-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
 
 (define (mark-stack-to-marks mark-stack)
   (let loop ([mark-stack mark-stack])
@@ -915,18 +915,21 @@
 
 (define-record mark-chain-frame (tag marks))
 
-(define (get-current-mark-chain mark-stack mark-splice mc)
-  (let ([hd (make-mark-chain-frame
-             #f ; no tag
-             (mark-stack-to-marks mark-stack))]
-        [mid (and (not (empty-mark-frame? mark-splice))
+(define (get-rest-mark-chain mark-splice mc)
+  (let ([mid (and (not (empty-mark-frame? mark-splice))
                   (make-mark-chain-frame
                    #f ; no tag
                    (mark-stack-to-marks (list mark-splice))))]
         [tl (metacontinuation-marks mc)])
     (if mid
-        (cons hd (cons mid tl))
-        (cons hd tl))))
+        (cons mid tl)
+        tl)))
+
+(define (get-mark-chain mark-stack mark-splice mc)
+  (cons (make-mark-chain-frame
+         #f ; no tag
+         (mark-stack-to-marks mark-stack))
+        (get-rest-mark-chain mark-splice mc)))
 
 (define (prune-mark-chain-prefix tag mark-chain)
   (cond
@@ -1024,12 +1027,22 @@
      (maybe-future-barricade prompt-tag)
      (let ([prompt-tag (strip-impersonator prompt-tag)])
        (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'continuation-mark-set-first key)])
-         (let ([v (marks-search (or (and marks
-                                         (continuation-mark-set-mark-chain marks))
-                                    (current-mark-chain))
-                                key
-                                #t ; at-outer?
-                                prompt-tag)])
+         (let* ([v0 (if marks
+                        none
+                        ;; Avoid allocating a frame for the immediate marks:
+                        (marks-search (mark-stack-to-marks (current-mark-stack))
+                                      key
+                                      #f ; at-outer?
+                                      prompt-tag))]
+                [v (if (eq? v0 none)
+                       (marks-search (or (and marks
+                                              (continuation-mark-set-mark-chain marks))
+                                         ;; We've already checked `(current-mark-stack)`, so get the rest
+                                         (get-rest-mark-chain (current-mark-splice) (current-metacontinuation)))
+                                     key
+                                     #t ; at-outer?
+                                     prompt-tag)
+                       v0)])
            (cond
             [(eq? v none)
              ;; More special treatment of built-in keys
@@ -1054,33 +1067,14 @@
       (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
       none]
      [else
-      (let ([t (car elems)]
-            [check-elem
-             (lambda (t)
-               (let ([v (if at-outer?
-                            ;; Search within the metacontinuation frame:
-                            (let ([marks (mark-chain-frame-marks t)])
-                              (marks-search marks key #f #f))
-                            ;; We're looking at just one frame:
-                            (intmap-ref t key none))])
-                 (cond
-                  [(eq? v none)
-                   ;; Not found at this point; keep looking
-                   (loop (cdr elems)
-                         (if cache-step? (cdr elems/cache-pos) elems/cache-pos)
-                         (not cache-step?)
-                         (fx+ 1 depth))]
-                  [else
-                   ;; Found it
-                   (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
-                   v])))])
+      (let t-loop ([t (car elems)])
         (cond
          [(elem+cache? t)
           (let ([v (intmap-ref (elem+cache-cache t) key none2)])
             (cond
              [(eq? v none2)
               ;; No mapping in cache, so try the element and continue:
-              (check-elem (elem+cache-elem t))]
+              (t-loop (elem+cache-elem t))]
              [else
               (let ([v (if at-outer?
                            ;; strip & combine --- cache results at the metacontinuation
@@ -1091,7 +1085,7 @@
                 (cond
                  [(eq? v none2)
                   ;; Strip filtered this cache entry away, so try the element:
-                  (check-elem (elem+cache-elem t))]
+                  (t-loop (elem+cache-elem t))]
                  [(eq? v none)
                   ;; The cache records that it's not in the rest:
                   (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
@@ -1102,7 +1096,25 @@
                   v]))]))]
          [else
           ;; Try the element:
-          (check-elem t)]))])))
+          (let ([v (if at-outer?
+                       ;; Search within the metacontinuation frame:
+                       (let ([marks (mark-chain-frame-marks t)])
+                         (if (null? marks)
+                             none
+                             (marks-search marks key #f #f)))
+                       ;; We're looking at just one frame:
+                       (intmap-ref t key none))])
+            (cond
+             [(eq? v none)
+              ;; Not found at this point; keep looking
+              (loop (cdr elems)
+                    (if cache-step? (cdr elems/cache-pos) elems/cache-pos)
+                    (not cache-step?)
+                    (fx+ 1 depth))]
+             [else
+              ;; Found it
+              (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
+              v]))]))])))
 
 ;; To make `continuation-mark-set-first` constant-time, cache
 ;; a key--value mapping at a point that's half-way in
@@ -1245,15 +1257,15 @@
            (make-continuation-mark-set
             (prune-mark-chain-suffix
              tag
-             (get-current-mark-chain '() #f mc))
+             (get-mark-chain '() #f mc))
             (get-metacontinuation-traces mc)))]
         [(full-continuation? k)
          (make-continuation-mark-set
           (prune-mark-chain-suffix
            tag
-           (get-current-mark-chain (full-continuation-mark-stack k)
-                                   (full-continuation-mark-splice k)
-                                   (full-continuation-mc k)))
+           (get-mark-chain (full-continuation-mark-stack k)
+                           (full-continuation-mark-splice k)
+                           (full-continuation-mc k)))
           (cons (continuation->trace (full-continuation-k k))
                 (get-metacontinuation-traces (full-continuation-mc k))))]
         [(escape-continuation? k)
