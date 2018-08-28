@@ -114,14 +114,14 @@
       (and (or (eq? mode 'symbol-or-number)
                (string? mode))
            (not quoted-ever?)
-           (string->number (if (string? mode)
-                               (string-append mode str)
-                               str)
-                           10
-                           'read
-                           (if (check-parameter read-decimal-as-inexact config)
-                               'decimal-as-inexact
-                               'decimal-as-exact))))
+           (unchecked-string->number (if (string? mode)
+                                         (string-append mode str)
+                                         str)
+                                     10
+                                     'read
+                                     (if (check-parameter read-decimal-as-inexact config)
+                                         'decimal-as-inexact
+                                         'decimal-as-exact))))
     (when (string? num)
       (reader-error in config "~a" num))
 

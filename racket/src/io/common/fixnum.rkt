@@ -7,7 +7,6 @@
 ;; Representing a mutable, fixnum-valued variable with an fxvector can
 ;; avoid a write barrier on assignment
 
-#;
 (define-syntax-rule (define-fixnum id v)
   (begin
     (define cell (fxvector v))
@@ -18,8 +17,3 @@
            [(set! _ r) #'(fxvector-set! cell 0 r)]
            [(... (_ ...)) (raise-syntax-error stx "bad use" stx)]
            [_ #'(fxvector-ref cell 0)]))))))
-
-;; ... but, for now, something seems to go wrong with whole-program
-;; optimization
-(define-syntax-rule (define-fixnum id v)
-  (define id v))

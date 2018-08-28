@@ -67,45 +67,54 @@
 
 (define (extract-procedure f n-args)
   (cond
-   [(chez:procedure? f) f]
-   [else (or (try-extract-procedure/check-arity f n-args)
-             (not-a-procedure f))]))
+   [(#%procedure? f) f]
+   [else (slow-extract-procedure f n-args)]))
 
-;; returns #f or a host-Scheme procedure, and checks arity so that
-;; checking and reporting use the right top-level function
-(define (try-extract-procedure/check-arity f n-args)
-  (let ([v (try-extract-procedure f)])
-    (cond
-     [(not v) #f]
-     [(procedure-arity-includes? f n-args) v]
-     [else (wrong-arity-wrapper f)])))
+(define (slow-extract-procedure f n-args)
+  (pariah ; => don't inline enclosing procedure
+   (do-extract-procedure f f n-args #f)))
 
-(define (try-extract-procedure f)
+;; Returns a host-Scheme procedure, but first checks arity so that
+;; checking and reporting use the right top-level function, and
+;; the returned procedure may just report a not-a-procedure error
+(define (do-extract-procedure f orig-f n-args success-k)
   (cond
-   [(chez:procedure? f) f]
+   [(#%procedure? f)
+    (if (chez:procedure-arity-includes? f n-args)
+        (if success-k
+            (success-k f)
+            f)
+        (wrong-arity-wrapper orig-f))]
    [(record? f)
     (let ([v (struct-property-ref prop:procedure (record-rtd f) none)])
       (cond
-       [(eq? v none) #f]
+       [(eq? v none) (not-a-procedure orig-f)]
        [(fixnum? v)
-        (try-extract-procedure (unsafe-struct-ref f v))]
+        (do-extract-procedure (unsafe-struct-ref f v) orig-f n-args success-k)]
        [(eq? v 'unsafe)
-        (try-extract-procedure
+        (do-extract-procedure
          (if (chaperone? f)
              (unsafe-procedure-chaperone-replace-proc f)
-             (unsafe-procedure-impersonator-replace-proc f)))]
+             (unsafe-procedure-impersonator-replace-proc f))
+         orig-f
+         n-args
+         success-k)]
        [else
-        (let ([v (try-extract-procedure v)])
-          (cond
-           [(not v) (case-lambda)]
-           [else
-            (case-lambda
-             [() (v f)]
-             [(a) (v f a)]
-             [(a b) (v f a b)]
-             [(a b c) (v f a b c)]
-             [args (chez:apply v f args)])]))]))]
-   [else #f]))
+        (do-extract-procedure
+         v
+         orig-f
+         (fx+ n-args 1)
+         (lambda (v)
+           (cond
+            [(not v) (case-lambda)]
+            [else
+             (case-lambda
+              [() (v f)]
+              [(a) (v f a)]
+              [(a b) (v f a b)]
+              [(a b c) (v f a b c)]
+              [args (chez:apply v f args)])])))]))]
+   [else (not-a-procedure orig-f)]))
 
 (define (extract-procedure-name f)
   (cond

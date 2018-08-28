@@ -370,6 +370,7 @@ static void init_unsafe(Scheme_Startup_Env *env)
   scheme_init_unsafe_number(env);
   scheme_init_unsafe_numarith(env);
   scheme_init_unsafe_numcomp(env);
+  scheme_init_unsafe_char(env);
   scheme_init_unsafe_list(env);
   scheme_init_unsafe_hash(env);
   scheme_init_unsafe_vector(env);

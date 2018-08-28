@@ -2,6 +2,7 @@
 
 (require racket/contract
          racket/contract/private/generate-base
+         (only-in racket/list empty? cons?)
          rackunit
          racket/math
          (for-syntax racket/base))
@@ -43,6 +44,7 @@
 
 (check-not-exn (λ () (test-contract-generation exact-nonnegative-integer?)))
 (check-not-exn (λ () (test-contract-generation natural?)))
+(check-not-exn (λ () (test-contract-generation symbol?)))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 100))))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 (expt 2 1000)))))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 #f))))
@@ -110,6 +112,21 @@
  (λ ()
    (test-contract-generation
     null?)))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    empty?)))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    pair?)))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    cons?)))
 
 (check-not-exn
  (λ ()

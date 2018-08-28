@@ -482,6 +482,13 @@
           unsafe-list-ref
           unsafe-cons-list
 
+          unsafe-char=?
+          unsafe-char<?
+          unsafe-char>?
+          unsafe-char>=?
+          unsafe-char<=?
+          unsafe-char->integer
+
           unsafe-fx+
           unsafe-fx-
           unsafe-fx*

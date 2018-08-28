@@ -15,11 +15,69 @@
   <noscript>Sorry, you must have JavaScript to use this page.<br></noscript>
 <script>
 
+function decode(str) { return decodeURIComponent(str.replace(/\+/g, ' ')); }
+  
+function appendTo(dict, name, value) {
+  // dict :: Dict<String, Array<String>>
+  // Since keys can be presented multiple times, map each key
+  // to an array of values, "just in case" of repeats
+  var val;
+  if (typeof value === "string") {
+    val = value;
+  } else if (value && typeof value.toString === "function") {
+    val = value.toString();
+  } else {
+    val = JSON.stringify(value);
+  }
+  if (name in dict) {
+    dict[name].push(val);
+  } else {
+    dict[name] = [val];
+  }
+}
+
+// String -> Dict<String, Array<String>>
+function parseToDict(search) {
+  var dict = {};
+  if (search.indexOf("?") === 0) {
+    search = search.slice(1);
+  }
+  var pairs = search.split("&");
+  for (var j = 0; j < pairs.length; j++) {
+    var value = pairs[j];
+    var index = value.indexOf('=');
+    if (index != -1) {
+      appendTo(dict, decode(value.slice(0, index)), decode(value.slice(index + 1)));
+    } else {
+      if (value) {
+        appendTo(dict, decode(value), '');
+      }
+    }
+  }
+  return dict;
+}
+
+function searchParams(url) {
+  if (url.searchParams && url.searchParams.get && url.searchParams.keys) {
+    return {
+      keys: Array.from(url.searchParams.keys()),
+      get: function(key) { return url.searchParams.get(key); }
+    };
+  } else {
+    var dict = parseToDict(url.search);
+    return {
+      keys: Object.keys(dict),
+      get: function(key) { return dict[key]; }
+    };
+  }
+}
+
 if (location.search.length > 0) {
   var u = new URL(location);
   var newsearch = "";
-  for(var key of u.searchParams.keys()) {
-    var val = u.searchParams.get(key);
+  var searchParams = searchParams(u);
+  searchParams.keys.forEach(function(key) {
+    var val = searchParams.get(key);
     // an empty "hq=" can be used to clear the cookie
     if (key == "hq") {
       SetCookie("PLT_ContextQuery", val);
@@ -29,7 +87,7 @@ if (location.search.length > 0) {
       if (newsearch == "") newsearch = "?";
       newsearch = newsearch + "&" + key + "=" + encodeURIComponent(val);
     }
-  }
+  });
   // localtion.replace => jump without leaving the current page in the history
   // (the new url uses "index.html" and the new search part)
   location.replace(location.href.replace(/\/[^\/?#]*[?][^#]*/,

@@ -155,6 +155,6 @@
 ;; The arity of many functions changed in 7.0.0.13:
 (provide history/arity)
 (define-syntax-rule (history/arity arg ...)
-  (history #:changed "7.0.0.13" @elem{Allow one argument, in addition to two or more.}
+  (history #:changed "7.0.0.13" @elem{Allow one argument, in addition to allowing two or more.}
            arg ...))
 

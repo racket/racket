@@ -328,6 +328,11 @@ static MZ_INLINE Scheme_Object *c_int_add(Scheme_Object *a, Scheme_Object *b)
   return scheme_make_integer(SCHEME_INT_VAL(a) + SCHEME_INT_VAL(b));
 }
 
+static MZ_INLINE Scheme_Object *c_int_mult(Scheme_Object *a, Scheme_Object *b)
+{
+  return scheme_make_integer(SCHEME_INT_VAL(a) * SCHEME_INT_VAL(b));
+}
+
 static MZ_INLINE Scheme_Object *c_int_sub(Scheme_Object *a, Scheme_Object *b)
 {
   return scheme_make_integer(SCHEME_INT_VAL(a) - SCHEME_INT_VAL(b));

@@ -3,6 +3,13 @@
 (define unsafe-list-tail #3%list-tail)
 (define unsafe-list-ref #3%list-ref)
 
+(define unsafe-char=? #3%char=?)
+(define unsafe-char<? #3%char<?)
+(define unsafe-char>? #3%char>?)
+(define unsafe-char>=? #3%char>=?)
+(define unsafe-char<=? #3%char<=?)
+(define unsafe-char->integer #3%char->integer)
+
 (define unsafe-fx+ #3%fx+)
 (define unsafe-fx- #3%fx-)
 (define unsafe-fx* #3%fx*)
