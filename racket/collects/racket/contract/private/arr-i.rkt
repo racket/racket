@@ -716,7 +716,8 @@ evaluted left-to-right.)
                    an-arg/res
                    wrapper-arg
                    (if (arg/res-vars an-arg/res)
-                       #`(#,contract-identifier
+                       #`(#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                          #,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
                           neg-party
@@ -753,7 +754,8 @@ evaluted left-to-right.)
                           neg-party
                           #f)]
                       [(arg/res-vars an-arg/res)
-                       #`(#,contract-identifier
+                       #`(#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                          #,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res))
                           neg-party
@@ -1255,13 +1257,10 @@ evaluted left-to-right.)
                             'racket/contract:contract-on-boundary
                             (gensym '->i-indy-boundary)))
                          #`(λ (#,@orig-vars)
-                             (define the-contract #,ctc-stx)
                              #,@(arg/res-vars arg) ;; needed for check syntax arrows
-                             (λ (val blame neg-party indy-blame?)
-                               ;; this used to use opt/direct, but
-                               ;; opt/direct duplicates code (bad!)
-                               (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                                the-contract val blame neg-party indy-blame?)))))
+                             ;; this used to use opt/direct, but
+                             ;; opt/direct duplicates code (bad!)
+                             #,ctc-stx)))
               ;; then the non-dependent argument contracts that are themselves depended on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -1295,16 +1294,10 @@ evaluted left-to-right.)
                                          #,@(arg/res-vars arg) ;; needed for check syntax arrows
                                          (opt/c #,arg-stx))
                                      #`(λ (#,@orig-vars)
-                                         (define the-contract #,arg-stx)
                                          #,@(arg/res-vars arg) ;; needed for check syntax arrows
-                                         (λ (val blame neg-party indy-blame?)
-                                           ;; this used to use opt/direct, but
-                                           ;; opt/direct duplicates code (bad!)
-                                           (#,(if is-chaperone-contract?
-                                                  #'un-dep/chaperone
-                                                  #'un-dep)
-                                            the-contract val blame neg-party
-                                            indy-blame?))))))
+                                         ;; this used to use opt/direct, but
+                                         ;; opt/direct duplicates code (bad!)
+                                         #,arg-stx))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
