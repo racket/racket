@@ -1122,6 +1122,11 @@ stream, but plain lists can be used as streams, and functions such as
   the resulting stream.
 }
 
+@defproc[(stream-take [s stream?] [i exact-nonnegative-integer?])
+         stream?]{
+  Returns a list of the first @racket[i] elements of @racket[s].
+}
+
 @defproc[(stream-append [s stream?] ...)
          stream?]{
   Returns a stream that contains all elements of each stream in the
