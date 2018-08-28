@@ -176,6 +176,7 @@
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
+(check-not-exn (λ () ((test-contract-generation (-> any/c (-> any) any)) 0 void)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? any)) 1)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? (-> integer? any))) 1)))
 (check-not-exn (λ () ((test-contract-generation (-> (-> integer? any) integer?))

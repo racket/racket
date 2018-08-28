@@ -1335,6 +1335,7 @@
          (define-values (exer ctcs) ((contract-struct-exercise c) fuel))
          (set! dom-exers (cons exer dom-exers))
          (set! addl-available (append ctcs addl-available)))
+       (set! dom-exers (reverse dom-exers))
        (define rngs-gens 
          (if (base->-rngs ctc)
              (with-definitely-available-contracts
