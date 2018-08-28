@@ -80,6 +80,6 @@
   (stream (not (zero? b)) (/ a b)))
 (test #f guarded-second (stream-take (div 1 0) 2))
 (test 3/4 guarded-second (stream-take (div 3 4) 2))
-(err/rt-test (stream-take (stream 1 2) 3) exn:fail:contract? "stream-take")
+(err/rt-test (stream->list (stream-take (stream 1 2) 3)) exn:fail:contract? "stream-take")
 
 (report-errs)
