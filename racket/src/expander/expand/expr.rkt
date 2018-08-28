@@ -171,6 +171,7 @@
       '(let-values ([(id:val ...) val-rhs] ...)
          body ...+))
     (define sc (new-scope 'local))
+    (define body-sc (and rec? (new-scope 'letrec-body)))
     (define phase (expand-context-phase ctx))
     (define frame-id (and syntaxes?
                           (make-reference-record))) ; accumulates info on referenced variables
@@ -205,7 +206,10 @@
                           (add-local-binding! id phase counter #:frame-id frame-id #:in s))))
     ;; Add new scope to body:
     (define bodys (for/list ([body (in-list (if syntaxes? (stx-m 'body) (val-m 'body)))])
-                    (add-scope body sc)))
+                    (define new-body (add-scope body sc))
+                    (if rec?
+                        (add-scope new-body body-sc)
+                        new-body)))
     (log-expand... ctx (lambda (obs)
                          (log-let-renames obs renames-log-tag val-idss val-rhss bodys
                                           trans-idss (and syntaxes? (stx-m 'trans-rhs)) sc)))
@@ -241,7 +245,10 @@
     (define orig-rrs (expand-context-reference-records expr-ctx))
     (define rec-ctx (struct*-copy expand-context expr-ctx
                                   [env rec-env]
-                                  [scopes (cons sc (expand-context-scopes ctx))]
+                                  [scopes (let ([scopes (cons sc (expand-context-scopes ctx))])
+                                            (if rec?
+                                                (cons body-sc scopes)
+                                                scopes))]
                                   [reference-records (if split-by-reference?
                                                          (cons frame-id orig-rrs)
                                                          orig-rrs)]

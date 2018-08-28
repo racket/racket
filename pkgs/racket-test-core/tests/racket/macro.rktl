@@ -2307,7 +2307,38 @@
          (if ok? #''ok #''oops))]))
   
   (test 'ok values (m 1)))
-  
+
+;; ----------------------------------------
+
+(test 'ok 'scope-for-letrec
+      (let ([x 'ok])
+        (letrec-syntax ([foo (lambda (stx)
+                               #'x)])
+          (define x 2)
+          (foo))))
+
+
+(test 1 'scope-for-letrec
+      (let ()
+        (define-syntaxes (stash restore)
+          (let ([stash #f])
+            (values
+             ;; stash
+             (lambda (stx)
+               (syntax-case stx ()
+                 [(_ arg)
+                  (begin (set! stash (syntax-local-introduce #'arg))
+                         #'arg)]))
+             ;; restore
+             (lambda (stx)
+               (syntax-local-introduce stash)))))
+
+        (define x 1)
+
+        (letrec-values ([(foo) (stash x)])
+          (define x 2)
+          (restore))))
+
 ;; ----------------------------------------
 
 (report-errs)
