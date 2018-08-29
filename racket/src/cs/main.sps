@@ -26,7 +26,8 @@
                module-path-index-join
                version
                exit
-               compile-keep-source-locations!)
+               compile-keep-source-locations!
+               expander-place-init!)
          (regexp)
          (io)
          (thread)
@@ -64,8 +65,7 @@
     (when (foreign-entry? "racket_exit")
       (#%exit-handler (foreign-procedure "racket_exit" (int) void))))
 
-   (seq
-    (|#%app| use-compiled-file-paths
+   (define compiled-file-paths
      (list (string->path (string-append "compiled/"
                                         (cond
                                          [(getenv "PLT_ZO_PATH")
@@ -75,7 +75,9 @@
                                                  (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
                                                s)]
                                          [platform-independent-zo-mode? "cs"]
-                                         [else (symbol->string (machine-type))]))))))
+                                         [else (symbol->string (machine-type))])))))
+   (define user-specific-search-paths? #t)
+   (define load-on-demand? #t)
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -285,7 +287,7 @@
               (set! version? #t)
               (flags-loop (cddr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
-              (|#%app| use-compiled-file-paths '())
+              (set! compiled-file-paths '())
               (loop (cdr args))]
              [("-I")
               (let-values ([(lib-name rest-args) (next-arg "library name" arg within-arg args)])
@@ -311,10 +313,10 @@
               (set! host-collects-dir init-collects-dir)
               (loop (cdr args))]
              [("-U" "--no-user-path")
-              (|#%app| use-user-specific-search-paths #f)
+              (set! user-specific-search-paths? #f)
               (loop (cdr args))]
              [("-d")
-              (|#%app| load-on-demand-enabled #f)
+              (set! load-on-demand? #t)
               (loop (cdr args))]
              [("-q" "--no-init-file")
               (set! repl-init? #f)
@@ -456,6 +458,38 @@
                (parse-logging-spec "stdout" spec "in PLTSTDOUT environment variable" #f)
                '()))))
 
+   (define (initialize-place!)
+     (|#%app| use-compiled-file-paths compiled-file-paths)
+     (|#%app| use-user-specific-search-paths user-specific-search-paths?)
+     (|#%app| load-on-demand-enabled load-on-demand?)
+     (boot)
+     (when (and stderr-logging
+                (not (null? stderr-logging)))
+       (apply add-stderr-log-receiver! (|#%app| current-logger) stderr-logging))
+     (when (and stdout-logging
+                (not (null? stdout-logging)))
+       (apply add-stdout-log-receiver! (|#%app| current-logger) stdout-logging))
+     (cond
+      [(eq? init-collects-dir 'disable)
+       (|#%app| use-collection-link-paths #f)
+       (set-collects-dir! (build-path 'same))]
+      [else
+       (set-collects-dir! init-collects-dir)])
+     (set-config-dir! init-config-dir)
+     (unless (eq? init-collects-dir 'disable)
+       (|#%app| current-library-collection-links
+        (find-library-collection-links))
+       (|#%app| current-library-collection-paths
+        (find-library-collection-paths))))
+
+   (install-start-place!
+    (lambda (mod sym in out err)
+      (io-place-init!)
+      (regexp-place-init!)
+      (expander-place-init!)
+      (initialize-place!)
+      (dynamic-require mod sym)))
+
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler
       (let ([orig (keyboard-interrupt-handler)])
@@ -467,25 +501,7 @@
      (printf "Welcome to Racket v~a [cs]\n" (version)))
    (call-in-main-thread
     (lambda ()
-      (boot)
-      (when (and stderr-logging
-                 (not (null? stderr-logging)))
-        (apply add-stderr-log-receiver! (|#%app| current-logger) stderr-logging))
-      (when (and stdout-logging
-                 (not (null? stdout-logging)))
-        (apply add-stdout-log-receiver! (|#%app| current-logger) stdout-logging))
-      (cond
-       [(eq? init-collects-dir 'disable)
-        (|#%app| use-collection-link-paths #f)
-        (set-collects-dir! (build-path 'same))]
-       [else
-        (set-collects-dir! init-collects-dir)])
-      (set-config-dir! init-config-dir)
-      (unless (eq? init-collects-dir 'disable)
-        (|#%app| current-library-collection-links
-         (find-library-collection-links))
-        (|#%app| current-library-collection-paths
-         (find-library-collection-paths)))
+      (initialize-place!)
 
       (when init-library
         (namespace-require+ init-library))

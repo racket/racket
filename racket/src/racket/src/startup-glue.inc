@@ -481,6 +481,11 @@ static MZ_INLINE Scheme_Object *c_bytes_ref(Scheme_Object *v, Scheme_Object *i)
   return scheme_make_integer(c);
 }
 
+static MZ_INLINE Scheme_Object *c_make_box(Scheme_Object *v)
+{
+  return scheme_box(v);
+}
+
 static MZ_INLINE Scheme_Object *c_box_ref(Scheme_Object *b)
 {
   if (SCHEME_NP_CHAPERONEP(b))

@@ -2,9 +2,11 @@
  [(threaded?)
   (define make-pthread-parameter make-thread-parameter)
   (define (fork-pthread thunk)
-    (fork-thread (lambda ()
-                   (init-virtual-registers)
-                   (thunk))))
+    (fork-thread (let ([place-registers (get-place-registers)])
+                   (lambda ()
+                     (init-virtual-registers)
+                     (set-place-registers! place-registers)
+                     (thunk)))))
   (define pthread? thread?)
   ;; make-condition
   ;; condition-wait

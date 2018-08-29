@@ -19,7 +19,9 @@
          "network/main.rkt"
          "foreign/main.rkt"
          "unsafe/main.rkt"
-         "run/main.rkt")
+         "run/main.rkt"
+         "port/parameter.rkt"
+         "host/rktio.rkt")
 
 (provide (all-from-out "port/main.rkt")
          (all-from-out "path/main.rkt")
@@ -40,6 +42,12 @@
          (all-from-out "network/main.rkt")
          (all-from-out "foreign/main.rkt")
          (all-from-out "unsafe/main.rkt")
-         (all-from-out "run/main.rkt"))
+         (all-from-out "run/main.rkt")
+         io-place-init!)
+
+(define (io-place-init!)
+  (sandman-place-init!)
+  (rktio-place-init!)
+  (init-current-ports!))
 
 (module main racket/base)

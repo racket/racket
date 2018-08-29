@@ -1,5 +1,6 @@
 #lang racket/base
-(require "atomic.rkt"
+(require racket/private/place-local
+         "atomic.rkt"
          "engine.rkt"
          "internal-error.rkt"
          "sandman.rkt"
@@ -20,7 +21,7 @@
 
 (define TICKS 100000)
 
-(define process-milliseconds 0)
+(define-place-local process-milliseconds 0)
 
 ;; Initializes the thread system:
 (define (call-in-main-thread thunk)
@@ -212,7 +213,7 @@
 
 ;; ----------------------------------------
 
-(define atomic-timeout-callback #f)
+(define-place-local atomic-timeout-callback #f)
 
 (define (set-atomic-timeout-callback! cb)
   (begin0

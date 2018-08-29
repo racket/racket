@@ -30,7 +30,11 @@
          "boot/runtime-primitive.rkt"
          "boot/handler.rkt"
          "syntax/api.rkt"
-         (only-in racket/private/config find-main-config))
+         (only-in racket/private/config find-main-config)
+         (only-in "syntax/cache.rkt" cache-place-init!)
+         (only-in "syntax/scope.rkt" scope-place-init!)
+         (only-in "eval/module-cache.rkt" module-cache-place-init!)
+         (only-in "common/performance.rkt" performance-place-init!))
 
 ;; All bindings provided by this module must correspond to variables
 ;; (as opposed to syntax). Provided functions must not accept keyword
@@ -109,6 +113,8 @@
 
          compile-keep-source-locations! ; to enable if the back end wants them
 
+         expander-place-init!
+
          ;; The remaining functions are provided for basic testing
          ;; (such as "demo.rkt")
 
@@ -136,54 +142,67 @@
 ;; ----------------------------------------
 ;; Initial namespace
 
-(define ns (make-namespace))
-(void
- (begin
-   (declare-core-module! ns)
-   (declare-hash-based-module! '#%read read-primitives #:namespace ns)
-   (declare-hash-based-module! '#%main main-primitives #:namespace ns)
-   (declare-hash-based-module! '#%utils utils-primitives #:namespace ns)
-   (declare-hash-based-module! '#%place-struct place-struct-primitives #:namespace ns
-                               ;; Treat place creation as "unsafe", since the new place starts with
-                               ;; permissive guards that can access unsafe features that affect
-                               ;; existing places
-                               #:protected '(dynamic-place))
-   (declare-hash-based-module! '#%boot boot-primitives #:namespace ns)
-   (let ([linklet-primitives
-          ;; Remove symbols that are in the '#%linklet primitive table
-          ;; but provided by `#%kernel`:
-          (hash-remove (hash-remove linklet-primitives
-                                    'variable-reference?)
-                       'variable-reference-constant?)])
-     (declare-hash-based-module! '#%linklet linklet-primitives #:namespace ns
-                                 #:primitive? #t
-                                 #:register-builtin? #t))
-   (declare-hash-based-module! '#%expobs expobs-primitives #:namespace ns
-                               #:protected? #t)
-   (declare-kernel-module! ns
-                           #:eval eval
-                           #:main-ids (for/set ([name (in-hash-keys main-primitives)])
-                                        name)
-                           #:read-ids (for/set ([name (in-hash-keys read-primitives)])
-                                        name))
-   (for ([name (in-list runtime-instances)]
-         #:unless (eq? name '#%kernel))
-     (copy-runtime-module! name
-                           #:namespace ns
-                           #:protected? (or (eq? name '#%foreign)
-                                            (eq? name '#%futures)
-                                            (eq? name '#%unsafe))))
-   (declare-reexporting-module! '#%builtin (list* '#%place-struct
-                                                  '#%utils
-                                                  '#%boot
-                                                  '#%expobs
-                                                  '#%linklet
-                                                  runtime-instances)
-                                #:namespace ns
-                                #:reexport? #f)
-   (current-namespace ns)
+(define (namespace-init!)
+  (define ns (make-namespace))
+  (void
+   (begin
+     (declare-core-module! ns)
+     (declare-hash-based-module! '#%read read-primitives #:namespace ns)
+     (declare-hash-based-module! '#%main main-primitives #:namespace ns)
+     (declare-hash-based-module! '#%utils utils-primitives #:namespace ns)
+     (declare-hash-based-module! '#%place-struct place-struct-primitives #:namespace ns
+                                 ;; Treat place creation as "unsafe", since the new place starts with
+                                 ;; permissive guards that can access unsafe features that affect
+                                 ;; existing places
+                                 #:protected '(dynamic-place))
+     (declare-hash-based-module! '#%boot boot-primitives #:namespace ns)
+     (let ([linklet-primitives
+            ;; Remove symbols that are in the '#%linklet primitive table
+            ;; but provided by `#%kernel`:
+            (hash-remove (hash-remove linklet-primitives
+                                      'variable-reference?)
+                         'variable-reference-constant?)])
+       (declare-hash-based-module! '#%linklet linklet-primitives #:namespace ns
+                                   #:primitive? #t
+                                   #:register-builtin? #t))
+     (declare-hash-based-module! '#%expobs expobs-primitives #:namespace ns
+                                 #:protected? #t)
+     (declare-kernel-module! ns
+                             #:eval eval
+                             #:main-ids (for/set ([name (in-hash-keys main-primitives)])
+                                          name)
+                             #:read-ids (for/set ([name (in-hash-keys read-primitives)])
+                                          name))
+     (for ([name (in-list runtime-instances)]
+           #:unless (eq? name '#%kernel))
+       (copy-runtime-module! name
+                             #:namespace ns
+                             #:protected? (or (eq? name '#%foreign)
+                                              (eq? name '#%futures)
+                                              (eq? name '#%unsafe))))
+     (declare-reexporting-module! '#%builtin (list* '#%place-struct
+                                                    '#%utils
+                                                    '#%boot
+                                                    '#%expobs
+                                                    '#%linklet
+                                                    runtime-instances)
+                                  #:namespace ns
+                                  #:reexport? #f)
+     (current-namespace ns)
 
-   (dynamic-require ''#%kernel 0)))
+     (dynamic-require ''#%kernel 0))))
+
+(namespace-init!)
 
 (define (datum->kernel-syntax s)
   (datum->syntax core-stx s))
+
+(define (expander-place-init!)
+  (scope-place-init!)
+  (cache-place-init!)
+  (core-place-init!)
+  (module-path-place-init!)
+  (module-cache-place-init!)
+  (collection-place-init!)
+  (performance-place-init!)
+  (namespace-init!))

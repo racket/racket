@@ -11,6 +11,22 @@ RKTIO_DEP=../build/so-rktio/Makefile
 # a direct use of the primitive name:
 DIRECT = ++direct thread
 
+# Enable the sanity check for global state (to be avoided in
+# favor of place-local state), but declare some initialized-once
+# global state to be ok:
+GLOBALS = --no-global \
+          ++global-ok installed-read \
+          ++global-ok installed-read-syntax \
+          ++global-ok installed-read-accept-reader \
+          ++global-ok installed-read-accept-lang \
+          ++global-ok maybe-raise-missing-module \
+          ++global-ok 'string->number?' \
+          ++global-ok do-global-print \
+          ++global-ok exec-file \
+          ++global-ok run-file \
+          ++global-ok collects-dir \
+          ++global-ok config-dir
+
 io-src: $(RKTIO_DEP)
 	$(RACO) make ../expander/bootstrap-run.rkt
 	$(MAKE) io-src-generate
@@ -22,7 +38,7 @@ GENERATE_ARGS = -t main.rkt --submod main \
                 --depends $(BUILDDIR)compiled/io-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/io.rktl $(BUILDDIR)compiled/io.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. -s -x $(DIRECT) \
+                -k ../.. -s -x $(DIRECT) $(GLOBALS) \
                 -o $(BUILDDIR)compiled/io.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/private/place-local
+         "../common/check.rkt"
          "../print/main.rkt"
          "../error/main.rkt"
          "../port/parameter.rkt"
@@ -62,10 +63,10 @@
 
 ;; ----------------------------------------
 
-(define cached-values (make-hasheq))
+(define-place-local cached-values #hasheq())
 (define (cache-configuration index thunk)
   (hash-ref cached-values index
             (lambda ()
               (let ([v (thunk)])
-                (hash-set! cached-values index v)
+                (set! cached-values (hash-set cached-values index v))
                 v))))

@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../../thread/sandman-struct.rkt"
+(require racket/private/place-local
+         "../../thread/sandman-struct.rkt"
          "../common/internal-error.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
@@ -19,7 +20,8 @@
 (provide sandman-add-poll-set-adder
          sandman-poll-ctx-add-poll-set-adder!
          sandman-poll-ctx-merge-timeout
-         sandman-set-background-sleep!)
+         sandman-set-background-sleep!
+         sandman-place-init!)
 
 (struct exts (timeout-at fd-adders))
 
@@ -44,19 +46,23 @@
                                  timeout))))
 
 
-(define background-sleep #f)
-(define background-sleep-fd #f)
+(define-place-local background-sleep #f)
+(define-place-local background-sleep-fd #f)
 
 (define (sandman-set-background-sleep! sleep fd)
   (set! background-sleep sleep)
   (set! background-sleep-fd fd))
 
+(define-place-local lock (make-lock))
+(define-place-local waiting-threads '())
+(define-place-local awoken-threads '())
+
+(define (sandman-place-init!)
+  (set! lock (make-lock)))
+
 (void
  (current-sandman
-  (let ([timeout-sandman (current-sandman)]
-        [lock (make-lock)]
-        [waiting-threads '()]
-        [awoken-threads '()])
+  (let ([timeout-sandman (current-sandman)])
     (sandman
      ;; sleep
      (lambda (exts)

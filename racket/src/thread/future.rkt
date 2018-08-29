@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "check.rkt"
+(require racket/private/place-local
+         "check.rkt"
          "internal-error.rkt"
          "engine.rkt"
          "atomic.rkt"
@@ -220,7 +221,7 @@
 (define THREAD-COUNT 2)
 (define TICKS 1000000000)
 
-(define global-scheduler #f)
+(define-place-local global-scheduler #f)
 (define (scheduler-running?)
   (not (not global-scheduler)))
 

@@ -1,5 +1,6 @@
 #lang racket/base
-(require "check.rkt"
+(require racket/private/place-local
+         "check.rkt"
          "atomic.rkt"
          "engine.rkt"
          "evt.rkt"

@@ -569,12 +569,17 @@
           unsafe-extfl->fx unsafe-fx->extfl unsafe-extflsqrt
           unsafe-extflvector-length unsafe-extflvector-ref unsafe-extflvector-set!
 
+          install-start-place!       ; not exported to Racket
           place-enabled? place? place-channel? place-break
           place-channel-get place-channel-put place-sleep
           place-channel place-dead-evt place-kill place-message-allowed?
           dynamic-place place-wait place-pumper-threads place-shared?
           unsafe-get-place-table
           unsafe-add-post-custodian-shutdown
+          unsafe-make-place-local unsafe-place-local-ref unsafe-place-local-set!
+          place-local-register-ref   ; not exported to Racket
+          place-local-register-set!  ; not exported to Racket
+          place-local-register-init! ; not exported to Racket
 
           _bool _bytes _short_bytes _double _double* _fixint _fixnum _float _fpointer _gcpointer
           _int16 _int32 _int64 _int8 _longdouble _pointer _scheme _stdbool _void
@@ -744,6 +749,7 @@
   ;; the the following line will cause the error to loop with another error, etc.,
   ;; probably without printing anything:
   (set-base-exception-handler!)
+  (init-place-locals!)
   (register-as-place-main!)
   (set-collect-handler!)
   (set-primitive-applicables!)

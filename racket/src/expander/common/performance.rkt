@@ -1,6 +1,8 @@
 #lang racket/base
+(require racket/private/place-local)
 
-(provide performance-region)
+(provide performance-region
+         performance-place-init!)
 
 ;; To enable measurement, see the end of this file.
 
@@ -48,8 +50,11 @@
       (when log-performance?
         (end-performance-region)))))
 
-(define region-stack #f)
-(define accums (make-hasheq))
+(define-place-local region-stack #f)
+(define-place-local accums (make-hasheq))
+
+(define (performance-place-init!)
+  (set! accums (make-hasheq)))
 
 (struct region (path
                 [start #:mutable]        ; start time

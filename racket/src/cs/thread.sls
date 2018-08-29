@@ -8,6 +8,10 @@
                   [sleep chez:sleep])
           (rename (rumble)
                   [rumble:break-enabled-key break-enabled-key]
+                  ;; Remapped to place-local register operations:
+                  [unsafe-make-place-local rumble:unsafe-make-place-local]
+                  [unsafe-place-local-ref rumble:unsafe-place-local-ref]
+                  [unsafe-place-local-set! rumble:unsafe-place-local-set!]
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
                   [engine-block rumble:engine-block]
@@ -29,8 +33,11 @@
                   [unsafe-root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]))
 
-  ;; Special handling of `current-atomic`: use the last virtual register.
-  ;; We rely on the fact that the register's default value is 0.
+  (include "place-register.ss")
+  (define-place-register-define place:define thread-register-start thread-register-count)
+  
+  ;; Special handling of `current-atomic`: use the last virtual register;
+  ;; we rely on the fact that the register's default value is 0.
   (define-syntax (define stx)
     (syntax-case stx (current-atomic make-pthread-parameter)
       [(_ current-atomic (make-pthread-parameter 0))
@@ -40,7 +47,7 @@
              (syntax-rules ()
                [(_) (virtual-register n)]
                [(_ v) (set-virtual-register! n v)])))]
-      [(_ . rest) #'(chez:define . rest)]))
+      [(_ . rest) #'(place:define . rest)]))
 
   (define (exit n)
     (chez:exit n))

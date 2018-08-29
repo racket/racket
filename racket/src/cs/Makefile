@@ -17,7 +17,7 @@ DEBUG_COMP = # --debug
 RUMBLE_UNSAFE_COMP = --unsafe
 
 COMPILE_FILE = $(SCHEME) --script compile-file.ss $(UNSAFE_COMP) $(COMPRESS_COMP) $(DEBUG_COMP) --dest "$(BUILDDIR)"
-COMPILE_FILE_DEPS = compile-file.ss include.ss
+COMPILE_FILE_DEPS = compile-file.ss include.ss place-register.ss 
 
 RACKET_SETUP_ARGS = ../../bin/racket ../collects ../etc 0 false
 

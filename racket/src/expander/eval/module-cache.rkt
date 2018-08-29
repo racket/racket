@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/private/place-local)
 
 ;; The module cache lets us avoid reloading ".zo" files when
 ;; we have the relevant data handy in memory. The "eval/module.rkt"
@@ -7,9 +8,13 @@
 
 (provide make-module-cache-key
          module-cache-set!
-         module-cache-ref)
+         module-cache-ref
+         module-cache-place-init!)
 
-(define module-cache (make-weak-hasheq))
+(define-place-local module-cache (make-weak-hasheq))
+
+(define (module-cache-place-init!)
+  (set! module-cache (make-weak-hasheq)))
 
 (define (make-module-cache-key hash-code)
   ;; The result is preserved to retain the cache entry, and

@@ -47,6 +47,8 @@
 (define extract-to-decompiled? #f)
 (define extract-to-bytecode? #f)
 (define local-rename? #f)
+(define no-global? #f)
+(define global-ok (make-hasheq))
 (define instance-knot-ties (make-hasheq))
 (define primitive-table-directs (make-hasheq))
 (define side-effect-free-modules (make-hash))
@@ -102,18 +104,24 @@
     (hash-set! dependencies (simplify-path (path->complete-path file)) #t)]
    [("++depend-module") mod-file "Add <mod-file> and transitive as dependencies"
                         (set! extra-module-dependencies (cons mod-file extra-module-dependencies))]
-   [("++disallow") id "If <id> is defined in the flattened version, explain why"
-                   (set! disallows (cons (string->symbol id) disallows))]
-   #:once-each
-   [("--local-rename") "Use simpler names in extracted, instead of a unique name for each binding"
-    (set! local-rename? #t)]
    #:once-any
    [("-C") "Print extracted bootstrap as a C encoding"
     (set! extract-to-c? #t)]
    [("-D") "Print extracted bootstrap as a decompiled"
     (set! extract-to-decompiled? #t)]
    [("-B") "Print extracted bootstrap as bytecode"
-    (set! extract-to-bytecode? #t)]
+           (set! extract-to-bytecode? #t)]
+   #:multi
+   [("++disallow") id "If <id> is defined in the flattened version, explain why"
+                   (set! disallows (cons (string->symbol id) disallows))]
+   #:once-each
+   [("--local-rename") "Use simpler names in extracted, instead of a unique name for each binding"
+                       (set! local-rename? #t)]
+   [("--no-global") "Complain if a variable looks like it holds mutable global state"
+                    (set! no-global? #t)]
+   #:multi
+   [("++global-ok") id "Allow <id> as global state without complaint, after all"
+                    (hash-set! global-ok (string->symbol id) #t)]
    #:multi
    [("++knot") primitive-table path ("Redirect imports from #%<primitive-table> to flattened from <path>;"
                                      " use `-` for <path> to leave as-is, effectively redirecting to a primitive use")
@@ -321,6 +329,8 @@
            #:as-decompiled? extract-to-decompiled?
            #:as-bytecode? extract-to-bytecode?
            #:local-rename? local-rename?
+           #:no-global? no-global?
+           #:global-ok global-ok
            #:instance-knot-ties instance-knot-ties
            #:primitive-table-directs primitive-table-directs
            #:side-effect-free-modules side-effect-free-modules

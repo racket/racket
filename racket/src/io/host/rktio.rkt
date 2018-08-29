@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/include
+(require racket/private/place-local
+         racket/include
          (for-syntax racket/base)
          (only-in '#%linklet primitive-table))
 
@@ -8,7 +9,8 @@
          rktio-errkind
          rktio-errno
          rktio-errstep
-         racket-error?)
+         racket-error?
+         rktio-place-init!)
 ;; More `provide`s added by macros below
 
 (define rktio-table
@@ -74,6 +76,10 @@
   (and (eqv? (rktio-errkind v) RKTIO_ERROR_KIND_RACKET)
        (eqv? (rktio-errno v) errno)))
 
-(define rktio (rktio_init))
+(define-place-local rktio (rktio_init))
 
+(define (rktio-place-init!)
+  (set! rktio (rktio_init)))
+
+;; Only in the main place:
 (void (rktio_do_install_os_signal_handler rktio))

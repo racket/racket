@@ -1,5 +1,6 @@
 #lang racket/base
-(require ffi/unsafe/atomic
+(require racket/private/place-local
+         ffi/unsafe/atomic
          "../common/set.rkt"
          "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
@@ -59,7 +60,9 @@
          scope?
          scope<?
          shifted-multi-scope?
-         shifted-multi-scope<?)
+         shifted-multi-scope<?
+
+         scope-place-init!)
 
 (module+ for-debug
   (provide (struct-out scope)
@@ -296,7 +299,7 @@
 
 ;; Each new scope increments the counter, so we can check whether one
 ;; scope is newer than another.
-(define id-counter 0)
+(define-place-local id-counter 0)
 (define (new-scope-id!)
   (set! id-counter (add1 id-counter))
   id-counter)
@@ -318,7 +321,10 @@
 ;; The intern table used for interned scopes. Access to the table must be
 ;; atomic so that the table is not left locked if the expansion thread is
 ;; killed.
-(define interned-scopes-table (make-weak-hasheq))
+(define-place-local interned-scopes-table (make-weak-hasheq))
+
+(define (scope-place-init!)
+  (set! interned-scopes-table (make-weak-hasheq)))
 
 (define (make-interned-scope sym)
   (define (make)

@@ -2005,7 +2005,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       }
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-unbox*")) {
+    } else if (IS_NAMED_PRIM(rator, "unsafe-unbox*")
+               || IS_NAMED_PRIM(rator, "unsafe-place-local-ref")) {
       LOG_IT(("inlined unbox\n"));
 
       mz_runstack_skipped(jitter, 1);
@@ -2344,7 +2345,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       mz_runstack_unskipped(jitter, 1);
       (void)jit_movi_p(JIT_R1, &scheme_null);
       return scheme_generate_cons_alloc(jitter, 0, 0, 1, dest);
-    } else if (IS_NAMED_PRIM(rator, "box")) {
+    } else if (IS_NAMED_PRIM(rator, "box")
+               || IS_NAMED_PRIM(rator, "unsafe-make-place-local")) {
       mz_runstack_skipped(jitter, 1);
       scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -4296,7 +4298,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         (void)jit_movi_p(dest, scheme_void);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-set-box*!")) {
+    } else if (IS_NAMED_PRIM(rator, "unsafe-set-box*!")
+               || IS_NAMED_PRIM(rator, "unsafe-place-local-set!")) {
       LOG_IT(("inlined unsafe-set-box*!\n"));
 
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);

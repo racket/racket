@@ -357,10 +357,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
       scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 2, argc, args);
     }
     if (SCHEME_TRUEP(out_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &out_arg))) {
-      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 3, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? output-port?) #f)", 3, argc, args);
     }
     if (SCHEME_TRUEP(err_arg) && !SCHEME_TRUEP(scheme_file_stream_port_p(1, &err_arg))) {
-      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? input-port?) #f)", 4, argc, args);
+      scheme_wrong_contract("dynamic-place", "(or/c (and/c file-stream-port? output-port?) #f)", 4, argc, args);
     }
 
     if (SCHEME_PAIRP(args[0]) 

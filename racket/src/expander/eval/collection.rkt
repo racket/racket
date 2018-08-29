@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/private/check
          racket/private/config
+         racket/private/place-local
          "parameter.rkt"
          ;; Avoid keyword-argument variant:
          (only-in '#%kernel directory-list))
@@ -10,7 +11,9 @@
          find-library-collection-paths
          find-library-collection-links
 
-         find-col-file)
+         find-col-file
+
+         collection-place-init!)
 
 (define (relative-path-string? s)
   (and (path-string? s) (relative-path? s)))
@@ -119,7 +122,10 @@
        null)))
 
 ;; map from link-file names to cached information:
-(define links-cache (make-weak-hash))
+(define-place-local links-cache (make-weak-hash))
+
+(define (collection-place-init!)
+  (set! links-cache (make-weak-hash)))
 
 ;; used for low-level exception abort below:
 (define stamp-prompt-tag (make-continuation-prompt-tag 'stamp))

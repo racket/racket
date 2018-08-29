@@ -1,5 +1,6 @@
 #lang racket/base
-(require ffi/unsafe/atomic
+(require racket/private/place-local
+         ffi/unsafe/atomic
          "../compile/serialize-property.rkt"
          "contract.rkt"
          "parse-module-path.rkt"
@@ -37,7 +38,9 @@
          current-module-declare-source
          substitute-module-declare-name
          
-         deserialize-module-path-index)
+         deserialize-module-path-index
+
+         module-path-place-init!)
 
 (module+ for-intern
   (provide (struct-out module-path-index)))
@@ -284,8 +287,11 @@
 ;; expanded module (at the same submodule nesting and name) uses the same
 ;; generic module path, so that compilation can recognize references within
 ;; the module to itself, and so on
-(define generic-self-mpis (make-weak-hash))
+(define-place-local generic-self-mpis (make-weak-hash))
 (define generic-module-name '|expanded module|)
+
+(define (module-path-place-init!)
+  (set! generic-self-mpis (make-weak-hash)))
 
 ;; Return a module path index that is the same for a given
 ;; submodule path in the given self module path index

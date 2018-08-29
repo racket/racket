@@ -14,7 +14,7 @@ GENERATE_ARGS = -t main.rkt \
                 --depends $(BUILDDIR)compiled/regexp-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/regexp.rktl $(BUILDDIR)compiled/regexp.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. -s -x \
+                -k ../.. -s -x --no-global \
                 -o $(BUILDDIR)compiled/regexp.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

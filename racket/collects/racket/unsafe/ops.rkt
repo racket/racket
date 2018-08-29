@@ -44,7 +44,10 @@
                      unsafe-os-semaphore-post
                      unsafe-os-semaphore-wait
                      unsafe-add-collect-callbacks
-                     unsafe-remove-collect-callbacks)
+                     unsafe-remove-collect-callbacks
+                     unsafe-make-place-local
+                     unsafe-place-local-ref
+                     unsafe-place-local-set!)
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-

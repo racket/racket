@@ -2,7 +2,8 @@
 (require "../common/check.rkt"
          "match/regexp.rkt"
          "match/main.rkt"
-         "replace/main.rkt")
+         "replace/main.rkt"
+         (only-in "common/range.rkt" range-place-init!))
 
 (provide regexp
          byte-regexp
@@ -28,7 +29,9 @@
          pregexp?
          byte-pregexp?
          
-         regexp-max-lookbehind)
+         regexp-max-lookbehind
+
+         regexp-place-init!)
 
 (define/who (regexp p [handler #f])
   (check who string? p)
@@ -169,3 +172,8 @@
                       #:mode 'positions
                       #:end-bytes? #t
                       #:end-bytes-count end-bytes-count))
+
+;; ----------------------------------------
+
+(define (regexp-place-init!)
+  (range-place-init!))

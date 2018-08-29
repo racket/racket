@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/private/place-local
+         "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
          "../host/error.rkt"
@@ -20,7 +21,7 @@
                       (raise-argument-error 'current-locale "(or/c #f string?)" v))
                     (and v (string->immutable-string v)))))
 
-(define installed-locale #f)
+(define-place-local installed-locale #f)
 
 ;; in atomic mode
 ;; Any rktio function that depends on the locale should be called in

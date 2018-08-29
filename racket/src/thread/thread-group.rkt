@@ -1,5 +1,6 @@
 #lang racket/base
-(require "check.rkt"
+(require racket/private/place-local
+         "check.rkt"
          "internal-error.rkt"
          "atomic.rkt")
 
@@ -33,7 +34,7 @@
 
 (define root-thread-group (thread-group 'none 'none #f #f #f #f))
 
-(define num-threads-in-groups 0)
+(define-place-local num-threads-in-groups 0)
 
 (define/who current-thread-group
   (make-parameter root-thread-group

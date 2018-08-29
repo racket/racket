@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/queue.rkt"
+(require racket/private/place-local
+         "../common/queue.rkt"
          "check.rkt"
          "internal-error.rkt"
          "engine.rkt"
@@ -125,7 +126,7 @@
                                             (lambda (v) t)))
   #:property prop:object-name (struct-field-index name))
 
-(define root-thread #f)
+(define-place-local root-thread #f)
 
 ;; ----------------------------------------
 ;; Thread creation
@@ -678,7 +679,7 @@
 ;; all threads again. Accumulate a table of threads that we don't need
 ;; to poll because we've tried them since the most recent thread
 ;; performed work:
-(define poll-done-threads #hasheq())
+(define-place-local poll-done-threads #hasheq())
 
 (define (thread-did-no-work!)
   (set! poll-done-threads (hash-set poll-done-threads (current-thread) #t)))
@@ -701,7 +702,7 @@
 (define break-enabled-default-cell (make-thread-cell #t))
 
 ;; For disabling breaks, such as through `unsafe-start-atomic`:
-(define break-suspend 0)
+(define-place-local break-suspend 0)
 (define current-break-suspend
   (case-lambda
     [() break-suspend]

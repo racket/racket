@@ -1,8 +1,11 @@
 #lang racket/base
-(require racket/fixnum
+(require racket/private/place-local
+         racket/fixnum
          "../common/set.rkt")
 
-(provide clear-resolve-cache!
+(provide cache-place-init!
+
+         clear-resolve-cache!
          resolve-cache-get
          resolve-cache-set!
 
@@ -17,7 +20,13 @@
 ;; Cache bindings resolutions with a fairly weak
 ;; cache keyed on a symbol, phase, and scope sets.
 
-(define cache (box (make-weak-box #f)))
+(define (make-cache)
+  (box (make-weak-box #f)))
+
+(define-place-local cache (make-cache))
+
+(define (resolve-cache-place-init!)
+  (set! cache (make-cache)))
 
 (define clear-resolve-cache!
   (case-lambda
@@ -68,8 +77,8 @@
 (define SHIFTED-CACHE-SIZE 16) ; power of 2
 
 ;; Cache box contains #f or a weak box of a vector:
-(define shifted-cache (box #f))
-(define shifted-cache-pos 0)
+(define-place-local shifted-cache (box #f))
+(define-place-local shifted-cache-pos 0)
 
 (struct shifted-entry (s phase binding)
   #:authentic)
@@ -110,11 +119,21 @@
 
 (define NUM-CACHE-SLOTS 8) ; power of 2
 
-(define cached-sets (make-weak-box (make-vector NUM-CACHE-SLOTS #f)))
-(define cached-sets-pos 0)
+(define (make-cached-sets)
+  (make-weak-box (make-vector NUM-CACHE-SLOTS #f)))
 
-(define cached-hashes (make-weak-box (make-vector NUM-CACHE-SLOTS #f)))
-(define cached-hashes-pos 0)
+(define-place-local cached-sets (make-cached-sets))
+(define-place-local cached-sets-pos 0)
+
+(define (make-cached-hashes)
+  (make-weak-box (make-vector NUM-CACHE-SLOTS #f)))
+
+(define-place-local cached-hashes (make-cached-hashes))
+(define-place-local cached-hashes-pos 0)
+
+(define (sets-place-init!)
+  (set! cached-sets (make-cached-sets))
+  (set! cached-hashes (make-cached-hashes)))
 
 (define-syntax-rule (define-cache-or-reuse cache-or-reuse cached cached-pos same?)
   (define (cache-or-reuse s)
@@ -133,3 +152,9 @@
 
 (define-cache-or-reuse cache-or-reuse-set cached-sets cached-sets-pos set=?)
 (define-cache-or-reuse cache-or-reuse-hash cached-hashes cached-hashes-pos equal?)
+
+;; ----------------------------------------
+
+(define (cache-place-init!)
+  (resolve-cache-place-init!)
+  (sets-place-init!))

@@ -12,6 +12,7 @@
          "prune-name.rkt"
          "decompile.rkt"
          "save-and-report.rkt"
+         "global.rkt"
          "underscore.rkt"
          "symbol.rkt"
          "../run/status.rkt"
@@ -30,6 +31,8 @@
                  #:as-decompiled? as-decompiled?
                  #:as-bytecode? as-bytecode?
                  #:local-rename? local-rename?
+                 #:no-global? no-global?
+                 #:global-ok global-ok
                  ;; Table of symbol -> (listof knot-spec),
                  ;; to redirect a remaining import back to
                  ;; an implementation that is defined in the
@@ -151,6 +154,9 @@
           (set! complained? #t))))
     (when complained?
       (exit 1))
+
+    (when no-global?
+      (check-global gced-linklet-expr global-ok))
 
     ;; Avoid gratuitous differences due to names generated during
     ;; expansion...

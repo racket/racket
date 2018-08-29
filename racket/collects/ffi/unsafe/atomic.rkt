@@ -1,5 +1,6 @@
 #lang racket/base
 (require '#%unsafe
+         racket/private/place-local
          (for-syntax racket/base))
 
 (provide (protect-out in-atomic-mode?
@@ -27,7 +28,7 @@
 
 ;; ----------------------------------------
 
-(define monitor-owner #f)
+(define-place-local monitor-owner #f)
 
 ;; An exception may be constructed while we're entered:
 (define entered-err-string-handler
@@ -36,10 +37,10 @@
      (lambda ()
        ((error-value->string-handler) s n)))))
 
-(define old-paramz #f)
-(define old-break-paramz #f)
+(define-place-local old-paramz #f)
+(define-place-local old-break-paramz #f)
 
-(define extra-atomic-depth 0)
+(define-place-local extra-atomic-depth 0)
 
 (define exited-key (gensym 'as-exit))
 (define lock-tag (make-continuation-prompt-tag 'lock))

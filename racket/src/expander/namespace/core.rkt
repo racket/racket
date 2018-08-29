@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/set.rkt"
+(require racket/private/place-local
+         "../common/set.rkt"
          "../syntax/syntax.rkt"
          "../syntax/scope.rkt"
          "../syntax/binding.rkt"
@@ -20,7 +21,9 @@
          
          core-module-name
          core-mpi
-         core-form-sym)
+         core-form-sym
+
+         core-place-init!)
 
 ;; Accumulate all core bindings in `core-scope`, so we can
 ;; easily generate a reference to a core form using `core-stx`:
@@ -32,8 +35,12 @@
 
 ;; The expander needs to synthesize some core references
 
-(define id-cache-0 (make-hasheq))
-(define id-cache-1 (make-hasheq))
+(define-place-local id-cache-0 (make-hasheq))
+(define-place-local id-cache-1 (make-hasheq))
+
+(define (core-place-init!)
+  (set! id-cache-0 (make-hasheq))
+  (set! id-cache-1 (make-hasheq)))
 
 (define (core-id sym phase)
   (cond

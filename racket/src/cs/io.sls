@@ -1,7 +1,8 @@
 (library (io)
   (export)
-  (import (except (chezpart)
-                  close-port)
+  (import (rename (except (chezpart)
+                          close-port)
+                  [define chez:define])
           (rename (only (chezscheme)
                         read-char peek-char
                         current-directory
@@ -12,8 +13,16 @@
                   [input-port? chez:input-port?]
                   [output-port? chez:output-port?]
                   [flush-output-port flush-output])
-          (rumble)
+          (rename (rumble)
+                  ;; Remapped to place-local register operations:
+                  [unsafe-make-place-local rumble:unsafe-make-place-local]
+                  [unsafe-place-local-ref rumble:unsafe-place-local-ref]
+                  [unsafe-place-local-set! rumble:unsafe-place-local-set!])
           (thread))
+
+  (include "place-register.ss")
+  (define-place-register-define define io-register-start io-register-count)
+
   ;; ----------------------------------------
   ;; Tie knots:
 
@@ -391,8 +400,8 @@
 
   (include "include.ss")
   (include-generated "io.scm")
-  
-  ;; Initialize:
+
+   ;; Initialize:
   (|#%app| 1/current-directory (current-directory))
   (|#%app| 1/current-directory-for-user (current-directory))
   (set-log-system-message! (lambda (level str)

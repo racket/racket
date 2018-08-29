@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/private/place-local)
 
 ;; Represent a range as a list of `(cons start end)`
 ;; pairs, where `start` and `end` are inclusive.
@@ -16,7 +17,9 @@
          range->list
          
          compile-range
-         rng-in?)
+         rng-in?
+
+         range-place-init!)
 
 (define empty-range null)
 
@@ -108,7 +111,10 @@
 
 ;; ----------------------------------------
 
-(define rngs (make-weak-hash))
+(define-place-local rngs (make-weak-hash))
+
+(define (range-place-init!)
+  (set! rngs (make-weak-hash)))
 
 (define (compile-range range)
   (or (hash-ref rngs range #f)

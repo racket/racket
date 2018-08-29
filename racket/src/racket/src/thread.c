@@ -416,6 +416,10 @@ static Scheme_Object *unsafe_poll_ctx_time_wakeup(int argc, Scheme_Object **argv
 static Scheme_Object *unsafe_signal_received(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_set_sleep_in_thread(int argc, Scheme_Object **argv);
 
+static Scheme_Object *unsafe_make_place_local(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_place_local_ref(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_place_local_set(int argc, Scheme_Object **argv);
+
 static void make_initial_config(Scheme_Thread *p);
 
 static int do_kill_thread(Scheme_Thread *p);
@@ -625,6 +629,8 @@ void scheme_init_thread(Scheme_Startup_Env *env)
 void
 scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 {
+  Scheme_Object *p;
+
   scheme_addto_prim_instance("unsafe-start-atomic",
 			     scheme_make_prim_w_arity(unsafe_start_atomic,
 						      "unsafe-start-atomic",
@@ -681,6 +687,24 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
 
   ADD_PRIM_W_ARITY("unsafe-add-collect-callbacks", unsafe_add_collect_callbacks, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-remove-collect-callbacks", unsafe_remove_collect_callbacks, 1, 1, env);
+
+  /* Place locals are just boxes, so these operations are just aliases box operations */
+  p = scheme_make_folding_prim(unsafe_make_place_local, "unsafe-make-place-local", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
+  scheme_addto_prim_instance("unsafe-make-place-local", p, env);
+
+  p = scheme_make_immed_prim(unsafe_place_local_ref, "unsafe-place-local-ref", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("unsafe-place-local-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_place_local_set, "unsafe-place-local-set!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_AD_HOC_OPT);
+  scheme_addto_prim_instance("unsafe-place-local-set!", p, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -7307,6 +7331,26 @@ static Scheme_Object *sch_sync_timeout_enable_break(int argc, Scheme_Object *arg
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *argv[])
 {
   return (Scheme_Object *)make_evt_set("choice-evt", argc, argv, 0, 0);
+}
+
+/*========================================================================*/
+/*                         boxes as place locals                          */
+/*========================================================================*/
+
+static Scheme_Object *unsafe_make_place_local(int argc, Scheme_Object **argv)
+{
+  return scheme_box(argv[0]);
+}
+
+static Scheme_Object *unsafe_place_local_ref(int argc, Scheme_Object **argv)
+{
+  return SCHEME_BOX_VAL(argv[0]);
+}
+
+static Scheme_Object *unsafe_place_local_set(int argc, Scheme_Object **argv)
+{
+  SCHEME_BOX_VAL(argv[0]) = argv[1];
+  return scheme_void;
 }
 
 /*========================================================================*/

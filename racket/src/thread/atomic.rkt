@@ -1,5 +1,6 @@
 #lang racket/base
-(require "engine.rkt"
+(require racket/private/place-local
+         "engine.rkt"
          "internal-error.rkt"
          "debug.rkt")
 
@@ -64,7 +65,7 @@
 
 ;; ----------------------------------------
 
-(define end-atomic-callback #f)
+(define-place-local end-atomic-callback #f)
 
 (define (set-end-atomic-callback! cb)
   (set! end-atomic-callback cb))

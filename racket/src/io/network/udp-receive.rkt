@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/private/place-local
+         "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"
          "../sandman/main.rkt"
@@ -120,8 +121,8 @@
                             cached-address-string))
                       (string->integer (bytes->string/utf-8 (cadr address))))])])))))
 
-(define cached-address-bytes #"")
-(define cached-address-string "")
+(define-place-local cached-address-bytes #"")
+(define-place-local cached-address-string "")
 
 ;; ----------------------------------------
 

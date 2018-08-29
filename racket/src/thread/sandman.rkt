@@ -1,5 +1,6 @@
 #lang racket/base
-(require "check.rkt"
+(require racket/private/place-local
+         "check.rkt"
          "tree.rkt"
          "internal-error.rkt"
          "sandman-struct.rkt")
@@ -107,21 +108,23 @@
   (unless (box-cas! box 1 0)
     (internal-error "Failed to release lock\n")))
 
-(define waiting-threads '())
-(define awoken-threads '())
+(define-place-local waiting-threads '())
+(define-place-local awoken-threads '())
 
 ;; ----------------------------------------
 ;; Default sandman implementation
 
 ;; A tree mapping times (in milliseconds) to a hash table of threads
 ;; to wake up at that time
-(define sleeping-threads empty-tree)
+(define-place-local sleeping-threads empty-tree)
 
 (define (min* a-sleep-until b-sleep-until)
   (if (and a-sleep-until b-sleep-until)
       (min a-sleep-until b-sleep-until)
       (or a-sleep-until b-sleep-until)))
 
+;; Sandman should not have place-local state itself, but
+;; it can access place-local state that's declared as such.
 (define the-sandman
   (sandman
    ;; sleep
