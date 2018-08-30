@@ -1270,7 +1270,8 @@
 
 (define the-foreign-guardian (make-guardian))
 
-;; Can be called in any host thread
+;; Can be called in any host thread, but all other
+;; threads are stopped
 (define (poll-foreign-guardian)
   (let ([v (the-foreign-guardian)])
     (when v
@@ -1287,8 +1288,8 @@
   (set! eval/foreign proc))
 
 ;; Cache generated code for an underlying foreign call or callable shape:
-(define ffi-expr->code (make-weak-hash))  ; expr to weak cell of code
-(define ffi-code->expr (make-weak-eq-hashtable)) ; keep exprs alive as long as code lives
+(define-thread-local ffi-expr->code (make-weak-hash))         ; expr to weak cell of code
+(define-thread-local ffi-code->expr (make-weak-eq-hashtable)) ; keep exprs alive as long as code lives
 
 (define/who ffi-call
   (case-lambda
@@ -1659,7 +1660,7 @@
         (let* ([code (make-code proc)]
                [cb (create-callback code)])
           (lock-object code)
-          (the-foreign-guardian cb (lambda () (unlock-object code)))
+          (with-global-lock (the-foreign-guardian cb (lambda () (unlock-object code))))
           cb)))]))
 
 ;; ----------------------------------------
@@ -1714,23 +1715,19 @@
 ;; ----------------------------------------
 
 (define process-global-table (make-hashtable equal-hash-code equal?))
-(define process-table-lock (make-mutex))
 
 (define (unsafe-register-process-global key val)
-  (with-interrupts-disabled
-   (mutex-acquire process-table-lock)
-   (let ([result (cond
-                  [(not val)
-                   (hashtable-ref process-global-table key #f)]
-                  [else
-                   (let ([old-val (hashtable-ref process-global-table key #f)])
-                     (cond
-                      [(not old-val)
-                       (hashtable-set! process-global-table key val)
-                       #f]
-                      [else old-val]))])])
-     (mutex-release process-table-lock)
-     result)))
+  (with-global-lock
+   (cond
+    [(not val)
+     (hashtable-ref process-global-table key #f)]
+    [else
+     (let ([old-val (hashtable-ref process-global-table key #f)])
+       (cond
+        [(not old-val)
+         (hashtable-set! process-global-table key val)
+         #f]
+        [else old-val]))])))
 
 ;; ----------------------------------------
 

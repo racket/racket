@@ -1,8 +1,8 @@
 ;; locking code for hash.ss
 
 (define make-scheduler-lock (lambda () #f))
-(define scheduler-lock-acquire (lambda (l) (void)))
-(define scheduler-lock-release (lambda (l) (void)))
+(define scheduler-lock-acquire (lambda (l) (#%void)))
+(define scheduler-lock-release (lambda (l) (#%void)))
 
 (define (set-scheduler-lock-callbacks! make acquire release)
   (set! make-scheduler-lock make)
@@ -37,7 +37,17 @@
   
   (define (lock-release lock)
     (when lock
-      (scheduler-lock-release lock)))]
+      (scheduler-lock-release lock)))
+
+  ;; Use `with-global-lock*` when no lock is needed absent threads
+  (define-syntax-rule (with-global-lock* e ...)
+    (begin e ...))
+
+  ;; Use `with-global-lock` when a lock is needed to prevent
+  ;; engine-based concurrency
+  (define-syntax-rule (with-global-lock e ...)
+    (with-interrupts-disabled
+     e))]
  [else
   ;; Using a Chez Scheme build with thread support; make hash-table
   ;; access thread-safe at that level for `eq?`- and `eqv?`-based
@@ -49,7 +59,7 @@
   ;; Assume low contention on `eq?`- and `eqv?`-based tables across
   ;; Chez Scheme threads, in which case a compare-and-set spinlock is
   ;; good enough.
-  ;; Taking a lock disables interrupts, whcih ensures that the GC
+  ;; Taking a lock disables interrupts, which ensures that the GC
   ;; callback or other atomic actions can use hash tables without
   ;; deadlocking.
   (define (make-spinlock) (box #f))
@@ -63,7 +73,7 @@
   (define (spinlock-release q)
     (#%set-box! q #f)
     (enable-interrupts)
-    (void))
+    (#%void))
 
   (define (make-lock for-kind)
     (cond
@@ -76,14 +86,14 @@
     (case-lambda
      [(lock)
       (cond
-       [(not lock) (void)]
+       [(not lock) (#%void)]
        [(spinlock? lock)
 	(spinlock-acquire lock)]
        [else
 	(scheduler-lock-acquire lock)])]
      [(lock block?)
       (cond
-       [(not lock) (void)]
+       [(not lock) (#%void)]
        [(spinlock? lock)
 	(spinlock-acquire lock block?)]
        [else
@@ -91,8 +101,18 @@
   
   (define (lock-release lock)
     (cond
-     [(not lock) (void)]
+     [(not lock) (#%void)]
      [(spinlock? lock)
       (spinlock-release lock)]
      [else
-      (scheduler-lock-release lock)]))])
+      (scheduler-lock-release lock)]))
+
+  (define global-lock (make-spinlock))
+  (define-syntax-rule (with-global-lock* e ...)
+    (with-global-lock e ...))
+  (define-syntax-rule (with-global-lock e ...)
+    (begin
+      (spinlock-acquire global-lock)
+      (begin0
+       (begin e ...)
+       (spinlock-release global-lock))))])

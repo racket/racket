@@ -2,16 +2,16 @@
 ;; Implements a variant of will executors with polling and a callback
 ;; for when a will becomes ready
 
-(define the-will-guardian (make-guardian))
-(define the-stubborn-will-guardian (make-guardian #t))
+(define-thread-local the-will-guardian (make-guardian))
+(define-thread-local the-stubborn-will-guardian (make-guardian #t))
 
 ;; Guardian callbacks are called fifo, but will executors are called
 ;; lifo. The `will-stacks` tables map a finalized value to a list
 ;; of finalizers, where each finalizer is an ephemeron pairing a will
 ;; executor with a will function (so that the function is not retained
 ;; if the will executor is dropped)
-(define the-will-stacks (make-weak-eq-hashtable))
-(define the-stubborn-will-stacks (make-weak-eq-hashtable))
+(define-thread-local the-will-stacks (make-weak-eq-hashtable))
+(define-thread-local the-stubborn-will-stacks (make-weak-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
   (fields guardian will-stacks (mutable ready) notify))

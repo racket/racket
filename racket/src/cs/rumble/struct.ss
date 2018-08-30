@@ -92,9 +92,10 @@
                                  pv))
                            (do-fail fail v)))])]
                   [(v) (acc v default-fail)])])
-         (hashtable-set! property-accessors
-                         acc
-                         (cons pred can-impersonate?))
+         (with-global-lock*
+          (hashtable-set! property-accessors
+                          acc
+                          (cons pred can-impersonate?)))
          (values st
                  pred
                  acc)))]))
@@ -102,14 +103,14 @@
 (define (struct-type-property-accessor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
-         (hashtable-ref property-accessors v #f))
+         (with-global-lock* (hashtable-ref property-accessors v #f)))
        #t))
 
 (define (struct-type-property-accessor-procedure-pred v)
-  (car (hashtable-ref property-accessors v #f)))
+  (car (with-global-lock (hashtable-ref property-accessors v #f))))
 
 (define (struct-type-property-accessor-procedure-can-impersonate? v)
-  (cdr (hashtable-ref property-accessors v #f)))
+  (cdr (with-global-lock* (hashtable-ref property-accessors v #f))))
 
 (define (struct-property-ref prop rtd default)
   (getprop (record-type-uid rtd) prop default))
@@ -360,44 +361,46 @@
 (define struct-field-mutators (make-ephemeron-eq-hashtable))
 
 (define (register-struct-constructor! p)
-  (hashtable-set! struct-constructors p #t))
+  (with-global-lock* (hashtable-set! struct-constructors p #t)))
 
 (define (register-struct-predicate! p)
-  (hashtable-set! struct-predicates p #t))
+  (with-global-lock* (hashtable-set! struct-predicates p #t)))
 
 (define (register-struct-field-accessor! p rtd pos)
-  (hashtable-set! struct-field-accessors p (cons rtd pos)))
+  (with-global-lock* (hashtable-set! struct-field-accessors p (cons rtd pos))))
 
 (define (register-struct-field-mutator! p rtd pos)
-  (hashtable-set! struct-field-mutators p (cons rtd pos)))
+  (with-global-lock* (hashtable-set! struct-field-mutators p (cons rtd pos))))
 
 (define (struct-constructor-procedure? v)
   (and (procedure? v)
-       (hashtable-ref struct-constructors (strip-impersonator v) #f)))
+       (let ([v (strip-impersonator v)])
+         (with-global-lock* (hashtable-ref struct-constructors v #f)))))
 
 (define (struct-predicate-procedure? v)
   (and (procedure? v)
-       (hashtable-ref struct-predicates (strip-impersonator v) #f)))
+       (let ([v (strip-impersonator v)])
+         (with-global-lock* (hashtable-ref struct-predicates v #f)))))
 
 (define (struct-accessor-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-accessor? v)
-             (hashtable-ref struct-field-accessors v #f)))
+             (with-global-lock* (hashtable-ref struct-field-accessors v #f))))
        #t))
 
 (define (struct-mutator-procedure? v)
   (and (procedure? v)
        (let ([v (strip-impersonator v)])
          (or (position-based-mutator? v)
-             (hashtable-ref struct-field-mutators v #f)))
+             (with-global-lock* (hashtable-ref struct-field-mutators v #f))))
        #t))
 
 (define (struct-accessor-procedure-rtd+pos v)
-  (hashtable-ref struct-field-accessors v #f))
+  (with-global-lock* (hashtable-ref struct-field-accessors v #f)))
 
 (define (struct-mutator-procedure-rtd+pos v)
-  (hashtable-ref struct-field-mutators v #f))
+  (with-global-lock* (hashtable-ref struct-field-mutators v #f)))
 
 ;; ----------------------------------------
 
@@ -498,7 +501,7 @@
         (let* ([parent-rtd* (strip-impersonator parent-rtd)]
                [parent-props
                 (if parent-rtd*
-                    (hashtable-ref rtd-props parent-rtd* '())
+                    (with-global-lock* (hashtable-ref rtd-props parent-rtd* '()))
                     '())]
                [all-immutables (if (integer? proc-spec)
                                    (cons proc-spec immutables)
@@ -508,12 +511,13 @@
             (record-type-equal-procedure rtd default-struct-equal?)
             (record-type-hash-procedure rtd default-struct-hash))
           ;; Record properties implemented by this type:
-          (hashtable-set! rtd-props rtd (let ([props (append (map car props) parent-props)])
-                                          (if proc-spec
-                                              (cons prop:procedure props)
-                                              props)))
+          (let ([props (let ([props (append (map car props) parent-props)])
+                         (if proc-spec
+                             (cons prop:procedure props)
+                             props))])
+            (with-global-lock* (hashtable-set! rtd-props rtd props)))
           (unless (equal? '#() mutables)
-            (hashtable-set! rtd-mutables rtd mutables))
+            (with-global-lock* (hashtable-set! rtd-mutables rtd mutables)))
           ;; Copy parent properties for this type:
           (for-each (lambda (prop)
                       (let loop ([prop prop])
@@ -548,9 +552,8 @@
      (prefab-key+count->rtd (cons prefab-key total*-count)))))
 
 (define (prefab-ref prefab-key+count)
-  (with-interrupts-disabled ; atomic access of `prefabs`
-   (and prefabs
-        (hash-ref prefabs prefab-key+count #f))))
+  (and prefabs
+       (hash-ref prefabs prefab-key+count #f)))
 
 (define (prefab-key+count->rtd prefab-key+count)
   (cond
@@ -575,16 +578,15 @@
                                              uid #f #f
                                              (make-fields total-count))]
            [mutables (prefab-key-mutables prefab-key)])
-      (with-interrupts-disabled
+      (with-global-lock
        (cond
         [(prefab-ref prefab-key+count)
          ;; rtd was created concurrently
          => (lambda (rtd) rtd)]
         [else
          (putprop uid 'prefab-key+count prefab-key+count)
-         (with-interrupts-disabled ; atomic use of `prefabs` table
-          (unless prefabs (set! prefabs (make-weak-hash)))
-          (hash-set! prefabs prefab-key+count rtd))
+         (unless prefabs (set! prefabs (make-weak-hash)))
+         (hash-set! prefabs prefab-key+count rtd)
          (unless parent-rtd
            (record-type-equal-procedure rtd default-struct-equal?)
            (record-type-hash-procedure rtd default-struct-hash))
@@ -722,7 +724,7 @@
                             auto-count
                             (make-position-based-accessor rtd* parent-total*-count (+ init-count auto-count))
                             (make-position-based-mutator rtd* parent-total*-count (+ init-count auto-count))
-                            (mutables->immutables (hashtable-ref rtd-mutables rtd* '#()) init-count)
+                            (mutables->immutables (with-global-lock* (hashtable-ref rtd-mutables rtd* '#())) init-count)
                             next-rtd*
                             skipped?))])
           (cond
@@ -884,7 +886,7 @@
 ;; ----------------------------------------
 
 (define (struct-type-field-mutable? rtd pos)
-  (let ([mutables (hashtable-ref rtd-mutables rtd '#())])
+  (let ([mutables (with-global-lock* (hashtable-ref rtd-mutables rtd '#()))])
     (let loop ([j (#%vector-length mutables)])
       (cond
        [(fx= j 0) #f]

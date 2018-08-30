@@ -32,7 +32,7 @@
    (define-syntax define
      (syntax-rules ()
        [(_ id rhs) (set! id rhs)]))
-   
+
    (check #t (thread? (current-thread)))
    (check #t (evt? (current-thread)))
    (define s (make-semaphore))

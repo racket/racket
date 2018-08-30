@@ -58,5 +58,5 @@
     (and
      ;; Having an entry in `rtd-props` is a sign that
      ;; this structure type was created with `make-struct-type`:
-     (hashtable-contains? rtd-props rtd)
+     (with-global-lock* (hashtable-contains? rtd-props rtd))
      (object-name (record-rtd v)))))

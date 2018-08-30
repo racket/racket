@@ -8,12 +8,13 @@
 (define/who (string->keyword s)
   (check who string? s)
   (let ([sym (string->symbol s)])
-    (let ([e (eq-hashtable-ref keywords sym #f)])
-      (or (and e
-               (ephemeron-value e))
-          (let ([kw (make-keyword sym)])
-            (eq-hashtable-set! keywords sym (make-ephemeron sym kw))
-            kw)))))
+    (with-global-lock
+     (let ([e (eq-hashtable-ref keywords sym #f)])
+       (or (and e
+                (ephemeron-value e))
+           (let ([kw (make-keyword sym)])
+             (eq-hashtable-set! keywords sym (make-ephemeron sym kw))
+             kw))))))
 
 (define/who (keyword->string kw)
   (check who keyword? kw)

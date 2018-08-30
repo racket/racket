@@ -6,7 +6,7 @@
 ;; Detect cycles using the same `slow` tortoise that is used for
 ;; caching.
 
-(define lists (make-weak-eq-hashtable))
+(define-thread-local lists (make-weak-eq-hashtable))
 
 (define (list? v)
   (let loop ([v v] [depth 0])

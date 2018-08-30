@@ -240,6 +240,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/hash.ss \
               rumble/datum.ss \
 	      rumble/lock.ss \
+	      rumble/thread-local.ss \
               rumble/thread-cell.ss \
               rumble/parameter.ss \
               rumble/begin0.ss \
