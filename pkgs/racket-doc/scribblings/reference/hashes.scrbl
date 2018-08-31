@@ -262,7 +262,7 @@ result:
 
 @see-also-caveats[]}
 
-@defproc[(hash-ref! [hash hash?] [key any/c] [to-set any/c])
+@defproc[(hash-ref! [hash hash?] [key any/c] [to-set (failure-result/c any/c)])
          any]{
 
 Returns the value for @racket[key] in @racket[hash].  If no value is
