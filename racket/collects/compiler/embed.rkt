@@ -620,7 +620,9 @@
                                     (if (is-lib-path? module-path)
                                         ;; Preserve `lib`-ness of module reference:
                                         (collapse-module-path-index
-                                         (module-path-index-join mp module-path))
+                                         (module-path-index-join
+                                          mp
+                                          (module-path-index-join module-path #f)))
                                         ;; Ok to collapse based on filename:
                                         (collapse-module-path-index mpi filename))
                                     m))
