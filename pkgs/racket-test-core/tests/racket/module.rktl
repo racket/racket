@@ -648,6 +648,18 @@
             module->language-info 'tests/racket/langm))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The default module name resolver invents an uninterned symbol as a
+;; module name when resolving a submodule for a base path where the
+;; *collection* can't even be found for making a potential path name.
+
+(let ([m (module-path-index-resolve
+          (module-path-index-join '(submod no-such-collection/x nested) #f))])
+  (test #f symbol-interned? (car (resolved-module-path-name m)))
+  (test '(nested) cdr (resolved-module-path-name m)))
+
+(test #f module-declared? '(submod no-such-collection/x nested) #t)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check shadowing of initial imports:
 
 (let ([m-code '(module m racket/base (define-syntax-rule (lambda . _) 5) (provide lambda))]

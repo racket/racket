@@ -50,10 +50,20 @@ created executable. Such modules can be explicitly included using the
 @racket[define-runtime-path] to embed references to the run-time files
 in the executable; the files are then copied and packaged together
 with the executable when creating a distribution (as described in
-@secref["exe-dist"]). Finally, a submodule is included if its
+@secref["exe-dist"]). A submodule is included if its
 enclosing module is included and the submodule contains a
 sub-submodule named @racketidfont{declare-preserve-for-embedding}
 (where the implementation of the sub-submodule is ignored).
+
+Language reader modules that are used only via @hash-lang[] are also
+not automatically embedded. To support dynamic use of @hash-lang[]
+with a language specifcation, supply the @DPFlag{lang} flag to
+@exec{raco exe}. The argument after @DPFlag{lang} can be a language
+name, but more generally it can be text to appear just after
+@hash-lang[]. For example, @litchar{at-exp racket/base} makes sense as
+an argument to @DPFlag{lang} to allow @racketmodname[at-exp] combined
+with @racketmodname[racket/base] as a language for dynamically loaded
+modules.
 
 Modules that are implemented directly by extensions---i.e., extensions
 that are automatically loaded from @racket[(build-path "compiled"
@@ -169,6 +179,19 @@ The @exec{raco exe} command accepts the following command-line flags:
    in the executable, even if it is not referenced by the main program,
    so that it is available via @racket[dynamic-require].}
 
+ @item{@DPFlag{lang} @nonterm{lang} --- include modules needed to load
+   modules starting @racket[@#,hash-lang[] @#,nonterm{lang}]
+   dynamically. The @nonterm{lang} does not have to be a plain
+   language or module name; it might be a more general text sequence,
+   such as @litchar{at-exp racket/base} to support language
+   constructors like @racketmodname[at-exp].
+   The initial @racket[require] for a @racket[module] read as
+   @nonterm{lang} must be available though the language reader's
+   @racketidfont{get-info} function and the @racket['module-language]
+   key; languages implemented with
+   @racketmodname[syntax/module-reader] support that key
+   automatically.}
+
  @item{@DPFlag{exf} @nonterm{flag} --- provide the @nonterm{flag}
    command-line argument on startup to the embedded @exec{racket} or
    @exec{gracket}.}
@@ -193,7 +216,8 @@ The @exec{raco exe} command accepts the following command-line flags:
 
 @history[#:changed "6.3.0.11" @elem{Added support for
                                     @racketidfont{declare-preserve-for-embedding}.}
-         #:changed "6.90.0.23" @elem{Added @DFlag{embed-dlls}.}]
+         #:changed "6.90.0.23" @elem{Added @DFlag{embed-dlls}.}
+         #:changed "7.0.0.17" @elem{Added @DPFlag{lang}.}]
 
 @; ----------------------------------------------------------------------
 

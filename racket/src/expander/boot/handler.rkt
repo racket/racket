@@ -392,6 +392,13 @@
                                              msg
                                              (current-continuation-marks)
                                              s)))))]
+              [invent-collection-dir (lambda (f-file col col-path fail)
+                                       (lambda (msg)
+                                         ;; No such module => make a module-name symbol that
+                                         ;; certainly isn't declared
+                                         (string->uninterned-symbol
+                                          (path->string
+                                           (build-path (apply build-path col col-path) f-file)))))]
               [ss->rkt (lambda (s)
                          (let ([len (string-length s)])
                            (if (and (len . >= . 3)
@@ -442,17 +449,27 @@
                                    #f))
                              #f)])
           (let ([s-parsed
-                 ;; Non-string result represents an error
+                 ;; Non-string, non-vector result represents an error, but
+                 ;; a symbol result is a special kind of error for the purposes
+                 ;; of dealing with a submodule path when there's no such
+                 ;; collection
                  (cond
                    [(symbol? s)
                     (or (path-cache-get (cons s (get-reg)))
                         (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                           (let* ([f-file (if (null? cols)
                                              "main.rkt"
-                                             (string-append file ".rkt"))])
-                            (find-col-file show-collection-err
-                                           (if (null? cols) file (car cols))
-                                           (if (null? cols) null (cdr cols))
+                                             (string-append file ".rkt"))]
+                                 [col (if (null? cols) file (car cols))]
+                                 [col-path (if (null? cols) null (cdr cols))])
+                            (find-col-file (if (not subm-path)
+                                               show-collection-err
+                                               ;; Invent a fictional collection directory, if necessary,
+                                               ;; so that we don't raise an exception:
+                                               (invent-collection-dir f-file col col-path
+                                                                      show-collection-err))
+                                           col
+                                           col-path
                                            f-file
                                            #t))))]
                    [(string? s)
@@ -511,125 +528,132 @@
                     ;; Use filesystem-sensitive `simplify-path' here:
                     (path-ss->rkt 
                      (simplify-path (path->complete-path (expand-user-path (cadr s)) (get-dir))))])])
-            (unless (or (path? s-parsed)
-                        (vector? s-parsed))
-              (if stx
-                  (raise-syntax-error
-                   'require
-                   (format "bad module path~a" (if s-parsed
-                                                   (car s-parsed)
-                                                   ""))
-                   stx)
-                  (raise-argument-error 
-                   'standard-module-name-resolver
-                   "module-path?"
-                   s)))
-            ;; At this point, s-parsed is a complete path (or a cached vector)
-            (let* ([filename (if (vector? s-parsed)
-                                 (vector-ref s-parsed 0)
-                                 (simplify-path (cleanse-path s-parsed) #f))]
-                   [normal-filename (if (vector? s-parsed)
-                                        (vector-ref s-parsed 1)
-                                        (normal-case-path filename))])
-              (let-values ([(base name dir?) (if (vector? s-parsed)
-                                                 (values 'ignored (vector-ref s-parsed 2) 'ignored)
-                                                 (split-path filename))])
-                (let* ([no-sfx (if (vector? s-parsed)
-                                   (vector-ref s-parsed 3)
-                                   (path-replace-extension name #""))])
-                  (let* ([root-modname (if (vector? s-parsed)
-                                           (vector-ref s-parsed 4)
-                                           (make-resolved-module-path filename))]
-                         [hts (or (registry-table-ref (get-reg))
-                                  (let ([hts (cons (make-hasheq) (make-hasheq))])
-                                    (registry-table-set! (get-reg)
-                                                         hts)
-                                    hts))]
-                         [modname (if subm-path
-                                      (make-resolved-module-path 
-                                       (cons (resolved-module-path-name root-modname)
-                                             subm-path))
-                                      root-modname)])
-                    ;; Loaded already?
-                    (when load?
-                      (let ([got (hash-ref (car hts) modname #f)])
-                        (unless got
-                          ;; Currently loading?
-                          (let ([loading
-                                 (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
-                                                -loading-prompt-tag
-                                                (default-continuation-prompt-tag))])
-                                   (continuation-mark-set-first
-                                    #f
-                                    -loading-filename
-                                    null
-                                    tag))]
-                                [nsr (get-reg)])
-                            (for-each
-                             (lambda (s)
-                               (when (and (equal? (cdr s) normal-filename)
-                                          (eq? (car s) nsr))
-                                 (error
-                                  'standard-module-name-resolver
-                                  "cycle in loading\n  at path: ~a\n  paths:~a"
-                                  filename
-                                  (apply string-append
-                                         (let loop ([l (reverse loading)])
-                                           (if (null? l)
-                                               '()
-                                               (list* "\n   " (path->string (cdar l)) (loop (cdr l)))))))))
-                             loading)
-                            ((if (continuation-prompt-available? -loading-prompt-tag)
-                                 (lambda (f) (f))
-                                 (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
-                             (lambda ()
-                               (with-continuation-mark -loading-filename (cons (cons nsr normal-filename)
-                                                                               loading)
-                                                       (parameterize ([current-module-declare-name root-modname]
-                                                                      [current-module-path-for-load
-                                                                       ;; If `s' is an absolute module path, then
-                                                                       ;; keep it as-is, the better to let a tool
-                                                                       ;; recommend how to get an unavailable module;
-                                                                       ;; also, propagate the source location.
-                                                                       ((if stx
-                                                                            (lambda (p) (datum->syntax #f p stx))
-                                                                            values)
-                                                                        (cond
-                                                                          [(symbol? s) s]
-                                                                          [(and (pair? s) (eq? (car s) 'lib)) s]
-                                                                          [else (if (resolved-module-path? root-modname)
-                                                                                    (let ([src (resolved-module-path-name root-modname)])
-                                                                                      (if (symbol? src)
-                                                                                          (list 'quote src)
-                                                                                          src))
-                                                                                    root-modname)]))])
-                                                         ((current-load/use-compiled) 
-                                                          filename 
-                                                          (let ([sym (string->symbol (path->string no-sfx))])
-                                                            (if subm-path
-                                                                (if (hash-ref (car hts) root-modname #f)
-                                                                    ;; Root is already loaded, so only use .zo
-                                                                    (cons #f subm-path)
-                                                                    ;; Root isn't loaded, so it's ok to load form source:
-                                                                    (cons sym subm-path))
-                                                                sym)))))))))))
-                    ;; If a `lib' path, cache pathname manipulations
-                    (when (and (not (vector? s-parsed))
-                               load?
-                               (or (string? s)
-                                   (symbol? s)
-                                   (and (pair? s)
-                                        (eq? (car s) 'lib))))
-                      (path-cache-set! (if (string? s)
-                                           (cons s (get-dir))
-                                           (cons s (get-reg)))
-                                       (vector filename
-                                               normal-filename
-                                               name
-                                               no-sfx
-                                               root-modname)))
-                    ;; Result is the module name:
-                    modname))))))])]))
+            (cond
+              [(symbol? s-parsed)
+               ;; Return a genenerated symnol
+               (make-resolved-module-path 
+                (cons s-parsed subm-path))]
+              [(not (or (path? s-parsed)
+                        (vector? s-parsed)))
+               (if stx
+                   (raise-syntax-error
+                    'require
+                    (format "bad module path~a" (if s-parsed
+                                                    (car s-parsed)
+                                                    ""))
+                    stx)
+                   (raise-argument-error 
+                    'standard-module-name-resolver
+                    "module-path?"
+                    s))]
+              [else
+               ;; At this point, s-parsed is a complete path (or a cached vector)
+               (define filename (if (vector? s-parsed)
+                                    (vector-ref s-parsed 0)
+                                    (simplify-path (cleanse-path s-parsed) #f)))
+               (define normal-filename (if (vector? s-parsed)
+                                           (vector-ref s-parsed 1)
+                                           (normal-case-path filename)))
+               (define-values (base name dir?) (if (vector? s-parsed)
+                                                   (values 'ignored (vector-ref s-parsed 2) 'ignored)
+                                                   (split-path filename)))
+               (define no-sfx (if (vector? s-parsed)
+                                  (vector-ref s-parsed 3)
+                                  (path-replace-extension name #"")))
+               (define root-modname (if (vector? s-parsed)
+                                        (vector-ref s-parsed 4)
+                                        (make-resolved-module-path filename)))
+               (define hts (or (registry-table-ref (get-reg))
+                               (let ([hts (cons (make-hasheq) (make-hasheq))])
+                                 (registry-table-set! (get-reg)
+                                                      hts)
+                                 hts)))
+               (define modname (if subm-path
+                                   (make-resolved-module-path 
+                                    (cons (resolved-module-path-name root-modname)
+                                          subm-path))
+                                   root-modname))
+               ;; Loaded already?
+               (when load?
+                 (let ([got (hash-ref (car hts) modname #f)])
+                   (unless got
+                     ;; Currently loading?
+                     (let ([loading
+                            (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
+                                           -loading-prompt-tag
+                                           (default-continuation-prompt-tag))])
+                              (continuation-mark-set-first
+                               #f
+                               -loading-filename
+                               null
+                               tag))]
+                           [nsr (get-reg)])
+                       (for-each
+                        (lambda (s)
+                          (when (and (equal? (cdr s) normal-filename)
+                                     (eq? (car s) nsr))
+                            (error
+                             'standard-module-name-resolver
+                             "cycle in loading\n  at path: ~a\n  paths:~a"
+                             filename
+                             (apply string-append
+                                    (let loop ([l (reverse loading)])
+                                      (if (null? l)
+                                          '()
+                                          (list* "\n   " (path->string (cdar l)) (loop (cdr l)))))))))
+                        loading)
+                       ((if (continuation-prompt-available? -loading-prompt-tag)
+                            (lambda (f) (f))
+                            (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
+                        (lambda ()
+                          (with-continuation-mark
+                           -loading-filename (cons (cons nsr normal-filename)
+                                                   loading)
+                           (parameterize ([current-module-declare-name root-modname]
+                                          [current-module-path-for-load
+                                           ;; If `s' is an absolute module path, then
+                                           ;; keep it as-is, the better to let a tool
+                                           ;; recommend how to get an unavailable module;
+                                           ;; also, propagate the source location.
+                                           ((if stx
+                                                (lambda (p) (datum->syntax #f p stx))
+                                                values)
+                                            (cond
+                                              [(symbol? s) s]
+                                              [(and (pair? s) (eq? (car s) 'lib)) s]
+                                              [else (if (resolved-module-path? root-modname)
+                                                        (let ([src (resolved-module-path-name root-modname)])
+                                                          (if (symbol? src)
+                                                              (list 'quote src)
+                                                              src))
+                                                        root-modname)]))])
+                             ((current-load/use-compiled) 
+                              filename 
+                              (let ([sym (string->symbol (path->string no-sfx))])
+                                (if subm-path
+                                    (if (hash-ref (car hts) root-modname #f)
+                                        ;; Root is already loaded, so only use .zo
+                                        (cons #f subm-path)
+                                        ;; Root isn't loaded, so it's ok to load form source:
+                                        (cons sym subm-path))
+                                    sym)))))))))))
+               ;; If a `lib' path, cache pathname manipulations
+               (when (and (not (vector? s-parsed))
+                          load?
+                          (or (string? s)
+                              (symbol? s)
+                              (and (pair? s)
+                                   (eq? (car s) 'lib))))
+                 (path-cache-set! (if (string? s)
+                                      (cons s (get-dir))
+                                      (cons s (get-reg)))
+                                  (vector filename
+                                          normal-filename
+                                          name
+                                          no-sfx
+                                          root-modname)))
+               ;; Result is the module name:
+               modname])))])]))
 
 (define default-eval-handler
   (lambda (s)

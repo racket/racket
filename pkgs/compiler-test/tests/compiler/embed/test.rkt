@@ -505,7 +505,7 @@
                            ;; scope:
                            (member "compatibility-lib"
                                    (installed-pkg-names #:scope 'installation)))
-  
+
     (void)))
 
 (define (try-mzc)
@@ -629,6 +629,23 @@
 
 ;; ----------------------------------------
 
+(define (try-lang)
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++lang" "racket/base"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me32.rkt")))
+  (try-exe (mk-dest #f) "This is 32.\n" #f)
+  
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++lang" "at-exp racket/base"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me33.rkt")))
+  (try-exe (mk-dest #f) "This is 33.\n" #f))
+
+;; ----------------------------------------
+
 (define (try-source)
   (define (try-one file submod start result)
     (define mred? #f)
@@ -731,6 +748,7 @@
   (try-extension))
 (try-gracket)
 (try-reader)
+(try-lang)
 (try-planet)
 (try-*sl)
 (try-source)

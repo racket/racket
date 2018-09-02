@@ -163,6 +163,16 @@ the cache only when the fourth argument to the module name resolver is
 true (indicating that a module should be loaded) and only when loading
 succeeds.
 
+Finally, the default module name resolver potentially treats a
+@racket[submod] path specially. If the module path as the first
+element of the @racket[submod] form refers to non-existent collection,
+then instead of raising an exception, the default module name resolver
+synthesizes an uninterned symbol module name for the resulting
+@tech{resolved module path}. This special treatment of submodule paths
+is consistent with the special treatment of nonexistent submodules by
+the @tech{compiled-load handler}, so that @racket[module-declared?]
+can be used more readily to check for the existence of a submodule.
+
 Module loading is suppressed (i.e., @racket[#f] is supplied as a fourth
 argument to the module name resolver) when resolving module paths in
 @tech{syntax objects} (see @secref["stxobj-model"]). When a
@@ -178,7 +188,11 @@ arguments will be removed in a future version.
 
 @history[#:changed "6.0.1.12" 
          @elem{Added error logging to the default module name resolver
-               when called with three arguments.}]}
+               when called with three arguments.}
+         #:changed "7.0.0.17"
+         @elem{Added special treatment of @racket[submod] forms with a
+               nonexistent collection by the default module name
+               resolver.}]}
 
 
 @defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{

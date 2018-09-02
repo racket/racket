@@ -4,7 +4,8 @@
          compiler/private/embed
          launcher/launcher
          dynext/file
-         setup/dirs)
+         setup/dirs
+         "../private/language.rkt")
 
 (define verbose (make-parameter #f))
 (define very-verbose (make-parameter #f))
@@ -16,6 +17,7 @@
 (define exe-output (make-parameter #f))
 (define exe-embedded-flags (make-parameter '("-U" "--")))
 (define exe-embedded-libraries (make-parameter null))
+(define exe-embedded-languages (make-parameter null))
 (define exe-aux (make-parameter null))
 (define exe-embedded-config-path (make-parameter "etc"))
 (define exe-embedded-collects-path (make-parameter null))
@@ -69,6 +71,8 @@
       (exe-aux (append auxes (exe-aux))))]
    [("++lib") lib "Embed <lib> in executable"
     (exe-embedded-libraries (append (exe-embedded-libraries) (list lib)))]
+   [("++lang") lang "Embed support for `#lang <lang>` in executable"
+    (exe-embedded-languages (append (exe-embedded-languages) (list lang)))]
    [("++exf") flag "Add flag to embed in executable"
     (exe-embedded-flags (append (exe-embedded-flags) (list flag)))]
    [("--exf") flag "Remove flag to embed in executable"
@@ -130,8 +134,13 @@
      #:variant (variant)
      #:verbose? (very-verbose)
      #:modules (cons `(#%mzc: (file ,source-file) (main configure-runtime))
-                     (map (lambda (l) `(#t (lib ,l)))
-                          (exe-embedded-libraries)))
+                     (append
+                      (map (lambda (l) `(#t (lib ,l)))
+                           (exe-embedded-libraries))
+                      (map (lambda (mod) `(#t ,mod))
+                           (languages->libraries
+                            (exe-embedded-languages)
+                            #:who (string->symbol (short-program+command-name))))))
      #:configure-via-first-module? #t
      #:early-literal-expressions
      (parameterize ([current-namespace (make-base-namespace)])
