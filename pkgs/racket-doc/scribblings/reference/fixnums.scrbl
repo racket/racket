@@ -77,13 +77,13 @@ result would not be a fixnum.
 
 
 @deftogether[(
-@defproc[(fx=   [a fixnum?] ...) boolean?]
-@defproc[(fx<   [a fixnum?] ...) boolean?]
-@defproc[(fx>   [a fixnum?] ...) boolean?]
-@defproc[(fx<=  [a fixnum?] ...) boolean?]
-@defproc[(fx>=  [a fixnum?] ...) boolean?]
-@defproc[(fxmin [a fixnum?] ...) fixnum?]
-@defproc[(fxmax [a fixnum?] ...) fixnum?]
+@defproc[(fx=   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(fx<   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(fx>   [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(fx<=  [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(fx>=  [a fixnum?] [b fixnum?] ...) boolean?]
+@defproc[(fxmin [a fixnum?] [b fixnum?] ...) fixnum?]
+@defproc[(fxmax [a fixnum?] [b fixnum?] ...) fixnum?]
 )]{
 
 Safe versions of @racket[unsafe-fx=], @racket[unsafe-fx<],
