@@ -1,14 +1,14 @@
 #lang racket/base
 (require "check.rkt"
          (submod "thread.rkt" scheduling)
-         (prefix-in engine: "engine.rkt"))
+         (prefix-in host: "host.rkt"))
 
 (provide current-process-milliseconds
          set-get-subprocesses-time!)
 
 (define/who (current-process-milliseconds [scope #f])
   (cond
-    [(not scope) (engine:current-process-milliseconds)]
+    [(not scope) (host:current-process-milliseconds)]
     [(thread? scope) (thread-cpu-time scope)]
     [(eq? scope 'subprocesses) (get-subprocesses-time)]
     [else

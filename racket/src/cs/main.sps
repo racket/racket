@@ -488,7 +488,8 @@
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
-      (dynamic-require mod sym)))
+      (lambda ()
+        (dynamic-require mod sym))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler

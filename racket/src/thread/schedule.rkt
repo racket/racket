@@ -1,7 +1,7 @@
 #lang racket/base
-(require racket/private/place-local
+(require "place-local.rkt"
          "atomic.rkt"
-         "engine.rkt"
+         "host.rkt"
          "internal-error.rkt"
          "sandman.rkt"
          "parameter.rkt"

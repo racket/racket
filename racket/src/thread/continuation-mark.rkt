@@ -1,7 +1,7 @@
 #lang racket/base
 (require "check.rkt"
          (submod "thread.rkt" scheduling)
-         "engine.rkt")
+         "host.rkt")
 
 (provide continuation-marks)
 

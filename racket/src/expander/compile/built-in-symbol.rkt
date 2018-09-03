@@ -48,18 +48,18 @@
 
    ;; Linklet compilation on Chez Scheme 
    (for-each register-built-in-symbol!
-             '(let
-                  letrec*
-                define
-                or
-                and
-                pariah
-                variable-set!
-                variable-ref
-                variable-ref/no-check
-                make-instance-variable-reference
-                annotation?
-                annotation-expression
-                #%app
-                #%call-with-values
-                make-pthread-parameter))))
+             '(or
+               and
+               let
+               letrec*
+               define
+               pariah
+               variable-set!
+               variable-ref
+               variable-ref/no-check
+               make-instance-variable-reference
+               annotation?
+               annotation-expression
+               #%app
+               #%call-with-values
+               make-pthread-parameter))))

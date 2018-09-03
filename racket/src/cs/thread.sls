@@ -26,6 +26,8 @@
                   [mutex-acquire rumble:mutex-acquire]
                   [mutex-release rumble:mutex-release]
                   [pthread? rumble:thread?]
+                  [fork-place rumble:fork-place]
+                  [start-place rumble:start-place]
                   [fork-pthread rumble:fork-thread]
                   [threaded? rumble:threaded?]
                   [get-thread-id rumble:get-thread-id]
@@ -39,7 +41,8 @@
   ;; Special handling of `current-atomic`: use the last virtual register;
   ;; we rely on the fact that the register's default value is 0.
   (define-syntax (define stx)
-    (syntax-case stx (current-atomic make-pthread-parameter)
+    (syntax-case stx (current-atomic make-pthread-parameter unsafe-make-place-local)
+      ;; Recognize definition of `current-atomic`:
       [(_ current-atomic (make-pthread-parameter 0))
        (with-syntax ([(_ id _) stx]
                      [n (datum->syntax #'here (sub1 (virtual-register-count)))])
@@ -47,6 +50,9 @@
              (syntax-rules ()
                [(_) (virtual-register n)]
                [(_ v) (set-virtual-register! n v)])))]
+      ;; Workaround for redirected access of `unsafe-make-place-local` from engine:
+      [(_ alias-id unsafe-make-place-local) #'(begin)]
+      ;; Chain to place-register handling:
       [(_ . rest) #'(place:define . rest)]))
 
   (define (exit n)
@@ -67,7 +73,13 @@
        ;; expander, and they need to be listed in
        ;; "primitives/internal.ss".
        (hash
-        'make-pthread-parameter make-pthread-parameter)]
+        'make-pthread-parameter make-pthread-parameter
+        ;; These are actually redirected by "place-register.ss", but
+        ;; we list them here for compatibility with the bootstrapping
+        ;; variant of `#%pthread`
+        'unsafe-make-place-local rumble:unsafe-make-place-local
+        'unsafe-place-local-ref rumble:unsafe-place-local-ref
+        'unsafe-place-local-set! rumble:unsafe-place-local-set!)]
       [(|#%engine|)
        (hash
         'make-engine rumble:make-engine
@@ -93,6 +105,8 @@
         'poll-async-callbacks poll-async-callbacks
         'disable-interrupts disable-interrupts
         'enable-interrupts enable-interrupts
+        'fork-place rumble:fork-place
+        'start-place rumble:start-place
         'fork-pthread rumble:fork-thread
         'pthread? rumble:thread?
         'get-thread-id rumble:get-thread-id

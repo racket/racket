@@ -24,7 +24,10 @@
 ;; This `#%pthread` table's entries are linked more directly
 ;; than `#%engine` entries:
 (bounce #%pthread
-        make-pthread-parameter)
+        make-pthread-parameter
+        unsafe-make-place-local
+        unsafe-place-local-ref
+        unsafe-place-local-set!)
 
 (bounce #%engine
         make-engine
@@ -62,6 +65,9 @@
         ;; disables interrupts can be used from a GC handler.
         [disable-interrupts host:disable-interrupts]
         [enable-interrupts host:enable-interrupts]
+
+        [fork-place host:fork-place]
+        [start-place host:start-place]
 
         fork-pthread
         pthread?

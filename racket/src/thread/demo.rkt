@@ -500,6 +500,12 @@
    (thread (lambda () (sync (system-idle-evt)) (collect-garbage)))
    (check #t (symbol? (will-execute we)))
 
+   ;; Check places, where the various export symbols passed to
+   ;; `dynamic-place` are built into "bootstrap.rkt"
+   (define pl (dynamic-place 'dummy 'no-op #f #f #f))
+   (check #t (place? pl))
+   (sleep 1)
+
    (set! done? #t)))
 
 (unless done?

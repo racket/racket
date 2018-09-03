@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/private/place-local
+(require "place-local.rkt"
          "check.rkt"
          "internal-error.rkt"
          "atomic.rkt")

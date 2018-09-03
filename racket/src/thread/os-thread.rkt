@@ -1,6 +1,6 @@
 #lang racket/base
 (require "check.rkt"
-         "engine.rkt"
+         "host.rkt"
          "atomic.rkt")
 
 (provide unsafe-os-thread-enabled?

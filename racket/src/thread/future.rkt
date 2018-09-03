@@ -1,9 +1,9 @@
 #lang racket/base
 
-(require racket/private/place-local
+(require "place-local.rkt"
          "check.rkt"
          "internal-error.rkt"
-         "engine.rkt"
+         "host.rkt"
          "atomic.rkt"
          "parameter.rkt"
          "../common/queue.rkt"

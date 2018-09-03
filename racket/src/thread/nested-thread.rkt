@@ -1,7 +1,7 @@
 #lang racket/base
 (require "check.rkt"
          "atomic.rkt"
-         "engine.rkt"
+         "host.rkt"
          "thread.rkt"
          (except-in (submod "thread.rkt" scheduling)
                     thread

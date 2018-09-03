@@ -140,9 +140,34 @@
     [() x]
     [(v) (set! x v)]))
 
+(define place-local-table (make-thread-cell (make-hasheq)))
+
+(define (unsafe-make-place-local v)
+  (define key (vector v 'place-locale))
+  (hash-set! (thread-cell-ref place-local-table) key v)
+  key)
+
+(define (unsafe-place-local-ref key)
+  (hash-ref (thread-cell-ref place-local-table) key (vector-ref key 0)))
+
+(define (unsafe-place-local-set! key val)
+  (hash-set! (thread-cell-ref place-local-table) key val))
+
+(define (fork-place thunk)
+  (thread (lambda ()
+            (thread-cell-set! place-local-table (make-hasheq))
+            (thunk))))
+
+(define (start-place mod sym in out err)
+  (lambda (finish)
+    (void)))
+
 (primitive-table '#%pthread
                  (hash
-                  'make-pthread-parameter make-pthread-parameter))
+                  'make-pthread-parameter make-pthread-parameter
+                  'unsafe-make-place-local unsafe-make-place-local
+                  'unsafe-place-local-ref unsafe-place-local-ref
+                  'unsafe-place-local-set! unsafe-place-local-set!))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
@@ -168,6 +193,8 @@
                   'poll-async-callbacks (lambda () null)
                   'disable-interrupts void
                   'enable-interrupts void
+                  'fork-place fork-place
+                  'start-place start-place
                   'fork-pthread (lambda args
                                   (error "fork-pthread: not ready"))
                   'pthread? (lambda args
