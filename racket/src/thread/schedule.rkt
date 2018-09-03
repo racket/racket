@@ -10,14 +10,18 @@
          (submod "thread.rkt" scheduling)
          "system-idle-evt.rkt"
          "exit.rkt"
-         "future.rkt")
+         "future.rkt"
+         "custodian.rkt"
+         (submod "custodian.rkt" scheduling))
 
 ;; Many scheduler details are implemented in "thread.rkt", but this
 ;; module handles the thread selection, thread swapping, and
 ;; process sleeping.
 
 (provide call-in-main-thread
-         set-atomic-timeout-callback!)
+         call-in-another-main-thread
+         set-atomic-timeout-callback!
+         set-check-place-break!)
 
 (define TICKS 100000)
 
@@ -28,6 +32,12 @@
   (make-initial-thread thunk)
   (select-thread!))
 
+;; Initializes the thread system in a new place:
+(define (call-in-another-main-thread c thunk)
+  (make-another-initial-thread-group)
+  (set-root-custodian! c)
+  (call-in-main-thread thunk))
+
 ;; ----------------------------------------
 
 (define (select-thread! [pending-callbacks null])
@@ -37,6 +47,7 @@
                           pending-callbacks))
     (host:poll-will-executors)
     (check-external-events 'fast)
+    (check-place-break)
     (when (and (null? callbacks)
                (all-threads-poll-done?)
                (waiting-on-external-or-idle?))
@@ -219,3 +230,9 @@
   (begin0
     atomic-timeout-callback
     (set! atomic-timeout-callback cb)))
+
+;; ----------------------------------------
+
+(define check-place-break void)
+(define (set-check-place-break! proc)
+  (set! check-place-break proc))

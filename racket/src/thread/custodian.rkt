@@ -28,6 +28,11 @@
          raise-custodian-is-shut-down
          set-post-shutdown-action!)
 
+(module+ scheduling
+  (provide do-custodian-shutdown-all
+           set-root-custodian!
+           create-custodian))
+
 (struct custodian (children     ; weakly maps maps object to callback
                    [shut-down? #:mutable]
                    [shutdown-sema #:mutable]
@@ -59,13 +64,18 @@
              #f ; shutdown semaphore
              #f))
   
-(define root-custodian (create-custodian))
+(define-place-local root-custodian (create-custodian))
 
 (define/who current-custodian
   (make-parameter root-custodian
                   (lambda (v)
                     (check who custodian? v)
                     v)))
+
+;; To initialize a new place:
+(define (set-root-custodian! c)
+  (set! root-custodian c)
+  (current-custodian c))
 
 (define/who (make-custodian [parent (current-custodian)])
   (check who custodian? parent)

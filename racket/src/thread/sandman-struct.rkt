@@ -15,6 +15,9 @@
                  do-poll            ; <mode> (thread -> any) -> (void), calls function on any thread to wake up
                  ;                    where <mode> is 'fast or 'slow
 
+                 do-get-wakeup      ; -> <wakeup-handle>, identifies current place
+                 do-wakeup          ; <wakeup-handle> -> (void), wakes up `do-sleep` call
+
                  do-any-sleepers?   ; -> boolean
                  do-sleepers-external-events ; -> <ext-event-set> for sleepers
 

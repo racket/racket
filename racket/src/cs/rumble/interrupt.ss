@@ -58,4 +58,4 @@
 (define (internal-error who s)
   (CHECK-uninterrupted
    (chez:fprintf (current-error-port) "~a: ~a\n" who s)
-   (chez:exit 1)))
+   (#%exit 1)))

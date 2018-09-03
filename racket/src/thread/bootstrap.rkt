@@ -10,6 +10,8 @@
 ;; with `break-enabled-key`, and it does not support using an
 ;; exception handler in an engine.
 
+(provide register-place-symbol!)
+
 (define (make-engine thunk init-break-enabled-cell empty-config?)
   (define ready-s (make-semaphore))
   (define s (make-semaphore))
@@ -135,32 +137,68 @@
 (struct exn:break:terminate/non-engine exn:break/non-engine ())
 
 (define (make-pthread-parameter v)
-  (define x v)
+  (define l (unsafe-make-place-local v))
   (case-lambda
-    [() x]
-    [(v) (set! x v)]))
+    [() (unsafe-place-local-ref l)]
+    [(v) (unsafe-place-local-set! l v)]))
 
-(define place-local-table (make-thread-cell (make-hasheq)))
+(define initial-place-local-table (make-hasheq))
+(define place-local-table (make-parameter initial-place-local-table))
 
 (define (unsafe-make-place-local v)
   (define key (vector v 'place-locale))
-  (hash-set! (thread-cell-ref place-local-table) key v)
+  (hash-set! (place-local-table) key v)
   key)
 
 (define (unsafe-place-local-ref key)
-  (hash-ref (thread-cell-ref place-local-table) key (vector-ref key 0)))
+  (hash-ref (place-local-table) key (vector-ref key 0)))
 
 (define (unsafe-place-local-set! key val)
-  (hash-set! (thread-cell-ref place-local-table) key val))
+  (hash-set! (place-local-table) key val))
 
-(define (fork-place thunk)
-  (thread (lambda ()
-            (thread-cell-set! place-local-table (make-hasheq))
-            (thunk))))
+(define wakeables (make-weak-hasheq))
+
+(define (wakeable-sleep msecs)
+  (define s (make-semaphore))
+  (hash-set! wakeables (place-local-table) s)
+  (sync/timeout msecs s)
+  (void))
+
+(define (get-wakeup-handle)
+  (place-local-table))
+
+(define (wakeup t)
+  (define s (hash-ref wakeables t #f))
+  (when s (semaphore-post s)))
+
+(define place-done-prompt (make-continuation-prompt-tag 'place-done))
+
+(define (fork-place thunk finish)
+  (parameterize ([place-local-table (make-hasheq)])
+    (thread (lambda ()
+              (define v
+                (call-with-continuation-prompt
+                 thunk
+                 place-done-prompt))
+              (finish v)))))               
+
+(define place-symbols (make-hasheq))
 
 (define (start-place mod sym in out err)
   (lambda (finish)
-    (void)))
+    (finish #f #f #f)
+    ((hash-ref place-symbols sym))))
+
+;; For use in "demo.rkt"
+(define (register-place-symbol! sym proc)
+  (hash-set! place-symbols sym proc))
+
+(define (place-exit v)
+  (if (eq? initial-place-local-table (place-local-table))
+      (exit v)
+      (abort-current-continuation
+       place-done-prompt
+       (lambda () v))))
 
 (primitive-table '#%pthread
                  (hash
@@ -193,29 +231,33 @@
                   'poll-async-callbacks (lambda () null)
                   'disable-interrupts void
                   'enable-interrupts void
+                  'sleep wakeable-sleep
+                  'get-wakeup-handle get-wakeup-handle
+                  'wakeup wakeup
                   'fork-place fork-place
                   'start-place start-place
+                  'exit place-exit
                   'fork-pthread (lambda args
                                   (error "fork-pthread: not ready"))
                   'pthread? (lambda args
                               (error "thread?: not ready"))
                   'get-thread-id (lambda args
                                    (error "get-pthread-id: not ready"))
-                  'make-condition (lambda () 'condition)
-                  'condition-wait (lambda args
-                                    (error "condition-wait: not ready"))
-                  'condition-signal (lambda args
-                                      (error "condition-signal: not ready"))
+                  'make-condition (lambda () (make-semaphore))
+                  'condition-wait (lambda (c s)
+                                    (semaphore-post s)
+                                    (semaphore-wait c)
+                                    (semaphore-wait s))
+                  'condition-signal (lambda (c)
+                                      (semaphore-post c))
                   'condition-broadcast (lambda args
                                          (error "condition-broadcast: not ready"))
                   'threaded? (lambda () #f)
                   'current-engine-state (lambda args
                                           (error "current-engine state: not ready"))
-                  'make-mutex (lambda () 'mutex)
-                  'mutex-acquire (lambda args
-                                   (error "mutex-acquire: not ready"))
-                  'mutex-release (lambda args
-                                   (error "mutex-release: not ready"))))
+                  'make-mutex (lambda () (make-semaphore 1))
+                  'mutex-acquire (lambda (s) (semaphore-wait s))
+                  'mutex-release (lambda (s) (semaphore-post s))))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

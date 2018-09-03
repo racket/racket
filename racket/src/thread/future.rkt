@@ -253,7 +253,7 @@
   (let loop ([id 1])
     (cond
       [(< id (+ 1 THREAD-COUNT))
-       (cons (worker id (make-lock) (chez:make-mutex) (chez:make-condition) (make-queue) #t)
+       (cons (worker id (make-lock) (host:make-mutex) (host:make-condition) (make-queue) #t)
              (loop (+ id 1)))]
       [else
        '()])))
@@ -277,10 +277,10 @@
 
   (let ([w (pick-worker)])
     (with-lock ((worker-lock w) (get-caller))
-      (chez:mutex-acquire (worker-mutex w))
+      (host:mutex-acquire (worker-mutex w))
       (queue-add! (worker-queue w) f)
-      (chez:condition-signal (worker-cond w))
-      (chez:mutex-release (worker-mutex w)))))
+      (host:condition-signal (worker-cond w))
+      (host:mutex-release (worker-mutex w)))))
 
 (define (pick-worker)
   (define workers (scheduler-workers global-scheduler))
@@ -304,9 +304,9 @@
     (cond
       [(not (queue-empty? (worker-queue w))) ;; got work in meantime
        (void)]
-      [(chez:mutex-acquire m #f) ;; cannot acquire lock while worker is being given work.
-       (chez:condition-wait (worker-cond w) m)
-       (chez:mutex-release m)]
+      [(host:mutex-acquire m #f) ;; cannot acquire lock while worker is being given work.
+       (host:condition-wait (worker-cond w) m)
+       (host:mutex-release m)]
       [else ;; try to get lock again.
        (try)])))
 
@@ -343,9 +343,9 @@
            ((future*-engine future) TICKS void complete (expire future worker))]
           [(not (future*-cont future)) ;; don't want to reschedule future with a saved continuation
            (with-lock ((worker-lock worker) (get-caller))
-             (chez:mutex-acquire (worker-mutex worker))
+             (host:mutex-acquire (worker-mutex worker))
              (queue-add! (worker-queue worker) future)
-             (chez:mutex-release (worker-mutex worker)))]
+             (host:mutex-release (worker-mutex worker)))]
           [else
            (with-lock ((future*-lock future) (get-caller))
              (future:condition-signal (future*-cond future)))])))

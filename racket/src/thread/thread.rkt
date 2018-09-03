@@ -84,6 +84,12 @@
 
            break-max))
 
+;; Exports needed by "place.rkt":
+(module* for-place #f
+  (provide root-thread
+           do-break-thread
+           break>?))
+
 ;; ----------------------------------------
 
 (struct thread node (name

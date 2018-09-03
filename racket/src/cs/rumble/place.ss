@@ -54,17 +54,26 @@
 
 ;; ----------------------------------------
 
+(define-thread-local place-esc-box (box #f))
+
 (meta-cond
  [(threaded?)
   (define (place-enabled?) #f) ;; FIXME
-  (define (fork-place thunk)
+  (define (fork-place thunk finish-proc)
     (fork-thread (lambda ()
                    (init-virtual-registers)
                    (place-registers (vector-copy place-register-inits))
-                   (thunk))))]
+                   (init-place-locals!)
+                   (foreign-place-init!)
+                   (let ([result (call/cc
+                                  (lambda (esc)
+                                    (set-box! place-esc-box esc)
+                                    (thunk)
+                                    0))])
+                     (finish-proc result)))))]
  [else
   (define (place-enabled?) #f)
-  (define (fork-place thunk) #f)])
+  (define (fork-place thunk finish-proc) #f)])
 
 (define do-start-place void)
 (define (install-start-place! proc)
@@ -72,3 +81,9 @@
 
 (define (start-place path sym in out err)
   (do-start-place path sym in out err))
+
+(define (place-exit v)
+  (let ([esc (unbox place-esc-box)])
+    (if esc
+        (esc v)
+        (#%exit v))))

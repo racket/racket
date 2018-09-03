@@ -1528,6 +1528,9 @@
 (define-virtual-register place-thread-category PLACE-KNOWN-THREAD)
 (define (register-as-place-main!)
   (place-thread-category PLACE-MAIN-THREAD)
+  (foreign-place-init!))
+
+(define (foreign-place-init!)
   (current-async-callback-queue (make-async-callback-queue (make-mutex)
                                                            (make-condition)
                                                            '())))

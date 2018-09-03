@@ -1,7 +1,6 @@
 #lang racket/base
-(require (only-in racket/base
-                  [exit host:exit])
-         "../common/check.rkt"
+(require "../common/check.rkt"
+         "host.rkt"
          "plumber.rkt")
 
 (provide exit
@@ -17,6 +16,7 @@
                     (check who (procedure-arity-includes/c 1) p)
                     p)))
 
+;; In a non-main place, must be called only in the scheduler:
 (define (force-exit v)
   (cond
     [(byte? v)

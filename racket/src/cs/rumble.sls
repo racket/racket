@@ -578,6 +578,7 @@
           place-local-register-ref   ; not exported to Racket
           place-local-register-set!  ; not exported to Racket
           place-local-register-init! ; not exported to Racket
+          place-exit                 ; not exported to Racket
 
           _bool _bytes _short_bytes _double _double* _fixint _fixnum _float _fpointer _gcpointer
           _int16 _int32 _int64 _int8 _longdouble _pointer _scheme _stdbool _void

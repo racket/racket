@@ -501,10 +501,30 @@
    (check #t (symbol? (will-execute we)))
 
    ;; Check places, where the various export symbols passed to
-   ;; `dynamic-place` are built into "bootstrap.rkt"
-   (define pl (dynamic-place 'dummy 'no-op #f #f #f))
-   (check #t (place? pl))
-   (sleep 1)
+   ;; `dynamic-place` are registered via `register-place-symbol!`
+   (register-place-symbol! 'nothing void)
+   (define pl1 (dynamic-place 'dummy 'nothing #f #f #f))
+   (check #t (place? pl1))
+   (check 0 (place-wait pl1))
+
+   (register-place-symbol! 'exit1 (lambda () (exit 1)))
+   (define pl2 (dynamic-place 'dummy 'exit1 #f #f #f))
+   (check #t (place? pl2))
+   (check 1 (place-wait pl2))
+
+   (register-place-symbol! 'loop (lambda () (let loop () (loop))))
+   (define pl3 (dynamic-place 'dummy 'loop #f #f #f))
+   (check #t (place? pl3))
+   (place-break pl3)
+   (check 1 (place-wait pl3))
+   (printf "[That break was from a place, and it's expected]\n")
+
+   (define pl4 (dynamic-place 'dummy 'loop #f #f #f))
+   (check #f (sync/timeout 0.01 (place-dead-evt pl4)))
+   (place-kill pl4)
+   (check 1 (place-wait pl4))
+   (check #t (evt? (sync (place-dead-evt pl4))))
+   (check #t (evt? (sync/timeout 0.01 (place-dead-evt pl4))))
 
    (set! done? #t)))
 

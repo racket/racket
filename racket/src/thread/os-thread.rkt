@@ -24,30 +24,30 @@
 
 (define/who (unsafe-make-os-semaphore)
   (unless threaded? (raise-unsupported who))
-  (os-semaphore 0 (chez:make-mutex) (chez:make-condition)))
+  (os-semaphore 0 (host:make-mutex) (host:make-condition)))
 
 (define/who (unsafe-os-semaphore-post s)
   (check who os-semaphore? s)
-  (chez:mutex-acquire (os-semaphore-mutex s))
+  (host:mutex-acquire (os-semaphore-mutex s))
   (when (zero? (os-semaphore-count s))
-    (chez:condition-signal (os-semaphore-condition s)))
+    (host:condition-signal (os-semaphore-condition s)))
   (set-os-semaphore-count! s (add1 (os-semaphore-count s)))
-  (chez:mutex-release (os-semaphore-mutex s)))
+  (host:mutex-release (os-semaphore-mutex s)))
 
 ;; interrupts must be enabled when waiting on a semaphore; otherwise,
 ;; the wait will block GCs, likely deadlocking this thread and another
 ;; thread that is working toward posting the semaphore
 (define/who (unsafe-os-semaphore-wait s)
   (check who os-semaphore? s)
-  (chez:mutex-acquire (os-semaphore-mutex s))
+  (host:mutex-acquire (os-semaphore-mutex s))
   (let loop ()
     (cond
       [(zero? (os-semaphore-count s))
-       (chez:condition-wait (os-semaphore-condition s) (os-semaphore-mutex s))
+       (host:condition-wait (os-semaphore-condition s) (os-semaphore-mutex s))
        (loop)]
       [else
        (set-os-semaphore-count! s (sub1 (os-semaphore-count s)))]))
-  (chez:mutex-release (os-semaphore-mutex s)))
+  (host:mutex-release (os-semaphore-mutex s)))
 
 (define (raise-unsupported who)
   (raise

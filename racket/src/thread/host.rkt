@@ -66,17 +66,24 @@
         [disable-interrupts host:disable-interrupts]
         [enable-interrupts host:enable-interrupts]
 
+        ;; Support for the thre scheduler and interrupts
+        ;; across places
+        [sleep host:sleep]
+        [get-wakeup-handle host:get-wakeup-handle]
+        [wakeup host:wakeup]
+
         [fork-place host:fork-place]
         [start-place host:start-place]
+        [exit host:exit]
 
         fork-pthread
         pthread?
         [get-thread-id get-pthread-id]
-        [make-condition chez:make-condition]
-        [condition-wait chez:condition-wait]
-        [condition-signal chez:condition-signal]
-        [condition-broadcast chez:condition-broadcast]
-        [make-mutex chez:make-mutex]
-        [mutex-acquire chez:mutex-acquire]
-        [mutex-release chez:mutex-release]
+        [make-condition host:make-condition]
+        [condition-wait host:condition-wait]
+        [condition-signal host:condition-signal]
+        [condition-broadcast host:condition-broadcast]
+        [make-mutex host:make-mutex]
+        [mutex-acquire host:mutex-acquire]
+        [mutex-release host:mutex-release]
         threaded?)

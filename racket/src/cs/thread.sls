@@ -2,10 +2,6 @@
   (export)
   (import (rename (chezpart)
                   [define chez:define])
-          (rename (only (chezscheme)
-                        sleep
-                        printf)
-                  [sleep chez:sleep])
           (rename (rumble)
                   [rumble:break-enabled-key break-enabled-key]
                   ;; Remapped to place-local register operations:
@@ -55,14 +51,35 @@
       ;; Chain to place-register handling:
       [(_ . rest) #'(place:define . rest)]))
 
-  (define (exit n)
-    (chez:exit n))
-
+  ;; This implementation of `sleep`, `get-wakeup-handle`, and `wakeup` is relevant
+  ;; only for running the places part of the thread demo. The relevant callbacks get
+  ;; replaced by the "io" layer to use rktio-based functions.
+  (define sleep-interrupted (rumble:unsafe-make-place-local #f))
   (define (sleep secs)
-    (define isecs (inexact->exact (floor secs)))
-    (chez:sleep (make-time 'time-duration
-                           (inexact->exact (floor (* (- secs isecs) 1e9)))
-                           isecs)))
+    (let ([isecs (inexact->exact (floor secs))]
+          [zero-secs (make-time 'time-duration 0 0)]
+          [pause-secs (make-time 'time-duration 100000 0)])
+      (let loop ([all-secs (make-time 'time-duration
+                                      (inexact->exact (floor (* (- secs isecs) 1e9)))
+                                      isecs)])
+        (unless (or (time<=? all-secs zero-secs)
+                    (let ([b (rumble:unsafe-place-local-ref sleep-interrupted)])
+                      (and b (unbox b))))
+          (#%sleep pause-secs)
+          (loop (subtract-duration all-secs pause-secs))))
+      (let ([b (rumble:unsafe-place-local-ref sleep-interrupted)])
+        (when b
+          (set-box! b #f)))))
+  (define (get-wakeup-handle)
+    (let ([b (rumble:unsafe-place-local-ref sleep-interrupted)])
+      (or b
+          (begin
+            ;; There's a race condition here.. Avoid triggering it
+            ;; in the thread demo.
+            (rumble:unsafe-place-local-set! sleep-interrupted (box #f))
+            (get-wakeup-handle)))))
+  (define (wakeup b)
+    (set-box! b #t))
 
   (define (primitive-table key)
     (case key
@@ -105,9 +122,13 @@
         'poll-async-callbacks poll-async-callbacks
         'disable-interrupts disable-interrupts
         'enable-interrupts enable-interrupts
+        'sleep sleep
+        'get-wakeup-handle get-wakeup-handle
+        'wakeup wakeup
         'fork-place rumble:fork-place
         'start-place rumble:start-place
         'fork-pthread rumble:fork-thread
+        'exit place-exit
         'pthread? rumble:thread?
         'get-thread-id rumble:get-thread-id
         'make-condition rumble:make-condition

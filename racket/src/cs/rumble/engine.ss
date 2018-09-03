@@ -19,7 +19,7 @@
   (keyboard-interrupt-handler))
 
 (define (engine-exit v)
-  (chez:exit v))
+  (place-exit v))
 
 (define (set-engine-exit-handler! proc)
   (set! engine-exit proc))

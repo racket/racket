@@ -186,6 +186,40 @@
      (sync (system-idle-evt))
      (check 2 trying)) ; second thread should have completed
 
+   (let* ([place-symbols (make-hasheq)]
+          [register-place-symbol!
+           (lambda (sym proc)
+             (hash-set! place-symbols sym proc))])
+     (install-start-place!
+      (lambda (mod sym in out err)
+        (lambda (finish)
+          (finish #f #f #f)
+          ((hash-ref place-symbols sym)))))
+
+     (register-place-symbol! 'nothing void)
+     (let ([pl1 (dynamic-place 'dummy 'nothing #f #f #f)])
+       (check #t (place? pl1))
+       (check 0 (place-wait pl1)))
+
+     (register-place-symbol! 'exit1 (lambda () (exit 1)))
+     (let ([pl2 (dynamic-place 'dummy 'exit1 #f #f #f)])
+       (check #t (place? pl2))
+       (check 1 (place-wait pl2)))
+
+     (register-place-symbol! 'loop (lambda () (let loop () (loop))))
+     (let ([pl3 (dynamic-place 'dummy 'loop #f #f #f)])
+       (check #t (place? pl3))
+       (place-break pl3)
+       (check 1 (place-wait pl3))
+       (printf "[That break was from a place, and it's expected]\n"))
+
+     (let ([pl4 (dynamic-place 'dummy 'loop #f #f #f)])
+       (check #f (sync/timeout 0.01 (place-dead-evt pl4)))
+       (place-kill pl4)
+       (check 1 (place-wait pl4))
+       (check #t (evt? (sync (place-dead-evt pl4))))
+       (check #t (evt? (sync/timeout 0.01 (place-dead-evt pl4))))))
+
    ;; Measure thread quantum:
    #;
    (let ([t1 (thread (lambda () (let loop () (loop))))]

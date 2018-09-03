@@ -5,7 +5,7 @@
 ;; first index is reserved for Rumble:
 
 (meta chez:define thread-register-start 1)
-(meta chez:define thread-register-count 12)
+(meta chez:define thread-register-count 14)
 
 (meta chez:define io-register-start (+ thread-register-start thread-register-count))
 (meta chez:define io-register-count 16)
@@ -14,7 +14,7 @@
 (meta chez:define regexp-register-count 3)
 
 (meta chez:define expander-register-start (+ regexp-register-start regexp-register-count))
-(meta chez:define expander-register-count 32)
+(meta chez:define expander-register-count 30)
 
 ;; ----------------------------------------
 

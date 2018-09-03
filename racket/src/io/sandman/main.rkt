@@ -104,6 +104,14 @@
            (check-signals)))
        ((sandman-do-poll timeout-sandman) mode wakeup))
 
+     ;; get-wakeup
+     (lambda ()
+       (rktio_get_signal_handle rktio))
+
+     ;; wakeup
+     (lambda (h)
+       (rktio_signal_received_at h))
+
      ;; any-sleepers?
      (lambda ()
        ((sandman-do-any-sleepers? timeout-sandman)))

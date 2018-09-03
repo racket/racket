@@ -3,7 +3,8 @@
          "check.rkt"
          "tree.rkt"
          "internal-error.rkt"
-         "sandman-struct.rkt")
+         "sandman-struct.rkt"
+         "host.rkt")
 
 ;; A "sandman" manages the set of all sleeping threads that may need
 ;; to be awoken in response to an external event, and it implements
@@ -35,6 +36,8 @@
          sandman-remove-sleeping-thread!
          sandman-poll
          sandman-sleep
+         sandman-get-wakeup-handle
+         sandman-wakeup
          sandman-any-sleepers?
          sandman-sleepers-external-events
          sandman-condition-wait
@@ -66,6 +69,14 @@
 ;; in atomic mode
 (define (sandman-sleep exts)
   ((sandman-do-sleep the-sandman) exts))
+
+;; potentially in atomic mode
+(define (sandman-get-wakeup-handle)
+  ((sandman-do-get-wakeup the-sandman)))
+
+;; potentially in atomic mode
+(define (sandman-wakeup h)
+  ((sandman-do-wakeup the-sandman) h))
 
 ;; in atomic mode
 (define (sandman-any-sleepers?)
@@ -129,7 +140,7 @@
   (sandman
    ;; sleep
    (lambda (timeout-at)
-     (sleep (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0)))
+     (host:sleep (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0)))
 
    ;; poll
    (lambda (mode wakeup)
@@ -140,6 +151,14 @@
          (unless (null? threads)
            (for ([t (in-hash-keys threads)])
              (wakeup t))))))
+
+   ;; get-wakeup-handle
+   (lambda ()
+     (host:get-wakeup-handle))
+
+   ;; wakeup
+   (lambda (h)
+     (host:wakeup h))
 
    ;; any-sleepers?
    (lambda ()
