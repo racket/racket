@@ -4,7 +4,10 @@
          syntax/location
          "guts.rkt"
          "blame.rkt"
-         "prop.rkt")
+         "prop.rkt"
+         "rand.rkt"
+         "generate.rkt"
+         "generate-base.rkt")
 
 (provide (rename-out [wrap-hash/c hash/c])
          hash/dc)
@@ -188,6 +191,21 @@
           (contract-struct-equivalent? this-rng that-rng))]
     [else #f]))
 
+(define (hash/c-generate ctc)
+  (define this-dom (base-hash/c-dom ctc))
+  (define this-rng (base-hash/c-rng ctc))
+  (define this-immutable (base-hash/c-immutable ctc))
+  (λ (fuel)
+    (define gen-key (contract-random-generate/choose this-dom fuel))
+    (define gen-val (contract-random-generate/choose this-rng fuel))
+    (λ ()
+      (if this-immutable
+          (hash (gen-key) (gen-val))
+          (make-hash (list (cons (gen-key) (gen-val))))))))
+
+(define (hash/c-exercise ctc)
+  (multi-exercise (list (base-hash/c-dom ctc) (base-hash/c-rng ctc))))
+
 (define-struct (flat-hash/c base-hash/c) ()
   #:omit-define-syntaxes
   #:property prop:custom-write custom-write-property-proc
@@ -195,6 +213,8 @@
   (build-flat-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
+   #:generate hash/c-generate
+   #:exercise hash/c-exercise
    #:stronger hash/c-stronger
    #:equivalent hash/c-equivalent
    #:late-neg-projection
@@ -311,6 +331,8 @@
   (build-chaperone-contract-property
    #:name hash/c-name
    #:first-order hash/c-first-order
+   #:generate hash/c-generate
+   #:exercise hash/c-exercise
    #:stronger hash/c-stronger
    #:equivalent hash/c-equivalent
    #:late-neg-projection (ho-projection chaperone-hash)))
