@@ -92,6 +92,12 @@
 (check-not-exn (λ () (test-contract-generation (*list/c boolean? number? char?))))
 (check-not-exn (λ () (test-contract-generation (-> (*list/c boolean? number? char?) any))))
 
+(check-not-exn (λ () (test-contract-generation (hash/c boolean? boolean?))))
+(check-not-exn (λ () (test-contract-generation (hash/c char? integer?))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? integer?))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? (hash/c integer? string?)))))
+(check-not-exn (λ () (test-contract-generation (hash/c (hash/c string? integer?) (hash/c integer? string?)))))
+
 (check-not-exn
  (λ ()
    (test-contract-generation
