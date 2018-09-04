@@ -58,6 +58,9 @@
          flat-contract-with-explanation
 
          (struct-out between/c-s)
+         (struct-out </>-ctc)
+         (struct-out <-ctc)
+         (struct-out >-ctc)
          renamed-between/c)
 
 (define-syntax (flat-murec-contract stx)

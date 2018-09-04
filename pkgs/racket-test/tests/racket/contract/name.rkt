@@ -266,6 +266,8 @@
   (test-name 'exact-positive-integer? (integer-in 1 #f))
   (test-name '(char-in #\a #\z) (char-in #\a #\z))
   (test-name '(and/c 0 exact?) (integer-in 0 0))
+  ;; this next one is convenient, using the and/c name would also be okay
+  (test-name '(integer-in 0 9) (and/c (</c 10) exact-integer? (>=/c 0)))
   (test-name '(real-in 1 10) (real-in 1 10))
   (test-name '(between/c 1 10) (between/c 1 10))
   (test-name '(string-len/c 3) (string-len/c 3))

@@ -247,6 +247,36 @@
                [else (make-first-order-and/c contracts preds)])]
             [else
              (make-first-order-and/c contracts preds)])]
+         [(and (pair? (cdr preds))
+               (pair? (cddr preds))
+               (null? (cdddr preds)))
+          (cond
+            [(or (chaperone-of? (car preds) exact-integer?)
+                 (chaperone-of? (cadr preds) exact-integer?)
+                 (chaperone-of? (caddr preds) exact-integer?))
+             (define lb #f)
+             (define ub #f)
+             (for ([ctc (in-list contracts)])
+               (cond
+                 [(between/c-s? ctc)
+                  (define lo (between/c-s-low ctc))
+                  (define hi (between/c-s-high ctc))
+                  (cond
+                    [(and (= lo -inf.0) (integer? hi))
+                     (set! ub (inexact->exact hi))]
+                    [(and (= hi +inf.0) (integer? lo))
+                     (set! lb (inexact->exact lo))])]
+                 [(</>-ctc? ctc)
+                  (define x (</>-ctc-x ctc))
+                  (when (integer? x)
+                    (cond
+                      [(<-ctc? ctc) (set! ub (- (inexact->exact x) 1))]
+                      [(>-ctc? ctc) (set! lb (+ (inexact->exact x) 1))]))]))
+             (cond
+               [(and lb ub)
+                (integer-in lb ub)]
+               [else (make-first-order-and/c contracts preds)])]
+            [else (make-first-order-and/c contracts preds)])]
          [else
           (make-first-order-and/c contracts preds)])]
       [(andmap chaperone-contract? contracts)
