@@ -168,6 +168,18 @@
       (define trois (slv num))))
   (test #t = trois 3))
 
+(let ()
+  (define x 1)
+  (define y 10)
+  (define-rename-transformer-parameter num
+    (make-rename-transformer #'y))
+  (syntax-parameterize ([num (make-rename-transformer #'x)])
+    (test #t = num 1)
+    (set! num 3)
+    (test #t = num 3))
+  (test #t = x 3)
+  (test #t = num 10))
+
 ;; ----------------------------------------
 
 (let ()

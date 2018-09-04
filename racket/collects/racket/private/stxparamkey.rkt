@@ -2,7 +2,8 @@
 (module stxparamkey '#%kernel
   (#%require "small-scheme.rkt" "define.rkt" 
              "stxcase.rkt" "stxloc.rkt" "with-stx.rkt"
-             (only '#%unsafe unsafe-root-continuation-prompt-tag))
+             (only '#%unsafe unsafe-root-continuation-prompt-tag)
+             (for-template '#%kernel))
   
   ;; Consulted before the expander's table, for use by compile-time
   ;; code wrapped by a run-time-phased `syntax-parameterize`:
