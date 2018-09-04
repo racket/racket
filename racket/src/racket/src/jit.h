@@ -548,7 +548,7 @@ void *scheme_jit_get_threadlocal_table();
 #  ifdef THREAD_LOCAL_USES_JIT_V2
 #   define mz_tl_addr(reg, addr) (jit_addi_p(reg, JIT_V2, addr))
 #   define mz_tl_addr_tmp(tmp_reg, addr) (void)0
-#   define mz_tl_addr_untmp(tmp_reg) 0
+#   define mz_tl_addr_untmp(tmp_reg) (void)0
 #   define mz_tl_tmp_reg(tmp_reg) (void)0
 #   define _mz_tl_str_p(addr, tmp_reg, reg) jit_stxi_p(addr, JIT_V2, reg)
 #   define _mz_tl_str_l(addr, tmp_reg, reg) jit_stxi_l(addr, JIT_V2, reg)
