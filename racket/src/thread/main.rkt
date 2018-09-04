@@ -164,7 +164,6 @@
          place-kill
          place-wait
          place-dead-evt
-         place-sleep
 
          place-channel
          place-channel? 

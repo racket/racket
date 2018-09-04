@@ -12,6 +12,5 @@
   [place-message-allowed? (known-procedure 2)]
   [place-pumper-threads (known-procedure 6)]
   [place-shared? (known-procedure 2)]
-  [place-sleep (known-procedure 2)]
   [place-wait (known-procedure 2)]
   [place? (known-procedure 2)])

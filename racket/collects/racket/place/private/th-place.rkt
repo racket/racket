@@ -12,7 +12,6 @@
 
 (provide th-dynamic-place
          ;th-dynamic-place*
-         th-place-sleep
          th-place-wait
          th-place-kill
          th-place-break
@@ -80,7 +79,6 @@
     (thread (lambda () (thread-wait th) (custodian-shutdown-all cust))))
   (TH-place th pch cust cust-box result-box))
 
-(define (th-place-sleep n) (sleep n))
 (define (th-place-wait pl) (sync (TH-place-cust-box pl)) (unbox (TH-place-result-box pl)))
 (define (th-place-kill pl) (set-box! (TH-place-result-box pl) 1) (custodian-shutdown-all (TH-place-cust pl)))
 (define (th-place-break pl kind) (break-thread (TH-place-th pl) kind))

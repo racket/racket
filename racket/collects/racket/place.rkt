@@ -20,7 +20,6 @@
 
 (provide (protect-out dynamic-place
                       dynamic-place*)
-         place-sleep
          place-wait
          place-kill
          (rename-out [place-break/opt place-break])
@@ -58,7 +57,6 @@
 
 (define place-channel (if (pl-place-enabled?)  pl-place-channel th-place-channel))
 
-(define-pl-func place-sleep p)
 (define-pl-func place-wait p)
 (define-pl-func place-kill p)
 (define-pl-func place-break p kind)

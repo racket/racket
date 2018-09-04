@@ -21,7 +21,6 @@
          place-kill
          place-wait
          place-dead-evt
-         place-sleep
 
          place-channel
          place-channel? 
@@ -197,9 +196,6 @@
 (define/who (place-dead-evt p)
   (check who place? p)
   (place-done-evt p #f))
-
-(define/who (place-sleep msecs)
-  (void))
 
 ;; ----------------------------------------
 

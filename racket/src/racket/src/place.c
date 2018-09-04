@@ -50,7 +50,6 @@ static Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_kill(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_break(int argc, Scheme_Object *args[]);
-static Scheme_Object *place_sleep(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_send(int argc, Scheme_Object *args[]);
 static Scheme_Object *place_receive(int argc, Scheme_Object *args[]);
@@ -138,7 +137,6 @@ void scheme_init_place(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("place-shared?",        scheme_place_shared,    1, 1, env);
   PLACE_PRIM_W_ARITY("dynamic-place",         scheme_place,           5, 5, env);
   PLACE_PRIM_W_ARITY("place-pumper-threads",  place_pumper_threads,   1, 2, env);
-  PLACE_PRIM_W_ARITY("place-sleep",           place_sleep,     1, 1, env);
   PLACE_PRIM_W_ARITY("place-wait",            place_wait,      1, 1, env);
   PLACE_PRIM_W_ARITY("place-kill",            place_kill,      1, 1, env);
   PLACE_PRIM_W_ARITY("place-break",           place_break,     1, 2, env);
@@ -234,11 +232,6 @@ static void null_out_runtime_globals() {
   scheme_current_runstack         = NULL;
   scheme_current_cont_mark_stack  = 0;
   scheme_current_cont_mark_pos    = 0;
-}
-
-Scheme_Object *place_sleep(int argc, Scheme_Object *args[]) {
-  mzrt_sleep(SCHEME_INT_VAL(args[0]));
-  return scheme_void;
 }
 
 Scheme_Object *scheme_make_place_object() {
