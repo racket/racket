@@ -7,7 +7,8 @@
          plumber-flush-all
          plumber-add-flush!
          plumber-flush-handle?
-         plumber-flush-handle-remove!)
+         plumber-flush-handle-remove!
+         plumber-callbacks)
 
 (struct plumber (callbacks ; hash table of handles -> callbacks
                  weak-callbacks) ; same, but weak references

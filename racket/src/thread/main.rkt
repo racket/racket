@@ -172,8 +172,8 @@
          place-channel-put
          place-message-allowed?
 
+         set-make-place-ports+fds!
          place-pumper-threads
-         place-shared?
          unsafe-add-post-custodian-shutdown
 
          futures-enabled?

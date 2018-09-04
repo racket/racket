@@ -46,7 +46,7 @@
              (syntax-rules ()
                [(_) (virtual-register n)]
                [(_ v) (set-virtual-register! n v)])))]
-      ;; Workaround for redirected access of `unsafe-make-place-local` from engine:
+      ;; Workaround for redirected access of `unsafe-make-place-local` from #%pthread:
       [(_ alias-id unsafe-make-place-local) #'(begin)]
       ;; Chain to place-register handling:
       [(_ . rest) #'(place:define . rest)]))
@@ -89,7 +89,7 @@
        ;; entries need to be registered as built-in names with the
        ;; expander, and they need to be listed in
        ;; "primitives/internal.ss".
-       (hash
+       (hasheq
         'make-pthread-parameter make-pthread-parameter
         ;; These are actually redirected by "place-register.ss", but
         ;; we list them here for compatibility with the bootstrapping
@@ -98,7 +98,7 @@
         'unsafe-place-local-ref rumble:unsafe-place-local-ref
         'unsafe-place-local-set! rumble:unsafe-place-local-set!)]
       [(|#%engine|)
-       (hash
+       (hasheq
         'make-engine rumble:make-engine
         'engine-block rumble:engine-block
         'engine-timeout rumble:engine-timeout

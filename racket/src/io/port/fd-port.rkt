@@ -51,7 +51,8 @@
 (define (open-input-fd fd name
                        #:extra-data [extra-data #f]
                        #:on-close [on-close void]
-                       #:fd-refcount [fd-refcount (box 1)])
+                       #:fd-refcount [fd-refcount (box 1)]
+                       #:custodian [cust (current-custodian)])
   (define-values (port buffer-control)
     (open-input-peek-via-read
      #:name name
@@ -81,7 +82,7 @@
                         [() (buffer-control)]
                         [(pos) (buffer-control pos)]))))
   (define custodian-reference
-    (register-fd-close (current-custodian) fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount port))
   port)
 
 ;; ----------------------------------------
@@ -92,15 +93,16 @@
                         #:extra-data [extra-data #f]
                         #:buffer-mode [buffer-mode 'infer]
                         #:fd-refcount [fd-refcount (box 1)]
-                        #:on-close [on-close void])
+                        #:on-close [on-close void]
+                        #:plumber [plumber (current-plumber)]
+                        #:custodian [cust (current-custodian)])
   (define buffer (make-bytes 4096))
   (define buffer-start 0)
   (define buffer-end 0)
   (define flush-handle
-    (plumber-add-flush! (current-plumber)
+    (plumber-add-flush! plumber
                         (lambda (h)
-                          (flush-buffer-fully #f)
-                          (plumber-flush-handle-remove! h))))
+                          (flush-buffer-fully #f))))
   
   (when (eq? buffer-mode 'infer)
     (if (rktio_fd_is_terminal rktio fd)
@@ -222,7 +224,7 @@
                      [(mode) (set! buffer-mode mode)])))
 
   (define custodian-reference
-    (register-fd-close (current-custodian) fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount port))
 
   (set-fd-evt-closed! evt (core-port-closed port))
 

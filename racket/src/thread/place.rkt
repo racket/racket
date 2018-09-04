@@ -29,8 +29,8 @@
          place-channel-put
          place-message-allowed?
 
+         set-make-place-ports+fds!
          place-pumper-threads
-         place-shared?
          unsafe-add-post-custodian-shutdown)
 
 ;; ----------------------------------------
@@ -40,24 +40,24 @@
                [queued-result #:mutable] ; non-#f triggers a place exit
                custodian
                [post-shutdown #:mutable] ; list of callbacks
-               pumper-threads            ; vector of up to three pumper threads
+               [pumpers #:mutable]       ; vector of up to three pumper threads
                [pending-break #:mutable] ; #f, 'break, 'hangup, or 'terminate
                done-waiting              ; hash table of places to ping when this one ends
                [wakeup-handle #:mutable]))
 
 (define-place-local current-place #f)
 
-(define (dynamic-place path sym in out err)
-  (define c (create-custodian))
+(define/who (dynamic-place path sym in out err)
+  (define orig-cust (create-custodian))
   (define lock (host:make-mutex))
   (define started (host:make-condition))
   (define done-waiting (make-hasheq))
   (define new-place (place lock
                            #f                   ; result
                            #f                   ; queued-result
-                           c
+                           orig-cust
                            '()                  ; post-shutdown
-                           (make-vector 3 #f)   ; pumper-threads
+                           #f                   ; pumper-threads
                            #f                   ; pending-break
                            done-waiting
                            #f))
@@ -69,12 +69,18 @@
     (host:mutex-release lock)
     ;; Switch to scheduler, so it can exit:
     (engine-block))
+  ;; Atomic mode to create ports and deliver them to the new place
+  (start-atomic)
+  (define-values (parent-in parent-out parent-err child-in-fd child-out-fd child-err-fd)
+    (make-place-ports+fds in out err))
   ;; Start the new place
   (host:fork-place
    (lambda ()
-     (define finish (host:start-place path sym in out err))
+     (define finish (host:start-place path sym
+                                      child-in-fd child-out-fd child-err-fd
+                                      orig-cust orig-plumber))
      (call-in-another-main-thread
-      c
+      orig-cust
       (lambda ()
         (set! current-place new-place)
         (current-plumber orig-plumber)
@@ -86,10 +92,7 @@
         (call-with-continuation-prompt
          (lambda ()
            (finish
-            (lambda (in-th out-th err-th)
-              (vector-set! (place-pumper-threads new-place) 0 in-th)
-              (vector-set! (place-pumper-threads new-place) 1 out-th)
-              (vector-set! (place-pumper-threads new-place) 2 err-th)
+            (lambda ()
               (host:mutex-acquire lock)
               (set-place-wakeup-handle! new-place (sandman-get-wakeup-handle))
               (host:condition-signal started) ; place is sufficiently started
@@ -103,7 +106,7 @@
    (lambda (result)
      ;; Place is done, so save the result and alert anyone waiting on
      ;; the place
-     (do-custodian-shutdown-all c)
+     (do-custodian-shutdown-all orig-cust)
      (host:mutex-acquire lock)
      (set-place-result! new-place result)
      (host:mutex-release lock)
@@ -116,11 +119,12 @@
           (host:mutex-release (place-lock k))]
          [else (sandman-wakeup k)]))
      (hash-clear! done-waiting)))
+  (end-atomic)
   ;; Wait for the place to start, then return the place object
   (host:mutex-acquire lock)
   (host:condition-wait started lock)
   (host:mutex-release lock)
-  new-place)
+  (values new-place parent-in parent-out parent-err))
 
 (define/who (place-break p [kind #f])
   (check who place? p)
@@ -163,7 +167,13 @@
 
 (define/who (place-wait p)
   (check who place? p)
-  (sync (place-done-evt p #t)))
+  (define result (sync (place-done-evt p #t)))
+  (define vec (place-pumpers p))
+  (when vec
+    (for ([s (in-vector vec)])
+      (when s (thread-wait s)))
+    (set-place-pumpers! p #f))
+  result)
 
 (struct place-done-evt (p get-result?)
   #:property prop:evt (poller (lambda (self poll-ctx)
@@ -214,8 +224,16 @@
 
 ;; ----------------------------------------
 
-(define (place-shared? v)
-  #f)
+(define make-place-ports+fds
+  ;; To be replaced by the "io" layer:
+  (lambda (in out err)
+    (values #f #f #f in out err)))
+
+(define (set-make-place-ports+fds! proc)
+  (set! make-place-ports+fds proc))
+
+(define (place-pumper-threads p vec)
+  (set-place-pumpers! p vec))
 
 (define (unsafe-add-post-custodian-shutdown proc)
   (when current-place

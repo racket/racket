@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/private/place-local
+(require "../host/place-local.rkt"
          "../../thread/sandman-struct.rkt"
          "../common/internal-error.rkt"
          "../host/thread.rkt"

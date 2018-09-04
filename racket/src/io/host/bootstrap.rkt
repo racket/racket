@@ -3,7 +3,7 @@
          (only-in '#%unsafe
                   unsafe-custodian-register
                   unsafe-custodian-unregister)
-         "../../thread/sandman.rkt"
+         "../../thread/current-sandman.rkt"
          ffi/unsafe/atomic
          "bootstrap-rktio.rkt")
 
@@ -71,12 +71,25 @@
       (eq? always-evt evt)
       (eq? never-evt evt)))
 
+(primitive-table '#%pthread
+                 (hasheq 'unsafe-make-place-local box
+                         'unsafe-place-local-ref unbox
+                         'unsafe-place-local-set! set-box!))
+                         
 (primitive-table '#%thread
-                 (hasheq 'make-semaphore make-semaphore
+                 (hasheq 'thread thread
+                         'thread-suspend-evt thread-suspend-evt
+                         'thread-dead-evt thread-dead-evt
+                         'current-thread current-thread
+                         'thread-resume thread-resume
+                         'make-semaphore make-semaphore
                          'semaphore-post semaphore-post
                          'semaphore-wait semaphore-wait
                          'semaphore-peek-evt semaphore-peek-evt
+                         'make-channel make-channel
+                         'channel-put-evt channel-put-evt
                          'wrap-evt wrap-evt
+                         'handle-evt handle-evt
                          'always-evt always-evt
                          'choice-evt (lambda (l) (apply choice-evt l))
                          'sync sync
@@ -108,6 +121,9 @@
                                                  (cond
                                                    [ref (unsafe-custodian-unregister v ref) #f]
                                                    [else #t]))
+                         'current-plumber current-plumber
+                         'plumber-add-flush! plumber-add-flush!
+                         'plumber-flush-handle-remove! plumber-flush-handle-remove!
                          'unsafe-custodian-register unsafe-custodian-register
                          'unsafe-custodian-unregister unsafe-custodian-unregister
                          'thread-push-kill-callback! thread-push-kill-callback!

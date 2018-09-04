@@ -1,5 +1,5 @@
 #lang racket/base
-(require racket/private/place-local
+(require "../host/place-local.rkt"
          "../common/check.rkt"
          "../host/thread.rkt"
          "../host/rktio.rkt"

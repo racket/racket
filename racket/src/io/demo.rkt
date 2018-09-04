@@ -12,8 +12,6 @@
                   [current-directory host:current-directory]
                   [path->string host:path->string]))
 
-(io-place-init! #t)
-
 (current-directory (host:path->string (host:current-directory)))
 (set-string->number?! string->number)
 

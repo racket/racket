@@ -76,14 +76,18 @@
   (define (fork-place thunk finish-proc) #f)])
 
 (define do-start-place void)
-(define (install-start-place! proc)
+(define (set-start-place! proc)
   (set! do-start-place proc))
 
-(define (start-place path sym in out err)
-  (do-start-place path sym in out err))
+(define (start-place path sym in out err cust plumber)
+  (do-start-place path sym in out err cust plumber))
 
 (define (place-exit v)
   (let ([esc (unbox place-esc-box)])
     (if esc
         (esc v)
         (#%exit v))))
+
+(define (place-shared? v)
+  #f)
+

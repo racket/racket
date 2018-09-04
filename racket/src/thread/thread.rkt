@@ -350,10 +350,10 @@
 (define (thread-dead-evt? v)
   (dead-evt? v))
 
-(define/who get-thread-dead-evt
+(define get-thread-dead-evt
   (let ([thread-dead-evt
          (lambda (t)
-           (check who thread? t)
+           (check 'thread-dead-evt thread? t)
            (atomically
             (unless (thread-dead-evt t)
               (set-thread-dead-evt! t (dead-evt (get-thread-dead-sema t)))))

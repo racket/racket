@@ -4,6 +4,7 @@
          "tree.rkt"
          "internal-error.rkt"
          "sandman-struct.rkt"
+         "current-sandman.rkt"
          "host.rkt")
 
 ;; A "sandman" manages the set of all sleeping threads that may need
@@ -98,14 +99,6 @@
 (define (sandman-any-waiters?)
   ((sandman-do-any-waiters? the-sandman)))
 
-;; in atomic mode
-(define/who current-sandman
-  (case-lambda
-    [() the-sandman]
-    [(sm)
-     (check who sandman? sm)
-     (set! the-sandman sm)]))
-
 ;; created simple lock here to avoid cycle in loading from using lock defined in future.rkt
 (define (make-lock)
   (box 0))
@@ -136,7 +129,7 @@
 
 ;; Sandman should not have place-local state itself, but
 ;; it can access place-local state that's declared as such.
-(define the-sandman
+(define the-default-sandman
   (sandman
    ;; sleep
    (lambda (timeout-at)
@@ -233,6 +226,7 @@
 
    (make-lock)))
 
+(void (current-sandman the-default-sandman))
 
 ;; Compute an approximation to infinity:
 (define (distant-future)

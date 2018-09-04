@@ -30,11 +30,19 @@
     (define id (hash-ref table 'id))
     ...))
 
-(bounce make-semaphore
+(bounce thread
+        thread-suspend-evt
+        thread-dead-evt
+        current-thread
+        thread-resume
+        make-semaphore
         semaphore-post
         semaphore-wait
         semaphore-peek-evt
+        make-channel
+        channel-put-evt
         wrap-evt
+        handle-evt
         always-evt
         sync
         sync/timeout
@@ -42,7 +50,11 @@
         prop:evt
         unsafe-start-atomic
         unsafe-end-atomic
-        current-custodian)
+        current-custodian
+        custodian-shut-down?
+        current-plumber
+        plumber-add-flush!
+        plumber-flush-handle-remove!)
 
 (bounce* choice-evt ; raw variant that takes a list of evts
          prop:secondary-evt

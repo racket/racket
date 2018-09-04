@@ -9,7 +9,7 @@ RKTIO_DEP=../build/so-rktio/Makefile
 
 # When flattening, replace a dynamic lookup from a primitive table to
 # a direct use of the primitive name:
-DIRECT = ++direct thread
+DIRECT = ++direct thread ++direct pthread
 
 # Enable the sanity check for global state (to be avoided in
 # favor of place-local state), but declare some initialized-once

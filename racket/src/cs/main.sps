@@ -482,9 +482,11 @@
        (|#%app| current-library-collection-paths
         (find-library-collection-paths))))
 
-   (install-start-place!
-    (lambda (mod sym in out err)
-      (io-place-init!)
+   (set-make-place-ports+fds! make-place-ports+fds)
+
+   (set-start-place!
+    (lambda (mod sym in out err cust plumber)
+      (io-place-init! in out err cust plumber)
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)

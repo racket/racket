@@ -167,6 +167,10 @@
 (define (rktio_status_result r)
   (Rrktio_status_t-result (cast r _pointer _Rrktio_status_t-pointer)))
 
+(define (rktio_pipe_results r)
+  (values (ptr-ref r _pointer)
+          (ptr-ref r _pointer 1)))
+
 (define (rktio_do_install_os_signal_handler rktio)
   (racket:void))
 (define (rktio_get_ctl_c_handler)
@@ -223,6 +227,7 @@
                                          'rktio_process_result_process rktio_process_result_process
                                          'rktio_status_running rktio_status_running
                                          'rktio_status_result rktio_status_result
+                                         'rktio_pipe_results rktio_pipe_results
                                          'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
                                          'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                         form ...))

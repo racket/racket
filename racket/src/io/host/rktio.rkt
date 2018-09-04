@@ -1,8 +1,8 @@
 #lang racket/base
-(require racket/private/place-local
-         racket/include
+(require racket/include
          (for-syntax racket/base)
-         (only-in '#%linklet primitive-table))
+         (only-in '#%linklet primitive-table)
+         "../host/place-local.rkt")
 
 (provide rktio
          rktio-error?
@@ -65,6 +65,7 @@
 (define-function () #f rktio_process_result_process)
 (define-function () #f rktio_status_running)
 (define-function () #f rktio_status_result)
+(define-function () #f rktio_pipe_results)
 
 ;; Error results are represented as vectors:
 (define rktio-error? vector?)

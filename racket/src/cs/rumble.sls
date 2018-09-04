@@ -569,10 +569,11 @@
           unsafe-extfl->fx unsafe-fx->extfl unsafe-extflsqrt
           unsafe-extflvector-length unsafe-extflvector-ref unsafe-extflvector-set!
 
-          install-start-place!       ; not exported to Racket
+          set-start-place!           ; not exported to Racket
           fork-place                 ; not exported to Racket
           start-place                ; not exported to Racket
           place-enabled?
+          place-shared?
           unsafe-get-place-table
           unsafe-make-place-local unsafe-place-local-ref unsafe-place-local-set!
           place-local-register-ref   ; not exported to Racket

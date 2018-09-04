@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../host/rktio.rkt"
+(require "../host/place-local.rkt"
+         "../host/rktio.rkt"
          "../host/error.rkt"
          "output-port.rkt"
          "input-port.rkt"
@@ -8,6 +9,11 @@
 (provide current-input-port
          current-output-port
          current-error-port
+
+         orig-input-port
+         orig-output-port
+         orig-error-port
+
          init-current-ports!)
 
 (define (make-stdin)
@@ -30,8 +36,12 @@
                   'stderr
                   #:buffer-mode 'none))
 
+(define-place-local orig-input-port (make-stdin))
+(define-place-local orig-output-port (make-stdout))
+(define-place-local orig-error-port (make-stderr))
+
 (define current-input-port
-  (make-parameter (make-stdin)
+  (make-parameter orig-input-port
                   (lambda (v)
                     (unless (input-port? v)
                       (raise-argument-error 'current-input-port
@@ -40,7 +50,7 @@
                     v)))
 
 (define current-output-port
-  (make-parameter (make-stdout)
+  (make-parameter orig-output-port
                   (lambda (v)
                     (unless (output-port? v)
                       (raise-argument-error 'current-output-port
@@ -49,7 +59,7 @@
                     v)))
 
 (define current-error-port
-  (make-parameter (make-stderr)
+  (make-parameter orig-error-port
                   (lambda (v)
                     (unless (output-port? v)
                       (raise-argument-error 'current-error-port
@@ -57,7 +67,16 @@
                                             v))
                     v)))
 
-(define (init-current-ports!)
-  (current-input-port (make-stdin))
-  (current-output-port (make-stdout))
-  (current-error-port (make-stderr)))
+(define (init-current-ports! in-fd out-fd err-fd cust plumber)
+  (set! orig-input-port (open-input-fd in-fd "stdin"
+                                       #:custodian cust))
+  (current-input-port orig-input-port)
+  (set! orig-output-port (open-output-fd out-fd "stdout"
+                                         #:custodian cust
+                                         #:plumber plumber))
+  (current-output-port orig-output-port)
+  (set! orig-error-port (open-output-fd err-fd "srderr"
+                                        #:custodian cust
+                                        #:plumber plumber))
+  (current-error-port orig-error-port))
+

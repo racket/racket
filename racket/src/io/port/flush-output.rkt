@@ -23,10 +23,6 @@
 
 ;; ----------------------------------------
 
-(define orig-input-port (current-input-port))
-(define orig-output-port (current-output-port))
-(define orig-error-port (current-error-port))
-
 (define (maybe-flush-stdout in)
   (when (eq? in orig-input-port)
     (flush-output orig-output-port)

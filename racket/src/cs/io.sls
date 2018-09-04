@@ -21,7 +21,14 @@
           (thread))
 
   (include "place-register.ss")
-  (define-place-register-define define io-register-start io-register-count)
+  (define-place-register-define place:define io-register-start io-register-count)
+
+  (define-syntax (define stx)
+    (syntax-case stx (unsafe-make-place-local)
+      ;; Workaround for redirected access of `unsafe-make-place-local` from #%pthread:
+      [(_ alias-id unsafe-make-place-local) #'(begin)]
+      ;; Chain to place-register handling:
+      [(_ . rest) #'(place:define . rest)]))
 
   ;; ----------------------------------------
   ;; Tie knots:
@@ -286,6 +293,11 @@
     (define (rktio_status_result r)
       (ftype-ref rktio_status_t (result) (make-ftype-pointer rktio_status_t (ptr->address r))))
 
+    (define (rktio_pipe_results r)
+      (values
+       (foreign-ref 'ptr (ptr->address r) 0)
+       (foreign-ref 'ptr (ptr->address r) 1)))
+
     (define (rktio_do_install_os_signal_handler rktio)
       (rktio_install_os_signal_handler rktio))
 
@@ -341,6 +353,7 @@
                                  'rktio_process_result_process rktio_process_result_process
                                  'rktio_status_running rktio_status_running
                                  'rktio_status_result rktio_status_result
+                                 'rktio_pipe_results rktio_pipe_results
                                  'rktio_do_install_os_signal_handler rktio_do_install_os_signal_handler
                                  'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                 form ...)]))
@@ -394,6 +407,7 @@
 
   (define (primitive-table key)
     (case key
+      [(|#%pthread|) (hasheq)]
       [(|#%thread|) |#%thread-instance|]
       [(|#%rktio|) |#%rktio-instance|]
       [else #f]))

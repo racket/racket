@@ -10,7 +10,8 @@
 ;; with `break-enabled-key`, and it does not support using an
 ;; exception handler in an engine.
 
-(provide register-place-symbol!)
+(provide register-place-symbol!
+         set-io-place-init!)
 
 (define (make-engine thunk init-break-enabled-cell empty-config?)
   (define ready-s (make-semaphore))
@@ -183,15 +184,21 @@
               (finish v)))))               
 
 (define place-symbols (make-hasheq))
+(define io-place-init! void)
 
-(define (start-place mod sym in out err)
+(define (start-place mod sym in-fd out-fd err-fd cust plumber)
+  (io-place-init! in-fd out-fd err-fd cust plumber)
   (lambda (finish)
-    (finish #f #f #f)
+    (finish)
     ((hash-ref place-symbols sym))))
 
 ;; For use in "demo.rkt"
 (define (register-place-symbol! sym proc)
   (hash-set! place-symbols sym proc))
+
+;; For use in "demo-thread.rkt" in "io"
+(define (set-io-place-init! proc)
+  (set! io-place-init! proc))
 
 (define (place-exit v)
   (if (eq? initial-place-local-table (place-local-table))
