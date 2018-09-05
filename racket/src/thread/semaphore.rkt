@@ -20,7 +20,8 @@
          semaphore-any-waiters?
 
          semaphore-post/atomic
-         semaphore-wait/atomic)
+         semaphore-wait/atomic
+         semaphore-post-all/atomic)
 
 (struct semaphore ([count #:mutable]
                    queue)
@@ -71,12 +72,16 @@
          ;; Don't consume a post for a peek waiter
          (loop))])))
 
+;; In atomic mode
+(define (semaphore-post-all/atomic s)
+  (set-semaphore-count! s +inf.0)
+  (queue-remove-all!
+   (semaphore-queue s)
+   (lambda (w) (waiter-resume! w s))))
+
 (define (semaphore-post-all s)
   (atomically
-   (set-semaphore-count! s +inf.0)
-   (queue-remove-all!
-    (semaphore-queue s)
-    (lambda (w) (waiter-resume! w s)))))
+   (semaphore-post-all/atomic s)))
 
 ;; In atomic mode:
 (define (semaphore-any-waiters? s)

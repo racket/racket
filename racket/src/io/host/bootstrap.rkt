@@ -71,6 +71,9 @@
       (eq? always-evt evt)
       (eq? never-evt evt)))
 
+(define-values (prop:place-message place-message? place-message-ref)
+  (make-struct-type-property 'place-message))
+
 (primitive-table '#%pthread
                  (hasheq 'unsafe-make-place-local box
                          'unsafe-place-local-ref unbox
@@ -128,4 +131,5 @@
                          'unsafe-custodian-unregister unsafe-custodian-unregister
                          'thread-push-kill-callback! thread-push-kill-callback!
                          'thread-pop-kill-callback! thread-pop-kill-callback!
-                         'set-get-subprocesses-time! void))
+                         'set-get-subprocesses-time! void
+                         'prop:place-message prop:place-message))

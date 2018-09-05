@@ -66,7 +66,7 @@ setup:
 	$(MAKE) run ARGS="-l- setup $(ARGS)"
 
 setup-v:
-	$(MAKE) run ARGS="-W 'info@compiler/cm info@linklet debug@GC:major error' -l- setup $(ARGS)"
+	$(MAKE) run ARGS="-W 'info@compiler/cm info@linklet debug@GC:major error' -l- setup -j 1 $(ARGS)"
 
 run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 	$(SCHEME) --script $(BUILDDIR)racket.so $(RACKET_SETUP_ARGS) $(ARGS)

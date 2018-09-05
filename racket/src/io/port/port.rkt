@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../host/thread.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         "place-message.rkt")
 
 (provide (struct-out core-port)
          (struct-out closed-state))
@@ -27,7 +28,10 @@
                    [position #:mutable]) ; count UTF-8 characters
   #:authentic
   #:property prop:object-name (struct-field-index name)
-  #:property prop:secondary-evt port->evt)
+  #:property prop:secondary-evt port->evt
+  #:property prop:place-message (lambda (p)
+                                  (define data (core-port-data p))
+                                  (data->place-message data p)))
 
 (struct closed-state ([closed? #:mutable]
                       [closed-sema #:mutable]) ; #f or a semaphore posed on close

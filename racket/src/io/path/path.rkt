@@ -1,7 +1,8 @@
 #lang racket/base
 (require "../print/custom-write.rkt"
          "../port/string-output.rkt"
-         "../locale/string.rkt")
+         "../locale/string.rkt"
+         (only-in "../host/thread.rkt" prop:place-message))
 
 (provide (struct-out path)
          is-path?
@@ -32,7 +33,10 @@
    (lambda (p hc)
      (hc (path-bytes p)))
    (lambda (p hc)
-     (hc (path-bytes p)))))
+     (hc (path-bytes p))))
+  #:property prop:place-message (lambda (self)
+                                  (lambda ()
+                                    (lambda () self))))
 
 (define is-path?
   (let ([path? (lambda (p)

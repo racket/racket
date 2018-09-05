@@ -21,7 +21,7 @@
 (provide call-in-main-thread
          call-in-another-main-thread
          set-atomic-timeout-callback!
-         set-check-place-break!)
+         set-check-place-activity!)
 
 (define TICKS 100000)
 
@@ -47,7 +47,7 @@
                           pending-callbacks))
     (host:poll-will-executors)
     (check-external-events 'fast)
-    (check-place-break)
+    (check-place-activity)
     (when (and (null? callbacks)
                (all-threads-poll-done?)
                (waiting-on-external-or-idle?))
@@ -233,6 +233,6 @@
 
 ;; ----------------------------------------
 
-(define check-place-break void)
-(define (set-check-place-break! proc)
-  (set! check-place-break proc))
+(define check-place-activity void)
+(define (set-check-place-activity! proc)
+  (set! check-place-activity proc))

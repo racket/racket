@@ -295,8 +295,8 @@
 
     (define (rktio_pipe_results r)
       (values
-       (foreign-ref 'ptr (ptr->address r) 0)
-       (foreign-ref 'ptr (ptr->address r) 1)))
+       (address->ptr (foreign-ref 'uptr (ptr->address r) 0))
+       (address->ptr (foreign-ref 'uptr (ptr->address r) (foreign-sizeof 'uptr)))))
 
     (define (rktio_do_install_os_signal_handler rktio)
       (rktio_install_os_signal_handler rktio))

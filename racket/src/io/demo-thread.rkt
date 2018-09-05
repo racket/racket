@@ -23,7 +23,7 @@
 
 (call-in-main-thread
  (lambda ()
-
+   
    ;; Make `N` threads trying to write `P` copies
    ;; of each possible byte into a limited pipe, and
    ;; make `N` other threads try to read those bytes.
@@ -185,8 +185,11 @@
      (custodian-shutdown-all c))
 
    ;; Places
+   ;;  BEWARE: we can run some basic places tests in bootstrap mode,
+   ;;  but since "places" are just Racket threads, avoid any rktio-based
+   ;;  blocking operations
    (register-place-symbol! 'report
-                           (lambda ()
+                           (lambda (pch)
                              (write-string "expected place out\n")
                              (write-string "expected place err\n" (current-error-port))))
    (define-values (pl1 pin1 pout1 perr1) (dynamic-place 'dummy 'report
@@ -198,9 +201,10 @@
    (test #f pout1)
    (test #f perr1)
    (test 0 (place-wait pl1))
-   
+
+   ;; See warnign about about places in bootstrap-demo mode
    (register-place-symbol! 'echo2
-                           (lambda ()
+                           (lambda (pch)
                              (define s (read-line))
                              (write-string s)
                              (define s2 (list->string (reverse (string->list s))))
@@ -215,6 +219,31 @@
    (test "hello" (read-string 100 pout2))
    (test "olleh" (read-string 100 perr2))
    (test 0 (place-wait pl2))
+
+   ;; Can pass a file-stream port through a place channel, but it
+   ;; makes a fresh port on the other end
+   (define-values (left1 right1) (place-channel))
+   (let ([f (open-input-file "compiled/hello.txt")])
+     (file-stream-buffer-mode f 'none)
+     (test #\h (read-char f))
+     (test 1 (file-position f))
+     (place-channel-put left1 f)
+     (define f2 (place-channel-get right1))
+     (file-stream-buffer-mode f2 'none)
+     (test #\e (read-char f2))
+     (test 2 (file-position f2))
+     (close-input-port f2)
+     (test 2 (file-position f))
+     (test #\l (read-char f))
+     (test 3 (file-position f))
+     (close-input-port f))
+   ;; Paths are ok as place messages:
+   (let ([p (bytes->path #"ok" 'windows)])
+     (place-channel-put left1 p)
+     (test p (place-channel-get right1)))
+   (let ([p (bytes->path #"ok" 'unix)])
+     (place-channel-put left1 p)
+     (test p (place-channel-get right1)))
 
    ;; TCP and accept evts
    (parameterize ([current-custodian (make-custodian)])

@@ -58,7 +58,7 @@
 
 (meta-cond
  [(threaded?)
-  (define (place-enabled?) #f) ;; FIXME
+  (define (place-enabled?) #t)
   (define (fork-place thunk finish-proc)
     (fork-thread (lambda ()
                    (init-virtual-registers)
@@ -79,8 +79,8 @@
 (define (set-start-place! proc)
   (set! do-start-place proc))
 
-(define (start-place path sym in out err cust plumber)
-  (do-start-place path sym in out err cust plumber))
+(define (start-place pch path sym in out err cust plumber)
+  (do-start-place pch path sym in out err cust plumber))
 
 (define (place-exit v)
   (let ([esc (unbox place-esc-box)])

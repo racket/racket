@@ -1226,7 +1226,7 @@
     (let* ([bstr (make-bytevector size)]
            [p (make-cpointer bstr #f)])
       (lock-object bstr)
-      (the-foreign-guardian p (lambda () (unlock-object bstr)))
+      (with-global-lock (the-foreign-guardian p (lambda () (unlock-object bstr))))
       p)]
    [else
     (raise-unsupported-error 'malloc

@@ -174,6 +174,10 @@
 
 (define place-done-prompt (make-continuation-prompt-tag 'place-done))
 
+;; Beware that this implementation of `fork-place` doesn't support
+;; rktio-based blocking in different places. So, be careful of the
+;; preliminary tests that you might try with the "io" layer and
+;; places.
 (define (fork-place thunk finish)
   (parameterize ([place-local-table (make-hasheq)])
     (thread (lambda ()
@@ -186,11 +190,11 @@
 (define place-symbols (make-hasheq))
 (define io-place-init! void)
 
-(define (start-place mod sym in-fd out-fd err-fd cust plumber)
+(define (start-place pch mod sym in-fd out-fd err-fd cust plumber)
   (io-place-init! in-fd out-fd err-fd cust plumber)
   (lambda (finish)
     (finish)
-    ((hash-ref place-symbols sym))))
+    ((hash-ref place-symbols sym) pch)))
 
 ;; For use in "demo.rkt"
 (define (register-place-symbol! sym proc)

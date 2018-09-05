@@ -26,6 +26,7 @@
          "stats.rkt"
          "stack-size.rkt"
          "place.rkt"
+         "place-message.rkt"
          "future.rkt"
          "fsemaphore.rkt"
          "os-thread.rkt")
@@ -170,6 +171,8 @@
          place-channel-get
          place-channel-put
          place-message-allowed?
+
+         prop:place-message
 
          set-make-place-ports+fds!
          place-pumper-threads

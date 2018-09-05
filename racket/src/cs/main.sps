@@ -485,13 +485,15 @@
    (set-make-place-ports+fds! make-place-ports+fds)
 
    (set-start-place!
-    (lambda (mod sym in out err cust plumber)
+    (lambda (pch mod sym in out err cust plumber)
       (io-place-init! in out err cust plumber)
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
-      (lambda ()
-        (dynamic-require mod sym))))
+      (lambda (finish)
+        (finish)
+        (let ([f (dynamic-require mod sym)])
+          (f pch)))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler

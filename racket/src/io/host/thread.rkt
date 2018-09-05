@@ -54,7 +54,8 @@
         custodian-shut-down?
         current-plumber
         plumber-add-flush!
-        plumber-flush-handle-remove!)
+        plumber-flush-handle-remove!
+        prop:place-message)
 
 (bounce* choice-evt ; raw variant that takes a list of evts
          prop:secondary-evt

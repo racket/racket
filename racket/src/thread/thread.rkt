@@ -88,7 +88,8 @@
 (module* for-place #f
   (provide root-thread
            do-break-thread
-           break>?))
+           break>?
+           thread-did-work!))
 
 ;; ----------------------------------------
 

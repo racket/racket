@@ -130,4 +130,63 @@
          (test '#(info "cats: hello" 7 cats) msg1)
 
          (log-message demo1-logger 'info 'cats "goodbye" 9)
-         (test '#(info "cats: goodbye" 9 cats) (sync lr1)))))))
+         (test '#(info "cats: goodbye" 9 cats) (sync lr1)))))
+
+
+   ;; ----------------------------------------
+   
+   (let* ([place-symbols (make-hasheq)]
+          [register-place-symbol!
+           (lambda (sym proc)
+             (hash-set! place-symbols sym proc))])
+     (set-make-place-ports+fds! make-place-ports+fds)
+     (set-start-place!
+      (lambda (pch mod sym in out err cust plumber)
+        (io-place-init! in out err cust plumber)
+        (lambda (finish)
+          (finish)
+          ((hash-ref place-symbols sym) pch))))
+
+     ;; Check file port passed across places
+     (let ([f (open-input-file "compiled/io.scm")])
+       (file-stream-buffer-mode f 'none)
+       (let ([content (read-bytes 5 f)])
+         (file-position f 0)
+         
+         (register-place-symbol! 'read-byte
+                                 (lambda (pch)
+                                   (let ([f (place-channel-get pch)])
+                                     (file-stream-buffer-mode f 'none)
+                                     (let ([b (read-byte f)])
+                                       (close-input-port f)
+                                       (place-channel-put pch b)))))
+         (let-values ([(pl in out err) (dynamic-place 'dummy 'read-byte #f #f #f)])
+           (test (bytes-ref content 0) (read-byte f))
+           (place-channel-put pl f)
+           (test (bytes-ref content 1) (place-channel-get pl))
+           (test (bytes-ref content 2) (read-byte f))
+           (close-input-port f)))))
+
+   ;; Thread can be GCed if it's block on a place channel with no writer
+   (let ()
+     (define-values (left1 right1) (place-channel))
+     (define saved #f)
+     (define not-saved (gensym))
+     (define weak-saved (make-weak-box not-saved))
+     (define weak-right1 (make-weak-box right1))
+     (place-channel-put right1 not-saved)
+     ;; DON'T USE `right1` from here on...
+     (let ()
+       (define weak-thread
+         (make-weak-box
+          (thread (lambda ()
+                    (define local-saved (place-channel-get left1))
+                    (place-channel-get left1) ; no writer for this channel
+                    (set! saved local-saved)))))
+       (sync (system-idle-evt))
+       (collect-garbage)
+       (test #f (weak-box-value weak-right1))
+       (test #f (weak-box-value weak-thread))
+       (test #f (weak-box-value weak-saved))))
+
+   (void)))

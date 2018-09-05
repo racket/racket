@@ -63,6 +63,10 @@ Thread and signal conventions:
    before a second call, different `rktio_t` values can be used freely
    from different threads.
 
+ - Except as otherwise specificed, anything created with a particular
+   `rktio_t` must be used with that same `rktio_t` thereafter (and in
+   only one thread at a time).
+
  - If a function doesn't take a `rktio_t` argument, then it can be
    called concurrently with anything else. Notably,
    `rktio_signal_received_at` does not take a `rktio_t`.
@@ -189,7 +193,9 @@ typedef struct rktio_fd_t rktio_fd_t;
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 /* A socket (as opposed to other file descriptors) registered this way
    should include include `RKTIO_OPEN_SOCKET` and be non-blocking or
-   use `RKTIO_OPEN_INIT`. */
+   use `RKTIO_OPEN_INIT`. The resulting `rktio_fd_t` is not attached
+   to `rktio`; it can be used with other `rktio_t`s, as long as it is
+   used from only one thread at a time. */
 
 RKTIO_EXTERN_NOERR intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 /* Extracts a native file descriptor or socket. */
@@ -230,7 +236,8 @@ RKTIO_EXTERN void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *fd);
 
 RKTIO_EXTERN rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd);
 /* Copies a file descriptor, where each must be closed or forgotten
-   independenty. */
+   independenty. Like the result of `rktio_system_fd`, the resulting
+   `rktio_fd_t` is not attached to `rktio`. */
 
 RKTIO_EXTERN void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
 /* Deallocates a `rktio_fd_t` without closing the file descriptor,

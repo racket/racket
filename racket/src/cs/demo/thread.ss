@@ -191,22 +191,22 @@
            (lambda (sym proc)
              (hash-set! place-symbols sym proc))])
      (set-start-place!
-      (lambda (mod sym in out err cust plumber)
+      (lambda (pch mod sym in out err cust plumber)
         (lambda (finish)
           (finish)
-          ((hash-ref place-symbols sym)))))
+          ((hash-ref place-symbols sym) pch))))
 
      (register-place-symbol! 'nothing void)
      (let-values ([(pl1 in1 out1 err1) (dynamic-place 'dummy 'nothing #f #f #f)])
        (check #t (place? pl1))
        (check 0 (place-wait pl1)))
 
-     (register-place-symbol! 'exit1 (lambda () (exit 1)))
+     (register-place-symbol! 'exit1 (lambda (pch) (exit 1)))
      (let-values ([(pl2 in2 out2 err2) (dynamic-place 'dummy 'exit1 #f #f #f)])
        (check #t (place? pl2))
        (check 1 (place-wait pl2)))
 
-     (register-place-symbol! 'loop (lambda () (let loop () (loop))))
+     (register-place-symbol! 'loop (lambda (pch) (let loop () (loop))))
      (let-values ([(pl3 in3 out3 err3) (dynamic-place 'dummy 'loop #f #f #f)])
        (check #t (place? pl3))
        (place-break pl3)
