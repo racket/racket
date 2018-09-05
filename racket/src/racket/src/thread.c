@@ -689,7 +689,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-remove-collect-callbacks", unsafe_remove_collect_callbacks, 1, 1, env);
 
   /* Place locals are just boxes, so these operations are just aliases box operations */
-  p = scheme_make_folding_prim(unsafe_make_place_local, "unsafe-make-place-local", 1, 1, 1);
+  p = scheme_make_prim_w_arity(unsafe_make_place_local, "unsafe-make-place-local", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_addto_prim_instance("unsafe-make-place-local", p, env);
