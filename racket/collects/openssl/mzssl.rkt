@@ -43,6 +43,8 @@ TO DO:
  ["private/win32.rkt" (load-win32-store)]
  ["private/macosx.rkt" (load-macosx-keychain)])
 
+(define-logger openssl)
+
 (define protocol-symbol/c
   (or/c 'secure 'auto 'sslv2-or-v3 'sslv2 'sslv3 'tls 'tls11 'tls12))
 
@@ -361,22 +363,24 @@ TO DO:
 (define-crypto X509_get_default_cert_file_env (_fun -> _string))
 
 (define (x509-root-sources)
-  (define (dir-sep)
-    (case (system-type)
-      [(windows) ";"]
-      [else ":"]))
-  (define (get-paths get-env get-path dir? split?)
-    (cond [libcrypto
-           (let* ([result (or (getenv (get-env)) (get-path))]
-                  [results (if split?
-                               (string-split result (dir-sep))
-                               (list result))])
-             (if dir?
-                 (map (lambda (p) (list 'directory p)) results)
-                 results))]
-          [else null]))
-  (append (get-paths X509_get_default_cert_file_env X509_get_default_cert_file #f #f)
-          (get-paths X509_get_default_cert_dir_env X509_get_default_cert_dir #t #t)))
+  (define dir-sep (case (system-type) [(windows) ";"] [else ":"]))
+  (define cert-file0
+    (or (getenv (X509_get_default_cert_file_env)) (X509_get_default_cert_file)))
+  (define cert-dirs0
+    (or (getenv (X509_get_default_cert_dir_env)) (X509_get_default_cert_dir)))
+  ;; Use path-string? filter to avoid {file,directory}-exists? error on "".
+  (define cert-files (filter path-string? (list cert-file0)))
+  (define cert-dirs (filter path-string? (string-split cert-dirs0 dir-sep)))
+  ;; Log error only if *no* cert source exists (eg, on Debian/Ubuntu, default
+  ;; cert file does not exist).
+  (unless (or (ormap file-exists? cert-files) (ormap directory-exists? cert-dirs))
+    (log-openssl-error
+     "x509-root-sources: cert sources do not exist: ~s, ~s; ~a"
+     cert-file0 cert-dirs0
+     (format "override using ~a, ~a"
+             (X509_get_default_cert_file_env)
+             (X509_get_default_cert_dir_env))))
+  (append cert-files (map (lambda (p) (list 'directory p)) cert-dirs)))
 
 (define ssl-default-verify-sources
   (make-parameter
