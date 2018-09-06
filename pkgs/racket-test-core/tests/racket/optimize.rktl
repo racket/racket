@@ -6360,5 +6360,15 @@
          m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regresssion test for an optimizer bug
+
+(define (late-inline-with-single-use-that-turns-out-to-be-movable g)
+  (let ([x (g)])
+    (let ([proc (lambda (y) (list x y))])
+      (let ([only (lambda () ((car (list proc)) '(5)))])
+        (let ([also-only only])
+          (also-only))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

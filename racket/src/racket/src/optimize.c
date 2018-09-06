@@ -2658,7 +2658,8 @@ int check_potential_size(Scheme_Object *var)
 }
 
 Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
-                                       int argc, int for_inline, int for_props, int *_single_use)
+                                       int argc, int for_inline, int for_props,
+                                       int *_single_use, Scheme_Object **_single_use_var)
 /* Return a known procedure, if any.
    When argc == -1, the result may be a case-lambda or `scheme_constant_key`;
    otherwise, unless `for_props`, the arity is used to split a case-lambda to extact
@@ -2687,6 +2688,8 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
     int tmp;
     tmp = check_single_use(le);
     *_single_use = tmp;
+    if (tmp)
+      *_single_use_var = le;
     if ((SCHEME_VAR(le)->mode != SCHEME_VAR_MODE_OPTIMIZE)) {
       /* We got a local that is bound in a let that is not yet optimized. */
       return NULL;
@@ -2832,7 +2835,8 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
 Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *le, int argc)
 {
   int single_use = 0;
-  return do_lookup_constant_proc(info, le, argc, 0, 0, &single_use);
+  Scheme_Object *single_use_var;
+  return do_lookup_constant_proc(info, le, argc, 0, 0, &single_use, &single_use_var);
 }
 
 #if 0
@@ -2850,7 +2854,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
    application with two arguments. */
 {
   int single_use = 0, psize = 0;
-  Scheme_Object *prev = NULL, *orig_le = le, *le2;
+  Scheme_Object *prev = NULL, *orig_le = le, *le2, *single_use_var = NULL;
   int already_opt = optimized_rator;
 
   if ((info->inline_fuel < 0) && info->has_nonleaf)
@@ -2871,7 +2875,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   }
 
   le2 = le;
-  le = do_lookup_constant_proc(info, le, argc, 1, 0, &single_use);
+  le = do_lookup_constant_proc(info, le, argc, 1, 0, &single_use, &single_use_var);
   
   if (!le) {
     info->has_nonleaf = 1;
@@ -2894,7 +2898,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     int len;
     const char *pname = NULL, *context;
     info->escapes = 1;
-    le2 = do_lookup_constant_proc(info, le2, argc, 1, 1, &single_use);
+    le2 = do_lookup_constant_proc(info, le2, argc, 1, 1, &single_use, &single_use_var);
     if (!SAME_TYPE(SCHEME_TYPE(le2), scheme_struct_proc_shape_type)
         && !SAME_TYPE(SCHEME_TYPE(le2), scheme_struct_prop_proc_shape_type)){
       pname = scheme_get_proc_name(le2, &len, 0);
@@ -2942,6 +2946,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                      sz,
                      threshold,
                      scheme_optimize_context_to_string(info->context));
+        if (single_use_var)
+          SCHEME_VAR(single_use_var)->optimize_used = 0; /* just in case tentatively used */
         le = apply_inlined((Scheme_Lambda *)le, sub_info, argc, app, app2, app3, context,
                            orig_le, prev, single_use);
         return le;
