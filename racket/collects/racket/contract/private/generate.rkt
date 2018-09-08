@@ -194,7 +194,8 @@
 ; #f if no value could be generated
 ;; if it returns a thunk, the thunk will not return contract-random-generate-fail?
 (define (contract-random-generate/choose ctc fuel)
-  (define direct ((contract-struct-generate ctc) fuel))
+  (define def-ctc (coerce-contract 'contract-random-generate/choose ctc))
+  (define direct ((contract-struct-generate def-ctc) fuel))
   (define env-can? (can-generate/env? ctc))
   (define env (generate-env))
   (unless (contract-random-generate-env? env)
