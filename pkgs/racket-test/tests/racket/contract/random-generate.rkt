@@ -492,3 +492,14 @@
            (λ (_) 'thing)
            'pos
            'neg))
+
+;; a test for contract-random-generate/choose
+(let ()
+  (struct make-gen-choose/c ()
+    #:property prop:chaperone-contract
+    (build-chaperone-contract-property
+     #:late-neg-projection
+     (λ (ctc) (λ (b) (λ (v np) v)))
+     #:generate
+     (λ (ctc) (λ (fuel) (contract-random-generate/choose number? 10)))))
+  (check-not-exn (λ () (test-contract-generation (make-gen-choose/c)))))

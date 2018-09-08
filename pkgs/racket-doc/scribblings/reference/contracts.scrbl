@@ -3554,8 +3554,14 @@ ended up returning @racket[contract-random-generate-fail].
          (or/c #f (-> c))]{
   This function is like @racket[contract-random-generate], but it is intended to
   be used with combinators that generate values based on sub-contracts
-  they have. It cannot be called, except during contract
-  generation. It will never fail, but it might escape back to an enclosing
+  they have. It must be called when @racket[contract-random-generate]
+  (and @racket[contract-exercise]) creates the generators. In other words,
+  @racket[contract-random-generate/choose] is available only after the
+  @racket[_generate] (and @racket[_exercise]) function received the
+  @racket[_fuel] and before it returned the thunk (or the exerciser).
+
+  @racket[contract-random-generate/choose] will never fail,
+  but it might escape back to an enclosing
   call or to the original call to @racket[contract-random-generate].
  
   It chooses one of several possible generation strategies, and thus it may not
