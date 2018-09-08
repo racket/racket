@@ -594,7 +594,7 @@
           make-sized-byte-string make-union-type malloc malloc-immobile-cell
           memcpy memmove memset offset-ptr? prop:cpointer ptr-add ptr-add! ptr-equal? ptr-offset ptr-ref
           ptr-set! saved-errno set-cpointer-tag! set-ptr-offset! vector->cpointer
-          unsafe-register-process-global
+          unsafe-register-process-global unsafe-add-global-finalizer
           (rename [ffi-lib* ffi-lib])
           set-ffi-get-lib-and-obj!        ; not exported to Racket
           poll-async-callbacks            ; not exported to Racket

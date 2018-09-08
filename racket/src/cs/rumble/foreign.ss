@@ -1278,6 +1278,9 @@
       (v)
       (poll-foreign-guardian))))
 
+(define (unsafe-add-global-finalizer v proc)
+  (the-foreign-guardian v proc))
+
 ;; ----------------------------------------
 
 (define eval/foreign

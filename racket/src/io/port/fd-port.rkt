@@ -2,6 +2,7 @@
 (require "../host/rktio.rkt"
          "../host/error.rkt"
          "../host/thread.rkt"
+         "../host/pthread.rkt"
          "../sandman/main.rkt"
          "../file/error.rkt"
          "port.rkt"
@@ -366,9 +367,14 @@
     (end-atomic)
     (raise-rktio-error 'place-channel-put new-fd "error during duping file descriptor"))
   (define fd-dup (box new-fd))
-  ;; FIXME: possible leak if place message is never received
+  (unsafe-add-global-finalizer fd-dup (lambda ()
+                                        (define fd (unbox fd-dup))
+                                        (when fd
+                                          (rktio_close rktio fd))))
   fd-dup)
 
 ;; in atomic mode
 (define (claim-dup fd-dup)
-  (unbox fd-dup))
+  (define fd (unbox fd-dup))
+  (set-box! fd-dup #f)
+  fd)

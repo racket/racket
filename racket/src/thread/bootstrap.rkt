@@ -216,7 +216,8 @@
                   'make-pthread-parameter make-pthread-parameter
                   'unsafe-make-place-local unsafe-make-place-local
                   'unsafe-place-local-ref unsafe-place-local-ref
-                  'unsafe-place-local-set! unsafe-place-local-set!))
+                  'unsafe-place-local-set! unsafe-place-local-set!
+                  'unsafe-add-global-finalizer (lambda (v proc) (void))))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine

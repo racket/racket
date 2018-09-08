@@ -5,6 +5,7 @@
   [check-not-unsafe-undefined/assign (known-procedure 4)]
   [prop:chaperone-unsafe-undefined (known-constant)]
   [unsafe-abort-current-continuation/no-wind (known-procedure 4)]
+  [unsafe-add-global-finalizer (known-procedure 4)]
   [unsafe-add-post-custodian-shutdown (known-procedure 2)]
   [unsafe-add-collect-callbacks (known-procedure 4)]
   [unsafe-box*-cas! (known-procedure 8)]

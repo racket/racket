@@ -22,4 +22,5 @@
 (bounce #%pthread
         unsafe-make-place-local
         unsafe-place-local-ref
-        unsafe-place-local-set!)
+        unsafe-place-local-set!
+        unsafe-add-global-finalizer)

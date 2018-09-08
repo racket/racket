@@ -77,8 +77,9 @@
 (primitive-table '#%pthread
                  (hasheq 'unsafe-make-place-local box
                          'unsafe-place-local-ref unbox
-                         'unsafe-place-local-set! set-box!))
-                         
+                         'unsafe-place-local-set! set-box!
+                         'unsafe-add-global-finalizer (lambda (v proc) (void))))
+
 (primitive-table '#%thread
                  (hasheq 'thread thread
                          'thread-suspend-evt thread-suspend-evt

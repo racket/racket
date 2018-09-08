@@ -340,6 +340,7 @@ static Scheme_Object *unsafe_add_post_custodian_shutdown(int argc, Scheme_Object
 static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_get_place_table(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_add_global_finalizer(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_os_thread_enabled_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_call_in_os_thread(int argc, Scheme_Object *argv[]);
@@ -671,6 +672,8 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-set-on-atomic-timeout!", unsafe_set_on_atomic_timeout, 1, 1, env);
 
   ADD_PRIM_W_ARITY("unsafe-make-security-guard-at-root", unsafe_make_security_guard_at_root, 0, 3, env);
+
+  ADD_PRIM_W_ARITY("unsafe-add-global-finalizer", unsafe_add_global_finalizer, 2, 2, env);
 
   scheme_addto_prim_instance("unsafe-poller", scheme_unsafe_poller_proc, env);
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-fd-wakeup", unsafe_poll_ctx_fd_wakeup, 3, 3, env);
@@ -2907,6 +2910,12 @@ static Scheme_Object *unsafe_os_semaphore_wait(int argc, Scheme_Object *argv[])
 static Scheme_Object *unsafe_os_semaphore_post(int argc, Scheme_Object *argv[])
 {
   scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-os-semaphore-post: " NOT_SUPPORTED_STR);
+  ESCAPED_BEFORE_HERE;
+}
+
+static Scheme_Object *unsafe_add_global_finalizer(int argc, Scheme_Object *argv[])
+{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "unsafe-add-global-finalizer: " NOT_SUPPORTED_STR);
   ESCAPED_BEFORE_HERE;
 }
 
