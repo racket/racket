@@ -3969,7 +3969,7 @@ typedef struct Scheme_Place_Object {
 typedef struct Scheme_Serialized_File_FD {
   Scheme_Object so;
   Scheme_Object *name;
-  struct rktio_fd_t *fd;
+  struct rktio_fd_transfer_t *fdt;
   intptr_t type;
   char flush_mode;
 } Scheme_Serialized_File_FD;
@@ -3977,7 +3977,7 @@ typedef struct Scheme_Serialized_File_FD {
 typedef struct Scheme_Serialized_Socket_FD {
   Scheme_Object so;
   Scheme_Object *name;
-  struct rktio_fd_t *fd;
+  struct rktio_fd_transfer_t *fdt;
   intptr_t type;
 } Scheme_Serialized_Socket_FD;
 

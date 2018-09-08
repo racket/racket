@@ -366,15 +366,15 @@
   (when (rktio-error? new-fd)
     (end-atomic)
     (raise-rktio-error 'place-channel-put new-fd "error during duping file descriptor"))
-  (define fd-dup (box new-fd))
+  (define fd-dup (box (rktio_fd_detach rktio new-fd)))
   (unsafe-add-global-finalizer fd-dup (lambda ()
                                         (define fd (unbox fd-dup))
                                         (when fd
-                                          (rktio_close rktio fd))))
+                                          (rktio_fd_close_transfer fd))))
   fd-dup)
 
 ;; in atomic mode
 (define (claim-dup fd-dup)
   (define fd (unbox fd-dup))
   (set-box! fd-dup #f)
-  fd)
+  (rktio_fd_attach rktio fd))

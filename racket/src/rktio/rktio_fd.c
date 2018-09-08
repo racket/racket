@@ -48,6 +48,10 @@ struct rktio_fd_t {
 #endif
 };
 
+struct rktio_fd_transfer_t {
+  rktio_fd_t fd;
+};
+
 /*========================================================================*/
 /* Windows I/O helper structs                                             */
 /*========================================================================*/
@@ -90,13 +94,13 @@ typedef struct Win_FD_Output_Thread {
 # define RKTIO_FD_BUFFSIZE 4096
 
 static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd);
-static void deinit_read_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close);
-static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close);
+static void deinit_read_fd(rktio_fd_t *rfd, int full_close);
+static void deinit_write_fd(rktio_fd_t *rfd, int full_close);
 
-static void deinit_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+static void deinit_fd(rktio_fd_t *rfd, int full_close)
 {
-  deinit_read_fd(rktio, rfd, full_close);
-  deinit_write_fd(rktio, rfd, full_close);
+  deinit_read_fd(rfd, full_close);
+  deinit_write_fd(rfd, full_close);
 }
 
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th);
@@ -193,7 +197,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   return rfd;
 }
 
-intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
+intptr_t rktio_internal_fd_system_fd(rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   return rfd->fd;
@@ -204,6 +208,11 @@ intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
   else
     return (intptr_t)rfd->fd;
 #endif
+}
+
+intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return rktio_internal_fd_system_fd(rfd);
 }
 
 rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
@@ -348,19 +357,19 @@ void rktio_reliably_close(intptr_t s)
 }
 #endif
 
-static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
+static rktio_ok_t do_close(rktio_t *rktio /* maybe NULL */, rktio_fd_t *rfd, int set_error)
 {
   int ok;
 
 #ifdef RKTIO_SYSTEM_UNIX
   int cr;
 
+  cr = rktio_reliably_close_err(rfd->fd);
+
 # ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
-  if (!(rfd->modes & RKTIO_OPEN_SOCKET))
+  if (rktio && !(rfd->modes & RKTIO_OPEN_SOCKET))
     rktio_release_lockf(rktio, rfd->fd);
 # endif
-
-  cr = rktio_reliably_close_err(rfd->fd);
 
   if (cr && set_error) {
     get_posix_error();   
@@ -372,21 +381,22 @@ static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_close(rktio, rfd, set_error);
 
-  deinit_fd(rktio, rfd, 1);
+  deinit_fd(rfd, 1);
 
   ok = 1;
   if (!rfd->th && !rfd->oth) {
     if (!CloseHandle(rfd->fd)) {
       ok = 0;
-      get_windows_error();
+      if (set_error)
+        get_windows_error();
     }
   }
   
 #endif
 
-  if (ok)
+  if (ok || !set_error)
     free(rfd);
-  
+
   return ok;
 }
 
@@ -400,12 +410,36 @@ void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *rfd)
   (void)do_close(rktio, rfd, 0);
 }
 
+rktio_ok_t rktio_internal_close(rktio_t *rktio /* may be NULL */, rktio_fd_t *rfd, int set_error)
+{
+  return do_close(rktio, rfd, set_error);
+}
+
 void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_WINDOWS_SYSTEM
-  deinit_fd(rktio, rfd, 1);
+  deinit_fd(rfd, 1);
 #endif
   free(rfd);
+}
+
+/*========================================================================*/
+/* detach, attach, and abandon                                            */
+/*========================================================================*/
+
+rktio_fd_transfer_t *rktio_fd_detach(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return (rktio_fd_transfer_t *)rfd;
+}
+
+rktio_fd_t *rktio_fd_attach(rktio_t *rktio, rktio_fd_transfer_t *rfdt)
+{
+  return (rktio_fd_t *)rfdt;
+}
+
+void rktio_fd_close_transfer(rktio_fd_transfer_t *rfdt)
+{
+  (void)do_close(NULL, (rktio_fd_t *)rfdt, 0);
 }
 
 /*========================================================================*/
@@ -988,7 +1022,7 @@ static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
   }
 }
 
-static void deinit_read_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+static void deinit_read_fd(rktio_fd_t *rfd, int full_close)
 {
   if (rfd->th) {
     CSI_proc csi;
@@ -1686,7 +1720,7 @@ static intptr_t recount_output_wtext(wchar_t *w_buffer, intptr_t winwrote)
   return WideCharToMultiByte(CP_UTF8, 0, w_buffer, winwrote, NULL, 0, NULL, 0);
 }
 
-static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+static void deinit_write_fd(rktio_fd_t *rfd, int full_close)
 {
   if (rfd->oth) {
     CSI_proc csi;

@@ -398,6 +398,21 @@
  rktio_ok_t
  rktio_set_file_size
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (rktio_filesize_t sz)))
+(define-function
+ ()
+ (ref rktio_fd_transfer_t)
+ rktio_fd_detach
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function
+ ()
+ (ref rktio_fd_t)
+ rktio_fd_attach
+ (((ref rktio_t) rktio) ((ref rktio_fd_transfer_t) rfdt)))
+(define-function
+ ()
+ void
+ rktio_fd_close_transfer
+ (((ref rktio_fd_transfer_t) rfdt)))
 (define-function/errno
  NULL
  ()

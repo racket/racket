@@ -869,10 +869,17 @@ void rktio_winsock_done(rktio_t *rktio)
 /* TCP sockets                                                            */
 /*========================================================================*/
 
-rktio_socket_t rktio_fd_socket(rktio_t *rktio, rktio_fd_t *rfd)
+static rktio_socket_t rktio_fd_socket(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return (rktio_socket_t)rktio_fd_system_fd(rktio, rfd);
 }
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+static rktio_socket_t rktio_internal_fd_socket(rktio_fd_t *rfd)
+{
+  return (rktio_socket_t)rktio_internal_fd_system_fd(rfd);
+}
+#endif
 
 void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
 {
@@ -906,22 +913,17 @@ void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
   }
 }
 
-int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
+int rktio_socket_close(rktio_t *rktio /* may be NULL */, rktio_fd_t *rfd, int set_error)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  if (set_error)
-    return rktio_close(rktio, rfd);
-  else {
-    rktio_close_noerr(rktio, rfd);
-    return 1;
-  }
+  return rktio_internal_close(rktio, rfd, set_error);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  rktio_socket_t s = rktio_internal_fd_socket(rfd);
   int err;
   UNREGISTER_SOCKET(s);
   err = closesocket(s);
-  if (!err)
+  if (!err && set_error)
     get_socket_error();
   free(rfd);
 

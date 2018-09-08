@@ -818,17 +818,17 @@ static void bad_place_message(Scheme_Object *so) {
                         NULL);
 }
 
-static void *box_fd(rktio_fd_t *fd)
+static void *box_fd(rktio_fd_transfer_t *fd)
 {
-  rktio_fd_t **fdp;
-  fdp = scheme_malloc_atomic(sizeof(rktio_fd_t*));
+  rktio_fd_transfer_t **fdp;
+  fdp = scheme_malloc_atomic(sizeof(rktio_fd_transfer_t*));
   *fdp = fd;
   return fdp;
 }
 
-static rktio_fd_t *unbox_fd(void *p)
+static rktio_fd_transfer_t *unbox_fd(void *p)
 {
-  return *(rktio_fd_t **)p;
+  return *(rktio_fd_transfer_t **)p;
 }
 
 static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_raise_exn) {
@@ -838,7 +838,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
     if (SCHEME_VEC_ELS(v)[0]) {
       l = SCHEME_VEC_ELS(v)[0];
       while (SCHEME_PAIRP(l)) {
-        rktio_close(scheme_rktio, unbox_fd(SCHEME_CAR(l)));
+        rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
       }
@@ -846,7 +846,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
     if (SCHEME_VEC_ELS(v)[1]) {
       l = SCHEME_VEC_ELS(v)[1];
       while (SCHEME_PAIRP(l)) {
-        rktio_close(scheme_rktio, unbox_fd(SCHEME_CAR(l)));
+        rktio_fd_close_transfer(unbox_fd(SCHEME_CAR(l)));
         l = SCHEME_CDR(l);
         SCHEME_USE_FUEL(1);
       }
@@ -856,7 +856,7 @@ static void bad_place_message2(Scheme_Object *so, Scheme_Object *o, int can_rais
     bad_place_message(so);
 }
 
-static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, rktio_fd_t *dupfd) {
+static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, rktio_fd_transfer_t *dupfdt) {
   Scheme_Object *tmp;
   Scheme_Vector *v; 
   if (fd_accumulators) {
@@ -866,7 +866,7 @@ static void push_duped_fd(Scheme_Object **fd_accumulators, intptr_t slot, rktio_
     }
     v = (Scheme_Vector*) *fd_accumulators;
 
-    tmp = scheme_make_raw_pair(box_fd(dupfd), SCHEME_VEC_ELS(v)[slot]);
+    tmp = scheme_make_raw_pair(box_fd(dupfdt), SCHEME_VEC_ELS(v)[slot]);
     SCHEME_VEC_ELS(v)[slot] = tmp;
   }
 }
@@ -1176,6 +1176,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             Scheme_Object *portname;
             Scheme_Serialized_Socket_FD *ssfd;
             rktio_fd_t *dupfd;
+            rktio_fd_transfer_t *dupfdt;
             dupfd = rktio_dup(scheme_rktio, fd);
             if (!dupfd) {
               if (can_raise_exn)
@@ -1189,11 +1190,12 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
               }
               return NULL;
             }
-            push_duped_fd(fd_accumulators, 1, dupfd);
+            dupfdt = rktio_fd_detach(scheme_rktio, dupfd);
+            push_duped_fd(fd_accumulators, 1, dupfdt);
             ssfd = scheme_malloc_tagged(sizeof(Scheme_Serialized_Socket_FD));
             ssfd->so.type = scheme_serialized_tcp_fd_type;
             ssfd->type = so->type;
-            ssfd->fd = dupfd;
+            ssfd->fdt = dupfdt;
             portname = scheme_port_name(so);
             tmp = shallow_types_copy(portname, ht, fd_accumulators, delayed_errno, delayed_errkind,
                                      mode, can_raise_exn, master_chain, invalid_object);
@@ -1207,6 +1209,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
               Scheme_Object *tmp;
               Scheme_Serialized_File_FD *sffd;
               rktio_fd_t *dupfd;
+              rktio_fd_transfer_t *dupfdt;
               sffd = scheme_malloc_tagged(sizeof(Scheme_Serialized_File_FD));
               sffd->so.type = scheme_serialized_file_fd_type;
               scheme_get_serialized_fd_flags(so, sffd);
@@ -1226,8 +1229,9 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
                 }
                 return NULL;
               }
-              push_duped_fd(fd_accumulators, 0, dupfd);
-              sffd->fd = dupfd;
+              dupfdt = rktio_fd_detach(scheme_rktio, dupfd);
+              push_duped_fd(fd_accumulators, 0, dupfdt);
+              sffd->fdt = dupfdt;
               sffd->type = so->type;
               new_so = (Scheme_Object *) sffd;
             }
@@ -1252,8 +1256,11 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           Scheme_Object *out;
           Scheme_Object *name;
           int type = ((Scheme_Serialized_Socket_FD *) so)->type;
-          rktio_fd_t *fd   = ((Scheme_Serialized_Socket_FD *) so)->fd;
+          rktio_fd_transfer_t *fdt = ((Scheme_Serialized_Socket_FD *) so)->fdt;
+          rktio_fd_t *fd;
+
           name = ((Scheme_Serialized_Socket_FD *) so)->name;
+          fd = rktio_fd_attach(scheme_rktio, fdt);
 
           /* scheme_socket_to_ports(fd, "tcp-accepted", 1, &in, &out); */
           if (type == scheme_input_port_type) {
@@ -1267,8 +1274,8 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
             new_so = out;
           }
         } else if (mode == mzPDC_CLEAN) {
-          rktio_fd_t *fd   = ((Scheme_Serialized_Socket_FD *) so)->fd;
-          rktio_close(scheme_rktio, fd);
+          rktio_fd_transfer_t *fdt = ((Scheme_Serialized_Socket_FD *) so)->fdt;
+          rktio_fd_close_transfer(fdt);
         } else {
           scheme_log_abort("encountered serialized TCP socket in bad mode");
           abort();
@@ -1284,7 +1291,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
           int type;
 
           ffd = (Scheme_Serialized_File_FD *) so;
-          fd = ffd->fd;
+          fd = rktio_fd_attach(scheme_rktio, ffd->fdt);
           name = ffd->name;
           type = ffd->type;
 
@@ -1297,7 +1304,7 @@ static Scheme_Object *shallow_types_copy(Scheme_Object *so, Scheme_Hash_Table *h
         } else if (mode == mzPDC_CLEAN) {
           Scheme_Serialized_File_FD *sffd;
           sffd = (Scheme_Serialized_File_FD *) so;
-          rktio_close(scheme_rktio, sffd->fd);
+          rktio_fd_close_transfer(sffd->fdt);
         } else {
           scheme_log_abort("encountered serialized fd in bad mode");
           abort();

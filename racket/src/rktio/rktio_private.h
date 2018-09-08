@@ -32,6 +32,13 @@ struct background_sleep_t;
 #endif
 
 /*========================================================================*/
+/* File-descriptor actions without a rktio_t                              */
+/*========================================================================*/
+
+intptr_t rktio_internal_fd_system_fd(rktio_fd_t *rfd);
+rktio_ok_t rktio_internal_close(rktio_t *rktio /* may be NULL */, rktio_fd_t *rfd, int set_error);
+
+/*========================================================================*/
 /* Globals, as gathered into `rktio_t`                                    */
 /*========================================================================*/
 
