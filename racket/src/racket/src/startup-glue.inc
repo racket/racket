@@ -66,8 +66,13 @@ static void c_pop_mark_stack(c_saved_mark_stack_t s)
 }
 #endif
 
-#define c_use_fuel() if (DECREMENT_FUEL(c_scheme_fuel_counter, 1) <= 0) scheme_out_of_fuel();
+#ifdef SCHEME_BIG_ENDIAN
+# define c_SELECT_LITTLE_BIG_ENDIAN(l, b) b
+#else
+# define c_SELECT_LITTLE_BIG_ENDIAN(l, b) l
+#endif
 
+#define c_use_fuel() if (DECREMENT_FUEL(c_scheme_fuel_counter, 1) <= 0) scheme_out_of_fuel();
 
 #define c_RUNSTACK_INIT_VAL NULL
 
@@ -212,20 +217,12 @@ static Scheme_Object *c_wrong_arity(const char *name, int argc, Scheme_Object **
   return NULL;
 }
 
-static mzshort *convert_arities(int mina, const char *a)
-{
-  /* FIXME: On a big-endian machine, we need to reverse the byte order in arities */
-  return (mzshort *)a;
-}
-
 static Scheme_Object *scheme_make_prim_w_case_arity(Scheme_Prim *prim, const char *name, mzshort mina, const char *arities)
 {
   Scheme_Object *p;
-  mzshort *a;
   p = scheme_make_prim_w_arity(prim, name, 0, 0);
   ((Scheme_Primitive_Proc *)p)->mina = mina;
-  a = convert_arities(mina, arities);
-  ((Scheme_Primitive_Proc *)p)->mu.cases = a;
+  ((Scheme_Primitive_Proc *)p)->mu.cases = (mzshort *)arities;
   return p;
 }
 
@@ -235,11 +232,9 @@ static Scheme_Object *scheme_make_prim_closure_w_case_arity(Scheme_Primitive_Clo
                                                             mzshort mina, const char *arities)
 {
   Scheme_Object *p;
-  mzshort *a;
   p = scheme_make_prim_closure_w_arity(prim, size, vals, name, 0, 0);
   ((Scheme_Primitive_Proc *)p)->mina = mina;
-  a = convert_arities(mina, arities);
-  ((Scheme_Primitive_Proc *)p)->mu.cases = a;
+  ((Scheme_Primitive_Proc *)p)->mu.cases = (mzshort *)arities;
   return p;
 }
 

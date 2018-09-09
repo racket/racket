@@ -33,6 +33,10 @@
 #include "schmach.h"
 #include "schrktio.h"
 #include <errno.h>
+#ifdef OS_X
+/* needed for old gcc to define `off_t` */
+# include <unistd.h>
+#endif
 #ifndef DONT_IGNORE_PIPE_SIGNAL
 # include <signal.h>
 #endif

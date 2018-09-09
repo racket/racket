@@ -36,16 +36,19 @@
        [precise-cases?
         ;; Get full arity to record for arity reporting
         (define idss unsorted-idss)
+        (define (bytes->string-constant s)
+          ;; Drop the leading `#`:
+          (substring (format "~s" s) 1))
+        (define (encode big-endian?)
+          (bytes->string-constant 
+           (apply bytes-append
+                  ;; Encode individual arities as pairs of `int`s:
+                  (for/list ([ids (in-list idss)])
+                    (define-values (min-a max-a) (lambda-arity `(lambda ,ids)))
+                    (bytes-append (integer->integer-bytes min-a 4 #t big-endian?)
+                                  (integer->integer-bytes max-a 4 #t big-endian?))))))
         (values (- (+ (length idss) 1))
-                (substring
-                 (format "~s"
-                         (apply bytes-append
-                                ;; Encode individual arities as pairs of little-endian `int`s:
-                                (for/list ([ids (in-list idss)])
-                                  (define-values (min-a max-a) (lambda-arity `(lambda ,ids)))
-                                  (bytes-append (integer->integer-bytes min-a 4 #t #f)
-                                                (integer->integer-bytes max-a 4 #t #f)))))
-                 1))]
+                (format "c_SELECT_LITTLE_BIG_ENDIAN(~a, ~a)" (encode #f) (encode #t)))]
        [else
         ;; Get approximate arity for predictions about calls
         (define idss (sort unsorted-idss < #:key args-length))
