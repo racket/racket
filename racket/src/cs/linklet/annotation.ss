@@ -38,18 +38,26 @@
                            stripped-e))
         e)))
 
-(define sfd-cache (make-weak-hash))
+(define sfd-cache-box (unsafe-make-place-local #f))
 
 (define (source->sfd src)
-  (or (hash-ref sfd-cache src #f)
-      (let ([str (if (path? src)
-                     (path->string src)
-                     src)])
-        ;; We'll use a file-position object in source objects, so
-        ;; the sfd checksum doesn't matter
-        (let ([sfd (source-file-descriptor str 0)])
-          (hash-set! sfd-cache src sfd)
-          sfd))))
+  (let ([sfd-cache (unsafe-place-local-ref sfd-cache-box)])
+    (cond
+     [sfd-cache
+      (or (hash-ref sfd-cache src #f)
+          (let ([str (if (path? src)
+                         (path->string src)
+                         src)])
+            ;; We'll use a file-position object in source objects, so
+            ;; the sfd checksum doesn't matter
+            (let ([sfd (source-file-descriptor str 0)])
+              (hash-set! sfd-cache src sfd)
+              sfd)))]
+     [else
+      ;; There's a race here at the level of Racket threads,
+      ;; but that seems ok for setting up a cache
+      (unsafe-place-local-set! sfd-cache-box (make-weak-hash))
+      (source->sfd src)])))
 
 ;; --------------------------------------------------
 

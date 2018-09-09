@@ -103,12 +103,13 @@
         (create-flvector bstr)))]))
 
 (define/who (shared-flvector . xs)
-  (do-flvector who xs))
+  (register-place-shared (do-flvector who xs)))
 
 (define make-shared-flvector
   (case-lambda
    [(size) (make-shared-flvector size 0.0)]
-   [(size init) (do-make-flvector 'make-shared-flvector size init)]))
+   [(size init)
+    (register-place-shared (do-make-flvector 'make-shared-flvector size init))]))
 
 ;; ----------------------------------------
 

@@ -97,11 +97,11 @@
   ;; Start the new place
   (host:fork-place
    (lambda ()
+     (set-root-custodian! orig-cust)
      (define finish (host:start-place child-pch path sym
                                       child-in-fd child-out-fd child-err-fd
                                       orig-cust orig-plumber))
      (call-in-another-main-thread
-      orig-cust
       (lambda ()
         (set! current-place new-place)
         (current-plumber orig-plumber)

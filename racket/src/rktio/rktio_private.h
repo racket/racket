@@ -114,6 +114,8 @@ struct rktio_t {
 
   int pending_os_signals[RKTIO_NUM_OS_SIGNALS];
 
+  int processor_count;
+
   struct rktio_dll_t *all_dlls;
   struct rktio_hash_t *dlls_by_name;
 #ifdef RKTIO_SYSTEM_UNIX
@@ -333,6 +335,8 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 void rktio_stop_fs_change(rktio_t *rktio);
 
 void rktio_init_time(rktio_t *rktio);
+
+void rktio_init_cpu(rktio_t *rktio);
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 int rktio_winsock_init(rktio_t *rktio);

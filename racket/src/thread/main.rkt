@@ -179,7 +179,6 @@
          unsafe-add-post-custodian-shutdown
 
          futures-enabled?
-         processor-count
          future
          future?
          touch

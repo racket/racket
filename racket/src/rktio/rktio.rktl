@@ -1205,6 +1205,7 @@
  (ref char)
  rktio_wide_path_to_path
  (((ref rktio_t) rktio) ((*ref rktio_char16_t) wp)))
+(define-function () int rktio_processor_count (((ref rktio_t) rktio)))
 (define-function/errno
  #f
  ()

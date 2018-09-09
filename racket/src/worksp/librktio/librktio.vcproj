@@ -171,6 +171,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_cpu.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_syslog.c"
 				>
 			</File>

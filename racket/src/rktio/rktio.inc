@@ -167,6 +167,7 @@ Sforeign_symbol("rktio_seconds_to_date", (void *)rktio_seconds_to_date);
 Sforeign_symbol("rktio_shell_execute", (void *)rktio_shell_execute);
 Sforeign_symbol("rktio_path_to_wide_path", (void *)rktio_path_to_wide_path);
 Sforeign_symbol("rktio_wide_path_to_path", (void *)rktio_wide_path_to_path);
+Sforeign_symbol("rktio_processor_count", (void *)rktio_processor_count);
 Sforeign_symbol("rktio_syslog", (void *)rktio_syslog);
 Sforeign_symbol("rktio_convert_properties", (void *)rktio_convert_properties);
 Sforeign_symbol("rktio_converter_open", (void *)rktio_converter_open);

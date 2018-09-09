@@ -88,6 +88,13 @@
         (esc v)
         (#%exit v))))
 
-(define (place-shared? v)
-  #f)
+(define place-shared (make-weak-eq-hashtable))
 
+(define (place-shared? v)
+  (with-global-lock
+   (hashtable-ref place-shared v #f)))
+
+(define (register-place-shared v)
+  (with-global-lock
+   (hashtable-set! place-shared v #t))
+  v)

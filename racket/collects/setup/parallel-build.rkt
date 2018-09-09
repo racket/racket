@@ -110,7 +110,7 @@
                   (append-error cc "making" #f out err "output"))
                 ;(when last (printer (current-output-port) "made" "~a" (cc-name cc)))
                 #t]
-              [else (eprintf "Failed trying to match:\n~e\n" result-type)]))]
+              [else (eprintf "Failed trying to match:\n~s\n" result-type)]))]
         [(list _ (list 'ADD fn))
          ;; Currently ignoring queued individual files
          #f]

@@ -396,5 +396,11 @@
    [else
     (raise-argument-error who "vector?" v)]))
 
-(define shared-fxvector fxvector)
-(define make-shared-fxvector make-fxvector)
+(define (shared-fxvector . args)
+  (register-place-shared (apply fxvector args)))
+
+(define make-shared-fxvector
+  (case-lambda
+   [(size) (make-shared-fxvector size 0)]
+   [(size init)
+    (register-place-shared (make-fxvector size init))]))

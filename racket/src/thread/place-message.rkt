@@ -195,7 +195,9 @@
          [else
           (for/hash ([(k v) (in-hash v)])
             (values (loop k) (loop v)))])]
-      [(cpointer? v)
+      [(and (cpointer? v)
+            v ; not #f
+            (not (bytes? v)))
        (ptr-add v 0)]
       [(message-ized? v)
        ((message-ized-unmessage v))]

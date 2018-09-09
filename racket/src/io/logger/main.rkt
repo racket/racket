@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "../host/place-local.rkt"
          "logger.rkt"
          "level.rkt"
          "wanted.rkt"
@@ -18,10 +19,13 @@
          log-receiver?
          make-log-receiver
          add-stderr-log-receiver!
-         add-stdout-log-receiver!)
+         add-stdout-log-receiver!
+         logger-init!)
 
-(define root-logger
+(define (make-root-logger)
   (create-logger #:topic #f #:parent #f #:propagate-filters 'none))
+
+(define-place-local root-logger (make-root-logger))
 
 (define current-logger
   (make-parameter root-logger
@@ -29,6 +33,10 @@
                     (unless (logger? l)
                       (raise-argument-error 'current-logger "logger?" l))
                     l)))
+
+(define (logger-init!)
+  (set! root-logger (make-root-logger))
+  (current-logger root-logger))
 
 (define (make-logger [topic #f] [parent #f] . filters)
   (unless (or (not topic) (symbol? topic))

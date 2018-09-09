@@ -33,9 +33,8 @@
   (select-thread!))
 
 ;; Initializes the thread system in a new place:
-(define (call-in-another-main-thread c thunk)
+(define (call-in-another-main-thread thunk)
   (make-another-initial-thread-group)
-  (set-root-custodian! c)
   (call-in-main-thread thunk))
 
 ;; ----------------------------------------

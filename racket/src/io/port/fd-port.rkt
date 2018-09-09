@@ -351,13 +351,16 @@
      (define input? (input-port? port))
      (define fd-dup (dup-port-fd port))
      (define name (core-port-name port))
+     (define opener (or (fd-extra-data->opener (fd-data-extra (core-port-data port))
+                                               port)
+                        (if input?
+                            (lambda (port name) (open-input-fd port name))
+                            (lambda (port name) (open-output-fd port name)))))
      (end-atomic)
      (lambda ()
        (atomically
         (define fd (claim-dup fd-dup))
-        (if input?
-            (open-input-fd fd name)
-            (open-output-fd fd name))))]))
+        (opener fd name)))]))
 
   ;; in atomic mode
 (define (dup-port-fd port)

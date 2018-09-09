@@ -167,6 +167,7 @@ rktio_seconds_to_date
 rktio_shell_execute
 rktio_path_to_wide_path
 rktio_wide_path_to_path
+rktio_processor_count
 rktio_syslog
 rktio_convert_properties
 rktio_converter_open

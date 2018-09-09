@@ -4,7 +4,8 @@
          "../port/port.rkt"
          "../port/input-port.rkt"
          "../port/output-port.rkt"
-         "../port/fd-port.rkt")
+         "../port/fd-port.rkt"
+         "../port/place-message.rkt")
 
 (provide open-input-output-tcp
          tcp-port?
@@ -12,7 +13,17 @@
 
 (struct tcp-data (abandon-in? abandon-out?)
   #:mutable
-  #:authentic)
+  #:authentic
+  #:property
+  prop:fd-extra-data-place-message
+  (lambda (port)
+    (if (input-port? port)
+        (lambda (fd name)
+          (open-input-fd fd name
+                         #:extra-data (tcp-data #f #t)))
+        (lambda (fd name)
+          (open-output-fd fd name
+                          #:extra-data (tcp-data #t #f))))))
 
 (define (open-input-output-tcp fd name #:close? [close? #t])
   (define refcount (box (if close? 2 3)))

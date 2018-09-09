@@ -1035,6 +1035,13 @@ RKTIO_EXTERN_NOERR char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_cha
    function can fail and report `RKTIO_ERROR_INVALID_PATH`. */
 
 /*************************************************/
+/* Processor count                               */
+
+RKTIO_EXTERN_NOERR int rktio_processor_count(rktio_t *rktio);
+/* Returns the number of processing units, either as CPUs, cores, or
+   hyoperthreads. */
+
+/*************************************************/
 /* Logging                                       */
 
 RKTIO_EXTERN rktio_ok_t rktio_syslog(rktio_t *rktio, int level, rktio_const_string_t name, rktio_const_string_t msg,

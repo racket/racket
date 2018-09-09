@@ -11,7 +11,6 @@
          "lock.rkt")
 
 (provide futures-enabled?
-         processor-count
          current-future
          future
          future?
@@ -50,9 +49,6 @@
       (if (box-cas! ID id (+ 1 id))
           id
           (get-next-id)))))
-
-(define (processor-count)
-  1)
 
 (define futures-enabled? threaded?)
 

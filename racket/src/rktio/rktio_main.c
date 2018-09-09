@@ -34,6 +34,7 @@ rktio_t *rktio_init(void)
   
   rktio_init_time(rktio);
   rktio_init_wide(rktio);
+  rktio_init_cpu(rktio);
 
   rktio_syslog_init(rktio);
 

@@ -111,6 +111,8 @@ linklet-demo: $(BUILDDIR)linklet.so
 LINKLET_SRCS = linklet/read.ss \
                linklet/write.ss \
                linklet/performance.ss \
+               linklet/annotation.ss \
+               linklet/compress.ss \
                linklet/db.ss
 
 $(BUILDDIR)linklet.so: linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)

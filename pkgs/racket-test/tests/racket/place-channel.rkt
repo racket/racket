@@ -244,7 +244,6 @@
     (place-channel-put p (list flx flv bs in out))
     (place-wait p))
 
-
   (let ()
     (define p1 (place ch
                       (define in (place-channel-get ch))
