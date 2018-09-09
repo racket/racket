@@ -191,17 +191,29 @@
           (contract-struct-equivalent? this-rng that-rng))]
     [else #f]))
 
+;; Will periodically generate empty hashes and hashes with multiple elements
 (define (hash/c-generate ctc)
   (define this-dom (base-hash/c-dom ctc))
   (define this-rng (base-hash/c-rng ctc))
   (define this-immutable (base-hash/c-immutable ctc))
   (λ (fuel)
+    (define rnd (random 25))
+    (define rnd-len (add1 (modulo (add1 rnd) 3)))
     (define gen-key (contract-random-generate/choose this-dom fuel))
     (define gen-val (contract-random-generate/choose this-rng fuel))
     (λ ()
-      (if this-immutable
-          (hash (gen-key) (gen-val))
-          (make-hash (list (cons (gen-key) (gen-val))))))))
+      (cond [(or (zero? rnd) (not gen-key) (not gen-val))
+             (if this-immutable
+                 (hash)
+                 (make-hash))]
+            [else
+             (if this-immutable
+                 (make-immutable-hash
+                  (for/list ([i (in-range rnd-len)])
+                    (cons (gen-key) (gen-val))))
+                 (make-hash
+                  (for/list ([i (in-range rnd-len)])
+                    (cons (gen-key) (gen-val)))))]))))
 
 (define (hash/c-exercise ctc)
   (multi-exercise (list (base-hash/c-dom ctc) (base-hash/c-rng ctc))))
