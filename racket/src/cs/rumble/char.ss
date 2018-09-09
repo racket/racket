@@ -32,10 +32,10 @@
   (and (char? v) (< (char->integer v) 256)))
 
 (define (char-general-category ch)
-  (or (getprop (#%char-general-category ch) 'downcase #f)
+  (or (with-global-lock* (getprop (#%char-general-category ch) 'downcase #f))
       (let* ([s (#%char-general-category ch)]
              [ds (string->symbol (string-downcase (symbol->string s)))])
-        (putprop s 'downcase ds)
+        (with-global-lock* (putprop s 'downcase ds))
         ds)))
 
 ;; FIXME

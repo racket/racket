@@ -6,6 +6,7 @@
          "schedule.rkt"
          "atomic.rkt"
          "thread.rkt"
+         "thread-group.rkt"
          (submod "thread.rkt" for-place)
          "custodian.rkt"
          (submod "custodian.rkt" scheduling)
@@ -97,27 +98,27 @@
   ;; Start the new place
   (host:fork-place
    (lambda ()
-     (set-root-custodian! orig-cust)
-     (define finish (host:start-place child-pch path sym
-                                      child-in-fd child-out-fd child-err-fd
-                                      orig-cust orig-plumber))
      (call-in-another-main-thread
+      orig-cust
       (lambda ()
         (set! current-place new-place)
+        (current-thread-group root-thread-group)
+        (current-custodian orig-cust)
         (current-plumber orig-plumber)
         (exit-handler default-exit)
-        ;; The finish function reports some I/O related
-        ;; information to store in the place, and when that
-        ;; callback returns, it starts loading the specified
-        ;; module
+        (current-pseudo-random-generator (make-pseudo-random-generator))
+        (current-evt-pseudo-random-generator (make-pseudo-random-generator))
+        (define finish
+          (host:start-place child-pch path sym
+                            child-in-fd child-out-fd child-err-fd
+                            orig-cust orig-plumber))
         (call-with-continuation-prompt
          (lambda ()
-           (finish
-            (lambda ()
-              (host:mutex-acquire lock)
-              (set-place-wakeup-handle! new-place (sandman-get-wakeup-handle))
-              (host:condition-signal started) ; place is sufficiently started
-              (host:mutex-release lock))))
+           (host:mutex-acquire lock)
+           (set-place-wakeup-handle! new-place (sandman-get-wakeup-handle))
+           (host:condition-signal started) ; place is sufficiently started
+           (host:mutex-release lock)
+           (finish))
          (default-continuation-prompt-tag)
          (lambda (thunk)
            ;; Thread ended with escape => exit with status 1

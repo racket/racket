@@ -63,8 +63,9 @@
     (fork-thread (lambda ()
                    (init-virtual-registers)
                    (place-registers (vector-copy place-register-inits))
+                   (root-thread-cell-values (make-empty-thread-cell-values))
                    (init-place-locals!)
-                   (foreign-place-init!)
+                   (register-as-place-main!)
                    (let ([result (call/cc
                                   (lambda (esc)
                                     (set-box! place-esc-box esc)

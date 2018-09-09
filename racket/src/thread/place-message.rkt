@@ -124,6 +124,7 @@
                  (define ph (make-placeholder #f))
                  (hash-set! graph v ph)
                  (maybe-ph
+                  ph
                   (apply make-prefab-struct
                          k
                          (for/list ([e (in-vector (struct->vector v) 1)])

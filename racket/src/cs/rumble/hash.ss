@@ -279,21 +279,14 @@
     (check who hash? ht)
     (check who (procedure-arity-includes/c 2) proc)
     (cond
-     [(mutable-hash? ht)
+     [(intmap? ht) (intmap-for-each ht proc)]
+     [else
+      ;; mutable, impersonated, and weak-equal:
       (let loop ([i (hash-iterate-first ht)])
         (when i
           (let-values ([(key val) (hash-iterate-key+value ht i)])
             (|#%app| proc key val))
-          (loop (hash-iterate-next ht i))))]
-     [(intmap? ht) (intmap-for-each ht proc)]
-     [(weak-equal-hash? ht) (weak-hash-for-each ht proc)]
-     [else
-      ;; impersonated
-      (let loop ([i (hash-iterate-first ht)])
-        (when i
-          (let-values ([(key val) (hash-iterate-key+value ht i)])
-            (|#%app| proc key val)
-            (loop (hash-iterate-next ht i)))))])]))
+          (loop (hash-iterate-next ht i))))])]))
 
 (define/who hash-map
   (case-lambda
@@ -301,25 +294,16 @@
     (check who hash? ht)
     (check who (procedure-arity-includes/c 2) proc)
     (cond
-     [(mutable-hash? ht)
+     [(intmap? ht) (intmap-map ht proc)]
+     [else
+      ;; mutable, impersonated, and weak-equal:
       (let loop ([i (hash-iterate-first ht)])
         (if (not i)
             '()
             (cons
              (let-values ([(key val) (hash-iterate-key+value ht i)])
                (|#%app| proc key val))
-             (loop (hash-iterate-next ht i)))))]
-     [(intmap? ht) (intmap-map ht proc)]
-     [(weak-equal-hash? ht) (weak-hash-map ht proc)]
-     [else
-      ;; impersonated
-      (let loop ([i (hash-iterate-first ht)])
-        (cond
-         [(not i) '()]
-         [else
-          (let-values ([(key val) (hash-iterate-key+value ht i)])
-            (cons (|#%app| proc key val)
-                  (loop (hash-iterate-next ht i))))]))])]
+             (loop (hash-iterate-next ht i)))))])]
    [(ht proc try-order?)
     (hash-map ht proc)]))
 
@@ -725,9 +709,12 @@
 
 (define (weak-equal-hash-lock t) (locked-iterable-hash-lock t))
 
+(define (make-weak-hash-with-lock lock)
+  (make-weak-equal-hash lock #f #f (hasheqv) (make-weak-eq-hashtable) (make-eqv-hashtable) 0 128))
+
 (define make-weak-hash
   (case-lambda
-   [() (make-weak-equal-hash (make-lock 'equal?) #f #f (hasheqv) (make-weak-eq-hashtable) (make-eqv-hashtable) 0 128)]
+   [() (make-weak-hash-with-lock (make-lock 'equal?))]
    [(alist) (fill-hash! 'make-weak-hash (make-weak-hash) alist)]))
 
 (define (weak-hash-copy ht)
@@ -856,41 +843,6 @@
   (set-weak-equal-hash-prune-at! t 128)
   (set-locked-iterable-hash-cells! t #f)
   (lock-release (weak-equal-hash-lock t)))
-
-(define (weak-hash-for-each t proc)
-  (let ([ht-for-each
-         (lambda (ht)
-           (let* ([keys (hashtable-keys ht)]
-                  [len (#%vector-length keys)])
-             (let loop ([i 0])
-               (unless (fx= i len)
-                 (let ([key (#%vector-ref keys i)])
-                   (|#%app| proc key (hashtable-ref ht key #f)))
-                 (loop (fx1+ i))))))])
-    (ht-for-each (weak-equal-hash-vals-ht t))
-    (ht-for-each (weak-equal-hash-fl-vals-ht t))))
-
-(define (weak-hash-map t proc)
-  (let* ([ht (weak-equal-hash-vals-ht t)]
-         [keys (hashtable-keys ht)]
-         [len (#%vector-length keys)])
-    (let loop ([i 0])
-      (cond
-        [(fx= i len)
-         (let* ([ht (weak-equal-hash-fl-vals-ht t)]
-                [keys (hashtable-keys ht)]
-                [len (#%vector-length keys)])
-           (let loop ([i 0])
-             (cond
-               [(fx= i len) '()]
-               [else
-                (let ([key (#%vector-ref keys i)])
-                  (cons (|#%app| proc key (hashtable-ref ht key #f))
-                        (loop (fx1+ i))))])))]
-        [else
-         (let ([key (#%vector-ref keys i)])
-           (cons (|#%app| proc key (hashtable-ref ht key #f))
-                 (loop (fx1+ i))))]))))
 
 (define (weak-hash-count t)
   (fx+ (hashtable-size (weak-equal-hash-vals-ht t))

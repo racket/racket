@@ -490,8 +490,7 @@
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
-      (lambda (finish)
-        (finish)
+      (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
 

@@ -18,7 +18,7 @@
 
 (define (main)
   (test-case
-    "test file descriptors copied across place channesl"
+    "test file descriptors copied across place channels"
     ;; write out "fdt.rkt"
     (with-output-to-file fdt #:exists 'replace (lambda ()
       (display

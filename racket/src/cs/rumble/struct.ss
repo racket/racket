@@ -446,7 +446,8 @@
                                      (lambda (args)
                                        (args-insert args init-count auto-count auto-val pfa))))])
        (when (or parent-rtd* auto-field-adder)
-         (putprop (record-type-uid rtd) 'field-info (make-field-info init*-count auto*-count auto-field-adder)))
+         (let ([field-info (make-field-info init*-count auto*-count auto-field-adder)])
+           (putprop (record-type-uid rtd) 'field-info field-info)))
        (struct-type-install-properties! rtd name init-count auto-count parent-rtd
                                         props insp proc-spec immutables guard constructor-name
                                         install-props!)
@@ -551,13 +552,20 @@
     (record-type-uid
      (prefab-key+count->rtd (cons prefab-key total*-count)))))
 
+;; A weak, `equal?`-based hash table that maps (cons prefab-key
+;; total-field-count) to rtd. We'll create a table without a lock, and
+;; we'll use it for all places, which means that we need to use a
+;; global lock to access the table.
+(define prefabs #f)
+
+;; Call with lock:
 (define (prefab-ref prefab-key+count)
   (and prefabs
-       (hash-ref prefabs prefab-key+count #f)))
+       (weak-hash-ref prefabs prefab-key+count #f)))
 
 (define (prefab-key+count->rtd prefab-key+count)
   (cond
-   [(prefab-ref prefab-key+count)
+   [(with-global-lock (prefab-ref prefab-key+count))
     => (lambda (rtd) rtd)]
    [else
     (let* ([prefab-key (car prefab-key+count)]
@@ -585,8 +593,8 @@
          => (lambda (rtd) rtd)]
         [else
          (putprop uid 'prefab-key+count prefab-key+count)
-         (unless prefabs (set! prefabs (make-weak-hash)))
-         (hash-set! prefabs prefab-key+count rtd)
+         (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
+         (weak-hash-set! prefabs prefab-key+count rtd)
          (unless parent-rtd
            (record-type-equal-procedure rtd default-struct-equal?)
            (record-type-hash-procedure rtd default-struct-hash))
@@ -912,16 +920,17 @@
                                              (struct-type-field-info parent-rtd*)))
                                       parent-guards)
                                 parent-guards)])
-        (putprop (record-type-uid rtd) 'guards (if guard
-                                                   (if (eq? which-end 'at-start)
-                                                       ;; Normal:
-                                                       (cons (cons guard (get-field-info-init*-count fi))
-                                                             parent-guards)
-                                                       ;; Internal, makes primitive guards have a natural
-                                                       ;; error order:
-                                                       (append parent-guards
-                                                               (list (cons guard (get-field-info-init*-count fi)))))
-                                                   parent-guards))))))
+        (let ([new-guards (if guard
+                              (if (eq? which-end 'at-start)
+                                  ;; Normal:
+                                  (cons (cons guard (get-field-info-init*-count fi))
+                                        parent-guards)
+                                  ;; Internal, makes primitive guards have a natural
+                                  ;; error order:
+                                  (append parent-guards
+                                          (list (cons guard (get-field-info-init*-count fi)))))
+                              parent-guards)])
+          (putprop (record-type-uid rtd) 'guards new-guards))))))
 
 (define (unsafe-struct*-ref s i)
   (#3%vector-ref s i))

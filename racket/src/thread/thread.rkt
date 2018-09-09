@@ -145,7 +145,7 @@
                         #:initial? [initial? #f]
                         #:suspend-to-kill? [suspend-to-kill? #f])
   (check who (procedure-arity-includes/c 0) proc)
-  (define p (if at-root?
+  (define p (if (or at-root? initial?)
                 root-thread-group
                 (current-thread-group)))
   (define e (make-engine (lambda ()

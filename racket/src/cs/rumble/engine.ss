@@ -123,13 +123,15 @@
 (define (make-empty-thread-cell-values)
   (make-ephemeron-eq-hashtable))
 
-(define root-thread-cell-values (make-empty-thread-cell-values))
+(define-virtual-register root-thread-cell-values (make-empty-thread-cell-values))
+
+(define original-thread-id (get-thread-id))
 
 (define (current-engine-thread-cell-values)
   (let ([es (current-engine-state)])
     (if es
         (engine-state-thread-cell-values es)
-        root-thread-cell-values)))
+        (root-thread-cell-values))))
 
 (define (set-current-engine-thread-cell-values! new-t)
   (let ([current-t (current-engine-thread-cell-values)])

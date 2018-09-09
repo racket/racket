@@ -11,7 +11,7 @@
          current-thread-group
          make-another-initial-thread-group
 
-         ;; Used by scheduler
+         ;; Used by scheduler and place creation
          root-thread-group
          thread-group-next!
          
@@ -47,8 +47,7 @@
                     v)))
 
 (define (make-another-initial-thread-group)
-  (set! root-thread-group (make-root-thread-group))
-  (current-thread-group root-thread-group))
+  (set! root-thread-group (make-root-thread-group)))
 
 (define/who (make-thread-group [parent (current-thread-group)])
   (check who thread-group? parent)

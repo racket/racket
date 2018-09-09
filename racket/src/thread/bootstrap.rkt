@@ -192,8 +192,7 @@
 
 (define (start-place pch mod sym in-fd out-fd err-fd cust plumber)
   (io-place-init! in-fd out-fd err-fd cust plumber)
-  (lambda (finish)
-    (finish)
+  (lambda ()
     ((hash-ref place-symbols sym) pch)))
 
 ;; For use in "demo.rkt"

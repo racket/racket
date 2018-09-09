@@ -192,8 +192,7 @@
              (hash-set! place-symbols sym proc))])
      (set-start-place!
       (lambda (pch mod sym in out err cust plumber)
-        (lambda (finish)
-          (finish)
+        (lambda ()
           ((hash-ref place-symbols sym) pch))))
 
      (register-place-symbol! 'nothing void)

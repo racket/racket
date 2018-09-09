@@ -143,8 +143,7 @@
      (set-start-place!
       (lambda (pch mod sym in out err cust plumber)
         (io-place-init! in out err cust plumber)
-        (lambda (finish)
-          (finish)
+        (lambda ()
           ((hash-ref place-symbols sym) pch))))
 
      ;; Check file port passed across places
