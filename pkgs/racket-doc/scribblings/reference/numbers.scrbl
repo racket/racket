@@ -556,9 +556,9 @@ If @racket[z] is exact @racket[1], the result is exact @racket[1].
  If @racket[z] is @racket[1.0] and @racket[w] is a @tech{real number}, the
  result is @racket[1.0] (even if @racket[w] is @racket[+nan.0]).
 
-If @racket[z] is
- exact @racket[0] and @racket[w] is negative, the
- @exnraise[exn:fail:contract:divide-by-zero].
+If @racket[z] is exact @racket[0] and @racket[w] is either a negative
+real number or a complex number with a non-positive @racket[real-part],
+the @exnraise[exn:fail:contract:divide-by-zero].
 
 Further special cases when @racket[w] is a @tech{real number}:
 @margin-note*{These special cases correspond to @tt{pow} in C99 @cite["C99"],
