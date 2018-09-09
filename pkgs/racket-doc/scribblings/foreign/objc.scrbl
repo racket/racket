@@ -323,6 +323,16 @@ retained as long as the block remains in use.
 @history[#:added "6.3"]}
 
 
+@defform[(with-blocking-tell form ...+)]{
+
+Causes any @racket[tell], @racket[tellv], or @racket[super-tell]
+expression syntactically within the @racket[form]s to be blocking in
+the sense of the @racket[#:blocking?] argument to
+@racket[_cprocedure]. Otherwise, @racket[(with-blocking-tell form
+...+)] is equivalent to @racket[(let () form ...+)].
+
+@history[#:added "7.0.0.19"]}
+
 @; ----------------------------------------------------------------------
 
 @section{Raw Runtime Functions}
@@ -419,7 +429,25 @@ Like @racket[objc_msgSend/typed], but for a super call.}
 
 Constructor and FFI C type use for super calls.}
 
-@table-of-contents[]
+@deftogether[(
+@defproc[((objc_msgSend/typed/blocking [types (vector/c result-ctype arg-ctype ...)])
+          [obj _id]
+          [sel _SEL]
+          [arg any/c])
+         any/c]
+@defproc[((objc_msgSendSuper/typed/blocking [types (vector/c result-ctype arg-ctype ...)])
+          [super _objc_super]
+          [sel _SEL]
+          [arg any/c])
+         any/c]
+)]{
+
+The same as @racket[objc_msgSend/typed] and
+@racket[objc_msgSendSuper/typed], but specifying that the send should
+be blocking in the sense of the @racket[#:blocking?] argument to
+@racket[_cprocedure].
+
+@history[#:added "7.0.0.19"]}
 
 @; ----------------------------------------------------------------------
 
