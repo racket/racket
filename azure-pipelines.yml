@@ -1,0 +1,13 @@
+# C/C++ with GCC
+# Build your C/C++ project with GCC using make.
+# Add steps that publish test results, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/vsts/pipelines/apps/c-cpp/gcc
+
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+steps:
+- script: |
+    make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+    ./racket/bin/raco test -l tests/racket/test
+  displayName: 'make'
