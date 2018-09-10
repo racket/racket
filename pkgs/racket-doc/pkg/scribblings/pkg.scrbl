@@ -398,9 +398,13 @@ all users of the Racket installation.
 
 A directory path can be used as a @tech{package scope}, in which case
 package operations affect the set of packages installations in the
-directory. An installation can be configured to include the
-directory in its search path for installed packages (see
-@secref["config-file" #:doc raco-doc]).
+directory. An installation can be configured to include the directory
+in its search path for installed packages (see @secref["config-file"
+#:doc raco-doc]). When a directory path is used as a @tech{package
+scope}, operations such as dependency checking will use all paths in
+the configured search path starting with the one that is designed as a
+@tech{package scope}; if the designated path is not in the configured
+search path, then the dierctory by itself is used as the search path.
 
 Conflict checking disallows installation of the same or conflicting
 package in different scopes, but if such a configuration is forced,

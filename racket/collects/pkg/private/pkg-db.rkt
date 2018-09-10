@@ -37,20 +37,10 @@
 
 ;; read all packages in this scope or wider
 (define (merge-pkg-dbs [scope (current-pkg-scope)])
-  (define (merge-next-pkg-dbs scope)
-    (parameterize ([current-pkg-scope scope])
-      (merge-pkg-dbs scope)))
-  (if (path? scope)
-      (read-pkg-db)
-      (case scope
-        [(installation)
-         (for*/hash ([dir (in-list (get-pkgs-search-dirs))]
-                     [(k v) (read-pkgs-db dir)])
-           (values k v))]
-        [(user)
-         (define db (read-pkgs-db 'user (current-pkg-scope-version)))
-         (for/fold ([ht (merge-next-pkg-dbs 'installation)]) ([(k v) (in-hash db)])
-           (hash-set ht k v))])))    
+  (for/fold ([ht #hash()]) ([m-scope (in-list (reverse (get-scope-list scope)))])
+    (define db (read-pkgs-db m-scope (current-pkg-scope-version)))
+    (for/fold ([ht ht]) ([(k v) (in-hash db)])
+      (hash-set ht k v))))
 
 ;; Finds the scope, in which `pkg-name' is installed; returns 'dir,
 ;; 'installation, a path, or #f (where #f means "not installed").  If
@@ -149,19 +139,22 @@
   (and (path? scope)
        (build-path scope "links.rktd")))
 
-(define (get-scope-list)
+(define (get-scope-list [current-scope (current-pkg-scope)])
   ;; Get a list of scopes suitable for searches with respect to
   ;; the current scope
-  (define current-scope (current-pkg-scope))
-  (if (path? current-scope)
-      (list current-scope)
-      (member current-scope
-              (append '(user)
-                      (let ([main (find-pkgs-dir)])
-                        (for/list ([d (get-pkgs-search-dirs)])
-                          (if (equal? d main)
-                              'installation
-                              d)))))))
+  (or
+   ;; Exploit the fact that `member` returns a list starting
+   ;; with the found element:
+   (member current-scope
+           (append '(user)
+                   (let ([main (find-pkgs-dir)])
+                     (for/list ([d (get-pkgs-search-dirs)])
+                       (if (equal? d main)
+                           'installation
+                           d)))))
+   ;; In case the specified scope wasn't in the list,
+   ;; then make a search path that has just that scope:
+   (list current-scope)))
 
 (define (pkg-directory pkg-name #:cache [cache #f])
   ;; Warning: takes locks individually.

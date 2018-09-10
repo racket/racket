@@ -3,7 +3,8 @@
          "util.rkt"
          pkg/lib
          setup/dirs
-         racket/format)
+         racket/format
+         racket/file)
 
 (this-test-is-run-by-the-main-test)
 
@@ -77,5 +78,23 @@
     $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "2\n"
     $ "raco pkg remove pkg-test1" =stdout> #rx"Inferred package scope: installation")
+
+   (initialize-catalogs)
+   (define alone-dir (make-temporary-file "alone~a" 'directory))
+   (define in-search-dir (make-temporary-file "in-search~a" 'directory))
+   (shelly-case
+    "directory as a package scope"
+    $ "raco pkg config -i --set catalogs http://localhost:9990 http://localhost:9991"
+    $ "raco pkg install -i pkg-test1"
+    $ "racket -l pkg-test1"  =stdout> #rx"main loaded"
+    ;; won't find "base" on catalog:
+    $ (~a "raco pkg install --scope-dir "alone-dir" --auto pkg-test2") =exit> 1 =stderr> #rx"cannot find package.*base"
+    $ "racket -l pkg-test2"   =exit> 1 =stderr> #rx"collection not found"
+    $ (~a "racket -l tests/pkg/test-scope-add "in-search-dir)
+    ;; will install "pkg-test2" without an extra "pkg-test1" or "base":
+    $ (~a "raco pkg install --scope-dir "in-search-dir" --auto pkg-test2")
+    $ "racket -l pkg-test2"   =stdout> #rx"pkg-test2/main loaded")
+   (delete-directory/files alone-dir)
+   (delete-directory/files in-search-dir)
 
     )))

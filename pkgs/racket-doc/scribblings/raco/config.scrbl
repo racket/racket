@@ -78,10 +78,22 @@ directory}:
        "pkg/scribblings/pkg.scrbl")]{package scope}. It defaults to
        @filepath{pkgs} in the main shared-file directory.}
 
- @item{@indexed-racket['pkgs-search-dirs] --- like
-       @racket['lib-search-dirs], but for packages in @exec{installation}
-       @tech[#:doc '(lib "pkg/scribblings/pkg.scrbl")]{package
-       scope}.}
+ @item{@indexed-racket['pkgs-search-dirs] --- similar to
+       @racket['lib-search-dirs], but for packages in roughly
+       @exec{installation} @tech[#:doc '(lib
+       "pkg/scribblings/pkg.scrbl")]{package scope}. More precisely, a
+       @racket[#f] value in the list is replaced with the directory
+       specified by @racket['pkgs-dir], and that point in the search
+       list corresponds to @exec{installation} scope. Paths before or
+       after a @racket[#f] value in the list can be selected as a
+       scopes to start searches at that path's point in the list.
+       Directories listed in @racket['pkgs-search-dirs] typically oblige
+       a corresponding entry in @racket['links-search-files], where
+       the corresponding entry is @filepath{links.rktd} within the
+       directory.
+
+       @history[#:changed "7.0.0.19" @elem{Adapt the package-search path in
+                                           a general way for a directory scope.}]}
 
  @item{@indexed-racket['bin-dir] --- a path, string, or byte string for the
        installation's directory containing executables. It defaults to a
