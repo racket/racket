@@ -1113,7 +1113,8 @@
                                  (collection-tree-map top-level-plt-collects
                                                       has-module-suffix?)))))
             (iterate-cct clean-cc cct)
-            (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
+            (parallel-compile (parallel-workers) setup-fprintf handle-error cct
+                              #:use-places? (parallel-use-places))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode
@@ -1361,6 +1362,7 @@
   (define (doc:setup-scribblings latex-dest auto-start-doc?)
     (scr:call 'setup-scribblings
               (parallel-workers)
+              (parallel-use-places)
               name-str
               (if no-specific-collections? #f (map cc-path ccs-to-compile))
               latex-dest auto-start-doc? (make-user) (force-user-docs)

@@ -107,7 +107,8 @@
   (define flush-handle
     (plumber-add-flush! plumber
                         (lambda (h)
-                          (flush-buffer-fully #f))))
+                          (atomically
+                           (flush-buffer-fully #f)))))
   
   (when (eq? buffer-mode 'infer)
     (if (rktio_fd_is_terminal rktio fd)

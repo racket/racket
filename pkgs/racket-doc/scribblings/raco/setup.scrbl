@@ -245,6 +245,12 @@ flags:
    uses @racket[(processor-count)] jobs, which typically uses
    all of the machine's processing cores.}
 
+ @item{@DFlag{places} --- use Racket places for parallel jobs; this
+   mode is the default if Racket places run in parallel.}
+
+ @item{@DFlag{processes} --- use separate processes for parallel jobs;
+   this mode is the default if Racket places cannot run in parallel.}
+
  @item{@DFlag{verbose} or @Flag{v} --- more verbose output about
    @exec{raco setup} actions.}
 
@@ -330,7 +336,8 @@ update a compiled file's timestamp if the file is not recompiled.
                                @DFlag{fail-fast} flags.}
          #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}
-         #:changed "6.6.0.3" @elem{Added support for @envvar{PLT_COMPILED_FILE_CHECK}.}]
+         #:changed "6.6.0.3" @elem{Added support for @envvar{PLT_COMPILED_FILE_CHECK}.}
+         #:changed "7.0.0.19" @elem{Added @DFlag{places} and  @DFlag{processes}.}]
 
 @; ------------------------------------------------------------------------
 

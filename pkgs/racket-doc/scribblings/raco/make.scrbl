@@ -583,6 +583,7 @@ field is a @racket[compile-event] as documented in
 
 @defproc[(parallel-compile-files [list-of-files (listof path-string?)]
                                  [#:worker-count worker-count exact-positive-integer? (processor-count)]
+                                 [#:use-places? use-places? any/c #t]
                                  [#:handler handler (->i ([_worker-id exact-integer?]
                                                           [_handler-type symbol?]
                                                           [_path path-string?]
@@ -596,7 +597,9 @@ field is a @racket[compile-event] as documented in
 The @racket[parallel-compile-files] utility function is used by @exec{raco make} to
 compile a list of paths in parallel.  The optional
 @racket[#:worker-count] argument specifies the number of compile workers to spawn during
-parallel compilation.  The callback, @racket[handler], is called with the symbol
+parallel compilation.  The compile workers are implemented as Racket places if @racket[use-places?]
+is true, otherwise the compile workers are implemented as separate
+Racket processes. The callback, @racket[handler], is called with the symbol
 @racket['done] as the @racket[_handler-type] argument for each successfully compiled file, 
 @racket['output] when a
 successful compilation produces stdout/stderr output, @racket['error] when a
@@ -617,7 +620,8 @@ The return value is @racket[(void)] if it was successful, or @racket[#f] if ther
                         msg 
                         out 
                         err)])))]
-}
+
+@history[#:changed "7.0.0.19" @elem{Added the @racket[#:use-places?] argument.}]}
 
 @defproc[(parallel-compile 
   [worker-count non-negative-integer?] 
@@ -631,12 +635,16 @@ The return value is @racket[(void)] if it was successful, or @racket[#f] if ther
                       [_err string?]
                       [_message string?])
                      void?)]
-  [collects-tree (listof any/c)])  (void)]{
+  [collects-tree (listof any/c)]
+  [#:use-places? use-places? any/c #t])
+ (void)]{
 
 The @racket[parallel-compile] function is used by @exec{raco setup} to
 compile collections in parallel. The @racket[worker-count] argument
 specifies the number of compilation workers to spawn during parallel
-compilation. The @racket[setup-fprintf] and @racket[append-error]
+compilation. The @racket[use-places?] argument specified whether
+to use places, otherwise separate processes
+are used. The @racket[setup-fprintf] and @racket[append-error]
 functions communicate intermediate compilation results and errors. The
 @racket[collects-tree] argument is a compound data structure containing
 an in-memory tree representation of the collects directory.
@@ -647,7 +655,8 @@ second string is a short form (omitting evaluation context
 information, for example).
 
 @history[#:changed "6.1.1.8" @elem{Changed @racket[append-error] to allow
-                                   a pair of error strings.}]}
+                                   a pair of error strings.}
+         #:changed "7.0.0.19" @elem{Added the @racket[#:use-places?] argument.}]}
 
 @; ----------------------------------------------------------------------
 

@@ -130,6 +130,12 @@
      #:once-each
      [("-j" "--jobs" "--workers") n "Use <n> parallel jobs"
       (add-flags `((parallel-workers ,(string->number n))))]
+     #:once-any
+     [("--places") "Use places for parallel jobs"
+      (add-flags `((parallel-use-places #t)))]
+     [("--processes") "Use processes for parallel jobs"
+      (add-flags `((parallel-use-places #f)))]
+     #:once-each
      [("-v" "--verbose") "See names of compiled files and info printfs"
       (add-flags '((verbose #t)))]
      [("-m" "--make-verbose") "See make and compiler usual messages"

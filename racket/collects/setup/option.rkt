@@ -1,5 +1,8 @@
 #lang racket/base
-(require racket/future)
+(require (only-in racket/future
+                  processor-count)
+         (only-in racket/place
+                  place-enabled?))
 
 ;; other params are provided by declaration
 (provide call-with-flag-params
@@ -57,6 +60,7 @@
 					 (if (fixnum? (arithmetic-shift 1 40))
 					     8    ; 64-bit machine
 					     4))) ; 32-bit machine
+(define-flag-param parallel-use-places (place-enabled?))
 (define-flag-param verbose #f)
 (define-flag-param make-verbose #f)
 (define-flag-param compiler-verbose #f)

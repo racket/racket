@@ -137,6 +137,7 @@
 
 (define (setup-scribblings
          worker-count       ; number of cores to use to create documentation
+         use-places?        ; use places when available?
          program-name       ; name of program that calls setup-scribblings
          only-dirs          ; limits doc builds
          latex-dest         ; if not #f, generate Latex output
@@ -302,7 +303,7 @@
       ;; If places are not available, then tasks will be run
       ;; in separate OS processes, and we can do without an
       ;; extra lock.
-      (when (place-enabled?)
+      (when use-places?
         (set!-values (lock-ch lock-ch-in) (place-channel))
         (thread (lambda ()
                   (define-values (ch ch-in) (place-channel))
@@ -343,7 +344,8 @@
                (append
                 (map (make-sequential-get-info #f) 
                      (take docs num-sequential))
-                (parallel-do 
+                (parallel-do
+                 #:use-places? use-places?
                  (min worker-count (length (list-tail docs num-sequential)))
                  (lambda (workerid)
                    (init-lock-ch!)
@@ -664,7 +666,8 @@
                 (prep-info! i)
                 (update-info! i (build-again! latex-dest i with-record-error no-lock 
                                               main-doc-exists?)))
-              (parallel-do 
+              (parallel-do
+               #:use-places? use-places?
                (min worker-count (length need-rerun))
                (lambda (workerid)
                  (init-lock-ch!)

@@ -313,9 +313,9 @@ Threads, Threads, Atomicity, Atomicity, and Atomicity
 Racket's thread layer does not use Chez Scheme threads. Chez Scheme
 threads correspond to OS threads. Racket threads are implemented in
 terms of engines at the Rumble layer. At the same time, futures and
-places will use Chez Scheme threads, and so parts of Rumble are meant
-to be thread-safe with respect to Chez Scheme and OS threads. The FFI
-also exposes elements of Chez Scheme / OS threads.
+places use Chez Scheme threads, and so parts of Rumble are meant to be
+thread-safe with respect to Chez Scheme and OS threads. The FFI also
+exposes elements of Chez Scheme / OS threads.
 
 As a result of these layers, there are multiple ways to implement
 atomic regions:
@@ -386,6 +386,11 @@ Status and Thoughts on Various Racket Subsystems
  * The Racket and Chez Scheme numeric systems likely differ in some
    ways, and I don't know how much work that will be.
 
+ * Places are implemented as Chez Scheme threads. Possibly because a
+   GC is stop-the-world across all threads, however, this
+   implementation currently does not scale as much as the traditional
+   Racket implementation's places.
+
  * For futures, Chez Scheme exposes OS-level threads with limited
    safety guarantees. An implementation of futures can probably take
    advantage of threads with thread-unsafe primitives wrapped to
@@ -399,7 +404,7 @@ Status and Thoughts on Various Racket Subsystems
 
  * For now, `make setup` builds platform-specific ".zo" files in a
    subdirectory of "compiled" named by the Chez Scheme platform name
-   (e.g., "a6osx"). Longer term, although bytecode as it currently
+   (e.g., "ta6osx"). Longer term, although bytecode as it currently
    exists goes away, platform-independent ".zo" files might contain
    fully expanded source (possibly also run through Chez Scheme's
    source-to-source optimizer) with `raco setup` gaining a new step in

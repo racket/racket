@@ -4,7 +4,6 @@
          racket/list
          racket/match
          racket/path
-         racket/fasl
          racket/serialize
          "private/cc-struct.rkt"
          setup/parallel-do
@@ -261,9 +260,10 @@
       (define/public (get-results) results)
       (super-new)))
 
-(define (parallel-build work-queue worker-count)
+(define (parallel-build work-queue worker-count #:use-places? use-places?)
   (define do-log-forwarding (log-level? pb-logger 'info 'setup/parallel-build))
   (parallel-do
+   #:use-places? use-places?
     worker-count
     (lambda (workerid) (list workerid do-log-forwarding))
     work-queue
@@ -350,19 +350,23 @@
 (define (parallel-compile-files list-of-files
                                 #:worker-count [worker-count (processor-count)]
                                 #:handler [handler void]
-                                #:options [options '()])
+                                #:options [options '()]
+                                #:use-places? [use-places? #t])
   (unless (exact-positive-integer? worker-count)
     (raise-argument-error 'parallel-compile-files "exact-positive-integer?" worker-count))
   (unless (and (list? list-of-files) (andmap path-string? list-of-files))
     (raise-argument-error 'parallel-compile-files "(listof path-string?)" list-of-files))
   (unless (and (procedure? handler) (procedure-arity-includes? handler 6))
     (raise-argument-error 'parallel-compile-files "(procedure-arity-includes/c 6)" handler))
-  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count))
+  (parallel-build (make-object file-list-queue% list-of-files handler options) worker-count
+                  #:use-places? use-places?))
 
-(define (parallel-compile worker-count setup-fprintf append-error collects-tree)
+(define (parallel-compile worker-count setup-fprintf append-error collects-tree
+                          #:use-places? [use-places? #t])
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '(set-directory)))
-  (parallel-build collects-queue worker-count))
+  (parallel-build collects-queue worker-count
+                  #:use-places? use-places?))
 
 (define (start-prefetch-thread send/add)
   (define pf (make-log-receiver (current-logger) 'info 'module-prefetch))
