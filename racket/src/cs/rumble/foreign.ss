@@ -1337,6 +1337,9 @@
     (check who ctype? out-type)
     (ffi-call/callable #t in-types out-type abi save-errno blocking? #f #f)]))
 
+;; For sanity checking of callbacks during a blocking callout:
+(define-virtual-register currently-blocking? #f)
+
 (define (ffi-call/callable call? in-types out-type abi save-errno blocking? atomic? async-apply)
   (let* ([conv (case abi
                  [(stdcall) '__stdcall]
@@ -1441,6 +1444,7 @@
                                           ;; result is a struct type; need to allocate space for it
                                           (make-bytevector ret-size))])
                         (with-interrupts-disabled
+                         (when blocking? (currently-blocking? #t))
                          (let ([r (#%apply (gen-proc (cpointer-address proc-p))
                                            (append
                                             (if ret-ptr
@@ -1455,6 +1459,7 @@
                                                         (maker (cpointer-address arg))]
                                                        [else arg])))
                                                  args in-types arg-makers)))])
+                           (when blocking? (currently-blocking? #f))
                            (case save-errno
                              [(posix) (thread-cell-set! errno-cell (get-errno))]
                              [(windows) (thread-cell-set! errno-cell (get-last-error))])
@@ -1470,6 +1475,11 @@
         (gen-proc (lambda args ; if ret-id, includes an extra initial argument to receive the result
                     (let ([v (call-as-atomic-callback
                               (lambda ()
+                                (unless async-apply
+                                  ;; Sanity check; if the check fails, things can go bad from here on,
+                                  ;; but we try to continue, anyway
+                                  (when (currently-blocking?)
+                                    (#%printf "non-async in callback during blocking: ~s\n" to-wrap)))
                                 (s->c
                                  out-type
                                  (apply to-wrap
