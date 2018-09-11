@@ -365,14 +365,14 @@ TO DO:
 (define (x509-root-sources)
   ;; Workaround for natipkg openssl library: the default cert locations vary
   ;; from distro to distro, and there is no one configuration that works with
-  ;; all. So build natipkg libssl.so with `--openssldir="/RACKET USE ALT PATH/"`
+  ;; all. So build natipkg libssl.so with `--openssldir="/RACKET_USE_ALT_PATH"`
   ;; and this code will override with better guesses.
   ;; Cert locations for various distros:
   ;;   Debian: dir=/etc/ssl/certs, file=/etc/ssl/certs/ca-certificates.crt (prefer dir!)
   ;;   RedHat: file=/etc/pki/tls/certs/ca-bundle.crt; /etc/ssl/certs exists but useless!
   ;;   OpenSUSE: dir=/etc/ssl/certs, file=/var/lib/ca-certificates/ca-bundle.pem (prefer dir!)
   ;; So try file=/etc/pki/tls/certs/ca-bundle.crt, dir=/etc/ssl/certs.
-  (define (use-alt-path? p) (regexp-match? #rx"^/RACKET USE ALT PATH/" p))
+  (define (use-alt-path? p) (regexp-match? #rx"^/RACKET_USE_ALT_PATH" p))
   (define (subst-cert-file p)
     (cond [(use-alt-path? p)
            (log-openssl-debug "cert file path is ~s; using alternatives" p)
