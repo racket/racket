@@ -36,6 +36,7 @@
 (define (call-in-another-main-thread c thunk)
   (make-another-initial-thread-group)
   (set-root-custodian! c)
+  (init-system-idle-evt!)
   (call-in-main-thread thunk))
 
 ;; ----------------------------------------

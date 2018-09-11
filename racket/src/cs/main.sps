@@ -207,6 +207,8 @@
             (let () body ...)
             (string-case arg rest ...))]))
 
+   (define remaining-command-line-arguments '#())
+
    (seq
     (let flags-loop ([args (list-tail the-command-line-arguments 5)]
                      [saw (hasheq)])
@@ -220,7 +222,8 @@
                (not (saw? saw 'non-config)))
           (loop (cons "-u" args))]
          [else
-          (|#%app| current-command-line-arguments (list->vector args))
+          (set! remaining-command-line-arguments (vector->immutable-vector
+                                                  (list->vector args)))
           (when (and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
             (unless gracket?
@@ -459,6 +462,7 @@
                '()))))
 
    (define (initialize-place!)
+     (|#%app| current-command-line-arguments remaining-command-line-arguments)
      (|#%app| use-compiled-file-paths compiled-file-paths)
      (|#%app| use-user-specific-search-paths user-specific-search-paths?)
      (|#%app| load-on-demand-enabled load-on-demand?)

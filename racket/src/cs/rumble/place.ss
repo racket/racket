@@ -7,7 +7,7 @@
 ;; place-local values, and the rest are used by the thread, io, etc.,
 ;; layers for directly accessed variables.
 
-(define NUM-PLACE-REGISTERS 64)
+(define NUM-PLACE-REGISTERS 128)
 
 (define-virtual-register place-registers (make-vector NUM-PLACE-REGISTERS 0))
 (define place-register-inits (make-vector NUM-PLACE-REGISTERS 0))
