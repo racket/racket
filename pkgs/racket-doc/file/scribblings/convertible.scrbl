@@ -9,7 +9,7 @@
 The @racketmodname[file/convertible] library provides a protocol to
 mediate between providers of data in different possible formats and
 consumers of the formats. For example, a datatype that implements
-@racket[prop:convertible] might be able to convert itself to a GIF or
+@racket[prop:convertible] might be @deftech{convertible} to a GIF or
 PDF stream, in which case it would produce data for
 @racket['gif-bytes] or @racket['pdf-bytes] requests.
 
