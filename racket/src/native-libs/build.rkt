@@ -260,7 +260,14 @@
           (list "--host=i686-w64-mingw32")]
          [else
           (list "--host=x86_64-w64-mingw32")])])]
-    [else null])))
+    [else null])
+   (case package-name
+     [("openssl")
+      ;; Especially for the natipkg build, but it makes sense
+      ;; to suppress the path (which records the build location)
+      ;; on all platforms:
+      (list "--openssldir=/RACKET_USE_ALT_PATH")]
+     [else null])))
 
 (define (merge e1 e2)
   (define ht
