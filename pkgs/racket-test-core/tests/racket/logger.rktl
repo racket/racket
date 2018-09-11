@@ -275,5 +275,21 @@
 (test 2 test-intercepted-logging2)
 
 ; --------------------
+;; Check that a blocked log receiver is not GCed if
+;; if might receiver something
+
+(let ()
+  (define s (make-semaphore))
+  (let ([lr (make-log-receiver (current-logger)
+                               'info)])
+    (thread (lambda ()
+              (semaphore-post s))))
+  (sync (system-idle-evt))
+  (collect-garbage)
+  (log-message (current-logger) 'info  "" 'c)
+  ;; If receiver is GCed, then this will block
+  (sync s))
+
+; --------------------
 
 (report-errs)

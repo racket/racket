@@ -9,7 +9,7 @@
 (struct logger (topic     ; symbol or #f
                 parent    ; logger or #f
                 propagate-filters
-                [receiver-boxes #:mutable] ; list of weak boxes
+                [receiver-box+backrefs #:mutable] ; list of (cons weak-box any)
                 [prune-counter #:mutable] ; number of adds before checking empied boxes
                 [permanent-receivers #:mutable] ; receivers to retain strongly
                 [max-receiver-level #:mutable] ; up-to-date if `local-level-timestamp` = `(unbox root-level-timestamp-box)`
@@ -26,7 +26,7 @@
   (logger topic
           parent
           propagate-filters
-          null ; receiver-boxes
+          null ; receiver-box+backrefs
           8 ; prune-counter
           null ; permanent-receivers
           'none ; max-receiver-level
@@ -40,7 +40,7 @@
 ;; Get log receivers, dropping any boxes made empty due to a weak
 ;; reference:
 (define (logger-receivers logger)
-  (for*/list ([rb (in-list (logger-receiver-boxes logger))]
-              [b (in-value (weak-box-value rb))]
-              #:when b)
-    b))
+  (for*/list ([b+r (in-list (logger-receiver-box+backrefs logger))]
+              [lr (in-value (weak-box-value (car b+r)))]
+              #:when lr)
+    lr))

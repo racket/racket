@@ -76,7 +76,8 @@
         => (lambda (s) s)]
        [else
         (define s (make-semaphore))
-        (set-logger-level-sema! logger s)])))
+        (set-logger-level-sema! logger s)
+        s])))
   (semaphore-peek-evt s))
 
 ;; Can be called in any host Scheme thread and in interrupt handler,
