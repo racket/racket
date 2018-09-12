@@ -678,9 +678,7 @@
            (rebuild
             rebuild-s
             (list (m 'set!)
-                  (substitute-variable id t #:no-stops? (free-id-set-empty-or-just-module*?
-                                                         (expand-context-stops ctx)
-                                                         (expand-context-phase ctx)))
+                  (substitute-variable id t #:no-stops? (free-id-set-empty-or-just-module*? (expand-context-stops ctx)))
                   exp-rhs)))]
       [(not binding)
        (raise-unbound-syntax-error #f "unbound identifier" s id null

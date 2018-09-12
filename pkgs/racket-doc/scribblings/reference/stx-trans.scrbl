@@ -232,12 +232,11 @@ identifier, the @racket[exn:fail:contract] exception is raised.
 
 @defproc[(local-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
-                       [stop-ids (or/c (listof identifier?) (cons/c 'only (listof identifier?)) #f)]
+                       [stop-ids (or/c (listof identifier?) empty #f)]
                        [intdef-ctx (or/c internal-definition-context?
                                          (listof internal-definition-context?)
                                          #f)
-                                   '()]
-                       [#:extend-stop-ids? extend-stop-ids? any/c #t])
+                                   '()])
          syntax?]{
 
 Expands @racket[stx] in the lexical context of the expression
@@ -260,13 +259,13 @@ The @racket[stop-ids] argument controls how far @racket[local-expand] expands @r
        @racket[stop-ids] were an empty list, except that expansion does not recur to @tech{submodules}
        defined with @racket[module*] (which are left unexpanded in the result).}
 
- @item{If @racket[stop-ids] is any other list, then expansion proceeds recursively until the expander
-       encounters any of the forms in @racket[stop-ids], and the result is the partially-expanded
-       form. If @racket[extend-stop-ids?] is not @racket[#f], then @racket[begin], @racket[quote],
-       @racket[set!], @racket[#%plain-lambda], @racket[case-lambda], @racket[let-values],
-       @racket[letrec-values], @racket[if], @racket[begin0], @racket[with-continuation-mark],
-       @racket[letrec-syntaxes+values], @racket[#%plain-app], @racket[#%expression], @racket[#%top],
-       and @racket[#%variable-reference] are implicitly added to @racket[stop-ids].
+ @item{If @racket[stop-ids] is any other list, then @racket[begin], @racket[quote], @racket[set!],
+       @racket[#%plain-lambda], @racket[case-lambda], @racket[let-values], @racket[letrec-values],
+       @racket[if], @racket[begin0], @racket[with-continuation-mark], @racket[letrec-syntaxes+values],
+       @racket[#%plain-app], @racket[#%expression], @racket[#%top], and @racket[#%variable-reference]
+       are implicitly added to @racket[stop-ids]. Expansion proceeds recursively, stopping when the
+       expander encounters any of the forms in @racket[stop-ids], and the result is the
+       partially-expanded form.
 
        When the expander would normally implicitly introduce a @racketid[#%app], @racketid[#%datum],
        or @racketid[#%top] identifier as described in @secref["expand-steps"], it checks to see if an
@@ -275,13 +274,9 @@ The @racket[stop-ids] argument controls how far @racket[local-expand] expands @r
        the bare application, literal data expression, or unbound identifier rather than one wrapped in
        the respective explicit form.
 
-       Note that forcing recursive expansion with an identifier in @racket[stop-ids] does not
-       necessarily guarantee uses of that identifier will not be expanded, since other transformers
-       may force @tech{partial expansion} by invoking @racket[local-expand] with a different value for
-       @racket[stop-ids]. For example, the @racket[#%plain-module-begin] transformer partially expands
-       its sub-forms regardless of identifiers’ presence in @racket[stop-ids]. As a special case,
-       @racket[#%plain-module-begin] refrains from expanding @racket[module*] sub-forms if
-       @racket[module*] is in @racket[stop-ids].
+       When @racket[#%plain-module-begin] is not in @racket[stop-ids], the
+       @racket[#%plain-module-begin] transformer detects and expands sub-forms (such as
+       @racket[define-values]) regardless of the identifiers presence in @racket[stop-ids].
 
        Expansion does not replace the scopes in a local-variable
        reference to match the binding identifier.}
@@ -364,8 +359,7 @@ expansion history to external tools.
                                    an explicit wrapper.}
          #:changed "6.0.90.27" @elem{Loosened the contract on the @racket[intdef-ctx] argument to
                                      allow an empty list, which is treated the same way as
-                                     @racket[#f].}
-         #:changed "7.0.0.1" @elem{Added the @racket[#:extend-stop-ids?] argument.}]}
+                                     @racket[#f].}]}
 
 
 @defproc[(syntax-local-expand-expression [stx any/c] [opaque-only? any/c #f])

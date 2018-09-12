@@ -1,9 +1,7 @@
 #lang racket/base
 (require "../common/list-ish.rkt"
-         "../syntax/binding.rkt"
          "../syntax/syntax.rkt"
-         "../syntax/scope.rkt"
-         "../namespace/core.rkt")
+         "../syntax/binding.rkt")
 
 (provide free-id-set
          empty-free-id-set
@@ -31,10 +29,8 @@
                                           null))])
         (free-identifier=? id given-id phase phase))))
 
-(define (free-id-set-empty-or-just-module*? fs phase)
+(define (free-id-set-empty-or-just-module*? fs)
   (define c (hash-count fs))
-  (or (zero? c)
-      (and (= 1 c)
-           (let* ([p-core-stx (syntax-shift-phase-level core-stx phase)]
-                  [mod-star-stx (datum->syntax p-core-stx 'module*)])
-             (free-identifier=? (car (hash-values fs)) mod-star-stx phase phase)))))
+  ;; If any identifier other than `module*` is present, then many
+  ;; identifiers are present
+  (c . <= . 1))

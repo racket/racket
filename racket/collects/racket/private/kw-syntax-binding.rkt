@@ -1,4 +1,4 @@
-(module kw-syntax-local "pre-base.rkt"
+(module kw-syntax-binding "pre-base.rkt"
   (require (prefix-in k: '#%kernel))
 
   (provide syntax-binding-set-extend)

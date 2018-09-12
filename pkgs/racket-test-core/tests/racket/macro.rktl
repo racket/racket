@@ -482,8 +482,7 @@
 (module m1-for-local-expand racket/base
   (require (for-syntax racket/base))
   (provide (rename-out [mb #%module-begin])
-           (except-out (all-from-out racket/base) #%module-begin)
-           (for-syntax (all-from-out racket/base)))
+           (except-out (all-from-out racket/base) #%module-begin))
   (define-syntax (mb stx)
     (syntax-case stx ()
       [(_ 10) #'(#%plain-module-begin 10)]
@@ -492,20 +491,17 @@
        (let ([e (local-expand #'(#%plain-module-begin form ...)
                               'module-begin
                               (list #'module*))])
-         (syntax-case e (module module* quote #%plain-app begin-for-syntax)
+         (syntax-case e (module module* quote #%plain-app)
            [(mod-beg
              (#%plain-app + (quote 1) (quote 2))
              (module* q #f 10)
-             (module* z #f 11)
-             (begin-for-syntax (module* r #f 12)))
+             (module* z #f 11))
             'ok]
            [else (error 'test "bad local-expand result: ~s" (syntax->datum e))])
          e)])))
 (module m2-for-local-expand 'm1-for-local-expand
   (+ 1 2)
-  (module* q #f 10)
-  (module* z #f 11)
-  (begin-for-syntax (module* r #f 12)))
+  (module* q #f 10) (module* z #f 11))
 
 
 (module uses-internal-definition-context-around-id racket/base
