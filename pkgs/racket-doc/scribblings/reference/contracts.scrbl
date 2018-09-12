@@ -3555,10 +3555,14 @@ ended up returning @racket[contract-random-generate-fail].
   This function is like @racket[contract-random-generate], but it is intended to
   be used with combinators that generate values based on sub-contracts
   they have. It must be called when @racket[contract-random-generate]
-  (and @racket[contract-exercise]) creates the generators. In other words,
-  @racket[contract-random-generate/choose] is available only after the
-  @racket[_generate] (and @racket[_exercise]) function received the
-  @racket[_fuel] and before it returned the thunk (or the exerciser).
+  (and @racket[contract-exercise]) creates the generators.
+  To be more precise, @racket[contract-random-generate/choose] is available
+  only for the @racket[_generate] and @racket[_exercise] arguments in
+  @racket[build-contract-property], @racket[build-chaperone-contract-property]
+  or @racket[build-flat-contract-property] and only during the dynamic
+  extent of the call to @racket[_generate] (and @racket[_exercise]).
+  That is, after it receives the @racket[_c] and @racket[_fuel] arguments
+  and before it returns the thunk (or the exerciser).
 
   @racket[contract-random-generate/choose] will never fail,
   but it might escape back to an enclosing
