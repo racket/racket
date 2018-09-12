@@ -398,11 +398,19 @@
   (define orig-err (current-error-port))
   (define orig-out (current-output-port))
   (define orig-in  (current-input-port))
+  (define send-lock (make-semaphore 1))
   (define (raw-send msg)
     (cond 
      [ch (place-channel-put ch msg)]
-     [else (write (convert-paths msg) orig-out)
-           (flush-output orig-out)]))
+     [else
+      (define c-msg (convert-paths msg))
+      ;; Multiple threads might try to write (e.g., for prefetching),
+      ;; so make sure the writes are not interleaved
+      (call-with-semaphore
+       send-lock
+       (lambda ()
+         (write c-msg orig-out)))
+      (flush-output orig-out)]))
   (define (raw-recv)
     (cond 
      [ch (place-channel-get ch)]
