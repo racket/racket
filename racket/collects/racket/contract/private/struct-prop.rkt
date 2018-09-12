@@ -13,7 +13,7 @@
     (define late-neg-proj (get-late-neg-proj blame))
     (λ (x neg-party)
       (unless (struct-type-property? x)
-        (raise-blame-error input-blame x #:neg-party
+        (raise-blame-error input-blame x #:missing-party neg-party
                            '(expected "struct-type-property" given: "~e")
                            x))
       (define blame+neg-party (cons blame neg-party))

@@ -144,6 +144,4 @@
                             "expected a procedure of at least one argument, given ~e"
                             f)))))
                  #:first-order
-                 (lambda (f)
-                   (and (procedure? f) (procedure-arity-includes? f))))])
-
+                 (lambda (f) (procedure? f)))])

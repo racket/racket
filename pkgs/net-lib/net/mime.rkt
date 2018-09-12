@@ -493,7 +493,7 @@
 ;;                 ietf-token / x-token
 (define (mechanism mech)
   (if (not mech)
-    (raise (make-empty-mechanism))
+    (raise (make-empty-mechanism "empty mechanism" (current-continuation-marks)))
     (let ([val (assoc (lowercase mech) mechanism-alist)])
       (or (and val (cdr val))
           (ietf-token mech)
@@ -516,14 +516,14 @@
 ;; type := discrete-type / composite-type
 (define (type value)
   (if (not value)
-    (raise (make-empty-type))
+    (raise (make-empty-type "empty type" (current-continuation-marks)))
     (or (discrete-type value)
         (composite-type value))))
 
 ;; disposition-type := "inline" / "attachment"  / extension-token
 (define (disp-type value)
   (if (not value)
-    (raise (make-empty-disposition-type))
+    (raise (make-empty-disposition-type "empty disposition type" (current-continuation-marks)))
     (let ([val (assoc (lowercase (trim-spaces value)) disposition-alist)])
       (if val (cdr val) (extension-token value)))))
 
@@ -614,7 +614,7 @@
 ;; subtype := extension-token / iana-token
 (define (subtype value)
   (if (not value)
-    (raise (make-empty-subtype))
+    (raise (make-empty-subtype "empty subtype" (current-continuation-marks)))
     (or (extension-token value)
         (iana-token value))))
 
