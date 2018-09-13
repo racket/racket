@@ -3,6 +3,9 @@
 
 (Section 'syntax)
 
+(require syntax/srcloc
+         syntax/strip-context)
+
 ;; ----------------------------------------
 
 (test 0 'with-handlers (with-handlers () 0))
@@ -2079,6 +2082,54 @@
 
 (err/rt-test (eval '(module m 'provide-transformer-set!-and-broken-module-begin (set! x 1)))
              exn:fail:syntax?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check disappeared-uses for cond
+
+(define (jumble->list v)
+  (cond
+    [(list? v) (append-map jumble->list v)]
+    [(pair? v) (append (jumble->list (car v)) (jumble->list (cdr v)))]
+    [else (list v)]))
+
+(define (collect-property-jumble stx key)
+  (let loop ([stx stx])
+    (let ([outer-val (syntax-property stx key)]
+          [inner-vals (syntax-case stx ()
+                        [(a . b)
+                         (append (loop #'a) (loop #'b))]
+                        [#(a ...)
+                         (append-map loop (syntax->list #'(a ...)))]
+                        [#&a
+                         (loop #'a)]
+                        [_
+                         (prefab-struct-key (syntax-e stx))
+                         (append-map loop (vector->list (struct->vector (syntax-e stx))))]
+                        [_
+                         (hash? (syntax-e stx))
+                         (append-map loop (hash-values (syntax-e stx)))]
+                        [_ '()])])
+      (if outer-val
+          (append (jumble->list outer-val) inner-vals)
+          inner-vals))))
+
+(define (srclocs-equal? a b)
+  (equal? (build-source-location a)
+          (build-source-location b)))
+
+(define (all-srclocs-equal? as bs)
+  (and (= (length as) (length bs))
+       (andmap srclocs-equal? as bs)))
+
+(with-syntax ([=>1 #'=>] [=>2 #'=>] [else1 #'else])
+  (test
+   #t
+   all-srclocs-equal?
+   (collect-property-jumble
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand (strip-context #'(cond [#t =>1 values] [#f =>2 not] [else1 #f]))))
+    'disappeared-use)
+   (list #'=>1 #'=>2 #'else1)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
