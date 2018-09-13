@@ -253,7 +253,15 @@ cs-in-place:
 	$(MAKE) cs
 
 cs-base:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-cs-base ; \
+         else $(MAKE) cpus-cs-base CPUS="$(CPUS)" ; fi
+
+plain-cs-base:
 	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
+
+cpus-cs-base:
+	$(MAKE) -j $(CPUS) plain-cs-base JOB_OPTIONS="-j $(CPUS)"
 
 cs-as-is:
 	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
