@@ -338,7 +338,7 @@
   (syntax-case stx ()
     [(_ s ...)
      (case (machine-type)
-       [(a6nt ta6nt i3nt ti3nt) #'(foreign-procedure _stdcall s ...)]
+       [(i3nt ti3nt) #'(foreign-procedure __stdcall s ...)]
        [else #'(foreign-procedure s ...)])]))
 
 ;; This is an inconvenient callback interface, certainly, but it
