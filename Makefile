@@ -88,11 +88,18 @@ win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
-win32-in-place-after-base:
+win32-minimal-in-place:
+	$(MAKE) win32-base
+	$(MAKE) win32-minimal-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+
+win32-minimal-in-place-after-base:
 	$(MAKE) win32-pkgs-catalog SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(WIN32_RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(WIN32_RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(WIN32_RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+
+win32-in-place-after-base:
+	$(MAKE) win32-minimal-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # Rebuild without consulting catalogs or package sources:
@@ -320,7 +327,7 @@ win32-cs:
 	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
 
 win32-racket-then-cs:
-	$(MAKE) win32-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+	$(MAKE) win32-minimal-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
 	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
 
 win32-just-cs:
