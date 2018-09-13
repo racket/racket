@@ -20,6 +20,8 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 # define RACKET_IS_GUI 0
 #endif
 
+#define XFORM_SKIP_PROC /* empty */
+
 #include "../../start/config.inc"
 
 char *boot_file_data = "BooT FilE OffsetS:xxxxyyyyyzzzz";
