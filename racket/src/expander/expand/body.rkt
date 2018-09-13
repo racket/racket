@@ -76,6 +76,7 @@
              [val-rhss null]   ; accumulated binding right-hand sides
              [track-stxs null] ; accumulated syntax for tracking
              [trans-idss null] ; accumulated `define-syntaxes` identifiers that have disappeared
+             [trans-stxs null] ; accumulated `define-syntaxes` forms for tracking
              [stx-clauses null] ; accumulated syntax-binding clauses, used when observing
              [dups (make-check-no-duplicate-table)])
     (cond
@@ -89,7 +90,8 @@
                              #:source s
                              #:stratified? stratified?
                              #:name name
-                             #:disappeared-transformer-bindings (reverse trans-idss))]
+                             #:disappeared-transformer-bindings (reverse trans-idss)
+                             #:disappeared-transformer-forms (reverse trans-stxs))]
      [else
       (define rest-bodys (cdr bodys))
       (log-expand body-ctx 'next)
@@ -114,6 +116,7 @@
                val-rhss
                track-stxs
                trans-idss
+               trans-stxs
                stx-clauses
                dups)]
         [(define-values)
@@ -157,6 +160,7 @@
                                  #f)
                                track-stxs))
                trans-idss
+               trans-stxs
                stx-clauses
                new-dups)]
         [(define-syntaxes)
@@ -191,6 +195,7 @@
                val-rhss
                track-stxs
                (cons ids trans-idss)
+               (cons exp-body trans-stxs)
                (cons (datum->syntax #f (list ids (m 'rhs)) exp-body) stx-clauses)
                new-dups)]
         [else
@@ -209,6 +214,7 @@
                  val-rhss
                  track-stxs
                  trans-idss
+                 trans-stxs
                  stx-clauses
                  dups)]
           [else
@@ -221,6 +227,7 @@
                  val-rhss
                  track-stxs
                  trans-idss
+                 trans-stxs
                  stx-clauses
                  dups)])])])))
 
@@ -233,7 +240,8 @@
                                #:source s
                                #:stratified? stratified?
                                #:name name
-                               #:disappeared-transformer-bindings disappeared-transformer-bindings)
+                               #:disappeared-transformer-bindings disappeared-transformer-bindings
+                               #:disappeared-transformer-forms disappeared-transformer-forms)
   (when (null? done-bodys)
     (raise-syntax-error (string->symbol "begin (possibly implicit)")
                         "no expression after a sequence of internal definitions"
@@ -287,9 +295,13 @@
     (log-expand* body-ctx ['exit-prim exp-s] ['return exp-s])
     (if (expand-context-to-parsed? body-ctx)
         (list exp-s)
-        (list (attach-disappeared-transformer-bindings
-               exp-s
-               disappeared-transformer-bindings)))]))
+        (list (for/fold ([exp-s (attach-disappeared-transformer-bindings
+                                 exp-s
+                                 disappeared-transformer-bindings)])
+                        ([disappeared-transformer-form (in-list disappeared-transformer-forms)])
+                (syntax-track-origin exp-s
+                                     disappeared-transformer-form
+                                     (car (syntax-e disappeared-transformer-form))))))]))
 
 ;; Roughly, create a `letrec-values` for for the given ids, right-hand sides, and
 ;; body. While expanding right-hand sides, though, keep track of whether any
