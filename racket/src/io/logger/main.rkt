@@ -15,7 +15,8 @@
          log-max-level
          log-all-levels
          log-level-evt
-         log-message  ; ok to call in host-Scheme interrupt handler
+         log-message
+         log-message* ; ok to call in host-Scheme interrupt handler
          log-receiver?
          make-log-receiver
          add-stderr-log-receiver!
@@ -80,8 +81,6 @@
         s])))
   (semaphore-peek-evt s))
 
-;; Can be called in any host Scheme thread and in interrupt handler,
-;; like `log-level?`:
 (define/who log-message
   ;; Complex dispatch based on number and whether third is a string:
   (case-lambda
@@ -102,13 +101,16 @@
     [(logger level topic message data prefix?)
      (do-log-message who logger level topic message data prefix?)]))
 
-;; Can be called in any host Scheme thread and in interrupt handler,
-;; like `log-level?`:
 (define (do-log-message who logger level topic message data prefix?)
   (check who logger? logger)
   (check-level who level)
   (check who #:or-false symbol? topic)
   (check who string? message)
+  (log-message* logger level topic message data prefix? #f))
+
+;; Can be called in any host Scheme thread and in interrupt handler,
+;; like `log-level?`:
+(define (log-message* logger level topic message data prefix? in-interrupt?)
   (define msg #f)
   (atomically/no-interrupts/no-wind
    (when ((logger-max-wanted-level logger) . level>=? . level)
@@ -126,7 +128,7 @@
                              message))
                         data
                         topic)))
-           (log-receiver-send! r msg)))
+           (log-receiver-send! r msg in-interrupt?)))
        (let ([parent (logger-parent logger)])
          (when (and parent
                     ((filters-level-for-topic (logger-propagate-filters logger) topic) . level>=? . level))

@@ -11,7 +11,8 @@
          "thread.rkt"
          "unsafe.rkt"
          "time.rkt"
-         "place-message.rkt")
+         "place-message.rkt"
+         "pre-poll.rkt")
 
 ;; Unsafe scheduler-cooperation functions are made available to
 ;; clients through a `#%thread` primitive linklet instance:
@@ -65,5 +66,6 @@
           'unsafe-custodian-unregister unsafe-custodian-unregister
           'thread-push-kill-callback! thread-push-kill-callback!
           'thread-pop-kill-callback! thread-pop-kill-callback!
+          'unsafe-add-pre-poll-callback! unsafe-add-pre-poll-callback!
           'set-get-subprocesses-time! set-get-subprocesses-time!
           'prop:place-message prop:place-message))

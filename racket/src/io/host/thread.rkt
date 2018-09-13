@@ -78,6 +78,7 @@
          unsafe-custodian-unregister
          thread-push-kill-callback!
          thread-pop-kill-callback!
+         unsafe-add-pre-poll-callback!
          set-get-subprocesses-time!)
 
 (define start-atomic unsafe-start-atomic)
