@@ -2,6 +2,7 @@ srcdir = @srcdir@
 builddir = @builddir@
 
 SCHEME_SRC = @SCHEME_SRC@
+MAKE_BUILD_SCHEME = @MAKE_BUILD_SCHEME@
 MACH = @MACH@
 SCHEME_BIN = $(SCHEME_SRC)/$(MACH)/bin/$(MACH)/scheme
 SCHEME_INC = $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
@@ -104,9 +105,10 @@ known:
 	cd $(srcdir)/../../schemify && $(MAKE) known-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
 scheme:
-	$(MAKE) $(SCHEME_BIN)
+	if [ "$(MAKE_BUILD_SCHEME)" = "y" ] ; \
+         then $(MAKE) scheme-make ; fi
 
-$(SCHEME_BIN):
+scheme-make:
 	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@
 	cd @SCHEME_SRC@ && make
 

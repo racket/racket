@@ -624,6 +624,7 @@ LIBOBJS
 FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
 SCHEME_CONFIG_ARGS
+MAKE_BUILD_SCHEME
 SCHEME_SRC
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
@@ -3296,9 +3297,11 @@ case "$host_cpu" in
 esac
 
 SCHEME_SRC=../ChezScheme
+MAKE_BUILD_SCHEME=y
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
+  MAKE_BUILD_SCHEME=n
 fi
 
 if test "${enable_racket}" != "" ; then
@@ -3909,6 +3912,7 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

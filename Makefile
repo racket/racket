@@ -234,6 +234,7 @@ RACKET =
 # Chez Scheme from `CHEZ_SCHEME_REPO`
 SCHEME_SRC = 
 DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
+MAKE_BUILD_SCHEME = y
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
 
@@ -289,14 +290,14 @@ ABS_SCHEME_SRC = "`$(RACKET) racket/src/cs/absify.rkt $(SCHEME_SRC)`"
 cs-after-racket-with-racket:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
 	  then $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(DEFAULT_SCHEME_SRC)" ; \
-	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" ; fi
+	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=n ; fi
 
 cs-after-racket-with-racket-and-scheme-src:
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
 
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/Makefile
-	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)"
+	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
 	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
