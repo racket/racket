@@ -1,7 +1,6 @@
 sudo: false
 language: c
 matrix:
-  include:
   - os: osx
     compiler: clang
     env: PATH=./racket/bin:$PATH
@@ -22,11 +21,15 @@ matrix:
     compiler: gcc
     env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places
       --disable-futures --disable-extflonum"
+  allow-failures:
+    - os: linux
+      compiler: clang
+      env: PATH=./racket/bin:$PATH TARGET="cs"
 before_script:
 - git config --global user.email "travis-test@racket-lang.org"
 - git config --global user.name "Travis Tester"
 script:
-- make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+- make $TARGET CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
 - raco test -l tests/racket/test
 - racket -l tests/racket/contract/all
 - raco test -l tests/json/json
