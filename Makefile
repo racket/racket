@@ -235,11 +235,19 @@ BASE_TARGET = plain-minimal-in-place
 CS_SETUP_TARGET = plain-in-place-after-base
 
 cs:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-cs ; \
+         else $(MAKE) cpus-cs CPUS="$(CPUS)" ; fi
+
+plain-cs:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
          then $(MAKE) scheme-src ; fi
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) racket-then-cs ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+
+cpus-cs:
+	$(MAKE) -j $(CPUS) plain-cs JOB_OPTIONS="-j $(CPUS)"
 
 cs-in-place:
 	$(MAKE) cs
