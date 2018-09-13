@@ -2132,5 +2132,28 @@
    (list #'=>1 #'=>2 #'else1)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check origin for internal definitions includes define-syntax itself
+
+(define (all-srclocs-included? as bs)
+  (and (for/and ([a (in-list as)])
+         (member a bs srclocs-equal?))
+       #t))
+
+(with-syntax ([define-syntax1 #'define-syntax])
+  (define expanded-stx
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand (strip-context #'(let ()
+                                 (define-syntax1 foo (syntax-rules ()))
+                                 (void))))))
+  (define expanded-body-stx
+    (syntax-case expanded-stx (let-values)
+      [(let-values _ form) #'form]))
+  (test
+   #t
+   all-srclocs-included?
+   (list #'define-syntax1)
+   (syntax-property expanded-body-stx 'origin)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
