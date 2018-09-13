@@ -495,6 +495,45 @@
    (lambda (slow-k l)
      l)))
 
+(define (continuation->trace* k)
+  (call-with-values
+   (lambda ()
+     (let loop ([k k] [slow-k k] [move? #f])
+       (cond
+         [(or (not (#%$continuation? k))
+              (eq? k #%$null-continuation))
+          (values slow-k '())]
+         [else
+          (let* ([name (or (let ([n #f])
+                             (and n
+                                  (string->symbol (format "body of ~a" n))))
+                           (let* ([c (#%$continuation-return-code k)]
+                                  [n (#%$code-name c)])
+                             n))]
+                 [desc
+                  (let* ([ci (#%$code-info (#%$continuation-return-code k))]
+                         [src (and
+                               (code-info? ci)
+                               (or
+                                ;; when per-expression inspector info is available:
+                                (find-rpi (#%$continuation-return-offset k) (code-info-rpis ci))
+                                ;; when only per-function source location is available:
+                                (code-info-src ci)))])
+                    (and (or name src)
+                         (cons name src)))])
+            (#%$split-continuation k 0)
+            (call-with-values
+             (lambda () (loop (#%$continuation-link k) (if move? (#%$continuation-link slow-k) slow-k) (not move?)))
+             (lambda (slow-k l)
+               (let ([l (if desc
+                            (cons desc l)
+                            l)])
+                 (when (eq? k slow-k)
+                   (hashtable-set! cached-traces k l))
+                 (values slow-k l)))))])))
+   (lambda (slow-k l)
+     l)))
+
 (define (traces->context ls)
   (let loop ([l '()] [ls ls])
     (cond

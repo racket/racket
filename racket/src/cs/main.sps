@@ -411,10 +411,10 @@
                (set! minor-gcs (add1 minor-gcs))
                (set! major-gcs (add1 major-gcs)))
            (set! peak-mem (max peak-mem pre-allocated))
-           (let ([debug-GC? (log-level? root-logger 'debug 'GC)])
+           (let ([debug-GC? (log-level?* root-logger 'debug 'GC)])
              (when (or debug-GC?
                        (and (not minor?)
-                            (log-level? root-logger 'debug 'GC:major)))
+                            (log-level?* root-logger 'debug 'GC:major)))
                (let ([delta (- pre-allocated post-allocated)])
                  (log-message* root-logger 'debug (if debug-GC? 'GC 'GC:major)
                                (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams @ ~a"
