@@ -8,7 +8,7 @@ pool:
   
 
 steps:
- - checkout:
+- checkout:
    - depth: 1
 - script:
     make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
