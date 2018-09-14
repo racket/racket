@@ -13,21 +13,21 @@ steps:
 - script:
     make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
   displayName: 'make'
-- script:
-  - raco test -l tests/racket/test
-  - racket -l tests/racket/contract/all
-  - raco test -l tests/json/json
-  - raco test -l tests/file/main
-  - raco test -l tests/net/head
-  - raco test -l tests/net/uri-codec
-  - raco test -l tests/net/url
-  - raco test -l tests/net/url-port
-  - raco test -l tests/net/encoders
-  - raco test -l tests/openssl/basic
-  - raco test -l tests/openssl/https
-  - raco test -l tests/match/main
-  - raco test -l tests/zo-path
-  - raco test -l tests/xml/test
-  - raco test -l tests/db/all-tests
-  - raco test -c tests/stxparse
-  env: {PATH : $PATH:`pwd`:/racket/bin}
+- script: |
+    export PATH=$PATH:`pwd`:/racket/bin
+    raco test -l tests/racket/test
+    racket -l tests/racket/contract/all
+    raco test -l tests/json/json
+    raco test -l tests/file/main
+    raco test -l tests/net/head
+    raco test -l tests/net/uri-codec
+    raco test -l tests/net/url
+    raco test -l tests/net/url-port
+    raco test -l tests/net/encoders
+    raco test -l tests/openssl/basic
+    raco test -l tests/openssl/https
+    raco test -l tests/match/main
+    raco test -l tests/zo-path
+    raco test -l tests/xml/test
+    raco test -l tests/db/all-tests
+    raco test -c tests/stxparse
