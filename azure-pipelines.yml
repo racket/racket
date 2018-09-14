@@ -8,7 +8,7 @@ pool:
   
 
 steps:
-- checkout:
+- checkout: self
   fetchDepth: 5
   
 - script:
