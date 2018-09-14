@@ -4,9 +4,8 @@
 # https://docs.microsoft.com/vsts/pipelines/apps/c-cpp/gcc
 
 pool:
-  vmImage: 'Ubuntu 18.04'
+  vmImage: ubuntu-16.04
   
-
 steps:
 - checkout: self
   fetchDepth: 5
