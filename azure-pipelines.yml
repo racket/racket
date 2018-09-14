@@ -9,10 +9,12 @@ pool:
 
 steps:
 - checkout:
-    depth: 5
+  fetchDepth: 5
+  
 - script:
     make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
   displayName: 'make'
+  
 - script: |
     export PATH=$PATH:`pwd`:/racket/bin
     raco test -l tests/racket/test
@@ -31,3 +33,4 @@ steps:
     raco test -l tests/xml/test
     raco test -l tests/db/all-tests
     raco test -c tests/stxparse
+  displayName: test
