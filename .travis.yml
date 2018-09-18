@@ -70,12 +70,13 @@ before_install:
 
 env:
   global:
-    secure: cSKI7GYTFP8VQZYMT6Fo0XQjx3r+yXf0b1r3y8NNWXOXg8xIAXFE3lM5+kvv/eDPz43sknskwmb0e093WzKN6Ht9ngJ1nsUh/cleFwPjGgYiYF4/EfMR5MhNrWQyYSbT0g2gF9+jJG1mOmXZ3cvMVzkuuJluOPB1E8tZX9T+ml8=
+  - secure: cSKI7GYTFP8VQZYMT6Fo0XQjx3r+yXf0b1r3y8NNWXOXg8xIAXFE3lM5+kvv/eDPz43sknskwmb0e093WzKN6Ht9ngJ1nsUh/cleFwPjGgYiYF4/EfMR5MhNrWQyYSbT0g2gF9+jJG1mOmXZ3cvMVzkuuJluOPB1E8tZX9T+ml8=
+  - secure: w2+YA9As/1MHT1Jwv9yKiGW1G4Vq7rtqjvqcHk7zsf+6w6Ig0vplJqbr+rcAtmkzR/ZEYZYc+/OQ9uvov7TFlYxU+9msNanL7W6sN+XwYSG+0BTiA+/rHhd4phuRou1ox5iCRiNs7QsaqN0JV2QOtbt/ILzhsgy87MnI59UYAHLe/pZSopXncl8rrj1vtoaC0isKRHzkZBPfK3kTGGMEfy5pdHK/p88grn14OBMNTQzoqPFymO5zO5LPY+nSL/w9sUARaClE0oIrDSWRVqFEf8tQaP1/DUCoobi7ACtslZWMuCwlx32EDIdTlAX+jyrTrYGp5lw+90uOuj/Zjeyvmr+zvBWtFuGTi/9HekWlat51FM1DbPQUCQjzjNnPv/cxqzytadZluL1LWrYhGNIjj1lIL3luG6jNJ3p+oYOWyYvR/VG/QD7FZfruyY8F65A7AxA2vpnN0QG1413Uvrq9iz4Wa9kjUz7LH97OHqO8r/tm0pvFdyOMpUGhTGKYNDVcQl1Zz2HafRMeMt7oBuKgLYKCnaPdUjX7EOJc20Z8MBh5VZKscLQfPw+KCnpV2kpJMaKVKFD+OX89vR51DDkYo749SQKQyfOu8VFMeeabwvM1nfP7gF1vBrFHKwMVQrN41umbsBXvWgsFCqXSl3JnNaXahIw3YTBGpSRXLfpyafE=
 
 addons:
   coverity_scan:
     project:
-      name: racket/racket
+      name: Racket Programming Language - Official
       description: The Racket Programming Language
     notification_email: pmatos@linki.tools
     build_command_prepend: cd racket/src && ./configure
