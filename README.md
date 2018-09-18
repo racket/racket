@@ -1,8 +1,8 @@
 | Build                            | Badge |
 |----------------------------------|-------|
-| Azure Pipelines Windows              | [![Build status](https://dev.azure.com/racketci/Racket/_apis/build/status/racket.racket?jobName=Windows&label=Windows&branchName=master)](https://dev.azure.com/racketci/Racket/_build/latest?definitionId=1&branchName=master) |
+| Azure Pipelines Windows | [![Build status](https://dev.azure.com/racketci/Racket/_apis/build/status/racket.racket?jobName=Windows&label=Windows&branchName=master)](https://dev.azure.com/racketci/Racket/_build/latest?definitionId=1&branchName=master) |
 | Azure Pipelines Linux | [![Build status](https://dev.azure.com/racketci/Racket/_apis/build/status/racket.racket?jobName=Windows&label=Linux&branchName=master)](https://dev.azure.com/racketci/Racket/_build/latest?definitionId=1&branchName=master) |
-| Azure Pipelines Mac          | [![Build status]https://dev.azure.com/racketci/Racket/_apis/build/status/racket.racket?jobName=Windows&label=Mac&branchName=master)](https://dev.azure.com/racketci/Racket/_build/latest?definitionId=1&branchName=master) |
+| Azure Pipelines Mac | [![Build status](https://dev.azure.com/racketci/Racket/_apis/build/status/racket.racket?jobName=Windows&label=Mac&branchName=master)](https://dev.azure.com/racketci/Racket/_build/latest?definitionId=1&branchName=master) |
 
 This is the source code for the core of Racket. See "INSTALL.txt" for
 full information on building Racket.
