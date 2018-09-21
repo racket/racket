@@ -76,7 +76,7 @@ env:
 addons:
   coverity_scan:
     project:
-      name: Racket Programming Language - Official
+      name: "Racket Programming Language - Official"
       description: The Racket Programming Language
     notification_email: pmatos@linki.tools
     build_command_prepend: cd racket/src && ./configure
