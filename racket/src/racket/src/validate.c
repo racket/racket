@@ -1210,7 +1210,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       
       if (tl_use_map) {
         if ((uintptr_t)tl_use_map & 0x1) {
-          if (p > 31)
+          if (p >= 31)
             scheme_ill_formed_code(port);
           if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p + 1))))
             scheme_ill_formed_code(port);
