@@ -865,7 +865,7 @@ static Scheme_Object *do_power(const Scheme_Object *a, uintptr_t b)
   result = scheme_make_integer(1);
 
   i = sizeof(uintptr_t) * 8- 1;
-  while (!((b >> i) & 0x1) && i >= 0)
+  while (i >= 0 && !((b >> i) & 0x1))
   {
     i = i - 1;
   }
