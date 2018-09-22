@@ -95,6 +95,7 @@
 (check-not-exn (λ () (test-contract-generation (hash/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (hash/c char? integer?))))
 (check-not-exn (λ () (test-contract-generation (hash/c string? integer?))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? (-> number? boolean?)))))
 (check-not-exn (λ () (test-contract-generation (hash/c string? (hash/c integer? string?)))))
 (check-not-exn (λ () (test-contract-generation (hash/c (hash/c string? integer?) (hash/c integer? string?)))))
 
@@ -112,6 +113,11 @@
 (check-pred
  (λ (v) (not (empty? v)))
  (filter (λ (h) (> (length (hash-values h)) 1)) hash/c-list))
+
+;; hash/c should not generate more than 4 elements
+(check-pred
+ empty?
+ (filter (λ (h) (> (length (hash-values h)) 4)) hash/c-list))
 
 (check-not-exn
  (λ ()

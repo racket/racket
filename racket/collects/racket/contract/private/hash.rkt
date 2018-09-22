@@ -198,7 +198,8 @@
   (define this-immutable (base-hash/c-immutable ctc))
   (λ (fuel)
     (define rnd (random fuel))
-    (define rnd-len (add1 (modulo (add1 rnd) fuel)))
+    ;; keep amount of random elements reasonable, no more than 4
+    (define rnd-len (add1 (modulo (add1 fuel) 4)))
     (define gen-key (contract-random-generate/choose this-dom fuel))
     (define gen-val (contract-random-generate/choose this-rng fuel))
     (λ ()
@@ -216,7 +217,23 @@
                     (cons (gen-key) (gen-val)))))]))))
 
 (define (hash/c-exercise ctc)
-  (multi-exercise (list (base-hash/c-dom ctc) (base-hash/c-rng ctc))))
+  (define env (contract-random-generate-get-current-environment))
+  (define dom (base-hash/c-dom ctc))
+  (define rng (base-hash/c-rng ctc))
+  (λ (fuel)
+    ;; passing (list dom rng) to multi-exercise will produce
+    ;; a function that exercises values of form (list/c dom rng)
+    ;; and a list of newly available contracts.
+    (define-values (exercise-list-dom-rng available-ctcs)
+      ((multi-exercise (list dom rng)) fuel))
+    (values
+     (λ (h)
+       ;; iterate over key-value pairs, exercise and stash
+       (for ([(k v) (in-hash h)])
+         (exercise-list-dom-rng (list k v))
+         (contract-random-generate-stash env dom k)
+         (contract-random-generate-stash env dom v)))
+     (cons dom (cons rng available-ctcs)))))
 
 (define-struct (flat-hash/c base-hash/c) ()
   #:omit-define-syntaxes
