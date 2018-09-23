@@ -255,12 +255,6 @@ static void close_six_fds(rktio_fd_t **rw) {
   }
 }
 
-static int is_predefined_module_path(Scheme_Object *v)
-{
-  /* Every table of primitives should have a corresponding predefined module */
-  return !!scheme_hash_get(scheme_startup_env->primitive_tables, v);
-}
-
 Scheme_Object *place_pumper_threads(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   Scheme_Object         *tmp;
@@ -358,7 +352,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
     if (SCHEME_PAIRP(args[0]) 
         && SAME_OBJ(SCHEME_CAR(args[0]), quote_symbol)
-        && !is_predefined_module_path(args[0])) {
+        && !scheme_is_predefined_module_path(args[0])) {
       scheme_contract_error("dynamic-place", "not a filesystem or predefined module-path", 
                             "module path", 1, args[0],
                             NULL);
