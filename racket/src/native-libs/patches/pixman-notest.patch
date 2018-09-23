@@ -1,0 +1,13 @@
+diff -u -r old/pixman-0.34.0/Makefile new/pixman-0.34.0/Makefile
+--- old/pixman-0.34.0/Makefile	2018-09-22 20:18:54.000000000 -0600
++++ new/pixman-0.34.0/Makefile	2018-09-22 20:18:35.000000000 -0600
+@@ -380,7 +380,7 @@
+ top_build_prefix = 
+ top_builddir = .
+ top_srcdir = /Users/mflatt/build/bl/m64/pixman-0.34.0/.
+-SUBDIRS = pixman demos test
++SUBDIRS = pixman
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = pixman-1.pc
+ GPGKEY = 3892336E
+Only in old/pixman-0.34.0: Makefile~

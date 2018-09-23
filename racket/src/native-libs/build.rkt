@@ -113,6 +113,9 @@
 ;; Fix a problem with glyph extents and clipped rendering:
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
+;; Fix a problem with blank glyphs triggering Type 3 substitutions:
+(define-runtime-path cairo-emptyglyph.patch "patches/cairo-emptyglyph.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
@@ -155,6 +158,9 @@
 
 ;; `vector` syntax with old gcc
 (define-runtime-path pixman-altivec-patch "patches/pixman-altivec.patch")
+
+;; No need for pixman demos and tests
+(define-runtime-path pixman-notest-patch "patches/pixman-notest.patch")
 
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
@@ -476,7 +482,8 @@
     [("pixman") (config #:patches (cond
                                     [(and win? (not m32?)) (list noforceinline-patch)]
                                     [ppc? (list pixman-altivec-patch)]
-                                    [else null]))]
+                                    [else null])
+                        #:post-patches (list pixman-notest-patch))]
     [("cairo")
      (when mac?
        (define zlib.pc (build-path dest "lib" "pkgconfig" "zlib.pc"))
@@ -497,7 +504,8 @@
                           (if mac?
                               '("CFLAGS=-include Kernel/uuid/uuid.h")
                               '()))
-             #:patches (list cairo-coretext-patch
+             #:patches (list cairo-emptyglyph.patch
+                             cairo-coretext-patch
                              courier-new-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
