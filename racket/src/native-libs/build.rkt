@@ -138,6 +138,9 @@
 ;; (i.e., auto-find a suitable font) as implemented by `racket/draw`
 (define-runtime-path pango-emoji-patch "patches/pango-emoji.patch")
 
+;; Merge a Pango patch that fixes a decoding problem
+(define-runtime-path pango-emojiiter-patch "patches/pango-emojiiter.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -529,7 +532,8 @@
                                   (list coretext-patch
                                         coretext-fontreg-patch
                                         coretext-nullarray
-                                        win32text-patch)
+                                        win32text-patch
+                                        pango-emojiiter-patch)
                                   (if (and mac? m32?)
                                       (list pango-surrogate-patch)
                                       null)
