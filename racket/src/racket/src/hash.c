@@ -770,7 +770,7 @@ void scheme_clear_bucket_table(Scheme_Bucket_Table *bt)
 
   bt->count = 0;
   bt->size = 4;
-  ba = (Scheme_Bucket **)scheme_malloc(bt->size * sizeof(Scheme_Bucket **));
+  ba = (Scheme_Bucket **)scheme_malloc(bt->size * sizeof(Scheme_Bucket *));
   bt->buckets = ba;
 }
 
