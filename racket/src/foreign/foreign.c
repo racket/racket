@@ -2675,7 +2675,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   }
   res = scheme_malloc_fail_ok(mf,size);
   if (failok && (res == NULL)) scheme_signal_error("malloc: out of memory");
-  if (((from != NULL) || (foff != 0)) && (res != NULL))
+  if ((from != NULL) && (res != NULL))
     memcpy(res, W_OFFSET(from, foff), size);
   if (SAME_OBJ(mode, raw_sym))
     return scheme_make_foreign_external_cpointer(res);
