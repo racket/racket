@@ -1434,6 +1434,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       } else {
 	RKTIO_CLOSE_SUBPROCESS_COPY(err_subprocess, 1);
       }
+		  
+      if (env)
+        free(env);
+
       return NULL;
 
     case 0: /* child */
@@ -1497,7 +1501,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         if (err)
           err = errno;
 
-        if (envvars)
+        if (env)
           free(env);
 
 	/* If we get here it failed; give up */
@@ -1519,7 +1523,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   /*      Close unneeded descriptors      */
   /*--------------------------------------*/
 
-  free(env);
+  if (env)
+    free(env);
 
   if (!stdin_fd)
     RKTIO_CLOSE(to_subprocess[0]);
