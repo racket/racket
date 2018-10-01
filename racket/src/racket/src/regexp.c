@@ -4397,10 +4397,8 @@ static unsigned char *add_byte_range(const unsigned char *lo, const unsigned cha
     /* Fill out [nxxxx, p0000) */
     if (p > lo[same_chars]) {
       r = make_room(r, j, 2, rs);
-      if (!did_alt) {
+      if (!did_alt)
 	r[j++] = '|';
-	did_alt = 1;
-      }
       r[j++] = lo[same_chars];
       *_j = j;
       r = add_byte_range(lo XFORM_OK_PLUS same_chars + 1, highest, count - same_chars - 1,
@@ -4409,14 +4407,12 @@ static unsigned char *add_byte_range(const unsigned char *lo, const unsigned cha
       p = lo[same_chars] + 1;
       did_alt = 0;
     }
-    
+
     /* Fill out [m0000, mxxxx] */
     if (q < hi[same_chars]) {
       r = make_room(r, j, 2, rs);
-      if (!did_alt) {
+      if (!did_alt)
 	r[j++] = '|';
-	did_alt = 1;
-      }
       r[j++] = hi[same_chars];
       *_j = j;
       r = add_byte_range(lowest, hi  XFORM_OK_PLUS same_chars + 1, count - same_chars - 1,
@@ -4426,7 +4422,7 @@ static unsigned char *add_byte_range(const unsigned char *lo, const unsigned cha
 
       q = hi[same_chars] - 1;
     }
-    
+
     /* Fill out [p0000,m0000) */
     if (p <= q) {
       /* Make the alternative that lets the initial digit vary,
