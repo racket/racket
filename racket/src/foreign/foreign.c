@@ -2675,8 +2675,19 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   }
   res = scheme_malloc_fail_ok(mf,size);
   if (failok && (res == NULL)) scheme_signal_error("malloc: out of memory");
-  if (((from != NULL) || (foff != 0)) && (res != NULL))
-    memcpy(res, W_OFFSET(from, foff), size);
+
+  /* We might want to use foff as the object base address if from is NULL,
+   * therefore set a src point to use in memcpy to clarify this */
+  {
+    void *src = NULL;
+    if (from != NULL)
+      src = W_OFFSET(from, foff);
+    else if (foff != 0)
+      src = (void *)foff;
+    if (src != NULL && res != NULL)
+      memcpy(res, src, size);
+  }
+
   if (SAME_OBJ(mode, raw_sym))
     return scheme_make_foreign_external_cpointer(res);
   else
