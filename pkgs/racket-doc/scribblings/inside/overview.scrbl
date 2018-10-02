@@ -11,7 +11,7 @@ reclamation of memory used during evaluation, and the scheduling of
 concurrent threads and parallel tasks.
 
 Much of the language provided by @racketmodname[racket/base] is
-implemented in a more primitive dialect of Racket that is provided by
+implemented in a more primitive dialect of Racket than is provided by
 the run-time system. Future versions of Racket are likely to move
 macro expansion, compilation, and many ``primitive'' functions into
 such Racket-implemented libraries, instead of having them built into
