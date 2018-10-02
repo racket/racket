@@ -5477,8 +5477,8 @@ static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
 
   base = SCHEME_INT_VAL(argv[0]);
   /* Consistent if potentially unkept bits are all 0 or 1 */
-  if (!(base - (base & ((1 << kept) - 1)))
-      || !(~(base | ((1 << kept) - 1)))) {
+  if (!(base - (base & ((1UL << kept) - 1)))
+      || !(~(base | ((1UL << kept) - 1)))) {
     v = base << amt;
     
     return scheme_make_integer(v);
