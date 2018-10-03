@@ -56,7 +56,7 @@ all:
 	$(MAKE) rktl
 	$(MAKE) $(BUILDDIR)racket.so
 
-expander-demo: $(BUILDDIR)expander.so demo/expander.ss
+expander-demo: $(BUILDDIR)expander.so demo/expander.ss ../../bin/racket
 	$(SCHEME) $(EXPANDER_DEPS) $(BUILDDIR)expander.so demo/expander.ss
 
 run: $(BUILDDIR)main.so ../../bin/racket
