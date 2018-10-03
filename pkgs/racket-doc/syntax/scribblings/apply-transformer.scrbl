@@ -12,10 +12,11 @@
          syntax?]{
 
 Applies @racket[transformer] as a @tech[#:doc refman]{syntax transformer} to @racket[stx] in the
-current expansion context. The result is similar to expanding @racket[(m stx)] with
-@racket[local-expand], where @racket[m] is bound to @racket[transformer], except that expansion is
-guaranteed to stop after applying a single macro transformation (assuming @racket[transformer] does
-not explicitly force further recursive expansion).
+current expansion context. The result is similar to expanding a use of an
+@tech[#:doc refman]{identifier} bound as a @tech[#:doc refman]{syntax transformer} bound to
+@racket[transformer] with @racket[local-expand], except that expansion is guaranteed to stop after
+applying a single macro transformation (assuming @racket[transformer] does not explicitly force
+further recursive expansion).
 
 Unlike simply applying @racket[transformer] to @racket[stx] directly, using
 @racket[local-apply-transformer] introduces the appropriate @tech[#:doc refman]{use-site scope} and
