@@ -1494,8 +1494,6 @@ static Scheme_Object *places_deep_copy_worker(Scheme_Object *so, Scheme_Hash_Tab
   Scheme_Structure *st;
   Scheme_Serialized_Structure *sst;
   Scheme_Struct_Type *stype;
-  Scheme_Struct_Type *ptype;
-  int local_slots;
 
 #define DEEP_DO_CDR       1
 #define DEEP_DO_FIN_PAIR  2
@@ -1666,9 +1664,7 @@ DEEP_VEC2:
     case scheme_structure_type:
       st = (Scheme_Structure*)so;
       stype = st->stype;
-      ptype = stype->parent_types[stype->name_pos - 1];
       size = stype->num_slots;
-      local_slots = stype->num_slots - (ptype ? ptype->num_slots : 0);
 
       if (!stype->prefab_key) {
         bad_place_message2(so, fd_accumulators, can_raise_exn);
@@ -1676,13 +1672,11 @@ DEEP_VEC2:
         new_so = NULL;
         ABORT;
       }
-      for (i = 0; i < local_slots; i++) {
-        if (!stype->immutables || stype->immutables[i] != 1) {
-          bad_place_message2(so, fd_accumulators, can_raise_exn);
-          if (invalid_object) *invalid_object = so;
-          new_so = NULL;
-          ABORT;
-        }
+      if (!(MZ_OPT_HASH_KEY(&stype->iso) & STRUCT_TYPE_ALL_IMMUTABLE)) {
+        bad_place_message2(so, fd_accumulators, can_raise_exn);
+        if (invalid_object) *invalid_object = so;
+        new_so = NULL;
+        ABORT;
       }
 
       IFS_PUSH((Scheme_Object *)st);
