@@ -2578,23 +2578,28 @@ void scheme_unbound_global(Scheme_Bucket *b)
     Scheme_Object *src_name;
     const char *errmsg;
 
-    if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-      errmsg = ("%S: undefined;\n"
-                " cannot reference an identifier before its definition\n"
-                "  in module: %D\n"
-                "  internal name: %S");
-    else
-      errmsg = ("%S: undefined;\n"
-                " cannot reference an identifier before its definition%_%_");
-
     src_name = scheme_hash_tree_get(home->source_names, name);
     if (!src_name)
       src_name = name;
 
+    if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC))) {
+      if (!SAME_OBJ(name, src_name))
+        errmsg = ("%S: undefined;\n"
+                  " cannot reference an identifier before its definition\n"
+                  "  in module: %D\n"
+                  "  internal name: %S");
+      else
+        errmsg = ("%S: undefined;\n"
+                  " cannot reference an identifier before its definition\n"
+                  "  in module: %D");
+    } else
+      errmsg = ("%S: undefined;\n"
+                " cannot reference an identifier before its definition%_%_");
+
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
-		     src_name,
-		     errmsg,
 		     name,
+		     errmsg,
+		     src_name,
 		     home->name,
                      name);
   } else {

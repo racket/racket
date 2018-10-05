@@ -2133,4 +2133,23 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module tries-to-use-foo-before-defined racket/base
+  (provide result)
+  (define-syntax-rule (go result)
+    ;; `foo` will be macro-introduced
+    (begin
+      (define result
+        (with-handlers ([exn:fail:contract:variable? values])
+          (foo "bar")))
+      (define foo 5)))
+  (go result))
+
+(let ([v (dynamic-require ''tries-to-use-foo-before-defined 'result)])
+  (test #t exn? v)
+  (test #t symbol? (exn:fail:contract:variable-id v))
+  (test #t regexp-match? #rx"^foo:" (exn-message v))
+  (test 5 eval (exn:fail:contract:variable-id v) (module->namespace ''tries-to-use-foo-before-defined)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
