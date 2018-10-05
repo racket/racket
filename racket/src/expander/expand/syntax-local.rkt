@@ -39,7 +39,8 @@
          make-interned-syntax-introducer
          make-syntax-delta-introducer
          syntax-local-make-delta-introducer
-         
+
+         syntax-local-binding
          syntax-local-value
          syntax-local-value/immediate
          
@@ -159,11 +160,18 @@
 
 ;; ----------------------------------------
 
-(define (do-syntax-local-value who id intdefs failure-thunk
-                               #:immediate? immediate?)
+(define out-of-context (gensym 'out-of-context))
+(define (out-of-context? v) (eq? v out-of-context))
+
+(define (do-syntax-local-binding who id intdefs failure-thunk
+                                 #:immediate? immediate?
+                                 #:immediate-return-extra-value? [immediate-return-extra-value? #f]
+                                 #:only-value? only-value?)
   (check who identifier? id)
   (check who #:or-false (procedure-arity-includes/c 0) failure-thunk)
-  (check who intdefs-or-false? #:contract intdefs-or-false?-string intdefs)
+  (if only-value?
+      (check who intdefs-or-false? #:contract intdefs-or-false?-string intdefs)
+      (check who intdefs? #:contract intdefs?-string intdefs))
   (define current-ctx (get-current-expand-context who))
   (define ctx (if intdefs
                   (struct*-copy expand-context current-ctx
@@ -185,29 +193,45 @@
           (error who "unbound identifier: ~v" id))]
      [else
       (define-values (v primitive? insp protected?)
-        (lookup b ctx id #:out-of-context-as-variable? #t))
+        (lookup b ctx id #:out-of-context-value (if only-value? variable out-of-context)))
       (cond
-       [(or (variable? v) (core-form? v))
-        (log-expand ctx 'local-value-result #f)
+       [(out-of-context? v)
         (if failure-thunk
             (failure-thunk)
-            (error who "identifier is not bound to syntax: ~v" id))]
+            (error who "identifier is out of context: ~v" id))]
+       [(or (variable? v) (core-form? v))
+        (log-expand ctx 'local-value-result #f)
+        (if only-value?
+            (if failure-thunk
+                (failure-thunk)
+                (error who "identifier is not bound to syntax: ~v" id))
+            (values #f #f))]
        [else
         (log-expand* ctx #:unless (and (rename-transformer? v) (not immediate?))
                      ['local-value-result #t])
         (cond
          [(rename-transformer? v)
           (if immediate?
-              (values v (rename-transformer-target v))
+              (if only-value?
+                  (if immediate-return-extra-value?
+                      (values v (rename-transformer-target v))
+                      v)
+                  (values #t v))
               (loop (rename-transformer-target v)))]
-         [immediate? (values v #f)]
-         [else v])])])))
+         [(and only-value? immediate? immediate-return-extra-value?) (values v #f)]
+         [else (if only-value? v (values #t v))])])])))
 
-(define (syntax-local-value id [failure-thunk #f] [intdef #f])
-  (do-syntax-local-value 'syntax-local-value #:immediate? #f id intdef failure-thunk))
+(define (syntax-local-binding id [failure-thunk #f] [intdefs #f] [immediate? #f])
+  (do-syntax-local-binding 'syntax-local-binding id intdefs failure-thunk
+                           #:immediate? immediate? #:only-value? #f))
+
+(define (syntax-local-value id [failure-thunk #f] [intdef #f] [immediate? #f])
+  (do-syntax-local-binding 'syntax-local-value id intdef failure-thunk
+                           #:immediate? immediate? #:only-value? #t))
 
 (define (syntax-local-value/immediate id [failure-thunk #f] [intdef #f])
-  (do-syntax-local-value 'syntax-local-value/immediate #:immediate? #t id intdef failure-thunk))
+  (do-syntax-local-binding 'syntax-local-value/immediate id intdef failure-thunk
+                           #:immediate? #t #:immediate-return-extra-value? #t #:only-value? #t))
 
 ;; ----------------------------------------
 

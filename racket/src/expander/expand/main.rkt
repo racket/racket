@@ -484,7 +484,9 @@
 ;; Helper to lookup a binding in an expansion context
 (define (lookup b ctx id
                 #:in [in-s #f]
-                #:out-of-context-as-variable? [out-of-context-as-variable? #f])
+                #:out-of-context-as-variable? [out-of-context-as-variable? #f]
+                #:out-of-context-value [out-of-context-value
+                                        (and out-of-context-as-variable? variable)])
   (binding-lookup b
                   (expand-context-env ctx)
                   (expand-context-lift-envs ctx)
@@ -492,7 +494,7 @@
                   (expand-context-phase ctx)
                   id
                   #:in in-s
-                  #:out-of-context-as-variable? out-of-context-as-variable?))
+                  #:out-of-context-value out-of-context-value))
 
 (define-syntax-rule (guard-stop id ctx s otherwise ...)
   (cond

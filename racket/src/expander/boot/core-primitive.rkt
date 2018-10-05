@@ -126,7 +126,8 @@
                       make-interned-syntax-introducer
                       make-syntax-delta-introducer
                       syntax-local-make-delta-introducer
-                      
+
+                      syntax-local-binding
                       syntax-local-value
                       syntax-local-value/immediate
                       
