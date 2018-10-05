@@ -649,7 +649,7 @@ Supported for any @racket[st] and @racket[st2] that both @supp{support}
 
 @defproc[(subset? [st generic-set?] [st2 generic-set?]) boolean?]{
 
-Returns @racket[#t] if @racket[st2] contains every member of @racket[st];
+@index["set-subset?"]{Returns} @racket[#t] if @racket[st2] contains every member of @racket[st];
 returns @racket[#f] otherwise.
 
 If @racket[st] is a list, then @racket[st2] must also be a list.  This
