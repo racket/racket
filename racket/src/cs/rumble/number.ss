@@ -81,42 +81,80 @@
 (define/who integer->integer-bytes
   (case-lambda
    [(num size signed? big-endian? bstr start)
-    (check who bytes? bstr)
-    (case size
-      [(2)
-       (if signed?
-           (bytevector-s16-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little)))
-           (bytevector-u16-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little))))]
-      [(4)
-       (if signed?
-           (bytevector-s32-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little)))
-           (bytevector-u32-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little))))]
-      [(8)
-       (if signed?
-           (bytevector-s64-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little)))
-           (bytevector-u64-set! bstr start num (if big-endian?
-                                                   (endianness big)
-                                                   (endianness little))))]
-      [else
-       (raise-argument-error 'integer->integer-bytes
-                             "(or/c 2 4 8)" size)])
+    (let ([check (lambda (n lo hi)
+                   (check who bytes? bstr)
+                   (check who exact-nonnegative-integer? start)
+                   (let ([len (bytevector-length bstr)])
+                     (unless (>= len n)
+                       (raise-arguments-error who
+                                              "destination byte string is too small"
+                                              "destination byte string length" len
+                                              "number of bytes to write" n))
+                     (unless (<= start (- len n))
+                       (raise-arguments-error who
+                                              "starting position too large"
+                                              "given starting position" start
+                                              "destination byte string length" len
+                                              "number of bytes to write" n))
+                     (unless (<= lo num hi)
+                       (raise-arguments-error who
+                                              "number is out of bounds for size in bytes"
+                                              "given number" num
+                                              (if signed?
+                                                  "size in bytes for signed"
+                                                  "size in bytes for unsigned")
+                                              n))))])
+      (case size
+        [(1)
+         (if signed? 
+             (check 1 -128 127)
+             (check 1 0 255))
+         (if signed?
+             (bytevector-s8-set! bstr start num)
+             (bytevector-u8-set! bstr start num))]
+        [(2)
+         (if signed? 
+             (check 2 -32768 32767)
+             (check 2 0 65535))
+         (if signed?
+             (bytevector-s16-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little)))
+             (bytevector-u16-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little))))]
+        [(4)
+         (if signed? 
+             (check 4 -2147483648 2147483647)
+             (check 4 0 8589934591))
+         (if signed?
+             (bytevector-s32-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little)))
+             (bytevector-u32-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little))))]
+        [(8)
+         (if signed? 
+             (check 8 -9223372036854775808 9223372036854775807)
+             (check 8 0 18446744073709551615))
+         (if signed?
+             (bytevector-s64-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little)))
+             (bytevector-u64-set! bstr start num (if big-endian?
+                                                     (endianness big)
+                                                     (endianness little))))]
+        [else
+         (raise-argument-error 'integer->integer-bytes
+                               "(or/c 1 2 4 8)" size)]))
     bstr]
    [(num size signed?)
     (integer->integer-bytes num size signed? (system-big-endian?)
-                            (and (exact-integer? size) (<= 2 size 8) (make-bytevector size)) 0)]
+                            (and (exact-integer? size) (<= 1 size 8) (make-bytevector size)) 0)]
    [(num size signed? big-endian?)
     (integer->integer-bytes num size signed? big-endian?
-                            (and (exact-integer? size) (<= 2 size 8) (make-bytevector size)) 0)]
+                            (and (exact-integer? size) (<= 1 size 8) (make-bytevector size)) 0)]
    [(num size signed? big-endian? bstr)
     (integer->integer-bytes num size signed? big-endian? bstr 0)]))
 
