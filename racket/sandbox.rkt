@@ -1218,7 +1218,7 @@
                                '())
                            all-for-load)
                    (lambda () (build-program lang 
-                                             (map normalize-require-for-syntax all-requires)
+                                             (map normalize-require-for-syntax requires)
                                              input-program))))
 
 (define (make-module-evaluator input-program 
