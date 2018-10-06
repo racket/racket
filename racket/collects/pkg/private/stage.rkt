@@ -632,9 +632,9 @@
               (if strip-mode
                   (begin
                     (unless force-strip?
-                      (check-strip-compatible strip-mode pkg-name pkg pkg-error))
+                      (check-strip-compatible strip-mode pkg-name pkg-path pkg-error))
                     (make-directory* pkg-dir)
-                    (generate-stripped-directory strip-mode pkg pkg-dir))
+                    (generate-stripped-directory strip-mode pkg-path pkg-dir))
                   (begin
                     (make-parent-directory* pkg-dir)
                     (copy-directory/files pkg-path pkg-dir #:keep-modify-seconds? #t)))

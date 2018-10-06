@@ -261,4 +261,170 @@
      $ "raco pkg config --set git-checkout-credentials user:bad-password"
      $ "raco pkg install pkg-git" =exit> 1
      $ "raco pkg config --set git-checkout-credentials user:password"
-     $ "raco pkg install pkg-git")))))
+     $ "raco pkg install pkg-git"))
+
+   (parameterize ([current-directory test-source-directory])
+     (with-fake-root
+         (shelly-case
+          "install package in default mode using local directory catalog specified via pkg config --set catalogs"
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (copy-directory/files (build-path "test-pkgs" "pkg-strip") (build-path pkgs-dir "pkg-strip"))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install pkg-strip" =exit> 1
+          $ (format "raco pkg config --set catalogs file:///~a" (path->string catalog-dir))
+          $ "raco pkg install pkg-strip"
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in default mode using local directory catalog specified via pkg config --set catalogs"
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (copy-directory/files (build-path "test-pkgs" "pkg-strip") (build-path pkgs-dir "pkg-strip"))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install pkg-strip" =exit> 1
+          $ (format "raco pkg config --set catalogs file:///~a" (path->string catalog-dir))
+          $ "raco pkg install pkg-strip"
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in source mode using local directory catalog specified via pkg config --set catalogs"
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (copy-directory/files (build-path "test-pkgs" "pkg-strip") (build-path pkgs-dir "pkg-strip"))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --source pkg-strip" =exit> 1
+          $ (format "raco pkg config --set catalogs file:///~a" (path->string catalog-dir))
+          $ "raco pkg install --source pkg-strip"
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in source mode using local directory catalog specified via pkg install --catalog"
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (copy-directory/files (build-path "test-pkgs" "pkg-strip") (build-path pkgs-dir "pkg-strip"))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --source pkg-strip" =exit> 1
+          $ (format "raco pkg install --source --catalog file:///~a pkg-strip" (path->string catalog-dir))
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in binary mode using local directory catalog specified via pkg config --set catalogs"
+          (define pkg-strip-orig-dir (build-path "test-pkgs" "pkg-strip"))
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (define pkg-strip-dir (build-path tmp-dir "pkg-strip"))
+          (define pkg-strip-binary-dir (build-path pkgs-dir "pkg-strip"))
+          (make-directory pkg-strip-binary-dir)
+          (copy-directory/files pkg-strip-orig-dir pkg-strip-dir)
+          (parameterize ([current-directory pkg-strip-dir])
+            (shelly-begin
+             $ "raco make info.rkt main.rkt"))
+          $ (format "racket -e '(require pkg/strip) (generate-stripped-directory (quote binary) ~s ~s)'"
+                    (path->string pkg-strip-dir)
+                    (path->string pkg-strip-binary-dir))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --binary pkg-strip" =exit> 1
+          $ (format "raco pkg config --set catalogs file:///~a" (path->string catalog-dir))
+          $ "raco pkg install --binary pkg-strip"
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in binary mode using local directory catalog specified via pkg install --catalog"
+          (define pkg-strip-orig-dir (build-path "test-pkgs" "pkg-strip"))
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (define pkg-strip-dir (build-path tmp-dir "pkg-strip"))
+          (define pkg-strip-binary-dir (build-path pkgs-dir "pkg-strip"))
+          (make-directory pkg-strip-binary-dir)
+          (copy-directory/files pkg-strip-orig-dir pkg-strip-dir)
+          (parameterize ([current-directory pkg-strip-dir])
+            (shelly-begin
+             $ "raco make info.rkt main.rkt"))
+          $ (format "racket -e '(require pkg/strip) (generate-stripped-directory (quote binary) ~s ~s)'"
+                    (path->string pkg-strip-dir)
+                    (path->string pkg-strip-binary-dir))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --binary pkg-strip" =exit> 1
+          $ (format "raco pkg install --catalog file:///~a --binary pkg-strip" (path->string catalog-dir))
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in binary-lib mode using local directory catalog specified via pkg config --set catalogs"
+          (define pkg-strip-orig-dir (build-path "test-pkgs" "pkg-strip"))
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (define pkg-strip-dir (build-path tmp-dir "pkg-strip"))
+          (define pkg-strip-binary-lib-dir (build-path pkgs-dir "pkg-strip"))
+          (make-directory pkg-strip-binary-lib-dir)
+          (copy-directory/files pkg-strip-orig-dir pkg-strip-dir)
+          (parameterize ([current-directory pkg-strip-dir])
+            (shelly-begin
+             $ "raco make info.rkt main.rkt"))
+          $ (format "racket -e '(require pkg/strip) (generate-stripped-directory (quote binary-lib) ~s ~s)'"
+                    (path->string pkg-strip-dir)
+                    (path->string pkg-strip-binary-lib-dir))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --binary-lib pkg-strip" =exit> 1
+          $ (format "raco pkg config --set catalogs file:///~a" (path->string catalog-dir))
+          $ "raco pkg install --binary-lib pkg-strip"
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))
+
+     (with-fake-root
+         (shelly-case
+          "install package in binary-lib mode using local directory catalog specified via pkg install --catalog"
+          (define pkg-strip-orig-dir (build-path "test-pkgs" "pkg-strip"))
+          (define tmp-dir (path->directory-path (make-temporary-file "tmp~a" 'directory)))
+          (define catalog-dir (build-path tmp-dir "catalog"))
+          (make-directory catalog-dir)
+          (define pkgs-dir (build-path tmp-dir "pkgs"))
+          (make-directory pkgs-dir)
+          (define pkg-strip-dir (build-path tmp-dir "pkg-strip"))
+          (define pkg-strip-binary-lib-dir (build-path pkgs-dir "pkg-strip"))
+          (make-directory pkg-strip-binary-lib-dir)
+          (copy-directory/files pkg-strip-orig-dir pkg-strip-dir)
+          (parameterize ([current-directory pkg-strip-dir])
+            (shelly-begin
+             $ "raco make info.rkt main.rkt"))
+          $ (format "racket -e '(require pkg/strip) (generate-stripped-directory (quote binary-lib) ~s ~s)'"
+                    (path->string pkg-strip-dir)
+                    (path->string pkg-strip-binary-lib-dir))
+          $ (format "racket -l pkg/dirs-catalog ~a ~a" catalog-dir pkgs-dir)
+          $ "raco pkg install --binary-lib pkg-strip" =exit> 1
+          $ (format "raco pkg install --catalog file:///~a --binary-lib pkg-strip" (path->string catalog-dir))
+          $ "racket -l pkg-strip" =stdout> "this pkg can be stripped in multiple modes\n"
+          (delete-directory/files tmp-dir)))))))
