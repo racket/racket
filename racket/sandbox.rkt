@@ -1037,7 +1037,8 @@
            `(read ,l))
        ,@(for/list ([(k v) (in-hash saw-accesses)])
            `(,v ,k))
-       ,@(for*/list ([l (get-pkgs-search-dirs)]
+       ,@(for*/list ([l (append (get-pkgs-search-dirs)
+                                (list (find-user-pkgs-dir)))]
                      [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
            `(read ,(build-path l f)))
        (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
