@@ -763,13 +763,14 @@ binding table. This can be observed by the fact that @racket[identifier-binding]
   (eval:check (stashed-id-binding) 'lexical))
 
 However, the reference produced by @racket[(unstash-id)] in the above program is still illegal, even
-if it isn’t technically unbound. To record the fact that @racket[x]’s @tech{binding} is in scope only
-within the body of its corresponding @racket[let] form, the expander adds @racket[x]’s @tech{binding}
-to the @tech{local binding context} while expanding the @racket[let] body. More generally, the
-expander adds all @tech{local variable} @tech{bindings} to the @tech{local binding context} while
-expanding expressions in which a reference to the @tech{variable} would be legal. When the expander
-encounters an @tech{identifier} bound to a @tech{local variable}, and the associated @tech{binding} is
-not in the current @tech{local binding context}, it raises a syntax error.
+if it isn’t unbound: it is @deftech{out of context}. To record the fact that @racket[x]’s
+@tech{binding} is in scope only within the body of its corresponding @racket[let] form, the expander
+adds @racket[x]’s @tech{binding} to the @tech{local binding context} while expanding the @racket[let]
+body. More generally, the expander adds all @tech{local variable} @tech{bindings} to the @tech{local
+binding context} while expanding expressions in which a reference to the @tech{variable} would be
+legal. When the expander encounters an @tech{identifier} bound to a @tech{local variable}, and the
+associated @tech{binding} is not in the current @tech{local binding context}, it raises a syntax
+error.
 
 The @tech{local binding context} also tracks local @tech{transformer} @tech{bindings} (i.e. bindings
 bound by forms like @racket[let-syntax]) in a similar way, except that the context also stores the

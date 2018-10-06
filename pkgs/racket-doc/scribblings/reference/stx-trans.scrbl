@@ -643,7 +643,8 @@ the binding creates a binding alias that effectively routes around the
                              [intdef-ctx (or/c internal-definition-context?
                                                (listof internal-definition-context?)
                                                #f)
-                              '()])
+                              '()]
+                             [#:immediate? immediate? any/c #f])
          any]{
 
 Returns the @tech{transformer} binding value of the identifier @racket[id-stx] in the context of the
@@ -651,19 +652,6 @@ current expansion. If @racket[intdef-ctx] is not @racket[#f], bindings from all 
 contexts are also considered. Unlike the fourth argument to @racket[local-expand], the
 @tech{scopes} associated with the provided definition contexts are @emph{not} used to enrich
 @racket[id-stx]’s @tech{lexical information}.
-
-If @racket[id-stx] is bound to a @tech{rename transformer} created
-with @racket[make-rename-transformer], @racket[syntax-local-value]
-effectively calls itself with the target of the rename and returns
-that result, instead of the @tech{rename transformer}.
-
-If @racket[id-stx] has no @tech{transformer} binding (via
-@racket[define-syntax], @racket[let-syntax], etc.) in that
-environment, the result is obtained by applying @racket[failure-thunk]
-if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
-@exnraise[exn:fail:contract].
-
-@transform-time[]
 
 @examples[#:eval stx-eval
   (define-syntax swiss-cheeses? #t)
@@ -678,6 +666,11 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
     (syntax-local-value #'something-else (λ () (error "no binding"))))
   (eval:error (transformer-2))
 ]
+
+If @racket[immediate?] is @racket[#f], then if @racket[id-stx] is bound to a @tech{rename transformer}
+created with @racket[make-rename-transformer], @racket[syntax-local-value] effectively calls itself
+with the target of the rename and returns that result, instead of the @tech{rename transformer}.
+
 @examples[#:eval stx-eval
   (define-syntax nachos #'(printf "nachos~n"))
   (define-syntax chips (make-rename-transformer #'nachos))
@@ -686,10 +679,37 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
   (transformer-3)
 ]
 
+Otherwise, if @racket[immediate?] is not @racket[#f], then @tech{rename transformers} are not treated
+specially, and if @racket[id-stx] is bound to a @tech{rename transformer}, the transformer itself will
+be returned. @margin-note*{Beware that @racket[provide] on an @racket[_id] bound to a @tech{rename
+transformer} may export the target of the rename instead of @racket[_id]. See
+@racket[make-rename-transformer] for more information.}
+
+@examples[#:eval (make-base-eval '(require (for-syntax racket/base syntax/parse)))
+          #:once
+          #:escape UNSYNTAX
+  (define-syntax agent-007 (make-rename-transformer #'james-bond))
+  (define-syntax (show-secret-identity stx)
+    (syntax-parse stx
+      [(_ name:id)
+       (define orig-name (rename-transformer-target
+                          (syntax-local-value #'name #:immediate? #t)))
+       #`'(name #,orig-name)]))
+  (show-secret-identity agent-007)]
+
+If @racket[id-stx] has no @tech{transformer} binding (via
+@racket[define-syntax], @racket[let-syntax], etc.) in that
+environment, the result is obtained by applying @racket[failure-thunk]
+if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
+@exnraise[exn:fail:contract].
+
+@transform-time[]
+
 @history[
  #:changed "6.90.0.27" @elem{Changed @racket[intdef-ctx] to accept a list of internal-definition
                              contexts in addition to a single internal-definition context or
-                             @racket[#f].}]}
+                             @racket[#f].}
+ #:changed "7.0.0.21" @elem{Added optional @racket[#:immediate?] argument.}]}
 
 
 @defproc[(syntax-local-value/immediate [id-stx syntax?]
@@ -701,32 +721,57 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
                                         '()])
          any]{
 
-Like @racket[syntax-local-value], but the result is normally two
-values. If @racket[id-stx] is bound to a @tech{rename transformer},
-the results are the rename transformer and the identifier in the
-transformer. @margin-note*{Beware that @racket[provide] on an
-@racket[_id] bound to a @tech{rename transformer} may export the
-target of the rename instead of @racket[_id]. See
-@racket[make-rename-transformer] for more information.} If
-@racket[id-stx] is not bound to a @tech{rename transformer}, then the
-results are the value that @racket[syntax-local-value] would produce
-and @racket[#f].
+Like @racket[syntax-local-value], but the result is normally two values. If @racket[id-stx] is bound
+to a @tech{rename transformer}, the results are the rename transformer and the identifier in the
+transformer. If @racket[id-stx] is not bound to a @tech{rename transformer}, then the results are the
+value that @racket[syntax-local-value] would produce and @racket[#f].
 
-If @racket[id-stx] has no transformer binding, then
-@racket[failure-thunk] is called (and it can return any number of
-values), or an exception is raised if @racket[failure-thunk] is
-@racket[#f].
+The @racket[syntax-local-value/immediate] function is provided for backward compatibility; supplying a
+non-@racket[#f] value for the @racket[#:immediate?] argument of @racket[syntax-local-value] (and
+possibly applying @racket[rename-transformer-target] to the result) is preferred.}
 
-@examples[#:eval (make-base-eval '(require (for-syntax racket/base syntax/parse)))
-          #:escape unsyntax-splicing
-  (define-syntax agent-007 (make-rename-transformer #'james-bond))
-  (define-syntax (show-secret-identity stx)
-    (syntax-parse stx
-      [(_ name:id)
-       (define-values [_ orig-name] (syntax-local-value/immediate #'name))
-       #`'(name #,orig-name)]))
-  (show-secret-identity agent-007)]}
+@defproc[(syntax-local-binding [id-stx identifier?]
+                               [failure-thunk (or/c (-> any) #f) #f]
+                               [intdef-ctx (or/c internal-definition-context?
+                                                 (listof internal-definition-context?))
+                                '()]
+                               [#:immediate? immediate? any/c #f])
+         any]{
 
+Looks up @racket[id-stx] in the @tech{local binding context} of the current expansion and all provided
+definition contexts. If a binding is found, this procedure returns two values:
+
+@itemlist[
+ @item{If @racket[id-stx] is bound as a @tech{variable}, both return values are @racket[#f].}
+ @item{If @racket[id-stx] is bound as a @tech{transformer}, the first return value is @racket[#t], and
+       the second is the compile-time value associated with the @tech{binding} (i.e. the value that
+       would be returned by @racket[syntax-local-value]).}]
+
+If @racket[immediate?] is @racket[#f], then if @racket[id-stx] is bound to a @tech{rename transformer}
+created with @racket[make-rename-transformer], @racket[syntax-local-binding] effectively calls itself
+with the target of the rename and returns that result, instead of the @tech{rename transformer}.
+
+If @racket[id-stx] is @tech{unbound}, or if its binding is @tech{out of context}, then the result is
+obtained by applying @racket[failure-thunk] if it is not @racket[#f], which can return any number of
+values. If @racket[failure-thunk] is @racket[#f], the @exnraise[exn:fail:contract].
+
+@transform-time[]
+
+@examples[#:eval stx-eval
+  (define-syntax (print-binding-info stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let-values ([(transformer? value) (syntax-local-binding #'id)])
+         (println (list transformer? value))
+         #'(void))]))
+  (let ([x 42])
+    (print-binding-info x))
+  (let-syntax ([x 42])
+    (print-binding-info x))
+  (eval:error (print-binding-info unbound))
+]
+
+@history[#:added "7.0.0.21"]}
 
 @defproc[(syntax-local-lift-expression [stx syntax?])
          identifier?]{

@@ -120,7 +120,7 @@
 ;; just `resolve+shift` may leave the access with a too-weak inspector.
 (define (binding-lookup b env lift-envs ns phase id
                         #:in [in-s #f]
-                        #:out-of-context-as-variable? [out-of-context-as-variable? #f])
+                        #:out-of-context-value [out-of-context-value #f])
   (cond
    [(module-binding? b)
     (define top-level? (top-level-module-path-index? (module-binding-module b)))
@@ -143,9 +143,8 @@
                ;; check in lift envs, if any
                (for/or ([lift-env (in-list lift-envs)])
                  (lookup (unbox lift-env) (local-binding-key b) #f))
-               (if out-of-context-as-variable?
-                   variable
-                   (error "identifier used out of context:" id)))
+               out-of-context-value
+               (error "identifier used out of context:" id))
               #f
               #f
               #f)]

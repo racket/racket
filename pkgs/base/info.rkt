@@ -12,7 +12,7 @@
 
 (define collection 'multi)
 
-(define version "7.0.0.20")
+(define version "7.0.0.21")
 
 (define deps `("racket-lib"
                ["racket" #:version ,version]))

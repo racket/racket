@@ -1,6 +1,8 @@
 
 (load-relative "loadtest.rktl")
 
+(require (for-syntax racket/syntax))
+
 (Section 'macro)
 
 (error-test #'(define-syntaxes () (values 1)) exn:application:arity?)
@@ -2334,6 +2336,91 @@
         (letrec-values ([(foo) (stash x)])
           (define x 2)
           (restore))))
+
+;; ----------------------------------------
+;; `syntax-local-value` + `#:immediate? #t`
+
+(define-syntax (quote-compile-time-result stx)
+  (syntax-case stx ()
+    [(_ e) #`'#,(syntax-local-eval #'e)]))
+
+(define-syntax compile-time-value 42)
+(define-syntax compile-time-value-redirect (make-rename-transformer #'compile-time-value))
+
+(test 42 'syntax-local-value/no-immediate
+      (quote-compile-time-result
+       (syntax-local-value #'compile-time-value-redirect)))
+(test #t 'syntax-local-value/no-immediate
+      (quote-compile-time-result
+       (rename-transformer? (syntax-local-value #'compile-time-value-redirect #:immediate? #t))))
+(test 'compile-time-value 'syntax-local-value/no-immediate
+      (quote-compile-time-result
+       (syntax-e (rename-transformer-target
+                  (syntax-local-value #'compile-time-value-redirect #:immediate? #t)))))
+
+;; ----------------------------------------
+;; `syntax-local-binding`
+
+(module syntax-local-binding racket/base
+  (require (for-syntax racket/base))
+  (provide var trans unbound out-of-context
+           indirect-var indirect-var/immediate indirect-trans indirect-trans/immediate)
+
+  (define-syntax (local-binding-info stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let-values ([(variable? value) (syntax-local-binding #'id (λ () (values 'bad #f)))])
+         (if (eq? variable? 'bad)
+             (if (identifier-binding #'id) #''out-of-context #''unbound)
+             #`(list '#,variable? '#,value)))]
+      [(_ id #:immediate)
+       (let-values ([(variable? value) (syntax-local-binding #'id (λ () (values 'bad #f))
+                                                             #:immediate? #t)])
+         (if (eq? variable? 'bad)
+             (if (identifier-binding #'id) #''out-of-context #''unbound)
+             #`(list '#,variable? '#,(rename-transformer-target value))))]))
+
+  (define var-x 1)
+  (define-syntax trans-x 1)
+
+  (define var (local-binding-info var-x))
+  (define trans (local-binding-info trans-x))
+  (define unbound (local-binding-info unbound-x))
+
+  (define-for-syntax stashed-id-for-local-binding #f)
+
+  (define-syntax (stash-for-local-binding! stx)
+    (syntax-case stx ()
+      [(_ id)
+       (begin
+         (set! stashed-id-for-local-binding #'id)
+         #'(void))]))
+
+  (define-syntax (stashed-id-local-binding-info stx)
+    (syntax-case stx ()
+      [(_)
+       #`(local-binding-info #,stashed-id-for-local-binding)]))
+
+  (let ([x 1]) (stash-for-local-binding! x))
+
+  (define out-of-context (stashed-id-local-binding-info))
+
+  (define-syntax indirect-var-x (make-rename-transformer #'var-x))
+  (define-syntax indirect-trans-x (make-rename-transformer #'trans-x))
+
+  (define indirect-var (local-binding-info indirect-var-x))
+  (define indirect-var/immediate (local-binding-info indirect-var-x #:immediate))
+  (define indirect-trans (local-binding-info indirect-trans-x))
+  (define indirect-trans/immediate (local-binding-info indirect-trans-x #:immediate)))
+
+(test '(#f #f) dynamic-require ''syntax-local-binding 'var)
+(test '(#t 1) dynamic-require ''syntax-local-binding 'trans)
+(test 'unbound dynamic-require ''syntax-local-binding 'unbound)
+(test 'out-of-context dynamic-require ''syntax-local-binding 'out-of-context)
+(test '(#f #f) dynamic-require ''syntax-local-binding 'indirect-var)
+(test '(#t var-x) dynamic-require ''syntax-local-binding 'indirect-var/immediate)
+(test '(#t 1) dynamic-require ''syntax-local-binding 'indirect-trans)
+(test '(#t trans-x) dynamic-require ''syntax-local-binding 'indirect-trans/immediate)
 
 ;; ----------------------------------------
 
