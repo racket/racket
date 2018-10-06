@@ -332,7 +332,8 @@
          ;; Check whether the current thread was terminated
          (let ([t (current-thread)])
            (when t ; in case custodians used (for testing) without threads
-             (when (thread-dead? t)
+             (when (or (thread-dead? t)
+                       (null? (thread-custodian-references t)))
                (engine-block))
              (check-for-break-after-kill))))))
 
