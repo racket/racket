@@ -21,6 +21,12 @@
 (define strip-binary-compile-info (make-parameter #t))
 
 (define (check-strip-compatible mode pkg dir error)
+  (unless (and (path-string? dir) (directory-exists? dir))
+    (raise-argument-error
+     'check-strip-compatible
+     "(and/c path-string? directory-exists?)"
+     dir))
+
   (define i (get-info/full dir))
   (define raw-status (and i
                           (i 'package-content-state (lambda () #f))))
@@ -58,6 +64,18 @@
 
 (define (generate-stripped-directory mode dir dest-dir
                                      #:check-status? [check-status? #t])
+  (unless (and (path-string? dir) (directory-exists? dir))
+    (raise-argument-error
+     'generate-stripped-directory
+     "(and/c path-string? directory-exists?)"
+     dir))
+
+  (unless (and (path-string? dest-dir) (directory-exists? dest-dir))
+    (raise-argument-error
+     'generate-stripped-directory
+     "(and/c path-string? directory-exists?)"
+     dest-dir))
+
   (define drop-keep-ns (make-base-namespace))
   (define (add-drop+keeps dir base drops keeps)
     (define get-info (get-info/full dir #:namespace drop-keep-ns))

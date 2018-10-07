@@ -61,7 +61,9 @@
    "raco"
    "binary"
    "catalogs"
-   "failure"))
+   "failure"
+
+   "api"))
 
 (module+ test
   (module config info
