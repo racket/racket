@@ -401,6 +401,8 @@
     (add-to-sleeping-threads! t (sandman-merge-timeout #f timeout-at)))
   (when (eq? t (current-thread))
     (thread-did-work!))
+  ;; Beware that this thunk is not used when a thread is descheduled
+  ;; but a custodian callback
   (lambda ()
     (when (eq? t (current-thread))
       (when (positive? (current-atomic))
@@ -454,7 +456,9 @@
 
 ;; in atomic mode
 ;; Returns a thunk to call to handle the case that
-;; the current thread is suspended
+;; the current thread is suspended; beware that the
+;; thunk is not used when `custodian-shutdown-all`
+;; suspends a thread
 (define (do-thread-suspend t)
   (assert-atomic-mode)
   (cond

@@ -129,6 +129,8 @@
   (check who custodian? c)
   (atomically
    (do-custodian-shutdown-all c))
+  ;; Set in "thread.rkt" to check whether the current thread
+  ;; should be swapped out
   (post-shutdown-action))
 
 ;; In atomic mode
