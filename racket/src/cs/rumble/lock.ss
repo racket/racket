@@ -47,7 +47,7 @@
   ;; engine-based concurrency
   (define-syntax-rule (with-global-lock e ...)
     (with-interrupts-disabled
-     e))]
+     e ...))]
  [else
   ;; Using a Chez Scheme build with thread support; make hash-table
   ;; access thread-safe at that level for `eq?`- and `eqv?`-based
