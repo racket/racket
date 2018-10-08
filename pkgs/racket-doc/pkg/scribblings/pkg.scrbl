@@ -516,10 +516,13 @@ sub-commands.
         @tech{package name} must be mapped by the @tech{package catalog} to a
         Git or GitHub @tech{package source}.}
 
+  @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.
+                           See also @secref["strip"].}
+
   @item{@DFlag{binary} --- Strips source elements of a package before installing, and implies @DFlag{copy}.
                            See also @secref["strip"].}
 
-  @item{@DFlag{source} --- Strips built elements of a package before installing, and implies @DFlag{copy}.
+  @item{@DFlag{binary-lib} --- Strips source and documentation elements of a package before installing, and implies @DFlag{copy}.
                            See also @secref["strip"].}
 
  @item{@DFlag{scope} @nonterm{scope} --- Selects the @tech{package scope} for installation, where @nonterm{scope} is one of
@@ -853,8 +856,10 @@ package is created.
 
  @item{@DFlag{deps} @nonterm{behavior} --- Same as for @command-ref{install}, except that @exec{search-auto} is
        the default.}
-  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
+  
   @item{@DFlag{source} --- Same as for @command-ref{install}.}
+  @item{@DFlag{binary} --- Same as for @command-ref{install}.}
+  @item{@DFlag{binary-lib} --- Same as for @command-ref{install}.}
   @item{@DFlag{scope} @nonterm{scope} --- Same as for @command-ref{install}.}
   @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
   @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
@@ -899,6 +904,7 @@ package is created.
  @item{@DFlag{source} --- Bundles only sources in the package directory; see @secref["strip"].}
  @item{@DFlag{binary} --- Bundles compiled bytecode and rendered
        documentation in the package directory; see @secref["strip"].}
+ @item{@DFlag{binary-lib} --- Bundles compiled bytecode only in the package directory; see @secref["strip"].}
  @item{@DFlag{built} --- Bundles compiled sources, bytecode, and rendered
        documentation in the package directory, filtering repository elements; see @secref["strip"].}
   @item{@DFlag{dest} @nonterm{dest-dir} --- Writes generated bundles to @nonterm{dest-dir}.}
