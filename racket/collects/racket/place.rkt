@@ -167,17 +167,6 @@
                 (and (not out) outr)
                 (and (not err) errr)))]))
 
-
-(define-for-syntax (modpath->string modpath)
-  (cond
-    [(equal? modpath #f)
-     (number->string (current-inexact-milliseconds))]
-    [else
-      (define name (resolved-module-path-name modpath))
-      (cond
-        [(symbol? name) (symbol->string name)]
-        [(path? name) (path->string name)])]))
-
 (define-for-syntax place-body-counter 0)
 
 (define-for-syntax (place-form _in _out _err _start-place-func stx orig-stx)
