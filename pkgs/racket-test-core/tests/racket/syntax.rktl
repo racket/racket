@@ -2150,6 +2150,18 @@
   (test #t regexp-match? #rx"^foo:" (exn-message v))
   (test 5 eval (exn:fail:contract:variable-id v) (module->namespace ''tries-to-use-foo-before-defined)))
 
+;; A top-level `cons` is renamed internally to something like `1/cons`
+;; to avoid shadowing a primitive, but the variable name is still
+;; `cons` and an exception should contain 'cons
+(let ([e (with-handlers ([exn:fail:contract:variable? values])
+           (define ns (make-base-empty-namespace))
+           (namespace-require `(all-except racket/base cons) ns)
+           (eval 'cons ns))])
+  (test #t exn? e)
+  (test #t exn:fail:contract:variable? e)
+  (test 'cons exn:fail:contract:variable-id e)
+  (test #t regexp-match? #rx"^cons: " (exn-message e)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
