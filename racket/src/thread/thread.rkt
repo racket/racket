@@ -402,7 +402,7 @@
   (when (eq? t (current-thread))
     (thread-did-work!))
   ;; Beware that this thunk is not used when a thread is descheduled
-  ;; but a custodian callback
+  ;; by a custodian callback
   (lambda ()
     (when (eq? t (current-thread))
       (when (positive? (current-atomic))
