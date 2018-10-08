@@ -869,7 +869,7 @@
 
 ;; Call this with a name (symbol or #f) and a list of symbols, where a symbol can be
 ;; followed by a '= and an integer to have a similar effect of C's enum.
-(define ((_enum name) symbols [basetype _ufixint] #:unknown [unknown _enum])
+(define ((_enum name) symbols [basetype _fixint] #:unknown [unknown _enum])
   (unless (list? symbols)
     (raise-argument-error '_enum "list?" symbols))
   (when (and (procedure? unknown) (not (procedure-arity-includes? unknown 1)))
