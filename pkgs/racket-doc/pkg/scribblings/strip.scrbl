@@ -215,19 +215,21 @@ with the same file/directory omissions and updates as
 @command-ref{create}.}
 
 @defproc[(generate-stripped-directory [mode (or/c 'source 'binary 'binary-lib 'built)]
-                                      [src-dir path-string?]
-                                      [dest-dir path-string?])
+                                      [src-dir (and/c path-string? directory-exists?)]
+                                      [dest-dir (and/c path-string? directory-exists?)])
           void?]{
 
 Copies @racket[src-dir] to @racket[dest-dir] with file/directory
-omissions and updates corresponding the creation of a @tech{source
+omissions and updates corresponding to the creation of a @tech{source
 package}, @tech{binary package}, @tech{binary library package}, or @tech{built package} as indicated
-by @racket[mode].}
+by @racket[mode].} Note, @racket[generate-stripped-directory] does not compile or render source files
+found in the @racket[src-dir]. To perform precompilation or rendering before stripping the source directory,
+use @exec{raco setup} or @exec{raco make}.
 
 
 @defproc[(check-strip-compatible [mode (or/c 'source 'binary 'binary-lib 'built)]
                                  [pkg-name string?]
-                                 [dir path-string?]
+                                 [dir (and/c path-string? directory-exists?)]
                                  [error (string? . -> . any)])
           any]{
 
