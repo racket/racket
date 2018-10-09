@@ -224,7 +224,7 @@ omissions and updates corresponding to the creation of a @tech{source
 package}, @tech{binary package}, @tech{binary library package}, or @tech{built package} as indicated
 by @racket[mode].} Note, @racket[generate-stripped-directory] does not compile or render source files
 found in the @racket[src-dir]. To perform precompilation or rendering before stripping the source directory,
-use @command-ref{setup} or @command-ref{make}.
+use @exec{raco setup} or @exec{raco make}.
 
 
 @defproc[(check-strip-compatible [mode (or/c 'source 'binary 'binary-lib 'built)]
