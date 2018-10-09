@@ -15,6 +15,10 @@ through message passing---using the @racket[place-channel-put] and
 values---which helps ensure the safety and independence of parallel
 computations.
 
+Each place is implemented as a separate OS thread and as such they don't
+scale well over 16 places, after which a lot of the time is spent in the kernel
+performing memory allocation locking.
+
 As a starting example, the racket program below uses a @tech{place} to
 determine whether any number in the list has a double that is also in
 the list:
