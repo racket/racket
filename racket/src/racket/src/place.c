@@ -1842,7 +1842,7 @@ DEEP_SST2_L:
       IFS_PUSH(nht);
       IFS_PUSH(so);
       IFS_PUSH(hti);
-      
+
       if (SCHEME_INTP(hti)) {
         Scheme_Object *a[2];
         a[0] = so;
@@ -1907,9 +1907,10 @@ DEEP_HT3:
       so   = IFS_POP;
       nht  = IFS_POP;
 
-      if (set_mode) {
+      if (set_mode)
         new_so = nht;
-      }
+      else
+        new_so = so;
       RETURN;
       break;
 
