@@ -24,6 +24,10 @@
                module-declared?
                module->language-info
                module-path-index-join
+               identifier-binding
+               namespace-datum-introduce
+               datum->kernel-syntax
+               namespace-variable-value
                version
                exit
                compile-keep-source-locations!
@@ -279,6 +283,12 @@
                          (eval (read (open-input-string expr))))
                        loads))
                 (flags-loop rest-args (see saw 'non-config)))]
+             [("-m" "--main")
+              (set! loads
+                    (cons
+                     (lambda () (call-main))
+                     loads))
+              (flags-loop (cdr args) (see saw 'non-config))]
              [("-i" "--repl") 
               (set! repl? #t)
               (set! version? #t)
@@ -362,6 +372,18 @@
                [else
                 ;; Non-flag argument
                 (finish args saw)])])))))
+
+   (define (call-main)
+     (let ([m (namespace-datum-introduce 'main)])
+       (unless (identifier-binding m)
+         (namespace-variable-value 'main #f
+                                   (lambda ()
+                                     (error "main: not defined or required into the top-level environment"))))
+       (call-with-values (lambda () (eval (datum->kernel-syntax
+                                           (cons m (vector->list remaining-command-line-arguments)))))
+         (lambda results
+           (let ([p (|#%app| current-print)])
+             (for-each (lambda (v) (|#%app| p v)) results))))))
 
    ;; Set up GC logging
    (define-values (struct:gc-info make-gc-info gc-info? gc-info-ref gc-info-set!)

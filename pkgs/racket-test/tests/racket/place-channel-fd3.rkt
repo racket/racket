@@ -41,6 +41,6 @@
       (error "output did not match expected pattern: "
              (get-output-bytes s))))
 
-  (check "tcp" "socket dup failed")
-  (check "stdio" "port dup failed"))
+  (check "tcp" "socket dup failed|error during dup of file descriptor")
+  (check "stdio" "port dup failed|error during dup of file descriptor"))
 
