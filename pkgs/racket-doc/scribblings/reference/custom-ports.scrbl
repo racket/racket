@@ -71,8 +71,8 @@ The arguments implement the port as follows:
       @item{@racket[eof];}
 
       @item{a procedure of arity four (representing a ``special''
-      result, as discussed @elemref["special"]{further below}) and
-      optionally of arity zero, but a procedure result is allowed only
+      result, as discussed @elemref["special"]{further below}),
+      but a procedure result is allowed only
       when @racket[peek] is not @racket[#f];}
 
       @item{a @techlink{pipe} input port that supplies bytes to be
@@ -377,26 +377,9 @@ The arguments implement the port as follows:
  return a character or @racket[eof]; in particular, @racket[read-char]
  raises an exception if it encounters a special-result procedure, even
  if the procedure produces a byte.) A special-result procedure must
- accept four arguments, and it can optionally accept zero arguments:
-
- @itemize[
-
-  @item{When the special read is triggered by @racket[read-syntax],
-  @racket[read-syntax/recursive] the
-  procedure is passed four arguments that represent a source
-  location. Four arguments for a source location are also provided when
-  the read is triggered by @racket[read-byte-or-special],
-  @racket[read-char-or-special], @racket[peek-byte-or-special], or
-  @racket[peek-char-or-special] with a non-@racket[#f] source name.}
-
-  @item{When the special read is triggered by @racket[read],
-  @racket[read/recursive], or other calls to
-  @racket[read-byte-or-special], @racket[read-char-or-special],
-  @racket[peek-byte-or-special], or @racket[peek-char-or-special], the
-  procedure is passed no arguments if it accepts zero arguments,
-  otherwise it is passed four arguments that are all @racket[#f].}
-
- ]
+ accept four arguments that represent a source location. The first
+ argument is @racket[#f] when the special read is triggered by @racket[read]
+ or @racket[read/recursive].
 
  The special-value procedure can return an arbitrary value, and it
  will be called zero or one times (not necessarily before further
