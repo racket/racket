@@ -1702,7 +1702,7 @@ implemented as syntax, so that error messages can report a type name
 where the syntactic context implies one.
 
 @defproc[(_enum [symbols list?]
-                [basetype ctype? _ufixint]
+                [basetype ctype? _fixint]
                 [#:unknown unknown any/c (lambda (x) (error ....))])
          ctype?]{
 
@@ -1737,6 +1737,8 @@ is to throw an exception.
              invalid_input
              buffer_too_small)))
 ]}
+
+@history[#:changed "7.0.0.20" "Changed default backing from _ufixint to _fixint"]
 
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
