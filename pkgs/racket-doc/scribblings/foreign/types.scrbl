@@ -1736,7 +1736,19 @@ is to throw an exception.
     (_enum '(ok = 0
              invalid_input
              buffer_too_small)))
-]}
+]
+
+Note that the default basetype is @racket[_fixint]. This
+differs from C enumerations that can use any value in
+@racket[_ufixint]. Any @racket[_enum] using negative values
+should use @racket[_ufixint] for the base type.
+
+@examples[#:eval ffi-eval
+  (define @#,racketidfont{_negative_enum}
+    (_enum '(unkown = -1
+             error = 0
+             ok = 1)
+           _ufixint))]}
 
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
