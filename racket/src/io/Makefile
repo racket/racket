@@ -21,6 +21,7 @@ GLOBALS = --no-global \
           ++global-ok installed-read-accept-lang \
           ++global-ok maybe-raise-missing-module \
           ++global-ok "string->number?" \
+          ++global-ok "printable-regexp?" \
           ++global-ok do-global-print \
           ++global-ok exec-file \
           ++global-ok run-file \

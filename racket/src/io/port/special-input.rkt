@@ -80,7 +80,10 @@
        [else
         (define special
           (cond
-            [(not source-name)
+            [#f
+             ;; There doesn't seem to be a case anymore
+             ;; where the old Racket implementation uses
+             ;; the 0-arity and/or no-position protocol
              (cond
                [(procedure-arity-includes? v 0)
                 (v)]

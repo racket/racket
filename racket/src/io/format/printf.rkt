@@ -95,10 +95,11 @@
               (do-global-print who (car args) o)
               (next i (cdr args))]
              [(#\e #\E)
-              (write-string ((error-value->string-handler)
-                             (car args)
-                             (error-print-width))
-                            o)
+              (parameterize ([print-unreadable #t])
+                (write-string ((error-value->string-handler)
+                               (car args)
+                               (error-print-width))
+                              o))
               (next i (cdr args))]
              [(#\.)
               (let ([i (add1 i)])

@@ -15,4 +15,9 @@
   (include "include.ss")
   (include-generated "regexp.scm")
 
-  (set-intern-regexp?! 1/regexp?))
+  (define (any-regexp? v)
+    (or (1/regexp? v)
+        (1/byte-regexp? v)))
+
+  (set-intern-regexp?! any-regexp?)
+  (set-printable-regexp?! any-regexp?))

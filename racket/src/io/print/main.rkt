@@ -22,6 +22,7 @@
          "mode.rkt"
          "graph.rkt"
          "config.rkt"
+         "regexp.rkt"
          "recur-handler.rkt")
 
 (provide display
@@ -37,6 +38,8 @@
          prop:custom-print-quotable
          custom-print-quotable?
          custom-print-quotable-accessor
+
+         set-printable-regexp?!
 
          (all-from-out "parameter.rkt"))
 
@@ -243,6 +246,17 @@
               (not (hash-weak? v)))
          (print-hash v o max-length p who mode graph config)
          (write-string/max "#<hash>" o max-length))]
+    [(and (eq? mode WRITE-MODE)
+          (not (config-get config print-unreadable))
+          ;; Regexps are a special case: custom writers that produce readable input
+          (not (printable-regexp? v)))
+     (raise (exn:fail
+             (string-append (symbol->string who)
+                            ": printing disabled for unreadable value"
+                            "\n  value: "
+                            (parameterize ([print-unreadable #t])
+                              ((error-value->string-handler) v (error-print-width))))
+             (current-continuation-marks)))]
     [(mpair? v)
      (print-mlist p who v mode o max-length graph config)]
     [(custom-write? v)
