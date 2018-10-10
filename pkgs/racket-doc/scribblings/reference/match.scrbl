@@ -360,15 +360,22 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(racketidfont "app") _expr _pats ...)] --- applies
-       @racket[_expr] to the value to be matched; the result of the
-       application is matched against @racket[_pats].
+       @racket[_expr] to the value to be matched; each result of the
+       application is matched against one of the @racket[_pats],
+       respectively.
 
        @examples[
        #:eval match-eval
        (match '(1 2)
         [(app length 2) 'yes])
+       (match "3.14"
+        [(app string->number (? number? pi))
+         `(I got ,pi)])
        (match '(1 2)
         [(app (lambda (v) (split-at v 1)) '(1) '(2)) 'yes])
+       (match '(1 2 3)
+        [(app (λ (ls) (apply values ls)) x y (? odd? z))
+         (list 'yes x y z)])
        ]}
 
  @item{@racket[(#,(racketidfont "?") _expr _pat ...)] --- applies
