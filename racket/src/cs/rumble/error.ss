@@ -346,7 +346,10 @@
                                               (number->string (arity-at-least-value arity))))]
      [else ""])))
 
-(define (raise-result-arity-error who num-expected-args where args)
+(define/who (raise-result-arity-error who num-expected-args where . args)
+  (check who symbol? :or-false who)
+  (check who exact-nonnegative-integer? num-expected-args)
+  (check who string? :or-false where)
   (raise
    (|#%app|
     exn:fail:contract:arity
@@ -356,7 +359,7 @@
      " expected number of values not received\n"
      "  received: " (number->string (length args)) "\n" 
      "  expected: " (number->string num-expected-args)
-     where)
+     (or where ""))
     (current-continuation-marks))))
 
 (define (raise-binding-result-arity-error expected-args args)
