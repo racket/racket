@@ -155,10 +155,11 @@
                                (for/list ([done-body (in-list done-bodys)])
                                  (no-binds done-body s phase))
                                val-rhss))
-               (cons exp-body (append
-                               (for/list ([done-body (in-list done-bodys)])
-                                 #f)
-                               track-stxs))
+               (cons (keep-as-needed body-ctx exp-body #:for-track? #t)
+                     (append
+                      (for/list ([done-body (in-list done-bodys)])
+                        #f)
+                      track-stxs))
                trans-idss
                trans-stxs
                stx-clauses
@@ -195,7 +196,7 @@
                val-rhss
                track-stxs
                (cons ids trans-idss)
-               (cons exp-body trans-stxs)
+               (cons (keep-as-needed body-ctx exp-body #:for-track? #t) trans-stxs)
                (cons (datum->syntax #f (list ids (m 'rhs)) exp-body) stx-clauses)
                new-dups)]
         [else
@@ -295,13 +296,12 @@
     (log-expand* body-ctx ['exit-prim exp-s] ['return exp-s])
     (if (expand-context-to-parsed? body-ctx)
         (list exp-s)
-        (list (for/fold ([exp-s (attach-disappeared-transformer-bindings
-                                 exp-s
-                                 disappeared-transformer-bindings)])
-                        ([disappeared-transformer-form (in-list disappeared-transformer-forms)])
-                (syntax-track-origin exp-s
-                                     disappeared-transformer-form
-                                     (car (syntax-e disappeared-transformer-form))))))]))
+        (let ([exp-s (attach-disappeared-transformer-bindings
+                      exp-s
+                      disappeared-transformer-bindings)])
+          (list (for/fold ([exp-s exp-s]) ([form (in-list disappeared-transformer-forms)]
+                                           #:when form)
+                  (syntax-track-origin exp-s form)))))]))
 
 ;; Roughly, create a `letrec-values` for for the given ids, right-hand sides, and
 ;; body. While expanding right-hand sides, though, keep track of whether any
