@@ -70,9 +70,15 @@ Each @tech{package} has associated @deftech{package metadata}:
  @item{a @deftech{version} --- a string of the form @nonterm{maj}@litchar{.}@nonterm{min},
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}, or
                      @nonterm{maj}@litchar{.}@nonterm{min}@litchar{.}@nonterm{sub}@litchar{.}@nonterm{rel},
+                     @margin-note*{The constraints on version numbers are consistent with @racketmodname[version/utils]
+                     and force version numbers to be in a canonical form. For example, a would-be version
+                     string @racket["4.3.0"] must be written instead as @racket["4.3"], @racket["4.3.1.0"]
+                     must be written instead as @racket["4.3.1"], and @racket["4"] must be written as @racket["4.0"].}
                      where @nonterm{maj}, @nonterm{min}, @nonterm{sub}, and @nonterm{rel} are
-                     all canonical decimal representations of natural numbers, @nonterm{min} has no more
-                     than two digits, and @nonterm{sub} and @nonterm{rel} has no more than
+                     all canonical decimal representations of natural numbers, @nonterm{rel} is not @litchar{0},
+                     @nonterm{sub} is not @litchar{0} unless
+                     @nonterm{rel} is supplied, @nonterm{min} has no more
+                     than two digits, and @nonterm{sub} and @nonterm{rel} have no more than
                      three digits. A version is intended to reflect available features of
                      a package, and should not be confused with different releases of
                      a package as indicated by the @tech{checksum}.}
