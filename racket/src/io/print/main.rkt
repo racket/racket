@@ -224,9 +224,13 @@
        [(eq? mode DISPLAY-MODE) (write-string/max (string v) o max-length)]
        [else (print-char v o max-length)])]
     [(not v)
-     (write-string/max "#f" o max-length)]
+     (if (config-get config print-boolean-long-form)
+         (write-string/max "#false" o max-length)
+         (write-string/max "#f" o max-length))]
     [(eq? v #t)
-     (write-string/max "#t" o max-length)]
+     (if (config-get config print-boolean-long-form)
+         (write-string/max "#true" o max-length)
+         (write-string/max "#t" o max-length))]
     [(pair? v)
      (print-list p who v mode o max-length graph config #f #f)]
     [(vector? v)
@@ -238,25 +242,40 @@
      (define l (for/list ([e (in-fxvector v)]) e))
      (print-list p who l mode o max-length graph config "#fx(" "(fxvector")]
     [(box? v)
-     (if (config-get config print-box)
-         (p who (unbox v) mode o (write-string/max "#&" o max-length) graph config)
-         (write-string/max "#<box>" o max-length))]
+     (cond
+       [(config-get config print-box)
+        (cond
+          [(eq? mode PRINT-MODE/UNQUOTED)
+           (let* ([max-length (write-string/max "(box " o max-length)]
+                  [max-length (p who (unbox v) mode o max-length graph config)])
+             (write-string/max ")" o max-length))]
+          [else
+           (p who (unbox v) mode o (write-string/max "#&" o max-length) graph config)])]
+       [else
+        (check-unreadable who config mode v)
+        (write-string/max "#<box>" o max-length)])]
     [(hash? v)
-     (if (and (config-get config print-hash-table)
-              (not (hash-weak? v)))
-         (print-hash v o max-length p who mode graph config)
-         (write-string/max "#<hash>" o max-length))]
+     (cond
+       [(and (config-get config print-hash-table)
+             (not (hash-weak? v)))
+        (cond
+          [(eq? mode PRINT-MODE/UNQUOTED)
+           (define l (apply append (hash-map v list #t)))
+           (define prefix (cond
+                            [(hash-eq? v) "(hasheq"]
+                            [(hash-eqv? v) "(hasheqv"]
+                            [else "(hash"]))
+           (print-list p who l mode o max-length graph config #f prefix)]
+          [else
+           (print-hash v o max-length p who mode graph config)])]
+       [else
+        (check-unreadable who config mode v)
+        (write-string/max "#<hash>" o max-length)])]
     [(and (eq? mode WRITE-MODE)
           (not (config-get config print-unreadable))
           ;; Regexps are a special case: custom writers that produce readable input
           (not (printable-regexp? v)))
-     (raise (exn:fail
-             (string-append (symbol->string who)
-                            ": printing disabled for unreadable value"
-                            "\n  value: "
-                            (parameterize ([print-unreadable #t])
-                              ((error-value->string-handler) v (error-print-width))))
-             (current-continuation-marks)))]
+     (fail-unreadable who v)]
     [(mpair? v)
      (print-mlist p who v mode o max-length graph config)]
     [(custom-write? v)
@@ -295,6 +314,22 @@
      (print-named "input-port" v mode o max-length)]
     [(core-output-port? v)
      (print-named "output-port" v mode o max-length)]
+    [(unquoted-printing-string? v)
+     (write-string/max (unquoted-printing-string-value v) o max-length)]
     [else
      ;; As a last resort, fall back to the host `format`:
      (write-string/max (format "~s" v) o max-length)]))
+
+(define (fail-unreadable who v)
+  (raise (exn:fail
+          (string-append (symbol->string who)
+                         ": printing disabled for unreadable value"
+                         "\n  value: "
+                         (parameterize ([print-unreadable #t])
+                           ((error-value->string-handler) v (error-print-width))))
+          (current-continuation-marks))))
+
+(define (check-unreadable who config mode v)
+  (when (and (eq? mode WRITE-MODE)
+             (not (config-get config print-unreadable)))
+    (fail-unreadable who v)))

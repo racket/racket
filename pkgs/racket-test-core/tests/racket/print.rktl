@@ -139,6 +139,8 @@
   (ptest "'(#<procedure:add1>)" (list add1))
   (ptest "'#(#<procedure:add1>)" (vector add1))
 
+  (ptest "(arity-at-least 1)" (arity-at-least 1))
+
   (ptest "#0='(#0#)" (read (open-input-string "#0=(#0#)")))
   (ptest "#0='(#0# #0#)" (read (open-input-string "#0=(#0# #0#)")))
   (ptest "#0='(#0# . #0#)" (read (open-input-string "#0=(#0# . #0#)")))
@@ -261,12 +263,12 @@
   ;; path value in compiled code => path appears in .zo format:
   (let ([o (open-output-string)])
     (write (compile p) o)
-    (test #t regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o)))
+    (test #t 'path-in-code?1 (regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o))))
   ;; `current-write-relative-directory' set => path not in .zo format: 
   (let ([o (open-output-string)])
     (parameterize ([current-write-relative-directory (current-directory)])
       (write (compile p) o)
-    (test #f regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o))))
+    (test #f 'path-in-code?2 (regexp-match? (regexp-quote (path->bytes (current-directory))) (get-output-string o)))))
   ;; try all possible supers that have at least two path elements:
   (let loop ([super (current-directory)])
     (let ([super (let-values ([(base name dir?) (split-path super)])
@@ -279,12 +281,12 @@
         (let ([o (open-output-string)])
           (parameterize ([current-write-relative-directory (current-directory)])
             (write (compile (build-path super "other")) o)
-            (test #t regexp-match? (regexp-quote (path->bytes super)) (get-output-string o))))
+            (test #t 'path-in-code?3 (regexp-match? (regexp-quote (path->bytes super)) (get-output-string o)))))
         (let ([o (open-output-string)])
           (parameterize ([current-write-relative-directory (cons (current-directory)
                                                                  super)])
             (write (compile (build-path super "other")) o)
-            (test #f regexp-match? (regexp-quote (path->bytes super)) (get-output-string o))))
+            (test #f 'path-in-code?4 (regexp-match? (regexp-quote (path->bytes super)) (get-output-string o)))))
         (loop super)))))
 
 ;; ----------------------------------------
