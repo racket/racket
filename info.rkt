@@ -9,3 +9,5 @@
 (define pkg-desc "Library for sandboxing Racket programs")
 
 (define pkg-authors '(eli))
+
+(define version "1.1")

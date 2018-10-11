@@ -460,9 +460,10 @@
                    (* 1000 secs)))
      (λ (a) #f)))
 
+  (define results null)
   (parameterize ([current-custodian cust]
                  [current-subprocess-custodian-mode 'kill])
-    (thread thunk))
+    (thread (lambda () (set! results (call-with-values thunk list)))))
 
   (define r
     (let loop ()
@@ -481,9 +482,10 @@
        timeout-evt)))
   (custodian-shutdown-all cust)
   (unless r
-    (raise (make-exn:fail:resource (format "call-with-deep-time-limit: out of ~a" r)
+    (raise (make-exn:fail:resource "call-with-deep-time-limit: out of time"
                                    (current-continuation-marks)
-                                   'deep-time))))
+                                   'deep-time)))
+  (apply values results))
 
 (define-syntax-rule (with-deep-time-limit sec body ...)
   (call-with-deep-time-limit sec (λ () body ...)))
