@@ -570,29 +570,31 @@
   (when (or (continuation-condition? v)
             (and (exn? v)
                  (not (exn:fail:user? v))))
-    (eprintf "\n  context...:")
-    (let loop ([l (traces->context
-                   (if (exn? v)
-                       (continuation-mark-set-traces (exn-continuation-marks v))
-                       (list (continuation->trace (condition-continuation v)))))]
-               [n (|#%app| error-print-context-length)])
-      (unless (or (null? l) (zero? n))
-        (let* ([p (car l)]
-               [s (cdr p)])
-          (cond
-           [(and s
-                 (srcloc-line s)
-                 (srcloc-column s))
-            (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
-            (when (car p)
-              (eprintf ": ~a" (car p)))]
-           [(and s (srcloc-position s))
-            (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
-            (when (car p)
-              (eprintf ": ~a" (car p)))]
-           [(car p)
-            (eprintf "\n   ~a" (car p))]))
-        (loop (cdr l) (sub1 n)))))
+    (let ([n (|#%app| error-print-context-length)])
+      (unless (zero? n)
+        (eprintf "\n  context...:")
+        (let loop ([l (traces->context
+                       (if (exn? v)
+                           (continuation-mark-set-traces (exn-continuation-marks v))
+                           (list (continuation->trace (condition-continuation v)))))]
+                   [n n])
+          (unless (or (null? l) (zero? n))
+            (let* ([p (car l)]
+                   [s (cdr p)])
+              (cond
+               [(and s
+                     (srcloc-line s)
+                     (srcloc-column s))
+                (eprintf "\n   ~a:~a:~a" (srcloc-source s) (srcloc-line s) (srcloc-column s))
+                (when (car p)
+                  (eprintf ": ~a" (car p)))]
+               [(and s (srcloc-position s))
+                (eprintf "\n   ~a::~a" (srcloc-source s) (srcloc-position s))
+                (when (car p)
+                  (eprintf ": ~a" (car p)))]
+               [(car p)
+                (eprintf "\n   ~a" (car p))]))
+            (loop (cdr l) (sub1 n)))))))
   (eprintf "\n"))
 
 (define eprintf

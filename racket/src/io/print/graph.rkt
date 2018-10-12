@@ -177,7 +177,8 @@
               [(or (eq? mode PRINT-MODE/QUOTED)
                    (eq? mode PRINT-MODE/UNQUOTED))
                (define e-unquoted? (build-graph e mode))
-               (unless (eq? print-quotable 'always)
+               (unless (or (eq? print-quotable 'always)
+                           (eq? print-quotable 'self))
                  (set! unquoted? (or e-unquoted? unquoted?)))]
               [else (build-graph e mode)]))))
        (checking! v)

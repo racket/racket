@@ -171,7 +171,9 @@
                     [max-length (write-string/max gs o max-length)]
                     [max-length (write-string/max "=" o max-length)])
                (hash-set! graph v gs)
-               (p/no-graph who v mode o max-length graph config))]))]
+               (if (as-constructor? g)
+                   (p/no-graph-no-quote who v mode o max-length graph config)
+                   (p/no-graph who v mode o max-length graph config)))]))]
     [else
      (p/no-graph who v mode o max-length graph config)]))
 
@@ -185,7 +187,10 @@
               (vector? v)
               (box? v)
               (hash? v)
-              (prefab-struct-key v)))
+              (prefab-struct-key v)
+              (and (custom-write? v)
+                   (not (printable-regexp? v))
+                   (not (eq? 'self (custom-print-quotable-accessor v 'self))))))
      ;; Since this value is not marked for constructor mode,
      ;; transition to quote mode:
      (let ([max-length (write-string/max "'" o max-length)])

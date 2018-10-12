@@ -44,7 +44,9 @@
               [(eq? mode PRINT-MODE/UNQUOTED)
                (let ([max-length
                       (if unquoted-pairs?
-                          (write-string/max "(cons" o max-length)
+                          (if (multiple-pairs? v graph)
+                              (write-string/max "(list*" o max-length)
+                              (write-string/max "(cons" o max-length))
                           (write-string/max (or alt-list-constructor "(list") o max-length))])
                  (cond
                    [(null? v) max-length]
@@ -60,7 +62,6 @@
               (write-string/max ")" o max-length))]
            [(and (pair? (cdr v))
                  (or (not graph) (non-graph? (hash-ref graph (cdr v) #f)))
-                 (not unquoted-pairs?)
                  (not (abbreviation (cdr v))))
             (let ([max-length (p who (car v) mode o max-length graph config)])
               (loop (cdr v) (write-string/max " " o max-length)))]
@@ -78,12 +79,18 @@
 
 (define (uninterrupted-list? v graph)
   (and (list? v)
-       (let loop ([v v])
+       (let loop ([v (cdr v)])
          (cond
            [(null? v) #t]
            [(non-graph? (hash-ref graph v #f))
             (loop (cdr v))]
-           [else #f]))))
+           [else
+            #f]))))
+
+(define (multiple-pairs? v graph)
+  (define d (cdr v))
+  (and (pair? d)
+       (non-graph? (hash-ref graph d #f))))
 
 (define (non-graph? g)
   (or (not g)

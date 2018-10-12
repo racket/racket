@@ -1150,6 +1150,7 @@
                  ...
                  (define dummy
                    (begin
+                     (register-struct-named! struct:name)
                      (register-struct-constructor! name)
                      (register-struct-field-accessor! name-field struct:name field-index) ...
                      (record-type-equal-procedure struct:name default-struct-equal?)
@@ -1166,3 +1167,6 @@
          #'(begin
              (struct name . rest)
              (define make-name name)))])))
+
+(define (register-struct-named! rtd)
+  (with-global-lock* (hashtable-set! rtd-props rtd '())))
