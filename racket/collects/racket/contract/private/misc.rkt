@@ -1239,7 +1239,8 @@
                 (and (procedure? reason)
                      (procedure-arity-includes? reason 1)))
       (raise-argument-error 'flat-contract-with-explanation
-                            (format "~s" '(or/c boolean? (-> blame? any)))))
+                            (format "~s" '(or/c boolean? (-> blame? any)))
+                            reason))
     reason)
   (make-flat-contract
    #:name name

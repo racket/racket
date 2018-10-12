@@ -25,14 +25,22 @@ take advantage of machines with multiple processors, cores, or
 hardware threads.
 
 @margin-note{Currently, parallel support for places is enabled
-  only for Racket 3m (which is the main variant of Racket), and only
+  only for the 3m (main) and CS variants of Racket, and only
   by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
   enable support for other platforms, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
-  function reports whether places run in parallel.}
+  function reports whether places run in parallel.
+
+  Implementation and operating-system constraints may limit the
+  scalability of places. For example, although places can perform
+  garbage collections independently in the 3m variant, a garbage collection
+  may need to manipulate a page table that is shared across all
+  places, and that shared page table can be a bottleneck with enough
+  places---perhaps around 8 or 16.}
 
 A @deftech{place} is a parallel task that is effectively a separate
-instance of the Racket virtual machine. Places communicate through
+instance of the Racket virtual machine, although all places run within
+a single operating-system process. Places communicate through
 @deftech{place channels}, which are endpoints for a two-way buffered
 communication.
 

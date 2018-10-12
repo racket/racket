@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../../common/queue.rkt"
          "../host/thread.rkt"
+         "../host/pthread.rkt"
          "../host/rktio.rkt"
          "../string/convert.rkt"
          "level.rkt"
@@ -27,48 +28,44 @@
   #:property
   prop:receiver-send
   (lambda (lr msg)
-    ;; called in atomic mode and possibly in host interrupt handler,
-    ;; so anything we touch here should only be modified with
-    ;; interrupts disabled
-    (atomically/no-interrupts/no-wind
-     (define b (queue-remove! (queue-log-receiver-waiters lr)))
-     (cond
-       [b
-        (decrement-receiever-waiters! lr)
-        (define select! (unbox b))
-        (set-box! b msg)
-        (select!)]
-       [else
-        (queue-add! (queue-log-receiver-msgs lr) msg)])))
+    ;; called in atomic mode
+    (define b (queue-remove! (queue-log-receiver-waiters lr)))
+    (cond
+      [b
+       (decrement-receiever-waiters! lr)
+       (define select! (unbox b))
+       (set-box! b msg)
+       (select!)]
+      [else
+       (queue-add! (queue-log-receiver-msgs lr) msg)]))
   #:property
   prop:evt
   (poller (lambda (lr ctx)
-            (define msg (atomically/no-interrupts/no-wind (queue-remove! (queue-log-receiver-msgs lr))))
+            (define msg (queue-remove! (queue-log-receiver-msgs lr)))
             (cond
               [msg
                (values (list msg) #f)]
               [else
                (define b (box (poll-ctx-select-proc ctx)))
-               (define n (atomically/no-interrupts/no-wind
-                          (increment-receiever-waiters! lr)
-                          (queue-add! (queue-log-receiver-waiters lr) b)))
+               (define n (begin
+                           (increment-receiever-waiters! lr)
+                           (queue-add! (queue-log-receiver-waiters lr) b)))
                (values #f (control-state-evt
                            (wrap-evt async-evt (lambda (e) (unbox b)))
-                           (lambda () (atomically/no-interrupts/no-wind
-                                       (queue-remove-node! (queue-log-receiver-waiters lr) n)
-                                       (decrement-receiever-waiters! lr)))
+                           (lambda ()
+                             (queue-remove-node! (queue-log-receiver-waiters lr) n)
+                             (decrement-receiever-waiters! lr))
                            void
                            (lambda ()
-                             (atomically/no-interrupts/no-wind
-                              (define msg (queue-remove! (queue-log-receiver-msgs lr)))
-                              (cond
-                                [msg
-                                 (set-box! b msg)
-                                 (values msg #t)]
-                                [else
-                                 (increment-receiever-waiters! lr)
-                                 (set! n (queue-add! (queue-log-receiver-waiters lr) b))
-                                 (values #f #f)])))))]))))
+                             (define msg (queue-remove! (queue-log-receiver-msgs lr)))
+                             (cond
+                               [msg
+                                (set-box! b msg)
+                                (values msg #t)]
+                               [else
+                                (increment-receiever-waiters! lr)
+                                (set! n (queue-add! (queue-log-receiver-waiters lr) b))
+                                (values #f #f)]))))]))))
 
 (define/who (make-log-receiver logger level . args)
   (check who logger? logger)
@@ -152,5 +149,11 @@
      (set-logger-level-sema! logger #f))))
 
 ;; Called in atomic mode and with interrupts disabled
-(define (log-receiver-send! r msg)
-  ((receiver-send-ref r) r msg))
+(define (log-receiver-send! r msg in-interrupt?)
+  (if (or (not in-interrupt?)
+          ;; We can run stdio loggers in atomic/interrupt mode:
+          (stdio-log-receiver? r))
+      ((receiver-send-ref r) r msg)
+      ;; Record any any other message for posting later:
+      (unsafe-add-pre-poll-callback! (lambda ()
+                                       ((receiver-send-ref r) r msg)))))

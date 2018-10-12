@@ -5,7 +5,8 @@
          "atomic.rkt"
          "parameter.rkt"
          "waiter.rkt"
-         "evt.rkt")
+         "evt.rkt"
+         "pre-poll.rkt")
 
 (provide make-semaphore
          semaphore?
@@ -93,6 +94,7 @@
 (define/who (semaphore-try-wait? s)
   (check who semaphore? s)
   (atomically
+   (call-pre-poll-external-callbacks)
    (define c (semaphore-count s))
    (cond
      [(positive? c)

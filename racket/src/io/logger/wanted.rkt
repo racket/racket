@@ -4,31 +4,31 @@
          "receiver.rkt"
          "level.rkt")
 
-(provide logger-wanted-level
+(provide logger-wanted-level      ; ok to call in host-Scheme interrupt handler
          logger-max-wanted-level
          logger-all-levels)
 
+;; in atomic mode with interrupts disabled
 (define (logger-wanted-level logger topic)
-  (atomically/no-interrupts/no-wind
-   (cond
-     [(not topic) (logger-max-wanted-level logger)]
-     [else
-      (cond
-        [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
-         ;; Cache is up-to-date, so search it
-         (define cache (logger-topic-level-cache logger))
-         (or (for/or ([i (in-range 0 (vector-length cache) 2)])
-               (and (eq? (vector-ref cache i) topic)
-                    (vector-ref cache (add1 i))))
-             ;; Didn't find in cache, so update the cache
-             (begin
-               (update-logger-wanted-level! logger topic)
-               (logger-wanted-level logger topic)))]
-        [else
-         ;; Update the cache and retry:
-         (update-logger-wanted-level! logger topic)
-         (logger-wanted-level logger topic)])])))
-                         
+  (cond
+    [(not topic) (logger-max-wanted-level logger)]
+    [else
+     (cond
+       [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
+        ;; Cache is up-to-date, so search it
+        (define cache (logger-topic-level-cache logger))
+        (or (for/or ([i (in-range 0 (vector-length cache) 2)])
+              (and (eq? (vector-ref cache i) topic)
+                   (vector-ref cache (add1 i))))
+            ;; Didn't find in cache, so update the cache
+            (begin
+              (update-logger-wanted-level! logger topic)
+              (logger-wanted-level logger topic)))]
+       [else
+        ;; Update the cache and retry:
+        (update-logger-wanted-level! logger topic)
+        (logger-wanted-level logger topic)])]))
+
 (define (logger-max-wanted-level logger)
   (atomically/no-interrupts/no-wind
    (cond

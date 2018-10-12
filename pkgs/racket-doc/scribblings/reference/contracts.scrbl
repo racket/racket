@@ -3567,8 +3567,18 @@ ended up returning @racket[contract-random-generate-fail].
          (or/c #f (-> c))]{
   This function is like @racket[contract-random-generate], but it is intended to
   be used with combinators that generate values based on sub-contracts
-  they have. It cannot be called, except during contract
-  generation. It will never fail, but it might escape back to an enclosing
+  they have. It must be called when @racket[contract-random-generate]
+  (and @racket[contract-exercise]) creates the generators.
+  To be more precise, @racket[contract-random-generate/choose] is available
+  only for the @racket[_generate] and @racket[_exercise] arguments in
+  @racket[build-contract-property], @racket[build-chaperone-contract-property]
+  or @racket[build-flat-contract-property] and only during the dynamic
+  extent of the call to @racket[_generate] (and @racket[_exercise]).
+  That is, after it receives the @racket[_c] and @racket[_fuel] arguments
+  and before it returns the thunk (or the exerciser).
+
+  @racket[contract-random-generate/choose] will never fail,
+  but it might escape back to an enclosing
   call or to the original call to @racket[contract-random-generate].
  
   It chooses one of several possible generation strategies, and thus it may not

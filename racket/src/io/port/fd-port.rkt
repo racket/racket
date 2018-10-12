@@ -369,7 +369,7 @@
   (define new-fd (rktio_dup rktio fd))
   (when (rktio-error? new-fd)
     (end-atomic)
-    (raise-rktio-error 'place-channel-put new-fd "error during duping file descriptor"))
+    (raise-rktio-error 'place-channel-put new-fd "error during dup of file descriptor"))
   (define fd-dup (box (rktio_fd_detach rktio new-fd)))
   (unsafe-add-global-finalizer fd-dup (lambda ()
                                         (define fd (unbox fd-dup))

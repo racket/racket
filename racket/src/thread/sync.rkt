@@ -9,7 +9,8 @@
          "thread.rkt"
          (only-in (submod "thread.rkt" scheduling)
                   thread-descheduled?)
-         "schedule-info.rkt")
+         "schedule-info.rkt"
+         "pre-poll.rkt")
 
 (provide sync
          sync/timeout
@@ -96,6 +97,7 @@
        (cond
          [(or (and (real? timeout) (zero? timeout))
               (procedure? timeout))
+          (atomically (call-pre-poll-external-callbacks))
           (let poll-loop ()
             (sync-poll s #:fail-k (lambda (sched-info polled-all?)
                                     (cond

@@ -88,11 +88,18 @@ win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 
-win32-in-place-after-base:
+win32-minimal-in-place:
+	$(MAKE) win32-base
+	$(MAKE) win32-minimal-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+
+win32-minimal-in-place-after-base:
 	$(MAKE) win32-pkgs-catalog SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(WIN32_RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(WIN32_RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(WIN32_RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+
+win32-in-place-after-base:
+	$(MAKE) win32-minimal-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
 	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # Rebuild without consulting catalogs or package sources:
@@ -227,6 +234,7 @@ RACKET =
 # Chez Scheme from `CHEZ_SCHEME_REPO`
 SCHEME_SRC = 
 DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
+MAKE_BUILD_SCHEME = y
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
 
@@ -235,17 +243,33 @@ BASE_TARGET = plain-minimal-in-place
 CS_SETUP_TARGET = plain-in-place-after-base
 
 cs:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-cs ; \
+         else $(MAKE) cpus-cs CPUS="$(CPUS)" ; fi
+
+plain-cs:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
          then $(MAKE) scheme-src ; fi
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) racket-then-cs ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
 
+cpus-cs:
+	$(MAKE) -j $(CPUS) plain-cs JOB_OPTIONS="-j $(CPUS)"
+
 cs-in-place:
 	$(MAKE) cs
 
 cs-base:
+	if [ "$(CPUS)" = "" ] ; \
+         then $(MAKE) plain-cs-base ; \
+         else $(MAKE) cpus-cs-base CPUS="$(CPUS)" ; fi
+
+plain-cs-base:
 	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
+
+cpus-cs-base:
+	$(MAKE) -j $(CPUS) plain-cs-base JOB_OPTIONS="-j $(CPUS)"
 
 cs-as-is:
 	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
@@ -266,14 +290,14 @@ ABS_SCHEME_SRC = "`$(RACKET) racket/src/cs/absify.rkt $(SCHEME_SRC)`"
 cs-after-racket-with-racket:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
 	  then $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(DEFAULT_SCHEME_SRC)" ; \
-	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" ; fi
+	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=n ; fi
 
 cs-after-racket-with-racket-and-scheme-src:
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
 
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/Makefile
-	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)"
+	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
 	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
@@ -304,7 +328,7 @@ win32-cs:
 	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
 
 win32-racket-then-cs:
-	$(MAKE) win32-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+	$(MAKE) win32-minimal-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
 	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
 
 win32-just-cs:

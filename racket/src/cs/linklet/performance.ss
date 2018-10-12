@@ -6,6 +6,27 @@
 (define current-start-time '())
 (define current-gc-start-time '())
 
+;; List keys for passes related to register allocation as recorded by
+;; Chez Scheme and reported from `$pass-stats`:
+(define register-allocation-passes
+  '(do-live-analysis!
+    record-call-live!
+    identify-poison!
+    do-spillable-conflict!
+    assign-frame!
+    assign-new-frame!
+    finalize-register-locations!
+    do-unspillable-conflict!
+    assign-registers!
+    finalize-frame-locations!
+    select-instructions!))
+
+(define (time->ms t)
+  (inexact->exact
+   (floor
+    (+ (* 1000. (time-second t))
+       (/ (time-nanosecond t) 1000000.)))))
+
 ;; Beware that `performance-region` doesn't really handle escapes, and
 ;; Racket-level thread swaps during `performance-region` can cause
 ;; strange results.
@@ -44,12 +65,19 @@
 
 (define (linklet-performance-init!)
   (hashtable-set! region-times 'boot
-                  (let ([t (sstats-cpu (statistics))])
-                    (+ (* 1000.0 (time-second t))
-                       (/ (time-nanosecond t) 1000000.0)))))
+                  (time->ms (sstats-cpu (statistics)))))
 
 (define (linklet-performance-report!)
   (when measure-performance?
+    (for-each (lambda (s)
+                (let ([label (if (#%memq (car s) register-allocation-passes)
+                                 'regalloc
+                                 'other)])
+                  (let-values ([(count cpu gc-cpu bytes) (apply values (cdr s))])
+                    (hashtable-update! region-times label (lambda (v) (+ v (time->ms cpu))) 0)
+                    (hashtable-update! region-gc-times label (lambda (v) (+ v (time->ms gc-cpu))) 0)
+                    (hashtable-update! region-counts label (lambda (v) (max count v)) 0))))
+              (#%$pass-stats))
     (let* ([total (apply + (hash-table-map region-times (lambda (k v) (round (inexact->exact v)))))]
            [gc-total (apply + (hash-table-map region-gc-times (lambda (k v) v)))]
            [name-len (apply max (hash-table-map region-times (lambda (k v) (string-length (symbol->string k)))))]
@@ -58,7 +86,8 @@
            [categories '((read (read-bundle faslin-code))
                          (comp-ffi (comp-ffi-call comp-ffi-back))
                          (run (instantiate outer))
-                         (compile (compile-linklet compile-nested)))]
+                         (compile (compile-linklet compile-nested))
+                         (compile-pass (regalloc other)))]
            [region-subs (make-eq-hashtable)]
            [region-gc-subs (make-eq-hashtable)])
       (define (lprintf fmt . args)

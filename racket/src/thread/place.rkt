@@ -95,6 +95,7 @@
   (start-atomic)
   (define-values (parent-in parent-out parent-err child-in-fd child-out-fd child-err-fd)
     (make-place-ports+fds in out err))
+  (host:mutex-acquire lock)
   ;; Start the new place
   (host:fork-place
    (lambda ()
@@ -136,7 +137,6 @@
        (wakeup-waiting pl))
      (hash-clear! done-waiting)))
   ;; Wait for the place to start, then return the place object
-  (host:mutex-acquire lock)
   (host:condition-wait started lock)
   (host:mutex-release lock)
   (end-atomic)

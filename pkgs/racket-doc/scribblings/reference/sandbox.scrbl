@@ -715,7 +715,7 @@ The memory limit that is specified by this parameter applies to each
 individual evaluation, but not to the whole sandbox --- that limit is
 specified via @racket[sandbox-memory-limit].  When the global limit is
 exceeded, the sandbox is terminated, but when the per-evaluation limit
-is exceeded the @exnraise[exn:fail:resource].  For example, say that
+is exceeded, an exception recognizable by @racket[exn:fail:resource?] is raised.  For example, say that
 you evaluate an expression like
 @racketblock[
   (for ([i (in-range 1000)])
@@ -1040,7 +1040,7 @@ checked at the time that a sandbox evaluator is created.}
 Executes the given @racket[thunk] with memory and time restrictions:
 if execution consumes more than @racket[mb] megabytes or more than
 @racket[secs] @tech{shallow time} seconds, then the computation is
-aborted and the @exnraise[exn:fail:resource].  Otherwise the result of
+aborted and an exception recognizable by @racket[exn:fail:resource?] is raised.  Otherwise, the result of
 the thunk is returned as usual (a value, multiple values, or an
 exception).  Each of the two limits can be @racket[#f] to indicate the
 absence of a limit. See also @racket[custodian-limit-memory] for
@@ -1059,8 +1059,15 @@ A macro version of @racket[call-with-limits].}
 @defproc[(call-with-deep-time-limit [secs exact-nonnegative-integer?]
                                     [thunk (-> any)])
          any]{
- Executes the given @racket[thunk] with @tech{deep time} restrictions.
-}
+Executes the given @racket[thunk] with @tech{deep time} restrictions,
+and returns the values produced by @racket[thunk].
+
+The given @racket[thunk] is run in a new thread. If it errors or if
+the thread terminates returning a value, then @racket[(values)] is
+returned.
+
+@history[#:changed "1.1" @elem{Changed to return @racket[thunk]'s result
+                               if it completes normally.}]}
 
 @defform[(with-deep-time-limit secs-expr body ...)]{
 

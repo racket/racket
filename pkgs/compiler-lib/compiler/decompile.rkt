@@ -225,6 +225,7 @@
                                          [import-shape (in-list import-shapes)]
                                          #:when import-shape)
                                 `[,import ,import-shape]))
+           '(source-names: ,source-names)
            ,@body-l))]))
 
 (define (decompile-data-linklet l)

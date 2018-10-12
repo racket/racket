@@ -94,7 +94,7 @@
       [else (values knowns #f)])]
     [`(define-values (,prop:s ,s? ,s-ref)
        (make-struct-type-property ,_ . ,rest))
-     (define type (gensym (symbol->string prop:s)))
+     (define type (gensym (symbol->string (unwrap prop:s))))
      (values
       (let* ([knowns (hash-set knowns (unwrap s-ref) (known-accessor 2 type))]
              [knowns (hash-set knowns (unwrap s?) (known-predicate 2 type))])

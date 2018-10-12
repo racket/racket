@@ -113,9 +113,12 @@
           (cond
            [(compile-context-module-self cctx)
             ;; In a module, look up name for local definition:
-            (for/list ([binding-sym (in-list binding-syms)])
-              (hash-ref (header-binding-sym-to-define-sym header)
-                        binding-sym))]
+            (for/list ([binding-sym (in-list binding-syms)]
+                       [id (in-list ids)])
+              (correlate-source-name
+               (hash-ref (header-binding-sym-to-define-sym header)
+                         binding-sym)
+               (syntax-e id)))]
            [else
             ;; Outside of a module, look up name to `set!`
             (for/list ([binding-sym (in-list binding-syms)])

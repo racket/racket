@@ -361,6 +361,10 @@
     (try-graph "#0=#s(thing 7 #0#)"))
 
   (check-exn exn:fail? (λ () (place-channel-put pl (open-output-string))))
+  (check-exn exn:fail? (λ ()
+                         (struct s ([x #:mutable]) #:prefab)
+                         (struct t s (y) #:prefab)
+                         (place-channel-put pl (t 1 2))))
   (check-not-exn (λ () (place-channel-put pl "Test String")))
   (check-not-exn (λ () (place-channel-put pl (bytes->path #"/tmp/unix" 'unix))))
   (check-not-exn (λ () (place-channel-put pl (bytes->path #"C:\\Windows" 'windows))))

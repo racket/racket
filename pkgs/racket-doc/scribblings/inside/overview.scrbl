@@ -10,13 +10,6 @@ compilation of Racket from source to bytecode, the allocation and
 reclamation of memory used during evaluation, and the scheduling of
 concurrent threads and parallel tasks.
 
-Much of the language provided by @racketmodname[racket/base] is
-implemented in a more primitive dialect of Racket that is provided by
-the run-time system. Future versions of Racket are likely to move
-macro expansion, compilation, and many ``primitive'' functions into
-such Racket-implemented libraries, instead of having them built into
-the run-time system.
-
 @section{``Scheme'' versus ``Racket''}
 
 The old name for Racket was ``PLT Scheme,'' and the core compiler and

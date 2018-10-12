@@ -12,7 +12,8 @@
          "exit.rkt"
          "future.rkt"
          "custodian.rkt"
-         (submod "custodian.rkt" scheduling))
+         (submod "custodian.rkt" scheduling)
+         "pre-poll.rkt")
 
 ;; Many scheduler details are implemented in "thread.rkt", but this
 ;; module handles the thread selection, thread swapping, and
@@ -48,6 +49,7 @@
                           pending-callbacks))
     (host:poll-will-executors)
     (check-external-events 'fast)
+    (call-pre-poll-external-callbacks)
     (check-place-activity)
     (when (and (null? callbacks)
                (all-threads-poll-done?)

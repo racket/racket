@@ -246,9 +246,9 @@
 (define (thread-dead! t)
   (assert-atomic-mode)
   (set-thread-engine! t 'done)
+  (run-interrupt-callback t)
   (when (thread-dead-sema t)
     (semaphore-post-all (thread-dead-sema t)))
-  (run-interrupt-callback t)
   (unless (thread-descheduled? t)
     (thread-group-remove! (thread-parent t) t))
   (remove-from-sleeping-threads! t)
@@ -332,7 +332,8 @@
          ;; Check whether the current thread was terminated
          (let ([t (current-thread)])
            (when t ; in case custodians used (for testing) without threads
-             (when (thread-dead? t)
+             (when (or (thread-dead? t)
+                       (null? (thread-custodian-references t)))
                (engine-block))
              (check-for-break-after-kill))))))
 
@@ -400,6 +401,8 @@
     (add-to-sleeping-threads! t (sandman-merge-timeout #f timeout-at)))
   (when (eq? t (current-thread))
     (thread-did-work!))
+  ;; Beware that this thunk is not used when a thread is descheduled
+  ;; by a custodian callback
   (lambda ()
     (when (eq? t (current-thread))
       (when (positive? (current-atomic))
@@ -453,7 +456,9 @@
 
 ;; in atomic mode
 ;; Returns a thunk to call to handle the case that
-;; the current thread is suspended
+;; the current thread is suspended; beware that the
+;; thunk is not used when `custodian-shutdown-all`
+;; suspends a thread
 (define (do-thread-suspend t)
   (assert-atomic-mode)
   (cond

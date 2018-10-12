@@ -307,34 +307,38 @@
 
 ;; ----------------------------------------
 
-;; List of (cons <pre> <post>)
+;; List of (cons <pre> <post>), currently suported
+;; only in the original host thread of the original place
 (define collect-callbacks '())
 
 (define (unsafe-add-collect-callbacks pre post)
-  (let ([p (cons pre post)])
-    (with-interrupts-disabled
-     (set! collect-callbacks (cons p collect-callbacks)))
-    p))
+  (when (in-original-host-thread?)
+    (let ([p (cons pre post)])
+      (with-interrupts-disabled
+       (set! collect-callbacks (cons p collect-callbacks)))
+      p)))
 
 (define (unsafe-remove-collect-callbacks p)
-  (with-interrupts-disabled
-   (set! collect-callbacks (#%remq p collect-callbacks))))
+  (when (in-original-host-thread?)
+    (with-interrupts-disabled
+     (set! collect-callbacks (#%remq p collect-callbacks)))))
 
 (define (run-collect-callbacks sel)
-  (let loop ([l collect-callbacks])
-    (unless (null? l)
-      (let ([v (sel (car l))])
-        (let loop ([i 0] [save #f])
-          (unless (fx= i (#%vector-length v))
-            (loop (fx+ i 1)
-                  (run-one-collect-callback (#%vector-ref v i) save sel))))
-        (loop (cdr l))))))
+  (when (in-original-host-thread?)
+    (let loop ([l collect-callbacks])
+      (unless (null? l)
+        (let ([v (sel (car l))])
+          (let loop ([i 0] [save #f])
+            (unless (fx= i (#%vector-length v))
+              (loop (fx+ i 1)
+                    (run-one-collect-callback (#%vector-ref v i) save sel))))
+          (loop (cdr l)))))))
 
 (define-syntax (osapi-foreign-procedure stx)
   (syntax-case stx ()
     [(_ s ...)
      (case (machine-type)
-       [(a6nt ta6nt i3nt ti3nt) #'(foreign-procedure _stdcall s ...)]
+       [(i3nt ti3nt) #'(foreign-procedure __stdcall s ...)]
        [else #'(foreign-procedure s ...)])]))
 
 ;; This is an inconvenient callback interface, certainly, but it

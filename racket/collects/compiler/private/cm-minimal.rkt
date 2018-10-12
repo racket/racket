@@ -684,8 +684,8 @@
   (define cp->m (current-path->mode))
   (define modes (use-compiled-file-paths))
   (when (and (not cp->m) (null? modes))
-    (raise-mismatch-error 'make-compilation-manager-...
-                          "use-compiled-file-paths is '() and current-path->mode is #f"))
+    (raise-arguments-error 'make-compilation-manager-...
+                           "use-compiled-file-paths is '() and current-path->mode is #f"))
   (define path->mode (or cp->m (λ (p) (car modes))))
   (let ([orig-eval (current-eval)]
         [orig-load (current-load)]
@@ -747,9 +747,8 @@
              (trace-printf "done: ~a" path)])
       (default-handler path mod-name))
     (when (null? roots)
-      (raise-mismatch-error 'make-compilation-manager-...
-                            "empty current-compiled-file-roots list: "
-                            roots))
+      (raise-arguments-error 'make-compilation-manager-...
+                             "empty current-compiled-file-roots list"))
     compilation-manager-load-handler))
 
 

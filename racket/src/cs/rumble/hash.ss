@@ -166,7 +166,7 @@
    [(and (impersonator? ht)
          (intmap? (impersonator-val ht)))
     (impersonate-hash-set ht k v)]
-   [else (raise-argument-error 'hash-set! "(and/c hash? immutable?)" ht)]))
+   [else (raise-argument-error 'hash-set "(and/c hash? immutable?)" ht)]))
 
 (define (hash-remove ht k)
   (cond
@@ -256,9 +256,7 @@
        (let ([v (hashtable-ref (mutable-hash-ht ht) k none)])
          (lock-release (mutable-hash-lock ht))
          (if (eq? v none)
-             (if (procedure? fail)
-                 (|#%app| fail)
-                 fail)
+             ($fail fail)
              v))]
       [(intmap? ht) (intmap-ref ht k fail)]
       [(weak-equal-hash? ht) (weak-hash-ref ht k fail)]
@@ -266,9 +264,7 @@
             (authentic-hash? (impersonator-val ht)))
        (let ([v (impersonate-hash-ref ht k)])
          (if (eq? v none)
-             (if (procedure? fail)
-                 (|#%app| fail)
-                 fail)
+             ($fail fail)
              v))]
       [else (raise-argument-error 'hash-ref "hash?" ht)])]))
 
@@ -744,17 +740,13 @@
          [(null? keys)
           ;; Not in the table:
           (lock-release (weak-equal-hash-lock t))
-          (if (procedure? fail)
-              (|#%app| fail)
-              fail)]
+          ($fail fail)]
          [(key-equal? (car keys) key)
           (let* ([k (car keys)]
                  [v (hashtable-ref (weak-equal-hash-*vals-ht t k) (car keys) none)])
             (lock-release (weak-equal-hash-lock t))
             (if (eq? v none)
-                (if (procedure? fail)
-                    (|#%app| fail)
-                    fail)
+                ($fail fail)
                 v))]
          [else (loop (cdr keys))])))))
 

@@ -208,7 +208,7 @@
 
 (lazy-require
  ["runtime-report.rkt"
-  (call-current-failure-handler ctx fs)])
+  (call-current-failure-handler)])
 
 ;; syntax-patterns-fail : (list Symbol/#f Syntax) -> (Listof (-> Any)) FailureSet -> escapes
 (define ((syntax-patterns-fail ctx) undos fs)

@@ -35,8 +35,8 @@ GLOBALS = --no-global \
           ++global-ok built-in-symbols \
           ++global-ok default-read-handler \
           ++global-ok current-previously-unbound \
-          ++global-ok 'keep-source-locations?' \
-          ++global-ok 'rx:path-list'
+          ++global-ok "keep-source-locations?" \
+          ++global-ok rx:path-list
 
 # Set `BUILDDIR` as a prefix on "compiled" output (defaults to empty).
 # Set `DEPENDSDIR` as the same sort of prefix in the generated

@@ -148,9 +148,15 @@
 
 ;; ----------------------------------------
 
+(system*! scheme
+	  "--script"
+	  "../cs/c/convert-to-boot.ss"
+	  "../build/racket.so"
+	  "../build/racket.boot")
+
 (system*! (find-exe)
 	  "../cs/c/embed-boot.rkt"
 	  "../build/raw_racketcs.exe"
 	  "../../RacketCS.exe"
 	  (build-path scheme-dir machine "boot" machine)
-	  "../build/racket.so")
+	  "../build/racket.boot")

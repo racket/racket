@@ -1730,7 +1730,7 @@
                                (unless (= 1 (length other))
                                  (raise-wrong-number-of-args-error
                                   #:missing-party neg-party
-                                  blame f (length other) 1 1 1
+                                  blame f (length other) 1 1
                                   #f)) ; not a method contract
                                (values (rng-checker f blame neg-party) (car other))))])
                          #f))

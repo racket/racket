@@ -21,6 +21,10 @@
 (define strip-binary-compile-info (make-parameter #t))
 
 (define (check-strip-compatible mode pkg dir error)
+  (unless (path-string? dir)
+    (raise-argument-error 'check-strip-compatible "path-string?" dir))
+  (check-directory-exists 'check-strip-compatible "" dir)
+
   (define i (get-info/full dir))
   (define raw-status (and i
                           (i 'package-content-state (lambda () #f))))
@@ -58,6 +62,13 @@
 
 (define (generate-stripped-directory mode dir dest-dir
                                      #:check-status? [check-status? #t])
+  (unless (path-string? dir)
+    (raise-argument-error 'generate-stripped-directory "path-string?" dir))
+  (unless (path-string? dest-dir)
+    (raise-argument-error 'generate-stripped-directory "path-string?" dest-dir))
+  (check-directory-exists 'generate-stripped-directory "source " dir)
+  (check-directory-exists 'generate-stripped-directory "destination " dest-dir)
+
   (define drop-keep-ns (make-base-namespace))
   (define (add-drop+keeps dir base drops keeps)
     (define get-info (get-info/full dir #:namespace drop-keep-ns))
@@ -469,3 +480,14 @@
     (for ([f (in-list (directory-list dest-dir #:build? #t))])
       (when (directory-exists? f)
         (create-info-as-needed mode f 'collection)))]))
+
+(define (check-directory-exists who which dir)
+  (unless (directory-exists? dir)
+    (raise (exn:fail:filesystem
+            (format (string-append
+                     "~a: destination ~adirectory does not exist\n"
+                     "  path: ~a")
+                    who
+                    which
+                    dir)
+            (current-continuation-marks)))))

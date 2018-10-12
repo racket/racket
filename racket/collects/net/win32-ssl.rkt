@@ -475,10 +475,9 @@
   ;; If we have too much to encrypt at once, we'll encrypt
   ;; halves separately:
   (define (divide-and-conquer)
-    
     (define mid (quotient (+ start end) 2))
-    (bytes-append (encrypt ctx bstr start mid sizes buffer)
-                  (encrypt ctx bstr mid end sizes buffer)))
+    (bytes-append (encrypt ctx bstr start mid out-sb sizes buffer)
+                  (encrypt ctx bstr mid end out-sb sizes buffer)))
   (cond
    [((- end start) . > . (bytes-length buffer))
     ;; Too much right from the start:

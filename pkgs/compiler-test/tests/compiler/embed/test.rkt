@@ -266,7 +266,8 @@
     (one-mz-test "embed-me18.rkt" "This is 18.\n" #f)
     (one-mz-test "embed-me19.rkt" "This is 19.\n" #f)
     (one-mz-test "embed-me21.rkt" "This is 21.\n" #f)
-    (one-mz-test "embed-me31.rkt" "This is 31.\n" #f))
+    (one-mz-test "embed-me31.rkt" "This is 31.\n" #f)
+    (one-mz-test "embed-me34.rkt" "This is 34 in a second place.\n" #f))
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")

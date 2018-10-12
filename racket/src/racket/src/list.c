@@ -2604,7 +2604,14 @@ static Scheme_Object *hash_failed(int argc, Scheme_Object *argv[])
   if (argc == 3) {
     v = argv[2];
     if (SCHEME_PROCP(v)) {
-      scheme_check_proc_arity("hash-ref", 0, 2, argc, argv);
+      if (!scheme_check_proc_arity(NULL, 0, 2, argc, argv)) {
+        scheme_raise_exn(MZEXN_FAIL_CONTRACT_ARITY,
+                         "hash-ref: arity mismatch for failure procedure;\n"
+                         " given procedure does not accept zero arguments\n"
+                         "  procedure: %V",
+                         v);
+        return NULL;
+      }
       return _scheme_tail_apply(v, 0, NULL);
     } else
       return v;

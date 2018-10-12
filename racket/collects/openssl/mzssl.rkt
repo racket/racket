@@ -363,48 +363,51 @@ TO DO:
 (define-crypto X509_get_default_cert_file_env (_fun -> _string))
 
 (define (x509-root-sources)
-  ;; Workaround for natipkg openssl library: the default cert locations vary
-  ;; from distro to distro, and there is no one configuration that works with
-  ;; all. So build natipkg libssl.so with `--openssldir="/RACKET_USE_ALT_PATH"`
-  ;; and this code will override with better guesses.
-  ;; Cert locations for various distros:
-  ;;   Debian: dir=/etc/ssl/certs, file=/etc/ssl/certs/ca-certificates.crt (prefer dir!)
-  ;;   RedHat: file=/etc/pki/tls/certs/ca-bundle.crt; /etc/ssl/certs exists but useless!
-  ;;   OpenSUSE: dir=/etc/ssl/certs, file=/var/lib/ca-certificates/ca-bundle.pem (prefer dir!)
-  ;; So try file=/etc/pki/tls/certs/ca-bundle.crt, dir=/etc/ssl/certs.
-  (define (use-alt-path? p) (regexp-match? #rx"^/RACKET_USE_ALT_PATH" p))
-  (define (subst-cert-file p)
-    (cond [(use-alt-path? p)
-           (log-openssl-debug "cert file path is ~s; using alternatives" p)
-           (filter file-exists? '("/etc/pki/tls/certs/ca-bundle.crt"))]
-          [else p]))
-  (define (subst-cert-dir p)
-    (cond [(use-alt-path? p)
-           (log-openssl-debug "cert dir path is ~s; using alternatives" p)
-           (filter directory-exists? '("/etc/ssl/certs"))]
-          [else p]))
-  ;; ----
-  (define dir-sep (case (system-type) [(windows) ";"] [else ":"]))
-  (define cert-file0
-    (or (getenv (X509_get_default_cert_file_env)) (X509_get_default_cert_file)))
-  (define cert-dirs0
-    (or (getenv (X509_get_default_cert_dir_env)) (X509_get_default_cert_dir)))
-  ;; Use path-string? filter to avoid {file,directory}-exists? error on "".
-  (define cert-files
-    (filter path-string? (flatten (map subst-cert-file (list cert-file0)))))
-  (define cert-dirs
-    (filter path-string? (flatten (map subst-cert-dir (string-split cert-dirs0 dir-sep)))))
-  ;; Log error only if *no* cert source exists (eg, on Debian/Ubuntu, default
-  ;; cert file does not exist).
-  (unless (or (ormap file-exists? cert-files) (ormap directory-exists? cert-dirs))
-    (log-openssl-error
-     "x509-root-sources: cert sources do not exist: ~s, ~s; ~a"
-     cert-file0 cert-dirs0
-     (format "override using ~a, ~a"
-             (X509_get_default_cert_file_env)
-             (X509_get_default_cert_dir_env))))
-  (log-openssl-debug "using cert sources: ~s, ~s" cert-files cert-dirs)
-  (append cert-files (map (lambda (p) (list 'directory p)) cert-dirs)))
+  (cond
+    [libcrypto
+     ;; Workaround for natipkg openssl library: the default cert locations vary
+     ;; from distro to distro, and there is no one configuration that works with
+     ;; all. So build natipkg libssl.so with `--openssldir="/RACKET_USE_ALT_PATH"`
+     ;; and this code will override with better guesses.
+     ;; Cert locations for various distros:
+     ;;   Debian: dir=/etc/ssl/certs, file=/etc/ssl/certs/ca-certificates.crt (prefer dir!)
+     ;;   RedHat: file=/etc/pki/tls/certs/ca-bundle.crt; /etc/ssl/certs exists but useless!
+     ;;   OpenSUSE: dir=/etc/ssl/certs, file=/var/lib/ca-certificates/ca-bundle.pem (prefer dir!)
+     ;; So try file=/etc/pki/tls/certs/ca-bundle.crt, dir=/etc/ssl/certs.
+     (define (use-alt-path? p) (regexp-match? #rx"^/RACKET_USE_ALT_PATH" p))
+     (define (subst-cert-file p)
+       (cond [(use-alt-path? p)
+              (log-openssl-debug "cert file path is ~s; using alternatives" p)
+              (filter file-exists? '("/etc/pki/tls/certs/ca-bundle.crt"))]
+             [else p]))
+     (define (subst-cert-dir p)
+       (cond [(use-alt-path? p)
+              (log-openssl-debug "cert dir path is ~s; using alternatives" p)
+              (filter directory-exists? '("/etc/ssl/certs"))]
+             [else p]))
+     ;; ----
+     (define dir-sep (case (system-type) [(windows) ";"] [else ":"]))
+     (define cert-file0
+       (or (getenv (X509_get_default_cert_file_env)) (X509_get_default_cert_file)))
+     (define cert-dirs0
+       (or (getenv (X509_get_default_cert_dir_env)) (X509_get_default_cert_dir)))
+     ;; Use path-string? filter to avoid {file,directory}-exists? error on "".
+     (define cert-files
+       (filter path-string? (flatten (map subst-cert-file (list cert-file0)))))
+     (define cert-dirs
+       (filter path-string? (flatten (map subst-cert-dir (string-split cert-dirs0 dir-sep)))))
+     ;; Log error only if *no* cert source exists (eg, on Debian/Ubuntu, default
+     ;; cert file does not exist).
+     (unless (or (ormap file-exists? cert-files) (ormap directory-exists? cert-dirs))
+       (log-openssl-error
+        "x509-root-sources: cert sources do not exist: ~s, ~s; ~a"
+        cert-file0 cert-dirs0
+        (format "override using ~a, ~a"
+                (X509_get_default_cert_file_env)
+                (X509_get_default_cert_dir_env))))
+     (log-openssl-debug "using cert sources: ~s, ~s" cert-files cert-dirs)
+     (append cert-files (map (lambda (p) (list 'directory p)) cert-dirs))]
+    [else null]))
 
 (define ssl-default-verify-sources
   (make-parameter

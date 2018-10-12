@@ -58,8 +58,7 @@
       [(and (struct? v)
             (config-get config print-struct))
        (and (not print-graph?)
-            (or (not (eq? mode PRINT-MODE/UNQUOTED))
-                (prefab-struct-key v)) ; can quote a prefab in `print` mode
+            (prefab-struct-key v) ; can quote a prefab in `print` mode
             (quick-no-graph? (struct->vector v) (sub1 fuel)))]
       [else fuel])))
 
@@ -178,7 +177,8 @@
               [(or (eq? mode PRINT-MODE/QUOTED)
                    (eq? mode PRINT-MODE/UNQUOTED))
                (define e-unquoted? (build-graph e mode))
-               (unless (eq? print-quotable 'always)
+               (unless (or (eq? print-quotable 'always)
+                           (eq? print-quotable 'self))
                  (set! unquoted? (or e-unquoted? unquoted?)))]
               [else (build-graph e mode)]))))
        (checking! v)

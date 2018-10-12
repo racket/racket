@@ -249,7 +249,15 @@
 
 (define ($fail default)
   (if (procedure? default)
-      (|#%app| default)
+      (if (procedure-arity-includes? default 0)
+          (|#%app| default)
+          (raise (|#%app|
+                  exn:fail:contract:arity
+                  (string-append "hash-ref: arity mismatch for failure procedure;\n"
+                                 " given procedure does not accept zero arguments\n"
+                                 "  procedure: "
+                                 (error-value->string default))
+                  (current-continuation-marks))))
       default))
 
 ;; iteration

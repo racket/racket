@@ -3795,7 +3795,7 @@ void scheme_embedded_load(intptr_t len, const char *desc, int predefined)
 int scheme_is_predefined_module_path(Scheme_Object *m)
 {
   Scheme_Object *is_predef, *a[1], *r;
-  is_predef = scheme_get_startup_export("embedded-load");
+  is_predef = scheme_get_startup_export("module-predefined?");
   a[0] = m;
   r = scheme_apply(is_predef, 1, a);
   return SCHEME_TRUEP(r);

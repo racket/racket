@@ -138,7 +138,7 @@ static Scheme_Object *do_apply_k(void)
 static Scheme_Object *c_handle_overflow_or_space(Scheme_Object *proc, int argc, Scheme_Object **argv, int runstack_space)
 {
   Scheme_Thread *p;
-  Scheme_Object **argv2;
+  Scheme_Object **argv2 = NULL;
 
   /* stash before allocation: */
   p = scheme_current_thread;
@@ -146,13 +146,17 @@ static Scheme_Object *c_handle_overflow_or_space(Scheme_Object *proc, int argc, 
   p->ku.k.i1 = argc;
   p->ku.k.i2 = runstack_space;
   p->ku.k.p2 = (void *)argv;
-  
-  argv2 = MALLOC_N(Scheme_Object*, argc);
 
-  p = scheme_current_thread;
-  argv = (Scheme_Object **)p->ku.k.p2;
-  
-  memcpy(argv2, argv, sizeof(Scheme_Object *) * argc);
+  if (argc != 0) {
+    argv2 = MALLOC_N(Scheme_Object*, argc);
+
+    /* In order for this code to be GC friendly, which can be triggered 
+     *  anytime memory is allocated, we need to refresh scheme_current_thread */
+    p = scheme_current_thread;
+    argv = (Scheme_Object **)p->ku.k.p2;
+    memcpy(argv2, argv, sizeof(Scheme_Object *) * argc);
+  }
+    
   if (argv == MZ_RUNSTACK)
     memset(argv, 0, sizeof(Scheme_Object *) * argc); /* space safety */
 

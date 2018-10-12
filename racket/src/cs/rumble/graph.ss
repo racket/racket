@@ -132,8 +132,8 @@
                 (let ([new-key (loop key)]
                       [new-val (loop val)])
                   (hloop (if mutable?
-                             (hash-set! orig-p key val)
-                             (hash-set p key val))
+                             (hash-set! orig-p new-key new-val)
+                             (hash-set p new-key new-val))
                          (hash-iterate-next v i)
                          (or diff? (not (and (eq? key new-key) (eq? val new-val)))))))])))]
        [(hash-placeholder? v)

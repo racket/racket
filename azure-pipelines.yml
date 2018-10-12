@@ -1,0 +1,104 @@
+# C/C++ with GCC
+# Build your C/C++ project with GCC using make.
+# Add steps that publish test results, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/vsts/pipelines/apps/c-cpp/gcc
+
+jobs:
+- job: Linux
+  pool:
+    vmImage: ubuntu-16.04
+    
+  steps:
+  - checkout: self
+    fetchDepth: 1
+    
+  - script:
+      make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+    displayName: 'make'
+    
+  - script: |
+      export PATH=$PATH:`pwd`/racket/bin
+      raco test -l tests/racket/test
+      racket -l tests/racket/contract/all
+      raco test -l tests/json/json
+      raco test -l tests/file/main
+      raco test -l tests/net/head
+      raco test -l tests/net/uri-codec
+      raco test -l tests/net/url
+      raco test -l tests/net/url-port
+      raco test -l tests/net/encoders
+      raco test -l tests/openssl/basic
+      raco test -l tests/openssl/https
+      raco test -l tests/match/main
+      raco test -l tests/zo-path
+      raco test -l tests/xml/test
+      raco test -l tests/db/all-tests
+      raco test -c tests/stxparse
+    displayName: test
+
+- job: Windows
+  pool:
+    vmImage: vs2015-win2012r2
+  
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  
+  - script: |
+      call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\vc\vcvarsall.bat" x86
+      echo %cd%
+      nmake win32-in-place PKGS="racket-test unstable-flonum-lib net-test"
+    displayName: Build
+
+  - script: |
+      echo %cd%
+      racket\raco.exe pkg show -l
+      racket\racket.exe -l tests/racket/test
+      racket\racket.exe -l tests/racket/contract/all
+      racket\raco.exe test -l tests/json/json
+      racket\raco.exe test -l tests/file/main
+      racket\raco.exe test -l tests/net/head
+      racket\raco.exe test -l tests/net/uri-codec
+      racket\raco.exe test -l tests/net/url
+      racket\raco.exe test -l tests/net/url-port
+      racket\raco.exe test -l tests/net/encoders
+      racket\raco.exe test -l tests/openssl/basic
+      racket\raco.exe test -l tests/openssl/https
+      racket\raco.exe test -l tests/match/main
+      racket\raco.exe test -l tests/zo-path
+      racket\raco.exe test -l tests/xml/test
+      racket\raco.exe test -c tests/db/all-tests
+      racket\raco.exe test -c tests/stxparse
+    displayName: Test
+    
+- job: Mac
+  pool:
+    vmImage: 'macOS 10.13'
+  
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  
+  - script:
+      make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+    displayName: 'make'
+    
+  - script: |
+      export PATH=$PATH:`pwd`/racket/bin
+      raco test -l tests/racket/test
+      racket -l tests/racket/contract/all
+      raco test -l tests/json/json
+      raco test -l tests/file/main
+      raco test -l tests/net/head
+      raco test -l tests/net/uri-codec
+      raco test -l tests/net/url
+      raco test -l tests/net/url-port
+      raco test -l tests/net/encoders
+      raco test -l tests/openssl/basic
+      raco test -l tests/openssl/https
+      raco test -l tests/match/main
+      raco test -l tests/zo-path
+      raco test -l tests/xml/test
+      raco test -l tests/db/all-tests
+      raco test -c tests/stxparse
+    displayName: test

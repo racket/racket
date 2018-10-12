@@ -113,6 +113,9 @@
 ;; Fix a problem with glyph extents and clipped rendering:
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
+;; Fix a problem with blank glyphs triggering Type 3 substitutions:
+(define-runtime-path cairo-emptyglyph.patch "patches/cairo-emptyglyph.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
@@ -135,6 +138,9 @@
 ;; (i.e., auto-find a suitable font) as implemented by `racket/draw`
 (define-runtime-path pango-emoji-patch "patches/pango-emoji.patch")
 
+;; Merge a Pango patch that fixes a decoding problem
+(define-runtime-path pango-emojiiter-patch "patches/pango-emojiiter.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -155,6 +161,9 @@
 
 ;; `vector` syntax with old gcc
 (define-runtime-path pixman-altivec-patch "patches/pixman-altivec.patch")
+
+;; No need for pixman demos and tests
+(define-runtime-path pixman-notest-patch "patches/pixman-notest.patch")
 
 ;; Disable libtool's management of standard libs so that
 ;; MinGW's -static-libstdc++ works:
@@ -476,7 +485,8 @@
     [("pixman") (config #:patches (cond
                                     [(and win? (not m32?)) (list noforceinline-patch)]
                                     [ppc? (list pixman-altivec-patch)]
-                                    [else null]))]
+                                    [else null])
+                        #:post-patches (list pixman-notest-patch))]
     [("cairo")
      (when mac?
        (define zlib.pc (build-path dest "lib" "pkgconfig" "zlib.pc"))
@@ -497,7 +507,8 @@
                           (if mac?
                               '("CFLAGS=-include Kernel/uuid/uuid.h")
                               '()))
-             #:patches (list cairo-coretext-patch
+             #:patches (list cairo-emptyglyph.patch
+                             cairo-coretext-patch
                              courier-new-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
                           #:configure '("--without-icu")
@@ -521,7 +532,8 @@
                                   (list coretext-patch
                                         coretext-fontreg-patch
                                         coretext-nullarray
-                                        win32text-patch)
+                                        win32text-patch
+                                        pango-emojiiter-patch)
                                   (if (and mac? m32?)
                                       (list pango-surrogate-patch)
                                       null)

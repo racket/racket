@@ -132,5 +132,6 @@
                          'unsafe-custodian-unregister unsafe-custodian-unregister
                          'thread-push-kill-callback! thread-push-kill-callback!
                          'thread-pop-kill-callback! thread-pop-kill-callback!
+                         'unsafe-add-pre-poll-callback! (lambda (proc) (void))
                          'set-get-subprocesses-time! void
                          'prop:place-message prop:place-message))

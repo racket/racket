@@ -24,6 +24,10 @@
                module-declared?
                module->language-info
                module-path-index-join
+               identifier-binding
+               namespace-datum-introduce
+               datum->kernel-syntax
+               namespace-variable-value
                version
                exit
                compile-keep-source-locations!
@@ -279,6 +283,12 @@
                          (eval (read (open-input-string expr))))
                        loads))
                 (flags-loop rest-args (see saw 'non-config)))]
+             [("-m" "--main")
+              (set! loads
+                    (cons
+                     (lambda () (call-main))
+                     loads))
+              (flags-loop (cdr args) (see saw 'non-config))]
              [("-i" "--repl") 
               (set! repl? #t)
               (set! version? #t)
@@ -363,6 +373,18 @@
                 ;; Non-flag argument
                 (finish args saw)])])))))
 
+   (define (call-main)
+     (let ([m (namespace-datum-introduce 'main)])
+       (unless (identifier-binding m)
+         (namespace-variable-value 'main #f
+                                   (lambda ()
+                                     (error "main: not defined or required into the top-level environment"))))
+       (call-with-values (lambda () (eval (datum->kernel-syntax
+                                           (cons m (vector->list remaining-command-line-arguments)))))
+         (lambda results
+           (let ([p (|#%app| current-print)])
+             (for-each (lambda (v) (|#%app| p v)) results))))))
+
    ;; Set up GC logging
    (define-values (struct:gc-info make-gc-info gc-info? gc-info-ref gc-info-set!)
      (make-struct-type 'gc-info #f 10 0 #f null 'prefab #f '(0 1 2 3 4 5 6 7 8 9)))
@@ -411,23 +433,25 @@
                (set! minor-gcs (add1 minor-gcs))
                (set! major-gcs (add1 major-gcs)))
            (set! peak-mem (max peak-mem pre-allocated))
-           (let ([debug-GC? (log-level? root-logger 'debug 'GC)])
+           (let ([debug-GC? (log-level?* root-logger 'debug 'GC)])
              (when (or debug-GC?
                        (and (not minor?)
-                            (log-level? root-logger 'debug 'GC:major)))
+                            (log-level?* root-logger 'debug 'GC:major)))
                (let ([delta (- pre-allocated post-allocated)])
-                 (log-message root-logger 'debug (if debug-GC? 'GC 'GC:major)
-                              (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams @ ~a"
-                                           (if minor? "min" "MAJ") gen
-                                           (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
-                                           (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
-                                                                  delta))
-                                           (- post-cpu-time pre-cpu-time) pre-cpu-time)
-                              (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
-                                            post-allocated post-allocated+overhead
-                                            pre-cpu-time post-cpu-time
-                                            pre-time post-time)
-                              #f)))))))))
+                 (log-message* root-logger 'debug (if debug-GC? 'GC 'GC:major)
+                               (chez:format "GC: 0:~a~a @ ~a(~a); free ~a(~a) ~ams @ ~a"
+                                            (if minor? "min" "MAJ") gen
+                                            (K "" pre-allocated) (K "+" (- pre-allocated+overhead pre-allocated))
+                                            (K "" delta) (K "+" (- (- pre-allocated+overhead post-allocated+overhead)
+                                                                   delta))
+                                            (- post-cpu-time pre-cpu-time) pre-cpu-time)
+                               (make-gc-info (if minor? 'minor 'major) pre-allocated pre-allocated+overhead 0
+                                             post-allocated post-allocated+overhead
+                                             pre-cpu-time post-cpu-time
+                                             pre-time post-time)
+                               #f
+                               ;; in interrupt:
+                               #t)))))))))
    (seq
     (|#%app| exit-handler
      (let ([orig (|#%app| exit-handler)]

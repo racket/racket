@@ -872,6 +872,10 @@
     (generate-inspector-information (not omit-debugging?))
     (generate-procedure-source-information #t))
 
+  (when measure-performance?
+    (#%$enable-pass-timing #t)
+    (#%$clear-pass-stats))
+
   (set-foreign-eval! eval/foreign)
 
   (expand-omit-library-invocations #t)

@@ -297,7 +297,7 @@
                     ;; of `make-struct-type`:
                     (simple-mutated-state? (hash-ref mutated (unwrap struct:) #f)))
                (define can-impersonate? (not (struct-type-info-authentic? sti)))
-               (define raw-s? (if can-impersonate? (gensym s?) s?))
+               (define raw-s? (if can-impersonate? (gensym (unwrap s?)) s?))
                `(begin
                   (define ,struct:s (make-record-type-descriptor ',(struct-type-info-name sti)
                                                                  ,(schemify (struct-type-info-parent sti))
@@ -333,7 +333,7 @@
                         null)
                   ,@(for/list ([acc/mut (in-list acc/muts)]
                                [make-acc/mut (in-list make-acc/muts)])
-                      (define raw-acc/mut (if can-impersonate? (gensym acc/mut) acc/mut))
+                      (define raw-acc/mut (if can-impersonate? (gensym (unwrap acc/mut)) acc/mut))
                       (match make-acc/mut
                         [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ,_)
                          (define raw-def `(define ,raw-acc/mut (record-accessor ,struct:s ,pos)))

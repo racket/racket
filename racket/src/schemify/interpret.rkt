@@ -170,7 +170,7 @@
        (compile-assignment id rhs env stack-depth)]
       [`(define-values ,ids ,rhs)
        (define gen-ids (for/list ([id (in-list ids)])
-                         (gensym id)))
+                         (gensym (unwrap id))))
        (compile-expr `(call-with-values (lambda () ,rhs)
                         (lambda ,gen-ids
                           ,@(if (null? ids)

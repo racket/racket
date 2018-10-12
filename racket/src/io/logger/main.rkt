@@ -11,11 +11,13 @@
          logger-name
          current-logger
          make-logger
-         log-level?    ; ok to call in host-Scheme interrupt handler
+         log-level?
+         log-level?*   ; ok to call in host-Scheme interrupt handler
          log-max-level
          log-all-levels
          log-level-evt
-         log-message  ; ok to call in host-Scheme interrupt handler
+         log-message
+         log-message*  ; ok to call in host-Scheme interrupt handler
          log-receiver?
          make-log-receiver
          add-stderr-log-receiver!
@@ -56,12 +58,18 @@
   (check who logger? logger)
   (check-level who level)
   (check who #:or-false symbol? topic)
+  (atomically/no-interrupts/no-wind
+   (log-level?* logger level topic)))
+
+;; In atomic mode with interrupts disabled
+(define/who (log-level?* logger level topic)
   (level>=? (logger-wanted-level logger topic) level))
 
 (define/who (log-max-level logger [topic #f])
   (check who logger? logger)
   (check who #:or-false symbol? topic)
-  (logger-wanted-level logger topic))
+  (atomically/no-interrupts/no-wind
+   (logger-wanted-level logger topic)))
 
 (define/who (log-all-levels logger)
   (check who logger? logger)
@@ -80,8 +88,6 @@
         s])))
   (semaphore-peek-evt s))
 
-;; Can be called in any host Scheme thread and in interrupt handler,
-;; like `log-level?`:
 (define/who log-message
   ;; Complex dispatch based on number and whether third is a string:
   (case-lambda
@@ -102,32 +108,36 @@
     [(logger level topic message data prefix?)
      (do-log-message who logger level topic message data prefix?)]))
 
-;; Can be called in any host Scheme thread and in interrupt handler,
-;; like `log-level?`:
 (define (do-log-message who logger level topic message data prefix?)
   (check who logger? logger)
   (check-level who level)
   (check who #:or-false symbol? topic)
   (check who string? message)
-  (define msg #f)
   (atomically/no-interrupts/no-wind
-   (when ((logger-max-wanted-level logger) . level>=? . level)
-     (let loop ([logger logger])
-       (for ([r (in-list (logger-receivers logger))])
-         (when ((filters-level-for-topic (log-receiver-filters r) topic) . level>=? . level)
-           (unless msg
-             (set! msg (vector-immutable
-                        level
-                        (string->immutable-string
-                         (if (and prefix? topic)
-                             (string-append (symbol->string topic)
-                                            ": "
-                                            message)
-                             message))
-                        data
-                        topic)))
-           (log-receiver-send! r msg)))
-       (let ([parent (logger-parent logger)])
-         (when (and parent
-                    ((filters-level-for-topic (logger-propagate-filters logger) topic) . level>=? . level))
-           (loop parent)))))))
+   (log-message* logger level topic message data prefix? #f)))
+
+;; In atomic mode with interrupts disabled
+;; Can be called in any host Scheme thread and in interrupt handler,
+;; like `log-level?*`
+(define (log-message* logger level topic message data prefix? in-interrupt?)
+  (define msg #f)
+  (when ((logger-max-wanted-level logger) . level>=? . level)
+    (let loop ([logger logger])
+      (for ([r (in-list (logger-receivers logger))])
+        (when ((filters-level-for-topic (log-receiver-filters r) topic) . level>=? . level)
+          (unless msg
+            (set! msg (vector-immutable
+                       level
+                       (string->immutable-string
+                        (if (and prefix? topic)
+                            (string-append (symbol->string topic)
+                                           ": "
+                                           message)
+                            message))
+                       data
+                       topic)))
+          (log-receiver-send! r msg in-interrupt?)))
+      (let ([parent (logger-parent logger)])
+        (when (and parent
+                   ((filters-level-for-topic (logger-propagate-filters logger) topic) . level>=? . level))
+          (loop parent))))))

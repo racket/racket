@@ -3,6 +3,9 @@
 
 (Section 'syntax)
 
+(require syntax/srcloc
+         syntax/strip-context)
+
 ;; ----------------------------------------
 
 (test 0 'with-handlers (with-handlers () 0))
@@ -2079,6 +2082,108 @@
 
 (err/rt-test (eval '(module m 'provide-transformer-set!-and-broken-module-begin (set! x 1)))
              exn:fail:syntax?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check disappeared-uses for cond
+
+(define (jumble->list v)
+  (cond
+    [(list? v) (append-map jumble->list v)]
+    [(pair? v) (append (jumble->list (car v)) (jumble->list (cdr v)))]
+    [else (list v)]))
+
+(define (collect-property-jumble stx key)
+  (let loop ([stx stx])
+    (let ([outer-val (syntax-property stx key)]
+          [inner-vals (syntax-case stx ()
+                        [(a . b)
+                         (append (loop #'a) (loop #'b))]
+                        [#(a ...)
+                         (append-map loop (syntax->list #'(a ...)))]
+                        [#&a
+                         (loop #'a)]
+                        [_
+                         (prefab-struct-key (syntax-e stx))
+                         (append-map loop (vector->list (struct->vector (syntax-e stx))))]
+                        [_
+                         (hash? (syntax-e stx))
+                         (append-map loop (hash-values (syntax-e stx)))]
+                        [_ '()])])
+      (if outer-val
+          (append (jumble->list outer-val) inner-vals)
+          inner-vals))))
+
+(define (srclocs-equal? a b)
+  (equal? (build-source-location a)
+          (build-source-location b)))
+
+(define (all-srclocs-equal? as bs)
+  (and (= (length as) (length bs))
+       (andmap srclocs-equal? as bs)))
+
+(with-syntax ([=>1 #'=>] [=>2 #'=>] [else1 #'else])
+  (test
+   #t
+   all-srclocs-equal?
+   (collect-property-jumble
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand (strip-context #'(cond [#t =>1 values] [#f =>2 not] [else1 #f]))))
+    'disappeared-use)
+   (list #'=>1 #'=>2 #'else1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check origin for internal definitions includes define-syntax itself
+
+(define (all-srclocs-included? as bs)
+  (and (for/and ([a (in-list as)])
+         (member a bs srclocs-equal?))
+       #t))
+
+(with-syntax ([define-syntax1 #'define-syntax])
+  (define expanded-stx
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand (strip-context #'(let ()
+                                 (define-syntax1 foo (syntax-rules ()))
+                                 (void))))))
+  (define expanded-body-stx
+    (syntax-case expanded-stx (let-values)
+      [(let-values _ form) #'form]))
+  (test
+   #t
+   all-srclocs-included?
+   (list #'define-syntax1)
+   (syntax-property expanded-body-stx 'origin)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module tries-to-use-foo-before-defined racket/base
+  (provide result)
+  (define-syntax-rule (go result)
+    ;; `foo` will be macro-introduced
+    (begin
+      (define result
+        (with-handlers ([exn:fail:contract:variable? values])
+          (foo "bar")))
+      (define foo 5)))
+  (go result))
+
+(let ([v (dynamic-require ''tries-to-use-foo-before-defined 'result)])
+  (test #t exn? v)
+  (test #t symbol? (exn:fail:contract:variable-id v))
+  (test #t regexp-match? #rx"^foo:" (exn-message v))
+  (test 5 eval (exn:fail:contract:variable-id v) (module->namespace ''tries-to-use-foo-before-defined)))
+
+;; A top-level `cons` is renamed internally to something like `1/cons`
+;; to avoid shadowing a primitive, but the variable name is still
+;; `cons` and an exception should contain 'cons
+(let ([e (with-handlers ([exn:fail:contract:variable? values])
+           (define ns (make-base-empty-namespace))
+           (namespace-require `(all-except racket/base cons) ns)
+           (eval 'cons ns))])
+  (test #t exn? e)
+  (test #t exn:fail:contract:variable? e)
+  (test 'cons exn:fail:contract:variable-id e)
+  (test #t regexp-match? #rx"^cons: " (exn-message e)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

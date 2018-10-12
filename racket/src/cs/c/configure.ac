@@ -184,9 +184,11 @@ case "$host_cpu" in
 esac
 
 SCHEME_SRC=../ChezScheme
+MAKE_BUILD_SCHEME=y
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
+  MAKE_BUILD_SCHEME=n
 fi
 
 if test "${enable_racket}" != "" ; then
@@ -357,6 +359,7 @@ AC_SUBST(NOT_OSX)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(SCHEME_SRC)
+AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)

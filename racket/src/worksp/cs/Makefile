@@ -3,7 +3,7 @@ INCS = /I.. /I..\..\rktio /I..\librktio /I$(SCHEME_DIR)\$(MACHINE)\boot\$(MACHIN
 
 RKTIO_LIB = ..\..\build\librktio.lib
 BASE_WIN32_LIBS = WS2_32.lib Shell32.lib User32.lib
-WIN32_LIBS = $(BASE_WIN32_LIBS) RpCrt4.lib Ole32.lib
+WIN32_LIBS = $(BASE_WIN32_LIBS) RpCrt4.lib Ole32.lib Advapi32.lib
 
 LIBS = $(RKTIO_LIB) \
        $(SCHEME_DIR)\$(MACHINE)\boot\$(MACHINE)\$(SCHEME_LIB) \

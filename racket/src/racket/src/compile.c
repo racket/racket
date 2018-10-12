@@ -82,6 +82,8 @@ static Scheme_Object *generate_defn_name(Scheme_Object *base_sym,
                                          Scheme_Hash_Tree *also_used_names,
                                          int search_start);
 
+static Scheme_Object *extract_source_name(Scheme_Object *e, int no_default);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -1939,10 +1941,12 @@ static Scheme_Object *define_parse(Scheme_Object *form,
                                    Scheme_Object **_vars, Scheme_Object **_val,
                                    Scheme_Comp_Env **_env,
                                    DupCheckRecord *r,
-                                   int *_extra_vars_pos)
+                                   int *_extra_vars_pos,
+                                   Scheme_Hash_Tree **_source_names)
 {
-  Scheme_Object *vars, *rest, *name, *v, *extra_vars = scheme_null;
+  Scheme_Object *vars, *rest, *name, *src_name, *v, *extra_vars = scheme_null;
   Scheme_Comp_Env *env;
+  Scheme_Hash_Tree *source_names = *_source_names;
   int len;
 
   len = check_form(form, form);
@@ -1959,6 +1963,10 @@ static Scheme_Object *define_parse(Scheme_Object *form,
   while (SCHEME_STX_PAIRP(vars)) {
     name = SCHEME_STX_CAR(vars);
     scheme_check_identifier(NULL, name, NULL, form);
+
+    src_name = extract_source_name(name, 0);
+    if (!SAME_OBJ(src_name, SCHEME_STX_SYM(name)))
+      source_names = scheme_hash_tree_set(source_names, SCHEME_STX_SYM(name), src_name);
 
     vars = SCHEME_STX_CDR(vars);
 
@@ -1980,6 +1988,8 @@ static Scheme_Object *define_parse(Scheme_Object *form,
 
   if (!SCHEME_STX_NULLP(vars))
     scheme_wrong_syntax(NULL, vars, form, "bad variable list");
+
+  *_source_names = source_names;
 
   return extra_vars;
 }
@@ -2005,13 +2015,17 @@ static void check_import_export_clause(Scheme_Object *e, Scheme_Object *orig_for
   scheme_wrong_syntax(NULL, e, orig_form, "bad import/export clause");
 }
 
-Scheme_Object *extract_source_name(Scheme_Object *e)
+static Scheme_Object *extract_source_name(Scheme_Object *e, int no_default)
 {
   Scheme_Object *a;
 
   a = scheme_stx_property(e, source_name_symbol, NULL);
-  if (!a || !SCHEME_SYMBOLP(a))
-    a = SCHEME_STX_SYM(e);
+  if (!a || !SCHEME_SYMBOLP(a)) {
+    if (no_default)
+      a = NULL;
+    else
+      a = SCHEME_STX_SYM(e);
+  }
 
   return a;
 }
@@ -2097,24 +2111,35 @@ Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Schem
   defn_syms = scheme_make_vector(len, NULL);
   source_names = scheme_make_hash_tree(0);
   also_used_names = scheme_make_hash_tree(0);
-
+  
   for (j = 0; j < len; j++, exports = SCHEME_STX_CDR(exports)) {
     e = SCHEME_STX_CAR(exports);
     check_import_export_clause(e, orig_form);
     if (SCHEME_STX_SYMBOLP(e)) {
-      SCHEME_VEC_ELS(defn_syms)[j] = SCHEME_STX_SYM(e);
+      a = SCHEME_STX_SYM(e);
     } else {
-      SCHEME_VEC_ELS(defn_syms)[j] = SCHEME_STX_SYM(SCHEME_STX_CADR(e));
+      a = SCHEME_STX_SYM(SCHEME_STX_CADR(e));
       e = SCHEME_STX_CAR(e);
     }
-    a = extract_source_name(e);
+    /* The export name is used as the variable name. Note that the
+       export name at the `linklet` level will correspond to the
+       definition name at the `module` level. */
+    SCHEME_VEC_ELS(defn_syms)[j] = a;
     if (scheme_hash_tree_get(source_names, a) || scheme_hash_tree_get(also_used_names, a)) {
       scheme_wrong_syntax("linklet", a, NULL, "duplicate export");
     }
-    if (!SAME_OBJ(a, SCHEME_VEC_ELS(defn_syms)[j]))
-      source_names = scheme_hash_tree_set(source_names, SCHEME_VEC_ELS(defn_syms)[j], a);
-    else
-      also_used_names = scheme_hash_tree_set(also_used_names, a, scheme_true);
+    /* Alternative source name supplied? */
+    a = extract_source_name(e, 1);
+    if (a) {
+      if (!SAME_OBJ(a, SCHEME_VEC_ELS(defn_syms)[j]))
+        source_names = scheme_hash_tree_set(source_names, SCHEME_VEC_ELS(defn_syms)[j], a);
+      else
+        also_used_names = scheme_hash_tree_set(also_used_names, SCHEME_VEC_ELS(defn_syms)[j], scheme_true);
+    } else {
+      /* Otherwise, use the export name (not the defined name) as the public name;
+         it matches the variable name */
+      also_used_names = scheme_hash_tree_set(also_used_names, SCHEME_VEC_ELS(defn_syms)[j], scheme_true);
+    }
     tl = scheme_make_ir_toplevel(-1, j, 0);
     env = scheme_extend_comp_env(env, e, (Scheme_Object *)tl, 1, 1);
     if (!env)
@@ -2125,12 +2150,12 @@ Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Schem
      not exported */
   extra_vars_pos = len;
   all_extra_vars = scheme_null;
-  
+
   for (i = 0, a = form; i < body_len; i++, a = SCHEME_STX_CDR(a)) {
     e = SCHEME_STX_CAR(a);
     if (is_define_values(e)) {
       Scheme_Object *vars, *vals;
-      extra_vars = define_parse(e, &vars, &vals, &env, &r, &extra_vars_pos);
+      extra_vars = define_parse(e, &vars, &vals, &env, &r, &extra_vars_pos, &source_names);
       if (extra_vars) {
         all_extra_vars = scheme_append(extra_vars, all_extra_vars);
       }
@@ -2154,7 +2179,7 @@ Scheme_Linklet *scheme_compile_linklet(Scheme_Object *form, int set_undef, Schem
         a = generate_defn_name(a, source_names, also_used_names, extra_vars_pos);
       }
       SCHEME_VEC_ELS(defn_syms)[i] = a;
-      a = extract_source_name(e);
+      a = extract_source_name(e, 0);
       if (!SAME_OBJ(a, SCHEME_VEC_ELS(defn_syms)[i]))
         source_names = scheme_hash_tree_set(source_names, SCHEME_VEC_ELS(defn_syms)[i], a);
       else

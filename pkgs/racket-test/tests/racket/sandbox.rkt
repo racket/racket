@@ -9,11 +9,19 @@
   (require rackunit)
 
   (define n 1)
-  (check-not-exn
-   (λ ()
-     (with-deep-time-limit
-      n
-      (sleep (sub1 n)))))
+  (check-equal?
+   (with-deep-time-limit
+     n
+     (begin (sleep (sub1 n)) 'done))
+   'done)
+  (check-equal?
+   (call-with-values
+    (lambda ()
+      (with-deep-time-limit
+        n
+        (kill-thread (current-thread))))
+    list)
+   null)
   (check-exn
    exn:fail:resource:time?
    (λ ()

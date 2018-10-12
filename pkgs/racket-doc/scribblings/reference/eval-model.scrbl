@@ -749,12 +749,42 @@ syntactic extensions in its presence.
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "cross-phase persistent-modules"]{Cross-Phase Persistent Modules}
 
-Module declarations that fit a highly constrained form---including a
-@racket[(#%declare #:cross-phase-persistent)] form in the module
-body---create @deftech{cross-phase persistent} modules. A
-@tech{cross-phase persistent} module's instantiations across all
-phases and @tech{module registries} share the variables produced by
-the first instantiation of the module.
+Module declarations that fit a highly constrained
+form---including a
+@racket[(#%declare #:cross-phase-persistent)] form in the
+module body---create @deftech{cross-phase persistent}
+modules. A @tech{cross-phase persistent} module's
+instantiations across all phases share the variables
+produced by the first instantiation of the module.
+Additionally, @tech{cross-phase persistent} module
+instantiations persist across @tech{module registries} when
+they share a common module declaration.
+
+@examples[
+ (module cross '#%kernel
+   (#%declare #:cross-phase-persistent)
+   (#%provide x)
+   (define-values (x) (gensym)))
+ (module noncross '#%kernel
+   (#%provide x)
+   (define-values (x) (gensym)))
+ (define ns (current-namespace))
+ (define (same-instence? mod)
+   (namespace-require mod)
+   (define a
+     (parameterize ([current-namespace (make-base-namespace)])
+       (namespace-attach-module-declaration ns mod)
+       (namespace-require mod)
+       (namespace-variable-value 'x)))
+   (define b
+     (parameterize ([current-namespace (make-base-namespace)])
+       (namespace-attach-module-declaration ns mod)
+       (namespace-require mod)
+       (namespace-variable-value 'x)))
+   (eq? a b))
+ (same-instence? ''noncross)
+ (same-instence? ''cross)
+ ]
 
 The intent of a @tech{cross-phase persistent} module is to support values that are
 recognizable after @tech{phase} crossings. For example, when a macro
