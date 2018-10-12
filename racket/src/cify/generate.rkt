@@ -283,9 +283,10 @@
                                     (out-close!)))
                  e env)
        (generate (multiple-return "") `(begin . ,r) env)
+       (runstack-sync! runstack)
        (out-open "if (~a_count != 1)" vals-id)
        (return ret runstack #:can-omit? #t
-               (format "scheme_values(~a_count, (Scheme_Object **)~a)" vals-id (runstack-ref runstack vals-id)))
+               (format "scheme_values(~a_count, (Scheme_Object **)~a)" vals-id (runstack-ref runstack vals-id #:values-ok? #t)))
        (cond
          [(return-can-omit-single? ret)
           (out-close!)]
