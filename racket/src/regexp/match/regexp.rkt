@@ -35,7 +35,8 @@
         #:property prop:object-name (struct-field-index source)
         #:property prop:equal+hash (list
                                     (lambda (a b eql?)
-                                      (equal? (rx:regexp-source a) (rx:regexp-source b)))
+                                      (and (eq? (rx:regexp-px? a) (rx:regexp-px? b))
+                                           (equal? (rx:regexp-source a) (rx:regexp-source b))))
                                     (lambda (a hc)
                                       (hc (rx:regexp-source a)))
                                     (lambda (a hc)
