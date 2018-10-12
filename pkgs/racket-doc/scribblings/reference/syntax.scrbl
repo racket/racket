@@ -860,10 +860,10 @@ corresponds to the default @tech{module name resolver}.
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
- @defsubform*[((submod root-module submod-path-element ...)
+ @defsubform*[((submod root-module-path submod-path-element ...)
                (submod "." submod-path-element ...)
                (submod ".." submod-path-element ...))]{
-  Identifies a @tech{submodule} within the module specified by @racket[root-module]
+  Identifies a @tech{submodule} within the module specified by @racket[root-module-path]
   or relative to the current module in the case of @racket[(submod "." ....)],
   where  @racket[(submod ".." submod-path-element ...)] is equivalent to
   @racket[(submod "." ".." submod-path-element ...)].
