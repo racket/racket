@@ -255,8 +255,11 @@
 (define-record props-chaperone chaperone ())
 
 ;; Applicable variants:
-(define-record props-procedure-impersonator props-impersonator ())
-(define-record props-procedure-chaperone props-chaperone ())
+(define-record props-procedure-impersonator props-impersonator (arity-mask))
+(define-record props-procedure-chaperone props-chaperone (arity-mask))
+;; Incomplete-arity variants:
+(define-record props-procedure~-impersonator props-procedure-impersonator ())
+(define-record props-procedure~-chaperone props-procedure-chaperone ())
 
 (define (add-impersonator-properties who props base-props)
   (let loop ([props props] [base-props base-props])
@@ -272,15 +275,23 @@
       (raise-argument-error who "impersonator-property?" (car props))])))
 
 (define (rewrap-props-impersonator orig new)
-  ((cond
-    [(props-procedure-impersonator? orig) make-props-procedure-impersonator]
-    [(props-procedure-chaperone? orig) make-props-procedure-chaperone]
-    [(props-chaperone? orig) make-props-chaperone]
-    [(props-impersonator? orig) make-props-impersonator]
-    [else (raise-arguments-error 'rewrap-props-impersonator "internal error: unknown impersonator variant")])
-   (strip-impersonator new)
-   new
-   (impersonator-props orig)))
+  (let ([val (strip-impersonator new)]
+        [props (impersonator-props orig)])
+    (cond
+     [(props-procedure~-impersonator? orig)
+      (make-props-procedure~-impersonator val new props (props-procedure-impersonator-arity-mask orig))]
+     [(props-procedure-impersonator? orig)
+      (make-props-procedure-impersonator val new props (props-procedure-impersonator-arity-mask orig))]
+     [(props-procedure~-chaperone? orig)
+      (make-props-procedure~-chaperone val new props (props-procedure-chaperone-arity-mask orig))]
+     [(props-procedure-chaperone? orig)
+      (make-props-procedure-chaperone val new props (props-procedure-chaperone-arity-mask orig))]
+     [(props-chaperone? orig)
+      (make-props-chaperone  val new props)]
+     [(props-impersonator? orig)
+      (make-props-impersonator val new props)]
+     [else
+      (raise-arguments-error 'rewrap-props-impersonator "internal error: unknown impersonator variant")])))
 
 ;; ----------------------------------------
 
@@ -292,16 +303,21 @@
       (struct-impersonator-procs i)
       (struct-chaperone-procs i)))
 
-(define-record procedure-struct-impersonator struct-impersonator ())
-(define-record procedure-struct-chaperone struct-chaperone ())
+(define-record procedure-struct-impersonator struct-impersonator (arity-mask))
+(define-record procedure-struct-chaperone struct-chaperone (arity-mask))
+(define-record procedure~-struct-impersonator procedure-struct-impersonator ())
+(define-record procedure~-struct-chaperone procedure-struct-chaperone ())
 
 (define (impersonate-struct v . args)
-  (do-impersonate-struct 'impersonate-struct #f v args make-struct-impersonator make-procedure-struct-impersonator))
+  (do-impersonate-struct 'impersonate-struct #f v args
+                         make-struct-impersonator make-procedure~-struct-impersonator make-procedure-struct-impersonator))
 
 (define (chaperone-struct v . args)
-  (do-impersonate-struct 'chaperone-struct #t v args make-struct-chaperone make-procedure-struct-chaperone))
+  (do-impersonate-struct 'chaperone-struct #t v args
+                         make-struct-chaperone make-procedure-struct-chaperone make-procedure~-struct-chaperone))
 
-(define (do-impersonate-struct who as-chaperone? v args make-struct-impersonator make-procedure-struct-impersonator)
+(define (do-impersonate-struct who as-chaperone? v args
+                               make-struct-impersonator make-procedure-struct-impersonator make-procedure~-struct-impersonator)
   (cond
    [(null? args) v]
    [else
@@ -386,8 +402,11 @@
             (if (and (zero? (hash-count props))
                      (eq? iprops orig-iprops))
                 v
-                (let ([mk (if (procedure? v) make-procedure-struct-impersonator make-struct-impersonator)])
-                  (mk val v iprops props)))]
+                (if (procedure? val)
+                    (if (procedure-incomplete-arity? val)
+                        (make-procedure~-struct-impersonator val v iprops props (procedure-arity-mask v))
+                        (make-procedure-struct-impersonator val v iprops props (procedure-arity-mask v)))
+                    (make-struct-impersonator val v iprops props)))]
            [(impersonator-property? (car args))
             (loop #f
                   '()
@@ -472,6 +491,7 @@
 
 (define-record struct-undefined-chaperone chaperone ())
 (define-record procedure-struct-undefined-chaperone chaperone ())
+(define-record procedure~-struct-undefined-chaperone procedure-struct-undefined-chaperone ())
 
 (define-values (prop:chaperone-unsafe-undefined chaperone-unsafe-undefined? chaperone-unsafe-undefined-ref)
   (make-struct-type-property 'chaperone-unsafe-undefined
@@ -488,7 +508,9 @@
     v]
    [else
     ((if (procedure? v)
-         make-procedure-struct-undefined-chaperone
+         (if (incomplete-arity? v)
+             make-procedure~-struct-undefined-chaperone
+             make-procedure-struct-undefined-chaperone)
          make-struct-undefined-chaperone)
      (strip-impersonator v)
      v
@@ -564,10 +586,10 @@
                         impersonate-apply)
   (struct-property-set! prop:procedure-arity
                         (record-type-descriptor props-procedure-impersonator)
-                        0)
+                        3)
   (struct-property-set! prop:procedure-arity
                         (record-type-descriptor props-procedure-chaperone)
-                        0)
+                        3)
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor impersonator-property-accessor-procedure)

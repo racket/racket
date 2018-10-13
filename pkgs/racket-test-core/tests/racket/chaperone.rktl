@@ -2448,6 +2448,7 @@
                                                            [(v)
                                                             (set! pre-cd? #t)
                                                             (values (lambda (x)
+                                                                      (test #t void? x)
                                                                       (set! post-cd? #t)
                                                                       (void))
                                                                     v)]))])
