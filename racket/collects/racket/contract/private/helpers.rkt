@@ -23,16 +23,22 @@
 
 ;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
 (define (lookup-struct-info stx provide-stx)
-  (let ([id (syntax-case stx ()
-              [(a b) (syntax a)]
-              [_ stx])])
-    (let ([v (syntax-local-value id (λ () #f))])
-      (if (struct-info? v)
-          (extract-struct-info v)
-          (raise-syntax-error 'provide/contract
-                              "expected a struct name" 
-                              provide-stx
-                              id)))))
+  (define id (syntax-case stx ()
+               [(a b) (syntax a)]
+               [_ stx]))
+  (define v (syntax-local-value id (λ () #f)))
+  (define error-name
+    (syntax-case provide-stx ()
+      [(x . y)
+       (identifier? #'x)
+       (syntax-e #'x)]
+      [_ 'provide/contract]))
+  (if (struct-info? v)
+      (extract-struct-info v)
+      (raise-syntax-error error-name
+                          "expected a struct name"
+                          provide-stx
+                          id)))
 
 
 (define (add-name-prop name stx)
