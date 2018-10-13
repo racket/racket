@@ -140,6 +140,11 @@
           (cond
            [(procedure? v) (object-name v)]
            [else (struct-object-name f)]))]
+       [(eq? v 'unsafe)
+        (extract-procedure-name
+         (if (chaperone? f)
+             (unsafe-procedure-chaperone-replace-proc f)
+             (unsafe-procedure-impersonator-replace-proc f)))]
        [else (struct-object-name f)]))]
    [else #f]))
 
@@ -253,7 +258,7 @@
                     (if (not (bitwise-bit-set? m 0))
                         (mask->arity (bitwise-arithmetic-shift-right m 1))
                         (mask->arity m)))
-                  (cdr args))]
+                  (if (null? args) '() (cdr args)))]
      [else
       (chez:apply raise-arity-error f (procedure-arity f) args)])))
 
@@ -320,29 +325,41 @@
     [(proc mask) (procedure-reduce-arity-mask proc mask #f)]))
 
 (define (do-procedure-reduce-arity-mask proc mask name)
-  (case mask
-    [(1) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                           (lambda () (proc))
-                                           (lambda () (|#%app| proc)))
-                                       mask
-                                       name)]
-    [(2) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                           (lambda (x) (proc x))
-                                           (lambda (x) (|#%app| proc x)))
-                                       mask
-                                       name)]
-    [(4) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                           (lambda (x y) (proc x y))
-                                           (lambda (x y) (|#%app| proc x y)))
-                                       mask
-                                       name)]
-    [(8) (make-arity-wrapper-procedure (if (#%procedure? proc)
-                                           (lambda (x y z) (proc x y z))
-                                           (lambda (x y z) (|#%app| proc x y z)))
-                                       mask
-                                       name)]
-    [else
-     (make-reduced-arity-procedure proc mask name)]))
+  (cond
+   [(and (arity-wrapper-procedure? proc)
+         (#%vector? (arity-wrapper-procedure-data proc)))
+    (let ([v (arity-wrapper-procedure-data proc)])
+      (do-procedure-reduce-arity-mask (#%vector-ref v 1)
+                                      mask
+                                      (or name (#%vector-ref v 0))))]
+   [(reduced-arity-procedure? proc)
+    (do-procedure-reduce-arity-mask (reduced-arity-procedure-proc proc)
+                                    mask
+                                    (or name (reduced-arity-procedure-name proc)))]
+   [else
+    (case mask
+      [(1) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda () (proc))
+                                             (lambda () (|#%app| proc)))
+                                         mask
+                                         (vector name proc))]
+      [(2) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x) (proc x))
+                                             (lambda (x) (|#%app| proc x)))
+                                         mask
+                                         (vector name proc))]
+      [(4) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x y) (proc x y))
+                                             (lambda (x y) (|#%app| proc x y)))
+                                         mask
+                                         (vector name proc))]
+      [(8) (make-arity-wrapper-procedure (if (#%procedure? proc)
+                                             (lambda (x y z) (proc x y z))
+                                             (lambda (x y z) (|#%app| proc x y z)))
+                                         mask
+                                         (vector name proc))]
+      [else
+       (make-reduced-arity-procedure proc mask name)])]))
 
 ;; ----------------------------------------
 
@@ -389,9 +406,11 @@
 
 (define (extract-jit-procedure-name p)
   (let ([name (arity-wrapper-procedure-data p)])
-    (if (#%box? name)
-        (#%unbox name)
-        name)))
+    (cond
+     [(#%box? name) (#%unbox name)]
+     [(#%vector? name) (or (#%vector-ref name 0)
+                           (object-name (#%vector-ref name 1)))]
+     [else name])))
 
 ;; ----------------------------------------
 
@@ -818,9 +837,6 @@
   (struct-property-set! prop:procedure-arity
                         (record-type-descriptor reduced-arity-procedure)
                         1)
-  (struct-property-set! prop:object-name
-                        (record-type-descriptor reduced-arity-procedure)
-                        2)
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor method-procedure)
