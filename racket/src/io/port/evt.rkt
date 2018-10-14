@@ -25,7 +25,7 @@
 
 (define (port->evt p)
   ;; A structure can be both an input port and an output
-  ;; port, and the input nature take precedence
+  ;; port, and the input nature takes precedence
   (cond
     [(input-port-evt? p)
      (wrap-evt ((input-port-evt-ref p) p)

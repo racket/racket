@@ -977,6 +977,12 @@
 (define-values (prop:authentic authentic? authentic-ref)
   (make-struct-type-property 'authentic (lambda (val info) #t)))
 
+;; A performance hack: cancels `prop:authentic` in
+;; `impersonator-struct`, but leaves Schemify with the impression that
+;; the structure type is authentic
+(define-values (prop:authentic-override authentic-override? authentic-override-ref)
+  (make-struct-type-property 'authentic-override (lambda (val info) #t)))
+
 (define (struct-type-immediate-transparent? rtd)
   (let ([insp (inspector-ref rtd)])
     (and (not (eq? insp none))

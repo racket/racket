@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../host/thread.rkt"
+         "../host/pthread.rkt"
          "evt.rkt"
          "place-message.rkt")
 
@@ -27,6 +28,7 @@
                    [column #:mutable] ; count UTF-8 characters in line
                    [position #:mutable]) ; count UTF-8 characters
   #:authentic
+  #:property prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:object-name (struct-field-index name)
   #:property prop:secondary-evt port->evt
   #:property prop:place-message (lambda (p)

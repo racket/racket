@@ -171,6 +171,8 @@
           impersonator-property-accessor-procedure?
           impersonator-ephemeron
           prop:impersonator-of
+          (rename [strip-impersonator unsafe-strip-impersonator] ; not exported to Racket
+                  [prop:authentic-override prop:unsafe-authentic-override])  ; not exported to Racket
 
           impersonate-procedure
           chaperone-procedure

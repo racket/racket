@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "../host/pthread.rkt"
          "port.rkt"
          "evt.rkt")
 
@@ -35,7 +36,11 @@
 ;; since it can invoke an artitrary function
 (define (->core-input-port v)
   (cond
-    [(core-input-port? v) v]
+    [(core-input-port? v) (if (impersonator? v)
+                              ;; If there's an impersonator, it's only
+                              ;; an evt impersonator
+                              (unsafe-strip-impersonator v)
+                              v)]
     [(input-port? v)
      (let ([p (input-port-ref v)])
        (cond
@@ -128,27 +133,30 @@
    [read-handler #:mutable])
   #:authentic
   #:property prop:input-port-evt (lambda (i)
-                                   (cond
-                                     [(closed-state-closed? (core-port-closed i))
-                                      always-evt]
-                                     [else
-                                      (define byte-ready (core-input-port-byte-ready i))
-                                      (cond
-                                        [(input-port? byte-ready)
-                                         byte-ready]
-                                        [else
-                                         (poller-evt
-                                          (poller
-                                           (lambda (self poll-ctx)
-                                             (define v (byte-ready (lambda ()
-                                                                     (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
-                                             (cond
-                                               [(evt? v)
-                                                (values #f v)]
-                                               [(eq? v #t)
-                                                (values (list #t) #f)]
-                                               [else
-                                                (values #f self)]))))])])))
+                                   ;; not atomic mode
+                                   (let ([i (->core-input-port i)])
+                                     (cond
+                                       [(closed-state-closed? (core-port-closed i))
+                                        always-evt]
+                                       [else
+                                        (define byte-ready (core-input-port-byte-ready i))
+                                        (cond
+                                          [(input-port? byte-ready)
+                                           byte-ready]
+                                          [else
+                                           (poller-evt
+                                            (poller
+                                             (lambda (self poll-ctx)
+                                               ;; atomic mode
+                                               (define v (byte-ready (lambda ()
+                                                                       (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
+                                               (cond
+                                                 [(evt? v)
+                                                  (values #f v)]
+                                                 [(eq? v #t)
+                                                  (values (list #t) #f)]
+                                                 [else
+                                                  (values #f self)]))))])]))))
 
 (define (make-core-input-port #:name name
                               #:data [data #f]
