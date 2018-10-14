@@ -107,12 +107,18 @@
                      (let ([rec-equal? (record-equal-procedure a b)])
                        (and rec-equal?
                             (or (check-union-find ctx a b)
-                                (if eql?
-                                    (rec-equal? orig-a orig-b eql?)
-                                    (let ([ctx (deeper-context ctx)])
-                                      (rec-equal? orig-a orig-b
-                                                  (lambda (a b)
-                                                    (equal? a b ctx))))))))])))]
+                                (cond
+                                 [eql?
+                                  (rec-equal? orig-a orig-b eql?)]
+                                 [(and (eq? mode 'chaperone-of?)
+                                       (with-global-lock* (hashtable-contains? rtd-mutables (record-rtd a))))
+                                  ;; Mutable records must be `eq?` for `chaperone-of?`
+                                  #f]
+                                 [else
+                                  (let ([ctx (deeper-context ctx)])
+                                    (rec-equal? orig-a orig-b
+                                                (lambda (a b)
+                                                  (equal? a b ctx))))]))))])))]
            [(and (eq? mode 'chaperone-of?)
                  ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?`
                  (or (mutable-string? a)

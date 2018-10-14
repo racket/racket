@@ -72,12 +72,12 @@
 
 (define (slow-extract-procedure f n-args)
   (pariah ; => don't inline enclosing procedure
-   (do-extract-procedure f f n-args #f)))
+   (do-extract-procedure f f n-args #f not-a-procedure)))
 
 ;; Returns a host-Scheme procedure, but first checks arity so that
 ;; checking and reporting use the right top-level function, and
 ;; the returned procedure may just report a not-a-procedure error
-(define (do-extract-procedure f orig-f n-args success-k)
+(define (do-extract-procedure f orig-f n-args success-k fail-k)
   (cond
    [(#%procedure? f)
     (if (chez:procedure-arity-includes? f n-args)
@@ -89,14 +89,14 @@
     (let* ([rtd (record-rtd f)]
            [v (struct-property-ref prop:procedure rtd none)])
       (cond
-       [(eq? v none) (not-a-procedure orig-f)]
+       [(eq? v none) (fail-k orig-f)]
        [(fixnum? v)
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
            [(and a (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
             (wrong-arity-wrapper orig-f)]
            [else
-            (do-extract-procedure (unsafe-struct-ref f v) orig-f n-args success-k)]))]
+            (do-extract-procedure (unsafe-struct-ref f v) orig-f n-args success-k wrong-arity-wrapper)]))]
        [(eq? v 'unsafe)
         (do-extract-procedure
          (if (chaperone? f)
@@ -104,7 +104,8 @@
              (unsafe-procedure-impersonator-replace-proc f))
          orig-f
          n-args
-         success-k)]
+         success-k
+         wrong-arity-wrapper)]
        [else
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
@@ -124,8 +125,9 @@
                   [(a) (v f a)]
                   [(a b) (v f a b)]
                   [(a b c) (v f a b c)]
-                  [args (chez:apply v f args)])])))]))]))]
-   [else (not-a-procedure orig-f)]))
+                  [args (chez:apply v f args)])]))
+             wrong-arity-wrapper)]))]))]
+   [else (fail-k orig-f)]))
 
 (define (extract-procedure-name f)
   (cond

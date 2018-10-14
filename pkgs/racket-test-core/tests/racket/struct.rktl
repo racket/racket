@@ -1105,7 +1105,7 @@
   (define thing.id! (make-struct-field-mutator thing-set! 0))
 
   (test #t struct-mutator-procedure? thing.id!)
-  (err/rt-test (thing.id!  'new-val))
+  (err/rt-test (thing.id! (make-thing 1) 'new-val))
   
   (let ([f #f])
     ;; defeat inlining to ensure that thunk is JITted:
