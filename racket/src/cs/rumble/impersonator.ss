@@ -309,15 +309,12 @@
 (define-record procedure~-struct-chaperone procedure-struct-chaperone ())
 
 (define (impersonate-struct v . args)
-  (do-impersonate-struct 'impersonate-struct #f v args
-                         make-struct-impersonator make-procedure~-struct-impersonator make-procedure-struct-impersonator))
+  (do-impersonate-struct 'impersonate-struct #f v args))
 
 (define (chaperone-struct v . args)
-  (do-impersonate-struct 'chaperone-struct #t v args
-                         make-struct-chaperone make-procedure-struct-chaperone make-procedure~-struct-chaperone))
+  (do-impersonate-struct 'chaperone-struct #t v args))
 
-(define (do-impersonate-struct who as-chaperone? v args
-                               make-struct-impersonator make-procedure-struct-impersonator make-procedure~-struct-impersonator)
+(define (do-impersonate-struct who as-chaperone? v args)
   (cond
    [(null? args) v]
    [else
@@ -339,25 +336,26 @@
                  [iprops orig-iprops])
         (let ([get-proc
                (lambda (what args arity proc->key key-applies?)
-                 (let* ([key-proc (strip-impersonator (car args))]
+                 (let* ([orig-proc (car args)]
+                        [key-proc (strip-impersonator orig-proc)]
                         [key (proc->key key-proc)])
                    (when (hash-ref saw-props key #f)
                      (raise-arguments-error who
                                             "given operation accesses the same value as a previous operation argument"
                                             "operation kind" what
-                                            "operation procedure" (car args)))
+                                            "operation procedure" orig-proc))
                    (when key-applies?
                      (unless (key-applies? key val)
                        (raise-arguments-error who
                                               "operation does not apply to given value"
                                               "operation kind" what
-                                              "operation procedure" (car args)
+                                              "operation procedure" orig-proc
                                               "value" v)))
                    (when (null? (cdr args))
                      (raise-arguments-error who
                                             "missing redirection procedure after operation"
                                             "operation kind" what
-                                            "operation procedure" (car args)))
+                                            "operation procedure" orig-proc))
                    (let ([proc (cadr args)])
                      (when proc
                        (unless (procedure-arity-includes? proc arity)
@@ -367,13 +365,19 @@
                                                 "expected" (string-append
                                                             "(or/c #f (procedure-arity-includes/c " (number->string arity) "))")
                                                 "operation kind" what
-                                                "operation procedure" (car args))))
+                                                "operation procedure" orig-proc)))
+                     (when (and as-chaperone?
+                                (and (impersonator? orig-proc)
+                                     (not (chaperone? orig-proc))))
+                       (raise-arguments-error who
+                                              "impersonated operation cannot be used to create a chaperone"
+                                              "operation" orig-proc))
                      (loop #f
                            (cddr args)
                            (if proc
                                (hash-set props key
-                                         (if (impersonator? (car args))
-                                             (cons (car args) ; save original accessor, in case it's impersonated
+                                         (if (impersonator? orig-proc)
+                                             (cons orig-proc ; save original accessor, in case it's impersonated
                                                    proc)      ; the interposition proc
                                              proc))
                                props)
@@ -400,14 +404,40 @@
                                                     (if as-chaperone? "chaperone" "impersonate")
                                                     " instance of an authentic structure type")
                                      "given value" v))
-            (if (and (zero? (hash-count props))
-                     (eq? iprops orig-iprops))
-                v
+            (cond
+             [(zero? (hash-count props))
+              ;; No structure operations chaperoned, so either unchanged or
+              ;; a properties-only impersonator
+              (cond
+               [(eq? iprops orig-iprops)
+                v]
+               [else
+                ;; Same six cases as below, but for a propery-only impersonator
                 (if (procedure? val)
                     (if (procedure-incomplete-arity? val)
-                        (make-procedure~-struct-impersonator val v iprops props (procedure-arity-mask v))
-                        (make-procedure-struct-impersonator val v iprops props (procedure-arity-mask v)))
-                    (make-struct-impersonator val v iprops props)))]
+                        (if as-chaperone?
+                            (make-props-procedure~-chaperone val v iprops (procedure-arity-mask v))
+                            (make-props-procedure~-impersonator val v iprops (procedure-arity-mask v)))
+                        (if as-chaperone?
+                            (make-props-procedure-chaperone val v iprops (procedure-arity-mask v))
+                            (make-props-procedure-impersonator val v iprops (procedure-arity-mask v))))
+                    (if as-chaperone?
+                        (make-props-chaperone val v iprops)
+                        (make-props-impersonator val v iprops)))])]
+             [(procedure? val)
+              ;; Wrap as a procedure-struct impersonator
+              (if (procedure-incomplete-arity? val)
+                  (if as-chaperone?
+                      (make-procedure~-struct-chaperone val v iprops props (procedure-arity-mask v))
+                      (make-procedure~-struct-impersonator val v iprops props (procedure-arity-mask v)))
+                  (if as-chaperone?
+                      (make-procedure-struct-chaperone val v iprops props (procedure-arity-mask v))
+                      (make-procedure-struct-impersonator val v iprops props (procedure-arity-mask v))))]
+             [else
+              ;; Wrap as a plain old struct impersonator
+              (if as-chaperone?
+                  (make-struct-chaperone val v iprops props)
+                  (make-struct-impersonator val v iprops props))])]
            [(impersonator-property? (car args))
             (loop #f
                   '()

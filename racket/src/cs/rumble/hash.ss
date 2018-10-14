@@ -129,7 +129,12 @@
          (let ([ht (impersonator-val ht)])
            (or (mutable-hash? ht)
                (weak-equal-hash? ht))))
-    (impersonate-hash-clear! ht)]
+    (unless (impersonate-hash-clear ht #t)
+      ;; fall back to iterated remove
+      (let loop ([i (hash-iterate-first ht)])
+          (when i
+            (hash-remove! ht (hash-iterate-key ht i))
+            (loop (hash-iterate-next ht i)))))]
    [else (raise-argument-error 'hash-clear! "(and/c hash? (not/c immutable?))" ht)]))
 
 (define (hash-copy ht)
@@ -185,11 +190,13 @@
      [else empty-hash])]
    [(and (impersonator? ht)
          (intmap? (impersonator-val ht)))
-    (let loop ([ht ht])
-      (let ([i (hash-iterate-first ht)])
-        (if i
-            (loop (hash-remove ht (hash-iterate-key ht i)))
-            ht)))]
+    (or (impersonate-hash-clear ht #f)
+        ;; fall back to iterated remove
+        (let loop ([ht ht])
+          (let ([i (hash-iterate-first ht)])
+            (if i
+                (loop (hash-remove ht (hash-iterate-key ht i)))
+                ht))))]
    [else (raise-argument-error 'hash-clear! "(and/c hash? immutable?)" ht)]))
 
 (define (hash-eq? ht)
@@ -963,16 +970,20 @@
   (check who (procedure-arity-includes/c 2) key)
   (let* ([clear-given? (and (pair? args)
                             (or (not (car args))
-                                (and (procedure? (car args))
-                                     (procedure-arity-includes? (car args) 1))))]
-         [clear (if clear-given? (car args) void)]
+                                (procedure? (car args))))]
+         [clear (if clear-given?
+                    (let ([clear (car args)])
+                      (check who (procedure-arity-includes/c 1) :or-false clear)
+                      clear)
+                    void)]
          [args (if clear-given? (cdr args) args)]
          [equal-key-given? (and (pair? args)
                                 (or (not (car args))
-                                    (and (procedure? (car args))
-                                         (procedure-arity-includes? (car args) 2))))]
+                                    (procedure? (car args))))]
          [equal-key (if equal-key-given?
-                        (car args)
+                        (let ([equal-key (car args)])
+                          (check who (procedure-arity-includes/c 2) :or-false equal-key)
+                          equal-key)
                         (lambda (ht k) k))]
          [args (if equal-key-given? (cdr args) args)])
     (make-hash-chaperone (strip-impersonator ht)
@@ -1103,7 +1114,7 @@
         (raise-chaperone-error who "key" new-k k))
       new-k)))
 
-(define (impersonate-hash-clear! ht)
+(define (impersonate-hash-clear ht mutable?)
   (let loop ([ht ht])
     (cond
      [(or (hash-impersonator? ht)
@@ -1111,13 +1122,33 @@
       (let ([procs (if (hash-impersonator? ht)
                        (hash-impersonator-procs ht)
                        (hash-chaperone-procs ht))]
-            [ht (impersonator-next ht)])
-        ((hash-procs-clear procs) ht)
-        (loop ht))]
+            [next-ht (impersonator-next ht)])
+        (let ([clear (hash-procs-clear procs)])
+          (cond
+           [clear
+            (clear next-ht)
+            (if mutable?
+                (loop next-ht)
+                (let ([r (loop next-ht)])
+                  (and r
+                       ((if (chaperone? ht) make-hash-chaperone make-hash-impersonator)
+                        (strip-impersonator r)
+                        r
+                        (impersonator-props ht)
+                        procs))))]
+           [else
+            ;; Fall back to iterate of remove
+            #f])))]
      [(impersonator? ht)
-      (loop (impersonator-next ht))]
+      (if mutable?
+          (loop (impersonator-next ht))
+          (let ([r (loop (impersonator-next ht))])
+            (and r
+                 (rewrap-props-impersonator ht r))))]
      [else
-      (hash-clear! ht)])))
+      (if mutable?
+          (hash-clear! ht)
+          (hash-clear ht))])))
 
 (define (impersonate-hash-copy ht)
   (let* ([val-ht (impersonator-val ht)]

@@ -192,10 +192,7 @@
                    [(fixnum? v)
                     (proc-arity-mask (unsafe-struct-ref f v) shift)]
                    [(eq? v 'unsafe)
-                    (proc-arity-mask (if (chaperone? f)
-                                         (unsafe-procedure-chaperone-replace-proc f)
-                                         (unsafe-procedure-impersonator-replace-proc f))
-                                     shift)]
+                    (proc-arity-mask (impersonator-next f) shift)]
                    [else
                     (proc-arity-mask v (add1 shift))]))]))]))]
        [(eq? f orig-f)
@@ -446,12 +443,12 @@
                             (lambda (n) (bitwise-arithmetic-shift-right n 1)) " (adding an extra argument)"))
 
 (define (do-impersonate-procedure who make-procedure-impersonator proc wrapper
-                                  make-props-procedure-impersonator props
+                                  make-props-procedure-impersonator props-l
                                   arity-shift arity-shift-str)
   (check who procedure? proc)
   (let ([m (procedure-arity-mask proc)])
     (when wrapper
-      (check who procedure? wrapper)
+      (check who procedure? :or-false wrapper)
       (unless (= m (bitwise-and m (arity-shift (procedure-arity-mask wrapper))))
         (raise-arguments-error who
                                (string-append
@@ -463,13 +460,15 @@
                    (impersonator-val proc)
                    proc)]
           [props (add-impersonator-properties who
-                                              props
+                                              props-l
                                               (if (impersonator? proc)
-                                                  (impersonator-props proc)
+                                                  (intmap-remove (impersonator-props proc) impersonator-prop:application-mark)
                                                   empty-hasheq))])
-      (if wrapper
-          (make-procedure-impersonator val proc props wrapper m)
-          (make-props-procedure-impersonator val proc props m)))))
+      (cond
+       [wrapper (make-procedure-impersonator val proc props wrapper m)]
+       [(null? props-l) proc]
+       [else
+        (make-props-procedure-impersonator val proc props m)]))))
 
 (define (procedure-impersonator*? v)
   (or (procedure*-impersonator? v)
@@ -689,7 +688,7 @@
   (do-unsafe-impersonate-procedure who make-unsafe-procedure-chaperone
                                    proc replace-proc props))
 
-(define (do-unsafe-impersonate-procedure who make-unsafe-procedure-impersonator proc replace-proc props)
+(define (do-unsafe-impersonate-procedure who make-unsafe-procedure-impersonator proc replace-proc props-l)
   (let ([m (procedure-arity-mask proc)])
     (unless (= m (bitwise-and m (procedure-arity-mask replace-proc)))
       (raise-arguments-error who
@@ -700,9 +699,9 @@
      (strip-impersonator proc)
      proc
      (add-impersonator-properties who
-                                  props
+                                  props-l
                                   (if (impersonator? proc)
-                                      (impersonator-props proc)
+                                      (intmap-remove (impersonator-props proc) impersonator-prop:application-mark)
                                       empty-hasheq))
      replace-proc)))
 

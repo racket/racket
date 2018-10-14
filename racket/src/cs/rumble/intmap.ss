@@ -240,7 +240,7 @@
 (define-syntax-rule (key=? et k1 k2)
   (cond [(eq? et 'eq)  (eq? k1 k2)]
         [(eq? et 'eqv) (eqv? k1 k2)]
-        [else          (equal? k1 k2)]))
+        [else          (key-equal? k1 k2)]))
 
 (define-syntax-rule (hash-code et k)
   (cond [(eq? et 'eq)  (eq-hash-code k)]
