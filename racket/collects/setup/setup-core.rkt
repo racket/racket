@@ -887,7 +887,7 @@
                   (define p (build-path (cc-path cc) v))
                   (unless (or (file-exists? p)
                               (bytecode-file-exists? p))
-                    (error "installer file does not exista: " p)))))
+                    (error "installer file does not exist: " p)))))
             (define installer
               (with-handlers ([exn:fail?
                                (lambda (exn)
