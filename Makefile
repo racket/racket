@@ -237,6 +237,7 @@ DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 MAKE_BUILD_SCHEME = y
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
+GIT_CLONE_ARGS_qq = --depth 1
 
 # Redirected for `cs-as-is` and `cs-base`:
 BASE_TARGET = plain-minimal-in-place
@@ -315,7 +316,7 @@ scheme-src:
 
 racket/src/build/ChezScheme:
 	mkdir -p racket/src/build
-	cd racket/src/build && git clone $(CHEZ_SCHEME_REPO)
+	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO)
 
 update-ChezScheme:
 	cd racket/src/build/ChezScheme && git pull && git submodule update

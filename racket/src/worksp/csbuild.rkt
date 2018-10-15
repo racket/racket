@@ -54,7 +54,8 @@
 (unless (directory-exists? scheme-dir)
   (system*! "git"
 	    "clone"
-	    "git@github.com:mflatt/ChezScheme"
+            "--depth" "1"
+	    "https://github.com/mflatt/ChezScheme"
 	    scheme-dir))
 
 (unless (file-exists? (build-path scheme-dir "zlib" "Makefile"))

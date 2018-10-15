@@ -52,7 +52,7 @@ If you stick with this repository, then you have several options:
  * In-place Racket-on-Chez build --- when you use `make cs`. Unless
    you use various options described in "More Instructions: Building
    Racket-on-Chez" below, this process downloads Chez Scheme from
-   Github, builds a traditional `racket` with minimal packages, builds
+   GitHub, builds a traditional `racket` with minimal packages, builds
    Chez Scheme, and then builds Racket-on-Chez using Racket and Chez
    Scheme. Final executables that end in "cs" or "CS" are the
    Racket-on-Chez variants.
