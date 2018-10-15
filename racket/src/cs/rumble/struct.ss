@@ -508,7 +508,7 @@
                [all-immutables (if (integer? proc-spec)
                                    (cons proc-spec immutables)
                                    immutables)]
-               [mutables (immutables->mutables all-immutables init-count)])
+               [mutables (immutables->mutables all-immutables init-count auto-count)])
           (when (not parent-rtd*)
             (record-type-equal-procedure rtd default-struct-equal?)
             (record-type-hash-procedure rtd default-struct-hash))
