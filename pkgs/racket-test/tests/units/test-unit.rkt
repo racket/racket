@@ -2212,3 +2212,32 @@
   (define a1 1)
   (define a2 2)
   (test 1 (invoke-unit v (import a2^))))
+
+;; ----------------------------------------
+;; Ensure contracted bindings have the right scopes across modules (racket/racket#1652)
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module sig racket/base
+      (require racket/contract racket/unit)
+      (provide foo^)
+      (define-signature foo^
+        [foo?
+         (contracted [make-foo (-> foo?)])])))
+  (eval
+   '(module unit racket/base
+      (require racket/unit 'sig)
+      (provide foo@)
+      (define-unit foo@
+        (import)
+        (export foo^)
+        (define (foo? x) #f)
+        (define (make-foo) #f))))
+  (eval
+   '(module use racket/base
+      (require racket/unit 'unit)
+      (define-values/invoke-unit/infer foo@)
+      (make-foo)))
+  (test-runtime-error exn:fail:contract?
+                      "make-foo: broke its own contract"
+                      (dynamic-require ''use #f)))

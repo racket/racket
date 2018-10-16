@@ -601,23 +601,31 @@
          #'(((int-vid ...) vbody) ...)))))
 
 ;; build-post-val-defs : sig -> (list syntax-object)
-(define-for-syntax (build-post-val-defs sig)
+(define-for-syntax (build-post-val-defs+ctcs sig)
+  (define introduced-sig (map-sig (lambda (x) x)
+                                  (make-syntax-introducer)
+                                  sig))
   (with-syntax ([(((int-ivar . ext-ivar) ...)
                   ((((int-vid . ext-vid) ...) . _) ...)
                   ((((int-sid . ext-sid) ...) . _) ...)
                   _
                   (((post-id ...) . post-rhs) ...))
-                 (map-sig (lambda (x) x)
-                          (make-syntax-introducer)
-                          sig)])
-    (list
-     #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
-        (make-rename-transformers
-         (quote-syntax
-          (int-ivar ...
-                    int-vid ... ...
-                    int-sid ... ...))))
-     #'(post-rhs ...))))
+                 introduced-sig])
+    (with-syntax ([post-renames
+                   #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
+                      (make-rename-transformers
+                       (quote-syntax
+                        (int-ivar ...
+                         int-vid ... ...
+                         int-sid ... ...))))])
+      (list
+       #'((let-syntaxes (post-renames) post-rhs) ...)
+       ; Absence of a contract is represented by #f, but a contract can be present
+       ; and be #'f, so we have to be extra careful not to coerce to syntax objects
+       ; too early. After wrapping in (contract . _), converting to syntax is okay.
+       (map (λ (ctc)
+              (and ctc (cons 'contract #`(let-syntaxes (post-renames) #,ctc))))
+            (cadddr introduced-sig))))))
 
 ;; Using `make-rename-transformers' helps improve sharing in
 ;; a syntax-quoted list of identifiers, although it risks
@@ -631,32 +639,32 @@
           (syntax->list ids))))
 
 (define-signature-form (open stx enclosing-intro)
-  (define (build-sig-elems sig)
+  (define (build-sig-elems ps cs)
     (map (λ (p c)
-           (if c #`(contracted [#,(car p) #,c]) (car p)))
-         (car sig)
-         (cadddr sig)))
+           (if (syntax-e c)
+               #`(contracted [#,(car p) #,(cdr (syntax-e c))])
+               (car p)))
+         ps
+         cs))
   (parameterize ([error-syntax stx])
     (syntax-case stx ()
       ((_ export-spec)
        (let ([sig (process-spec #'export-spec)])
-         (with-syntax (((sig-elem ...)
-                        (build-sig-elems sig))
-                       ((renames
+         (with-syntax ([(renames
                          (((mac-name ...) mac-body) ...) 
                          (((val-name ...) val-body) ...))
-                        ((build-val+macro-defs enclosing-intro) sig))
-                       ((((e-post-id ...) . _) ...) (list-ref sig 4))
-                       ((post-renames (e-post-rhs ...))
-                        (build-post-val-defs sig)))
-           (syntax->list
-            #'(sig-elem ...
-               (define-syntaxes . renames)
-               (define-syntaxes (mac-name ...) mac-body) ...
-               (define-values (val-name ...) val-body) ...
-               (define-values-for-export (e-post-id ...)
-                 (let-syntaxes (post-renames) e-post-rhs))
-               ...)))))
+                        ((build-val+macro-defs enclosing-intro) sig)]
+                       [(((e-post-id ...) . _) ...) (list-ref sig 4)]
+                       [((e-post-rhs ...) (e-ctc ...)) (build-post-val-defs+ctcs sig)])
+           (with-syntax ([(sig-elem ...)
+                          (build-sig-elems (car sig) (syntax->list #'(e-ctc ...)))])
+             (syntax->list
+              #'(sig-elem ...
+                 (define-syntaxes . renames)
+                 (define-syntaxes (mac-name ...) mac-body) ...
+                 (define-values (val-name ...) val-body) ...
+                 (define-values-for-export (e-post-id ...) e-post-rhs)
+                 ...))))))
       (_
        (raise-stx-err (format "must match (~a export-spec)"
                               (syntax-e (stx-car stx))))))))
@@ -881,11 +889,7 @@
 ;; - (unit (import import-spec ...) (export export-spec ...) unit-body-expr ...)
 
 (define-for-syntax (localify exp def-ctx)
-  (cadr (syntax->list
-         (local-expand #`(stop #,exp)
-                       'expression
-                       (list #'stop)
-                       def-ctx))))
+  (internal-definition-context-introduce def-ctx exp 'add))
 
 (define-for-syntax (tagged-sigid->tagged-siginfo x)
   (cons (car x)
@@ -944,7 +948,7 @@
        ;; The `intro` mark should be added to everything except
        ;; the introduced parts, which we implement by adding the
        ;; mark to the introduced parts and then flipping it
-       ;; evenrywehere.
+       ;; everywhere.
        (define intro (make-syntax-introducer #t))
        
        (with-syntax ((((dept . depr) ...)
@@ -958,18 +962,11 @@
                      [(((int-ivar . ext-ivar) ...) ...) (map car import-sigs)]
                      [(((int-evar . ext-evar) ...) ...) (map car export-sigs)]
                      [((((e-post-id ...) . _) ...) ...) (map (lambda (s) (list-ref s 4)) export-sigs)]
-                     [((post-renames (e-post-rhs ...)) ...) (map build-post-val-defs export-sigs)]
+                     [(((e-post-rhs ...) (e-ctc ...)) ...) (map build-post-val-defs+ctcs export-sigs)]
                      [((iloc ...) ...)
                       (map (lambda (x) (generate-temporaries (car x))) import-sigs)]
                      [((eloc ...) ...)
                       (map (lambda (x) (generate-temporaries (car x))) export-sigs)]
-                     [((ectc ...) ...)
-                      (map (λ (sig)
-                             (map (λ (ctc)
-                                    (if ctc
-                                        (cons 'contract ctc)
-                                        #f))
-                                  (cadddr sig))) export-sigs)]
                      [((import-key import-super-keys ...) ...)
                       (map tagged-info->keys import-tagged-infos)]
                      [((export-key ...) ...)
@@ -1029,11 +1026,10 @@
                                                       (int-ivar ... ...)
                                                       (int-evar ... ...)
                                                       (eloc ... ...)
-                                                      (ectc ... ...)
+                                                      (e-ctc ... ...)
                                                       (begin . body)
-                                                      (define-values (e-post-id ...) 
-                                                        (letrec-syntaxes+values (post-renames ...) ()
-                                                          e-post-rhs)) ... ...)))))
+                                                      (define-values (e-post-id ...)
+                                                        e-post-rhs) ... ...)))))
                     (unit-export ((export-key ...)
                                   (vector-immutable (λ () (check-not-unsafe-undefined (unbox eloc) 'int-evar))
                                                     ...))
@@ -1131,7 +1127,6 @@
                        [_ (void)]))
                    expanded-body)
                   table)])
-         (internal-definition-context-seal def-ctx)
          
          ;; Mark exported names and
          ;; check that all exported names are defined (as var):
