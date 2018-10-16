@@ -328,7 +328,7 @@
                 ;; Faster to work with a byte string:
                 (let ([bstr (read-bytes/exactly len init-i)])
                   (mcons bstr 0))))
-  
+
   (define (intern v) (if intern? (datum-intern-literal v) v))
   (let loop ()
     (define type (read-byte/no-eof i))
@@ -434,7 +434,7 @@
          (+ (- type fasl-small-integer-start) fasl-lowest-small-integer)]
         [else
          (read-error "unrecognized fasl tag" "tag" type)])])))
-      
+
 ;; ----------------------------------------
 
 ;; Integer encoding:
@@ -524,15 +524,14 @@
      (integer-bytes->integer (read-bytes/exactly 8 i) #f #f)]
     [(eqv? b 131)
      (define len (read-fasl-integer i))
-     (define str (read-string len i))
+     (define str (read-fasl-string i len))
      (unless (and (string? str) (= len (string-length str)))
        (read-error "truncated stream at number"))
      (string->number str 16)]
     [else
      (read-error "internal error on integer mode")]))
 
-(define (read-fasl-string i)
-  (define len (read-fasl-integer i))
+(define (read-fasl-string i [len (read-fasl-integer i)])
   (define bstr (read-bytes/exactly len i))
   (bytes->string/utf-8 bstr))
 
