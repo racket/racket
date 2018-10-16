@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base racket/list syntax/name)
-         racket/list racket/match racket/private/arity)
+         racket/list racket/private/arity)
 
 (provide identity const thunk thunk* negate curry curryr
          (all-from-out racket/private/arity)
