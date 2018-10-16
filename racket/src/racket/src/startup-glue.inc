@@ -79,9 +79,15 @@ static void c_pop_mark_stack(c_saved_mark_stack_t s)
 static void scheme_instance_add(Scheme_Instance *inst, const char *name, Scheme_Object *val)
 {
   Scheme_Bucket *b;
+  MZ_GC_DECL_REG(1);
+  MZ_GC_VAR_IN_REG(0, val);
+  MZ_GC_REG();
+
   b = scheme_instance_variable_bucket(scheme_intern_symbol(name), inst);
   b->val = val;
   ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_CONST | GLOB_IS_CONSISTENT;
+
+  MZ_GC_UNREG();
 }
 
 #define c_check_runstack_space(max_depth, runstack, runstack_start) \
@@ -791,8 +797,14 @@ static MZ_INLINE Scheme_Object *c_last_use(Scheme_Object **r, int i)
 static Scheme_Object *scheme_box_variable(Scheme_Object *v)
 {
   Scheme_Object **b;
+  MZ_GC_DECL_REG(1);
+  MZ_GC_VAR_IN_REG(0, v);
+  MZ_GC_REG();
+
   b = MALLOC_ONE(Scheme_Object *);
   b[0] = v;
+
+  MZ_GC_UNREG();
   return (Scheme_Object *)b;
 }
 
