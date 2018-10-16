@@ -2241,3 +2241,38 @@
   (test-runtime-error exn:fail:contract?
                       "make-foo: broke its own contract"
                       (dynamic-require ''use #f)))
+
+;; ----------------------------------------
+;; Ellipses in signature bodies should not cause problems due to syntax template misuse
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module m racket/base
+      (require racket/contract
+               racket/unit)
+
+      (provide result)
+
+      (define-signature foo^
+        [(contracted [foo (-> integer? ... integer?)])])
+
+      (define-unit foo@
+        (import)
+        (export foo^)
+        (define (foo . xs) (apply + xs)))
+
+      (define (foo+1@ foo-base@)
+        (define-values/invoke-unit foo-base@
+          (import)
+          (export (prefix base: foo^)))
+        (unit
+          (import)
+          (export foo^)
+          (define (foo . xs) (add1 (apply base:foo xs)))))
+
+      (define-values/invoke-unit (foo+1@ foo@)
+        (import)
+        (export foo^))
+
+      (define result (foo 1 2 3))))
+  (test 7 (dynamic-require ''m 'result)))

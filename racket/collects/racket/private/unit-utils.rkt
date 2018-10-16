@@ -46,13 +46,15 @@
             (syntax-case stx (set!)
               [x
                (identifier? #'x)
-               #'#,(add-ctc i (bound-identifier-mapping-get
-                               member-table
-                               i))]
+               (quote-syntax
+                #,(add-ctc i (bound-identifier-mapping-get
+                              member-table
+                              i)))]
               [(x . y)
-               #'(#,(add-ctc i (bound-identifier-mapping-get
-                                member-table
-                                i)) . y)])))])))
+               (quote-syntax
+                (#,(add-ctc i (bound-identifier-mapping-get
+                               member-table
+                               i)) . y))])))])))
 
 (define-syntax (unit-export stx)
   (syntax-case stx ()
