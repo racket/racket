@@ -738,8 +738,9 @@
       (weak-equal-hash-fl-vals-ht t)
       (weak-equal-hash-vals-ht t)))
 
-(define (weak-hash-ref t key fail)
-  (let ([code (key-equal-hash-code key)])
+(define weak-hash-ref
+  (case-lambda
+   [(t key fail code key-equal?)
     (lock-acquire (weak-equal-hash-lock t))
     (let ([keys (intmap-ref (weak-equal-hash-keys-ht t) code '())])
       (let loop ([keys keys])
@@ -755,7 +756,9 @@
             (if (eq? v none)
                 ($fail fail)
                 v))]
-         [else (loop (cdr keys))])))))
+         [else (loop (cdr keys))])))]
+   [(t key fail)
+    (weak-hash-ref t key fail (key-equal-hash-code key) key-equal?)]))
 
 ;; Only used in atomic mode:
 (define (weak-hash-ref-key ht key)
@@ -767,8 +770,9 @@
        [(key-equal? (car keys) key) (car keys)]
        [else (loop (cdr keys))]))))
 
-(define (weak-hash-set! t k v)
-  (let ([code (key-equal-hash-code k)])
+(define weak-hash-set!
+  (case-lambda
+   [(t k v code key-equal?)
     (lock-acquire (weak-equal-hash-lock t))
     (set-locked-iterable-hash-retry?! t #t)
     (let ([keys (intmap-ref (weak-equal-hash-keys-ht t) code '())])
@@ -791,7 +795,9 @@
           (let ([k (car keys)])
             (hashtable-set! (weak-equal-hash-*vals-ht t k) k v))
           (lock-release (weak-equal-hash-lock t))]
-         [else (loop (cdr keys))])))))
+         [else (loop (cdr keys))])))]
+   [(t k v)
+    (weak-hash-set! t k v (key-equal-hash-code k) key-equal?)]))
 
 (define (weak-hash-remove! t k)
   (let ([code (key-equal-hash-code k)])

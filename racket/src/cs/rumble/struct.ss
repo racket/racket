@@ -556,52 +556,54 @@
 ;; A weak, `equal?`-based hash table that maps (cons prefab-key
 ;; total-field-count) to rtd. We'll create a table without a lock, and
 ;; we'll use it for all places, which means that we need to use a
-;; global lock to access the table.
+;; global lock to access the table. Compute a hash code outside the
+;; lock, though, just in case computing the code needs the lock.
 (define prefabs #f)
 
 ;; Call with lock:
-(define (prefab-ref prefab-key+count)
+(define (prefab-ref prefab-key+count code)
   (and prefabs
-       (weak-hash-ref prefabs prefab-key+count #f)))
+       (weak-hash-ref prefabs prefab-key+count #f code equal?)))
 
 (define (prefab-key+count->rtd prefab-key+count)
-  (cond
-   [(with-global-lock (prefab-ref prefab-key+count))
-    => (lambda (rtd) rtd)]
-   [else
-    (let* ([prefab-key (car prefab-key+count)]
-           [name (if (symbol? prefab-key)
-                     prefab-key
-                     (car prefab-key))]
-           [parent-prefab-key+count
-            (prefab-key->parent-prefab-key+count (car prefab-key+count))]
-           [parent-rtd (and parent-prefab-key+count
-                            (prefab-key+count->rtd parent-prefab-key+count))]
-           [total-count (- (cdr prefab-key+count)
-                           (if parent-prefab-key+count
-                               (cdr parent-prefab-key+count)
-                               0))]
-           [uid (encode-prefab-key+count-as-symbol prefab-key+count)]
-           [rtd (make-record-type-descriptor name
-                                             parent-rtd
-                                             uid #f #f
-                                             (make-fields total-count))]
-           [mutables (prefab-key-mutables prefab-key)])
-      (with-global-lock
-       (cond
-        [(prefab-ref prefab-key+count)
-         ;; rtd was created concurrently
-         => (lambda (rtd) rtd)]
-        [else
-         (putprop uid 'prefab-key+count prefab-key+count)
-         (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
-         (weak-hash-set! prefabs prefab-key+count rtd)
-         (unless parent-rtd
-           (record-type-equal-procedure rtd default-struct-equal?)
-           (record-type-hash-procedure rtd default-struct-hash))
-         (register-mutables! mutables rtd parent-rtd)
-         (inspector-set! rtd 'prefab)
-         rtd])))]))
+  (let ([code (equal-hash-code prefab-key+count)])
+    (cond
+     [(with-global-lock (prefab-ref prefab-key+count code))
+      => (lambda (rtd) rtd)]
+     [else
+      (let* ([prefab-key (car prefab-key+count)]
+             [name (if (symbol? prefab-key)
+                       prefab-key
+                       (car prefab-key))]
+             [parent-prefab-key+count
+              (prefab-key->parent-prefab-key+count (car prefab-key+count))]
+             [parent-rtd (and parent-prefab-key+count
+                              (prefab-key+count->rtd parent-prefab-key+count))]
+             [total-count (- (cdr prefab-key+count)
+                             (if parent-prefab-key+count
+                                 (cdr parent-prefab-key+count)
+                                 0))]
+             [uid (encode-prefab-key+count-as-symbol prefab-key+count)]
+             [rtd (make-record-type-descriptor name
+                                               parent-rtd
+                                               uid #f #f
+                                               (make-fields total-count))]
+             [mutables (prefab-key-mutables prefab-key)])
+        (with-global-lock
+         (cond
+          [(prefab-ref prefab-key+count code)
+           ;; rtd was created concurrently
+           => (lambda (rtd) rtd)]
+          [else
+           (putprop uid 'prefab-key+count prefab-key+count)
+           (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
+           (weak-hash-set! prefabs prefab-key+count rtd code equal?)
+           (unless parent-rtd
+             (record-type-equal-procedure rtd default-struct-equal?)
+             (record-type-hash-procedure rtd default-struct-hash))
+           (register-mutables! mutables rtd parent-rtd)
+           (inspector-set! rtd 'prefab)
+           rtd])))])))
 
 ;; call with lock held
 (define (register-mutables! mutables rtd parent-rtd)
