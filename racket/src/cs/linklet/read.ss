@@ -32,8 +32,8 @@
                                sha-1)))))]
        [(equal? tag (char->integer #\D))
         (unless initial?
-          (raise-argument-error 'read-compiled-linklet
-                                "expected a linklet bundle"))
+          (raise-arguments-error 'read-compiled-linklet
+                                 "expected a linklet bundle"))
         (read-bundle-directory in start-pos)]
        [else
         (raise-arguments-error 'read-compiled-linklet
@@ -69,7 +69,7 @@
               (let ([bundle
                      (cond
                       [(equal? '#vu8(35 126) bstr)
-                       (read-compiled-linklet in)]
+                       (read-compiled-linklet-or-directory in #f)]
                       [(equal? '#vu8(35 102) bstr)
                        #f]
                       [else

@@ -484,7 +484,10 @@
         (let ([code (or ready-code
                         (get-module-code just-filename
                                          #:submodule-path submod-path
-                                         "compiled"
+                                         (let ([l (use-compiled-file-paths)])
+                                           (if (pair? l)
+                                               (car l)
+                                               "compiled"))
                                          compiler
                                          (if on-extension
                                              (lambda (f l?)

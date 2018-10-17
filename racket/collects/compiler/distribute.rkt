@@ -237,10 +237,15 @@
 	     [dll-dir (find-framework fw-name)])
 	(copy-file* (build-path dll-dir fw-name)
 		    (build-path lib-dir fw-name))
+	(let ([boot-src (build-path dll-dir sub-dir "boot")])
+	  (when (directory-exists? boot-src)
+	    (copy-directory/files*
+	     boot-src
+	     (build-path lib-dir sub-dir "boot"))))
 	(let ([rsrc-src (build-path dll-dir sub-dir "Resources")])
 	  (when (directory-exists? rsrc-src)
-	    (copy-directory/files* 
-	     rsrc-src 
+	    (copy-directory/files*
+	     rsrc-src
 	     (build-path lib-dir sub-dir "Resources")))))))
 
   (define (find-framework fw-name)

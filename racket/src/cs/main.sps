@@ -21,6 +21,7 @@
                load
                dynamic-require
                namespace-require
+               embedded-load
                module-declared?
                module->language-info
                module-path-index-join
@@ -282,6 +283,28 @@
                        (lambda ()
                          (eval (read (open-input-string expr))))
                        loads))
+                (flags-loop rest-args (see saw 'non-config)))]
+             [("-k")
+              (let*-values ([(n rest-args) (next-arg "starting and ending offsets" arg within-arg args)]
+                            [(m rest-args) (next-arg "first ending offset" arg within-arg (cons "-k" rest-args))]
+                            [(p rest-args) (next-arg "second ending offset" arg within-arg (cons "-k" rest-args))])
+                (let* ([add-segment-offset
+                        (lambda (s what)
+                          (let ([n (#%string->number s)])
+                            (unless (exact-integer? n)
+                              (raise-user-error 'racket "bad ~a: ~a" what s))
+                            (#%number->string (+ n segment-offset))))]
+                       [n (add-segment-offset n "starting offset")]
+                       [m (add-segment-offset m "first ending offset")]
+                       [p (add-segment-offset p "second ending offset")])
+                  (set! loads
+                        (cons
+                         (lambda ()
+                           ;; (register-embedded-load n m)
+                           (embedded-load n m #f #t)
+                           (embedded-load m p #f #f))
+                         loads)))
+                (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-m" "--main")
               (set! loads
