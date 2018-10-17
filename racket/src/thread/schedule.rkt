@@ -38,6 +38,7 @@
   (make-another-initial-thread-group)
   (set-root-custodian! c)
   (init-system-idle-evt!)
+  (init-future-place!)
   (call-in-main-thread thunk))
 
 ;; ----------------------------------------

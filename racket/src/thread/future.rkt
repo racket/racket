@@ -10,7 +10,8 @@
          "thread.rkt"
          "lock.rkt")
 
-(provide futures-enabled?
+(provide init-future-place!
+         futures-enabled?
          current-future
          future
          future?
@@ -27,12 +28,17 @@
          reset-future-logs-for-tracing!
          mark-future-trace-end!)
 
+(define place-main-thread-id (make-pthread-parameter 0))
+
+(define (init-future-place!)
+  (place-main-thread-id (get-pthread-id)))
+
 ;; not sure of order here...
 (define (get-caller)
   (cond
     [(current-future)
      (current-future)]
-    [(not (= 0 (get-pthread-id)))
+    [(not (= (place-main-thread-id) (get-pthread-id)))
      (get-pthread-id)]
     [else
      (current-thread)]))
