@@ -445,7 +445,10 @@ static double STRTOD(const char *orig_c, char **f)
 	if (!isdigit(ch))
 	  return 0; /* not a digit - bad! */
 	else {
-	  e = (e * 10) + (ch - '0');
+          /* only increment e until we know if it is
+            infinity or zero to avoid overflow on e */
+          if (!is_zero && !is_infinity)
+            e = (e * 10) + (ch - '0');
 	  if (e > CHECK_INF_EXP_THRESHOLD(0)) {
 	    if (neg_exp || !is_nonzero)
 	      is_zero  = 1;
