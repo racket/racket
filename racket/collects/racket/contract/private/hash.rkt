@@ -197,9 +197,7 @@
   (define this-rng (base-hash/c-rng ctc))
   (define this-immutable (base-hash/c-immutable ctc))
   (λ (fuel)
-    (define rnd (random fuel))
-    ;; keep amount of random elements reasonable, no more than 4
-    (define rnd-len (add1 (modulo (add1 fuel) 4)))
+    (define rnd (random fuel)) ;; used to return empty hashes from time to time
     (define gen-key (contract-random-generate/choose this-dom fuel))
     (define gen-val (contract-random-generate/choose this-rng fuel))
     (λ ()
@@ -208,13 +206,16 @@
                  (hash)
                  (make-hash))]
             [else
-             (if this-immutable
-                 (make-immutable-hash
-                  (for/list ([i (in-range rnd-len)])
-                    (cons (gen-key) (gen-val))))
-                 (make-hash
-                  (for/list ([i (in-range rnd-len)])
-                    (cons (gen-key) (gen-val)))))]))))
+             (let ([pair-list
+                    (let loop ([so-far (list (cons (gen-key) (gen-val)))])
+                      (rand-choice
+                       [1/5 so-far]
+                       [else
+                        (loop
+                         (cons (cons (gen-key) (gen-val)) so-far))]))])
+               (if this-immutable
+                   (make-immutable-hash pair-list)
+                   (make-hash pair-list)))]))))
 
 (define (hash/c-exercise ctc)
   (define env (contract-random-generate-get-current-environment))

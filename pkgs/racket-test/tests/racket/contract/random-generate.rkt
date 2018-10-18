@@ -114,11 +114,6 @@
  (λ (v) (not (empty? v)))
  (filter (λ (h) (> (length (hash-values h)) 1)) hash/c-list))
 
-;; hash/c should not generate more than 4 elements
-(check-pred
- empty?
- (filter (λ (h) (> (length (hash-values h)) 4)) hash/c-list))
-
 (check-not-exn
  (λ ()
    (test-contract-generation
