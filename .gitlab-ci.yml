@@ -1,0 +1,72 @@
+image: ubuntu:18.04
+
+.prepare:
+  before_script:
+    - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+    - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+    - export PATH=$PWD/racket/bin:$PATH
+
+envinfo:
+  extends: .prepare
+  script:
+    - cat /proc/cpuinfo
+    - lsb_release -a
+    - gcc -v
+    - export
+
+test:ubsan:
+  extends: .prepare    
+  script:
+    - mkdir logs
+    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" in-place 2>&1 | tee logs/build.log
+    - raco test -l tests/racket/test 2>&1 | tee logs/test.log
+    - racket -l tests/racket/contract/all 2>&1 | tee logs/contract-test.log
+    - raco test -l tests/json/json 2>&1 | tee logs/json-test.log
+    - raco test -l tests/file/main 2>&1 | tee logs/file-test.log
+    - raco test -l tests/net/head 2>&1 | tee logs/net-head-test.log
+    - raco test -l tests/net/uri-codec 2>&1 | tee logs/net-uri-codec-test.log
+    - raco test -l tests/net/url 2>&1 | tee logs/net-url-test.log
+    - raco test -l tests/net/url-port 2>&1 | tee logs/net-url-port-test.log
+    - raco test -l tests/net/encoders 2>&1 | tee logs/net-encoders-test.log
+    - raco test -l tests/openssl/basic 2>&1 | tee logs/openssl-basic-test.log
+    - raco test -l tests/openssl/https 2>&1 | tee logs/openssl-https-test.log
+    - raco test -l tests/match/main 2>&1 | tee logs/match-main-test.log
+    - raco test -l tests/zo-path 2>&1 | tee logs/zo-path-test.log
+    - raco test -l tests/xml/test 2>&1 | tee logs/xml-test.log
+    - raco test -l tests/db/all-tests 2>&1 | tee logs/db-test.log
+    - raco test -c tests/stxparse 2>&1 | tee logs/stxparse-test.log
+  after_script:
+    - grep 'runtime error' logs/*.log > runtime-errors.log
+  artifacts:
+    paths:
+      - logs/
+      - runtime-errors.log
+    
+test:ubsan:cs:
+  extends: .prepare    
+  script:
+    - mkdir cs-logs
+    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" cs 2>&1 | tee cs-logs/build.log
+    - raco test -l tests/racket/test 2>&1 | tee cs-logs/test.log
+    - racket -l tests/racket/contract/all 2>&1 | tee cs-logs/contract-test.log
+    - raco test -l tests/json/json 2>&1 | tee cs-logs/json-test.log
+    - raco test -l tests/file/main 2>&1 | tee cs-logs/file-test.log
+    - raco test -l tests/net/head 2>&1 | tee cs-logs/net-head-test.log
+    - raco test -l tests/net/uri-codec 2>&1 | tee cs-logs/net-uri-codec-test.log
+    - raco test -l tests/net/url 2>&1 | tee cs-logs/net-url-test.log
+    - raco test -l tests/net/url-port 2>&1 | tee cs-logs/net-url-port-test.log
+    - raco test -l tests/net/encoders 2>&1 | tee cs-logs/net-encoders-test.log
+    - raco test -l tests/openssl/basic 2>&1 | tee cs-logs/openssl-basic-test.log
+    - raco test -l tests/openssl/https 2>&1 | tee cs-logs/openssl-https-test.log
+    - raco test -l tests/match/main 2>&1 | tee cs-logs/match-main-test.log
+    - raco test -l tests/zo-path 2>&1 | tee cs-logs/zo-path-test.log
+    - raco test -l tests/xml/test 2>&1 | tee cs-logs/xml-test.log
+    - raco test -l tests/db/all-tests 2>&1 | tee cs-logs/db-test.log
+    - raco test -c tests/stxparse 2>&1 | tee cs-logs/stxparse-test.log
+  after_script:
+    - grep 'runtime error' cs-logs/*.log > runtime-errors.log
+  artifacts:
+    paths:
+      - cs-logs/
+      - runtime-errors.log
