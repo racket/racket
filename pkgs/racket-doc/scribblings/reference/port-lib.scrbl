@@ -819,7 +819,7 @@ a conversion error occurs at any point while reading from @racket[in], then
 @exnraise[exn:fail].}
 
 
-@defproc[(copy-port [in input-port?] [out output-port?] ...+) void?]{
+@defproc[(copy-port [in input-port?] [#:flush? flush? boolean? #f] [out output-port?] ...+) void?]{
 
 Reads data from @racket[in] and writes it back out to @racket[out],
 returning when @racket[in] produces @racket[eof].  The copy is
@@ -839,5 +839,8 @@ is written completely to one @racket[out] before moving to the next
 @racket[out]. The @racket[out]s are written in the provided order, so
 non-blocking ports (e.g., file output ports) should be placed first in the
 argument list.}
+
+If @racket[flush?] is provided, then each of the @racket[out]s are flushed
+(using @racket[flush-output]) whenever any write is performed.
 
 @close-eval[port-eval]

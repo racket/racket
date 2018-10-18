@@ -110,7 +110,7 @@
       [(mode) (file-stream-buffer-mode p mode)]
       [() (file-stream-buffer-mode p)]))))
 
-(define (copy-port src dest . dests*)
+(define (copy-port src dest #:flush? [flush? #f] . dests*)
   (unless (input-port? src)
     (raise-type-error 'copy-port "input-port" src))
   (for-each
@@ -131,13 +131,17 @@
          (let write-loop ([bytes-written 0])
            (unless (= bytes-written c)
              (define c2 (write-bytes-avail s dest bytes-written c))
-             (write-loop (+ bytes-written c2)))))
+             (write-loop (+ bytes-written c2))
+             (when flush?
+               (flush-output dest)))))
        (loop)]
       [(procedure? c)
        (define-values (l col p) (port-next-location src))
        (define v (c (object-name src) l col p))
        (for ([dest (in-list dests)])
          (write-special v dest))
+       (when flush?
+         (flush-output dest))
        (loop)]
       [else
        ;; Must be EOF
