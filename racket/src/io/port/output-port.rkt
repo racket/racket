@@ -33,7 +33,7 @@
       (output-port-via-property? p)))
 
 ;; This function should not be called in atomic mode,
-;; since it can invoke an artitrary function
+;; since it can invoke an arbitrary function
 (define (->core-output-port v)
   (cond
     [(core-output-port? v) (if (impersonator? v)
@@ -58,7 +58,7 @@
 
    evt ; An evt that is ready when writing a byte won't block
    
-   write-out ; (bstr start-k end-k no-block/buffer? enable-break? copy? -> ...)
+   write-out ; port or (bstr start-k end-k no-block/buffer? enable-break? copy? -> ...)
    ;;          Called in atomic mode.
    ;;          Doesn't block if `no-block/buffer?` is true.
    ;;          Does enable breaks while blocking if `enable-break?` is true.
