@@ -1,3 +1,6 @@
+Version 7.1, October 2018
+Bug repairs and other changes noted in the documentation
+
 Version 7.0, July 2018
 Replace the macro expander with a new, Racket-implemented expander
 Add an initial implementation of Racket on Chez Scheme (in the
