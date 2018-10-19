@@ -69,6 +69,7 @@ AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS build (enabled by default)], , enable_mac64=yes)
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
+AC_ARG_ENABLE(csefault,   [  --enable-csdefault      prepare for CS as default build (not CGC or 3m)])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
@@ -296,7 +297,13 @@ show_explicitly_enabled()
   fi
 }
 
+if test "${enable_cgcdefault}" != "" ; then
+   if test "${enable_csdefault}" != "" ; then
+     echo "ERROR: cannot specify both --enable-cgcdefault and --enable-csdefault"
+   fi
+fi
 show_explicitly_enabled "${enable_cgcdefault}" "CGC as default" "Note that this mode is NOT RECOMMENDED for normal Racket use"
+show_explicitly_enabled "${enable_csdefault}" "CS will be default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
@@ -1001,6 +1008,11 @@ if test "${enable_cgcdefault}" ; then
    CGC_INSTALLED=
    CGC_CAP_INSTALLED=
    MAIN_VARIANT=cgc
+fi
+
+if test "${enable_csdefault}" ; then
+   MMM_INSTALLED=3m
+   MMM_CAP_INSTALLED=3m
 fi
 
 ############## SGC ################

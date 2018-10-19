@@ -140,7 +140,7 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
+	$(MAKE) base MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(CONFIG_PREFIX_ARGS)" $(UNIX_BASE_ARGS)
 	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
@@ -169,7 +169,8 @@ set-src-catalog:
 # an empty set of link files, so that any installation-wide
 # links or packages are ignored during the base build.
 
-CONFIGURE_ARGS_qq = 
+CONFIGURE_ARGS_qq =
+MORE_CONFIGURE_ARGS = 
 
 SELF_UP = 
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
@@ -210,7 +211,7 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
+	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 
 # For cross-compilation, build a native executable with no configure options:
@@ -225,6 +226,11 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
 
 # ------------------------------------------------------------
 # Racket-on-Chez build
+
+# If `RACKETCS_SUFFIX` is set to the empty string, the Racket-on-Chez
+# is build as `racket` instead of `racketcs`. Also, if `RACKET`
+# is not set, then `--enable-csdefault` is added to 
+RACKETCS_SUFFIX = cs
 
 # If `RACKET` is not set, then we bootstrap by first building the
 # traditional virtual machine
@@ -280,7 +286,14 @@ cs-after-racket:
          then $(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)" ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
 
+RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
+
 racket-then-cs:
+	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
+         then $(MAKE) racket-configured-then-cs $(RACKETCS_SUFFIX_CONFIG) ; \
+         else $(MAKE) racket-configured-then-cs ; fi
+
+racket-configured-then-cs:
 	$(MAKE) $(BASE_TARGET) PKGS="compiler-lib parser-tools-lib"
 	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) -D -l compiler parser-tools
 	$(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)"
@@ -296,12 +309,15 @@ cs-after-racket-with-racket:
 cs-after-racket-with-racket-and-scheme-src:
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
 
+UPCASE_PROG = "(displayln (string-upcase (vector-ref (current-command-line-arguments) 0)))"
+SUFFIX_ARGS = CS_INSTALLED=$(RACKETCS_SUFFIX) CS_GR_INSTALLED="`$(RACKET) -I racket/base -e $(UPCASE_PROG) "$(RACKETCS_SUFFIX)"`"
+
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/Makefile
 	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
-	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
-	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
+	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(SUFFIX_ARGS) $(INSTALL_SETUP_ARGS)
+	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
 
 nothing-after-base:
 	echo base done
@@ -336,8 +352,8 @@ win32-just-cs:
 	cmd /c $(RACKET) racket\src\worksp\csbuild.rkt --scheme-dir "$(SCHEME_SRC)"
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	racket\racketcs -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-	$(MAKE) win32-in-place-after-base WIN32_PLAIN_RACKET=racket\racketcs $(WIN32_CS_COPY_ARGS)
+	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(MAKE) win32-in-place-after-base WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
 
 # ------------------------------------------------------------
 # Configuration options for building installers

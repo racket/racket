@@ -198,7 +198,7 @@ ICP=@ICP@
 
 install:
 	$(MAKE) plain-install
-	$(srcdir)/../../../bin/racketcs $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+	$(srcdir)/../../../bin/racket$(RACKETCS_SUFFIX) $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
 
 plain-install@NOT_OSX@:
 	$(MAKE) unix-install
