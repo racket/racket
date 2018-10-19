@@ -1,4 +1,6 @@
-#lang scribble/doc
+#lang scribble/manual
+@;;;#lang scribble/doc
+
 @(require scribble/struct scribble/racket "mz.rkt" "prog-steps.rkt"
           (for-syntax racket/base))
 
@@ -9,7 +11,6 @@
                   (make-element highlighted-color (list c))))
 @(define-syntax redex
    (syntax-rules () [(_ a) (*redex (racket a))]))
-
 
 @(define hole (make-element #f (list "[]")))
 @(define (*sub c e) (make-element #f (list c "[" e "]")))
@@ -29,6 +30,13 @@ to switch to the usual langle/rangle that is used in syntax definitions.
    (syntax-rules () [(_ a b) (*state (racket a) (racket b))]))
 ;}
 
+@;{
+I worked on sections 1--9. More work to come on them and the remaining
+sections.
+
+~~Paul C. Anagnostopoulos
+}
+
 @;------------------------------------------------------------------------
 @title[#:tag "eval-model"]{Evaluation Model}
 
@@ -44,11 +52,10 @@ Racket evaluation simplifies
 (+ 1 1) @#,reduces 2
 ]
 
-The arrow @reduces above replaces the more traditional @tt{=} to
-emphasize that evaluation proceeds in a particular direction towards
-simpler expressions. In particular, a @deftech{value} is an
-expression that evaluation simplifies no further, such as the number
-@racket[2].
+The arrow @reduces replaces the more traditional @tt{=} to
+emphasize that evaluation proceeds in a particular direction toward
+simpler expressions. In particular, a @deftech{value}, such as the number @racket[2],
+is an expression that evaluation simplifies no further.
 
 @;------------------------------------------------------------------------
 @section[#:tag "cont-model"]{Sub-expression Evaluation and Continuations}
@@ -60,25 +67,26 @@ Some simplifications require more than one step. For example:
 ]
 
 An expression that is not a @tech{value} can always be partitioned
-into two parts: a @deftech{redex}, which is the part that changed in a
+into two parts: a @deftech{redex} (``reducible expression''),
+which is the part that can change in a
 single-step simplification (highlighted), and the
 @deftech{continuation}, which is the evaluation
-context surrounding an expression. In @racket[(- 4 (+ 1 1))], the redex is @racket[(+ 1 1)], and
-the continuation is @racket[(- 4 @#,hole)], where @hole takes the
-place of the redex. That is, the continuation says how to ``continue''
+context surrounding the redex. In @racket[(- 4 (+ 1 1))], the redex is @racket[(+ 1 1)], and
+the continuation is @racket[(- 4 @#,hole)], where @hole indicates the
+position of the redex. That is, the continuation says how to ``continue''
 after the @tech{redex} is reduced to a @tech{value}.
 
-Before some things can be evaluated, some sub-expressions must be
-evaluated; for example, in the application @racket[(- 4 (+ 1 1))], the
+Before some expressions can be evaluated, their sub-expressions must be
+evaluated. For example, in the application @racket[(- 4 (+ 1 1))], the
 application of @racket[-] cannot be reduced until the sub-expression
 @racket[(+ 1 1)] is reduced.
-
 Thus, the specification of each syntactic form specifies how (some of)
-its sub-expressions are evaluated, and then how the results are
+its sub-expressions are evaluated and then how the results are
 combined to reduce the form away.
 
 The @deftech{dynamic extent} of an expression is the sequence of
-evaluation steps during which the expression contains the @tech{redex}.
+evaluation steps starting when the expression is selected as a @tech{redex}
+and continuing until it is fully evaluated.
 
 @;------------------------------------------------------------------------
 @section{Tail Position}
@@ -86,12 +94,12 @@ evaluation steps during which the expression contains the @tech{redex}.
 An expression @racket[_expr1] is in @deftech{tail position} with
 respect to an enclosing expression @racket[_expr2] if, whenever
 @racket[_expr1] becomes a redex, its @tech{continuation} is the same
-as was the enclosing @racket[_expr2]'s @tech{continuation}.
+as the enclosing @racket[_expr2]'s @tech{continuation}.
 
 For example, the @racket[(+ 1 1)] expression is @italic{not} in @tech{tail
 position} with respect to @racket[(- 4 (+ 1 1))]. To illustrate, we use
 the notation @sub[_C _expr] to mean the expression that is produced by
-substituting @racket[_expr] in place of @hole in the @tech{continuation}
+substituting @racket[_expr] in place of @hole in some arbitrary @tech{continuation}
 @racket[_C]:
 
 @racketblock[
@@ -99,16 +107,17 @@ substituting @racket[_expr] in place of @hole in the @tech{continuation}
 ]
 
 In this case, the @tech{continuation} for reducing @racket[(+ 1 1)] is
-@sub[_C (- 4 @#,hole)], not just @racket[_C].
+@sub[_C (- 4 @#,hole)], not just @racket[_C]. The requirement specified in the first paragraph above is not met.
 
 In contrast, @racket[(+ 1 1)] is in @tech{tail position} with respect
-to @racket[(if (zero? 0) (+ 1 1) 3)], because, for any continuation
+to @racket[(if (zero? 0) (+ 1 1) 3)] because, for any continuation
 @racket[_C],
 
 @racketblock[
 @#,sub[_C (if (zero? 0) (+ 1 1) 3)] @#,reduces @#,sub[_C (if #t (+ 1 1) 3)] @#,reduces @#,sub[_C (+ 1 1)]
 ]
 
+The requirement specified in the first paragraph is met.
 The steps in this reduction sequence are driven by the definition of
 @racket[if], and they do not depend on the @tech{continuation}
 @racket[_C]. The ``then'' branch of an @racket[if] form is always in
@@ -118,18 +127,19 @@ branch of an @racket[if] form is also in @tech{tail position}.
 
 @tech{Tail-position} specifications provide a guarantee about the
 asymptotic space consumption of a computation. In general, the
-specification of @tech{tail positions} goes with each syntactic form,
-like @racket[if].
+specification of @tech{tail positions} accompanies the description of
+each syntactic form, such as @racket[if].
 
 @;------------------------------------------------------------------------
 @section[#:tag "values-model"]{Multiple Return Values}
 
-A Racket expression can evaluate to @deftech{multiple values}, in the
-same way that a procedure can accept multiple arguments.
+A Racket expression can evaluate to @deftech{multiple values}, similar
+to the way that a procedure can accept multiple arguments.
 
-Most @tech{continuations} expect a particular number of result
-@tech{values}.  Indeed, most @tech{continuations}, such as @racket[(+
-@#,hole 1)] expect a single @tech{value}. The @tech{continuation}
+Most @tech{continuations} expect a certain number of result
+@tech{values}, although some @tech{continuations} can accept
+an arbitrary number. Indeed, most @tech{continuations}, such as @racket[(+
+@#,hole 1)], expect a single @tech{value}. The @tech{continuation}
 @racket[(let-values ([(x y) @#,hole]) _expr)] expects two result
 @tech{values}; the first result replaces @racket[x] in the body
 @racket[_expr], and the second replaces @racket[y] in
@@ -139,7 +149,7 @@ the result(s).
 
 In general, the specification of a syntactic form indicates the
 number of @tech{values} that it produces and the number that it
-expects from each of its sub-expression. In addition, some procedures
+expects from each of its sub-expressions. In addition, some procedures
 (notably @racket[values]) produce multiple @tech{values}, and some
 procedures (notably @racket[call-with-values]) create continuations
 internally that accept a certain number of @tech{values}.
@@ -155,7 +165,7 @@ then an algebra student simplifies @tt{x + 1} as follows:
 
 @verbatim{  x + 1 = 10 + 1 = 11}
 
-Racket works much the same way, in that a set of @tech{top-level
+Racket works much the same way, in that a set of @deftech{top-level
 variables} are available for substitutions on demand during
 evaluation. For example, given
 
@@ -169,15 +179,16 @@ then
 #,(redex (+ x 1)) #,reduces #,(redex (+ 10 1)) #,reduces 11
 ]
 
-In Racket, the way definitions appear is just as important as the way
-that they are used. Racket evaluation thus keeps track of both
+In Racket, the way definitions are created is just as important as the way
+they are used. Racket evaluation thus keeps track of both
 definitions and the current expression, and it extends the set of
 definitions in response to evaluating forms such as @racket[define].
 
-Each evaluation step, then, takes the current set of definitions and
-program to a new set of definitions and program. Before a
+Each evaluation step, then, transforms the current set of definitions and
+program into a new set of definitions and program. Before a
 @racket[define] can be moved into the set of definitions, its
-right-hand expression must be reduced to a @tech{value}.
+second expression must be reduced to a @tech{value}.
+(The first expression is used without evaluation.)
 
 @prog-steps/no-obj[
 [{}
@@ -216,17 +227,18 @@ variables}, various procedures enable the modification of elements
 within a compound data structure. For example, @racket[vector-set!]
 modifies the content of a vector.
 
-To allow such modifications to data, we must distinguish between
+To explain such modifications to data, we must distinguish between
 @tech{values}, which are the results of expressions, and
 @deftech{objects}, which hold the data referenced by a value.
 
 A few kinds of @tech{objects} can serve directly as values, including
 booleans, @racket[(void)], and small exact integers. More generally,
-however, a @tech{value} is a reference to an @tech{object}. For
-example, a @tech{value} can be a reference to a particular vector that
+however, a @tech{value} is a reference to an @tech{object} stored somewhere
+else. For example, a @tech{value} can refer to a particular vector that
 currently holds the value @racket[10] in its first slot. If an
-@tech{object} is modified, then the modification is visible through
-all copies of the @tech{value} that reference the same @tech{object}.
+@tech{object} is modified via one @tech{value},
+then the modification is visible through
+all copies of the @tech{value} that reference the @tech{object}.
 
 In the evaluation model, a set of @tech{objects} must be carried along
 with each step in evaluation, just like the definition set. Operations
@@ -299,14 +311,15 @@ that create @tech{objects}, such as @racket[vector], add to the set of
 
 The distinction between a @tech{top-level variable} and an object
 reference is crucial. A @tech{top-level variable} is not a
-@tech{value}; each time a @tech{variable} expression is evaluated, the
-value is extracted from the current set of definitions. An object
-reference, in contrast is a value, and therefore needs no further
-evaluation. The model evaluation steps above use angle-bracketed
+@tech{value}, so it must be evaluated. Each time
+a @tech{variable} expression is evaluated, the
+value of the variable is extracted from the current set of definitions. An object
+reference, in contrast, is a value and therefore needs no further
+evaluation. The evaluation steps above use angle-bracketed
 @racket[<o1>] for an object reference to distinguish it from a
 @tech{variable} name.
 
-A direct object reference can never appear in a text-based source
+An object reference can never appear directly in a text-based source
 program. A program representation created with
 @racket[datum->syntax], however, can embed direct references to
 existing @tech{objects}.
@@ -319,7 +332,7 @@ The @racket[eq?] operator compares two @tech{values}, returning
 of equality is suitable for comparing objects that support imperative
 update (e.g., to determine that the effect of modifying an object
 through one reference is visible through another reference). Also, an
-@racket[eq?]  test evaluates quickly, and @racket[eq?]-based hashing
+@racket[eq?] test evaluates quickly, and @racket[eq?]-based hashing
 is more lightweight than @racket[equal?]-based hashing in hash tables.
 
 In some cases, however, @racket[eq?] is unsuitable as a comparison
@@ -351,14 +364,15 @@ In the program state
 
 evaluation cannot depend on @racket[<o2>], because it is not part of
 the program to evaluate, and it is not referenced by any definition
-that is accessible in the program. The @tech{object} @racket[<o2>] may
-therefore be removed from the evaluation by @deftech{garbage
+that is accessible by the program. The object is said to be
+not @deftech{reachable}. The @tech{object} @racket[<o2>] may
+therefore be removed from the program state by @deftech{garbage
 collection}.
 
 A few special compound datatypes hold @deftech{weak references} to
 objects. Such weak references are treated specially by the garbage
 collector in determining which @tech{objects} are reachable for the
-remainder of the computation. If an @tech{object} is reachable only
+remainder of the computation. If an @tech{object} is reachable @italic{only}
 via a @tech{weak reference}, then the object can be reclaimed, and the
 @tech{weak reference} is replaced by a different @tech{value}
 (typically @racket[#f]).
@@ -380,12 +394,12 @@ Given
 
 @verbatim{  f(x) = x + 10}
 
-then an algebra student simplifies @tt{f(7)} as follows:
+an algebra student simplifies @tt{f(7)} as follows:
 
 @verbatim{  f(7) = 7 + 10 = 17}
 
 The key step in this simplification is take the body of the defined
-function @tt{f}, and then replace each @tt{x} with the actual
+function @tt{f} and replace each @tt{x} with the actual
 @tech{value} @tt{7}.
 
 Racket procedure application works much the same way. A procedure is
@@ -402,11 +416,11 @@ an @tech{object}, so evaluating @racket[(f 7)] starts with a
 ]
 
 Unlike in algebra, however, the @tech{value} associated with an
-argument can be changed in the body of a procedure by using
+procedure parameter can be changed in the body of a procedure by using
 @racket[set!], as in the example @racket[(lambda (x) (begin (set! x 3)
-x))]. Since the @tech{value} associated with @racket[x] can be
-changed, an actual value cannot be substituted for @racket[x] when
-the procedure is applied.
+x))]. Since the @tech{value} associated with parameter @racket[x] can be
+changed, an argument value cannot be substituted for @racket[x] when
+the procedure is first applied.
 
 Instead, a new @deftech{location} is created for each @tech{variable}
 on each application. The argument @tech{value} is placed in the
@@ -437,7 +451,7 @@ not been used before and that cannot be generated again or
 accessed directly.
 
 Generating a @tech{location} in this way means that @racket[set!]
-evaluates for @tech{local variables} in the same way as for
+evaluates for @tech{local variables}, including parameters, in the same way as for
 @tech{top-level variables}, because the @tech{local variable} is
 always replaced with a @tech{location} by the time the @racket[set!]
 form is evaluated:
@@ -467,7 +481,7 @@ form is evaluated:
  3]
 ]
 
-The substitution and @tech{location}-generation step of procedure
+The @tech{location}-generation and substitution step of procedure
 application requires that the argument is a @tech{value}. Therefore,
 in @racket[((lambda (x) (+ x 10)) (+ 1 2))], the @racket[(+ 1 2)]
 sub-expression must be simplified to the @tech{value} @racket[3], and
@@ -485,13 +499,13 @@ that replaces every instance of @racket[x] in @racket[_expr].
 
 A @deftech{variable} is a placeholder for a @tech{value}, and
 expressions in an initial program refer to @tech{variables}. A
-@deftech{top-level variable} is both a @tech{variable} and a
+@tech{top-level variable} is both a @tech{variable} and a
 @tech{location}. Any other @tech{variable} is always replaced by a
-@tech{location} at run-time, so that evaluation of expressions
+@tech{location} at run-time; thus, evaluation of expressions
 involves only @tech{locations}. A single @deftech{local variable}
 (i.e., a non-top-level, non-module-level @tech{variable}), such as a
-procedure argument, can correspond to different @tech{locations}
-through different instantiations.
+procedure parameter, can correspond to different @tech{locations}
+through different applications.
 
 For example, in the program
 
@@ -506,10 +520,10 @@ hold the value @racket[11].
 
 The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,
-when a procedure-argument @tech{variable} @racket[x] is replaced by
-the @tech{location} @racket[xloc], then it is replaced throughout the
+when a procedure parameter @tech{variable} @racket[x] is replaced by
+the @tech{location} @racket[xloc], it is replaced @italic{throughout} the
 body of the procedure, including any nested @racket[lambda]
-forms. As a result, future references of the @tech{variable} always
+forms. As a result, future references to the @tech{variable} always
 access the same @tech{location}.
 
 @;------------------------------------------------------------------------
