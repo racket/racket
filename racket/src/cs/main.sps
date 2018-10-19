@@ -161,12 +161,12 @@
                                      "gui-interactive.rkt"
                                      "interactive.rkt"))])
               (and (file-exists? p) p))
-            (hash-ref (call-with-input-file
-                       (build-path (find-main-config) "config.rktd")
-                       read)
-                      (if gracket? 'gui-interactive-file 'interactive-file)
-                      #f)
-            (if gracket? 'racket/interactive 'racket/gui/interactive)))
+            (let ([config-fn (build-path (find-main-config) "config.rktd")])
+              (and (file-exists? config-fn)
+                   (hash-ref (call-with-input-file config-fn read)
+                             (if gracket? 'gui-interactive-file 'interactive-file)
+                             #f)))
+            (if gracket? 'racket/gui/interactive 'racket/interactive)))
       (default-continuation-prompt-tag)
       (lambda args #f)))
 
@@ -321,7 +321,7 @@
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
-              (flags-loop (cddr args) (see saw 'non-config))]
+              (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
               (loop (cdr args))]
@@ -553,7 +553,7 @@
           (apply orig args)))))
 
    (when version?
-     (printf "Welcome to Racket v~a [cs]\n" (version)))
+     (printf "Welcome to Racket v~a [cs].\n" (version)))
    (call-in-main-thread
     (lambda ()
       (initialize-place!)
