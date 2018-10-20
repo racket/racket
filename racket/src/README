@@ -23,12 +23,19 @@ Please report bugs via one of the following:
  Traditional Racket versus Racket-on-Chez
 ========================================================================
 
-To build the experimental variant of Racket that runs on Chez Scheme
-see "cs/c/README.txt".
+By default, `configure` and the Windows scripts build the traditional
+3m variant of Racket. The rest of the instructions below are about
+building the traditional Racket implementation, except for a general
+"Implementation Organization" note at the end applies to both
+variants.
 
-The rest of the instructions below are about building the traditional
-Racket implementation, but a general "Implementation Organization"
-note at the end applies to both variants.
+Supplying `--enable-cs` or `--enable-csdefault` builds Racket on Chez
+Scheme in addition to the traditional variant of Racket, while
+`--enable-csonly` builds only Racket-on-Chez. Building Racket-on-Chez
+requires either a "ChezScheme" build checkout in the build directory
+or `--enable-scheme=...` to specify the Chez Scheme build directory
+location. For more information on building Racket-on-Chez see
+"cs/c/README.txt".
 
 ========================================================================
  Compiling for Windows
@@ -561,6 +568,8 @@ Directories in "src":
  "worksp" --- Windows projects and build scripts for "racket" and "cs"
 
  "native-libs" --- build scripts for some native-library packages
+
+ "ac" --- autoconf helpers
 
  "lt" --- libtool/configure support
 

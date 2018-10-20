@@ -1,7 +1,7 @@
 
 #################################################################
 # This is the source for the `configure` script, to be compiled #
-# by autoconf (use `make-configure` in "../../racket").         #
+# by autoconf (use `make-configure` in "../../ac").             #
 #################################################################
 
 AC_INIT([embed-boot.rkt])
@@ -10,15 +10,21 @@ AC_CONFIG_HEADERS([cs_config.h])
 AC_CONFIG_AUX_DIR(../../lt)
 AC_CANONICAL_SYSTEM
 
+AC_DISABLE_OPTION_CHECKING
+
 AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code])
-AC_ARG_ENABLE(xonx,       [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS])
+m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mac>     Use Chez Scheme machine type <mach>])
+m4_include(../ac/xonx_arg.m4)
+AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
+AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
+AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
 
 show_explicitly_disabled()
 {
@@ -52,6 +58,8 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+m4_include(../ac/xonx.m4)
+
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
@@ -59,6 +67,16 @@ fi
 if test "${enable_xonx}" == "" ; then
   enable_xonx=no
 fi
+
+m4_include(../ac/path_pkgscope.m4)
+
+############## Install targets ################
+
+PREFIX_PATH_RELATIVE=/../..
+
+m4_include(../ac/path.m4)
+
+############## init variables ################
 
 skip_iconv_check=no
 use_flag_pthread=yes
@@ -70,7 +88,7 @@ NOT_OSX=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 
-FRAMEWORK_INSTALL_DIR='$(srcdir)/../../../lib/'
+FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
@@ -136,6 +154,24 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+    fi
+
+    if test "${enable_libfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    elif test "${enable_userfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    else
+      FRAMEWORK_INSTALL_DIR='${libpltdir}'
+      FRAMEWORK_REL_INSTALL=yes
+      if test "${libpltdir_rel}" = "" ; then
+        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
+      else
+        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+      fi
     fi
 
     # -pthread is not needed and triggers a warning
@@ -372,3 +408,6 @@ mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
 cd rktio; ${abssrcdir}/../../rktio/configure
+
+# From "../ac/path.m4":
+show_path_results

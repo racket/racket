@@ -49,7 +49,7 @@ RACKET = racket
 RUN_THIS_RACKET_CGC = ./racket@CGC@
 RUN_THIS_RACKET_MMM = ./racket@MMM@
 
-SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
 
 MZSRC = $(srcdir)/src
 

@@ -89,7 +89,7 @@ LINKRESULT_wx_xt = gracket@CGC@
 LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
-SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
 
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1

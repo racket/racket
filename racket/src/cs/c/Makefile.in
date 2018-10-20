@@ -13,23 +13,20 @@ CFLAGS = @CFLAGS@ @CPPFLAGS@ -I$(SCHEME_INC) -I$(srcdir)/../../rktio -Irktio -I.
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 
-DEFAULT_RACKET = $(srcdir)/../../../bin/racket
+DEFAULT_RACKET = ../racket/racket3m
 RACKET = @RACKET@
-RACO = $(RACKET) -N raco -l- raco
 
 CS_INSTALLED = cs
-CS_GR_INSTALLED = CS
-bindir = $(srcdir)/../../../bin
-libpltdir = $(srcdir)/../../../lib
-docdir = $(srcdir)/../../../doc
-sharepltdir = $(srcdir)/../../../share
-configdir = $(srcdir)/../../../etc
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+bindir = @bindir@
+libdir = @libdir@
+libpltdir = @libpltdir@
+libpltdir_rel = @libpltdir_rel@
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
-             "$(DESTDIR)$(docdir)" \
-             "$(DESTDIR)$(libpltdir)" \
-             "$(DESTDIR)$(sharepltdir)" \
-             "$(DESTDIR)$(configdir)"
+             "$(DESTDIR)$(libpltdir)"
 
 # Defines FWVERSION:
 mainsrcdir = @srcdir@/../..
@@ -43,15 +40,19 @@ cs:
 	$(MAKE) gracketcs
 	$(MAKE) starter
 
-ABS_RACKET = "`$(RACKET) $(srcdir)/../absify.rkt --exec $(RACKET)`"
-ABS_SCHEME_SRC = "`$(RACKET) $(srcdir)/../absify.rkt $(SCHEME_SRC)`"
-ABS_SRCDIR = "`$(RACKET) $(srcdir)/../absify.rkt $(srcdir)`"
-ABS_BUILDDIR = "`$(RACKET) $(srcdir)/../absify.rkt $(builddir)`"
+SETUP_BOOT_MODE = --chain
+SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled
 
-SETUP_BOOT = -W 'info@compiler/cm error' -l- setup --chain $(srcdir)/../../setup-go.rkt $(builddir)/compiled
+ABS_BOOT = $(SETUP_COMMON_BOOT) ignored $(builddir)/ignored.d
+ABS_RACKET = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt --exec $(RACKET)`"
+ABS_SCHEME_SRC = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(SCHEME_SRC)`"
+ABS_SRCDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(srcdir)`"
+ABS_BUILDDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(builddir)`"
+
+SETUP_BOOT = -O 'info@compiler/cm' $(SETUP_COMMON_BOOT)
 
 # We don't try to track dependencies through makefiles for things
-# build with the expander extrator, hence "ignored"
+# built with the expander extractor, hence "ignored"
 BOOTSTRAP_RACKET = $(RACKET) $(SETUP_BOOT) ignored $(builddir)/ignored.d
 
 RKTIO_RACKET = $(RACKET) $(SETUP_BOOT) '(GENERATED_RKTIO_RKTL)' $(builddir)/rktio.d
@@ -75,6 +76,7 @@ build-racket-so:
 	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS) BUILDDIR="$(builddir)/"
 
 bounce:
+	$(RACKET) -O 'info@compiler/cm' $(ABS_BOOT) $(srcdir)/../absify.rkt just-to-compile-absify
 	$(MAKE) RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" srcdir="$(ABS_SRCDIR)" builddir="$(ABS_BUILDDIR)" $(TARGET)
 
 # You can't make `expander`, `thread`, etc., directly, because
@@ -198,7 +200,7 @@ ICP=@ICP@
 
 install:
 	$(MAKE) plain-install
-	$(srcdir)/../../../bin/racket$(RACKETCS_SUFFIX) $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+	$(DESTDIR)$(bindir)/racket$(CS_INSTALLED) $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
 
 plain-install@NOT_OSX@:
 	$(MAKE) unix-install
@@ -217,6 +219,8 @@ unix-install:
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 
 RKTFWDEST = @FRAMEWORK_INSTALL_DIR@/Racket.framework
+FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
+FRAMEWORK_ABS_PREFIX = "$(libpltdir)/"
 
 macos-install:
 	$(MAKE) common-install
@@ -228,7 +232,10 @@ macos-install:
 	cp $(RKTFWDIR)/boot/petite.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/scheme.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
-	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_GR_INSTALLED)"
+	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
+
+macos-install-gracket:
+	/usr/bin/install_name_tool -change "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(bindir)/racket$(CS_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
 	$(ICP) -r "GRacketCS.app" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app"
 	$(RACKET) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app" "GRacketCS" "GRacket$(CS_GR_INSTALLED)" no-up

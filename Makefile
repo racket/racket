@@ -176,6 +176,8 @@ SELF_UP =
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
 INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 
+BASE_INSTALL_TARGET = plain-base-install
+
 base:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-base ; \
@@ -190,6 +192,9 @@ plain-base:
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
 	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
+	$(MAKE) $(BASE_INSTALL_TARGET)
+
+plain-base-install:
 	cd racket/src/build; $(MAKE) install $(INSTALL_SETUP_ARGS)
 
 base-config:
@@ -210,8 +215,10 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\libeay32.dll cmd /c del racket\lib\libeay32.dll
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
-racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+SRC_MAKEFILE_CONFIG = configure
+
+racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
+	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 
 # For cross-compilation, build a native executable with no configure options:
@@ -236,6 +243,9 @@ RACKETCS_SUFFIX = cs
 # traditional virtual machine
 RACKET =
 
+# The built traditional Racket:
+RACKET_BUILT_FOR_CS = racket/src/build/racket/racket3m
+
 # If `SCHEME_SRC` is not set, then we'll download a copy of
 # Chez Scheme from `CHEZ_SCHEME_REPO`
 SCHEME_SRC = 
@@ -246,7 +256,6 @@ CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
 GIT_CLONE_ARGS_qq = --depth 1
 
 # Redirected for `cs-as-is` and `cs-base`:
-BASE_TARGET = plain-minimal-in-place
 CS_SETUP_TARGET = plain-in-place-after-base
 
 cs:
@@ -259,7 +268,7 @@ plain-cs:
          then $(MAKE) scheme-src ; fi
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) racket-then-cs ; \
-         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+         else $(MAKE) cs-only RACKET="$(RACKET)" ; fi
 
 cpus-cs:
 	$(MAKE) -j $(CPUS) plain-cs JOB_OPTIONS="-j $(CPUS)"
@@ -271,11 +280,11 @@ cs-base:
 	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
 
 cs-as-is:
-	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
+	$(MAKE) cs CS_SETUP_TARGET=in-place-setup
 
 cs-after-racket:
 	if [ "$(RACKET)" = "" ] ; \
-         then $(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)" ; \
+         then $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
 
 RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
@@ -286,12 +295,18 @@ racket-then-cs:
          else $(MAKE) racket-configured-then-cs ; fi
 
 racket-configured-then-cs:
-	$(MAKE) $(BASE_TARGET) PKGS="compiler-lib parser-tools-lib"
-	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) -D -l compiler parser-tools
-	$(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)"
+	$(MAKE) plain-base BASE_INSTALL_TARGET=nothing-after-base
+	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot
 
-ABS_RACKET = "`$(RACKET) racket/src/cs/absify.rkt --exec $(RACKET)`"
-ABS_SCHEME_SRC = "`$(RACKET) racket/src/cs/absify.rkt $(SCHEME_SRC)`"
+cs-only:
+	$(MAKE) racket/src/build/Makefile SRC_MAKEFILE_CONFIG=cfg-cs
+	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)"
+
+SETUP_BOOT_MODE = --chain
+ABS_SETUP_BOOT = -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled
+ABS_BOOT = $(ABS_SETUP_BOOT) ignored racket/src/build/ignored.d
+ABS_RACKET = `$(RACKET) $(ABS_BOOT) racket/src/cs/absify.rkt --exec $(RACKET)`
+ABS_SCHEME_SRC = `$(RACKET) $(ABS_BOOT) racket/src/cs/absify.rkt $(SCHEME_SRC)`
 
 cs-after-racket-with-racket:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
@@ -299,16 +314,14 @@ cs-after-racket-with-racket:
 	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=n ; fi
 
 cs-after-racket-with-racket-and-scheme-src:
+	$(RACKET) -O "info@compiler/cm" $(ABS_BOOT) racket/src/cs/absify.rkt just-to-compile-absify
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
-
-UPCASE_PROG = "(displayln (string-upcase (vector-ref (current-command-line-arguments) 0)))"
-SUFFIX_ARGS = CS_INSTALLED=$(RACKETCS_SUFFIX) CS_GR_INSTALLED="`$(RACKET) -I racket/base -e $(UPCASE_PROG) "$(RACKETCS_SUFFIX)"`"
 
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/Makefile
 	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
-	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(SUFFIX_ARGS) $(INSTALL_SETUP_ARGS)
+	cd racket/src/build; $(MAKE) install-cs RACKET="$(RACKET)" CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
 
 nothing-after-base:
