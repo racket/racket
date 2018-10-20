@@ -4,11 +4,30 @@
          scheme/unsafe/ops
          "for-util.rkt")
 
-(define 64-bit? (fixnum? (expt 2 33)))
+(test #t fixnum? (- (expt 2 (- 24 1))))
+(test #t fixnum? (- (expt 2 (- 24 1)) 1))
 
-(define (fixnum-width) (if 64-bit? 63 31))
-(define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
-(define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
+(define (fixnum-width)
+  (case (system-type 'word)
+    [(32) (case (system-type 'vm)
+            [(racket) 31]
+            [(chez-scheme) 30]
+            [else (error "unsuported vm value in system-type")])]
+    [(64) (case (system-type 'vm)
+            [(racket) 63]
+            [(chez-scheme) 61]
+            [else (error "unsuported vm value in system-type")])]
+    [else (error "unsuported word value in system-type")]))
+                      
+(define (least-fixnum) (- (expt 2 (- (fixnum-width) 1))))
+(define (greatest-fixnum) (- (expt 2 (- (fixnum-width) 1)) 1))
+
+(test #t fixnum? (least-fixnum))
+(test #t fixnum? (greatest-fixnum))
+(test #f fixnum? (- (least-fixnum) 1))
+(test #f fixnum? (+ (greatest-fixnum) 1))
+(test #t eq? (least-fixnum) (+ (- (least-fixnum) 1) 1))
+(test #t eq? (greatest-fixnum) (- (+ (greatest-fixnum) 1) 1))
 
 
 (define unary-table 
