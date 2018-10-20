@@ -154,6 +154,26 @@
 ;; check a small range
 (same-results/range/table)
 
+;; Check that constant folding doesn't go wrong for `unsafe-fxlshift`:
+
+(define-syntax-rule (test-unsafe-fxlshift i ...)
+  ; i must be a constant
+  (begin
+    (begin
+      (if (fixnum? (arithmetic-shift 1 i))
+          (test #t fixnum? (unsafe-fxlshift 1 i))
+          (unless (zero? (random 1))
+            ; This part never run, but the bytecode compiler can´t prove it,
+            (display (unsafe-fxlshift 1 i))))
+      (if (fixnum? (arithmetic-shift -1 i))
+          (test #t fixnum? (unsafe-fxlshift -1 i))
+          (unless (zero? (random 1))
+            ; This part never run, but the bytecode compiler can´t prove it,
+            (display (unsafe-fxlshift -1 i))))) ...))
+
+(test-unsafe-fxlshift 27 28 29 30 31 32 33 34)
+(test-unsafe-fxlshift 59 60 61 62 63 64 65 66)
+
 ;; ----------------------------------------
 
 ;; in-fxvector tests.
