@@ -55,29 +55,31 @@ if test "$use_cs" = "yes" ; then
       exit 1
     fi
   fi
+
+  if test "$use_racket" = "no" ; then
+    if test "$supplied_racket" = "no" ; then
+      echo $0: --enable-csonly needs --enable-racket=...
+      exit 1
+    fi
+  fi
+
+  # The "cs/c/configure" script doesn't report the installation
+  # configuration, so we run it first and let "cfg-cs" or
+  # "cfg-racket" report that information.
+
+  mkdir -p cs
+  case "$dir" in
+    /*)
+     cd cs && "$dir/cs/c/configure" ${1+"$@"} && cd ..
+     ;;
+    *)
+     cd cs && "../$dir/cs/c/configure" ${1+"$@"} && cd ..
+     ;;
+  esac
 fi
 
 if test "$use_racket" = "no" ; then
-  if test "$supplied_racket" = "no" ; then
-    echo $0: --enable-csonly needs --enable-racket=...
-    exit 1
-  fi
-  "$dir/cfg-cs" ${1+"$@"}
-  mkdir -p cs
-  # continue below
-elif test "$use_cs" = "no" ; then
-  exec "$dir/cfg-racket" ${1+"$@"}
+  exec "$dir/cfg-cs" ${1+"$@"}
 else
-  "$dir/cfg-racket" ${1+"$@"}
-  # continue below
+  exec "$dir/cfg-racket" ${1+"$@"}
 fi
-
-mkdir -p cs
-case "$dir" in
-  /*)
-   cd cs && exec "$dir/cs/c/configure" ${1+"$@"}
-   ;;
-  *)
-   cd cs && exec "../$dir/cs/c/configure" ${1+"$@"}
-   ;;
-esac

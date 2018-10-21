@@ -35,3 +35,6 @@ AC_SUBST(RUN_RACKET_CGC)
 makefiles="Makefile"
 
 AC_OUTPUT($makefiles)
+
+# From "../ac/path.m4":
+show_path_results
