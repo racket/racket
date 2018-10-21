@@ -9,7 +9,8 @@ SCHEME_INC = $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
 SCHEME = $(SCHEME_BIN) -b $(SCHEME_INC)/petite.boot -b $(SCHEME_INC)/scheme.boot
 
 CC = @CC@
-CFLAGS = @CFLAGS@ @CPPFLAGS@ -I$(SCHEME_INC) -I$(srcdir)/../../rktio -Irktio -I.
+BASE_CFLAGS = @CFLAGS@ @CPPFLAGS@
+CFLAGS = $(BASE_CFLAGS) -I$(SCHEME_INC) -I$(srcdir)/../../rktio -Irktio -I.
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 
@@ -111,7 +112,7 @@ scheme:
          then $(MAKE) scheme-make ; fi
 
 scheme-make:
-	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@
+	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@ CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)"
 	cd @SCHEME_SRC@ && make
 
 racket.boot: racket.so
