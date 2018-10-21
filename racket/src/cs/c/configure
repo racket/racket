@@ -622,6 +622,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CS_INSTALLED
 FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
 SCHEME_CONFIG_ARGS
@@ -661,9 +662,16 @@ CGC
 MMM_CAP_INSTALLED
 MMM_INSTALLED
 MMM
+INSTALL_ORIG_TREE
 LIBFINISH
 MAKE_GRACKET
 MAKE_COPYTREE
+GR_APP_CONFIG_PATH
+GUI_CONFIG_PATH
+CONFIG_PATH
+GR_APP_COLLECTS_PATH
+GUI_COLLECTS_PATH
+COLLECTS_PATH
 includepltdir
 etcpltdir
 sharepltdir
@@ -2525,6 +2533,11 @@ fi
 
 SUB_CONFIGURE_EXTRAS=
 
+CS_INSTALLED=cs
+if test "${enable_csdefault}" = "yes" ; then
+  CS_INSTALLED=""
+fi
+
 ############## Install targets ################
 
 PREFIX_PATH_RELATIVE=/../..
@@ -2629,6 +2642,14 @@ GUI_CONFIG_PATH="${CONFIG_PATH}"
 CS_BOOTSTRAP_HELP="no-3m"
 
 ########################################
+
+
+
+
+
+
+
+
 
 
 
@@ -4395,6 +4416,7 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

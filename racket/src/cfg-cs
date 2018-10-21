@@ -585,6 +585,7 @@ ac_unique_file="setup-go.rkt"
 enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+RUN_RACKET_CGC
 ICP
 MAKE_LOCAL_RACKET
 CS_BOOTSTRAP_HELP
@@ -596,9 +597,16 @@ CGC
 MMM_CAP_INSTALLED
 MMM_INSTALLED
 MMM
+INSTALL_ORIG_TREE
 LIBFINISH
 MAKE_GRACKET
 MAKE_COPYTREE
+GR_APP_CONFIG_PATH
+GUI_CONFIG_PATH
+CONFIG_PATH
+GR_APP_COLLECTS_PATH
+GUI_COLLECTS_PATH
+COLLECTS_PATH
 includepltdir
 etcpltdir
 sharepltdir
@@ -2124,6 +2132,14 @@ CS_BOOTSTRAP_HELP="no-3m"
 
 
 
+
+
+
+
+
+
+
+
 ########################################
 
 show_path_results()
@@ -2170,6 +2186,8 @@ MAKE_GRACKET=no
 LIBFINISH=echo
 
 ICP=cp
+RUN_RACKET_CGC="cs/racketcs"
+
 
 
 

@@ -74,6 +74,11 @@ m4_include(../ac/path_pkgscope.m4)
 
 SUB_CONFIGURE_EXTRAS=
 
+CS_INSTALLED=cs
+if test "${enable_csdefault}" = "yes" ; then
+  CS_INSTALLED=""
+fi
+
 ############## Install targets ################
 
 PREFIX_PATH_RELATIVE=/../..
@@ -413,6 +418,7 @@ AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
+AC_SUBST(CS_INSTALLED)
 
 makefiles="Makefile"
 

@@ -243,19 +243,20 @@ install-gracket-both:
 
 # CS install ----------------------------------------
 
-CS_INSTALL_TARGET = install
+CS_SETUP_INSTALL_TARGET = setup-install
 
 install-cs-common:
 	$(MAKE) install-common-first
-	cd cs; $(MAKE) $(CS_INSTALL_TARGET)
+	cd cs; $(MAKE) plain-install
 	$(MAKE) install-common-middle
+	cd cs; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
 	$(MAKE) install-common-last
 
 install-racketcs:
 	$(MAKE) install-cs-common
 
 plain-install-racketcs:
-	$(MAKE) install-cs-common CS_INSTALL_TARGET=plain-install
+	$(MAKE) install-cs-common CS_SETUP_INSTALL_TARGET=no-setup-install
 
 install-cs:
 	$(MAKE) install-racketcs

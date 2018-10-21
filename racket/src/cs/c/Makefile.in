@@ -1,6 +1,8 @@
 srcdir = @srcdir@
 builddir = @builddir@
 
+PACKAGE = racket
+
 SCHEME_SRC = @SCHEME_SRC@
 MAKE_BUILD_SCHEME = @MAKE_BUILD_SCHEME@
 MACH = @MACH@
@@ -17,14 +19,19 @@ LIBS = @LIBS@
 DEFAULT_RACKET = ../racket/racket3m
 RACKET = @RACKET@
 
-CS_INSTALLED = cs
+CS_INSTALLED = @CS_INSTALLED@
+
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 bindir = @bindir@
 libdir = @libdir@
+includepltdir = @includepltdir@
 libpltdir = @libpltdir@
 libpltdir_rel = @libpltdir_rel@
+etcpltdir = @etcpltdir@
+sharepltdir = @sharepltdir@
+collectsdir = @collectsdir@
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libpltdir)"
@@ -201,7 +208,13 @@ ICP=@ICP@
 
 install:
 	$(MAKE) plain-install
+	$(MAKE) setup-install
+
+setup-install:
 	$(DESTDIR)$(bindir)/racket$(CS_INSTALLED) $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+
+no-setup-install:
+	echo done
 
 plain-install@NOT_OSX@:
 	$(MAKE) unix-install
@@ -214,10 +227,12 @@ common-install:
 	$(ICP) racketcs "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(ICP) starter "$(DESTDIR)$(libpltdir)/starter"
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
+	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install:
 	$(MAKE) common-install
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
+	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 RKTFWDEST = @FRAMEWORK_INSTALL_DIR@/Racket.framework
 FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
@@ -233,6 +248,7 @@ macos-install:
 	cp $(RKTFWDIR)/boot/petite.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/scheme.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
+	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 	$(MAKE) macos-install-gracket CS_GR_INSTALLED="`echo $(CS_INSTALLED) | tr a-z A-Z`"
 
 macos-install-gracket:
