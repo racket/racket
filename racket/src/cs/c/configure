@@ -738,8 +738,12 @@ enable_usersetup
 enable_racket
 enable_scheme
 enable_mach
+enable_sdk
 enable_xonx
 enable_macprefix
+enable_libfw
+enable_userfw
+enable_mac64
 enable_csdefault
 enable_csonly
 enable_parent
@@ -1368,8 +1372,16 @@ Optional Features:
   --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-scheme=<path>  Chez Scheme build directory at <path>
   --enable-mach=<mac>     Use Chez Scheme machine type <mach>
+  --enable-sdk=<path>     use Mac OS 10.4 SDK directory
+  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
+  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-ios=<path>     use iOS SDK directory
+  --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
   --enable-macprefix      allow --prefix with a Mac OS install
+  --enable-libfw          install Mac OS frameworks to /Library/Frameworks
+  --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)
@@ -2308,6 +2320,30 @@ if test "${enable_mach+set}" = set; then :
   enableval=$enable_mach;
 fi
 
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-xonx was given.
 if test "${enable_xonx+set}" = set; then :
@@ -2317,6 +2353,23 @@ fi
 # Check whether --enable-macprefix was given.
 if test "${enable_macprefix+set}" = set; then :
   enableval=$enable_macprefix;
+fi
+
+# Check whether --enable-libfw was given.
+if test "${enable_libfw+set}" = set; then :
+  enableval=$enable_libfw;
+fi
+
+# Check whether --enable-userfw was given.
+if test "${enable_userfw+set}" = set; then :
+  enableval=$enable_userfw;
+fi
+
+# Check whether --enable-mac64 was given.
+if test "${enable_mac64+set}" = set; then :
+  enableval=$enable_mac64;
+else
+  enable_mac64=yes
 fi
 
 
@@ -2333,6 +2386,33 @@ fi
 # Check whether --enable-parent was given.
 if test "${enable_parent+set}" = set; then :
   enableval=$enable_parent;
+fi
+
+
+
+enable_quartz=no
+if test "${enable_xonx}" = "yes" ; then
+  enable_quartz=no
+else
+  case "$host_os" in
+  darwin*)
+    enable_quartz=yes
+    if test "${enable_origtree}" != "no" ; then
+      enable_origtree=yes
+    fi
+    if test "${prefix}" != "NONE" ; then
+      if test "${enable_macprefix}" != "yes" ; then
+        echo "ERROR: --prefix not allowed for a Mac OS build, unless either"
+        echo "         --enable-xonx is supplied (to create a Unix-style"
+        echo "           build), or "
+        echo "         --enable-macprefix is supplied (to allow a Mac-style"
+        echo "           installation, even though --prefix is normally used"
+        echo "           for Unix-style installations)"
+        exit 1
+      fi
+    fi
+  ;;
+  esac
 fi
 
 
@@ -2368,30 +2448,44 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
-enable_quartz=no
-if test "${enable_xonx}" = "yes" ; then
-  enable_quartz=no
-else
-  case "$host_os" in
-  darwin*)
-    enable_quartz=yes
-    if test "${enable_origtree}" != "no" ; then
-      enable_origtree=yes
-    fi
-    if test "${prefix}" != "NONE" ; then
-      if test "${enable_macprefix}" != "yes" ; then
-        echo "ERROR: --prefix not allowed for a Mac OS build, unless either"
-        echo "         --enable-xonx is supplied (to create a Unix-style"
-        echo "           build), or "
-        echo "         --enable-macprefix is supplied (to allow a Mac-style"
-        echo "           installation, even though --prefix is normally used"
-        echo "           for Unix-style installations)"
-        exit 1
-      fi
-    fi
-  ;;
-  esac
+show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
+show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+
+if test "${enable_sdk}" != "" ; then
+   if test "${enable_sdk5}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk5"
+   fi
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
+   fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.4 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk5}" != "" ; then
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
+   fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.5 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk6}" != "" ; then
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
+fi
+if test "${enable_ios}" != "" ; then
+   echo "=== Using ios SDK directory ${enable_ios}"
+fi
+
+if test "${enable_sysroot}" != "" ; then
+   echo "=== Using sysroot directory ${enable_sysroot}"
 fi
 
 
@@ -2428,6 +2522,8 @@ fi
 
 
 
+
+SUB_CONFIGURE_EXTRAS=
 
 ############## Install targets ################
 
@@ -3509,6 +3605,9 @@ fi
 
 ############## platform tests ################
 
+MACH_HOST_CPU="${host_cpu}"
+extra_scheme_config_args=
+
 case "$host_os" in
   solaris2*)
     MACH_OS=s2
@@ -3556,6 +3655,62 @@ case "$host_os" in
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
     fi
 
+        if test "${enable_sdk}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
+      if test "${CC}" = "gcc" ; then
+        CC=gcc-4.0
+      fi
+      if test "${CPP}" = "gcc -E" ; then
+        CPP="gcc-4.0 -E"
+        need_cpp_in_extras=yes
+      fi
+      if test "${LD}" = "gcc" ; then
+        LD=gcc-4.0
+        need_ld_in_extras=yes
+      fi
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      need_cc_in_extras=yes
+      if test "$ORIG_CC_FOR_BUILD" = "" ; then
+        CC_FOR_BUILD="$CC"
+      fi
+    fi
+
+    if test "${enable_sdk5}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    if test "${enable_sdk6}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    # Force 32-bit build unless mac64 is enabled:
+    if test "${enable_mac64}" != "yes" ; then
+      if test "$host_cpu" != "powerpc" ; then
+        if test "${ORIG_CC}" = "" ; then
+           PREFLAGS="${PREFLAGS} -m32"
+           CPPFLAGS="${CPPFLAGS} -m32"
+           LDFLAGS="${LDFLAGS} -m32"
+           # To make the libffi build work, we have to fold -m32 into CC
+           # instead of CFLAGS:
+           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           need_cc_in_extras=no
+        fi
+      fi
+    fi
+
+
+
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
@@ -3572,6 +3727,11 @@ case "$host_os" in
       else
         FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
       fi
+    fi
+
+    if test "${enable_mac64}" == "no"; then
+      MACH_HOST_CPU="x86"
+      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -3604,7 +3764,7 @@ if test "${enable_pthread}" = "yes" ; then
   thread_config_arg="--threads"
 fi
 
-case "$host_cpu" in
+case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
     ;;
@@ -3635,7 +3795,7 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
@@ -5541,7 +5701,7 @@ fi
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; ${abssrcdir}/../../rktio/configure
+cd rktio; eval "${abssrcdir}/../../rktio/configure ${SUB_CONFIGURE_EXTRAS}"
 
 # From "../ac/path.m4":
 show_path_results

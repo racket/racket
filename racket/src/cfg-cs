@@ -665,8 +665,12 @@ enable_origtree
 enable_pkgscope
 enable_docs
 enable_usersetup
+enable_sdk
 enable_xonx
 enable_macprefix
+enable_libfw
+enable_userfw
+enable_mac64
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1278,8 +1282,16 @@ Optional Features:
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
   --enable-usersetup      setup user-specific files on install
+  --enable-sdk=<path>     use Mac OS 10.4 SDK directory
+  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
+  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-ios=<path>     use iOS SDK directory
+  --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
   --enable-macprefix      allow --prefix with a Mac OS install
+  --enable-libfw          install Mac OS frameworks to /Library/Frameworks
+  --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-mac64          allow 64-bit Mac OS build (enabled by default)
 
 Report bugs to the package provider.
 _ACEOF
@@ -1879,6 +1891,30 @@ if test "${enable_usersetup+set}" = set; then :
 fi
 
 
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-xonx was given.
 if test "${enable_xonx+set}" = set; then :
@@ -1888,6 +1924,23 @@ fi
 # Check whether --enable-macprefix was given.
 if test "${enable_macprefix+set}" = set; then :
   enableval=$enable_macprefix;
+fi
+
+# Check whether --enable-libfw was given.
+if test "${enable_libfw+set}" = set; then :
+  enableval=$enable_libfw;
+fi
+
+# Check whether --enable-userfw was given.
+if test "${enable_userfw+set}" = set; then :
+  enableval=$enable_userfw;
+fi
+
+# Check whether --enable-mac64 was given.
+if test "${enable_mac64+set}" = set; then :
+  enableval=$enable_mac64;
+else
+  enable_mac64=yes
 fi
 
 

@@ -13,9 +13,9 @@ AC_CANONICAL_SYSTEM
 AC_DISABLE_OPTION_CHECKING
 
 m4_include(../ac/path_arg.m4)
-m4_include(../ac/xonx_arg.m4)
+m4_include(../ac/sdk_arg.m4)
 
-m4_include(../ac/xonx.m4)
+m4_include(../ac/sdk.m4)
 
 m4_include(../ac/path_pkgscope.m4)
 

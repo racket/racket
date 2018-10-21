@@ -21,10 +21,12 @@ m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mac>     Use Chez Scheme machine type <mach>])
-m4_include(../ac/xonx_arg.m4)
+m4_include(../ac/sdk_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
 AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
+
+m4_include(../ac/sdk.m4)
 
 show_explicitly_disabled()
 {
@@ -58,7 +60,7 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
-m4_include(../ac/xonx.m4)
+m4_include(../ac/sdk_show.m4)
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
@@ -69,6 +71,8 @@ if test "${enable_xonx}" == "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+
+SUB_CONFIGURE_EXTRAS=
 
 ############## Install targets ################
 
@@ -108,6 +112,9 @@ AC_CHECK_LIB(m, fmod)
 AC_CHECK_LIB(dl, dlopen)
 
 ############## platform tests ################
+
+MACH_HOST_CPU="${host_cpu}"
+extra_scheme_config_args=
 
 case "$host_os" in
   solaris2*)
@@ -156,6 +163,8 @@ case "$host_os" in
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
     fi
 
+    m4_include(../ac/sdk_mac.m4)
+
     if test "${enable_libfw}" = "yes" ; then
       FRAMEWORK_INSTALL_DIR=/Library/Frameworks
       FRAMEWORK_REL_INSTALL=no
@@ -172,6 +181,11 @@ case "$host_os" in
       else
         FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
       fi
+    fi
+
+    if test "${enable_mac64}" == "no"; then
+      MACH_HOST_CPU="x86"
+      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
@@ -204,7 +218,7 @@ if test "${enable_pthread}" = "yes" ; then
   thread_config_arg="--threads"
 fi
 
-case "$host_cpu" in
+case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
     ;;
@@ -235,7 +249,7 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
@@ -407,7 +421,7 @@ AC_OUTPUT($makefiles)
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; ${abssrcdir}/../../rktio/configure
+cd rktio; eval "${abssrcdir}/../../rktio/configure ${SUB_CONFIGURE_EXTRAS}"
 
 # From "../ac/path.m4":
 show_path_results

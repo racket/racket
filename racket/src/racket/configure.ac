@@ -54,15 +54,7 @@ AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries (enab
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
-AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS 10.4 SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-ios=<path>     use iOS SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-sysroot=<path> use sysroot directory (e.g., for Android)])
-m4_include(../ac/xonx_arg.m4)
-AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS frameworks to /Library/Frameworks])
-AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks])
-AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS build (enabled by default)], , enable_mac64=yes)
+m4_include(../ac/sdk_arg.m4)
 
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
@@ -138,7 +130,7 @@ if test "${enable_shared}" = "yes" ; then
   esac
 fi
 
-m4_include(../ac/xonx.m4)
+m4_include(../ac/sdk.m4)
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
@@ -237,45 +229,7 @@ show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
-show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
-
-show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
-show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
-
-if test "${enable_sdk}" != "" ; then
-   if test "${enable_sdk5}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk5"
-   fi
-   if test "${enable_sdk6}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
-   fi
-   if test "${enable_ios}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
-   fi
-   echo "=== Using Mac OS 10.4 SDK directory ${enable_sdk}"
-fi
-if test "${enable_sdk5}" != "" ; then
-   if test "${enable_sdk6}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
-   fi
-   if test "${enable_ios}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
-   fi
-   echo "=== Using Mac OS 10.5 SDK directory ${enable_sdk}"
-fi
-if test "${enable_sdk6}" != "" ; then
-   if test "${enable_ios}" != "" ; then
-     echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
-   fi
-   echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
-fi
-if test "${enable_ios}" != "" ; then
-   echo "=== Using ios SDK directory ${enable_ios}"
-fi
-
-if test "${enable_sysroot}" != "" ; then
-   echo "=== Using sysroot directory ${enable_sysroot}"
-fi
+m4_include(../ac/sdk_show.m4)
 
 if test "${enable_racket}" != "" ; then
   if test "${enable_racket}" = "auto" ; then
@@ -719,44 +673,7 @@ case "$host_os" in
     ;;
   darwin*)
 
-    if test "${enable_sdk}" != "" ; then 
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
-      if test "${CC}" = "gcc" ; then
-        CC=gcc-4.0
-      fi
-      if test "${CPP}" = "gcc -E" ; then
-        CPP="gcc-4.0 -E"
-        need_cpp_in_extras=yes
-      fi
-      if test "${LD}" = "gcc" ; then
-        LD=gcc-4.0
-        need_ld_in_extras=yes
-      fi
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-      need_cc_in_extras=yes
-      if test "$ORIG_CC_FOR_BUILD" = "" ; then
-        CC_FOR_BUILD="$CC"
-      fi
-    fi
-    
-    if test "${enable_sdk5}" != "" ; then 
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-    fi
-    
-    if test "${enable_sdk6}" != "" ; then 
-      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
-      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
-    fi
+    m4_include(../ac/sdk_mac.m4)
 
     case "$host_cpu" in
       i386|x86_64)
@@ -780,21 +697,6 @@ case "$host_os" in
     fi
 
     SO_SUFFIX=.dylib
-
-    # Force 32-bit build unless mac64 is enabled:
-    if test "${enable_mac64}" != "yes" ; then
-      if test "$host_cpu" != "powerpc" ; then
-        if test "${ORIG_CC}" = "" ; then
-           PREFLAGS="${PREFLAGS} -m32"
-           CPPFLAGS="${CPPFLAGS} -m32"
-           LDFLAGS="${LDFLAGS} -m32"
-           # To make the libffi build work, we have to fold -m32 into CC
-           # instead of CFLAGS:
-           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
-           need_cc_in_extras=no
-        fi
-      fi
-    fi
 
     if test "${need_cc_in_extras}" = "yes" ; then
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
