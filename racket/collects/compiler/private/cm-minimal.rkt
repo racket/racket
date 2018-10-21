@@ -234,6 +234,7 @@
                                 (cons 'ext d)))
                           external-deps))])
           (write (list* (version)
+                        (system-type 'vm)
                         (cons (or src-sha1 (get-source-sha1 path))
                               (get-dep-sha1s deps up-to-date collection-cache read-src-syntax path->mode roots #t #hash()))
                         (sort deps s-exp<?))
@@ -413,13 +414,14 @@
 
 (define (install-module-hashes! s [start 0] [len (bytes-length s)])
   (define vlen (bytes-ref s (+ start 2)))
-  (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
+  (define vmlen (bytes-ref s (+ start 3 vlen)))
+  (define mode (integer->char (bytes-ref s (+ start 4 vlen vmlen))))
   (case mode
     [(#\B)
      ;; A linklet bundle:
      (define h (sha1-bytes s start (+ start len)))
      ;; Write sha1 for bundle hash:
-     (bytes-copy! s (+ start 4 vlen) h)]
+     (bytes-copy! s (+ start 5 vlen vmlen) h)]
     [(#\D)
      ;; A linklet directory. The format starts with <count>,
      ;; and then it's <count> records of the format:
@@ -427,8 +429,8 @@
      (define (read-num rel-pos)
        (define pos (+ start rel-pos))
        (integer-bytes->integer s #t #f pos (+ pos 4)))
-     (define count (read-num (+ 4 vlen)))
-     (for/fold ([pos (+ 8 vlen)]) ([i (in-range count)])
+     (define count (read-num (+ 5 vlen vmlen)))
+     (for/fold ([pos (+ 9 vlen vmlen)]) ([i (in-range count)])
        (define pos-pos (+ pos 4 (read-num pos)))
        (define bund-start (read-num pos-pos))
        (define bund-len (read-num (+ pos-pos 4)))
@@ -463,14 +465,14 @@
                #f)
              (let ([src-sha1 (and zo-exists?
                                   deps
-                                  (cadr deps)
+                                  (caddr deps)
                                   (get-source-sha1 path))])
                (if (and zo-exists?
                         src-sha1
-                        (equal? src-sha1 (and (pair? (cadr deps))
-                                              (caadr deps)))
-                        (equal? (get-dep-sha1s (cddr deps) up-to-date collection-cache read-src-syntax path->mode roots #f seen)
-                                (cdadr deps)))
+                        (equal? src-sha1 (and (pair? (caddr deps))
+                                              (caaddr deps)))
+                        (equal? (get-dep-sha1s (cdddr deps) up-to-date collection-cache read-src-syntax path->mode roots #f seen)
+                                (cdaddr deps)))
                    (begin
                      (trace-printf "hash-equivalent: ~a" zo-name)
                      (touch zo-name)
@@ -519,7 +521,7 @@
        (string-append
         (call-with-input-file* path sha1)
         (with-handlers ([exn:fail:filesystem? (lambda (exn) "")])
-          (call-with-input-file* dep-path (lambda (p) (cdadr (read p))))))))))
+          (call-with-input-file* dep-path (lambda (p) (cdaddr (read p))))))))))
 
 (define (get-compiled-sha1 path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
@@ -534,8 +536,8 @@
 
 (define (different-source-sha1-and-dep-recorded path deps)
   (define src-hash (get-source-sha1 path))
-  (define recorded-hash (and (pair? (cadr deps))
-                             (caadr deps)))
+  (define recorded-hash (and (pair? (caddr deps))
+                             (caaddr deps)))
   (if (equal? src-hash recorded-hash)
       #f
       (list src-hash recorded-hash)))
@@ -548,7 +550,7 @@
 (define (compile-root path->mode roots path0 up-to-date collection-cache read-src-syntax sha1-only? seen)
   (define orig-path (simple-form-path path0))
   (define (read-deps path)
-    (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) '#f))])
+    (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) (system-type 'vm) '#f))])
       (with-module-reading-parameterization
        (lambda ()
          (call-with-input-file*
@@ -584,7 +586,10 @@
               [new-seen (hash-set seen path #t)])
           (define build
             (cond
-             [(not (and (pair? deps) (equal? (version) (car deps))))
+              [(not (and (pair? deps)
+                         (equal? (version) (car deps))
+                         (pair? (cdr deps))
+                         (equal? (system-type 'vm) (cadr deps))))
               (lambda ()
                 (trace-printf "newer version...")
                 (maybe-compile-zo #f #f path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen))]
@@ -611,7 +616,7 @@
                       (begin (trace-printf "newer: ~a (~a > ~a)..."
                                            d (car t) path-zo-time)
                              #t)))
-               (cddr deps))
+               (cdddr deps))
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen)]
              [else #f]))

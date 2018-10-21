@@ -5,19 +5,31 @@
 
 (define (read-compiled-linklet-or-directory in initial?)
   ;; `#~` has already been read
-  (let* ([start-pos (- (file-position in) 2)]
-         [vers-len (min 63 (read-byte in))]
-         [vers (read-bytes vers-len in)])
-    (unless (equal? vers (string->bytes/utf-8 (version)))
-      (raise-arguments-error 'read-compiled-linklet
-                             "version mismatch"
-                             "expected" (version)
-                             "found" (bytes->string/utf-8 vers #\?)
-                             "in" (let ([n (object-name in)])
-                                    (if (path? n)
-                                        (unquoted-printing-string
-                                         (path->string n))
-                                        in))))
+  (let ([start-pos (- (file-position in) 2)])
+    (let* ([vers-len (min 63 (read-byte in))]
+           [vers (read-bytes vers-len in)])
+      (unless (equal? vers version-bytes)
+        (raise-arguments-error 'read-compiled-linklet
+                               "version mismatch"
+                               "expected" (version)
+                               "found" (bytes->string/utf-8 vers #\?)
+                               "in" (let ([n (object-name in)])
+                                      (if (path? n)
+                                          (unquoted-printing-string
+                                           (path->string n))
+                                          in)))))
+    (let* ([vm-len (min 63 (read-byte in))]
+           [vm (read-bytes vm-len in)])
+      (unless (equal? vm vm-bytes)
+        (raise-arguments-error 'read-compiled-linklet
+                               "virtual-machine mismatch"
+                               "expected" (symbol->string (system-type 'vm))
+                               "found" (bytes->string/utf-8 vm #\?)
+                               "in" (let ([n (object-name in)])
+                                      (if (path? n)
+                                          (unquoted-printing-string
+                                           (path->string n))
+                                          in)))))
     (let ([tag (read-byte in)])
       (cond
        [(equal? tag (char->integer #\B))

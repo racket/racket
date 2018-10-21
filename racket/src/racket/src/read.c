@@ -3881,6 +3881,26 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
                           (buf[0] ? buf : "???"), MZSCHEME_VERSION);
     }
     
+    /* Check vm: */
+    size = scheme_get_byte(port);
+    {
+      char buf[64];
+
+      if (size < 0) size = 0;
+      if (size > 63) size = 63;
+
+      got = scheme_get_bytes(port, size, buf, 0);
+      buf[got] = 0;
+
+      if (!params->skip_zo_vers_check)
+        if (strcmp(buf, MZSCHEME_VM))
+          scheme_read_err(port,
+                          "read (compiled): wrong virtusal machine for compiled code\n"
+                          "  compiled version: %s\n"
+                          "  expected version: %s",
+                          (buf[0] ? buf : "???"), MZSCHEME_VM);
+    }
+
     mode = scheme_get_byte(port);
     if (mode == 'D') {
       /* a linklet directory */

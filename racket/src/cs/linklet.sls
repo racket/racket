@@ -168,6 +168,7 @@
                              (correlated->annotation v))))))))
       v]))
 
+  (include "linklet/version.ss")
   (include "linklet/write.ss")
   (include "linklet/read.ss")
   (include "linklet/annotation.ss")

@@ -490,7 +490,7 @@
               ;; This is the slowest part, because we have to read the module ".zo"
               (check-bytecode-deps f dir coll-path pkg))
             ;; Treat everything in ".dep" as 'build mode...
-            (define deps (cddr (call-with-input-file* (build-path dir f) read)))
+            (define deps (cdddr (call-with-input-file* (build-path dir f) read)))
             (for ([dep (in-list deps)])
               (when (and (not (external-dep? dep))
                          (not (indirect-dep? dep))

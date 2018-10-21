@@ -6,9 +6,10 @@
   ;;   "B"
   ;;   20 bytes of SHA-1 hash
   (write-bytes '#vu8(35 126) port)
-  (let ([vers (string->bytes/utf-8 (version))])
-    (write-bytes (bytes (bytes-length vers)) port)
-    (write-bytes vers port))
+  (write-bytes (bytes (bytes-length version-bytes)) port)
+  (write-bytes version-bytes port)
+  (write-bytes (bytes (bytes-length vm-bytes)) port)
+  (write-bytes vm-bytes port)
   (write-bytes '#vu8(66) port)
   (write-bytes (make-bytes 20 0) port)
   ;; The rest is whatever we want. We'll simply fasl the bundle.
@@ -28,6 +29,8 @@
   ;;   "#~"
   ;;   length of version byte string (< 64) as one byte
   ;;   version byte string
+  ;;   length of virtual machine byte string (< 64) as one byte
+  ;;   virtual machine byte string
   ;;   "D"
   ;;   bundle count as 4-byte integer
   ;;   binary tree:
@@ -41,31 +44,34 @@
   ;; prefixed with either: its length as a byte if less than 255; 255 followed by
   ;; a 4-byte integer for the length.
   (write-bytes '#vu8(35 126) port)
-  (let ([vers (string->bytes/utf-8 (version))])
-    (write-bytes (bytes (bytes-length vers)) port)
-    (write-bytes vers port)
-    (write-bytes '#vu8(68) port)
-    ;; Flatten a directory of bundles into a vector of pairs, where
-    ;; each pair has the encoded bundle name and the bundle bytes
-    (let* ([bundles (list->vector (flatten-linklet-directory ld '() '()))]
-           [len (vector-length bundles)]
-           [initial-offset (+ 2 ; "#~"
-                              1 ; version length
-                              (bytes-length vers)
-                              1 ; D
-                              4)]) ; bundle count
-      (write-int len port) ; bundle count
-      (chez:vector-sort! (lambda (a b) (bytes<? (car a) (car b))) bundles)
-      ;; Compute bundle offsets
-      (let* ([btree-size (compute-btree-size bundles len)]
-             [node-offsets (compute-btree-node-offsets bundles len initial-offset)]
-             [bundle-offsets (compute-bundle-offsets bundles len (+ initial-offset btree-size))])
-        (write-directory-btree bundles node-offsets bundle-offsets len port)
-        ;; Write the bundles
-        (let loop ([i 0])
-          (unless (fx= i len)
-            (write-bytes (cdr (vector-ref bundles i)) port)
-            (loop (fx1+ i))))))))
+  (write-bytes (bytes (bytes-length version-bytes)) port)
+  (write-bytes version-bytes port)
+  (write-bytes (bytes (bytes-length vm-bytes)) port)
+  (write-bytes vm-bytes port)
+  (write-bytes '#vu8(68) port)
+  ;; Flatten a directory of bundles into a vector of pairs, where
+  ;; each pair has the encoded bundle name and the bundle bytes
+  (let* ([bundles (list->vector (flatten-linklet-directory ld '() '()))]
+         [len (vector-length bundles)]
+         [initial-offset (+ 2 ; "#~"
+                            1 ; version length
+                            (bytes-length version-bytes)
+                            1 ; vm length
+                            (bytes-length vm-bytes)
+                            1 ; D
+                            4)]) ; bundle count
+    (write-int len port) ; bundle count
+    (chez:vector-sort! (lambda (a b) (bytes<? (car a) (car b))) bundles)
+    ;; Compute bundle offsets
+    (let* ([btree-size (compute-btree-size bundles len)]
+           [node-offsets (compute-btree-node-offsets bundles len initial-offset)]
+           [bundle-offsets (compute-bundle-offsets bundles len (+ initial-offset btree-size))])
+      (write-directory-btree bundles node-offsets bundle-offsets len port)
+      ;; Write the bundles
+      (let loop ([i 0])
+        (unless (fx= i len)
+          (write-bytes (cdr (vector-ref bundles i)) port)
+          (loop (fx1+ i)))))))
 
 ;; Flatten a tree into a list of `(cons _name-bstr _bundle-bstr)`
 (define (flatten-linklet-directory ld rev-name-prefix accum)

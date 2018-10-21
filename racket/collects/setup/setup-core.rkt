@@ -743,7 +743,7 @@
         (with-handlers ([exn:fail? (lambda (x) null)])
           (with-input-from-file path read)))
       (when (and (pair? deps) (list? deps))
-        (for ([s (in-list (cddr deps))])
+        (for ([s (in-list (cdddr deps))])
           (unless (external-dep? s)
               (define new-s (dep->path s))
               (when (path-string? new-s) (hash-set! dependencies new-s #t))))))

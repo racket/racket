@@ -14,8 +14,9 @@
                    (call-with-input-file* dep-path read)))
     (for/fold ([all-deps all-deps]) ([dep (in-list (if (and (list? deps)
                                                             (pair? deps)
-                                                            (pair? (cdr deps)))
-                                                       (cddr deps)
+                                                            (pair? (cdr deps))
+                                                            (pair? (cddr deps)))
+                                                       (cdddr deps)
                                                        '()))])
       (define p (collects-relative*->path (dep->encoded-path dep) collection-cache))
       (cond

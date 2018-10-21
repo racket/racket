@@ -275,7 +275,7 @@
                                                                                (eq? (car dep) 'ext))
                                                                           (void)
                                                                           (dynamic-require (main-collects-relative->path dep) #f))))
-                                                                  (cddr deps))))
+                                                                  (cdddr deps))))
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()
 							       ;; Try again without .zo

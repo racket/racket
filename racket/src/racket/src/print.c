@@ -3310,7 +3310,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       intptr_t *subtrees, offset, init_offset;
       int count, i;
 
-      init_offset = 2 + 1 + strlen(MZSCHEME_VERSION) + 1 + 4;
+      init_offset = 2 + 1 + strlen(MZSCHEME_VERSION) + 1 + strlen(MZSCHEME_VM) + 1 + 4;
 
       accum_l = write_bundles_to_strings(scheme_null, obj, scheme_null);
       
@@ -3338,6 +3338,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       print_this_string(pp, "#~", 0, 2);
       print_one_byte(pp, strlen(MZSCHEME_VERSION));
       print_this_string(pp, MZSCHEME_VERSION, 0, -1);
+      print_one_byte(pp, strlen(MZSCHEME_VM));
+      print_this_string(pp, MZSCHEME_VM, 0, -1);
 
       /* "D" means "linklet directory": */
       print_this_string(pp, "D", 0, 1);
@@ -3436,6 +3438,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	/* Remember version: */
         print_one_byte(pp, strlen(MZSCHEME_VERSION));
 	print_this_string(pp, MZSCHEME_VERSION, 0, -1);
+        print_one_byte(pp, strlen(MZSCHEME_VM));
+	print_this_string(pp, MZSCHEME_VM, 0, -1);
 
         print_this_string(pp, "B", 0, 1);  /* "B" means "bundle" */
 
