@@ -60,6 +60,7 @@
          set-run-file!
          set-collects-dir!
          set-config-dir!
+         set-addon-dir!
 
          _path)
 

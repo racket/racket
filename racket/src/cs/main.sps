@@ -183,6 +183,7 @@
    (define exit-value 0)
    (define host-collects-dir init-collects-dir)
    (define host-config-dir init-config-dir)
+   (define addon-dir #f)
 
    (define (no-init! saw)
      (unless (saw? saw 'top)
@@ -329,6 +330,10 @@
               (let-values ([(lib-name rest-args) (next-arg "library name" arg within-arg args)])
                 (when init-library
                   (set! init-library `(lib ,lib-name)))
+                (loop rest-args))]
+             [("-A" "--addon")
+              (let-values ([(addon-path rest-args) (next-arg "addon directory" arg within-arg args)])
+                (set! addon-dir addon-path)
                 (loop rest-args))]
              [("-X" "--collects")
               (let-values ([(collects-path rest-args) (next-arg "collects path" arg within-arg args)])
@@ -544,6 +549,11 @@
       (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
+
+   (let ([a (or addon-dir
+                (getenv "PLTADDONDIR"))])
+     (when a
+       (set-addon-dir! (path->complete-path a))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler

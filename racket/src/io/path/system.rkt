@@ -10,7 +10,8 @@
          set-exec-file!
          set-run-file!
          set-collects-dir!
-         set-config-dir!)
+         set-config-dir!
+         set-addon-dir!)
 
 (define/who (find-system-path key)
   (begin0
@@ -28,7 +29,8 @@
       [(sys-dir) (rktio-system-path who RKTIO_PATH_SYS_DIR)]
       [(pref-dir) (rktio-system-path who RKTIO_PATH_PREF_DIR)]
       [(pref-file) (rktio-system-path who RKTIO_PATH_PREF_FILE)]
-      [(addon-dir) (rktio-system-path who RKTIO_PATH_ADDON_DIR)]
+      [(addon-dir) (or addon-dir
+                       (rktio-system-path who RKTIO_PATH_ADDON_DIR))]
       [(home-dir) (rktio-system-path who RKTIO_PATH_HOME_DIR)]
       [(desk-dir) (rktio-system-path who RKTIO_PATH_DESK_DIR)]
       [(doc-dir) (rktio-system-path who RKTIO_PATH_DOC_DIR)]
@@ -55,6 +57,9 @@
 
 (define config-dir #f)
 (define (set-config-dir! p) (set! config-dir p))
+
+(define addon-dir #f)
+(define (set-addon-dir! p) (set! addon-dir p))
 
 (define (rktio-system-path who key)
   (start-atomic)
