@@ -359,9 +359,9 @@ update-ChezScheme:
 
 clone-ChezScheme-as-extra:
 	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/nanopass/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/stex/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/zlib/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
