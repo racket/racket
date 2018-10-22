@@ -81,7 +81,7 @@ static void init_foreign()
 void racket_boot(int argc, char **argv, char *self, long segment_offset,
                  char *coldir, char *configdir,
                  int pos1, int pos2, int pos3,
-                 int is_gui)
+                 int cs_compiled_subdir, int is_gui)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -133,6 +133,7 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
       l = Scons(Sbytevector(argv[i]), l);
     }
     l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
+    l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);
     sprintf(segment_offset_s, "%ld", segment_offset);
     l = Scons(Sbytevector(segment_offset_s), l);
     l = Scons(Sbytevector(configdir), l);

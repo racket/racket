@@ -20,6 +20,10 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 # define RACKET_IS_GUI 0
 #endif
 
+#ifndef CS_COMPILED_SUBDIR
+# define CS_COMPILED_SUBDIR 1
+#endif
+
 #define XFORM_SKIP_PROC /* empty */
 
 #include "../../start/config.inc"
@@ -128,7 +132,7 @@ int main(int argc, char **argv)
   racket_boot(argc, argv, self, segment_offset,
               extract_coldir(), extract_configdir(),
               pos1, pos2, pos3,
-              RACKET_IS_GUI);
+              CS_COMPILED_SUBDIR, RACKET_IS_GUI);
   
   return 0;
 }

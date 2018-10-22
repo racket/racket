@@ -56,31 +56,35 @@
           the-command-line-arguments/maybe-bytes))
 
    (seq
-    (unless (>= (length the-command-line-arguments) 5)
-      (error 'racket "expected `self`, `collects`, and `libs` paths plus `segment-offset` and `is-gui?` to start"))
+    (unless (>= (length the-command-line-arguments) 6)
+      (error 'racket "expected `self`, `collects`, and `libs` paths plus `segment-offset`, `cs-compiled-subdir?`, and `is-gui?` to start"))
     (set-exec-file! (path->complete-path (car the-command-line-arguments))))
    (define init-collects-dir (let ([s (cadr the-command-line-arguments)])
                                (if (equal? s "") 'disable (string->path s))))
    (define init-config-dir (string->path (or (getenv "PLTCONFIGDIR")
                                              (caddr the-command-line-arguments))))
    (define segment-offset (#%string->number (list-ref the-command-line-arguments 3)))
-   (define gracket? (string=? "true" (list-ref the-command-line-arguments 4)))
+   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 4)))
+   (define gracket? (string=? "true" (list-ref the-command-line-arguments 5)))
 
    (seq
     (when (foreign-entry? "racket_exit")
       (#%exit-handler (foreign-procedure "racket_exit" (int) void))))
 
    (define compiled-file-paths
-     (list (string->path (string-append "compiled/"
-                                        (cond
-                                         [(getenv "PLT_ZO_PATH")
-                                          => (lambda (s)
-                                               (unless (and (not (equal? s ""))
-                                                            (relative-path? s))
-                                                 (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
-                                               s)]
-                                         [platform-independent-zo-mode? "cs"]
-                                         [else (symbol->string (machine-type))])))))
+     (list (string->path (cond
+                          [cs-compiled-subdir?
+                           (string-append "compiled/"
+                                          (cond
+                                           [(getenv "PLT_ZO_PATH")
+                                            => (lambda (s)
+                                                 (unless (and (not (equal? s ""))
+                                                              (relative-path? s))
+                                                   (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
+                                                 s)]
+                                           [platform-independent-zo-mode? "cs"]
+                                           [else (symbol->string (machine-type))]))]
+                          [else "compiled"]))))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
 
@@ -216,7 +220,7 @@
    (define remaining-command-line-arguments '#())
 
    (seq
-    (let flags-loop ([args (list-tail the-command-line-arguments 5)]
+    (let flags-loop ([args (list-tail the-command-line-arguments 6)]
                      [saw (hasheq)])
       ;; An element of `args` can become `(cons _arg _within-arg)`
       ;; due to splitting multiple flags with a single "-"

@@ -282,9 +282,12 @@ cs-base:
 cs-as-is:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup
 
+CS_CONFIG_TARGET = no-cfg-cs
+RACKET_GIVEN_ARGS = RACKET="$(RACKET_BUILT_FOR_CS)" CS_CONFIG_TARGET=run-cfg-cs SETUP_BOOT_MODE=--boot
+
 cs-after-racket:
 	if [ "$(RACKET)" = "" ] ; \
-         then $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot ; \
+         then $(MAKE) cs-after-racket-with-racket $(RACKET_GIVEN_ARGS) ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
 
 RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
@@ -296,7 +299,7 @@ racket-then-cs:
 
 racket-configured-then-cs:
 	$(MAKE) plain-base BASE_INSTALL_TARGET=nothing-after-base
-	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot
+	$(MAKE) cs-after-racket-with-racket $(RACKET_GIVEN_ARGS)
 
 cs-only:
 	$(MAKE) racket/src/build/Makefile SRC_MAKEFILE_CONFIG=cfg-cs
@@ -327,9 +330,16 @@ cs-after-racket-with-abs-paths:
 nothing-after-base:
 	echo base done
 
-racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
+racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
 	mkdir -p cd racket/src/build/cs
-	cd racket/src/build/cs; ../../cs/c/configure
+	cd racket/src/build/cs; ../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	$(MAKE) $(CS_CONFIG_TARGET)
+
+run-cfg-cs:
+	cd racket/src/build; ../../cs/cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+
+no-cfg-cs:
+	echo done
 
 scheme-src:
 	$(MAKE) racket/src/build/ChezScheme

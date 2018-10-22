@@ -178,13 +178,14 @@ More Instructions: Building Racket-on-Chez
 ==========================================
 
 The `make cs` target (or `make cs-as-is` for a rebuild, or `nmake
-win32-cs` on Windows with Visual Studio) builds an experimental
-variant of Racket that runs on Chez Scheme. By default, the
-executables for the Racket-on-Chez variant all have a "cs" or "CS"
-suffix, so they coexist with a traditional Racket build. You can
-remove the "cs" suffix by providing `RACKETCS_SUFFIX=""` to `make`.
-(One day, if the experiment goes well, the default for
-`RACKETCS_SUFFIX with change from "cs" to "".)
+win32-cs` on Windows with Visual Studio) builds a variant of Racket
+that runs on Chez Scheme. By default, the executables for the
+Racket-on-Chez variant all have a "cs" or "CS" suffix, and they
+coexist with a traditional Racket build by keeping compiled files in a
+machine-specific subdirectory of the "compiled" directory. You can
+remove the "cs" suffix and the subdirectory in "compiled" by providing
+`RACKETCS_SUFFIX=""` to `make`. (One day, if all goes well, the
+default for `RACKETCS_SUFFIX` will change from "cs" to "".)
 
 Building Racket-on-Chez requires an existing Racket and Chez Scheme.
 If you use `make cs` with no further arguments, then the build process

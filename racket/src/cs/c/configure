@@ -622,6 +622,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
@@ -2538,6 +2539,12 @@ if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
 fi
 
+CS_COMPILED_SUBDIR=1
+if test "${enable_csdefault}" = "yes" ; then
+  CS_COMPILED_SUBDIR=0
+fi
+
+
 ############## Install targets ################
 
 PREFIX_PATH_RELATIVE=/../..
@@ -4416,6 +4423,7 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

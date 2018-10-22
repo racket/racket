@@ -79,6 +79,12 @@ if test "${enable_csdefault}" = "yes" ; then
   CS_INSTALLED=""
 fi
 
+CS_COMPILED_SUBDIR=1
+if test "${enable_csdefault}" = "yes" ; then
+  CS_COMPILED_SUBDIR=0
+fi
+
+
 ############## Install targets ################
 
 PREFIX_PATH_RELATIVE=/../..
@@ -419,6 +425,7 @@ AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(CS_INSTALLED)
+AC_SUBST(CS_COMPILED_SUBDIR)
 
 makefiles="Makefile"
 
