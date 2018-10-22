@@ -104,7 +104,8 @@
       (let ()
         (define the-rhs
           (parameterize ((current-syntax-context #'ctx))
-            (fixup-rhs (syntax-local-eval #'the-rhs-expr)
+            (fixup-rhs (syntax-local-eval
+                        (syntax-local-introduce #'the-rhs-expr))
                        (syntax-e #'splicing?)
                        (syntax->datum #'relsattrs))))
         (rhs->parser #'name #'formals #'relsattrs the-rhs (syntax-e #'splicing?) #'ctx)))]))
