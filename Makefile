@@ -255,6 +255,10 @@ MAKE_BUILD_SCHEME = y
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
 GIT_CLONE_ARGS_qq = --depth 1
 
+# Altenative source for Chez Scheme repo, normally set by
+# the distro-build client driver
+EXTRA_REPOS_BASE = 
+
 # Redirected for `cs-as-is` and `cs-base`:
 CS_SETUP_TARGET = plain-in-place-after-base
 
@@ -283,12 +287,11 @@ cs-as-is:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup
 
 CS_CONFIG_TARGET = no-cfg-cs
-RACKET_GIVEN_ARGS = RACKET="$(RACKET_BUILT_FOR_CS)" CS_CONFIG_TARGET=run-cfg-cs SETUP_BOOT_MODE=--boot
 
 cs-after-racket:
 	if [ "$(RACKET)" = "" ] ; \
-         then $(MAKE) cs-after-racket-with-racket $(RACKET_GIVEN_ARGS) ; \
-         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+         then $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot ; \
+         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" CS_CONFIG_TARGET=run-cfg-cs ; fi
 
 RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
 
@@ -299,7 +302,7 @@ racket-then-cs:
 
 racket-configured-then-cs:
 	$(MAKE) plain-base BASE_INSTALL_TARGET=nothing-after-base
-	$(MAKE) cs-after-racket-with-racket $(RACKET_GIVEN_ARGS)
+	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot
 
 cs-only:
 	$(MAKE) racket/src/build/Makefile SRC_MAKEFILE_CONFIG=cfg-cs
@@ -336,7 +339,7 @@ racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile
 	$(MAKE) $(CS_CONFIG_TARGET)
 
 run-cfg-cs:
-	cd racket/src/build; ../../cs/cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	cd racket/src/build; ../cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 no-cfg-cs:
 	echo done
@@ -347,10 +350,18 @@ scheme-src:
 
 racket/src/build/ChezScheme:
 	mkdir -p racket/src/build
-	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO)
+	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
+          then cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO) ChezScheme ; \
+          else $(MAKE) clone-ChezScheme-as-extra GIT_CLONE_ARGS_qq="" ; fi
 
 update-ChezScheme:
 	cd racket/src/build/ChezScheme && git pull && git submodule update
+
+clone-ChezScheme-as-extra:
+	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/nanopass/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/stex/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/zlib/.git
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
@@ -643,6 +654,7 @@ WIN32_CLIENT_BASE = win32-base
 
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" BUILD_STAMP="$(BUILD_STAMP)" \
+	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)" \
