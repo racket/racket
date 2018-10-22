@@ -166,7 +166,7 @@ then an algebra student simplifies @tt{x + 1} as follows:
 @verbatim{  x + 1 = 10 + 1 = 11}
 
 Racket works much the same way, in that a set of @deftech{top-level
-variables} are available for substitutions on demand during
+variables} (see also @secref["vars-and-locs"]) are available for substitutions on demand during
 evaluation. For example, given
 
 @racketblock[
@@ -416,9 +416,10 @@ an @tech{object}, so evaluating @racket[(f 7)] starts with a
 ]
 
 Unlike in algebra, however, the @tech{value} associated with an
-procedure parameter can be changed in the body of a procedure by using
+argument parameter variable (not to be confused with parameters;
+see @secref["parameter-model"]) can be changed in the body of a procedure by using
 @racket[set!], as in the example @racket[(lambda (x) (begin (set! x 3)
-x))]. Since the @tech{value} associated with parameter @racket[x] can be
+x))]. Since the @tech{value} associated with parameter variable @racket[x] can be
 changed, an argument value cannot be substituted for @racket[x] when
 the procedure is first applied.
 
@@ -451,7 +452,8 @@ not been used before and that cannot be generated again or
 accessed directly.
 
 Generating a @tech{location} in this way means that @racket[set!]
-evaluates for @tech{local variables}, including parameters, in the same way as for
+evaluates for @tech{local variables}, including argument
+parameter variables, in the same way as for
 @tech{top-level variables}, because the @tech{local variable} is
 always replaced with a @tech{location} by the time the @racket[set!]
 form is evaluated:
@@ -495,7 +497,7 @@ Evaluation of a local-variable form, such as @racket[(let ([x (+ 1
 that replaces every instance of @racket[x] in @racket[_expr].
 
 @;------------------------------------------------------------------------
-@section{Variables and Locations}
+@section[#:tag "vars-and-locs"]{Variables and Locations}
 
 A @deftech{variable} is a placeholder for a @tech{value}, and
 expressions in an initial program refer to @tech{variables}. A
@@ -503,8 +505,8 @@ expressions in an initial program refer to @tech{variables}. A
 @tech{location}. Any other @tech{variable} is always replaced by a
 @tech{location} at run-time; thus, evaluation of expressions
 involves only @tech{locations}. A single @deftech{local variable}
-(i.e., a non-top-level, non-module-level @tech{variable}), such as a
-procedure parameter, can correspond to different @tech{locations}
+(i.e., a non-top-level, non-module-level @tech{variable}), such as an
+argument parameter variable, can correspond to different @tech{locations}
 through different applications.
 
 For example, in the program
@@ -520,7 +522,7 @@ hold the value @racket[11].
 
 The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,
-when a procedure parameter @tech{variable} @racket[x] is replaced by
+when an argument parameter variable @racket[x] is replaced by
 the @tech{location} @racket[xloc], it is replaced @italic{throughout} the
 body of the procedure, including any nested @racket[lambda]
 forms. As a result, future references to the @tech{variable} always
