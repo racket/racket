@@ -737,6 +737,7 @@
    [(equal? #"#f" tag) #f]
    [else
     (define version (read-bytes (min 63 (read-byte port)) port))
+    (define vm (read-bytes (min 63 (read-byte port)) port))
     (read-char port)]))
 
 ;; path -> bytes
