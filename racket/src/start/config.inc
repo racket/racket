@@ -3,6 +3,13 @@
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
+#if defined(__GNUC__)
+# define PRESERVE_IN_EXECUTABLE __attribute__((used))
+#else
+# define PRESERVE_IN_EXECUTABLE /* empty */
+#endif
+
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_cmdline_exe_hack = (char *)
   ("[Replace me for EXE hack                                       "
    "                                                              ]");
@@ -14,6 +21,7 @@ char * volatile scheme_cmdline_exe_hack = (char *)
 #else
 # define GC_PRECISION_TYPE "c"
 #endif
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 /* The format of bINARy tYPe is e?[zr]i[3cs].
    e indicates a starter executable
@@ -29,6 +37,7 @@ char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRE
 # endif
 #endif
 
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
                        INITIAL_COLLECTS_DIRECTORY 
                        "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
@@ -59,6 +68,7 @@ static int _coldir_offset = 19; /* Skip permanent tag */
 # endif
 #endif
 
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_configdir = "coNFIg dIRECTORy:" /* <- this tag stays, so we can find it again */
                        INITIAL_CONFIG_DIRECTORY
                        "\0"
