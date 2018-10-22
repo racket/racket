@@ -33,14 +33,17 @@
    adjusted. Using a seciton offset allows linking tools (such as
    `strip') to move the data in the executable.
 */
+__attribute__((used))
 char *config = "cOnFiG:[***************************";
 
+__attribute__((used))
 char *binary_type_hack = "bINARy tYPe:ezic";
 
 /* This path list is used instead of the one in the Racket/GRacket
    binary. That way, the same Racket/GRacket binary can be shared
    among embedding exectuables that have different collection
    paths. */
+__attribute__((used))
 char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
                 "../collects"
                 "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
@@ -63,6 +66,7 @@ char *_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it ag
 		"****************************************************************";
 static int _coldir_offset = 19; /* Skip permanent tag */
 
+__attribute__((used))
 char * volatile _configdir = "coNFIg dIRECTORy:" /* <- this tag stays, so we can find it again */
                        "../etc"
                        "\0"
