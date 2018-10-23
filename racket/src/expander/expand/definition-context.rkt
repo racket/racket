@@ -239,11 +239,11 @@
                                           intdefs)]
                 [use-site-scopes
                  #:parent root-expand-context
-                 (and (or (eq? context 'module)
-                          (eq? context 'module-begin)
-                          (list? context))
-                      (or (root-expand-context-use-site-scopes ctx)
-                          (box null)))]
+                 (if (or (eq? context 'module)
+                         (eq? context 'module-begin)
+                         (list? context))
+                   (root-expand-context-use-site-scopes ctx)
+                   (box null))]
                 [frame-id #:parent root-expand-context
                           ;; If there are multiple definition contexts in `intdefs`
                           ;; and if they have different frame IDs, then we conservatively

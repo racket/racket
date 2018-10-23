@@ -606,7 +606,7 @@
 ;; expand-pattern : pattern-expander Syntax -> Syntax
 (define (expand-pattern pe stx)
   (let ([proc (pattern-expander-proc pe)])
-    (local-apply-transformer proc stx 'expression)))
+    (local-apply-transformer proc stx (list (gensym)))))
 
 ;; parse-ellipsis-head-pattern : stx DeclEnv -> (listof EllipsisHeadPattern)
 (define (parse-ellipsis-head-pattern stx decls)
@@ -695,11 +695,12 @@
                (declenv-check-unbound decls name (syntax-e suffix) #:blame-declare? #t)
                (define entry (declenv-lookup decls suffix))
                (cond [(or (den:lit? entry) (den:datum-lit? entry))
-                      (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
+                      (pat:and (list (pat:svar (syntax-local-identifier-as-binding name))
+                                     (parse-pat:id/entry id allow-head? entry)))]
                      [else (parse-stxclass-use id allow-head? name suffix no-arguments #f)])])]
         [(declenv-apply-conventions decls id)
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
-        [else (pat:svar id)]))
+        [else (pat:svar (syntax-local-identifier-as-binding id))]))
 
 (define (split-id id0)
   (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
@@ -787,7 +788,7 @@
               (parse-stxclass-use* stx allow-head? varname sc argu "." role parser*))]
         [(memq (stxclass-lookup-config) '(try no))
          (define bind (name->bind varname))
-         (pat:fixup stx bind varname scname argu role parser*)]
+         (pat:fixup stx bind (syntax-local-identifier-as-binding varname) scname argu role parser*)]
         [else (wrong-syntax scname "not defined as syntax class (config=~s)"
                             ;; XXX FIXME
                             (stxclass-lookup-config))]))
@@ -814,12 +815,12 @@
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]
         [(epsilon? id) id]
-        [else (format-id id "~a~a" (syntax-e id) pfx #:source id)]))
+        [else (format-id (syntax-local-identifier-as-binding id) "~a~a" (syntax-e id) pfx #:source id)]))
 
 (define (name->bind id)
   (cond [(wildcard? id) #f]
         [(epsilon? id) #f]
-        [else id]))
+        [else (syntax-local-identifier-as-binding id)]))
 
 ;; id-pattern-attrs : (listof SAttr)IdPrefix -> (listof IAttr)
 (define (id-pattern-attrs sattrs prefix)
@@ -1477,13 +1478,13 @@
   (syntax-case stx ()
     [attr
      (identifier? #'attr)
-     (make-attr #'attr 0 #f)]
+     (make-attr (syntax-local-identifier-as-binding #'attr) 0 #f)]
     [(attr depth)
      (begin (unless (identifier? #'attr)
               (raise-syntax-error #f "expected attribute name" ctx #'attr))
             (unless (exact-nonnegative-integer? (syntax-e #'depth))
               (raise-syntax-error #f "expected depth (nonnegative integer)" ctx #'depth))
-            (make-attr #'attr (syntax-e #'depth) #f))]
+            (make-attr (syntax-local-identifier-as-binding #'attr) (syntax-e #'depth) #f))]
     [_
      (raise-syntax-error #f "expected attribute name with optional depth declaration" ctx stx)]))
 

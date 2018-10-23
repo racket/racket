@@ -11,8 +11,7 @@
 ;; of syntax
 (define (remove-use-site-scopes s ctx)
   (define use-sites (root-expand-context-use-site-scopes ctx))
-  (if (and use-sites
-           (pair? (unbox use-sites)))
+  (if (pair? (unbox use-sites))
       (if (syntax? s)
           (remove-scopes s (unbox use-sites))
           (for/list ([id (in-list s)])

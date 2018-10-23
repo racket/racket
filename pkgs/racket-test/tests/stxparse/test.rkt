@@ -973,3 +973,30 @@
                   [(:ids) (syntax->datum #'(k ...))]
                   [_ #f])
                 '(a b c)))
+
+;; Make sure bind-bound attributes splice
+(let ()
+  (define-syntax ~m
+    (pattern-expander
+      (lambda (stx)
+        (syntax-case stx ()
+          [(_ arg)
+           #'(~bind [arg 5])]))))
+
+  (check-equal? (syntax-parse 5 [(~m a) (attribute a)])
+                5))
+
+;; Make sure use-site binder hygiene applies for local binders
+(let ()
+  (define x 'good)
+  (define-syntax ~m
+    (pattern-expander
+      (lambda (stx)
+        (syntax-case stx ()
+          [(_ arg1 arg2)
+           #'(~bind [arg1 (let ([arg2 'bad]) x)])]))))
+
+  (define/syntax-parse (~m a x) 5)
+
+  (check-equal? (attribute a)
+                'good))

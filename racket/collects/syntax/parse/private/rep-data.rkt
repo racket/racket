@@ -99,11 +99,11 @@ expressions are duplicated, and may be evaluated in different scopes.
                   (let ([id (cond [(den:lit? literal) (den:lit-internal literal)]
                                   [(den:datum-lit? literal) (den:datum-lit-internal literal)])])
                     ;;(eprintf ">> added ~e\n" id)
-                    (bound-id-table-set table id literal)))])
+                    (bound-id-table-set table (syntax-local-identifier-as-binding id) literal)))])
     (make-declenv table conventions)))
 
 (define (declenv-lookup env id)
-  (bound-id-table-ref (declenv-table env) id #f))
+  (bound-id-table-ref (declenv-table env) (syntax-local-identifier-as-binding id) #f))
 
 (define (declenv-apply-conventions env id)
   (conventions-lookup (declenv-conventions env) id))
@@ -137,7 +137,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define (declenv-put-stxclass env id stxclass-name argu [role #f])
   (declenv-check-unbound env id)
   (make-declenv
-   (bound-id-table-set (declenv-table env) id
+   (bound-id-table-set (declenv-table env) (syntax-local-identifier-as-binding id)
                        (den:magic-class id stxclass-name argu role))
    (declenv-conventions env)))
 
@@ -160,7 +160,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 ;; returns ids in domain of env but not in given list
 (define (declenv-domain-difference env ids)
   (define idbm (make-bound-id-table))
-  (for ([id (in-list ids)]) (bound-id-table-set! idbm id #t))
+  (for ([id (in-list ids)]) (bound-id-table-set! idbm (syntax-local-identifier-as-binding id) #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
              #:when (or (den:class? v) (den:magic-class? v))
              #:unless (bound-id-table-ref idbm k #f))

@@ -335,7 +335,7 @@
                                         #,(mode-wrap (phase+ base-mode (import-req-mode import))
                                                      (quasisyntax/loc in
                                                        (rename #,(import-src-mod-path import)
-                                                               #,(import-local-id import)
+                                                               #,(syntax-local-identifier-as-binding (import-local-id import))
                                                                #,(import-src-sym import))))))
                                    imports)
                               (map (lambda (src)
@@ -1182,7 +1182,7 @@
                  (import-mode i)
                  (list #'rename
                        (import-src-mod-path i)
-                       (import-local-id i)
+                       (syntax-local-identifier-as-binding (import-local-id i))
                        (import-src-sym i))))
      (import-orig-stx i)))
 
@@ -1201,7 +1201,7 @@
                           stx
                           (list* #'only-meta-in 0 (syntax->list #'(spec ...)))
                           stx))]
-                       [(names) (map import-local-id imports)]
+                       [(names) (map syntax-local-identifier-as-binding (map import-local-id imports))]
                        [(reqd-names)
                         (let ([ctx (syntax-local-get-shadower (datum->syntax #f (gensym)))])
                           (map (lambda (n) (datum->syntax ctx (syntax-e n) n)) names))]
