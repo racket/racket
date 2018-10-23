@@ -225,6 +225,9 @@ plain-install@OSX@:
 
 common-install:
 	mkdir -p $(ALLDIRINFO)
+	rm -f "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
+	rm -f "$(DESTDIR)$(libpltdir)/starter"
+	rm -f "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(ICP) racketcs "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(ICP) starter "$(DESTDIR)$(libpltdir)/starter"
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
@@ -232,6 +235,7 @@ common-install:
 
 unix-install:
 	$(MAKE) common-install
+	rm -f "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
@@ -246,6 +250,9 @@ macos-install:
 	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS"
 	cp $(RKTFW) $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/
 	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot"
+	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/petite.boot
+	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/scheme.boot
+	rm -f $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/racket.boot
 	cp $(RKTFWDIR)/boot/petite.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/scheme.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
 	cp $(RKTFWDIR)/boot/racket.boot $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot/
