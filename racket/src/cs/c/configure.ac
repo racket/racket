@@ -126,6 +126,7 @@ AC_CHECK_LIB(dl, dlopen)
 
 MACH_HOST_CPU="${host_cpu}"
 extra_scheme_config_args=
+disable_curses_arg=--disable-curses
 
 case "$host_os" in
   solaris2*)
@@ -201,6 +202,9 @@ case "$host_os" in
 
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
+
+    # ncurses.h is always available
+    disable_curses_arg=""
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -260,7 +264,7 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} ${extra_scheme_config_args}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
