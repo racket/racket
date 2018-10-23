@@ -1,5 +1,4 @@
 #lang scribble/manual
-@;;;#lang scribble/doc
 
 @(require scribble/struct scribble/racket "mz.rkt" "prog-steps.rkt"
           (for-syntax racket/base))
@@ -29,13 +28,6 @@ to switch to the usual langle/rangle that is used in syntax definitions.
 @(define-syntax state
    (syntax-rules () [(_ a b) (*state (racket a) (racket b))]))
 ;}
-
-@;{
-I worked on sections 1--9. More work to come on them and the remaining
-sections.
-
-~~Paul C. Anagnostopoulos
-}
 
 @;------------------------------------------------------------------------
 @title[#:tag "eval-model"]{Evaluation Model}
