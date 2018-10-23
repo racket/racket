@@ -1035,9 +1035,10 @@
       (write (compile e) o)
       (define s (get-output-bytes o))
       (define vlen (bytes-ref s 2))
+      (define vmlen (bytes-ref s (+ 3 vlen)))
       ;; Add a hash, so that loading this module in two contexts tries to
       ;; use the same loaded bytecode and same JIT-generated code:
-      (bytes-copy! s (+ 4 vlen)
+      (bytes-copy! s (+ 5 vlen vmlen)
                    (subbytes
                     (bytes-append (string->bytes/utf-8 (format "~s" (bytes-length s)))
                                   (make-bytes 20 0))
@@ -1356,17 +1357,18 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (define (install-module-hashes! s start len c)
   (define vlen (bytes-ref s (+ start 2)))
-  (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
+  (define vslen (bytes-ref s (+ start 3 vlen)))
+  (define mode (integer->char (bytes-ref s (+ start 4 vlen vslen))))
   (case mode
     [(#\B)
      (define h (make-bytes 20 (+ 42 c)))
-     (bytes-copy! s (+ start 4 vlen) h)]
+     (bytes-copy! s (+ start 5 vlen vslen) h)]
     [(#\D)
      (define (read-num rel-pos)
        (define pos (+ start rel-pos))
        (integer-bytes->integer s #t #f pos (+ pos 4)))
-     (define count (read-num (+ 4 vlen)))
-     (for/fold ([pos (+ 8 vlen)]) ([i (in-range count)])
+     (define count (read-num (+ 5 vlen vslen)))
+     (for/fold ([pos (+ 9 vlen vslen)]) ([i (in-range count)])
        (define pos-pos (+ pos 4 (read-num pos)))
        (define mod-start (read-num pos-pos))
        (define mod-len (read-num (+ pos-pos 4)))

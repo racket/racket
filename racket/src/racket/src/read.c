@@ -3895,7 +3895,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       if (!params->skip_zo_vers_check)
         if (strcmp(buf, MZSCHEME_VM))
           scheme_read_err(port,
-                          "read (compiled): wrong virtusal machine for compiled code\n"
+                          "read (compiled): wrong virtual machine for compiled code\n"
                           "  compiled version: %s\n"
                           "  expected version: %s",
                           (buf[0] ? buf : "???"), MZSCHEME_VM);
