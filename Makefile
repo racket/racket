@@ -191,11 +191,11 @@ plain-base:
 	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
-	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
+	cd racket/src/build; $(MAKE) racket-variant $(SELF_FLAGS_qq)
 	$(MAKE) $(BASE_INSTALL_TARGET)
 
 plain-base-install:
-	cd racket/src/build; $(MAKE) install $(INSTALL_SETUP_ARGS)
+	cd racket/src/build; $(MAKE) install-racket-variant $(INSTALL_SETUP_ARGS)
 
 base-config:
 	mkdir -p build/config

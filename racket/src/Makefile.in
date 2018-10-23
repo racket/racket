@@ -50,6 +50,9 @@ COPYING = "$(srcdir)/COPYING-libscheme.txt" \
 all:
 	$(MAKE) @MAIN_MAKE_TARGET@
 
+racket-variant:
+	$(MAKE) @MAIN_VARIANT@
+
 TAGS:
 	etags `find "@srcdir@/racket" -type f`
 
@@ -109,6 +112,9 @@ SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
 
 install:
 	$(MAKE) install-@MAIN_MAKE_TARGET@
+
+install-racket-variant:
+	$(MAKE) install-@MAIN_VARIANT@
 
 plain-install:
 	if [ "$(DESTDIR)" != "" ]; then \
