@@ -151,6 +151,7 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
+    LIBS="${LIBS} -lrt"
     ;;
   osf1*)
     ;;
