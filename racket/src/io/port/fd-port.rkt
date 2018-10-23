@@ -87,7 +87,7 @@
                         [() (buffer-control)]
                         [(pos) (buffer-control pos)]))))
   (define custodian-reference
-    (register-fd-close cust fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount #f port))
   port)
 
 ;; ----------------------------------------
@@ -230,7 +230,7 @@
                      [(mode) (set! buffer-mode mode)])))
 
   (define custodian-reference
-    (register-fd-close cust fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount flush-handle port))
 
   (set-fd-evt-closed! evt (core-port-closed port))
 
@@ -331,12 +331,14 @@
 
 ;; ----------------------------------------
 
-(define (register-fd-close custodian fd fd-refcount port)
+(define (register-fd-close custodian fd fd-refcount flush-handle port)
   (define closed (core-port-closed port))
   (unsafe-custodian-register custodian
                              fd
                              ;; in atomic mode
                              (lambda (fd)
+                               (when flush-handle
+                                 (plumber-flush-handle-remove! flush-handle))
                                (fd-close fd fd-refcount)
                                (set-closed-state! closed))
                              #f
