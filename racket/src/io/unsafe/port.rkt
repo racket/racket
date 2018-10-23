@@ -17,10 +17,10 @@
   (define write? (memq 'write mode))
   (define refcount (box (if (and read? write?) 2 1)))
   (define fd (rktio_system_fd rktio system-fd
-                              (bitwise-and
+                              (bitwise-ior
                                (if read? RKTIO_OPEN_READ 0)
                                (if write? RKTIO_OPEN_WRITE 0)
-                               (if (memq 'test mode) RKTIO_OPEN_TEXT 0)
+                               (if (memq 'text mode) RKTIO_OPEN_TEXT 0)
                                (if (memq 'regular-file mode) RKTIO_OPEN_REGFILE 0))))
   (define i (and read?
                  (open-input-fd fd name #:fd-refcount refcount)))
