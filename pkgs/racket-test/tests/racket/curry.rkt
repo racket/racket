@@ -68,3 +68,19 @@
 (check-pred procedure? ((curry opt-kw+pos) #t))
 (check-equal? (curry opt-kw+pos #:a #t #t) (list #t #t))
 (check-equal? ((curry opt-kw+pos) #:a #t #t) (list #t #t))
+
+(define zero-or-one
+  (case-lambda
+    [() 0]
+    [(a) 1]))
+
+(check-equal? (((curry zero-or-one))) 0)
+(check-equal? ((curry zero-or-one) #t) 1)
+(check-equal? (curry zero-or-one #t) 1)
+
+(define (zero-or-one/kw [x #f] #:y y)
+  (if x 1 0))
+
+(check-equal? ((curry zero-or-one/kw #:y #f)) 0)
+(check-equal? ((curry zero-or-one/kw #:y #f) #t) 1)
+(check-equal? (curry zero-or-one/kw #:y #f #t) 1)

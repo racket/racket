@@ -49,7 +49,7 @@
     (cond
       [(eqv? mask 0) #f]
       [(negative? mask) +inf.0]
-      [else (integer-length (sub1 mask))]))
+      [else (sub1 (integer-length mask))]))
 
   ; arity-mask? exact-nonnegative-integer? -> arity-mask?
   ;
