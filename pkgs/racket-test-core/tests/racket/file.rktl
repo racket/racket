@@ -1696,6 +1696,8 @@
 
 ;; The `ffi/file` library - - - - - - - - - - - - - - - - - - -
 
+(define no-op (lambda (x) #f))
+
 (let ()
   (define pub-mod (collection-file-path "list.rkt" "racket"))
   (define priv-mod (collection-file-path "stx.rkt" "racket/private"))
@@ -1724,11 +1726,15 @@
      void void))
 
   (define (mk-fun modes)
-    ;; receives path pointer, casts as int, who cares
-    (get-ffi-obj "scheme_make_integer_value" (ffi-lib #f)
-                 (_fun (path) ::
-                       (path : (_file/guard modes 'me))
-                       -> _scheme)))
+    ;; receives path pointer; the rest doesn't matter
+    (cast no-op
+          ;; turns `no-op` into a callback:
+          (_fun _pointer -> _scheme)
+          ;; turns the callback into a callout, which is what we want
+          ;; to test `_file/guard`:
+          (_fun (path) ::
+                (path : (_file/guard modes 'me))
+                -> _scheme)))
   
   (define (fun path modes)
     ((mk-fun modes) path))

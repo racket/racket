@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../host/rktio.rkt"
          "../port/port.rkt"
+         "../port/close.rkt"
          "../port/input-port.rkt"
          "../port/output-port.rkt"
          "../port/fd-port.rkt"
@@ -61,10 +62,20 @@
 (define/who (tcp-port? p)
   (tcp-data? (port-tcp-data p)))
 
-(define/who (tcp-abandon-port p)
+(define/who (tcp-abandon-port given-p)
+  (define p (cond
+              [(input-port? given-p)
+               (->core-input-port given-p)]
+              [(output-port? given-p)
+               (->core-output-port given-p)]
+              [else #f]))
   (define data (port-tcp-data p))
   (unless (tcp-data? data)
     (raise-argument-error who "tcp-port?" p))
   (if (input-port? p)
-      (set-tcp-data-abandon-in?! data #t)
-      (set-tcp-data-abandon-out?! data #t)))
+      (begin
+        (set-tcp-data-abandon-in?! data #t)
+        (close-port p))
+      (begin
+        (set-tcp-data-abandon-out?! data #t)
+        (close-port p))))
