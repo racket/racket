@@ -973,3 +973,16 @@
                   [(:ids) (syntax->datum #'(k ...))]
                   [_ #f])
                 '(a b c)))
+
+;; from Sam TH and Alex Knauth (10/2018)
+(convert-syntax-error
+ (let ()
+   (define-syntax (object stx)
+     (define-syntax-class f
+       [pattern _ #:with x #'ths])
+     (syntax-parse stx
+       [(object f:f)
+        #:with x #'ths
+        #'(define (f.x) ths)]))
+   (object 1)
+   (void)))
