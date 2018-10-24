@@ -194,7 +194,7 @@ main.o: $(MAIN_DEPS)
 	$(CC) $(CFLAGS) $(DEF_C_DIRS) $(COMP_SUBDIR) -c -o main.o $(srcdir)/main.c
 
 grmain.o: $(srcdir)/grmain.c $(MAIN_DEPS) $(srcdir)/../../start/gui_filter.inc
-	$(CC) $(CFLAGS) $(DEF_C_DIRS) -c -o grmain.o $(srcdir)/grmain.c
+	$(CC) $(CFLAGS) $(DEF_C_DIRS) $(COMP_SUBDIR) -c -o grmain.o $(srcdir)/grmain.c
 
 boot.o: $(srcdir)/boot.c $(srcdir)/../../rktio/rktio.inc $(srcdir)/boot.h
 	$(CC) $(CFLAGS) -c -o boot.o $(srcdir)/boot.c
