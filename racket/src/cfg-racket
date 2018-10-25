@@ -2849,6 +2849,13 @@ if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
 fi
 
+
+STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
+strip_debug_flags=""
+enable_strip_by_default=yes
+strip_needs_dash_s=no
+
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
@@ -3208,6 +3215,7 @@ show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
+
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
@@ -3336,12 +3344,6 @@ INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
 
 INSTALL_LIBS_ENABLE=no-install
-
-STRIP_DEBUG=":"
-STRIP_LIB_DEBUG=":"
-strip_debug_flags=""
-enable_strip_by_default=yes
-strip_needs_dash_s=no
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -5181,6 +5183,7 @@ $as_echo "$set_strip_lib" >&6; }
     fi
   fi
 fi
+
 
 ############## C flags ################
 

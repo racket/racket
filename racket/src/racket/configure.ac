@@ -75,7 +75,7 @@ AC_ARG_ENABLE(ffipoll, [  --enable-ffipoll        FFI calls only when embedding 
 AC_ARG_ENABLE(gprof,   [  --enable-gprof          compile for profiling with gprof (gcc only)])
 AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statistics (gcc3 only)])
 
-AC_ARG_ENABLE(noopt,   [  --enable-strip          strip debug on install (usually enabled by default)])
+m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
 AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
@@ -223,8 +223,7 @@ show_explicitly_enabled "${enable_gcov}" "gcov"
 show_explicitly_enabled "${enable_jitframe}" "jitframe"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode is intended only for debugging purposes"
-show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
-show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
+m4_include(../ac/strip_show.m4)
 
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
@@ -291,12 +290,6 @@ INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
 
 INSTALL_LIBS_ENABLE=no-install
-
-STRIP_DEBUG=":"
-STRIP_LIB_DEBUG=":"
-strip_debug_flags=""
-enable_strip_by_default=yes
-strip_needs_dash_s=no
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
@@ -792,45 +785,7 @@ fi
 
 ############## Strip tool ################
 
-if test "${enable_strip}" = "" ; then
-  if test "${enable_strip_by_default}" = "yes" ; then
-    enable_strip=yes
-  fi
-fi
-
-try_archive_conftest()
-{
-   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
-}
-
-if test "${enable_strip}" = "yes" ; then
-  AC_CHECK_TOOL([STRIP], [strip])
-  # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="${STRIP}"
-  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
-    check_strip_dash_s=yes
-  fi
-  if test "${strip_needs_dash_s}" = "yes" ; then
-    check_strip_dash_s=yes
-  fi
-  if test "${check_strip_dash_s}" = "yes" ; then
-    # Can only support library stripping if something like "-S" is available:
-    [ msg="for strip -S" ]
-    AC_MSG_CHECKING($msg)
-    set_strip_lib=no
-    AC_COMPILE_IFELSE([AC_LANG_SOURCE([int f() { return 0; }])], try_archive_conftest, set_strip_lib=no )
-    if test conftest.a ; then
-      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
-        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
-        set_strip_lib=yes
-      fi
-    fi
-    AC_MSG_RESULT($set_strip_lib)
-    if test "${strip_needs_dash_s}" = "yes" ; then
-      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
-    fi
-  fi
-fi
+m4_include(../ac/strip.m4)
 
 ############## C flags ################
 

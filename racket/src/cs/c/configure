@@ -639,6 +639,8 @@ SCHEME_DIR
 RACKET
 INCLUDEDEP
 RKTLINKER
+STRIP_LIB_DEBUG
+STRIP_DEBUG
 ICP
 STATIC_AR
 RANLIB
@@ -647,6 +649,7 @@ AR
 EGREP
 GREP
 CPP
+STRIP
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -754,6 +757,7 @@ enable_macprefix
 enable_libfw
 enable_userfw
 enable_mac64
+enable_noopt
 enable_csdefault
 enable_csonly
 enable_parent
@@ -1392,6 +1396,7 @@ Optional Features:
   --enable-libfw          install Mac OS frameworks to /Library/Frameworks
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
+  --enable-strip          strip debug on install (usually enabled by default)
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)
@@ -2383,6 +2388,18 @@ else
 fi
 
 
+# Check whether --enable-noopt was given.
+if test "${enable_noopt+set}" = set; then :
+  enableval=$enable_noopt;
+fi
+
+
+STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
+strip_debug_flags=""
+enable_strip_by_default=yes
+strip_needs_dash_s=no
+
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
   enableval=$enable_csdefault;
@@ -2497,6 +2514,9 @@ fi
 if test "${enable_sysroot}" != "" ; then
    echo "=== Using sysroot directory ${enable_sysroot}"
 fi
+
+show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
+show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
 
 if test "${enable_iconv}" = "" ; then
@@ -3686,6 +3706,7 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+      strip_needs_dash_s=yes
     fi
 
         if test "${enable_sdk}" != "" ; then
@@ -3836,6 +3857,151 @@ SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disab
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
 fi
+
+############## Strip tool ################
+
+if test "${enable_strip}" = "" ; then
+  if test "${enable_strip_by_default}" = "yes" ; then
+    enable_strip=yes
+  fi
+fi
+
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
+
+if test "${enable_strip}" = "yes" ; then
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
+set dummy ${ac_tool_prefix}strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$STRIP"; then
+  ac_cv_prog_STRIP="$STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_STRIP="${ac_tool_prefix}strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+STRIP=$ac_cv_prog_STRIP
+if test -n "$STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $STRIP" >&5
+$as_echo "$STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_STRIP"; then
+  ac_ct_STRIP=$STRIP
+  # Extract the first word of "strip", so it can be a program name with args.
+set dummy strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_STRIP"; then
+  ac_cv_prog_ac_ct_STRIP="$ac_ct_STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_STRIP="strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_STRIP=$ac_cv_prog_ac_ct_STRIP
+if test -n "$ac_ct_STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_STRIP" >&5
+$as_echo "$ac_ct_STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_STRIP" = x; then
+    STRIP=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    STRIP=$ac_ct_STRIP
+  fi
+else
+  STRIP="$ac_cv_prog_STRIP"
+fi
+
+  # Used to add -S flag, but not all `strip' variants support it:
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${strip_needs_dash_s}" = "yes" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${check_strip_dash_s}" = "yes" ; then
+    # Can only support library stripping if something like "-S" is available:
+     msg="for strip -S"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    set_strip_lib=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int f() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  try_archive_conftest
+else
+  set_strip_lib=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
+$as_echo "$set_strip_lib" >&6; }
+    if test "${strip_needs_dash_s}" = "yes" ; then
+      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
+    fi
+  fi
+fi
+
 
 ############## C flags ################
 
@@ -4431,6 +4597,8 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+
 
 
 

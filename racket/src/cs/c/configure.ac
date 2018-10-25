@@ -22,6 +22,7 @@ AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to bui
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mac>     Use Chez Scheme machine type <mach>])
 m4_include(../ac/sdk_arg.m4)
+m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
 AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
@@ -61,6 +62,7 @@ show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
 m4_include(../ac/sdk_show.m4)
+m4_include(../ac/strip_show.m4)
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
@@ -176,6 +178,7 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+      strip_needs_dash_s=yes
     fi
 
     m4_include(../ac/sdk_mac.m4)
@@ -272,6 +275,10 @@ SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disab
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
 fi
+
+############## Strip tool ################
+
+m4_include(../ac/strip.m4)
 
 ############## C flags ################
 
@@ -417,6 +424,8 @@ AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
 AC_SUBST(STATIC_AR)
 AC_SUBST(ICP)
+AC_SUBST(STRIP_DEBUG)
+AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(RKTLINKER)
 AC_SUBST(INCLUDEDEP)
 AC_SUBST(RACKET)

@@ -16,6 +16,9 @@ CFLAGS = $(BASE_CFLAGS) -I$(SCHEME_INC) -I$(srcdir)/../../rktio -Irktio -I.
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 
+STRIP_DEBUG = @STRIP_DEBUG@
+STRIP_LIB_DEBUG = @STRIP_LIB_DEBUG@
+
 DEFAULT_RACKET = ../racket/racket3m
 RACKET = @RACKET@
 
@@ -229,7 +232,9 @@ common-install:
 	rm -f "$(DESTDIR)$(libpltdir)/starter"
 	rm -f "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(ICP) racketcs "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
+	$(STRIP_DEBUG) "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)"
 	$(ICP) starter "$(DESTDIR)$(libpltdir)/starter"
+	$(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
@@ -266,3 +271,4 @@ macos-install-gracket:
 	$(BOOTSTRAP_RACKET) "$(srcdir)/../../mac/rename-app.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app" "GRacketCS" "GRacket$(CS_GR_INSTALLED)" no-up
 	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)" ../../../../collects ../../../../etc
+	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
