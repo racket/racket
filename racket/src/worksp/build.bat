@@ -30,6 +30,9 @@ if errorlevel 1 exit /B 1
 if errorlevel 1 exit /B 1
 msbuild racket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 
+if not defined BUILD_LEVEL set BUILD_LEVEL="3m"
+if "%BUILD_LEVEL%"=="cgc" goto doneBuilding
+
 cd ..\gracket
 msbuild gracket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1
@@ -78,3 +81,5 @@ if errorlevel 1 exit /B 1
 
 ..\..\racket -G ..\%BUILD_CONFIG% -u gendef.rkt
 if errorlevel 1 exit /B 1
+
+:doneBuilding

@@ -12,8 +12,10 @@ LIBS = $(RKTIO_LIB) \
 DEST = ..\..\build\raw_racketcs.exe
 CSDIR = ..\..\cs\c
 
+COMP_SUBDIR = /DCS_COMPILED_SUBDIR
+
 $(DEST): $(CSDIR).\main.c $(CSDIR)\boot.c $(RKTIO_LIB)
-	cl /Fe$(DEST) /Ox /MT $(INCS) $(CSDIR)\main.c $(CSDIR)\boot.c $(LIBS)
+	cl /Fe$(DEST) /Ox /MT $(COMP_SUBDIR) $(INCS) $(CSDIR)\main.c $(CSDIR)\boot.c $(LIBS)
 
 
 # Useful for debugging:

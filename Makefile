@@ -178,6 +178,8 @@ INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SE
 
 BASE_INSTALL_TARGET = plain-base-install
 
+WIN32_BUILD_LEVEL = 3m
+
 base:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-base ; \
@@ -205,7 +207,7 @@ win32-base:
 	$(MAKE) win32-remove-setup-dlls
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 # Start by removing DLLs that may be loaded by `raco setup`
 win32-remove-setup-dlls:
@@ -365,17 +367,29 @@ clone-ChezScheme-as-extra:
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
 WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+WIN32_CS_COPY_ARGS_BOOT = $(WIN32_CS_COPY_ARGS) SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
+
+WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=cgc WIN32_PLAIN_RACKET=racket\racketcgc
 
 win32-cs:
-	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_CS_COPY_ARGS)
+	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_BOOT_ARGS) $(WIN32_CS_COPY_ARGS)
 	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
 
 win32-racket-then-cs:
-	$(MAKE) win32-minimal-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
-	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+	$(MAKE) win32-base PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS) WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
+	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS_BOOT)
+
+CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" \
+                    --racketcs-suffix "$(RACKETCS_SUFFIX)" \
+                    --boot-mode "$(SETUP_BOOT_MODE)"
+
+WIN32_SETUP_BOOT = -O "info@compiler/cm" \
+                   -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled \
+                   ignored racket/src/build/ignored.d
 
 win32-just-cs:
-	cmd /c $(RACKET) racket\src\worksp\csbuild.rkt --scheme-dir "$(SCHEME_SRC)"
+	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
+	cmd /c $(RACKET) $(WIN32_SETUP_BOOT) racket\src\worksp\csbuild.rkt $(CSBUILD_ARGUMENTS)
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)

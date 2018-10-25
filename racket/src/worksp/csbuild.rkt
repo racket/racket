@@ -13,12 +13,18 @@
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
+(define cs-suffix "CS")
+(define boot-mode "--chain")
 
 (command-line
  #:once-each
  [("--scheme-dir") dir "Select the Chez Scheme build directory, unless <dir> is \"\""
   (unless (equal? dir "")
     (set! abs-scheme-dir (path->complete-path dir)))]
+ [("--racketcs-suffix") str "Select the suffix for RacketCS"
+  (set! cs-suffix (string-upcase str))]
+ [("--boot-mode") mode "Select the mode for Racket bootstrapping"
+  (set! boot-mode mode)]
  [("--machine") mach "Select the Chez Scheme machine name"
   (set! machine mach)]
  #:args
@@ -75,8 +81,9 @@
 (define rel-racket (build-path 'up "worksp" (find-relative-path (current-directory) (find-exe))))
 
 (define chain-racket
-  (format "~a -W info@compiler/cm -l- setup --chain ../setup-go.rkt ../build/compiled"
-	  rel-racket))
+  (format "~a -O info@compiler/cm -l- setup ~a ../setup-go.rkt ../build/compiled"
+	  rel-racket
+          boot-mode))
 
 (define build-dir (path->directory-path (build-path 'up "build")))
 
@@ -145,7 +152,11 @@
 	    "..\\..\\build\\raw_racketcs.exe"
 	    (format "SCHEME_DIR=~a" rel2-scheme-dir)
 	    (format "MACHINE=~a" machine)
-	    (format "SCHEME_LIB=~a" scheme-lib)))
+	    (format "SCHEME_LIB=~a" scheme-lib)
+	    (format "COMP_SUBDIR=/DCS_COMPILED_SUBDIR=~a"
+                    (if (string=? cs-suffix "")
+                        "0"
+                        "1"))))
 
 ;; ----------------------------------------
 
@@ -156,8 +167,11 @@
 	  "../build/racket.boot")
 
 (system*! (find-exe)
+	  "-O" "info@compiler/cm"
+          "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
+          "ignored" "../build/ignored.d"
 	  "../cs/c/embed-boot.rkt"
 	  "../build/raw_racketcs.exe"
-	  "../../RacketCS.exe"
+	  (format "../../Racket~a.exe" cs-suffix)
 	  (build-path scheme-dir machine "boot" machine)
 	  "../build/racket.boot")
