@@ -263,6 +263,7 @@ EXTRA_REPOS_BASE =
 
 # Redirected for `cs-as-is` and `cs-base`:
 CS_SETUP_TARGET = plain-in-place-after-base
+WIN32_CS_SETUP_TARGET = win32-in-place-after-base
 
 cs:
 	if [ "$(CPUS)" = "" ] ; \
@@ -365,23 +366,30 @@ clone-ChezScheme-as-extra:
 	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
 	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
 
-WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
-WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
+                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
+WIN32_CS_COPY_ARGS_EXCEPT_SUT = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
+WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" WIN32_CS_SETUP_TARGET=$(WIN32_CS_SETUP_TARGET) $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
 WIN32_CS_COPY_ARGS_BOOT = $(WIN32_CS_COPY_ARGS) SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
 
 WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=cgc WIN32_PLAIN_RACKET=racket\racketcgc
 
 win32-cs:
 	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_BOOT_ARGS) $(WIN32_CS_COPY_ARGS)
-	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" $(WIN32_CS_COPY_ARGS)
+
+win32-cs-base:
+	$(MAKE) win32-cs $(WIN32_CS_COPY_ARGS_EXCEPT_SUT) RACKET="$(RACKET)" WIN32_CS_SETUP_TARGET=nothing-after-base
 
 win32-racket-then-cs:
-	$(MAKE) win32-base PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS) WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
-	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS_BOOT)
+	$(MAKE) win32-base PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT) WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
+	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) $(WIN32_CS_COPY_ARGS_BOOT)
 
 CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" \
                     --racketcs-suffix "$(RACKETCS_SUFFIX)" \
-                    --boot-mode "$(SETUP_BOOT_MODE)"
+                    --boot-mode "$(SETUP_BOOT_MODE)" \
+                    --extra-repos-base "$(EXTRA_REPOS_BASE)" \
+                    -- $(GIT_CLONE_ARGS_qq)
 
 WIN32_SETUP_BOOT = -O "info@compiler/cm" \
                    -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled \
@@ -393,7 +401,7 @@ win32-just-cs:
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-	$(MAKE) win32-in-place-after-base WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
+	$(MAKE) $(WIN32_CS_SETUP_TARGET) WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
 
 # ------------------------------------------------------------
 # Configuration options for building installers
@@ -668,7 +676,7 @@ WIN32_CLIENT_BASE = win32-base
 
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" BUILD_STAMP="$(BUILD_STAMP)" \
-	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" \
+	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)" \
@@ -748,7 +756,7 @@ win32-bundle:
 
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
 	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 

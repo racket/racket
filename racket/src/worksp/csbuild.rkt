@@ -9,27 +9,34 @@
 
 (define-runtime-path here ".")
 
+(define scheme-dir-provided? #f)
 (define abs-scheme-dir (build-path here 'up "build" "ChezScheme"))
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
 (define cs-suffix "CS")
 (define boot-mode "--chain")
+(define extra-repos-base #f)
+(define git-clone-args '())
 
 (command-line
  #:once-each
  [("--scheme-dir") dir "Select the Chez Scheme build directory, unless <dir> is \"\""
-  (unless (equal? dir "")
-    (set! abs-scheme-dir (path->complete-path dir)))]
+                   (unless (equal? dir "")
+                     (set! scheme-dir-provided? #t)
+                     (set! abs-scheme-dir (path->complete-path dir)))]
  [("--racketcs-suffix") str "Select the suffix for RacketCS"
-  (set! cs-suffix (string-upcase str))]
+                        (set! cs-suffix (string-upcase str))]
  [("--boot-mode") mode "Select the mode for Racket bootstrapping"
-  (set! boot-mode mode)]
+                  (set! boot-mode mode)]
  [("--machine") mach "Select the Chez Scheme machine name"
-  (set! machine mach)]
+                (set! machine mach)]
+ [("--extra-repos-base") url "Clone repos from <url>ChezScheme/.git, etc."
+                         (unless (equal? url "")
+                           (set! extra-repos-base url))]
  #:args
- ()
- (void))
+ clone-arg
+ (set! git-clone-args clone-arg))
 
 (current-directory here)
 
@@ -58,11 +65,31 @@
 ;; ----------------------------------------
 
 (unless (directory-exists? scheme-dir)
-  (system*! "git"
-	    "clone"
-            "--depth" "1"
-	    "https://github.com/mflatt/ChezScheme"
-	    scheme-dir))
+  (define (clone from to [git-clone-args '()])
+    (apply system*! (append
+                     (list "git"
+                           "clone")
+                     git-clone-args
+                     (list from to))))
+  (cond
+    [extra-repos-base
+     ;; Intentionally not using `git-clone-args`
+     (clone (format "~aChezScheme/.git" extra-repos-base)
+            scheme-dir)
+     (clone (format "~ananopass/.git" extra-repos-base)
+            (build-path scheme-dir "nanopass"))
+     (clone (format "~astex/.git" extra-repos-base)
+            (build-path scheme-dir "stex"))
+     (clone (format "~aglib/.git" extra-repos-base)
+            (build-path scheme-dir "zlib"))]
+    [else
+     (clone "https://github.com/mflatt/ChezScheme"
+            scheme-dir
+            git-clone-args)]))
+
+(unless scheme-dir-provided?
+  (parameterize ([current-directory scheme-dir])
+    (system*! "git" "pull")))
 
 (unless (file-exists? (build-path scheme-dir "zlib" "Makefile"))
   (parameterize ([current-directory scheme-dir])
@@ -175,3 +202,45 @@
 	  (format "../../Racket~a.exe" cs-suffix)
 	  (build-path scheme-dir machine "boot" machine)
 	  "../build/racket.boot")
+
+;; ----------------------------------------
+;; Finish installation with "mzstart", "mrstart", and other
+;; implementation-independent details as in "build.bat"
+
+(define (get-status src)
+  (system*! "cl" src)
+  (system* (path-replace-suffix src #".exe")))
+
+(define buildmode (if (get-status "rbuildmode.c")
+                      "x64"
+                      "win32"))
+(define pltslnver (cond
+                    [(not (get-status "checkvs9.c")) "9"]
+                    [(not (get-status "genvsx.c")) "X"]
+                    [else ""]))
+
+(make-directory* "../../etc")
+(make-directory* "../../doc")
+(make-directory* "../../share")
+
+(copy-file "../COPYING-libscheme.txt"
+           "../../share/COPYING-libscheme.txt"
+           #t)
+(copy-file "../COPYING_LESSER.txt"
+           "../../share/COPYING_LESSER.txt"
+           #t)
+(copy-file "../COPYING.txt"
+           "../../share/COPYING.txt"
+           #t)
+
+(parameterize ([current-directory "mzstart"])
+  (system*! "msbuild"
+            (format "mzstart~a.sln" pltslnver)
+            "/p:Configuration=Release"
+            (format "/p:Platform=~a" buildmode)))
+
+(parameterize ([current-directory "mrstart"])
+  (system*! "msbuild"
+            (format "mrstart~a.sln" pltslnver)
+            "/p:Configuration=Release"
+            (format "/p:Platform=~a" buildmode)))
