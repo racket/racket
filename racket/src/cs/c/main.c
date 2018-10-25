@@ -77,6 +77,54 @@ static char *get_self_path()
 }
 #endif
 
+
+#ifdef ELF_FIND_BOOT_SECTION
+# include <elf.h>
+# include <fcntl.h>
+
+static long find_boot_section(char *me)
+{
+  int fd, i;
+  Elf64_Ehdr e;
+  Elf64_Shdr s;
+  char *strs;
+
+  fd = open(me, O_RDONLY, 0);
+  if (fd == -1) return 0;
+
+  if (read(fd, &e, sizeof(e)) == sizeof(e)) {
+    lseek(fd, e.e_shoff + (e.e_shstrndx * e.e_shentsize), SEEK_SET);
+    if (read(fd, &s, sizeof(s)) != sizeof(s)) {
+      close(fd);
+      return 0;
+    }
+
+    strs = (char *)malloc(s.sh_size);
+    lseek(fd, s.sh_offset, SEEK_SET);
+    if (read(fd, strs, s.sh_size) != s.sh_size) {
+      close(fd);
+      return 0;
+    }
+
+    for (i = 0; i < e.e_shnum; i++) {
+      lseek(fd, e.e_shoff + (i * e.e_shentsize), SEEK_SET);
+      if (read(fd, &s, sizeof(s)) != sizeof(s)) {
+        close(fd);
+        return 0;
+      }
+      if (!strcmp(strs + s.sh_name, ".rackboot")) {
+        close(fd);
+        return s.sh_offset;
+      }
+    }
+  }
+
+  close(fd);
+  return 0;
+}
+#endif
+
+
 #ifdef _MSC_VER
 static char *get_self_path()
 {
@@ -128,6 +176,16 @@ int main(int argc, char **argv)
   memcpy(&pos1, boot_file_data + boot_file_offset, sizeof(pos1));
   memcpy(&pos2, boot_file_data + boot_file_offset + 4, sizeof(pos2));
   memcpy(&pos3, boot_file_data + boot_file_offset + 8, sizeof(pos2));
+
+#ifdef ELF_FIND_BOOT_SECTION
+  {
+    long boot_offset;
+    boot_offset = find_boot_section(self);
+    pos1 += boot_offset;
+    pos2 += boot_offset;
+    pos3 += boot_offset;
+  }
+#endif
 
   racket_boot(argc, argv, self, segment_offset,
               extract_coldir(), extract_configdir(),

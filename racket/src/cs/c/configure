@@ -629,6 +629,7 @@ FRAMEWORK_INSTALL_DIR
 SCHEME_CONFIG_ARGS
 MAKE_BUILD_SCHEME
 SCHEME_SRC
+ELF_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
 NOT_OSX
@@ -2734,6 +2735,7 @@ OSX="not_osx"
 NOT_OSX=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+ELF_COMP=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -3661,6 +3663,8 @@ case "$host_os" in
   linux*)
     MACH_OS=le
     LIBS="${LIBS} -lrt"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   osf1*)
     ;;
@@ -4427,6 +4431,7 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

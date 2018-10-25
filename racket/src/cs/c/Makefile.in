@@ -131,10 +131,10 @@ racket.boot: racket.so
 EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
 racketcs@NOT_OSX@: raw_racketcs racket.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @COMPRESS_COMP@ raw_racketcs racketcs $(SCHEME_INC) racket.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_racketcs racketcs $(SCHEME_INC) racket.boot
 
 gracketcs@NOT_OSX@: raw_gracketcs racket.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @COMPRESS_COMP@ raw_gracketcs gracketcs $(SCHEME_INC) racket.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_gracketcs gracketcs $(SCHEME_INC) racket.boot
 
 BOOT_OBJS = boot.o $(SCHEME_INC)/kernel.o rktio/librktio.a
 

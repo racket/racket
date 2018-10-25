@@ -5,10 +5,14 @@
          compiler/private/elf
          "adjust-compress.rkt")
 
+(define expect-elf? #f)
+
 (command-line
  #:once-each
  [("--compress") "Leave compiled code files as compressed"
   (enable-compress!)]
+ [("--expect-elf") "Record offset from ELF section"
+  (set! expect-elf? #t)]
  #:args (src-file dest-file boot-dir racket.boot)
 
  (define bstr1 (adjust-compress (file->bytes (build-path boot-dir "petite.boot"))))
@@ -51,7 +55,12 @@
           [start-pos
            ;; Success as ELF
            (ensure-executable dest-file)
-           start-pos]
+           (cond
+             [expect-elf?
+              ;; Find ".rackboot" at run time:
+              0]
+             [else
+              start-pos])]
           [else
            ;; Not ELF; just append to the end
            (copy-file src-file dest-file #t)
@@ -63,6 +72,8 @@
             (lambda (o)
               (file-position o pos)
               (write-bytes data o)))
+           (when expect-elf?
+             (error 'embed-boot "expected ELF"))
            pos])]))
 
    (define-values (i o) (open-input-output-file dest-file #:exists 'update))
