@@ -540,7 +540,7 @@ There are a number of exceptions, however:
                because that table holds onto it.}
          @item{Reachability is only approximate with the @tech{CGC} collector (i.e.,
                a value may appear reachable to that collector when there is,
-               in fact, no way to reach it anymore.}]
+               in fact, no way to reach it anymore).}]
 
 @section{Weak Boxes and Testing}
 
