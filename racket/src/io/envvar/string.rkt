@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/bytes-no-nuls.rkt"
+         "../locale/string.rkt"
          "../host/rktio.rkt")
 
 (provide bytes-no-nuls?
@@ -12,5 +13,6 @@
 
 (define (normalize-key k)
   (if (rktio_are_envvar_names_case_insensitive rktio)
-      (string->immutable-string (string-foldcase k))
+      (bytes->immutable-bytes
+       (string->bytes/locale (string-foldcase (bytes->string/locale k))))
       k))
