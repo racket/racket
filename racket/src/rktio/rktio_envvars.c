@@ -167,7 +167,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
     count = 0;
     i = 0;
     while (e[i]) {
-      count++;
+      if (e[i] != '=')
+	count++;
       while (e[i]) i++;
       i++;
     }
@@ -187,11 +188,13 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       for (j = 0; p[j] && p[j] != '='; j++) {
       }
       p[j] = 0;
-      envvars->names[count] = MSC_IZE(strdup)(p);
-      envvars->vals[count] = MSC_IZE(strdup)(p+j+1);
+      if (p[0] != 0) {
+	envvars->names[count] = MSC_IZE(strdup)(p);
+	envvars->vals[count] = MSC_IZE(strdup)(p+j+1);
+	count++;
+      }
       free(p);
       i++;
-      count++;
     }
 
     FreeEnvironmentStringsW(e);
