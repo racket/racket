@@ -207,6 +207,13 @@
      (when (equal? what "")
        (error 'racket "empty ~a after ~a switch" what (or within-flag flag))))
 
+   (define (raise-bad-switch arg within-arg)
+     (raise-user-error 'racket "bad switch: ~a~a"
+                       arg
+                       (if within-arg
+                           (format " within: ~a" within-arg)
+                           "")))
+
    (define-syntax string-case
      ;; Assumes that `arg` is a variable
      (syntax-rules ()
@@ -326,6 +333,7 @@
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
+              (no-init! saw)
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
@@ -378,6 +386,22 @@
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
                 (set-run-file! (string->path name))
                 (loop rest-args))]
+             [("-J")
+              (cond
+               [gracket?
+                (let-values ([(wm-class rest-args) (next-arg "WM_CLASS string" arg within-arg args)])
+                  (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-wm-class")
+                                                  (string->bytes/utf-8 wm-class))
+                  (loop rest-args))]
+               [else
+                (raise-bad-switch arg within-arg)])]
+             [("-K")
+              (cond
+               [gracket?
+                (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-no-front") #vu8(1))
+                (loop (cdr args))]
+               [else
+                (raise-bad-switch arg within-arg)])]
              [("--")
               (cond
                [(or (null? (cdr args)) (not (pair? (cadr args))))
@@ -396,11 +420,7 @@
                                      (cdr (string->list arg)))
                                 (cdr args)))]
                  [else
-                  (raise-user-error 'racket "bad switch: ~a~a"
-                                    arg
-                                    (if within-arg
-                                        (format " within: ~a" within-arg)
-                                        ""))])]
+                  (raise-bad-switch arg within-arg)])]
                [else
                 ;; Non-flag argument
                 (finish args saw)])])))))

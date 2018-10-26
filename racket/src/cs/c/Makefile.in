@@ -243,6 +243,7 @@ unix-install:
 	rm -f "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(ICP) gracketcs "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(bindir)/racket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
+	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/gracket$(CS_INSTALLED)" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 RKTFWDEST = @FRAMEWORK_INSTALL_DIR@/Racket.framework
 FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
