@@ -193,7 +193,7 @@ otherwise platform-independent.}
 Sets elements in @racket[results] to report current performance
 statistics. If @racket[thd] is not @racket[#f], a particular set of
 thread-specific statistics are reported, otherwise a different set of
-global (within the current @tech{place}) statics are reported.
+global (within the current @tech{place}) statistics are reported.
 
 For global statistics, up to @math{12} elements are set in the vector,
 starting from the beginning. If @racket[results] has @math{n} elements
