@@ -32,7 +32,7 @@ for arg in $*; do
       ;;
     --help)
       echo $0:
-      echo se --help-racket or --help-cs, since the traditional Racket "(3m/CGC)" build
+      echo see --help-racket or --help-cs, since the traditional Racket "(3m/CGC)" build
       echo and the Chez Scheme "(CS)" build support different options. If you use
       echo options that build both CS and 3m/CGC, then you can mix options that apply
       echo to both or either kind of build.
