@@ -391,7 +391,7 @@
                [gracket?
                 (let-values ([(wm-class rest-args) (next-arg "WM_CLASS string" arg within-arg args)])
                   (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-wm-class")
-                                                  (string->bytes/utf-8 wm-class))
+                                                  (bytes-append (string->bytes/utf-8 wm-class) #vu8(0)))
                   (loop rest-args))]
                [else
                 (raise-bad-switch arg within-arg)])]
