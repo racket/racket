@@ -1,10 +1,10 @@
-#ifndef _MSC_VER
+#ifndef WIN32
 # include <unistd.h>
 #endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#ifdef _MSC_VER
+#ifdef WIN32
 # include <Windows.h>
 # define DOS_FILE_SYSTEM
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,

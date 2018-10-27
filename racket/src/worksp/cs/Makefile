@@ -10,15 +10,25 @@ LIBS = $(RKTIO_LIB) \
        $(WIN32_LIBS)
 
 DEST = ..\..\build\raw_racketcs.exe
+GDEST = ..\..\build\raw_gracketcs.exe
 CSDIR = ..\..\cs\c
 
+FLAGS = /DWIN32
 COMP_SUBDIR = /DCS_COMPILED_SUBDIR=1
 
-$(DEST): $(CSDIR).\main.c $(CSDIR)\boot.c racket.res $(RKTIO_LIB)
-	cl /Fe$(DEST) /Ox /MT $(COMP_SUBDIR) $(INCS) $(CSDIR)\main.c $(CSDIR)\boot.c racket.res $(LIBS)
+all: $(DEST) $(GDEST)
+
+$(DEST): $(CSDIR)\main.c $(CSDIR)\boot.c racket.res $(RKTIO_LIB)
+	cl /Fe$(DEST) /Ox /MT $(COMP_SUBDIR) $(FLAGS) $(INCS) $(CSDIR)\main.c $(CSDIR)\boot.c racket.res $(LIBS)
 
 racket.res: ../racket/racket.rc ../racket/racket.ico
 	rc /l 0x409 /foracket.res ../racket/racket.rc
+
+$(GDEST): $(CSDIR)\grmain.c $(CSDIR)\boot.c gracket.res $(RKTIO_LIB)
+	cl /Fe$(GDEST) /Ox /MT $(COMP_SUBDIR) $(INCS) $(FLAGS) $(CSDIR)\grmain.c $(CSDIR)\boot.c gracket.res $(LIBS) /subsystem:windows
+
+gracket.res: ../gracket/gracket.rc ../gracket/gracket.ico
+	rc /l 0x409 /fogracket.res ../gracket/gracket.rc
 
 # Useful for debugging:
 
