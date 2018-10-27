@@ -277,6 +277,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/unsafe.ss \
               rumble/extfl.ss \
               rumble/place.ss \
+              rumble/errno-data.ss \
               rumble/foreign.ss \
               rumble/future.ss \
               rumble/version.ss \

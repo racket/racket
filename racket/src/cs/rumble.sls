@@ -740,6 +740,7 @@
   (include "rumble/unsafe.ss")
   (include "rumble/extfl.ss")
   (include "rumble/place.ss")
+  (include "rumble/errno-data.ss")
   (include "rumble/foreign.ss")
   (include "rumble/future.ss")
   (include "rumble/inline.ss")

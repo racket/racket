@@ -1697,7 +1697,15 @@
 
 (define/who (lookup-errno sym)
   (check who symbol? sym)
-  (raise-unsupported-error who))
+  (let ([errno-alist
+         (case (machine-type)
+           [(a6le ta6le i3le ti3le) (linux-errno-alist)]
+           [(a6osx ta6osx i3osx ti3osx) (macosx-errno-alist)]
+           [(a6nt ta6nt i3nt ti3nt) (windows-errno-alist)]
+           [else (raise-unsupported-error who)])])
+    (cond
+     [(assq sym errno-alist) => cdr]
+     [else #f])))
 
 ;; function is called with interrupts disabled
 (define get-errno
