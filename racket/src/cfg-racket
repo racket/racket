@@ -1483,7 +1483,7 @@ Optional Features:
   --enable-csdefault      use CS as default build
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
   --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
-  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)
+  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-cify           compile startup code to C instead of bytecode
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
