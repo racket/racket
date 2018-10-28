@@ -380,7 +380,7 @@ $(XSRCDIR)/main.c: $(XFORMDEP)
 @INCLUDEDEP@ foreign.d
 @INCLUDEDEP@ main.d
 
-$(XSRCDIR)/mzobj.cxx: $(XFORMDEP)
+$(XSRCDIR)/mzobj.cxx: $(XFORMDEP) $(srcdir)/../../mzcom/mzobj.cxx
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/mzobj.cxx $(DEF_C_DIRS) $(srcdir)/../../mzcom/mzobj.cxx
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
