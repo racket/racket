@@ -540,6 +540,38 @@
                         [else (values (cons x acc)
                                       (hash-set seen x #t))]))])
         (list backwards forwards other)))
+(test '((1 3 5) (2 4 6))
+      'for/lists-result-clause1
+      (for/lists (firsts seconds #:result (list firsts seconds))
+                 ([pr '((1 . 2) (3 . 4) (5 . 6))])
+        (values (car pr) (cdr pr))))
+(test '((1 3 5) (2 4 6) ())
+      'for/lists-result-clause2
+      (let-values ([(firsts seconds other)
+                    (for/lists (firsts
+                                seconds
+                                #:result (values firsts seconds '()))
+                               ([pr '((1 . 2) (3 . 4) (5 . 6))])
+                      (values (car pr) (cdr pr)))])
+        (list firsts seconds other)))
+(test '((1 3 5 7 9) (2 4 6 8 10))
+      'for*/lists-result-clause1
+      (for*/lists (firsts seconds #:result (list firsts seconds))
+                  ([lst '(((1 . 2) (3 . 4) (5 . 6))
+                          ((7 . 8) (9 . 10)))]
+                   [pr (in-list lst)])
+        (values (car pr) (cdr pr))))
+(test '((1 3 5 7 9) (2 4 6 8 10) ())
+      'for*/lists-result-clause2
+      (let-values ([(firsts seconds other)
+                    (for*/lists (firsts
+                                 seconds
+                                 #:result (values firsts seconds '()))
+                                ([lst '(((1 . 2) (3 . 4) (5 . 6))
+                                        ((7 . 8) (9 . 10)))]
+                                 [pr (in-list lst)])
+                      (values (car pr) (cdr pr)))])
+        (list firsts seconds other)))
 
 ;; for should discard any results and return void
 (test (void) 'for-0-values (for ([x '(1 2 3)] [y '(a b c)]) (values)))
