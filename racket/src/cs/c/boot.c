@@ -1,4 +1,4 @@
-#ifndef _MSC_VER
+#ifndef WIN32
 # include <unistd.h>
 #endif
 #include <stdio.h>
@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #include "scheme.h"
 #include "rktio.h"
+
+#ifdef WIN32
+# define BOOT_EXTERN __declspec(dllexport)
+#else
+# define BOOT_EXTERN extern
+#endif
 #include "boot.h"
 
 #define RACKET_AS_BOOT
@@ -78,7 +84,8 @@ static void init_foreign()
   Sforeign_symbol("racket_exit", (void *)racket_exit);
 }
 
-void racket_boot(int argc, char **argv, char *self, long segment_offset,
+void racket_boot(int argc, char **argv, char *self,
+		 char *boot_exe, long segment_offset,
                  char *coldir, char *configdir,
                  int pos1, int pos2, int pos3,
                  int cs_compiled_subdir, int is_gui)
@@ -101,7 +108,7 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
   Sregister_boot_file(path_append(fw_path, "racket.boot"));
 # endif
 #else
-  fd = open(self, O_RDONLY | BOOT_O_BINARY);
+  fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
 
   {
     int fd1, fd2;
@@ -110,12 +117,12 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     lseek(fd1, pos1, SEEK_SET);    
     Sregister_boot_file_fd("petite", fd1);
     
-    fd2 = open(self, O_RDONLY | BOOT_O_BINARY);
+    fd2 = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
     lseek(fd2, pos2, SEEK_SET);
     Sregister_boot_file_fd("scheme", fd2);
 
 # ifdef RACKET_AS_BOOT
-    fd = open(self, O_RDONLY | BOOT_O_BINARY);
+    fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
     lseek(fd, pos3, SEEK_SET);
     Sregister_boot_file_fd("racket", fd);
 # endif

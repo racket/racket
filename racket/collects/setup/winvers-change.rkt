@@ -15,7 +15,7 @@
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))
 (define xxxs #"xxxxxxx")
 (define xxxs-re
-  (bytes-append #"(?:lib(?:g?racket|mzgc)(?:|3m))(" xxxs #")"))
+  (bytes-append #"(?:lib(?:g?racket|mzgc)(?:|3m|cs))(" xxxs #")"))
 (define renaming (regexp (format "^~a[.](?:dll|lib|exp|def)$" xxxs-re)))
 (define substitutions
   (map (lambda (s) (byte-regexp (regexp-replace #rx#"~a" s xxxs-re)))

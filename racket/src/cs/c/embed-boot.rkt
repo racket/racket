@@ -2,10 +2,12 @@
 (require racket/cmdline
          racket/file
          compiler/private/mach-o
+         compiler/private/pe-rsrc
          compiler/private/elf
          "adjust-compress.rkt")
 
 (define expect-elf? #f)
+(define alt-dests '())
 
 (command-line
  #:once-each
@@ -13,6 +15,9 @@
   (enable-compress!)]
  [("--expect-elf") "Record offset from ELF section"
   (set! expect-elf? #t)]
+ #:multi
+ [("++exe") src dest "Select an alternative executable"
+  (set! alt-dests (cons (cons src dest) alt-dests))]
  #:args (src-file dest-file boot-dir racket.boot)
 
  (define bstr1 (adjust-compress (file->bytes (build-path boot-dir "petite.boot"))))
@@ -39,6 +44,20 @@
         ;; Mach-O
         (copy-file src-file dest-file #t)
         (add-plt-segment dest-file data #:name #"__RKTBOOT")]
+       [("win32\\x86_64" "win32\\i386")
+        (copy-file src-file dest-file #t)
+        (define-values (pe rsrcs) (call-with-input-file*
+                                   dest-file
+                                   read-pe+resources))
+        (define new-rsrcs (resource-set rsrcs
+                                        ;; Racket's "user-defined" type for boot:
+                                        259
+                                        1
+                                        1033 ; U.S. English
+                                        data))
+	(update-resources dest-file pe new-rsrcs)
+	;; Find resource at run time:
+	0]
        [else
         ;; ELF?
         (define-values (start-pos end-pos any1 any2)
@@ -76,14 +95,25 @@
              (error 'embed-boot "expected ELF"))
            pos])]))
 
-   (define-values (i o) (open-input-output-file dest-file #:exists 'update))
-   (define m (regexp-match-positions #rx"BooT FilE OffsetS:" i))
-   (unless m
-     (error 'embed-boot "cannot file boot-file offset tag"))
+   (define (write-offsets dest-file)
+     (define-values (i o) (open-input-output-file dest-file #:exists 'update))
+     (define m (regexp-match-positions #rx"BooT FilE OffsetS:" i))
+     (unless m
+       (error 'embed-boot "cannot file boot-file offset tag"))
 
-   (define terminator-len (bytes-length terminator))
+     (define terminator-len (bytes-length terminator))
+     
+     (file-position o (cdar m))
+     (void (write-bytes (integer->integer-bytes pos 4 #t #f) o))
+     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t #f) o))
+     (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t #f) o)))
 
-   (file-position o (cdar m))
-   (void (write-bytes (integer->integer-bytes pos 4 #t #f) o))
-   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) terminator-len) 4 #t #f) o))
-   (void (write-bytes (integer->integer-bytes (+ pos (bytes-length bstr1) (bytes-length bstr2) (* 2 terminator-len)) 4 #t #f) o))))
+   (cond
+    [(null? alt-dests)
+     (write-offsets dest-file)]
+    [else
+     (for ([alt (in-list alt-dests)])
+	  (copy-file (car alt) (cdr alt) #t)
+	  (write-offsets (cdr alt)))])))
+     
+ 

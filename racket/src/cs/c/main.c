@@ -10,6 +10,7 @@
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 			      char *dest, int dest_len, int get_utf16);
 #endif
+#define BOOT_EXTERN extern
 #include "boot.h"
 
 #define MZ_CHEZ_SCHEME
@@ -125,10 +126,9 @@ static long find_boot_section(char *me)
 #endif
 
 
-#ifdef _MSC_VER
-static char *get_self_path()
+#ifdef WIN32
+static char *path_to_utf8(wchar_t *p)
 {
-  wchar_t *p = get_self_executable_path();
   char *r;
   int len;
 
@@ -137,6 +137,11 @@ static char *get_self_path()
   len = WideCharToMultiByte(CP_UTF8, 0, p, -1, r, len, NULL, NULL);
 
   return r;
+}
+
+static char *get_self_path()
+{
+  return path_to_utf8(get_self_executable_path());
 }
 
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
@@ -159,10 +164,16 @@ static long get_segment_offset()
 
 int main(int argc, char **argv)
 {
-  char *self, *prog = argv[0], *sprog = NULL;
+  char *self, *boot_exe, *prog = argv[0], *sprog = NULL;
   int pos1, pos2, pos3;
+  long boot_offset;
   long segment_offset;
-
+#ifdef WIN32
+  wchar_t *dll_path;
+  HMODULE dll;
+  racket_boot_t racket_boot_p;
+#endif
+  
   do_pre_filter_cmdline_arguments(&argc, &argv);
 
   argc--;
@@ -173,21 +184,33 @@ int main(int argc, char **argv)
 
   self = get_self_path();
 
+#ifdef WIN32
+# define racket_boot racket_boot_p
+  dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
+  boot_exe = path_to_utf8(dll_path);
+  racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
+#else
+  boot_exe = self;
+#endif
+
   memcpy(&pos1, boot_file_data + boot_file_offset, sizeof(pos1));
   memcpy(&pos2, boot_file_data + boot_file_offset + 4, sizeof(pos2));
   memcpy(&pos3, boot_file_data + boot_file_offset + 8, sizeof(pos2));
 
+  boot_offset = 0;
 #ifdef ELF_FIND_BOOT_SECTION
-  {
-    long boot_offset;
-    boot_offset = find_boot_section(self);
-    pos1 += boot_offset;
-    pos2 += boot_offset;
-    pos3 += boot_offset;
-  }
+  boot_offset = find_boot_section(self);
+#endif
+#ifdef WIN32
+  boot_offset = find_resource_offset(dll_path, 259);
 #endif
 
-  racket_boot(argc, argv, self, segment_offset,
+  pos1 += boot_offset;
+  pos2 += boot_offset;
+  pos3 += boot_offset;
+
+  racket_boot(argc, argv, self,
+	      boot_exe, segment_offset,
               extract_coldir(), extract_configdir(),
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI);

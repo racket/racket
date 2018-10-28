@@ -193,22 +193,16 @@
 	  "../build/racket.so"
 	  "../build/racket.boot")
 
-(define (embed-boot src dest)
-  (system*! (find-exe)
-            "-O" "info@compiler/cm"
-            "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
-            "ignored" "../build/ignored.d"
-            "../cs/c/embed-boot.rkt"
-            src
-            dest
-            (build-path scheme-dir machine "boot" machine)
-            "../build/racket.boot"))
-
-(embed-boot "../build/raw_racketcs.exe"
-            (format "../../Racket~a.exe" cs-suffix))
-
-(embed-boot "../build/raw_gracketcs.exe"
-            (format "../../lib/GRacket~a.exe" cs-suffix))
+(system*! (find-exe)
+          "-O" "info@compiler/cm"
+          "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
+          "ignored" "../build/ignored.d"
+          "../cs/c/embed-boot.rkt"
+	  "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
+	  "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
+          "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
+          (build-path scheme-dir machine "boot" machine)
+          "../build/racket.boot")
 
 ;; ----------------------------------------
 ;; Finish installation with "mzstart", "mrstart", and other

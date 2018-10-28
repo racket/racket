@@ -9,6 +9,7 @@ LIBS = $(RKTIO_LIB) \
        $(SCHEME_DIR)\$(MACHINE)\boot\$(MACHINE)\$(SCHEME_LIB) \
        $(WIN32_LIBS)
 
+DEST_DLL = ..\..\build\raw_libracketcs.dll
 DEST = ..\..\build\raw_racketcs.exe
 GDEST = ..\..\build\raw_gracketcs.exe
 CSDIR = ..\..\cs\c
@@ -18,14 +19,20 @@ COMP_SUBDIR = /DCS_COMPILED_SUBDIR=1
 
 all: $(DEST) $(GDEST)
 
-$(DEST): $(CSDIR)\main.c $(CSDIR)\boot.c racket.res $(RKTIO_LIB)
-	cl /Fe$(DEST) /Ox /MT $(COMP_SUBDIR) $(FLAGS) $(INCS) $(CSDIR)\main.c $(CSDIR)\boot.c racket.res $(LIBS)
+$(DEST_DLL): $(CSDIR)\boot.c libracket.res $(RKTIO_LIB)
+	cl /LD /DLL /Fe$(DEST_DLL) /Ox /MT $(FLAGS) $(INCS) $(CSDIR)\boot.c libracket.res $(LIBS)
+
+libracket.res: libracket.rc
+	rc /l 0x409 /folibracket.res libracket.rc
+
+$(DEST): $(CSDIR)\main.c $(DEST_DLL) racket.res
+	cl /Fe$(DEST) /Ox /MT $(COMP_SUBDIR) $(FLAGS) $(INCS) $(CSDIR)\main.c racket.res $(WIN32_LIBS)
 
 racket.res: ../racket/racket.rc ../racket/racket.ico
 	rc /l 0x409 /foracket.res ../racket/racket.rc
 
-$(GDEST): $(CSDIR)\grmain.c $(CSDIR)\boot.c gracket.res $(RKTIO_LIB)
-	cl /Fe$(GDEST) /Ox /MT $(COMP_SUBDIR) $(INCS) $(FLAGS) $(CSDIR)\grmain.c $(CSDIR)\boot.c gracket.res $(LIBS) /subsystem:windows
+$(GDEST): $(CSDIR)\grmain.c $(DEST_DLL) gracket.res
+	cl /Fe$(GDEST) /Ox /MT $(COMP_SUBDIR) $(FLAGS) $(INCS) $(CSDIR)\grmain.c gracket.res $(WIN32_LIBS) /subsystem:windows
 
 gracket.res: ../gracket/gracket.rc ../gracket/gracket.ico
 	rc /l 0x409 /fogracket.res ../gracket/gracket.rc

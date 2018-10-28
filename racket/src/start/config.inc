@@ -185,13 +185,11 @@ static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id) XFORM_SKIP_PR
   return 0;
 }
 
-static long find_resource_offset(int id) XFORM_SKIP_PROC
+static long find_resource_offset(wchar_t *path, int id) XFORM_SKIP_PROC
 {
   /* Find the resource of type `id` */
-  wchar_t *path;
   HANDLE fd;
 
-  path = get_self_executable_path();
   fd = CreateFileW(path, GENERIC_READ,
                    FILE_SHARE_READ | FILE_SHARE_WRITE,
                    NULL,
@@ -263,7 +261,7 @@ static long find_resource_offset(int id) XFORM_SKIP_PROC
 
 static long get_segment_offset() XFORM_SKIP_PROC
 {
-  return find_resource_offset(257);
+  return find_resource_offset(get_self_executable_path(), 257);
 }
 
 #endif
