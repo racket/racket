@@ -590,7 +590,7 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
     base = (char *)stack_boundary;
 # else
     delta = 0;
-    new_size = (intptr_t)stack_boundary - (intptr_t)jmp->cont.stack_from;
+    new_size = (intptr_t)stack_boundary XFORM_OK_MINUS (intptr_t)jmp->cont.stack_from;
     base = jmp->cont.stack_from;
 # endif
 

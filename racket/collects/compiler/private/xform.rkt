@@ -1808,7 +1808,8 @@
         
         (define (struct-decl? e)
           (and (memq (tok-n (car e)) '(struct enum))
-               (ormap braces? (cdr e))))
+               (ormap braces? (cdr e))
+               (not (function? e))))
         
         (define (class-decl? e)
           (memq (tok-n (car e)) '(class)))
