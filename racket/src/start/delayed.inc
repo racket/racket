@@ -86,6 +86,9 @@ static wchar_t *load_delayed_dll_x(HINSTANCE me, const char *lib, HMODULE *_load
       return t;
     }
   }
+
+  /* Should not get here */
+  return NULL;
 }
 
 static void load_delayed_dll(HINSTANCE me, const char *lib)

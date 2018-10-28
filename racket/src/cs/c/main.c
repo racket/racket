@@ -125,9 +125,8 @@ static long find_boot_section(char *me)
 }
 #endif
 
-
 #ifdef WIN32
-static char *path_to_utf8(wchar_t *p)
+static char *string_to_utf8(wchar_t *p)
 {
   char *r;
   int len;
@@ -141,7 +140,7 @@ static char *path_to_utf8(wchar_t *p)
 
 static char *get_self_path()
 {
-  return path_to_utf8(get_self_executable_path());
+  return string_to_utf8(get_self_executable_path());
 }
 
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
@@ -149,6 +148,8 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 {
   return WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, dest, dest_len, NULL, NULL);
 }
+
+# include "../start/parse_cmdl.inc"
 #endif
 
 #ifdef NO_GET_SEGMENT_OFFSET
@@ -162,7 +163,9 @@ static long get_segment_offset()
 # define do_pre_filter_cmdline_arguments(argc, argv) /* empty */
 #endif
 
-int main(int argc, char **argv)
+static int bytes_main(int argc, char **argv,
+		      /* for Windows GUI mode */
+		      int wm_is_gracket, const char *gracket_guid)
 {
   char *self, *boot_exe, *prog = argv[0], *sprog = NULL;
   int pos1, pos2, pos3;
@@ -176,8 +179,10 @@ int main(int argc, char **argv)
   
   do_pre_filter_cmdline_arguments(&argc, &argv);
 
-  argc--;
-  argv++;
+  if (argc) {
+    argc--;
+    argv++;
+  }
 
   extract_built_in_arguments(&prog, &sprog, &argc, &argv);
   segment_offset = get_segment_offset();
@@ -187,7 +192,7 @@ int main(int argc, char **argv)
 #ifdef WIN32
 # define racket_boot racket_boot_p
   dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
-  boot_exe = path_to_utf8(dll_path);
+  boot_exe = string_to_utf8(dll_path);
   racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
 #else
   boot_exe = self;
@@ -213,7 +218,44 @@ int main(int argc, char **argv)
 	      boot_exe, segment_offset,
               extract_coldir(), extract_configdir(),
               pos1, pos2, pos3,
-              CS_COMPILED_SUBDIR, RACKET_IS_GUI);
+              CS_COMPILED_SUBDIR, RACKET_IS_GUI,
+	      wm_is_gracket, gracket_guid);
   
   return 0;
 }
+
+#if defined(WIN32) && defined(CHECK_SINGLE_INSTANCE)
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
+{
+  int argc;
+  char **argv;
+  char *normalized_path;
+  int wm = 0;
+  const char *guid = "";
+
+  argv = cmdline_to_argv(&argc, &normalized_path);
+
+  if (CheckSingleInstance(normalized_path, argv))
+    return 0;
+  wm = wm_is_gracket;
+  guid = GRACKET_GUID;
+
+  return bytes_main(argc, argv, wm, guid);
+}
+#elif defined(WIN32)
+int wmain(int argc, wchar_t **wargv)
+{
+  int i;
+  char **argv = malloc(argc * sizeof(char*));
+
+  for (i = 0; i < argc; i++) {
+    argv[i] = string_to_utf8(wargv[i]);
+  }
+
+  return bytes_main(argc, argv, 0, "");
+}
+#else
+int main(int argc, char **argv) {
+  return bytes_main(argc, argv, 0, "");
+}
+#endif

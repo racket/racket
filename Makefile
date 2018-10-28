@@ -385,7 +385,7 @@ win32-racket-then-cs:
 	$(MAKE) win32-base PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT) WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
 	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) $(WIN32_CS_COPY_ARGS_BOOT)
 
-CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" \
+CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" --pull \
                     --racketcs-suffix "$(RACKETCS_SUFFIX)" \
                     --boot-mode "$(SETUP_BOOT_MODE)" \
                     --extra-repos-base "$(EXTRA_REPOS_BASE)" \

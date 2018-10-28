@@ -306,7 +306,7 @@ START_XFORM_SKIP;
 # endif
 
 #if defined(__MINGW32__) || defined(WINMAIN_ALREADY)
-# include "parse_cmdl.inc"
+# include "../start/parse_cmdl.inc"
 #endif
 
 #ifdef DOS_FILE_SYSTEM

@@ -123,7 +123,7 @@ int IsFlag(LPCTSTR cmd, LPCTSTR flag)
 
 #define ASSUME_ASCII_COMMAND_LINE
 #define GC_CAN_IGNORE
-#include "../racket/parse_cmdl.inc"
+#include "../start/parse_cmdl.inc"
 
 /////////////////////////////////////////////////////////////////////////////
 //

@@ -9,6 +9,17 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 # ifndef INITIAL_COLLECTS_DIRECTORY
 #  define INITIAL_COLLECTS_DIRECTORY "../collects"
 # endif
+# ifndef INITIAL_CONFIG_DIRECTORY
+#  define INITIAL_CONFIG_DIRECTORY "../etc"
+# endif
+
+/* Hack: overwrite "y" with "n" in binary to disable checking for another
+   instance of the same app. */
+char *check_for_another = "yes, please check for another";
+
+# include <Windows.h>
+# include "../start/win_single.inc"
+# define CHECK_SINGLE_INSTANCE
 #endif
 
 #include "main.c"

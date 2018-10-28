@@ -88,7 +88,8 @@ void racket_boot(int argc, char **argv, char *self,
 		 char *boot_exe, long segment_offset,
                  char *coldir, char *configdir,
                  int pos1, int pos2, int pos3,
-                 int cs_compiled_subdir, int is_gui)
+                 int cs_compiled_subdir, int is_gui,
+		 int wm_is_gracket, const char *gracket_guid)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -134,11 +135,14 @@ void racket_boot(int argc, char **argv, char *self,
   {
     ptr l = Snil;
     int i;
-    char segment_offset_s[32];
+    char segment_offset_s[32], wm_is_gracket_s[32];
 
     for (i = argc; i--; ) {
       l = Scons(Sbytevector(argv[i]), l);
     }
+    l = Scons(Sbytevector(gracket_guid), l);
+    sprintf(wm_is_gracket_s, "%ld", wm_is_gracket);
+    l = Scons(Sbytevector(wm_is_gracket_s), l);
     l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
     l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);
     sprintf(segment_offset_s, "%ld", segment_offset);

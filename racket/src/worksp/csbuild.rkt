@@ -11,6 +11,7 @@
 
 (define scheme-dir-provided? #f)
 (define abs-scheme-dir (build-path here 'up "build" "ChezScheme"))
+(define pull? #f)
 (define machine (if (= 32 (system-type 'word))
 		    "ti3nt"
 		    "ta6nt"))
@@ -25,6 +26,8 @@
                    (unless (equal? dir "")
                      (set! scheme-dir-provided? #t)
                      (set! abs-scheme-dir (path->complete-path dir)))]
+ [("--pull") "Use `git pull` on auto-cloned Chez Scheme repo"
+             (set! pull? #t)]
  [("--racketcs-suffix") str "Select the suffix for RacketCS"
                         (set! cs-suffix (string-upcase str))]
  [("--boot-mode") mode "Select the mode for Racket bootstrapping"
@@ -87,9 +90,10 @@
             scheme-dir
             git-clone-args)]))
 
-(unless scheme-dir-provided?
-  (parameterize ([current-directory scheme-dir])
-    (system*! "git" "pull")))
+(when pull?
+  (unless scheme-dir-provided?
+    (parameterize ([current-directory scheme-dir])
+      (system*! "git" "pull"))))
 
 (unless (file-exists? (build-path scheme-dir "zlib" "Makefile"))
   (parameterize ([current-directory scheme-dir])

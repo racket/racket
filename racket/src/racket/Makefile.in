@@ -272,8 +272,8 @@ DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../..; @PWD@`/etc"
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
-                   $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc \
-	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc $(srcdir)/parse_cmdl.inc \
+                   $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/../start/parse_cmdl.inc \
+	           $(srcdir)/../start/config.inc $(srcdir)/../start/delayed.inc \
 	           $(srcdir)/../start/embedded_dll.inc
 
 main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)

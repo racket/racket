@@ -55,9 +55,14 @@
                           s))
           the-command-line-arguments/maybe-bytes))
 
+   (define builtin-argc 8)
    (seq
-    (unless (>= (length the-command-line-arguments) 6)
-      (error 'racket "expected `self`, `collects`, and `libs` paths plus `segment-offset`, `cs-compiled-subdir?`, and `is-gui?` to start"))
+    (unless (>= (length the-command-line-arguments) builtin-argc)
+      (error 'racket (string-append
+		      "expected `self`, `collects`, and `libs` paths"
+		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
+		      " `wm-is-gracket`, and `gracket-guid`"
+		      " to start")))
     (set-exec-file! (path->complete-path (car the-command-line-arguments))))
    (define init-collects-dir (let ([s (cadr the-command-line-arguments)])
                                (if (equal? s "") 'disable (string->path s))))
@@ -66,10 +71,18 @@
    (define segment-offset (#%string->number (list-ref the-command-line-arguments 3)))
    (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 4)))
    (define gracket? (string=? "true" (list-ref the-command-line-arguments 5)))
+   (define wm-is-gracket (string->number (list-ref the-command-line-arguments 6)))
+   (define gracket-guid (list-ref the-command-line-arguments 7))
 
    (seq
     (when (foreign-entry? "racket_exit")
-      (#%exit-handler (foreign-procedure "racket_exit" (int) void))))
+      (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
+
+    ;; For Windows:
+    (unsafe-register-process-global (string->bytes/utf-8 "PLT_WM_IS_GRACKET")
+				    (ptr-add #f wm-is-gracket))
+    (unsafe-register-process-global (string->bytes/utf-8 "PLT_GRACKET_GUID")
+				    (bytes-append (string->bytes/utf-8 gracket-guid) #vu8(0))))
 
    (define compiled-file-paths
      (list (string->path (cond
@@ -227,7 +240,7 @@
    (define remaining-command-line-arguments '#())
 
    (seq
-    (let flags-loop ([args (list-tail the-command-line-arguments 6)]
+    (let flags-loop ([args (list-tail the-command-line-arguments builtin-argc)]
                      [saw (hasheq)])
       ;; An element of `args` can become `(cons _arg _within-arg)`
       ;; due to splitting multiple flags with a single "-"
