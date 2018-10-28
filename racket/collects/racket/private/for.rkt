@@ -1826,26 +1826,35 @@
     (for_/vector stx stx #'for*/vector #'for*/fold/derived #t))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
+    (define (do-without-result-clause normalized-stx)
+      (with-syntax ([(_ (id ...) bindings expr1 expr ...)
+                     normalized-stx])
+        (define ids (syntax->list #'(id ...)))
+        (for-each (lambda (id)
+                    (unless (identifier? id)
+                      (raise-syntax-error #f
+                                          "not an identifier"
+                                          stx
+                                          id)))
+                  ids)
+        (with-syntax ([(id2 ...) (generate-temporaries ids)]
+                      [for/fold for/fold-id]
+                      [orig-stx stx])
+          #'(let-values ([(id ...)
+                          (for/fold orig-stx ([id null] ...) bindings
+                            (let-values ([(id2 ...) (let ()
+                                                      expr1
+                                                      expr ...)])
+                              (values* (cons id2 id) ...)))])
+              (values* (alt-reverse id) ...)))))
     (syntax-case stx ()
+      [(_ (id ... #:result result-expr) bindings expr1 expr ...)
+       #`(let-values ([(id ...)
+                       #,(do-without-result-clause
+                          #'(_ (id ...) bindings expr1 expr ...))])
+           result-expr)]
       [(_ (id ...) bindings expr1 expr ...)
-       (let ([ids (syntax->list #'(id ...))])
-         (for-each (lambda (id)
-                     (unless (identifier? id)
-                       (raise-syntax-error #f
-                                           "not an identifier"
-                                           stx
-                                           id)))
-                   ids)
-         (with-syntax ([(id2 ...) (generate-temporaries ids)]
-                       [for/fold for/fold-id]
-                       [orig-stx stx])
-           #'(let-values ([(id ...)
-                           (for/fold orig-stx ([id null] ...) bindings
-                                     (let-values ([(id2 ...) (let ()
-                                                               expr1
-                                                               expr ...)])
-                                       (values* (cons id2 id) ...)))])
-               (values* (alt-reverse id) ...))))]))
+       (do-without-result-clause stx)]))
 
   (define-syntax (for/lists stx) (do-for/lists #'for/fold/derived stx))
   (define-syntax (for*/lists stx) (do-for/lists #'for*/fold/derived stx))
