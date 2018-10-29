@@ -6371,4 +6371,40 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module optimizes-to-with-immediate-continuation-mark-in-noninlined racket/base
+  (define (call/icm proc)
+    (call-with-immediate-continuation-mark
+     'x
+     (lambda (v)
+       ;; The constant '(1 2 3) currently prevents inlining
+       (if (proc '(1 2 3))
+           (proc v)
+           #f))))
+
+  (define (call/cm proc)
+    (if (zero? (random 1))
+        (with-continuation-mark
+         'x 'y
+         (proc))
+        ;; disable inline:
+        '(3 4 5)))
+
+  (define result
+    (let ([in? #f]
+          [result #f])
+      (call/cm
+       (lambda ()
+         (set! in? #t)
+         (call/icm
+          (lambda (v)
+            (set! result v)))
+         (set! in? #f)))
+      result))
+
+  (provide result))
+
+(test #f dynamic-require ''optimizes-to-with-immediate-continuation-mark-in-noninlined 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

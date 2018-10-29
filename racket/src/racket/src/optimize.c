@@ -6539,6 +6539,8 @@ with_immed_mark_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   wcm->val = val;
   SCHEME_CDR(wcm->body) = body;
 
+  info->preserves_marks = 0;
+
   return data;
 }
 
