@@ -1748,7 +1748,7 @@ should use @racket[_fixint] for the base type.
     (_enum '(unkown = -1
              error = 0
              ok = 1)
-           _ufixint))]}
+           _fixint))]}
 
 @defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
          ctype?]{
