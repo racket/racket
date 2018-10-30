@@ -208,6 +208,13 @@
           (build-path scheme-dir machine "boot" machine)
           "../build/racket.boot")
 
+(system*! "mt"
+	  "-manifest" "racket/racket.manifest"
+	  (format "-outputresource:../../Racket~a.exe;1" cs-suffix))
+(system*! "mt"
+	  "-manifest" "gracket/gracket.manifest"
+	  (format "-outputresource:../../GRacket~a.exe;1" cs-suffix))
+
 ;; ----------------------------------------
 ;; Finish installation with "mzstart", "mrstart", and other
 ;; implementation-independent details as in "build.bat"
