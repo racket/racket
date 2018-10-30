@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "scheme.h"
 #include "rktio.h"
 
@@ -78,10 +79,16 @@ static void racket_exit(int v)
   exit(v);
 }
 
+static int racket_errno()
+{
+  return errno;
+}
+
 static void init_foreign()
 {
 # include "rktio.inc"
   Sforeign_symbol("racket_exit", (void *)racket_exit);
+  Sforeign_symbol("racket_errno", (void *)racket_errno);
 }
 
 void racket_boot(int argc, char **argv, char *self,
