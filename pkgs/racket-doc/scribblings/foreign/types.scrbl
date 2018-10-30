@@ -1738,10 +1738,10 @@ is to throw an exception.
              buffer_too_small)))
 ]
 
-Note that the default basetype is @racket[_fixint]. This
+Note that the default basetype is @racket[_ufixint]. This
 differs from C enumerations that can use any value in
-@racket[_ufixint]. Any @racket[_enum] using negative values
-should use @racket[_ufixint] for the base type.
+@racket[_fixint]. Any @racket[_enum] using negative values
+should use @racket[_fixint] for the base type.
 
 @examples[#:eval ffi-eval
   (define @#,racketidfont{_negative_enum}
