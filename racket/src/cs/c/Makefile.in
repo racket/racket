@@ -123,7 +123,7 @@ scheme:
 
 scheme-make:
 	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@ CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)"
-	cd @SCHEME_SRC@ && make
+	cd @SCHEME_SRC@ && $(MAKE)
 
 racket.boot: racket.so
 	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @COMPRESS_COMP@ racket.so racket.boot
