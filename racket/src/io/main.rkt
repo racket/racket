@@ -20,6 +20,7 @@
          "network/main.rkt"
          "foreign/main.rkt"
          "unsafe/main.rkt"
+         "machine/main.rkt"
          "run/main.rkt"
          "port/parameter.rkt"
          (only-in "host/rktio.rkt"
@@ -46,6 +47,7 @@
          (all-from-out "network/main.rkt")
          (all-from-out "foreign/main.rkt")
          (all-from-out "unsafe/main.rkt")
+         (all-from-out "machine/main.rkt")
          (all-from-out "run/main.rkt")
          make-place-ports+fds
          io-place-init!)

@@ -15,6 +15,9 @@
 (current-directory (host:path->string (host:current-directory)))
 (set-string->number?! string->number)
 
+(get-machine-info)
+(exit)
+
 (define-syntax-rule (test expect rhs)
   (let ([e expect]
         [v rhs])

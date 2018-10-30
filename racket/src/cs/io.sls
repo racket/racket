@@ -385,6 +385,51 @@
 
   ;; ----------------------------------------
 
+  ;; `#%windows-version-instance` is used for `(system-type 'machine)`
+  ;; (via `get-machine-info`) on Windows
+  (meta-cond
+   [(#%memq (machine-type) '(a6nt ta6nt i3nt ti3nt))
+    (define |#%windows-version-instance|
+      (hash 'get-windows-version
+            (lambda ()
+              (define-ftype DWORD integer-32)
+              (define-ftype BOOL int)
+              (define-ftype OSVERSIONINFOA
+                (|struct|
+                 [dwOSVersionInfoSize DWORD]
+                 [dwMajorVersion DWORD]
+                 [dwMinorVersion DWORD]
+                 [dwBuildNumber DWORD]
+                 [dwPlatformId DWORD]
+                 [szCSDVersion (array 128 unsigned-8)]))
+              (define GetVersionEx
+                (begin
+                  (load-shared-object "Kernel32.dll")
+                  (foreign-procedure "GetVersionExA" ((* OSVERSIONINFOA)) BOOL)))
+              (define v (make-ftype-pointer OSVERSIONINFOA
+                                            (foreign-alloc (ftype-sizeof OSVERSIONINFOA))))
+              (ftype-set! OSVERSIONINFOA (dwOSVersionInfoSize) v (ftype-sizeof OSVERSIONINFOA))
+              (cond
+               [(GetVersionEx v)
+                (values (ftype-ref OSVERSIONINFOA (dwMajorVersion) v)
+                        (ftype-ref OSVERSIONINFOA (dwMinorVersion) v)
+                        (ftype-ref OSVERSIONINFOA (dwBuildNumber) v)
+                        (list->bytes
+                         (let loop ([i 0])
+                           (define b (ftype-ref OSVERSIONINFOA (szCSDVersion i) v))
+                           (cond
+                            [(fx= b 0) '()]
+                            [else (cons b (loop (fx+ i 1)))]))))]
+               [else
+                (values 0 0 0 #vu8())]))))]
+   [else
+    (define |#%windows-version-instance|
+      (hash 'get-windows-version
+            (lambda () (raise-arguments-error 'get-windows-version
+                                              "not on Windows"))))])
+
+  ;; ----------------------------------------
+
   (export system-library-subpath)
   (define system-library-subpath
     (case-lambda
@@ -410,6 +455,7 @@
       [(|#%pthread|) (hasheq)]
       [(|#%thread|) |#%thread-instance|]
       [(|#%rktio|) |#%rktio-instance|]
+      [(|#%windows-version|) |#%windows-version-instance|]
       [else #f]))
 
   (include "include.ss")
@@ -423,4 +469,5 @@
   (set-error-display-eprintf! (lambda (fmt . args)
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args)))
   (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ptr->address)
-  (set-async-callback-poll-wakeup! 1/unsafe-signal-received))
+  (set-async-callback-poll-wakeup! 1/unsafe-signal-received)
+  (set-get-machine-info! get-machine-info))

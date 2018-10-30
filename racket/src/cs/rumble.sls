@@ -477,6 +477,7 @@
           system-type
           system-path-convention-type
           system-library-subpath-string ; not exported to Racket
+          set-get-machine-info!         ; not exported to Racket
 
           unsafe-car
           unsafe-cdr
