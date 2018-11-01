@@ -502,9 +502,9 @@
     ;; the GC was re-enabled
     (memory->cpointer x)))
 
-;; FIXME:
+;; One-byte stdbool is correct on all currently supported platforms, at least:
 (define-ctype _stdbool 'integer-8 'stdbool
-  (lambda (x) (and x 0))
+  (lambda (x) (if x 1 0))
   (lambda (v) (not (zero? v))))
 
 (define make-cstruct-type
