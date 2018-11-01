@@ -210,10 +210,27 @@
                        [args args])
            #'(parse-command-line program-name argv (list . table) . args))))))
 
+(define (car-or-itself l)
+  (if (pair? l) (car l) l))
+
 (define (print-args port l f)
   (let loop ([l l]
              [n 1])
     (unless (null? l)
+      (define optional? (procedure-arity-includes? f n))
+      (fprintf port " ~a<~a>~a"
+               (if optional? "[" "")
+               (car-or-itself (car l))
+               (if optional? "]" ""))
+      (when (and (null? (cdr l))
+                 (procedure-arity-includes? f (+ n 2)))
+        (fprintf port " ..."))
+      (loop (cdr l) (add1 n)))))
+
+(define (print-args-choices port l f)
+  (let loop ([l l]
+             [n 1])
+    (unless (or (null? l) (= (length l) 1))
       (define optional? (procedure-arity-includes? f n))
       (fprintf port " ~a<~a>~a"
                (if optional? "[" "")
@@ -300,7 +317,7 @@
                           (cadr line))])
             (unless (and (pair? h)
                          (or (string? (car h)) (andmap string? (car h)))
-                         (andmap string? (cdr h)))
+                         (andmap (lambda (x) (or (string? x) (andmap string? x))) (cdr h)))
               (bad-table "spec-line help section must be ~a"
                          "a list of string-or-string-list and strings"))
             (unless (if (number? a)
@@ -396,7 +413,8 @@
                                       (unless (null? (cdr flags))
                                         (fprintf sp ",")
                                         (loop (cdr flags))))
-                                    (fprintf sp " :"))
+                                    (fprintf sp " :")
+                                    (print-args-choices sp (cdaddr line) (cadr line)))
                                   (fprintf sp "  "))
                                 (fprintf sp " ~a\n" help))))))
                       (fprintf sp "  --help, -h : Show this help\n")
