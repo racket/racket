@@ -1266,10 +1266,9 @@ If the @racket[c] argument is a flat contract or a chaperone contract, then the
 result will be a chaperone contract. Otherwise, the result will be an
 impersonator contract.
 
-When an @racket[stream/c] contract is applied to an asynchronous channel,
-the result is not @racket[eq?] to the input. The result will be either a
-@tech{chaperone} or @tech{impersonator} of the input depending on the type of
-contract.
+When an @racket[stream/c] contract is applied to a stream, the result is not
+@racket[eq?] to the input. The result will be either a @tech{chaperone} or
+@tech{impersonator} of the input depending on the type of contract.
 
 Contracts on streams are evaluated lazily by necessity (since streams may be
 infinite). Contract violations will not be raised until the value in violation

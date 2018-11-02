@@ -421,7 +421,9 @@
                                 "          (procedure-arity-includes/c 1)\n"
                                 "          (procedure-arity-includes/c 1))")
                                v))
-       (vector->immutable-vector v))))
+       (vector->immutable-vector v))
+     '()
+     #t))
 
   ;; new-style sequence property, where the property value is a procedure
   ;; to get the sequence-driving value and procedures;
