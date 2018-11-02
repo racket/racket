@@ -265,7 +265,9 @@
   config:apps-dir
   find-apps-dir
   find-user-apps-dir #:default (build-path "share" "applications")
-  (chain-to (lambda () (build-path (find-share-dir) "applications"))))
+  (chain-to (lambda ()
+              (let ([p (find-share-dir)])
+                (and p (build-path p "applications"))))))
 
 ;; ----------------------------------------
 ;; "man"
@@ -321,7 +323,9 @@
   get-false
   config:pkgs-search-dirs
   get-pkgs-search-dirs
-  (chain-to (lambda () (build-path (find-share-dir) "pkgs"))))
+  (chain-to (lambda ()
+              (let ([p (find-share-dir)])
+                (and p (build-path p "pkgs"))))))
 
 (provide find-user-pkgs-dir)
 (define (find-user-pkgs-dir [vers (get-installation-name)])
