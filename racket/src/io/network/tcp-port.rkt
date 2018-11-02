@@ -21,10 +21,12 @@
     (if (input-port? port)
         (lambda (fd name)
           (open-input-fd fd name
-                         #:extra-data (tcp-data #f #t)))
+                         #:extra-data (tcp-data #f #t)
+			 #:network-error? #t))
         (lambda (fd name)
           (open-output-fd fd name
-                          #:extra-data (tcp-data #t #f))))))
+                          #:extra-data (tcp-data #t #f)
+			  #:network-error? #t)))))
 
 (define (open-input-output-tcp fd name #:close? [close? #t])
   (define refcount (box (if close? 2 3)))
@@ -37,7 +39,8 @@
                   (lambda ()
                     (unless (tcp-data-abandon-in? extra-data)
                       (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))
-                  #:fd-refcount refcount)
+                  #:fd-refcount refcount
+		  #:network-error? #t)
    (open-output-fd fd name
                    #:extra-data extra-data
                    #:on-close
@@ -46,7 +49,8 @@
                      (unless (tcp-data-abandon-out? extra-data)
                        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))
                    #:fd-refcount refcount
-                   #:buffer-mode 'block)))
+                   #:buffer-mode 'block
+		   #:network-error? #t)))
 
 (define (port-tcp-data p)
   (maybe-fd-data-extra 

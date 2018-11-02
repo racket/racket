@@ -5,6 +5,7 @@
          "../host/pthread.rkt"
          "../sandman/main.rkt"
          "../file/error.rkt"
+         "../network/error.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -57,7 +58,8 @@
                        #:extra-data [extra-data #f]
                        #:on-close [on-close void]
                        #:fd-refcount [fd-refcount (box 1)]
-                       #:custodian [cust (current-custodian)])
+                       #:custodian [cust (current-custodian)]
+		       #:network-error? [network-error? #f])
   (define-values (port buffer-control)
     (open-input-peek-via-read
      #:name name
@@ -69,7 +71,9 @@
        (cond
          [(rktio-error? n)
           (end-atomic)
-          (raise-filesystem-error #f n "error reading from stream port")]
+	  (if network-error?
+              (raise-network-error #f n "error reading from stream port")
+              (raise-filesystem-error #f n "error reading from stream port"))]
          [(eqv? n RKTIO_READ_EOF) eof]
          [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ (core-port-closed port))
                                (lambda (v) 0))]
@@ -100,7 +104,8 @@
                         #:fd-refcount [fd-refcount (box 1)]
                         #:on-close [on-close void]
                         #:plumber [plumber (current-plumber)]
-                        #:custodian [cust (current-custodian)])
+                        #:custodian [cust (current-custodian)]
+			#:network-error? [network-error? #f])
   (define buffer (make-bytes 4096))
   (define buffer-start 0)
   (define buffer-end 0)
@@ -126,7 +131,9 @@
        (cond
          [(rktio-error? n)
           (end-atomic)
-          (raise-filesystem-error #f n "error writing to stream port")]
+	  (if network-error?
+              (raise-network-error #f n "error writing to stream port")
+              (raise-filesystem-error #f n "error writing to stream port"))]
          [(zero? n)
           #f]
          [else
@@ -194,7 +201,9 @@
           (cond
             [(rktio-error? n)
              (end-atomic)
-             (raise-filesystem-error #f n "error writing to stream port")]
+	     (if network-error?
+		 (raise-network-error #f n "error writing to stream port")
+		 (raise-filesystem-error #f n "error writing to stream port"))]
             [(zero? n) (wrap-evt evt (lambda (v) #f))]
             [else n])]))
 
