@@ -521,7 +521,11 @@
        (string-append
         (call-with-input-file* path sha1)
         (with-handlers ([exn:fail:filesystem? (lambda (exn) "")])
-          (call-with-input-file* dep-path (lambda (p) (cdaddr (read p))))))))))
+          (call-with-input-file* dep-path (lambda (p)
+                                            (define deps (read p))
+                                            (and (equal? (version) (car deps))
+                                                 (equal? (system-type 'vm) (cadr deps))
+                                                 (cdaddr deps))))))))))
 
 (define (get-compiled-sha1 path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
