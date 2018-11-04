@@ -2775,5 +2775,17 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 6 dynamic-require ''shaodws-c-and-imports-the-rest 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure #%module-begin respects the stop list when module* is present
+
+(module module-begin-stop-list racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (stop stx)
+    (raise-syntax-error #f "don't expand me!" stx))
+  (begin-for-syntax
+    (local-expand #'(#%plain-module-begin (#%expression (stop)))
+                  'module-begin
+                  (list #'module* #'stop))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
