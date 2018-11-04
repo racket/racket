@@ -38,7 +38,7 @@ something that isn't a procedure. That name is used in the
 transcript.
 
 |#
-
+(require (for-syntax racket/base))
 
 (define teval eval)
 
