@@ -68,7 +68,7 @@ the continuation is @racket[(- 4 @#,hole)], where @hole indicates the
 position of the redex. That is, the continuation says how to ``continue''
 after the @tech{redex} is reduced to a @tech{value}.
 
-Before some expressions can be evaluated, their sub-expressions must be
+Before some expressions can be evaluated, some or all of their sub-expressions must be
 evaluated. For example, in the application @racket[(- 4 (+ 1 1))], the
 application of @racket[-] cannot be reduced until the sub-expression
 @racket[(+ 1 1)] is reduced.
@@ -77,8 +77,8 @@ its sub-expressions are evaluated and then how the results are
 combined to reduce the form away.
 
 The @deftech{dynamic extent} of an expression is the sequence of
-evaluation steps starting when the expression is selected as a @tech{redex}
-and continuing until it is fully evaluated.
+evaluation steps starting when the expression is decomposed into the
+context and the @tech{redex} and continuing until it is fully evaluated.
 
 @;------------------------------------------------------------------------
 @section{Tail Position}
@@ -86,12 +86,12 @@ and continuing until it is fully evaluated.
 An expression @racket[_expr1] is in @deftech{tail position} with
 respect to an enclosing expression @racket[_expr2] if, whenever
 @racket[_expr1] becomes a redex, its @tech{continuation} is the same
-as the enclosing @racket[_expr2]'s @tech{continuation}.
+as was the enclosing @racket[_expr2]'s @tech{continuation}.
 
 For example, the @racket[(+ 1 1)] expression is @italic{not} in @tech{tail
 position} with respect to @racket[(- 4 (+ 1 1))]. To illustrate, we use
 the notation @sub[_C _expr] to mean the expression that is produced by
-substituting @racket[_expr] in place of @hole in some arbitrary @tech{continuation}
+substituting @racket[_expr] in place of @hole in some @tech{continuation}
 @racket[_C]:
 
 @racketblock[
@@ -125,8 +125,8 @@ each syntactic form, such as @racket[if].
 @;------------------------------------------------------------------------
 @section[#:tag "values-model"]{Multiple Return Values}
 
-A Racket expression can evaluate to @deftech{multiple values}, similar
-to the way that a procedure can accept multiple arguments.
+A Racket expression can evaluate to @deftech{multiple values}, to
+provide symmetry with the fact that a procedure can accept multiple arguments.
 
 Most @tech{continuations} expect a certain number of result
 @tech{values}, although some @tech{continuations} can accept
@@ -157,7 +157,7 @@ then an algebra student simplifies @tt{x + 1} as follows:
 
 @verbatim{  x + 1 = 10 + 1 = 11}
 
-Racket works much the same way, in that a set of @deftech{top-level
+Racket works much the same way, in that a set of @tech{top-level
 variables} (see also @secref["vars-and-locs"]) are available for substitutions on demand during
 evaluation. For example, given
 
@@ -179,8 +179,8 @@ definitions in response to evaluating forms such as @racket[define].
 Each evaluation step, then, transforms the current set of definitions and
 program into a new set of definitions and program. Before a
 @racket[define] can be moved into the set of definitions, its
-second expression must be reduced to a @tech{value}.
-(The first expression is used without evaluation.)
+expression (i.e., its right-hand side) must be reduced to a @tech{value}.
+(The left-hand side is used without evaluation.)
 
 @prog-steps/no-obj[
 [{}
@@ -230,7 +230,7 @@ else. For example, a @tech{value} can refer to a particular vector that
 currently holds the value @racket[10] in its first slot. If an
 @tech{object} is modified via one @tech{value},
 then the modification is visible through
-all copies of the @tech{value} that reference the @tech{object}.
+all the @tech{values} that reference the @tech{object}.
 
 In the evaluation model, a set of @tech{objects} must be carried along
 with each step in evaluation, just like the definition set. Operations
@@ -356,8 +356,8 @@ In the program state
 
 evaluation cannot depend on @racket[<o2>], because it is not part of
 the program to evaluate, and it is not referenced by any definition
-that is accessible by the program. The object is said to be
-not @deftech{reachable}. The @tech{object} @racket[<o2>] may
+that is accessible by the program. The object is said to not
+be @deftech{reachable}. The @tech{object} @racket[<o2>] may
 therefore be removed from the program state by @deftech{garbage
 collection}.
 
@@ -390,7 +390,7 @@ an algebra student simplifies @tt{f(7)} as follows:
 
 @verbatim{  f(7) = 7 + 10 = 17}
 
-The key step in this simplification is take the body of the defined
+The key step in this simplification is to take the body of the defined
 function @tt{f} and replace each @tt{x} with the actual
 @tech{value} @tt{7}.
 
@@ -407,13 +407,16 @@ an @tech{object}, so evaluating @racket[(f 7)] starts with a
  (code:hilite (<p1> 7))]
 ]
 
-Unlike in algebra, however, the @tech{value} associated with an
-argument parameter variable (not to be confused with parameters;
-see @secref["parameter-model"]) can be changed in the body of a procedure by using
+Unlike in algebra, however, the @tech{value} associated with a procedure
+argument variable can be changed in the body of a procedure by using
 @racket[set!], as in the example @racket[(lambda (x) (begin (set! x 3)
-x))]. Since the @tech{value} associated with parameter variable @racket[x] can be
-changed, an argument value cannot be substituted for @racket[x] when
+x))]. Since the @tech{value} associated with argument variable @racket[x] can be
+changed, the value cannot be substituted for @racket[x] when
 the procedure is first applied.
+
+@margin-note{We do not use the term ``parameter variable'' to refer to
+the parameter variable names declared with a function. This is to avoid
+confusion with Parameters (see @secref["parameter-model"]).}
 
 Instead, a new @deftech{location} is created for each @tech{variable}
 on each application. The argument @tech{value} is placed in the
@@ -445,7 +448,7 @@ accessed directly.
 
 Generating a @tech{location} in this way means that @racket[set!]
 evaluates for @tech{local variables}, including argument
-parameter variables, in the same way as for
+variables, in the same way as for
 @tech{top-level variables}, because the @tech{local variable} is
 always replaced with a @tech{location} by the time the @racket[set!]
 form is evaluated:
@@ -493,12 +496,12 @@ that replaces every instance of @racket[x] in @racket[_expr].
 
 A @deftech{variable} is a placeholder for a @tech{value}, and
 expressions in an initial program refer to @tech{variables}. A
-@tech{top-level variable} is both a @tech{variable} and a
+@deftech{top-level variable} is both a @tech{variable} and a
 @tech{location}. Any other @tech{variable} is always replaced by a
 @tech{location} at run-time; thus, evaluation of expressions
 involves only @tech{locations}. A single @deftech{local variable}
 (i.e., a non-top-level, non-module-level @tech{variable}), such as an
-argument parameter variable, can correspond to different @tech{locations}
+argument variable, can correspond to different @tech{locations}
 during different applications.
 
 For example, in the program
@@ -514,7 +517,7 @@ hold the value @racket[11].
 
 The replacement of a @tech{variable} with a @tech{location} during
 evaluation implements Racket's @deftech{lexical scoping}. For example,
-when an argument parameter variable @racket[x] is replaced by
+when an argument variable @racket[x] is replaced by
 the @tech{location} @racket[xloc], it is replaced @italic{throughout} the
 body of the procedure, including any nested @racket[lambda]
 forms. As a result, future references to the @tech{variable} always
@@ -534,7 +537,7 @@ evaluation.
 One difference between a module and a top-level definition
 is that a module can be @deftech[#:key "declare"]{declared}
 without instantiating its module-level definitions.
-Subsequently, evaluation of a @racket[require] @deftech{instantiates}
+Evaluation of a @racket[require] @deftech{instantiates}
 (i.e., triggers the @deftech{instantiation} of) the declared
 module, which creates variables that correspond to its
 module-level definitions.
@@ -548,17 +551,15 @@ For example, given the module declaration
 
 the evaluation of @racket[(require 'm)] creates the variable @racket[x]
 and installs @racket[10] as its value. This @racket[x] is unrelated to
-any top-level definition of @racket[x]. It's as
-if the variable were actually named ``x in m.''
+any top-level definition of @racket[x] (as if it were given a unique,
+model-specific prefix).
 
 @;------------------------------------------------------------------------
 @subsection[#:tag "module-phase"]{Phases}
 
-The purpose of @deftech{phases} is to solve the ``eval-when'' problem that
-appears in various Lisp dialects. In particular, phases
+The purpose of @deftech{phases} is to
 address the necessary separation of names defined at execution time versus
-names defined at compile/macro-expansion time. See the paper
-``Composable and Compilable Macros'' for detailed information @cite["Flatt02"].
+names defined at expansion time. See Section @secref["phases"] in the Guide.
 
 A module can be @tech{instantiate}d in multiple @tech{phases}. A
 phase is an integer that, like a module name, is effectively a prefix on the names
@@ -567,7 +568,7 @@ of module-level definitions. Phase 0 is the execution-time phase.
 A top-level @racket[require]
 @tech{instantiates} a module at @tech{phase} 0, if the module is not
 already @tech{instantiate}d at phase 0.  A top-level
-@racket[(require (for-syntax ...))] @tech{instantiates} a module at
+@racket[(require (for-syntax ....))] @tech{instantiates} a module at
 @tech{phase} 1 (if it is not already @tech{instantiate}d at that
 phase); @racket[for-syntax] also has a different binding
 effect on further program parsing, as described in
@@ -582,7 +583,7 @@ Thus, if the module is @tech{instantiate}d at phase 1,
 the variables defined with @racket[begin-for-syntax] are created at phase 2,
 and so on. Moreover, this relative phase acts as another layer of
 prefixing, so that @racket[x] defined with @racket[define] and
-@racket[x] defined with @racket[begin-for-syntax] can co-exist in a module
+@racket[x] defined with @racket[define-for-syntax] can co-exist in a module
 without colliding. A @racket[begin-for-syntax] form can be nested
 within a @racket[begin-for-syntax] form, in which case the inner definitions and
 expressions are in relative @tech{phase} +2, and so on. Higher phases are 
@@ -593,11 +594,11 @@ If a module @tech{instantiate}d at @tech{phase} @math{n}
 first @tech{instantiate}d at phase @math{n}, and so on
 transitively. (Module @racket[require]s cannot form cycles.) If a
 module @tech{instantiate}d at phase @math{n} @racket[require]s
-another module @racket[for-syntax], the other module becomes
-@deftech{available} at @tech{phase} @math{n+1}, and it may later be
+another module @racket[_M] @racket[for-syntax], then @racket[_M] becomes
+@deftech{available} at @tech{phase} @math{n+1}, and it later may be
 @tech{instantiate}d at @tech{phase} @math{n+1}.  If a module that is
 @tech{available} at phase @math{n} (for @math{n>0}) @racket[require]s
-another module @racket[for-template], the other module becomes
+another module @racket[_M] @racket[for-template], then @racket[_M] becomes
 @tech{available} at @tech{phase} @math{n-1}, and so
 on. @tech{Instantiation}s of @tech{available} modules above
 @tech{phase} 0 are triggered on demand as described in
@@ -623,11 +624,12 @@ top-levels are in correspondingly higher @tech{phase}s.
 When a module is compiled, its @tech{phase} 1 is instantiated. This
 can, in turn, trigger the transitive instantiation of many other
 modules at other phases, including phase 1. Racket provides a very
-strong guarantee about this instantiation called ``The Separate
-Compilation Guarantee'':
+strong guarantee about this instantiation called
+@index["separate compilation guarantee"]{``The Separate
+Compilation Guarantee''}:
 
-``Any @tech{effects} of the instantiation of the module's phase 1 due
-to compilation on the Racket runtime system are @tech{discarded}.''
+@nested[#:style 'inset]{Any @tech{effects} of the instantiation of the module's phase 1 due
+to compilation on the Racket runtime system are @tech{discarded}.}
 
 The guarantee concerns @deftech{effects}. There are two different
 kinds of effects: internal and external.
@@ -670,7 +672,7 @@ The opposite is also true: some things which appear to be external are
 actually internal. For instance, if a Racket program starts multiple
 threads and uses mutation to communicate between them, that mutation
 is purely internal, because Racket's threads are defined entirely
-internally. They are not related to operating system threads.
+internally (they are not related to operating system threads).
 
 Furthermore, whenever a Racket program calls an @tech{unsafe}
 function, the Racket runtime system makes no promises about its
@@ -873,7 +875,7 @@ can @racket[require] from its enclosing module, but the enclosing
 module cannot @racket[require] the submodule. Unless a submodule
 imports from its enclosing module or vice versa, then @tech{visits} or
 @tech{instantiations} of the two modules are independent, and their
-implementations may even be loaded from bytecode files at different times.
+implementations may even be loaded from bytecode sources at different times.
 
 A submodule declared with @racket[module] can import any preceding
 submodule declared with @racket[module]. A submodule declared with
@@ -881,7 +883,7 @@ submodule declared with @racket[module]. A submodule declared with
 @racket[module*] and any submodule declared with @racket[module].
 
 When a submodule declaration has the form @racket[(module* _name #f
-...)], then all of the bindings of the enclosing module's bodies are
+....)], then all of the bindings of the enclosing module's bodies are
 visible in the submodule's body, and the submodule implicitly imports
 the enclosing module. The submodule can @racket[provide] any bindings
 that it inherits from its enclosing module.
@@ -899,7 +901,7 @@ into smaller continuations. Evaluation steps add frames to and remove frames fro
 the current continuation, typically one at a time.
 
 Each frame is conceptually annotated with a set of
-@deftech{continuation mark}s. A mark consists of a key and its value.
+@deftech{continuation marks}. A mark consists of a key and its value.
 The key is an arbitrary value, and each frame includes at most one
 mark for any given key. Various operations set and extract marks from
 continuations, so that marks can be used to attach information to a
@@ -928,9 +930,8 @@ the marks associated with the relevant frames are also captured.
 A @deftech{continuation barrier} is another kind of continuation frame
 that prohibits certain replacements of the current continuation with
 another. Specifically, a continuation can be replaced by another only
-when the replacement does not introduce any continuation barriers. It
-may remove continuation barriers only through jumps to continuations
-that are a tail of the current continuation.  A continuation barrier
+when the replacement does not introduce any continuation barriers.
+A continuation barrier
 thus prevents ``downward jumps'' into a continuation that is protected
 by a barrier. Certain operations install barriers automatically; in
 particular, when an exception handler is called, a continuation
@@ -969,7 +970,7 @@ has its own private state that is accessed through @deftech{thread
 cells}. A thread cell is similar to a normal mutable object, but a
 change to the value inside a thread cell is seen only when extracting
 a value from that cell in the same thread. A thread cell can be
-@deftech{preserved}: when a new thread is created, the creating
+@deftech{preserved}; when a new thread is created, the creating
 thread's value for a preserved thread cell serves as the initial value
 for the cell in the created thread. For a non-preserved thread cell, a
 new thread sees the same initial value (specified when the thread cell
@@ -1086,7 +1087,7 @@ When Racket is compiled with support for per-custodian memory
 accounting (see @racket[custodian-memory-accounting-available?]), the
 @racket[current-memory-use] procedure can report a custodian-specific
 result.  This result determines how much memory is occupied by objects
-that are reachable from the custodian's managed values, especially its
+that are @tech{reachable} from the custodian's managed values, especially its
 threads, and including its sub-custodians' managed values. If an
 object is reachable from two custodians where neither is an ancestor
 of the other, an object is arbitrarily charged to one or the other,
