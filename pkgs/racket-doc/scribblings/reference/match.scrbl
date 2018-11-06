@@ -319,7 +319,7 @@ In more detail, patterns match as follows:
        ]}
 
  @item{@racket[(#,(racketidfont "pregexp") _rx-expr)] or
-       @racket[(#,(racketidfont "regexp") _rx-expr _pat)] --- like the
+       @racket[(#,(racketidfont "pregexp") _rx-expr _pat)] --- like the
        @racketidfont{regexp} patterns, but if @racket[_rx-expr]
        produces a string, it is converted to a pattern using
        @racket[pregexp] instead of @racket[regexp].}
