@@ -1972,7 +1972,7 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
 #ifdef MZ_USE_JIT
   if (data->u.native_code
       /* If the union points to a another Scheme_Lambda*, then it's not actually
-         a pointer to native code. We must have a closure referenced frmo non-JITted code
+         a pointer to native code. We must have a closure referenced from non-JITted code
          where the closure is also referenced by JITted code. */
       && !SAME_TYPE(SCHEME_TYPE(data->u.native_code), scheme_lambda_type)) {
     Scheme_Object *nc;
