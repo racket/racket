@@ -88,7 +88,7 @@ In more detail, patterns match as follows:
 @itemize[
 
  @item{@racket[_id] (excluding the reserved names @racketidfont{_},
-       @racketidfont{...}, @racketidfont{.._},
+       @racketidfont{...}, @racketidfont{___},
        @racketidfont{..}@racket[_k], and
        @racketidfont{..}@racket[_k] for non-negative integers
        @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[_id] to the
