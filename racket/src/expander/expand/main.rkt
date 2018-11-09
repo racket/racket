@@ -719,6 +719,11 @@
   (cond
    [(expand-context-to-parsed? ctx)
     (and (or keep-for-parsed? keep-for-error?) (datum->syntax #f keep-e s s))]
+   [(and for-track? (pair? d) keep-e)
+    ;; Use properties of `s`, but binding and source location of identifier
+    (define id (car d))
+    (syntax-rearm (datum->syntax (syntax-disarm id) keep-e id s)
+                  id)]
    [else
     (syntax-rearm (datum->syntax (syntax-disarm s) keep-e s s)
                   s)]))
