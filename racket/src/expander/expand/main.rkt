@@ -720,10 +720,9 @@
    [(expand-context-to-parsed? ctx)
     (and (or keep-for-parsed? keep-for-error?) (datum->syntax #f keep-e s s))]
    [(and for-track? (pair? d) keep-e)
-    ;; Use properties of `s`, but binding and source location of identifier
-    (define id (car d))
-    (syntax-rearm (datum->syntax (syntax-disarm id) keep-e id s)
-                  id)]
+    ;; Synthesize form to preserve just source and properties for tracking
+    ;; without affecting the identifier that is kept in 'origin
+    (datum->syntax #f (list (car d)) s s)]
    [else
     (syntax-rearm (datum->syntax (syntax-disarm s) keep-e s s)
                   s)]))

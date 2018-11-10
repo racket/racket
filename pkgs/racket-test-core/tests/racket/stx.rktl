@@ -424,13 +424,16 @@
             [else #f]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that 'origin has the right source location
+;; Check that 'origin has the right source location,
+;; and that it doesn't have excessive properties
 
 (let ()
-  (define m #'(module m racket/base
+  (define m #`(module m racket/base
                 (require (for-syntax racket/base))
                 (let ()
-                  (define-values (x y) (values 1 2))
+                  #,(syntax-property #`(define-values (x y) (values 1 2))
+                                     'on-form
+                                     'dv)
                   x)))
   (define e (expand m))
   (define dv-src
@@ -463,7 +466,8 @@
         list
         (syntax-line dv-origin)
         (syntax-column dv-origin)
-        (syntax-span dv-origin)))
+        (syntax-span dv-origin))
+  (test #f syntax-property dv-origin 'on-form))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check property tracking on `let[rec]-values` binding clauses
