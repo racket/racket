@@ -247,7 +247,9 @@
 ;; Helpers to manage the clunky SecBuffer API
 
 (define (make-SecBuffers n)
-  (cast (malloc n _SecBuffer 'atomic-interior) _pointer _SecBuffer-pointer))
+  (define p (malloc n _SecBuffer 'atomic-interior))
+  (cpointer-push-tag! p SecBuffer-tag)
+  p)
 
 (define (make-SecBuffers! sbs . vals)
   (define n
@@ -376,7 +378,8 @@
          (log-win32-ssl-debug "init context: done")
          (values ctx
                  (let ([n (get-leftover-bytes)])
-                   (pointer->bytes buffer n)))]
+                   (pointer->bytes buffer n))
+		 buffer)]
         [(or (= r SEC_I_CONTINUE_NEEDED)
              (= r SEC_E_INCOMPLETE_MESSAGE))
          ;; Pull more data from the server
@@ -406,19 +409,22 @@
         [else (network-error 'create-context
                              "unexpected result: ~x" r)])))))
 
-(define (decrypt ctx in-pre-r in-post-w out-sb)
+(define (decrypt ctx in-pre-r in-post-w out-sb msg-size)
   ;; Read encrypted byte from `in-pre-r', write decrypted bytes to
   ;; `in-port-w'.
   ;; Loop to try to get a big enough chunk from the input to be able
   ;; to decrypt it.
   (let loop ([size 4096] [prev-n 0])
     (define buffer (make-bytes size))
-    (define n (peek-bytes-avail!* buffer 0 #f in-pre-r))
+    (define n (peek-bytes! buffer 0 in-pre-r 0 (min (bytes-length buffer)
+						    (pipe-content-length in-pre-r))))
+    (define immobile-buffer (malloc (add1 n) 'atomic-interior)) 
+    (memcpy immobile-buffer buffer n)
     (define r (DecryptMessage (ctx->handle ctx)
                               (make-SecBuffers! out-sb
                                                 n
                                                 SECBUFFER_DATA
-                                                buffer
+                                                immobile-buffer
                                                 0
                                                 SECBUFFER_EMPTY
                                                 #f
@@ -446,7 +452,7 @@
       (write-bytes (pointer->bytes (SecBuffer-pvBuffer sb)
 				   (SecBuffer-cbBuffer sb))
                    in-post-w)
-      (define remain (or (for/or ([i (in-range 1 4)])
+      (define remain (or (for/or ([i (in-range 0 4)])
                            (define sb (ptr-ref out-sb _SecBuffer i))
                            (and (= SECBUFFER_EXTRA (SecBuffer-BufferType sb))
                                 (SecBuffer-cbBuffer sb)))
@@ -456,6 +462,7 @@
                            (SecBuffer-cbBuffer sb)
                            remain)
       (read-bytes! buffer in-pre-r 0 (- n remain))
+      (void/reference-sink immobile-buffer)
       (unless (zero? remain)
         (loop size 0))]
      [(= r SEC_E_INCOMPLETE_MESSAGE)
@@ -470,16 +477,16 @@
      [else
       (network-error 'decrypt "unexpected result: ~x" r)])))
 
-(define (encrypt ctx bstr start end out-sb sizes buffer)
+(define (encrypt ctx bstr start end out-sb sizes buffer buffer-len)
   ;; Encrypt bytes [start, end) from bstr.
   ;; If we have too much to encrypt at once, we'll encrypt
   ;; halves separately:
   (define (divide-and-conquer)
     (define mid (quotient (+ start end) 2))
-    (bytes-append (encrypt ctx bstr start mid out-sb sizes buffer)
-                  (encrypt ctx bstr mid end out-sb sizes buffer)))
+    (bytes-append (encrypt ctx bstr start mid out-sb sizes buffer buffer-len)
+                  (encrypt ctx bstr mid end out-sb sizes buffer buffer-len)))
   (cond
-   [((- end start) . > . (bytes-length buffer))
+   [((- end start) . > . buffer-len)
     ;; Too much right from the start:
     (divide-and-conquer)]
    [else
@@ -513,7 +520,9 @@
       (define len (+ (SecBuffer-cbBuffer (ptr-ref out-sb _SecBuffer 0))
                      (SecBuffer-cbBuffer (ptr-ref out-sb _SecBuffer 1))
                      (SecBuffer-cbBuffer (ptr-ref out-sb _SecBuffer 2))))
-      (subbytes buffer 0 len)]
+      (define result (make-bytes len))
+      (memcpy result buffer len)
+      result]
      [(= r SEC_E_BUFFER_TOO_SMALL)
       ;; The encrypted bytes don't fit in the unencrypted space?
       (divide-and-conquer)]
@@ -529,7 +538,7 @@
   (define in-sb (make-SecBuffers 2))
   
   ;; Allocate the encoding/decoding context:
-  (define-values (ctx init-bytes) (create-context protocol hostname i o out-sb in-sb))
+  (define-values (ctx init-bytes tok-buffer) (create-context protocol hostname i o out-sb in-sb))
 
   ;; Get some sizes that we need for encoding:
   (define sizes (make-SecPkgContext_StreamSizes 0 0 0 0 0))
@@ -539,16 +548,19 @@
   (define msize (SecPkgContext_StreamSizes-cbMaximumMessage sizes))
   (define hsize (SecPkgContext_StreamSizes-cbHeader sizes))
   (define tsize (SecPkgContext_StreamSizes-cbTrailer sizes))
+  (define msg-size (+ msize hsize tsize))
 
   ;; Some pipes to manage the decoding stream:
   (define-values (in-pre-r in-pre-w) (make-pipe))
   (define-values (in-post-r in-post-w) (make-pipe))
 
   (write-bytes init-bytes in-pre-w)
-  (decrypt ctx in-pre-r in-post-w out-sb)
+  (decrypt ctx in-pre-r in-post-w out-sb msg-size)
 
   ;; More working space:
   (define buffer (make-bytes (max 8000 (+ msize hsize tsize))))
+  (define out-buffer-len (bytes-length buffer))
+  (define out-buffer (malloc (add1 out-buffer-len) 'atomic-interior))
 
   ;; Port lock and state:
   (define lock (make-semaphore 1))
@@ -563,7 +575,10 @@
       (close-output-port o)
       (let ([v ctx])
         (set! ctx #f)
-        (when v (free-ctx v)))))
+        (when v (free-ctx v)))
+      (void/reference-sink tok-buffer)
+      (void/reference-sink in-sb)
+      (void/reference-sink out-sb)))
 
   ;; Callbacks used below (written here so that they're allocated once):
   (define (lock-unavailable/read) (wrap-evt lock (lambda () 0)))
@@ -585,16 +600,15 @@
           n]
          [(zero? n)
           ;; Nothing decrypted, no new input, so wait for input:
-          (log-win32-ssl-debug "blocked")
           (wrap-evt i (lambda (v) 0))]
          [else
           (log-win32-ssl-debug "underlying receive: ~a" n)
-          ;; Get some fresh bytes, so try decoding now:
+          ;; Got some fresh bytes, so try decoding now:
           (write-bytes buffer in-pre-w 0 n)
-          (decrypt ctx in-pre-r in-post-w out-sb)
+          (decrypt ctx in-pre-r in-post-w out-sb msg-size)
           (loop)])]
        [else n])))
-
+  
   ;; The new input port:
   (define in (make-input-port/read-to-peek
               (format "SSL ~a" (object-name i))
@@ -627,7 +641,7 @@
       0]
      [(not leftover-bytes)
       ;; Nothing in the output buffer, so we can encrypt more
-      (define encrypted-bstr (encrypt ctx bstr start end out-sb sizes buffer))
+      (define encrypted-bstr (encrypt ctx bstr start end out-sb sizes out-buffer out-buffer-len))
       (define n (write-bytes-avail* encrypted-bstr o))
       (cond
        [(zero? n)
