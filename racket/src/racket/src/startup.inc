@@ -40581,7 +40581,7 @@ static const char *startup_source =
 "(let-values(((keep-for-parsed?_0) keep-for-parsed?112_0))"
 "(let-values(((keep-for-error?_0) keep-for-error?113_0))"
 "(let-values()"
-"(let-values(((d_0)(syntax-e$1 s_0)))"
+"(let-values(((d_0)(syntax-e/no-taint s_0)))"
 "(let-values(((keep-e_0)"
 "(if(symbol? d_0)"
 "(let-values() d_0)"

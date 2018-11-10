@@ -711,7 +711,7 @@
                         #:for-track? [for-track? #f]
                         #:keep-for-parsed? [keep-for-parsed? #f]
                         #:keep-for-error? [keep-for-error? #f])
-  (define d (syntax-e s))
+  (define d (syntax-e/no-taint s))
   (define keep-e (cond
                   [(symbol? d) d]
                   [(and (pair? d) (syntax-identifier? (car d))) (syntax-e (car d))]
