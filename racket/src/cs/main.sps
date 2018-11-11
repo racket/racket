@@ -54,25 +54,33 @@
                           (bytes->string/locale s #\?)
                           s))
           the-command-line-arguments/maybe-bytes))
+   (define (->path s)
+     (cond
+      [(bytes? s) (bytes->path s)]
+      [else (string->path s)]))
 
-   (define builtin-argc 8)
+   (define builtin-argc 9)
    (seq
     (unless (>= (length the-command-line-arguments) builtin-argc)
       (error 'racket (string-append
-		      "expected `self`, `collects`, and `libs` paths"
+		      "expected `exec-file`, `run-file`, `collects`, and `etc` paths"
 		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
 		      " `wm-is-gracket`, and `gracket-guid`"
 		      " to start")))
-    (set-exec-file! (path->complete-path (car the-command-line-arguments))))
-   (define init-collects-dir (let ([s (cadr the-command-line-arguments)])
-                               (if (equal? s "") 'disable (string->path s))))
-   (define init-config-dir (string->path (or (getenv "PLTCONFIGDIR")
-                                             (caddr the-command-line-arguments))))
-   (define segment-offset (#%string->number (list-ref the-command-line-arguments 3)))
-   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 4)))
-   (define gracket? (string=? "true" (list-ref the-command-line-arguments 5)))
-   (define wm-is-gracket (string->number (list-ref the-command-line-arguments 6)))
-   (define gracket-guid (list-ref the-command-line-arguments 7))
+    (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 0)))
+    (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1))))
+   (define init-collects-dir (let ([s (list-ref the-command-line-arguments/maybe-bytes 2)])
+                               (if (or (equal? s "")
+                                       (equal? s '#vu8()))
+                                   'disable
+                                   (->path s))))
+   (define init-config-dir (->path (or (getenv "PLTCONFIGDIR")
+                                       (list-ref the-command-line-arguments/maybe-bytes 3))))
+   (define segment-offset (#%string->number (list-ref the-command-line-arguments 4)))
+   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 5)))
+   (define gracket? (string=? "true" (list-ref the-command-line-arguments 6)))
+   (define wm-is-gracket (string->number (list-ref the-command-line-arguments 7)))
+   (define gracket-guid (list-ref the-command-line-arguments 8))
 
    (seq
     (when (foreign-entry? "racket_exit")

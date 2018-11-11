@@ -91,12 +91,12 @@ static void init_foreign()
   Sforeign_symbol("racket_errno", (void *)racket_errno);
 }
 
-void racket_boot(int argc, char **argv, char *self,
+void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 		 char *boot_exe, long segment_offset,
                  char *coldir, char *configdir,
                  int pos1, int pos2, int pos3,
                  int cs_compiled_subdir, int is_gui,
-		 int wm_is_gracket, const char *gracket_guid)
+		 int wm_is_gracket, char *gracket_guid)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -148,7 +148,7 @@ void racket_boot(int argc, char **argv, char *self,
       l = Scons(Sbytevector(argv[i]), l);
     }
     l = Scons(Sbytevector(gracket_guid), l);
-    sprintf(wm_is_gracket_s, "%ld", wm_is_gracket);
+    sprintf(wm_is_gracket_s, "%d", wm_is_gracket);
     l = Scons(Sbytevector(wm_is_gracket_s), l);
     l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
     l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);
@@ -156,7 +156,8 @@ void racket_boot(int argc, char **argv, char *self,
     l = Scons(Sbytevector(segment_offset_s), l);
     l = Scons(Sbytevector(configdir), l);
     l = Scons(Sbytevector(coldir), l);
-    l = Scons(Sbytevector(self), l);
+    l = Scons(Sbytevector(run_file), l);
+    l = Scons(Sbytevector(exec_file), l);
 
 #ifdef RACKET_AS_BOOT
     {
