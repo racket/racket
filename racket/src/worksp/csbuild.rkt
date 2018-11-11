@@ -213,7 +213,7 @@
 	  (format "-outputresource:../../Racket~a.exe;1" cs-suffix))
 (system*! "mt"
 	  "-manifest" "gracket/gracket.manifest"
-	  (format "-outputresource:../../GRacket~a.exe;1" cs-suffix))
+	  (format "-outputresource:../../lib/GRacket~a.exe;1" cs-suffix))
 
 ;; ----------------------------------------
 ;; Finish installation with "mzstart", "mrstart", and other
