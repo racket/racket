@@ -629,7 +629,8 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  force_console(rfd);
+  if (rfd->fd == DELAYED_CONSOLE_HANDLE)
+    return RKTIO_POLL_READY;
 
   if (rfd->modes & RKTIO_OPEN_SOCKET) {
     if (check_flushed)
