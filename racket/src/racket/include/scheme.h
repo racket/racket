@@ -1883,6 +1883,7 @@ MZ_EXTERN void scheme_set_console_printf(scheme_console_printf_t p);
 typedef void (*scheme_console_output_t)(char *str, intptr_t len);
 MZ_EXTERN scheme_console_output_t scheme_console_output;
 MZ_EXTERN void scheme_set_console_output(scheme_console_output_t p);
+MZ_EXTERN void scheme_ensure_console_ready();
 MZ_EXTERN void (*scheme_sleep)(float seconds, void *fds);
 MZ_EXTERN void (*scheme_notify_multithread)(int on);
 MZ_EXTERN void (*scheme_wakeup_on_input)(void *fds);

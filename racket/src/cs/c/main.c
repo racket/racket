@@ -144,8 +144,12 @@ static char *get_self_path()
 }
 
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
-			      char *dest, int dest_len, int get_utf16)
+			      char *dest, int offset, int get_utf16)
 {
+  int dest_len = 0;
+  if (dest) {
+    dest_len = WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, NULL, 0, NULL, NULL);
+  }
   return WideCharToMultiByte(CP_UTF8, 0, (wchar_t *)path, len, dest, dest_len, NULL, NULL);
 }
 

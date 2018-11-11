@@ -376,3 +376,7 @@ void rktio_forget_os_signal_handler(rktio_t *rktio);
 int rktio_system_time_is_dst(SYSTEMTIME *st, TIME_ZONE_INFORMATION *_tz);
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+void rktio_console_ctl_c(void);
+void rktio_set_console_handler(void);
+#endif

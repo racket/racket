@@ -3617,8 +3617,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
       fd_ok = 1;
     }
     else if (SAME_OBJ(ip->sub_type, fd_input_port_type)) {
-      fd = rktio_fd_system_fd(scheme_rktio, ((Scheme_FD *)ip->port_data)->fd);
-      fd_ok = 1;
+      if (rktio_fd_is_terminal(scheme_rktio, ((Scheme_FD *)ip->port_data)->fd))
+	return scheme_true;
+      else
+	return scheme_false;
     }
   } else if (SCHEME_OUTPUT_PORTP(p)) {
     Scheme_Output_Port *op;
@@ -3633,8 +3635,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
       fd_ok = 1;
     }
     else if (SAME_OBJ(op->sub_type, fd_output_port_type))  {
-      fd = rktio_fd_system_fd(scheme_rktio, ((Scheme_FD *)op->port_data)->fd);
-      fd_ok = 1;
+      if (rktio_fd_is_terminal(scheme_rktio, ((Scheme_FD *)op->port_data)->fd))
+	return scheme_true;
+      else
+	return scheme_false;
     }
   }
 

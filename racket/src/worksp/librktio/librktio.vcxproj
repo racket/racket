@@ -140,6 +140,7 @@
     <ClCompile Include="..\..\rktio\rktio_error.c" />
     <ClCompile Include="..\..\rktio\rktio_hash.c" />
     <ClCompile Include="..\..\rktio\rktio_wide.c" />
+    <ClCompile Include="..\..\rktio\rktio_console.c" />
     <ClCompile Include="..\..\rktio\rktio_main.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

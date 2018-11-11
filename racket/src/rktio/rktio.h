@@ -245,6 +245,13 @@ RKTIO_EXTERN rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which);
 #define RKTIO_STDOUT 1
 #define RKTIO_STDERR 2
 
+RKTIO_EXTERN void rktio_create_console();
+/* On Windows, ensures that a console is available for output. If a
+   console is created for an application started in GUI mode, The
+   console cannot be closed by the user until the process exits, and
+   then an atexit callback pauses the exit until the user closes the
+   console. */
+
 RKTIO_EXTERN_ERR(RKTIO_READ_ERROR)
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 /* Returns the number of bytes read, possibly 0, in non-blocking mode.
