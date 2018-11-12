@@ -23,7 +23,7 @@
             (write-string "#<" port)
             (write-string (symbol->string (path-convention p)) port)
             (write-string "-path:" port))))
-    (write-string (bytes->string/locale (path-bytes p)) port)
+    (write-string (bytes->string/locale (path-bytes p) #\?) port)
     (when mode
       (write-string ">" port)))
   #:property prop:equal+hash
