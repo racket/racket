@@ -454,7 +454,9 @@
   (close-output-port o))
 (test 900 file-size tempfilename)
 (let ([o (open-output-file tempfilename #:exists 'update)])
+  (file-position o 10)
   (file-truncate o 399)
+  (test 10 file-position o)
   (close-output-port o))
 (test 399 file-size tempfilename)
 
