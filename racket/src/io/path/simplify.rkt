@@ -106,6 +106,8 @@
            (path->directory-path simpler-p)
            simpler-p)])]))
 
+(void (set-simplify-path-for-directory-list! simplify-path))
+
 ;; ----------------------------------------
 
 ;; Quick check for whether the path is already simple:
