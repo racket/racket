@@ -275,6 +275,13 @@ static long get_segment_offset()
 }
 #endif
 
+#ifndef WIN32
+static void *extract_dlldir()
+{
+  return NULL;
+}
+#endif
+
 #ifndef do_pre_filter_cmdline_arguments
 # define do_pre_filter_cmdline_arguments(argc, argv) /* empty */
 #endif
@@ -333,7 +340,7 @@ static int bytes_main(int argc, char **argv,
 
   racket_boot(argc, argv, exec_file, run_file,
 	      boot_exe, segment_offset,
-              extract_coldir(), extract_configdir(),
+              extract_coldir(), extract_configdir(), extract_dlldir(),
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
 	      wm_is_gracket, gracket_guid);
