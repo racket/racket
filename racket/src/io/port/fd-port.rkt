@@ -26,16 +26,19 @@
 
 (struct fd-data (fd extra input?)
   #:property prop:file-stream (lambda (fdd) (fd-data-fd fdd))
+  #:property prop:data-place-message (lambda (port)
+                                       (lambda ()
+                                         (fd-port->place-message port))))
+
+(struct fd-output-data fd-data (flush)
   #:property prop:file-truncate (case-lambda
                                   [(fdd pos)
+                                   ((fd-output-data-flush fdd))
                                    (check-rktio-error*
                                     (rktio_set_file_size rktio
                                                          (fd-data-fd fdd)
                                                          pos)
-                                    "error setting file size")])
-  #:property prop:data-place-message (lambda (port)
-                                       (lambda ()
-                                         (fd-port->place-message port))))
+                                    "error setting file size")]))
 
 (define (maybe-fd-data-extra data)
   (and (fd-data? data)
@@ -172,7 +175,11 @@
   (define port
     (make-core-output-port
      #:name name
-     #:data (fd-data fd extra-data #f)
+     #:data (fd-output-data fd extra-data #f
+                            ;; Flush function needed for `file-truncate`:
+                            (lambda ()
+                              (atomically
+                               (flush-buffer-fully #f))))
 
      #:evt evt
      
