@@ -64,8 +64,8 @@ which is the part that can change in a
 single-step simplification (highlighted), and the
 @deftech{continuation}, which is the evaluation
 context surrounding the redex. In @racket[(- 4 (+ 1 1))], the redex is @racket[(+ 1 1)], and
-the continuation is @racket[(- 4 @#,hole)], where @hole indicates the
-position of the redex. That is, the continuation says how to ``continue''
+the continuation is @racket[(- 4 @#,hole)], where @hole takes the place
+of the @tech{redex} as it is reduced. That is, the continuation says how to ``continue''
 after the @tech{redex} is reduced to a @tech{value}.
 
 Before some expressions can be evaluated, some or all of their sub-expressions must be
@@ -77,8 +77,7 @@ its sub-expressions are evaluated and then how the results are
 combined to reduce the form away.
 
 The @deftech{dynamic extent} of an expression is the sequence of
-evaluation steps starting when the expression is decomposed into the
-context and the @tech{redex} and continuing until it is fully evaluated.
+evaluation steps during which the expression contains the @tech{redex}.
 
 @;------------------------------------------------------------------------
 @section{Tail Position}
@@ -180,7 +179,7 @@ Each evaluation step, then, transforms the current set of definitions and
 program into a new set of definitions and program. Before a
 @racket[define] can be moved into the set of definitions, its
 expression (i.e., its right-hand side) must be reduced to a @tech{value}.
-(The left-hand side is used without evaluation.)
+(The left-hand side is not evaluated.)
 
 @prog-steps/no-obj[
 [{}
@@ -552,7 +551,7 @@ For example, given the module declaration
 the evaluation of @racket[(require 'm)] creates the variable @racket[x]
 and installs @racket[10] as its value. This @racket[x] is unrelated to
 any top-level definition of @racket[x] (as if it were given a unique,
-model-specific prefix).
+module-specific prefix).
 
 @;------------------------------------------------------------------------
 @subsection[#:tag "module-phase"]{Phases}
