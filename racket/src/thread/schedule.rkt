@@ -82,7 +82,7 @@
           (check-for-break)
           (when atomic-timeout-callback
             (when (positive? (current-atomic))
-              (atomic-timeout-callback))))
+              (atomic-timeout-callback #f))))
         (lambda args
           (start-implicit-atomic-mode)
           (accum-cpu-time! t)
@@ -234,6 +234,14 @@
   (begin0
     atomic-timeout-callback
     (set! atomic-timeout-callback cb)))
+
+
+(void (set-force-atomic-timeout-callback!
+       (lambda ()
+         (and atomic-timeout-callback
+              (begin
+                (atomic-timeout-callback #t)
+                #t)))))
 
 ;; ----------------------------------------
 

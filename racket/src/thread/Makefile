@@ -19,7 +19,8 @@ GLOBALS = --no-global \
           ++global-ok the-sandman \
           ++global-ok sync-on-channel \
           ++global-ok post-shutdown-action \
-          ++global-ok get-subprocesses-time
+          ++global-ok get-subprocesses-time \
+          ++global-ok force-atomic-timeout-callback
 
 GENERATE_ARGS = -t main.rkt --submod main \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \
