@@ -1,6 +1,7 @@
 #lang racket/base
 (require (only-in '#%unsafe
                   unsafe-poller
+                  unsafe-poll-fd
                   unsafe-poll-ctx-fd-wakeup
                   unsafe-poll-ctx-eventmask-wakeup
                   unsafe-poll-ctx-milliseconds-wakeup
