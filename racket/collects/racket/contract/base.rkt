@@ -122,7 +122,7 @@
  has-blame?
  value-blame
  contract-continuation-mark-key
- space-efficient-contract-continuation-mark-key
+ collapsible-contract-continuation-mark-key
  list-contract?
  can-cache-contract?
  

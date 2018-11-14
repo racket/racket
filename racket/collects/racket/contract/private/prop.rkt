@@ -11,7 +11,7 @@
          contract-struct-projection
          contract-struct-val-first-projection
          contract-struct-late-neg-projection
-         contract-struct-space-efficient-late-neg-projection
+         contract-struct-collapsible-late-neg-projection
          contract-struct-stronger?
          contract-struct-equivalent?
          contract-struct-generate
@@ -70,7 +70,7 @@
                                    exercise
                                    val-first-projection
                                    late-neg-projection
-                                   space-efficient-late-neg-projection
+                                   collapsible-late-neg-projection
                                    list-contract?
                                    can-cache? ]
   #:omit-define-syntaxes)
@@ -117,11 +117,11 @@
   (and get-projection
        (get-projection c)))
 
-(define (contract-struct-space-efficient-late-neg-projection c)
+(define (contract-struct-collapsible-late-neg-projection c)
   (define prop (contract-struct-property c))
-  (define get-space-efficient-projection (contract-property-space-efficient-late-neg-projection prop))
-  (and get-space-efficient-projection
-       (get-space-efficient-projection c)))
+  (define get-collapsible-projection (contract-property-collapsible-late-neg-projection prop))
+  (and get-collapsible-projection
+       (get-collapsible-projection c)))
 
 (define (contract-struct-stronger/equivalent?
          a b
@@ -310,7 +310,7 @@
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
          #:late-neg-projection [get-late-neg-projection #f]
-         #:space-efficient-late-neg-projection [get-space-efficient-late-neg-projection #f]
+         #:collapsible-late-neg-projection [get-collapsible-late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
@@ -328,9 +328,9 @@
       " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
       " argument to not be #f, but all four were #f")))
 
-  ;; TODO: update for space-efficient late-neg-projection
+  ;; TODO: update for collapsible late-neg-projection
   (unless get-late-neg-projection
-    (unless get-space-efficient-late-neg-projection
+    (unless get-collapsible-late-neg-projection
       (unless first-order?
         (log-racket/contract-info
          "no late-neg-projection passed to ~s~a"
@@ -372,7 +372,7 @@
             (λ (c) (late-neg-first-order-projection (get-name c) (get-first-order c)))]
            [else #f])]
         [else get-late-neg-projection])
-      get-space-efficient-late-neg-projection
+      get-collapsible-late-neg-projection
       list-contract?
       can-cache?))
 
@@ -437,7 +437,7 @@
 
 (define-struct make-contract [ name first-order projection
                                     val-first-projection late-neg-projection
-                                    space-efficient-late-neg-projection
+                                    collapsible-late-neg-projection
                                     stronger equivalent generate exercise list-contract?
                                     can-cache? ]
   #:omit-define-syntaxes
@@ -453,7 +453,7 @@
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
    #:late-neg-projection (lambda (c) (make-contract-late-neg-projection c))
-   #:space-efficient-late-neg-projection (lambda (c) (make-contract-space-efficient-late-neg-projection c))
+   #:collapsible-late-neg-projection (lambda (c) (make-contract-collapsible-late-neg-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
    #:exercise (lambda (c) (make-contract-exercise c))
@@ -462,7 +462,7 @@
 
 (define-struct make-chaperone-contract [ name first-order projection
                                               val-first-projection late-neg-projection
-                                              space-efficient-late-neg-projection
+                                              collapsible-late-neg-projection
                                               stronger equivalent generate exercise list-contract?
                                               can-cache? ]
   #:omit-define-syntaxes
@@ -478,7 +478,7 @@
    #:projection (lambda (c) (make-chaperone-contract-projection c))
    #:val-first-projection (lambda (c) (make-chaperone-contract-val-first-projection c))
    #:late-neg-projection (lambda (c) (make-chaperone-contract-late-neg-projection c))
-   #:space-efficient-late-neg-projection (lambda (c) (make-chaperone-contract-space-efficient-late-neg-projection c))
+   #:collapsible-late-neg-projection (lambda (c) (make-chaperone-contract-collapsible-late-neg-projection c))
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
    #:exercise (lambda (c) (make-chaperone-contract-exercise c))
@@ -487,7 +487,7 @@
 
 (define-struct make-flat-contract [ name first-order projection
                                          val-first-projection late-neg-projection
-                                         space-efficient-late-neg-projection
+                                         collapsible-late-neg-projection
                                          stronger equivalent generate exercise list-contract?
                                          can-cache? ]
   #:omit-define-syntaxes
@@ -502,7 +502,7 @@
    #:first-order (lambda (c) (make-flat-contract-first-order c))
    #:val-first-projection (λ (c) (make-flat-contract-val-first-projection c))
    #:late-neg-projection (λ (c) (make-flat-contract-late-neg-projection c))
-   #:space-efficient-late-neg-projection (lambda (c) (make-flat-contract-space-efficient-late-neg-projection c))
+   #:collapsible-late-neg-projection (lambda (c) (make-flat-contract-collapsible-late-neg-projection c))
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
@@ -516,7 +516,7 @@
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
          #:late-neg-projection [late-neg-projection #f]
-         #:space-efficient-late-neg-projection [space-efficient-late-neg-projection #f]
+         #:collapsible-late-neg-projection [collapsible-late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
          #:generate [generate (λ (fuel) #f)]
@@ -535,9 +535,9 @@
       " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
       " argument to not be #f, but all four were #f")))
   
-  ;; TODO: handle the addition of the space-efficient-late-neg-projection
+  ;; TODO: handle the addition of the collapsible-late-neg-projection
   (unless late-neg-projection
-    (unless space-efficient-late-neg-projection
+    (unless collapsible-late-neg-projection
       (unless first-order?
         (log-racket/contract-info
          "no late-neg-projection passed to ~s~a"
@@ -555,7 +555,7 @@
             (late-neg-first-order-projection name first-order)]
            [else #f])]
         [else late-neg-projection])
-      space-efficient-late-neg-projection
+      collapsible-late-neg-projection
       (or stronger weakest)
       (or equivalent (if equivalent-equal? equal? weakest))
       generate exercise

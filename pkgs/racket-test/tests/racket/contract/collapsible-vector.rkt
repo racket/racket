@@ -17,17 +17,17 @@
   (contract-eval '(define bad-vecof-int (wrap (wrap (vector 'bad)))))
 
   (test/spec-passed
-   'vec-space-efficient1
+   'vec-collapsible1
    '(vector-ref vecof-one 0))
   (test/spec-passed
-   'vec-space-efficient2
+   'vec-collapsible2
    '(vector-set! vecof-one 0 2))
   (test/spec-failed
-   'vec-space-efficient3
+   'vec-collapsible3
    '(vector-set! vecof-one 0 'nan)
    'neg)
   (test/spec-failed
-   'vec-space-efficient4
+   'vec-collapsible4
    '(vector-ref bad-vecof-int 0)
    'pos)
 
@@ -83,7 +83,7 @@
   ;; If the flat? argument is #t, then the resulting contract is a flat contract, and the c argument must also be a flat contract.
   ;; Such flat contracts will be unsound if applied to mutable vectors, as they will not check future operations on the vector.
   (test/spec-passed 
-   'vec-space-efficient-flat-passed
+   'vec-collapsible-flat-passed
    '(let* ([ctc 	(vectorof integer? #:flat? #t)]
            [v 	(add-many-contracts 11
                                     ctc 
@@ -91,7 +91,7 @@
       (vector-ref v 1)))
   
   (test/spec-failed
-   'vec-space-efficient-flat-failed!
+   'vec-collapsible-flat-failed!
    '(let* ([ctc    (vectorof integer? #:flat? #t)]
            [v      (add-many-contracts 11
                                        ctc 
@@ -101,7 +101,7 @@
   
   ;;Should pass the test because we indicate that it is a flat contract
   (test/spec-passed
-   'vec-space-efficient-flat-set!
+   'vec-collapsible-flat-set!
    '(let* ([ctc 	(vectorof integer? #:flat? #t)]
            [v 	(add-many-contracts
                  11
@@ -114,7 +114,7 @@
   (test-true 'is-flat '(flat-contract? ctc-flat))
   
   (test/spec-failed
-   'vec-space-efficient-flat-set!
+   'vec-collapsible-flat-set!
    '(let* ([ctc 	(vectorof integer? #:immutable #t #:eager #t)]
            [v 	(add-many-contracts
                  11
@@ -124,7 +124,7 @@
    "pos")
   
   (test/spec-passed
-   'vec-space-efficient-flat-set!
+   'vec-collapsible-flat-set!
    '(let* ([ctc 	(vectorof integer? #:immutable #t #:eager #t)]
            [v 	(add-many-contracts
                  11
@@ -138,7 +138,7 @@
 
 
   (test/spec-passed
-   'vec-space-efficient-vector-chap
+   'vec-collapsible-vector-chap
    '(let* ([ctc-chap    (vectorof (-> integer? integer?) #:immutable #t #:eager #t)]
            [v      (add-many-contracts
                     11
@@ -147,7 +147,7 @@
       ((vector-ref v 1) 10)))
   
    (test/spec-failed
-    'vec-space-efficient-vector-chap-fail
+    'vec-collapsible-vector-chap-fail
     '(let* ([ctc-chap    (vectorof (-> integer? integer?) #:immutable #t #:eager #t)]
             [v      (add-many-contracts
                      11
@@ -162,7 +162,7 @@
 
   ;; non-flat contracts at the leaves/nested vectorof contracts
   (test/spec-passed
-   'vec-space-efficient5
+   'vec-collapsible5
    '(let* ([ctc (vectorof (vectorof integer?))]
            [v (contract
                ctc
@@ -171,14 +171,14 @@
       (vector-ref (vector-ref v 1) 0)))
 
   (test/spec-failed
-   'vec-space-efficient6a
+   'vec-collapsible6a
    '(let* ([ctc (vectorof (vectorof integer?))]
            [v (add-many-contracts 11 ctc (vector (vector 'bad)) 'inner-pos 'inner-neg)])
       (vector-ref (vector-ref v 0) 0))
    "inner-pos")
   
   (test/spec-failed
-   'vec-space-efficient6b
+   'vec-collapsible6b
    '(let* ([ctc (vectorof (vectorof integer?))]
            [v (contract
                ctc
@@ -188,7 +188,7 @@
    "inner-pos")
 
   (test/spec-failed
-   'vec-space-efficient7
+   'vec-collapsible7
    '(let* ([ctc (vectorof (vectorof integer?))]
            [v (contract
                ctc
@@ -198,7 +198,7 @@
    'neg)
 
   (test/spec-failed
-   'vec-space-efficient8
+   'vec-collapsible8
    '(let* ([ctc (vectorof (vectorof integer?))]
            [v (contract
                ctc
@@ -210,7 +210,7 @@
 
   ;; non-identical contracts in nested vectorof
   (test/spec-failed
-   'vec-space-efficient9
+   'vec-collapsible9
    '(let* ([ctc1 (vectorof (vectorof integer?))]
            [ctc2 (vectorof (vectorof positive?))]
            [v (contract
@@ -221,7 +221,7 @@
    "inner-neg")
 
   (test/spec-failed
-   'vec-space-efficient10
+   'vec-collapsible10
    '(let* ([ctc1 (vectorof (vectorof integer?))]
            [ctc2 (vectorof (vectorof positive?))]
            [v (contract
@@ -232,7 +232,7 @@
    'neg)
 
   (test/spec-failed
-   'vec-space-efficient11
+   'vec-collapsible11
    '(let* ([ctc1 (vectorof (vectorof integer?))]
            [ctc2 (vectorof (vectorof positive?))]
            [v (contract
@@ -243,7 +243,7 @@
    'pos)
 
   (test/spec-failed
-   'vec-space-efficient12
+   'vec-collapsible12
    '(let* ([ctc1 (vectorof (vectorof integer?))]
            [ctc2 (vectorof (vectorof positive?))]
            [v (contract
@@ -255,7 +255,7 @@
 
   ;; tests for various first-order checks performed by vectors
   (test/spec-failed
-   'vec-space-efficient13
+   'vec-collapsible13
    '(let* ([ctc [vectorof (vectorof integer?)]]
            [v (contract
                ctc
@@ -265,7 +265,7 @@
    'neg)
 
     (test/spec-failed
-   'vec-space-efficient14
+   'vec-collapsible14
    '(let* ([ctc (vectorof (vectorof integer? #:immutable #t))]
            [v (contract
                ctc
@@ -297,7 +297,7 @@
    "inner-pos")
 
   (test/spec-passed
-   'vector/c-space-efficient1
+   'vector/c-collapsible1
    '(let* ([ctc (vector/c (vector/c integer?))]
            [v (contract
                ctc
@@ -306,14 +306,14 @@
       (vector-ref (vector-ref v 0) 0)))
 
   (test/spec-failed
-   'vector/c-space-efficient2
+   'vector/c-collapsible2
    '(let* ([ctc (vector/c (vector/c integer?))]
            [v (add-many-contracts 11 ctc (vector (vector 'bad)) 'inner-pos 'inner-neg)])
       (vector-ref (vector-ref v 0) 0))
    "inner-pos")
 
   (test/spec-failed
-   'vector/c-space-efficient3
+   'vector/c-collapsible3
    '(let* ([ctc (vector/c (vector/c integer?))]
            [v (contract
                ctc
@@ -323,7 +323,7 @@
    "inner-pos")
 
   (test/spec-failed
-   'vector/c-space-efficient4
+   'vector/c-collapsible4
    '(let* ([ctc (vector/c (vector/c integer?))]
            [v (contract
                ctc
@@ -333,7 +333,7 @@
    'neg)
 
   (test/spec-failed
-   'vector/c-space-efficient5
+   'vector/c-collapsible5
    '(let* ([ctc (vector/c (vector/c integer?))]
            [v (contract
                ctc
@@ -345,7 +345,7 @@
 
   ;; non-identical contracts in nested vectorof
   (test/spec-failed
-   'vector/c-space-efficient6
+   'vector/c-collapsible6
    '(let* ([ctc1 (vector/c (vector/c integer?))]
            [ctc2 (vector/c (vector/c positive?))]
            [v (contract
@@ -356,7 +356,7 @@
    "inner-neg")
 
   (test/spec-failed
-   'vector/c-space-efficient7
+   'vector/c-collapsible7
    '(let* ([ctc1 (vector/c (vector/c integer?))]
            [ctc2 (vector/c (vector/c positive?))]
            [v (contract
@@ -367,7 +367,7 @@
    'neg)
 
   (test/spec-failed
-      'vector/c-space-efficient8
+      'vector/c-collapsible8
    '(let* ([ctc1 (vector/c (vector/c integer?))]
            [ctc2 (vector/c (vector/c positive?))]
            [v (contract
@@ -378,7 +378,7 @@
    'pos)
 
   (test/spec-failed
-   'vector/c-space-efficient9
+   'vector/c-collapsible9
    '(let* ([ctc1 (vector/c (vector/c integer?))]
            [ctc2 (vector/c (vector/c positive?))]
            [v (contract
@@ -390,7 +390,7 @@
 
   ;; tests for various first-order checks performed by vectors
   (test/spec-failed
-   'vector/c-space-efficient10
+   'vector/c-collapsible10
    '(let* ([ctc [vector/c (vector/c integer?)]]
            [v (contract
                ctc
@@ -400,7 +400,7 @@
    'neg)
 
     (test/spec-failed
-     'vector/c-space-efficient11
+     'vector/c-collapsible11
      '(let* ([ctc (vector/c (vector/c integer? #:immutable #t))]
              [v (contract
                  ctc
@@ -435,31 +435,31 @@
       ((vector-ref v 0) 1.5))
    "neg")
 
-  ;; space-efficient continuation marks
+  ;; collapsible continuation marks
 
   (contract-eval
-   '(define (make-has-space-efficient-mark? b)
+   '(define (make-has-collapsible-mark? b)
       (flat-named-contract
-       'has-space-efficient-mark?
+       'has-collapsible-mark?
        (lambda (v)
          (define marks (current-continuation-marks))
-         (define res (continuation-mark-set-first marks space-efficient-contract-continuation-mark-key))
+         (define res (continuation-mark-set-first marks collapsible-contract-continuation-mark-key))
          (set-box! b (or (unbox b) res))
          #t)
        #:can-cache? #t)))
 
   (test-true
-   'space-efficient-mark-present
+   'collapsible-mark-present
    '(let* ([b (box #f)]
-           [ctc (vectorof (make-has-space-efficient-mark? b))]
+           [ctc (vectorof (make-has-collapsible-mark? b))]
            [v (add-many-contracts 12 ctc (vector 1))])
       (vector-ref v 0)
       (unbox b)))
 
   (test/spec-passed/result
-   'space-efficient-mark-absent
+   'collapsible-mark-absent
    '(let* ([b (box #f)]
-           [ctc (vectorof (make-has-space-efficient-mark? b))]
+           [ctc (vectorof (make-has-collapsible-mark? b))]
            [v (contract ctc (vector 1) 'pos 'neg)])
       (vector-ref v 0)
       (unbox b))
@@ -488,61 +488,61 @@
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (contract-eval '(require (submod racket/contract/private/vector-space-efficient for-testing)))
-  (contract-eval '(require (submod racket/contract/private/space-efficient-common for-testing)))
-  (contract-eval '(define (space-efficient? val)
-                    (and (has-impersonator-prop:space-efficient? val)
-                         (let ([prop (get-impersonator-prop:space-efficient val #f)])
-                           (and (space-efficient-wrapper-property? prop)
-                                (eq? val (space-efficient-property-ref prop)))))))
+  (contract-eval '(require (submod racket/contract/private/vector-collapsible for-testing)))
+  (contract-eval '(require (submod racket/contract/private/collapsible-common for-testing)))
+  (contract-eval '(define (collapsible? val)
+                    (and (has-impersonator-prop:collapsible? val)
+                         (let ([prop (get-impersonator-prop:collapsible val #f)])
+                           (and (collapsible-wrapper-property? prop)
+                                (eq? val (collapsible-property-ref prop)))))))
 
   ;; vectorof
   (contract-eval
    '(define (vectorof-has-num-contracts? v ref set)
       (with-handlers ([exn:fail? (lambda (e) (exn-message e))])
-        (unless (has-impersonator-prop:space-efficient? v)
-          (error "vectorof-has-num-contracts?: no space-efficient-contract"))
-        ;; TODO: maybe should check that is a space-efficient-wrapper-property ...
-        (define multi/c (space-efficient-property-s-e (get-impersonator-prop:space-efficient v)))
-        (define ref/c (multi-vector-ref-ctcs multi/c))
-        (define set/c (multi-vector-set-ctcs multi/c))
-        (unless (= (length (multi-leaf/c-proj-list ref/c)) ref)
+        (unless (has-impersonator-prop:collapsible? v)
+          (error "vectorof-has-num-contracts?: no collapsible-contract"))
+        ;; TODO: maybe should check that is a collapsible-wrapper-property ...
+        (define collapsible/c (collapsible-property-c-c (get-impersonator-prop:collapsible v)))
+        (define ref/c (collapsible-vector-ref-ctcs collapsible/c))
+        (define set/c (collapsible-vector-set-ctcs collapsible/c))
+        (unless (= (length (collapsible-leaf/c-proj-list ref/c)) ref)
           (error "vectorof-has-num-contracts?: wrong number of ref projections"))
-        (unless (= (length (multi-leaf/c-proj-list set/c)) set)
+        (unless (= (length (collapsible-leaf/c-proj-list set/c)) set)
           (error "vectorof-has-num-contracts?: wrong number of set projections"))
-        (unless (= (length (multi-leaf/c-contract-list ref/c)) ref)
+        (unless (= (length (collapsible-leaf/c-contract-list ref/c)) ref)
           (error "vectorof-has-num-contracts?: wrong number of ref contracts"))
-        (unless (= (length (multi-leaf/c-contract-list set/c)) set)
+        (unless (= (length (collapsible-leaf/c-contract-list set/c)) set)
           (error "vectorof-has-num-contracts?: wrong number of set contracts"))
         #t)))
 
   (contract-eval
    '(define (vector-can-combine? val ctc)
       (define cv (contract ctc val 'p 'n))
-      (and (space-efficient? val)
-           (space-efficient? cv))))
+      (and (collapsible? val)
+           (collapsible? cv))))
 
   ;; vector/c
   (contract-eval
    '(define (vector/c-has-num-contracts? v refs sets)
       (with-handlers ([exn:fail? (lambda (e) (exn-message e))])
-        (unless (has-impersonator-prop:space-efficient? v)
-          (error "vectorof-has-num-contracts?: no space-efficient-contract"))
-        ;; TODO: maybe should check that is a space-efficient-wrapper-property ...
-        (define multi/c (space-efficient-property-s-e (get-impersonator-prop:space-efficient v)))
-        (define ref-ctcs (multi-vector-ref-ctcs multi/c))
-        (define set-ctcs (multi-vector-set-ctcs multi/c))
+        (unless (has-impersonator-prop:collapsible? v)
+          (error "vectorof-has-num-contracts?: no collapsible-contract"))
+        ;; TODO: maybe should check that is a collapsible-wrapper-property ...
+        (define collapsible/c (collapsible-property-c-c (get-impersonator-prop:collapsible v)))
+        (define ref-ctcs (collapsible-vector-ref-ctcs collapsible/c))
+        (define set-ctcs (collapsible-vector-set-ctcs collapsible/c))
         (for ([ref (in-list refs)]
               [ref/c (in-vector ref-ctcs)])
-          (unless (= (length (multi-leaf/c-proj-list ref/c)) ref)
+          (unless (= (length (collapsible-leaf/c-proj-list ref/c)) ref)
             (error "vector/c-has-num-contracts?: wrong number of ref projections"))
-          (unless (= (length (multi-leaf/c-contract-list ref/c)) ref)
+          (unless (= (length (collapsible-leaf/c-contract-list ref/c)) ref)
             (error "vector/c-has-num-contracts?: wrong number of ref contracts")))
         (for ([set (in-list sets)]
               [set/c (in-vector set-ctcs)])
-          (unless (= (length (multi-leaf/c-proj-list set/c)) set)
+          (unless (= (length (collapsible-leaf/c-proj-list set/c)) set)
             (error "vector/c-has-num-contracts?: wrong number of set projections"))
-          (unless (= (length (multi-leaf/c-contract-list set/c)) set)
+          (unless (= (length (collapsible-leaf/c-contract-list set/c)) set)
             (error "vector/c-has-num-contracts?: wrong number of set contracts")))
         #t)))
    
@@ -1022,16 +1022,16 @@
 
   (contract-eval
    '(define (double-wrapped? x)
-      (define prop (get-impersonator-prop:space-efficient x #f))
+      (define prop (get-impersonator-prop:collapsible x #f))
       (and
-       (space-efficient-wrapper-property? prop)
-       (and (has-impersonator-prop:space-efficient?
-             (space-efficient-wrapper-property-checking-wrapper prop))
+       (collapsible-wrapper-property? prop)
+       (and (has-impersonator-prop:collapsible?
+             (collapsible-wrapper-property-checking-wrapper prop))
             ;; this is annoying because of how unsafe-chaperone-vector ...
             ;; work in relation to impersonator-properties
-            (space-efficient-wrapper-property?
-             (get-impersonator-prop:space-efficient
-              (space-efficient-wrapper-property-checking-wrapper prop)
+            (collapsible-wrapper-property?
+             (get-impersonator-prop:collapsible
+              (collapsible-wrapper-property-checking-wrapper prop)
               #f))))))
 
   (test-false
@@ -1094,7 +1094,7 @@
            [ctc2 (vector/c integer? integer?)]
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector 1 2) 'ip 'in) 'p 'n)])
       (and (vector/c-has-num-contracts? v '(1 1) '(1 1))
-           (space-efficient? v)))
+           (collapsible? v)))
    #t)
 
   (test/spec-passed/result
@@ -1103,7 +1103,7 @@
            [ctc1 (vector/c integer? integer?)]
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector 1 2) 'ip 'in) 'p 'n)])
       (and (vector/c-has-num-contracts? v '(1 1) '(1 1))
-           (space-efficient? v)))
+           (collapsible? v)))
    #t)
 
   (test/spec-failed
@@ -1129,8 +1129,8 @@
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector (vector 1)) 'ip 'in) 'p 'n)]
            [v1 (vector-ref v 0)])
       (and (vector/c-has-num-contracts? v1 '(1) '(1))
-           (space-efficient? v)
-           (space-efficient? v1)))
+           (collapsible? v)
+           (collapsible? v1)))
    #t)
 
   (test/spec-passed/result
@@ -1140,8 +1140,8 @@
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector (vector 1)) 'ip 'in) 'p 'n)]
            [v1 (vector-ref v 0)])
       (and (vector/c-has-num-contracts? v1 '(1) '(1))
-           (space-efficient? v)
-           (space-efficient? v1)))
+           (collapsible? v)
+           (collapsible? v1)))
    #t)
 
   (test/spec-passed/result
@@ -1151,8 +1151,8 @@
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector (vector 1)) 'ip 'in) 'p 'n)]
            [v1 (vector-ref v 0)])
       (and (vector/c-has-num-contracts? v1 '(1) '(1))
-           (space-efficient? v)
-           (space-efficient? v1)))
+           (collapsible? v)
+           (collapsible? v1)))
    #t)
 
   (test/spec-passed/result
@@ -1162,8 +1162,8 @@
            [v (contract ctc1 (add-many-contracts 11 ctc2 (vector (vector 1)) 'ip 'in) 'p 'n)]
            [v1 (vector-ref v 0)])
       (and (vector/c-has-num-contracts? v1 '(1) '(1))
-           (space-efficient? v)
-           (space-efficient? v1)))
+           (collapsible? v)
+           (collapsible? v1)))
    #t)
 
   (test/spec-failed
@@ -1230,9 +1230,9 @@
            [v0 (vector-ref v 0)]
            [v1 (vector-ref v0 0)])
       (and (vector/c-has-num-contracts? v1 '(1) '(1))
-           (space-efficient? v)
-           (space-efficient? v0)
-           (space-efficient? v1)))
+           (collapsible? v)
+           (collapsible? v0)
+           (collapsible? v1)))
    #t)
 
   (test-true
@@ -1254,7 +1254,7 @@
       (vector/c-has-num-contracts? v '(2 2) '(1 1))))
 
   (test/spec-passed
-   'vecof+chap+non-s-e
+   'vecof+chap+non-c-c
    '(let ()
       (define ctc (vectorof (-> integer?)))
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda () 1)) 'ip 'in) 'p 'n))
@@ -1297,7 +1297,7 @@
             impersonator-prop:blame full-blame))))))
 
    (test/spec-passed
-    'vecof+chap+non-s-e-ok
+    'vecof+chap+non-c-c-ok
     '(let ()
        (define ctc (vectorof (-> integer? integer?)))
        (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda (x) 1)) 'ip 'in) 'p 'n))
@@ -1306,7 +1306,7 @@
        ((vector-ref v 0) 1)))
 
    (test/spec-failed
-    'vecof+chap+non-s-e-blame-neg
+    'vecof+chap+non-c-c-blame-neg
     '(let ()
        (define ctc (vectorof (-> integer? integer?)))
        (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda (x) 1)) 'ip 'in) 'p 'n))
@@ -1316,7 +1316,7 @@
     "n")
 
    (test/spec-failed
-    'vecof+chap+non-s-e-blame-pos
+    'vecof+chap+non-c-c-blame-pos
     '(let ()
        (define ctc (vectorof (-> integer? integer?)))
        (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda (x) 1)) 'ip 'in) 'p 'n))
@@ -1326,7 +1326,7 @@
     "pf")
 
   (test/spec-passed
-   'vecof+->-insert-contracted-non-s-e
+   'vecof+->-insert-contracted-non-c-c
    '(let ()
       (define ctc (vectorof (-> integer?)))
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda () 1)) 'ip 'in) 'p 'n))
@@ -1338,7 +1338,7 @@
       (vector-set! v 0 f)))
 
   (test/spec-passed
-   'vec/c+->-insert-contracted-non-s-e
+   'vec/c+->-insert-contracted-non-c-c
    '(let ()
       (define ctc (vector/c (-> integer?)))
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda () 1)) 'ip 'in) 'p 'n))
@@ -1350,7 +1350,7 @@
       (vector-set! v 0 f)))
 
   (test/spec-failed
-   'vecof+->-insert-contracted-non-s-e-fail-blame-pos
+   'vecof+->-insert-contracted-non-c-c-fail-blame-pos
    '(let ()
       (define ctc (vectorof (-> integer?)))
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda () 1)) 'ip 'in) 'p 'n))
@@ -1364,7 +1364,7 @@
    "fp")
 
   (test/spec-failed
-   'vecof+->-insert-contracted-non-s-e-fail-blame-neg
+   'vecof+->-insert-contracted-non-c-c-fail-blame-neg
    '(let ()
       (define ctc (vectorof (-> integer? integer?)))
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda (x) 1)) 'ip 'in) 'p 'n))

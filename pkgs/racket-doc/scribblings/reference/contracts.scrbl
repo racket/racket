@@ -2434,9 +2434,9 @@ of the @tech{blame object} and the missing party should be used instead.
 @history[#:added "6.4.0.4"]
 }
 
-@defform[(with-space-efficient-contract-continuation-mark body ...)]{
+@defform[(with-collapsible-contract-continuation-mark body ...)]{
 Inserts a continuation mark that informs the contract profiler that the current contract
-is space-efficient.
+is collapsible.
 
 @history[#:added "7.0.0.20"]
 }
@@ -3374,9 +3374,9 @@ currently being checked.
 @history[#:added "6.4.0.4"]
 }
 
-@defthing[space-efficient-contract-continuation-mark-key continuation-mark-key?]{
-Key used by continuation marks that are present during space-efficient contract checking.
-The value of these marks are @racket[#t] if the current contract is space-efficient.
+@defthing[collapsible-contract-continuation-mark-key continuation-mark-key?]{
+Key used by continuation marks that are present during collapsible contract checking.
+The value of these marks are @racket[#t] if the current contract is collapsible.
 
 @history[#:added "6.9.0.2"]
 }

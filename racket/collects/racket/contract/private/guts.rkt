@@ -5,8 +5,8 @@
          "prop.rkt"
          "rand.rkt"
          "generate-base.rkt"
-         "space-efficient-common.rkt"
-         (submod "space-efficient-common.rkt" properties)
+         "collapsible-common.rkt"
+         (submod "collapsible-common.rkt" properties)
          "../../private/math-predicates.rkt"
          racket/pretty
          racket/list
@@ -62,8 +62,8 @@
          
          contract-continuation-mark-key
          with-contract-continuation-mark
-         space-efficient-contract-continuation-mark-key
-         with-space-efficient-contract-continuation-mark
+         collapsible-contract-continuation-mark-key
+         with-collapsible-contract-continuation-mark
          
          (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
@@ -74,7 +74,7 @@
          contract-late-neg-projection   ;; might return #f (if none)
          get/build-val-first-projection ;; builds one if necc., using contract-projection
          get/build-late-neg-projection
-         get/build-space-efficient-late-neg-projection
+         get/build-collapsible-late-neg-projection
          warn-about-val-first?
 
          contract-name
@@ -164,7 +164,7 @@
   (or (has-prop:contracted? v)
       (has-impersonator-prop:contracted? v)
       ;; TODO: I think this is the right check, but I'm not positive
-      (has-impersonator-prop:space-efficient? v)))
+      (has-impersonator-prop:collapsible? v)))
 
 (define (value-contract v)
   (cond
@@ -172,17 +172,17 @@
      (get-prop:contracted v)]
     [(has-impersonator-prop:contracted? v)
      (get-impersonator-prop:contracted v)]
-    [(get-impersonator-prop:space-efficient v #f)
+    [(get-impersonator-prop:collapsible v #f)
      =>
      (λ (p)
-       (multi-ho/c-latest-ctc (space-efficient-property-s-e p)))]
+       (collapsible-ho/c-latest-ctc (collapsible-property-c-c p)))]
     [else #f]))
 
 (define (has-blame? v)
   (or (has-prop:blame? v)
       (has-impersonator-prop:blame? v)
       ;; TODO: I think this check is ok, but I'm not sure ...
-      (has-impersonator-prop:space-efficient? v)))
+      (has-impersonator-prop:collapsible? v)))
 
 (define (value-blame v)
   (define bv
@@ -191,13 +191,13 @@
        (get-prop:blame v)]
       [(has-impersonator-prop:blame? v)
        (get-impersonator-prop:blame v)]
-      [(get-impersonator-prop:space-efficient v #f)
+      [(get-impersonator-prop:collapsible v #f)
        =>
        (λ (p)
-         (define s-e (space-efficient-property-s-e p))
+         (define c-c (collapsible-property-c-c p))
          (cons
-          (multi-ho/c-latest-blame s-e)
-          (or (multi-ho/c-missing-party s-e) (space-efficient-property-neg-party p))))]
+          (collapsible-ho/c-latest-blame c-c)
+          (or (collapsible-ho/c-missing-party c-c) (collapsible-property-neg-party p))))]
       [else #f]))
   (cond
     [(and (pair? bv) (blame? (car bv)))
@@ -827,15 +827,15 @@
 
 (define-logger racket/contract)
 
-(define (get/build-space-efficient-late-neg-projection ctc)
+(define (get/build-collapsible-late-neg-projection ctc)
   (cond
-    [(contract-struct-space-efficient-late-neg-projection ctc) => values]
+    [(contract-struct-collapsible-late-neg-projection ctc) => values]
     [else
      (define lnp (get/build-late-neg-projection ctc))
      (λ (blame)
        (define proj (lnp blame))
        (values proj
-               (build-space-efficient-leaf proj ctc blame)))]))
+               (build-collapsible-leaf proj ctc blame)))]))
 
 (define (get/build-late-neg-projection ctc)
   (cond
@@ -843,7 +843,7 @@
     [else
      (log-racket/contract-info "no late-neg-projection for ~s" ctc)
      (cond
-       [(contract-struct-space-efficient-late-neg-projection ctc) =>
+       [(contract-struct-collapsible-late-neg-projection ctc) =>
         (lambda (f)
           (lambda (blame)
             (define-values (proj _) (f blame))
@@ -964,11 +964,11 @@
     (with-continuation-mark contract-continuation-mark-key payload
                             (let () code ...))))
 
-(define space-efficient-contract-continuation-mark-key
-  (make-continuation-mark-key 'space-efficient-contract))
+(define collapsible-contract-continuation-mark-key
+  (make-continuation-mark-key 'collapsible-contract))
 
-(define-syntax-rule (with-space-efficient-contract-continuation-mark code ...)
-  (with-continuation-mark space-efficient-contract-continuation-mark-key #t
+(define-syntax-rule (with-collapsible-contract-continuation-mark code ...)
+  (with-continuation-mark collapsible-contract-continuation-mark-key #t
     (let () code ...)))
   
 (define (n->th n)

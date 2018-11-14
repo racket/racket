@@ -16,33 +16,33 @@
   (contract-eval '(define id (wrap (wrap (lambda (x) x)))))
 
   (test/spec-passed
-   'space-efficient1
+   'collapsible1
    '(id add1))
   (test/spec-passed
-   'space-efficient2
+   'collapsible2
    '((id add1) 1))
   (test/spec-failed
-   'space-efficient3
+   'collapsible3
    '((id add1) 'a)
    'neg)
   (test/spec-passed
-   'space-efficient4
+   'collapsible4
    '(((wrap id) add1) 1))
   (test/spec-failed
-   'space-efficient5
+   'collapsible5
    '(((wrap id) add1) 'a)
    'neg)
   (test/spec-passed
-   'space-efficient6
+   'collapsible6
    '(((wrap (wrap (wrap (wrap (wrap (wrap (wrap (wrap (wrap id))))))))) add1) 1))
   (test/spec-failed
-   'space-efficient7
+   'collapsible7
    '(wrap 3)
    'pos)
 
   ;; works with non-flat contracts at the leaves
   (test/spec-passed
-   'space-efficient8
+   'collapsible8
    '(let ([ctc (-> (vector/c integer?) (vector/c integer?))])
       (vector-ref ((contract ctc
                              (add-many-contracts 11 ctc
@@ -52,7 +52,7 @@
                    (vector 1))
                   0)))
   (test/spec-failed
-   'space-efficient9
+   'collapsible9
    '(vector-ref ((contract ctc
                            (add-many-contracts 11 ctc
                                      (lambda (x) x)
@@ -62,7 +62,7 @@
                 0)
    'neg)
   (test/spec-failed
-   'space-efficient10
+   'collapsible10
    '(let ([ctc (-> any/c (-> integer? integer?))])
       (vector-ref ((contract ctc
                              (add-many-contracts 11 ctc
@@ -73,28 +73,28 @@
                   0))
    "inner-pos")
 
-  (contract-eval '(require (submod racket/contract/private/arrow-space-efficient for-testing)))
-  (contract-eval '(require (submod racket/contract/private/space-efficient-common for-testing)))
+  (contract-eval '(require (submod racket/contract/private/arrow-collapsible for-testing)))
+  (contract-eval '(require (submod racket/contract/private/collapsible-common for-testing)))
   (contract-eval
    '(define (has-num-contracts? f dom rng)
-      (unless (has-impersonator-prop:space-efficient? f)
-        (error "has-num-contracts?: no space-efficient contract"))
-      (define multi/c  (space-efficient-property-s-e (get-impersonator-prop:space-efficient f)))
-      (define domain/c (car (multi->-doms multi/c)))
-      (define range/c  (multi->-rng  multi/c))
-      (unless (= (length (multi-leaf/c-proj-list domain/c)) dom)
+      (unless (has-impersonator-prop:collapsible? f)
+        (error "has-num-contracts?: no collapsible contract"))
+      (define collapsible/c  (collapsible-property-c-c (get-impersonator-prop:collapsible f)))
+      (define domain/c (car (collapsible->-doms collapsible/c)))
+      (define range/c  (collapsible->-rng  collapsible/c))
+      (unless (= (length (collapsible-leaf/c-proj-list domain/c)) dom)
         (error "has-num-contracts?: wrong number of domain projections"))
-      (unless (= (length (multi-leaf/c-proj-list range/c))  rng)
+      (unless (= (length (collapsible-leaf/c-proj-list range/c))  rng)
         (error "has-num-contracts?: wrong number of range projections"))
-      (unless (= (length (multi-leaf/c-contract-list domain/c)) dom)
+      (unless (= (length (collapsible-leaf/c-contract-list domain/c)) dom)
         (error "has-num-contracts?: wrong num of domain contracts"))
-      (unless (= (length (multi-leaf/c-contract-list range/c))  rng)
+      (unless (= (length (collapsible-leaf/c-contract-list range/c))  rng)
         (error "has-num-contracts?: wrong num of range contracts"))))
-  (contract-eval '(define (space-efficient? val)
-                    (and (has-impersonator-prop:space-efficient? val)
-                         (let ([prop (get-impersonator-prop:space-efficient val #f)])
-                           (and (space-efficient-wrapper-property? prop)
-                                (eq? val (space-efficient-property-ref prop)))))))
+  (contract-eval '(define (collapsible? val)
+                    (and (has-impersonator-prop:collapsible? val)
+                         (let ([prop (get-impersonator-prop:collapsible val #f)])
+                           (and (collapsible-wrapper-property? prop)
+                                (eq? val (collapsible-property-ref prop)))))))
 
   (contract-eval '(define pos (flat-named-contract
                                'pos
@@ -131,24 +131,24 @@
                          'pos 'neg)))
 
   (test/spec-failed
-   'space-efficient11
+   'collapsible11
    '(f1 guarded)
    "positive")
   (test/spec-failed
-   'space-efficient12
+   'collapsible12
    '(f2 guarded)
    'pos)
-  ;; check whether it has a contract (but not a space-efficient wrapper)
+  ;; check whether it has a contract (but not a collapsible wrapper)
   (test-false
-   'space-efficient12.5
-   '(multi->? (value-contract guarded)))
+   'collapsible12.5
+   '(collapsible->? (value-contract guarded)))
   ;; checking normal blame
   (test/spec-failed
-   'space-efficient13
+   'collapsible13
    '(guarded -34)
    "negative")
   (test/spec-failed
-   'space-efficient14
+   'collapsible14
    '(guarded 34)
    "positive")
 
@@ -156,25 +156,25 @@
    '(define guarded-twice (add-many-contracts 11 pos->pos guarded 'positive2 'negative2)))
   ;; Reapplying the same contract over the already contracted function
   (test-true
-   'space-efficient14.5
+   'collapsible14.5
    '(has-contract? guarded-twice))
   ;; Outer wrapper should be applied first for the domain
   (test/spec-failed
-   'space-efficient15
+   'collapsible15
    '(guarded-twice -34)
    "negative2")
   ;; Inner wrapper should be applied first for the range
   (test/spec-failed
-   'space-efficient16
+   'collapsible16
    '(guarded-twice 34)
    "positive")
   ;; Get the domain and range contract from the twice contracted function
   (test/spec-passed
-   'space-efficient16.1
+   'collapsible16.1
    '(has-num-contracts? guarded-twice 1 1))
   (test-true
-   'space-efficient16.5
-   '(space-efficient? guarded-twice))
+   'collapsible16.5
+   '(collapsible? guarded-twice))
 
   (contract-eval
    '(define (contract-times f c n)
@@ -201,49 +201,49 @@
   (contract-eval
    '(define insanely-contracted (contract-times guarded-twice pos->pos 1000)))
   (test/spec-passed
-   'space-efficient-wrap0
+   'collapsible-wrap0
    '(has-num-contracts? insanely-contracted 1 1))
   ;; not actually doubly-wrapped
 
   (contract-eval
    '(define (double-wrapped? x)
-      (define prop (get-impersonator-prop:space-efficient x #f))
+      (define prop (get-impersonator-prop:collapsible x #f))
       (and
-       (space-efficient-wrapper-property? prop)
-       (and (has-impersonator-prop:space-efficient?
-             (space-efficient-wrapper-property-checking-wrapper prop))
+       (collapsible-wrapper-property? prop)
+       (and (has-impersonator-prop:collapsible?
+             (collapsible-wrapper-property-checking-wrapper prop))
             ;; this is annoying because of how unsafe-chaperones ...
             ;; work in relation to impersonator-properties
-            (space-efficient-wrapper-property?
-             (get-impersonator-prop:space-efficient
-              (space-efficient-wrapper-property-checking-wrapper prop)
+            (collapsible-wrapper-property?
+             (get-impersonator-prop:collapsible
+              (collapsible-wrapper-property-checking-wrapper prop)
               #f))))))
 
   (test-false
-   'space-efficient-wrap1
+   'collapsible-wrap1
    '(double-wrapped? insanely-contracted))
   (test-true
-   'space-efficient-wrap2
-   '(space-efficient? insanely-contracted))
+   'collapsible-wrap2
+   '(collapsible? insanely-contracted))
 
   (test-false
-   'space-efficient-wrap3
+   'collapsible-wrap3
    '(double-wrapped? (id add1)))
   (test-true
-   'space-efficient-wrap4
-   '(space-efficient? (id add1)))
+   'collapsible-wrap4
+   '(collapsible? (id add1)))
   (test-false
-   'space-efficient-wrap5
+   'collapsible-wrap5
    '(double-wrapped? (id (id add1))))
   (test-true
-   'space-efficient-wrap6
-   '(space-efficient? (id (id add1))))
+   'collapsible-wrap6
+   '(collapsible? (id (id add1))))
   (test-false
-   'space-efficient-wrap7
+   'collapsible-wrap7
    '(double-wrapped? (id (id (id add1)))))
   (test-true
-   'space-efficient-wrap7
-   '(space-efficient? (id (id (id add1)))))
+   'collapsible-wrap7
+   '(collapsible? (id (id (id add1)))))
 
   ;; test relying on contract-stronger?
   (contract-eval '(define r-i (contract (-> integer? any/c)
@@ -257,26 +257,26 @@
                                                    'inner-pos 'inner-neg)
                                          'pos 'neg)))
   (test/spec-passed
-   'space-efficient-stronger-num1
+   'collapsible-stronger-num1
    '(has-num-contracts? r-i 1 1))
   (test-true
-   'space-efficient-stronger1
-   '(space-efficient? r-i))
+   'collapsible-stronger1
+   '(collapsible? r-i))
   (test/spec-passed
-   'space-efficient-stronger-num2
+   'collapsible-stronger-num2
    '(has-num-contracts? r-i2 1 1))
   (test-true
-   'space-efficient-stronger2
-   '(space-efficient? r-i2))
+   'collapsible-stronger2
+   '(collapsible? r-i2))
   (test/spec-passed
-   'space-efficient17
+   'collapsible17
    '(r-i 1))
   (test/spec-failed
-   'space-efficient18
+   'collapsible18
    '(r-i 'a)
    'neg)
   (test/spec-failed
-   'space-efficient19
+   'collapsible19
    '(r-i2 1)
    "inner-pos")
   (contract-eval '(define i-r (contract (-> integer? integer?)
@@ -292,26 +292,26 @@
   ;; can't collapse those. any/c must still be checked before integer? on the
   ;; way out, otherwise may blame wrong
   (test/spec-passed
-   'space-efficient-stronger-num3
+   'collapsible-stronger-num3
    '(has-num-contracts? i-r 1 2))
   (test/spec-passed
-   'space-efficient-stronger-num4
+   'collapsible-stronger-num4
    '(has-num-contracts? i-r2 1 2))
   (test-true
-   'space-efficient-stronger3
-   '(space-efficient? i-r))
+   'collapsible-stronger3
+   '(collapsible? i-r))
   (test-true
-   'space-efficient-stronger4
-   '(space-efficient? i-r2))
+   'collapsible-stronger4
+   '(collapsible? i-r2))
   (test/spec-passed
-   'space-efficient20
+   'collapsible20
    '(i-r 1))
   (test/spec-failed
-   'space-efficient21
+   'collapsible21
    '(i-r 'a)
    'neg)
   (test/spec-failed
-   'space-efficient22
+   'collapsible22
    '(i-r2 1)
    'pos)
 
@@ -343,8 +343,8 @@
   (contract-eval
    '(define (can-combine? val ctc)
       (define cv (contract ctc val 'p 'n))
-      (and (space-efficient? val)
-           (space-efficient? cv))))
+      (and (collapsible? val)
+           (collapsible? cv))))
 
   (contract-eval '(define ic
                     (contract (-> (-> c1 c1) (-> c1 c1))
@@ -365,32 +365,32 @@
       (chaperone-procedure add1 (lambda (x) x))))
 
   (test-true
-   'space-efficient-imps-on-underlying-chap
-   '(space-efficient? (add-many-contracts 11 (-> c1 c1) chap-add1)))
+   'collapsible-imps-on-underlying-chap
+   '(collapsible? (add-many-contracts 11 (-> c1 c1) chap-add1)))
   (test-true
-   'space-efficient-chaps-on-underlying-chap
-   '(space-efficient? (add-many-contracts 11 (-> c2 c2) chap-add1)))
+   'collapsible-chaps-on-underlying-chap
+   '(collapsible? (add-many-contracts 11 (-> c2 c2) chap-add1)))
   (test-true
-   'space-efficient-imps-on-underlying-imp
-   '(space-efficient? (add-many-contracts 11 (-> c1 c1) imp-add1)))
+   'collapsible-imps-on-underlying-imp
+   '(collapsible? (add-many-contracts 11 (-> c1 c1) imp-add1)))
   (test-true
-   'space-efficient-chaps-on-underlying-imp
-   '(space-efficient? (add-many-contracts 11 (-> c2 c2) imp-add1)))
+   'collapsible-chaps-on-underlying-imp
+   '(collapsible? (add-many-contracts 11 (-> c2 c2) imp-add1)))
 
   (test-false
-   'space-efficient-chap+imp1
+   'collapsible-chap+imp1
    '(can-combine? ic (-> c1 c1))) ; can collapse impersonators, the inner chaperone is not chaperone*
   (test-false
-   'space-efficient-chap+imp2
+   'collapsible-chap+imp2
    '(can-combine? ic (-> c2 c2)))
   (test-false
-   'space-efficient-chap+imp3
+   'collapsible-chap+imp3
    '(can-combine? iic (-> c1 c1))) ; see above
   (test-false
-   'space-efficient-chap+imp4
+   'collapsible-chap+imp4
    '(can-combine? iic (-> c2 c2)))
   (test/spec-passed
-   'space-efficient23
+   'collapsible23
    '((iic add1) 1))
 
   (contract-eval '(define cc
@@ -404,22 +404,22 @@
                               cc
                               'outer-pos 'outer-neg)))
   (test-true
-   'space-efficient-chap+imp5
-   '(space-efficient? cc))
+   'collapsible-chap+imp5
+   '(collapsible? cc))
   (test-false
-   'space-efficient-chap+imp6
+   'collapsible-chap+imp6
    '(can-combine? cc (-> c1 c1)))
   (test-true
-   'space-efficient-chap+imp7
+   'collapsible-chap+imp7
    '(can-combine? cc (-> c2 c2)))
   (test-false
-   'space-efficient-chap+imp8
+   'collapsible-chap+imp8
    '(can-combine? icc (-> c1 c1)))
   (test-false
-   'space-efficient-chap+imp9
+   'collapsible-chap+imp9
    '(can-combine? icc (-> c2 c2)))
   (test/spec-passed
-   'space-efficient24
+   'collapsible24
    '((icc add1) 1))
 
   (contract-eval '(define ci (contract (-> (-> c2 c2) (-> c2 c2))
@@ -431,23 +431,23 @@
                                         ci
                                         'outer-pos 'outer-neg)))
   (test-false
-   'space-efficient-chap+imp10
+   'collapsible-chap+imp10
    '(can-combine? ci (-> c1 c1)))
   (test-false
-   'space-efficient-chap+imp11
+   'collapsible-chap+imp11
    '(can-combine? ci (-> c2 c2))) ; it's impersonated before the `cc`, but not impersonator*, sook
   (test-false
-   'space-efficient-chap+imp12
+   'collapsible-chap+imp12
    '(can-combine? ici (-> c1 c1))) ; ditto
   (test-false
-   'space-efficient-chap+imp13
+   'collapsible-chap+imp13
    '(can-combine? ici (-> c2 c2)))
   (test/spec-passed
-   'space-efficient25
+   'collapsible25
    '((ici add1) 1))
 
   (test/spec-passed
-   'space-efficient25.5
+   'collapsible25.5
    ;; using `contract` explicitly, to trigger double-wrapping rewrite
    ;; (that changed something! (but it shouldn't, so it's a bug!))
    '(((contract (-> (-> c1 c1) (-> c1 c1))
@@ -465,33 +465,33 @@
                               ci
                               'outer-pos 'outer-neg)))
   (test-false
-   'space-efficient-chap+imp14
+   'collapsible-chap+imp14
    '(can-combine? cic (-> c1 c1)))
   (test-false
-   'space-efficient-chap+imp15
+   'collapsible-chap+imp15
    '(can-combine? cic (-> c2 c2)))
   (test/spec-passed
-   'space-efficient26
+   'collapsible26
    '((cic add1) 1))
 
-  ;; can we get space-efficient wrappers for impersonator contracts?
+  ;; can we get collapsible wrappers for impersonator contracts?
   (contract-eval
    '(define imp-imp (contract (-> c1 c1)
                               (add-many-contracts 11 (-> c1 c1) (lambda (x) x) 'pos 'neg)
                               'pos 'neg)))
   (test-true
-   'space-efficient-imp1
-   '(space-efficient? imp-imp))
+   'collapsible-imp1
+   '(collapsible? imp-imp))
   (test/spec-passed
-   'space-efficient27
+   'collapsible27
    '(imp-imp 1))
   (test/spec-failed
-   'space-efficient27f
+   'collapsible27f
    '(imp-imp 'a)
    'neg)
   ;; should be an impersonator contract
   (test-false
-   'space-efficient-imp2
+   'collapsible-imp2
    '(chaperone-contract? (value-contract imp-imp)))
 
 
@@ -508,53 +508,53 @@
                                                    'pos 'neg)
                                          'pos 'neg)))
   (test-true
-   'space-efficient-flat-h/o-mix1
-   '(space-efficient? mix1))
+   'collapsible-flat-h/o-mix1
+   '(collapsible? mix1))
   (test/spec-passed
-   'space-efficient-flat-h/o-mix2
+   'collapsible-flat-h/o-mix2
    '((mix1 add1) 2))
   (test-true
-   'space-efficient-flat-h/o-mix3
-   '(space-efficient? mix2))
+   'collapsible-flat-h/o-mix3
+   '(collapsible? mix2))
   (test/spec-passed
-   'space-efficient-flat-h/o-mix5
+   'collapsible-flat-h/o-mix5
    '((mix2 add1) 2))
   (test/neg-blame
-   'space-efficient-flat-h/o-mix6
+   'collapsible-flat-h/o-mix6
    '((mix1 add1) 'a))
   (test/neg-blame
-   'space-efficient-flat-h/o-mix7
+   'collapsible-flat-h/o-mix7
    '((mix1 number->string) 2))
   (test/neg-blame
-   'space-efficient-flat-h/o-mix8
+   'collapsible-flat-h/o-mix8
    '((mix2 add1) 'a))
   (test/neg-blame
-   'space-efficient-flat-h/o-mix9
+   'collapsible-flat-h/o-mix9
    '((mix2 number->string) 2))
 
   ;; only the outer contract matters for these tests, as the inner one is fully
-  ;; checked before we enter space-efficient mode
+  ;; checked before we enter collapsible mode
   (test/pos-blame
-   'space-efficient-first-order-checks1
+   'collapsible-first-order-checks1
    '(contract (-> any/c)
               (add-many-contracts 11 (-> any/c any/c) add1 'inner-pos 'inner-neg)
               'pos 'neg))
   (test/pos-blame
-   'space-efficient-first-order-checks2
+   'collapsible-first-order-checks2
    '((contract (-> (-> any/c))
                (add-many-contracts 11 (-> (-> any/c any/c))
                          (lambda () add1)
                          'inner-pos 'inner-neg)
                'pos 'neg)))
   (test/pos-blame
-   'space-efficient-first-order-checks3
+   'collapsible-first-order-checks3
    '((contract (-> (-> any/c any/c))
                (add-many-contracts 11 (-> (-> any/c))
                          (lambda () add1)
                          'pos 'neg)
                'outer-pos 'outer-neg)))
   (test/pos-blame
-   'space-efficient-first-order-checks4
+   'collapsible-first-order-checks4
    '((contract (-> (-> any/c any/c))
                (contract (-> (-> any/c))
                          (add-many-contracts 11 (-> (-> any/c any/c any/c))
@@ -563,22 +563,22 @@
                          'mid-pos 'mid-neg)
                'outer-pos 'outer-neg)))
   (test/pos-blame
-   'space-efficient-first-order-checks5
+   'collapsible-first-order-checks5
    '((contract (-> (-> any/c any/c))
                (contract (-> (-> any/c))
                          (add-many-contracts 11 (-> (-> any/c any/c any/c))
-                                   (contract (-> (-> any/c any/c)) ; to have next one be space-efficient
+                                   (contract (-> (-> any/c any/c)) ; to have next one be collapsible
                                              (lambda () add1)
                                              'inner-pos 'inner-neg)
                                    'pos 'neg)
                          'mid-pos 'mid-neg)
                'outer-pos 'outer-neg)))
   (test/pos-blame
-   'space-efficient-first-order-checks6
+   'collapsible-first-order-checks6
    '((contract (-> (-> any/c any/c))
                (contract (-> (-> any/c))
                          (add-many-contracts 11 (-> (-> any/c any/c))
-                                   (contract (-> (-> any/c any/c)) ; to have next one be space-efficient
+                                   (contract (-> (-> any/c any/c)) ; to have next one be collapsible
                                              (lambda () add1)
                                              'innermost-pos 'innermost-neg)
                                    'inner-pos 'inner-neg)
@@ -586,7 +586,7 @@
                'outer-pos 'outer-neg)))
 
   (test/neg-blame
-   'space-efficient-first-order-checks7
+   'collapsible-first-order-checks7
    ;; both should fail, but want to make sure we drop the right redundant check
    '((contract (-> (-> any/c any/c any/c) any)
                (add-many-contracts 11 (-> (-> any/c any/c any/c) any)
@@ -595,10 +595,10 @@
                'pos 'neg)
      add1))
 
-  ;; scenario: double-wrap (enter s-e mode), unrelated chaperone, another contract
+  ;; scenario: double-wrap (enter collapsible mode), unrelated chaperone, another contract
   ;; want to make sure no check gets lost
   (test/pos-blame
-   'space-efficient-chaperone-in-middle
+   'collapsible-chaperone-in-middle
    '(let ([x 0])
       (define f (contract (-> any/c string?)
                           (add-many-contracts 11 (-> any/c string?)
@@ -612,33 +612,33 @@
        4)))
 
   (test-true
-   'space-efficient-bail-on-subcontract1
+   'collapsible-bail-on-subcontract1
    ;; Contracts lifted to defeat the opt/c rewriting
    '(let ([ctc1 (-> (-> any/c (values any/c any/c)) any/c)]
           [ctc2 (-> (-> any/c (values any/c any/c)) any/c)])
-      (space-efficient?
+      (collapsible?
        (contract ctc1
                  (add-many-contracts 11 ctc2
                            (lambda (x) x)
                            'pos 'neg)
                  'pos 'neg))))
   (test-true
-   'space-efficient-bail-on-subcontract2
+   'collapsible-bail-on-subcontract2
    ;; Contracts lifted to defeat the opt/c rewriting
    '(let ([ctc1 (-> any/c (-> any/c (values any/c any/c)) any/c)]
           [ctc2 (-> any/c (-> any/c (values any/c any/c)) any/c)])
-      (space-efficient?
+      (collapsible?
        (contract ctc1
                  (add-many-contracts 11 ctc2
                            (lambda (x y) x)
                            'pos 'neg)
                  'pos 'neg))))
   (test-true
-   'space-efficient-bail-on-subcontract3
+   'collapsible-bail-on-subcontract3
    ;; Contracts lifted to defeat the opt/c rewriting
    '(let ([ctc1 (-> any/c (-> any/c (values any/c any/c)))]
           [ctc2 (-> any/c (-> any/c (values any/c any/c)))])
-      (space-efficient?
+      (collapsible?
        (contract ctc1
                  (add-many-contracts 11 ctc2
                            (lambda (x) x)
@@ -646,7 +646,7 @@
                  'pos 'neg))))
 
   (test/neg-blame
-   'space-efficient-merge-subcontract1
+   'collapsible-merge-subcontract1
    '(let ()
       (define id (contract (-> (-> string? string?) (-> string? string?))
                            (add-many-contracts 11 (-> (-> string? string?) (-> string? string?))
@@ -658,7 +658,7 @@
                            'pos 'neg))
       ((id a1) "a")))
   (test/neg-blame
-   'space-efficient-merge-subcontract2
+   'collapsible-merge-subcontract2
    '(let ()
       (define id (contract (-> (-> string? string?) (-> string? string?))
                            (add-many-contracts 11 (-> (-> string? string?) (-> string? string?))
@@ -670,10 +670,10 @@
                            'p3 'n3))
       ((id a1) 1)))
   (test/spec-passed
-   'space-efficient-merge-subcontract3
+   'collapsible-merge-subcontract3
    '(let ()
       ;; lift definitions to defeat the opt/c rewriting
-      ;; (otherwise that bypasses the whole space-efficient machinery)
+      ;; (otherwise that bypasses the whole collapsible machinery)
       (define ctc1 (-> (-> string? string?) (-> string? string?)))
       (define ctc2 (-> string? string?))
       (define id (contract ctc1
@@ -686,7 +686,7 @@
                            'p3 'n3))
       (has-num-contracts? (id a1) 1 1)))
   (test/neg-blame
-   'space-efficient-merge-subcontract4
+   'collapsible-merge-subcontract4
    '(let ()
       (define id (contract (-> (-> string? string?) (-> string? string?))
                            (add-many-contracts 11 (-> (-> string? string?) (-> string? string?))
@@ -700,7 +700,7 @@
                            'pos 'neg))
       ((id a1) "a")))
   (test/neg-blame
-   'space-efficient-merge-subcontract5
+   'collapsible-merge-subcontract5
    '(let ()
       (define id (contract (-> (-> string? string?) (-> string? string?))
                            (add-many-contracts 11 (-> (-> string? string?) (-> string? string?))
@@ -714,10 +714,10 @@
                            'p4 'n4))
       ((id a1) 1)))
   (test/spec-passed
-   'space-efficient-merge-subcontract6
+   'collapsible-merge-subcontract6
    '(let ()
       ;; lift definitions to defeat the opt/c rewriting
-      ;; (otherwise that bypasses the whole space-efficient machinery)
+      ;; (otherwise that bypasses the whole collapsible machinery)
       (define ctc1 (-> (-> string? string?) (-> string? string?)))
       (define ctc2 (-> string? string?))
       (define id (contract ctc1
@@ -733,7 +733,7 @@
       (has-num-contracts? (id a1) 1 1)))
 
   (test/spec-passed
-   'space-efficient-multi-args1
+   'collapsible-multi-args1
    '((contract (-> number? string? number?)
                (add-many-contracts 11 (-> number? string? number?)
                          (lambda (x y) x)
@@ -741,7 +741,7 @@
                'outer-pos 'outer-neg)
      1 "a"))
   (test/pos-blame
-   'space-efficient-multi-args2
+   'collapsible-multi-args2
    '((contract (-> number? string? number?)
                (add-many-contracts 11 (-> number? string? number?)
                          (lambda (x) x)
@@ -749,7 +749,7 @@
                'outer-pos 'outer-neg)
      1 "a"))
   (test/neg-blame
-   'space-efficient-multi-args3
+   'collapsible-multi-args3
    '((contract (-> number? string? number?)
                (add-many-contracts 11 (-> number? string? number?)
                          (lambda (x y) x)
@@ -757,7 +757,7 @@
                'pos 'neg)
      "a" "a"))
   (test/neg-blame
-   'space-efficient-multi-args4
+   'collapsible-multi-args4
    '((contract (-> number? string? number?)
                (add-many-contracts 11 (-> number? string? number?)
                          (lambda (x y) x)
@@ -765,7 +765,7 @@
                'pos 'neg)
      1 1))
   (test/spec-passed/result
-   'space-efficient-multi-args5
+   'collapsible-multi-args5
    '(with-handlers ([exn:fail:contract:arity? (lambda (e) 'ok)])
       ((contract (-> number? string? number?)
                  (add-many-contracts 11 (-> number? string? number?)
@@ -775,7 +775,7 @@
        1 1 "a"))
    'ok)
   (test/spec-passed/result
-   'space-efficient-multi-args6
+   'collapsible-multi-args6
    '(with-handlers ([exn:fail:contract:arity? (lambda (e) 'ok)])
       ((contract (-> number? string? number?)
                  (add-many-contracts 11 (-> number? string? number?)
@@ -785,8 +785,8 @@
        1))
    'ok)
   (test/spec-passed
-   'space-efficient-multi-args7
-   '(space-efficient? (contract (-> number? string? number?)
+   'collapsible-multi-args7
+   '(collapsible? (contract (-> number? string? number?)
                                 (add-many-contracts 11 (-> number? string? number?)
                                           (lambda (x y) x)
                                           'inner-pos 'inner-neg)

@@ -1,27 +1,27 @@
 #lang racket/base
 
-;; Space-efficient arrow contracts
+;; collapsible arrow contracts
 ;; supports a subset of full arrow contracts
 ;; based on a prototype by Christophe Scholliers
 
 (require racket/unsafe/ops
-         "space-efficient-common.rkt" "merge-cache.rkt"
-         (submod "space-efficient-common.rkt" properties)
+         "collapsible-common.rkt" "merge-cache.rkt"
+         (submod "collapsible-common.rkt" properties)
          "prop.rkt" "guts.rkt" "misc.rkt" "blame.rkt" "arrow-common.rkt"
          "arity-checking.rkt"
          (for-syntax racket/base))
 
-(provide arrow-enter-space-efficient-mode/continue
-         arrow-enter-space-efficient-mode/collapse
-         val-has-arrow-space-efficient-support?
-         ->-contract-has-space-efficient-support?
-         build-s-e-arrow)
+(provide arrow-enter-collapsible-mode/continue
+         arrow-enter-collapsible-mode/collapse
+         val-has-arrow-collapsible-support?
+         ->-contract-has-collapsible-support?
+         build-collapsible-arrow)
 (module+ for-testing
-  (provide multi->? multi->-doms multi->-rng))
+  (provide collapsible->? collapsible->-doms collapsible->-rng))
 
 ;; General Strategy
 
-;; Each function contracted with a space-efficient contract has two or three
+;; Each function contracted with a collapsible contract has two or three
 ;; chaperone wrappers.
 ;; - Functions that are wrapped in a "top-level" arrow contract (i.e., not a
 ;;   subcontract of an arrow contract) are first contracted using a regular
@@ -34,7 +34,7 @@
 ;;   - second, a chaperone* wrapper, which gets passed the outermost wrapper,
 ;;     and looks at a property on it to figure out what to check, then does
 ;;     the actual contract checking
-;;   - third, a property-only chaperone wrapper, which has a multi contract
+;;   - third, a property-only chaperone wrapper, which has a collapsible contract
 ;;     on a property, to keep track of which contracts to check.
 ;;   When additional contracts are applied, this third chaperone is swapped out
 ;;   for a new one, which keeps track of the new, merged contract to check.
@@ -42,17 +42,17 @@
 ;;   affect chaperone-of-ness.
 ;; - Functions that are wrapped in an "internal node" arrow contract (i.e.,
 ;;   their arrow contract is a subcontract of another arrow contract) may be
-;;   wrapped with space-efficient wrappers from the start (i.e., before getting
+;;   wrapped with collapsible wrappers from the start (i.e., before getting
 ;;   any other contract).
 ;;   Note: This could be changed. Just avoid recursively converting contracts in
-;;     `ho/c->multi->`, and instead have doms and rngs be `ho-leaf/c` always.
+;;     `ho/c->collapsible->`, and instead have doms and rngs be `ho-leaf/c` always.
 ;;   Because of this, they don't need the first, unsafe chaperone wrapper above.
 ;;   They only have the last two wrappers, otherwise the above strategy applies.
 
-;; Alternatively, we may try to attach an (internal node) space-efficient
-;; contract to a value that doesn't support space-efficient contracts (e.g.,
+;; Alternatively, we may try to attach an (internal node) collapsible
+;; contract to a value that doesn't support collapsible contracts (e.g.,
 ;; a function that takes keyword arguments). In this case, we must fall back to
-;; regular contract wrapping, and convert the space-efficient contract to a
+;; regular contract wrapping, and convert the collapsible contract to a
 ;; regular checking wrapper, as used elsewhere in the contract system (c.f.
 ;; `bail-to-regular-wrapper`).
 
@@ -65,9 +65,9 @@
 ;; for things like prop:blame, contract profiling, and tail marks, in which
 ;; case we lose information, but it's ok to be conservative in these places
 ;; (and this behavior is consistent with what would happen in the absence
-;; of space-efficient contracts anyway)
+;; of collapsible contracts anyway)
 ;; ditto for `latest-ctc` and prop:contracted
-(struct multi-> multi-ho/c (doms rng first-order-checks))
+(struct collapsible-> collapsible-ho/c (doms rng first-order-checks))
 
 ;; contains all the information necessary to both (1) perform first order checks
 ;; for an arrow contract, and (2) determine which such checks are redundant and
@@ -81,12 +81,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Applicability checks
 
-(define (->-contract-has-space-efficient-support? ctc)
+(define (->-contract-has-collapsible-support? ctc)
   (define-syntax-rule (bail reason)
     (begin
-      (log-space-efficient-contract-bailout-info (format "arrow: ~a" reason))
+      (log-collapsible-contract-bailout-info (format "arrow: ~a" reason))
       #f))
-  (cond [(multi->? ctc) ; already one
+  (cond [(collapsible->? ctc) ; already one
          #t]
         [(base->? ctc) ; only applies to regular arrow contracts (for now)
          (define doms (base->-doms ctc))
@@ -113,10 +113,10 @@
          (bail "not base arrow")
          #f]))
 
-(define (val-has-arrow-space-efficient-support? val)
+(define (val-has-arrow-collapsible-support? val)
   (define-syntax-rule (bail reason)
     (begin
-      (log-space-efficient-value-bailout-info (format "arrow: ~a" reason))
+      (log-collapsible-value-bailout-info (format "arrow: ~a" reason))
       #f))
   (and
    (or (not (procedure-impersonator*? val))
@@ -139,47 +139,47 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Wrapper management and contract checking
 
-(define (arrow-space-efficient-guard s-e val neg-party)
-  (do-arrow-first-order-checks s-e val neg-party)
-  (define chap-not-imp? (chaperone-multi->? s-e))
-  (define prop (get-impersonator-prop:space-efficient val #f))
-  (define safe-for-s-e?
+(define (arrow-collapsible-guard c-c val neg-party)
+  (do-arrow-first-order-checks c-c val neg-party)
+  (define chap-not-imp? (chaperone-collapsible->? c-c))
+  (define prop (get-impersonator-prop:collapsible val #f))
+  (define safe-for-c-c?
     (if prop
-        (and (space-efficient-property? prop)
-             (eq? (space-efficient-property-ref prop) val))
-        (val-has-arrow-space-efficient-support? val)))
+        (and (collapsible-property? prop)
+             (eq? (collapsible-property-ref prop) val))
+        (val-has-arrow-collapsible-support? val)))
   (cond
-    [(not safe-for-s-e?) (bail-to-regular-wrapper s-e val neg-party)]
-    [(space-efficient-wrapper-property? prop)
-     (arrow-enter-space-efficient-mode/continue
-      s-e
+    [(not safe-for-c-c?) (bail-to-regular-wrapper c-c val neg-party)]
+    [(collapsible-wrapper-property? prop)
+     (arrow-enter-collapsible-mode/continue
+      c-c
       val
       neg-party
-      (space-efficient-property-s-e prop)
-      (space-efficient-property-neg-party prop)
-      (space-efficient-wrapper-property-checking-wrapper prop)
+      (collapsible-property-c-c prop)
+      (collapsible-property-neg-party prop)
+      (collapsible-wrapper-property-checking-wrapper prop)
       chap-not-imp?)]
-    [(space-efficient-count-property? prop)
-     (arrow-enter-space-efficient-mode/collapse
-      s-e
+    [(collapsible-count-property? prop)
+     (arrow-enter-collapsible-mode/collapse
+      c-c
       val
       neg-party
       prop
       chap-not-imp?)]
     ;; else enter directly
     [else
-     (arrow-enter-space-efficient-mode/direct s-e val neg-party chap-not-imp?)]))
+     (arrow-enter-collapsible-mode/direct c-c val neg-party chap-not-imp?)]))
 
-(define (add-space-efficient-arrow-chaperone merged s-e neg-party checking-wrapper chap-not-imp?)
+(define (add-collapsible-arrow-chaperone merged c-c neg-party checking-wrapper chap-not-imp?)
   (define chap/imp (if chap-not-imp? chaperone-procedure impersonate-procedure))
-  (define s-e-prop
-    (space-efficient-wrapper-property merged neg-party #f checking-wrapper))
+  (define c-c-prop
+    (collapsible-wrapper-property merged neg-party #f checking-wrapper))
   (define wrapped
     (chap/imp
      checking-wrapper
      #f
-     impersonator-prop:space-efficient s-e-prop))
-  (set-space-efficient-property-ref! s-e-prop wrapped)
+     impersonator-prop:collapsible c-c-prop))
+  (set-collapsible-property-ref! c-c-prop wrapped)
   wrapped)
 
 
@@ -198,19 +198,19 @@
        arrow-wrapper)))
 
 ;; If requested, we can log the arities of the contracts that end up being
-;; space-efficient. That can inform whether we should have arity-specific
+;; collapsible. That can inform whether we should have arity-specific
 ;; wrappers, and if so, for which arities.
-(define-logger space-efficient-contract-arrow-wrapper-arity)
+(define-logger collapsible-contract-arrow-wrapper-arity)
 
 ;; Create the 2nd chaperone wrapper procedure (see comment at the top),
 ;; as well as "deoptimization" wrappers (see below).
 ;; Checking wrappers come in different varieties, along two axes:
 ;; - chaperone vs impersonator (to know how to wrap for subcontracts)
 ;; - where to find the checks (on an impersonator property, for actual
-;;   space-efficient contracts, vs closed over, for cases where we need
+;;   collapsible contracts, vs closed over, for cases where we need
 ;;   a regular contract wrapper (i.e., a subcontract has to "bail out,
-;;   and can't use the space-efficient machinery (but since subcontracts
-;;   always start-out as space-efficient, they can't bail out via the
+;;   and can't use the collapsible machinery (but since subcontracts
+;;   always start-out as collapsible, they can't bail out via the
 ;;   checks in arrow-higher-order, so we need to handle them here)))
 (define-syntax (make-interposition-procedure stx)
   (syntax-case stx ()
@@ -222,17 +222,17 @@
            #,(if (syntax-e #'maybe-closed-over-m/c)
                  #'(values maybe-closed-over-m/c maybe-closed-over-neg)
                  #'(let ()
-                     (define prop (get-impersonator-prop:space-efficient outermost-chaperone))
-                     (values (space-efficient-property-s-e prop)
-                             (space-efficient-property-neg-party prop)))))
-         (define neg (or (multi-ho/c-missing-party m/c) neg-party))
-         (define doms   (multi->-doms         m/c))
-         (define rng    (multi->-rng          m/c))
-         (define blame  (multi-ho/c-latest-blame m/c))
+                     (define prop (get-impersonator-prop:collapsible outermost-chaperone))
+                     (values (collapsible-property-c-c prop)
+                             (collapsible-property-neg-party prop)))))
+         (define neg (or (collapsible-ho/c-missing-party m/c) neg-party))
+         (define doms   (collapsible->-doms         m/c))
+         (define rng    (collapsible->-rng          m/c))
+         (define blame  (collapsible-ho/c-latest-blame m/c))
          (define blame+neg-party  (cons blame neg))
          (define n-args (length args))
          (define n-doms (length doms))
-         (log-space-efficient-contract-arrow-wrapper-arity-info
+         (log-collapsible-contract-arrow-wrapper-arity-info
           (number->string n-doms))
          (unless (= n-args n-doms)
            (raise-wrong-number-of-args-error blame #:missing-party neg outermost-chaperone
@@ -244,36 +244,36 @@
          ;; Note: should add tail-marks-match support here.
          (define rng-checker
            (lambda (result)
-             (with-space-efficient-contract-continuation-mark
+             (with-collapsible-contract-continuation-mark
                (with-contract-continuation-mark
                  blame+neg-party
-                 (space-efficient-guard rng result neg)))))
+                 (collapsible-guard rng result neg)))))
          (apply values
                 rng-checker
                 (for/list ([dom (in-list doms)]
                            [arg (in-list args)])
-                  (with-space-efficient-contract-continuation-mark
+                  (with-collapsible-contract-continuation-mark
                     (with-contract-continuation-mark
                       blame+neg-party
-                      (space-efficient-guard dom arg neg))))))]))
+                      (collapsible-guard dom arg neg))))))]))
 
 (define arrow-wrapper (make-interposition-procedure #f #f))
 
-;; create a regular checking wrapper from a space-efficient wrapper for a value
-;; that can't use space-efficient wrapping
+;; create a regular checking wrapper from a collapsible wrapper for a value
+;; that can't use collapsible wrapping
 (define (bail-to-regular-wrapper m/c val neg-party)
-  (define chap-not-imp? (chaperone-multi->? m/c))
-  (define neg (or (multi-ho/c-missing-party m/c) neg-party))
+  (define chap-not-imp? (chaperone-collapsible->? m/c))
+  (define neg (or (collapsible-ho/c-missing-party m/c) neg-party))
   ((if chap-not-imp? chaperone-procedure* impersonate-procedure*)
    val
    (make-interposition-procedure m/c neg)
-   impersonator-prop:contracted (multi-ho/c-latest-ctc   m/c)
+   impersonator-prop:contracted (collapsible-ho/c-latest-ctc   m/c)
    impersonator-prop:blame (cons
-                            (multi-ho/c-latest-blame m/c)
+                            (collapsible-ho/c-latest-blame m/c)
                             neg)))
 
 (define (do-arrow-first-order-checks m/c val neg-party)
-  (define checks (multi->-first-order-checks m/c))
+  (define checks (collapsible->-first-order-checks m/c))
   (for ([c (in-list checks)])
     (define n-doms (arrow-first-order-check-n-doms c))
     (define partial-blame (arrow-first-order-check-blame c))
@@ -289,34 +289,31 @@
            => (lambda (fail) (fail (or neg neg-party)))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Space-efficient contract data structure management
+;; collapsible contract data structure management
 
-(define (build-s-e-arrow rng doms ctc blame chap? [maybe-focs #f] [maybe-neg-blame #f])
+(define (build-collapsible-arrow rng doms ctc blame chap? [maybe-focs #f] [maybe-neg-blame #f])
   (define focs
     (or maybe-focs (list (arrow-first-order-check (length doms) blame maybe-neg-blame (base->-method? ctc)))))
   (if chap?
-      (chaperone-multi-> blame maybe-neg-blame ctc doms rng focs)
-      (impersonator-multi-> blame maybe-neg-blame ctc doms rng focs)))
+      (chaperone-collapsible-> blame maybe-neg-blame ctc doms rng focs)
+      (impersonator-collapsible-> blame maybe-neg-blame ctc doms rng focs)))
 
-;; merge two multi->
-(define/merge-cache (arrow-try-merge new-multi new-neg old-multi old-neg)
-  (define constructor (get-constructor new-multi old-multi))
+;; merge two collapsible->
+(define/merge-cache (arrow-try-merge new-collapsible new-neg old-collapsible old-neg)
+  (define constructor (get-constructor new-collapsible old-collapsible))
   (and constructor
        (constructor
-        (multi-ho/c-latest-blame new-multi)
-        (or (multi-ho/c-missing-party new-multi) new-neg)
-        (multi-ho/c-latest-ctc   new-multi)
+        (collapsible-ho/c-latest-blame new-collapsible)
+        (or (collapsible-ho/c-missing-party new-collapsible) new-neg)
+        (collapsible-ho/c-latest-ctc   new-collapsible)
         ;; if old and new don't have the same arity, then one of them will *have*
         ;; to fail its first order checks, so we're fine.
         ;; (we don't support optional arguments)
-        (merge-list (multi->-doms old-multi) old-neg (multi->-doms new-multi) new-neg)
-        #;(for/list ([new (in-list (multi->-doms new-multi))]
-                   [old (in-list (multi->-doms old-multi))])
-          (merge old old-neg new new-neg))
-        (merge (multi->-rng new-multi) new-neg (multi->-rng old-multi) old-neg)
+        (merge-list (collapsible->-doms old-collapsible) old-neg (collapsible->-doms new-collapsible) new-neg)
+        (merge (collapsible->-rng new-collapsible) new-neg (collapsible->-rng old-collapsible) old-neg)
         (arrow-first-order-merge
-         (multi->-first-order-checks new-multi) new-neg
-         (multi->-first-order-checks old-multi) old-neg))))
+         (collapsible->-first-order-checks new-collapsible) new-neg
+         (collapsible->-first-order-checks old-collapsible) old-neg))))
 
 (define (merge-list news new-neg olds old-neg)
   (for/list ([new (in-list news)]
@@ -329,23 +326,23 @@
    (add-f-o-neg-party old old-neg)
    arrow-first-order-check-stronger?))
 
-(define arrow-enter-space-efficient-mode/continue
-  (make-enter-space-efficient-mode/continue
+(define arrow-enter-collapsible-mode/continue
+  (make-enter-collapsible-mode/continue
    arrow-try-merge
-   add-space-efficient-arrow-chaperone
+   add-collapsible-arrow-chaperone
    bail-to-regular-wrapper))
 
-(define arrow-enter-space-efficient-mode/collapse
-    (make-enter-space-efficient-mode/collapse
+(define arrow-enter-collapsible-mode/collapse
+    (make-enter-collapsible-mode/collapse
      make-unsafe-checking-wrapper
-     add-space-efficient-arrow-chaperone
+     add-collapsible-arrow-chaperone
      arrow-try-merge
      bail-to-regular-wrapper))
 
-(define arrow-enter-space-efficient-mode/direct
-  (make-enter-space-efficient-mode/direct
+(define arrow-enter-collapsible-mode/direct
+  (make-enter-collapsible-mode/direct
    make-checking-wrapper
-   add-space-efficient-arrow-chaperone))
+   add-collapsible-arrow-chaperone))
 
 (define (add-f-o-neg-party focs neg-party)
   (for/list ([foc (in-list focs)])
@@ -356,19 +353,19 @@
      [missing-party (or missing-party neg-party)])))
 
 (define (get-constructor new old)
-  (or (and (chaperone-multi->? new)
-           (chaperone-multi->? old)
-           chaperone-multi->)
-      (and (impersonator-multi->? new)
-           (impersonator-multi->? old)
-           impersonator-multi->)))
+  (or (and (chaperone-collapsible->? new)
+           (chaperone-collapsible->? old)
+           chaperone-collapsible->)
+      (and (impersonator-collapsible->? new)
+           (impersonator-collapsible->? old)
+           impersonator-collapsible->)))
 
-(define (->-space-efficient-contract-property chap?)
-  (build-space-efficient-contract-property
+(define (->-collapsible-contract-property chap?)
+  (build-collapsible-contract-property
    #:try-merge arrow-try-merge
-   #:space-efficient-guard arrow-space-efficient-guard))
+   #:collapsible-guard arrow-collapsible-guard))
 
-(struct chaperone-multi-> multi-> ()
-  #:property prop:space-efficient-contract (->-space-efficient-contract-property #t))
-(struct impersonator-multi-> multi-> ()
-  #:property prop:space-efficient-contract (->-space-efficient-contract-property #f))
+(struct chaperone-collapsible-> collapsible-> ()
+  #:property prop:collapsible-contract (->-collapsible-contract-property #t))
+(struct impersonator-collapsible-> collapsible-> ()
+  #:property prop:collapsible-contract (->-collapsible-contract-property #f))

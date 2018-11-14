@@ -252,7 +252,7 @@
       (struct s-e-late-neg-none ()
         #:property prop:chaperone-contract
         (build-chaperone-contract-property
-         #:space-efficient-late-neg-projection
+         #:collapsible-late-neg-projection
          (λ (ctc)
            (λ (blame)
              (values
@@ -273,7 +273,7 @@
       (struct s-e-late-neg-none ()
         #:property prop:chaperone-contract
         (build-chaperone-contract-property
-         #:space-efficient-late-neg-projection
+         #:collapsible-late-neg-projection
          (λ (ctc)
            (λ (blame)
              (values

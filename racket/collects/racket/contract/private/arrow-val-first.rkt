@@ -10,8 +10,8 @@
          "generate.rkt"
          "arrow-common.rkt"
          "arrow-higher-order.rkt"
-         "arrow-space-efficient.rkt"
-         "space-efficient-common.rkt"
+         "arrow-collapsible.rkt"
+         "collapsible-common.rkt"
          "list.rkt"
          racket/stxparam)
 
@@ -1545,7 +1545,7 @@
                (base->-chaperone-constructor ->stct)
                (base->-method? ->stct)
                #f)))
-  (define space-efficient-late-neg-proj
+  (define collapsible-late-neg-proj
     (λ (->stct)
       (->-proj is-impersonator? ->stct
                (base->-min-arity ->stct)
@@ -1574,7 +1574,7 @@
    #:generate ->-generate
    #:exercise ->-exercise
    #:val-first-projection val-first-proj
-   #:space-efficient-late-neg-projection space-efficient-late-neg-proj
+   #:collapsible-late-neg-projection collapsible-late-neg-proj
    #:can-cache? ->-can-cache?))
 
 (define (->-can-cache? ctc)

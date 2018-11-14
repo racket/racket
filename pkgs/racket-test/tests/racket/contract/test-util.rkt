@@ -105,7 +105,7 @@
   (parameterize ([current-namespace n])
     (namespace-require 'racket/contract/base)
     (namespace-require '(only racket/contract/private/blame exn:fail:contract:blame?))
-    (namespace-require '(only racket/contract/private/space-efficient-common SPACE-EFFICIENT-LIMIT))
+    (namespace-require '(only racket/contract/private/collapsible-common COLLAPSIBLE-LIMIT))
     (for ([addon (in-list addons)])
       (namespace-require addon)))
   n)
@@ -338,14 +338,14 @@
   (rewrite (lambda (ctc val parties loop)
              `(contract (opt/c ,(loop ctc)) ,(loop val) ,@(map loop parties)))))
 
-;; rewrites `contract` to double-wrap. To test space-efficient wrappers.
+;; rewrites `contract` to double-wrap. To test collapsible wrappers.
 (define rewrite-to-multi-wrap
   (rewrite (lambda (ctc val parties loop)
              (define new-ctc (loop ctc))
              (define new-parties (map loop parties))
              `(let ([the-ctc ,new-ctc])
                 (for/fold ([the-val ,(loop val)])
-                          ([i (in-range (add1 SPACE-EFFICIENT-LIMIT))])
+                          ([i (in-range (add1 COLLAPSIBLE-LIMIT))])
                   (contract the-ctc the-val ,@new-parties))))))
 (define do-not-double-wrap (gensym)) ; recognized by some test forms
 

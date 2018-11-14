@@ -1,4 +1,3 @@
-
 #lang racket/base
 
 (require (for-syntax racket/base)
@@ -6,10 +5,10 @@
          "prop.rkt"
          "blame.rkt"
          "misc.rkt"
-         "space-efficient-common.rkt"
-         (submod "space-efficient-common.rkt" properties)
+         "collapsible-common.rkt"
+         (submod "collapsible-common.rkt" properties)
          "vector-common.rkt"
-         "vector-space-efficient.rkt")
+         "vector-collapsible.rkt")
 
 (provide (rename-out [wrap-vectorof vectorof]
                      [wrap-vector/c vector/c])
@@ -158,7 +157,7 @@
 (define (blame-add-element-of-context blame #:swap? [swap? #f])
   (blame-add-context blame "an element of" #:swap? swap?))
 
-(define (vectorof-space-efficient-late-neg-ho-projection chap-not-imp?)
+(define (vectorof-collapsible-late-neg-ho-projection chap-not-imp?)
   (define chaperone-or-impersonate-vector
     (if chap-not-imp? chaperone-vector impersonate-vector))
   (λ (ctc)
@@ -166,11 +165,11 @@
     (define flat-subcontract? (flat-contract-struct? elem-ctc))
     (define eager (base-vectorof-eager ctc))
     (define immutable (base-vectorof-immutable ctc))
-    (define vfp (get/build-space-efficient-late-neg-projection elem-ctc))
+    (define vfp (get/build-collapsible-late-neg-projection elem-ctc))
     (λ (blame)
       (define pos-blame (blame-add-element-of-context blame))
       (define neg-blame (blame-add-element-of-context blame #:swap? #t))
-      (define-values (filled? maybe-elem-pos-proj maybe-s-e-pos maybe-elem-neg-proj maybe-s-e-neg)
+      (define-values (filled? maybe-elem-pos-proj maybe-c-c-pos maybe-elem-neg-proj maybe-c-c-neg)
         (contract-pos/neg-doubling.2 (vfp pos-blame) (vfp neg-blame)))
       (define-values (fetch-tc-pos fetch-tc-neg)
         (cond
@@ -178,23 +177,23 @@
           [else
            (define tc-pos (make-thread-cell #f))
            (define tc-neg (make-thread-cell #f))
-           (define (fetch-from-tc tc maybe-elem-proj maybe-s-e)
+           (define (fetch-from-tc tc maybe-elem-proj maybe-c-c)
              (cond
                [(thread-cell-ref tc) => values]
                [else
-                (define-values (elem-proj s-e) (maybe-elem-proj))
-                (define pr (cons elem-proj s-e))
+                (define-values (elem-proj c-c) (maybe-elem-proj))
+                (define pr (cons elem-proj c-c))
                 (thread-cell-set! tc pr)
                 pr]))
-           (values (λ () (fetch-from-tc tc-pos maybe-elem-pos-proj maybe-s-e-pos))
-                   (λ () (fetch-from-tc tc-neg maybe-elem-neg-proj maybe-s-e-neg)))]))
-      (define s-e-vector
+           (values (λ () (fetch-from-tc tc-pos maybe-elem-pos-proj maybe-c-c-pos))
+                   (λ () (fetch-from-tc tc-neg maybe-elem-neg-proj maybe-c-c-neg)))]))
+      (define c-c-vector
         (cond
-          [filled? (build-s-e-vector maybe-s-e-pos maybe-s-e-neg ctc blame chap-not-imp?)]
+          [filled? (build-collapsible-vector maybe-c-c-pos maybe-c-c-neg ctc blame chap-not-imp?)]
           [else
-           (build-doubling-s-e-vector (λ () (cdr (fetch-tc-pos)))
-                                      (λ () (cdr (fetch-tc-neg)))
-                                      ctc blame chap-not-imp?)]))
+           (build-doubling-collapsible-vector (λ () (cdr (fetch-tc-pos)))
+                                              (λ () (cdr (fetch-tc-neg)))
+                                              ctc blame chap-not-imp?)]))
 
       (define checked-ref
         (cond
@@ -259,59 +258,59 @@
               (for/vector #:length (vector-length val) ([e (in-vector val)])
                 (elem-pos-proj e neg-party)))]
             [else
-             (define old-s-e-prop (get-impersonator-prop:space-efficient val #f))
-             (define safe-for-s-e?
-               (if old-s-e-prop
-                   (and (space-efficient-property? old-s-e-prop)
-                        (eq? (space-efficient-property-ref old-s-e-prop) val))
+             (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
+             (define safe-for-c-c?
+               (if old-c-c-prop
+                   (and (collapsible-property? old-c-c-prop)
+                        (eq? (collapsible-property-ref old-c-c-prop) val))
                    (not (impersonator? val))))
              (define wrapper-count
-               (if (space-efficient-count-property? old-s-e-prop)
-                   (space-efficient-count-property-count old-s-e-prop)
+               (if (collapsible-count-property? old-c-c-prop)
+                   (collapsible-count-property-count old-c-c-prop)
                    0))
              (cond
-               [(not safe-for-s-e?)
+               [(not safe-for-c-c?)
                 (chaperone-or-impersonate-vector
                  val
                  (checked-ref neg-party)
                  (checked-set neg-party)
                  impersonator-prop:contracted ctc
                  impersonator-prop:blame (cons blame neg-party))]
-               [(wrapper-count . >= . SPACE-EFFICIENT-LIMIT)
-                (vector-enter-space-efficient-mode/collapse
-                 s-e-vector
+               [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
+                (vector-enter-collapsible-mode/collapse
+                 c-c-vector
                  val
                  neg-party
-                 old-s-e-prop
+                 old-c-c-prop
                  chap-not-imp?)]
-               [(space-efficient-wrapper-property? old-s-e-prop)
-                (vector-enter-space-efficient-mode/continue
-                 s-e-vector
+               [(collapsible-wrapper-property? old-c-c-prop)
+                (vector-enter-collapsible-mode/continue
+                 c-c-vector
                  val
                  neg-party
-                 (space-efficient-property-s-e old-s-e-prop)
-                 (space-efficient-property-neg-party old-s-e-prop)
-                 (space-efficient-wrapper-property-checking-wrapper old-s-e-prop)
+                 (collapsible-property-c-c old-c-c-prop)
+                 (collapsible-property-neg-party old-c-c-prop)
+                 (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
                  chap-not-imp?)]
                [else
-                (define s-e-prop
-                  (space-efficient-count-property
-                   s-e-vector
+                (define c-c-prop
+                  (collapsible-count-property
+                   c-c-vector
                    neg-party
                    #f
                    (add1 wrapper-count)
-                   (or old-s-e-prop val)))
+                   (or old-c-c-prop val)))
                 (define wrapped
                   (chaperone-or-impersonate-vector
                    val
                    (checked-ref neg-party)
                    (checked-set neg-party)
-                   impersonator-prop:space-efficient s-e-prop))
-                (set-space-efficient-property-ref! s-e-prop wrapped)
+                   impersonator-prop:collapsible c-c-prop))
+                (set-collapsible-property-ref! c-c-prop wrapped)
                 wrapped])])))
       (values
        late-neg-proj
-       s-e-vector))))
+       c-c-vector))))
 
 (define-values (prop:neg-blame-party prop:neg-blame-party? prop:neg-blame-party-get)
   (make-impersonator-property 'prop:neg-blame-party))
@@ -324,7 +323,7 @@
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
-   #:space-efficient-late-neg-projection (vectorof-space-efficient-late-neg-ho-projection #t)
+   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #t)
    #:can-cache? can-cache-vectorof?))
 
 (define-struct (impersonator-vectorof base-vectorof) ()
@@ -335,7 +334,7 @@
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
-   #:space-efficient-late-neg-projection (vectorof-space-efficient-late-neg-ho-projection #f)
+   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #f)
    #:can-cache? can-cache-vectorof?))
 
 (define-syntax (wrap-vectorof stx)
@@ -490,7 +489,7 @@
            (p e neg-party))
          val)))))
 
-(define (vector/c-space-efficient-late-neg-ho-projection chap-not-imp?)
+(define (vector/c-collapsible-late-neg-ho-projection chap-not-imp?)
   (define vector-wrapper (if chap-not-imp? chaperone-vector impersonate-vector))
   (λ (ctc)
     (define elem-ctcs (base-vector/c-elems ctc))
@@ -498,31 +497,31 @@
     (define elems-length (length elem-ctcs))
     (define selnps
       (for/list ([elem-ctc (in-list elem-ctcs)])
-        (get/build-space-efficient-late-neg-projection elem-ctc)))
+        (get/build-collapsible-late-neg-projection elem-ctc)))
     (λ (blame)
-      (define-values (filled? maybe-elem-pos-projs maybe-s-e-poss maybe-elem-neg-projs maybe-s-e-negs)
+      (define-values (filled? maybe-elem-pos-projs maybe-c-c-poss maybe-elem-neg-projs maybe-c-c-negs)
         (contract-pos/neg-doubling.2
          (let ()
            (define elem-pos-projs (make-vector elems-length #f))
-           (define elem-s-e-poss (make-vector elems-length #f))
+           (define elem-c-c-poss (make-vector elems-length #f))
            (for ([selnp (in-list selnps)]
                  [i (in-naturals)])
              (define pos-blame (blame-add-context blame (nth-element-of i)))
-             (define-values (elem-pos-proj elem-s-e-pos) (selnp pos-blame))
+             (define-values (elem-pos-proj elem-c-c-pos) (selnp pos-blame))
              (vector-set! elem-pos-projs i elem-pos-proj)
-             (vector-set! elem-s-e-poss i elem-s-e-pos))
-           (values elem-pos-projs elem-s-e-poss))
+             (vector-set! elem-c-c-poss i elem-c-c-pos))
+           (values elem-pos-projs elem-c-c-poss))
          (let ()
            (define elem-neg-projs (make-vector elems-length #f))
-           (define elem-s-e-negs (make-vector elems-length #f))
+           (define elem-c-c-negs (make-vector elems-length #f))
            (for ([selnp (in-list selnps)]
                  [i (in-naturals)])
              (define neg-blame (blame-add-context blame (nth-element-of i)
                                                   #:swap? #t))
-             (define-values (elem-neg-proj elem-s-e-neg) (selnp neg-blame))
+             (define-values (elem-neg-proj elem-c-c-neg) (selnp neg-blame))
              (vector-set! elem-neg-projs i elem-neg-proj)
-             (vector-set! elem-s-e-negs i elem-s-e-neg))
-           (values elem-neg-projs elem-s-e-negs))))
+             (vector-set! elem-c-c-negs i elem-c-c-neg))
+           (values elem-neg-projs elem-c-c-negs))))
 
       (define-values (fetch-tc-pos fetch-tc-neg)
         (cond
@@ -534,26 +533,26 @@
                      (cond
                        [(thread-cell-ref tc-pos) => values]
                        [else
-                        (define-values (elem-pos-projs maybe-s-e-pos) (maybe-elem-pos-projs))
-                        (define pr (cons elem-pos-projs maybe-s-e-pos))
+                        (define-values (elem-pos-projs maybe-c-c-pos) (maybe-elem-pos-projs))
+                        (define pr (cons elem-pos-projs maybe-c-c-pos))
                         (thread-cell-set! tc-pos pr)
                         pr]))
                    (λ ()
                      (cond
                        [(thread-cell-ref tc-neg) => values]
                        [else
-                        (define-values (elem-neg-projs maybe-s-e-neg) (maybe-elem-neg-projs))
-                        (define pr (cons elem-neg-projs maybe-s-e-neg))
+                        (define-values (elem-neg-projs maybe-c-c-neg) (maybe-elem-neg-projs))
+                        (define pr (cons elem-neg-projs maybe-c-c-neg))
                         (thread-cell-set! tc-neg pr)
                         pr])))]))
-      (define s-e-vector
+      (define c-c-vector
         (cond
           [filled?
-           (build-s-e-vector maybe-s-e-poss maybe-s-e-negs ctc blame chap-not-imp?)]
+           (build-collapsible-vector maybe-c-c-poss maybe-c-c-negs ctc blame chap-not-imp?)]
           [else
-           (build-doubling-s-e-vector (λ () (cdr (fetch-tc-pos)))
-                                      (λ () (cdr (fetch-tc-neg)))
-                                      ctc blame chap-not-imp?)]))
+           (build-doubling-collapsible-vector (λ () (cdr (fetch-tc-pos)))
+                                              (λ () (cdr (fetch-tc-neg)))
+                                              ctc blame chap-not-imp?)]))
 
       (define chaperone-get-proc
         (cond
@@ -588,15 +587,15 @@
       
       (define late-neg-proj
         (λ (val neg-party)
-          (define old-s-e-prop (get-impersonator-prop:space-efficient val #f))
-          (define safe-for-s-e
-            (if old-s-e-prop
-                (and (space-efficient-property? old-s-e-prop)
-                     (eq? (space-efficient-property-ref old-s-e-prop) val))
+          (define old-c-c-prop (get-impersonator-prop:collapsible val #f))
+          (define safe-for-c-c
+            (if old-c-c-prop
+                (and (collapsible-property? old-c-c-prop)
+                     (eq? (collapsible-property-ref old-c-c-prop) val))
                 (not (impersonator? val))))
           (define wrapper-count
-            (if (space-efficient-count-property? old-s-e-prop)
-                (space-efficient-count-property-count old-s-e-prop)
+            (if (collapsible-count-property? old-c-c-prop)
+                (collapsible-count-property-count old-c-c-prop)
                 0))
           (check-vector/c val blame immutable elems-length neg-party)
           (define blame+neg-party (cons blame neg-party))
@@ -610,49 +609,49 @@
                     (for/list ([i (in-naturals)]
                                [elem-val (in-vector val)])
                       ((vector-ref elem-pos-projs i) elem-val neg-party)))]
-            [(not safe-for-s-e)
+            [(not safe-for-c-c)
              (vector-wrapper
               val
               (chaperone-get-proc neg-party blame+neg-party)
               (chaperone-set-proc neg-party blame+neg-party)
-              ;; TODO: should this be a space-efficient property instead??
+              ;; TODO: should this be a collapsible property instead??
               impersonator-prop:contracted ctc
               impersonator-prop:blame blame+neg-party)]
-            [(wrapper-count . >= . SPACE-EFFICIENT-LIMIT)
-             (vector-enter-space-efficient-mode/collapse
-              s-e-vector
+            [(wrapper-count . >= . COLLAPSIBLE-LIMIT)
+             (vector-enter-collapsible-mode/collapse
+              c-c-vector
               val
               neg-party
-              old-s-e-prop
+              old-c-c-prop
               chap-not-imp?)]
-            [(space-efficient-wrapper-property? old-s-e-prop)
-             (vector-enter-space-efficient-mode/continue
-              s-e-vector
+            [(collapsible-wrapper-property? old-c-c-prop)
+             (vector-enter-collapsible-mode/continue
+              c-c-vector
               val
               neg-party
-              (space-efficient-property-s-e old-s-e-prop)
-              (space-efficient-property-neg-party old-s-e-prop)
-              (space-efficient-wrapper-property-checking-wrapper old-s-e-prop)
+              (collapsible-property-c-c old-c-c-prop)
+              (collapsible-property-neg-party old-c-c-prop)
+              (collapsible-wrapper-property-checking-wrapper old-c-c-prop)
               chap-not-imp?)]
             [else
-             (define s-e-prop
-               (space-efficient-count-property
-                s-e-vector
+             (define c-c-prop
+               (collapsible-count-property
+                c-c-vector
                 neg-party
                 #f
                 (add1 wrapper-count)
-                (or old-s-e-prop val)))
+                (or old-c-c-prop val)))
              (define wrapped
                (vector-wrapper
                 val
                 (chaperone-get-proc neg-party blame+neg-party)
                 (chaperone-set-proc neg-party blame+neg-party)
-                impersonator-prop:space-efficient s-e-prop))
-             (set-space-efficient-property-ref! s-e-prop wrapped)
+                impersonator-prop:collapsible c-c-prop))
+             (set-collapsible-property-ref! c-c-prop wrapped)
              wrapped])))
       (values
        late-neg-proj
-       s-e-vector))))
+       c-c-vector))))
 
 (define-struct (chaperone-vector/c base-vector/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -662,7 +661,7 @@
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
    #:can-cache? can-cache-vector/c?
-   #:space-efficient-late-neg-projection (vector/c-space-efficient-late-neg-ho-projection #t)
+   #:collapsible-late-neg-projection (vector/c-collapsible-late-neg-ho-projection #t)
    #:equivalent vector/c-equivalent))
 
 (define-struct (impersonator-vector/c base-vector/c) ()
@@ -673,7 +672,7 @@
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
    #:can-cache? can-cache-vector/c?
-   #:space-efficient-late-neg-projection (vector/c-space-efficient-late-neg-ho-projection #f)
+   #:collapsible-late-neg-projection (vector/c-collapsible-late-neg-ho-projection #f)
    #:equivalent vector/c-equivalent))
 
 (define-syntax (wrap-vector/c stx)
