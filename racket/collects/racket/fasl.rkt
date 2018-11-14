@@ -122,6 +122,9 @@
       [(vector? v)
        (for ([e (in-vector v)])
          (loop e))]
+      [(hash? v)
+       (for ([(k v) (in-hash v)])
+         (loop k) (loop v))]
       [(box? v)
        (loop (unbox v))]
       [(prefab-struct-key v)
