@@ -54,6 +54,14 @@
   (test #t eq? u (car s-exp))
   (test #t eq? u (cadr s-exp)))
 
+
+(let* ([u (string->uninterned-symbol "unread")])
+  (define vs-exp (vector-ref (fasl->s-exp (s-exp->fasl (vector (cons u u)))) 0))
+  ;; these are not `eq?` to the original symbol, but are `eq? to each other
+  (test #t eq? (car vs-exp) (cdr vs-exp))
+  (define hs-exp (hash-ref (fasl->s-exp (s-exp->fasl (hasheq 0 (cons u u)))) 0))
+  (test #t eq? (car hs-exp) (cdr hs-exp)))
+
 ;; check uses datum-intern-literal:
 (test #t eq? "hello" (fasl->s-exp (s-exp->fasl "hello")))
 (test #t eq? #"hello" (fasl->s-exp (s-exp->fasl #"hello")))
