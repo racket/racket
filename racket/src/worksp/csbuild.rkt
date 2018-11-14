@@ -83,7 +83,7 @@
             (build-path scheme-dir "nanopass"))
      (clone (format "~astex/.git" extra-repos-base)
             (build-path scheme-dir "stex"))
-     (clone (format "~aglib/.git" extra-repos-base)
+     (clone (format "~azlib/.git" extra-repos-base)
             (build-path scheme-dir "zlib"))]
     [else
      (clone "https://github.com/mflatt/ChezScheme"
