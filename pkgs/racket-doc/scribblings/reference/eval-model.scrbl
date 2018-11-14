@@ -179,7 +179,7 @@ Each evaluation step, then, transforms the current set of definitions and
 program into a new set of definitions and program. Before a
 @racket[define] can be moved into the set of definitions, its
 expression (i.e., its right-hand side) must be reduced to a @tech{value}.
-(The left-hand side is not evaluated.)
+(The left-hand side is not an expression position, and so it is not evaluated.)
 
 @prog-steps/no-obj[
 [{}
@@ -414,8 +414,8 @@ changed, the value cannot be substituted for @racket[x] when
 the procedure is first applied.
 
 @margin-note{We do not use the term ``parameter variable'' to refer to
-the parameter variable names declared with a function. This is to avoid
-confusion with Parameters (see @secref["parameter-model"]).}
+the argument variable names declared with a function. This choice avoids
+confusion with @tech{parameters}.}
 
 Instead, a new @deftech{location} is created for each @tech{variable}
 on each application. The argument @tech{value} is placed in the
@@ -556,9 +556,11 @@ module-specific prefix).
 @;------------------------------------------------------------------------
 @subsection[#:tag "module-phase"]{Phases}
 
+@guidealso["phases"]
+
 The purpose of @deftech{phases} is to
 address the necessary separation of names defined at execution time versus
-names defined at expansion time. See Section @secref["phases"] in the Guide.
+names defined at expansion time.
 
 A module can be @tech{instantiate}d in multiple @tech{phases}. A
 phase is an integer that, like a module name, is effectively a prefix on the names
