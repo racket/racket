@@ -39,7 +39,7 @@ const char *get_framework_path() {
   for (i = 0; i < c; i++) {
     s = _dyld_get_image_name(i);
     len = strlen(s);
-    if ((len > 9) && !strcmp("CS/Racket", s + len - 9)) {
+    if ((len > 7) && !strcmp("/Racket", s + len - 7)) {
       char *s2;
       s2 = strdup(s);
       strcpy(s2 + len - 6, "boot");
