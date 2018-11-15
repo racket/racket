@@ -73,6 +73,13 @@
 (test #f eq? #rx#"hello" (fasl->s-exp (s-exp->fasl #rx#"hello") #:datum-intern? #f))
 (test #f eq? #px#"hello" (fasl->s-exp (s-exp->fasl #px#"hello") #:datum-intern? #f))
 
+(let* ([r1 #rx"[/\u5C][. ]+ap"]
+       [r2 #px"[/\u5C][. ]+ap"]
+       [r3 #px#"[\\][. ]+ap*"])
+  (test #t equal? r1 (fasl->s-exp (s-exp->fasl r1) #:datum-intern? #f))
+  (test #t equal? r2 (fasl->s-exp (s-exp->fasl r2) #:datum-intern? #f))
+  (test #t equal? r3 (fasl->s-exp (s-exp->fasl r3) #:datum-intern? #f)))
+
 (define (check-hash make-hash hash)
   (let ([mut (make-hash)]
         [immut (hash 'one 2 'three 4)])
