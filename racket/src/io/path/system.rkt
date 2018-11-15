@@ -4,7 +4,9 @@
          "../host/rktio.rkt"
          "../host/error.rkt"
          "../security/main.rkt"
-         "path.rkt")
+         "../file/host.rkt"
+         "path.rkt"
+         "directory-path.rkt")
 
 (provide find-system-path
          set-exec-file!
@@ -24,7 +26,7 @@
                                         (string->path "../etc"))]
       [(collects-dir host-collects-dir) (or collects-dir
                                             (string->path "../collects"))]
-      [(orig-dir) (string->path (|#%app| current-directory))]
+      [(orig-dir) orig-dir]
       [(temp-dir) (rktio-system-path who RKTIO_PATH_TEMP_DIR)]
       [(sys-dir) (rktio-system-path who RKTIO_PATH_SYS_DIR)]
       [(pref-dir) (rktio-system-path who RKTIO_PATH_PREF_DIR)]
@@ -51,6 +53,9 @@
 
 (define run-file #f)
 (define (set-run-file! p) (set! run-file p))
+
+(define orig-dir (path->directory-path
+                  (host-> (rktio_to_bytes (rktio_get_current_directory rktio)))))
 
 (define collects-dir #f)
 (define (set-collects-dir! p) (set! collects-dir p))

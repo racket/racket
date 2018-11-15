@@ -12,7 +12,7 @@
                   [current-directory host:current-directory]
                   [path->string host:path->string]))
 
-(current-directory (host:path->string (host:current-directory)))
+(current-directory (find-system-path 'orig-dir))
 (set-string->number?! string->number)
 
 (define-syntax-rule (test expect rhs)
