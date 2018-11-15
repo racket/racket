@@ -1,12 +1,23 @@
 #lang racket/base
 (require (for-syntax racket/base)
          "private/truncate-path.rkt"
-         "private/relative-path.rkt")
+         "private/relative-path.rkt"
+         (rename-in racket/base
+                    [write-byte r:write-byte]
+                    [write-bytes r:write-bytes]))
 
 (provide s-exp->fasl
          fasl->s-exp)
 
 ;; ----------------------------------------
+
+;; These wrappers are to make it harder to misuse write-byte(s)
+;; (e.g. calling without the port)
+(define (write-byte byte out)
+  (r:write-byte byte out))
+
+(define (write-bytes bstr out [start-pos 0] [end-pos (bytes-length bstr)])
+  (r:write-bytes bstr out start-pos end-pos))
 
 (define-for-syntax constants (make-hasheq))
 
@@ -288,10 +299,10 @@
            (write-fasl-integer (hash-count v) o)
            (hash-for-each v (lambda (k v) (loop k) (loop v)) #t)]
           [(regexp? v)
-           (write-byte (if (pregexp? v) fasl-pregexp-type fasl-regexp-type))
+           (write-byte (if (pregexp? v) fasl-pregexp-type fasl-regexp-type) o)
            (write-fasl-string (object-name v) o)]
           [(byte-regexp? v)
-           (write-byte (if (byte-pregexp? v) fasl-byte-pregexp-type fasl-byte-regexp-type))
+           (write-byte (if (byte-pregexp? v) fasl-byte-pregexp-type fasl-byte-regexp-type) o)
            (write-fasl-bytes (object-name v) o)]
           [else
            (raise-arguments-error 'fasl-write
