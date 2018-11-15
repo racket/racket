@@ -57,13 +57,16 @@
      (with-syntax ([n-args (length #'(rand ...))])
        #'((extract-procedure rator n-args) rand ...))]))
 
-(define (|#%call-with-values| generator receiver)
-  (call-with-values (if (#%procedure? generator)
-                        generator
-                        (lambda () (|#%app| generator)))
-    (if (#%procedure? receiver)
-        receiver
-        (lambda args (apply receiver args)))))
+(define |#%call-with-values|
+  (|#%name|
+   call-with-values
+   (lambda (generator receiver)
+     (call-with-values (if (#%procedure? generator)
+                           generator
+                           (lambda () (|#%app| generator)))
+       (if (#%procedure? receiver)
+           receiver
+           (lambda args (apply receiver args)))))))
 
 (define (extract-procedure f n-args)
   (cond

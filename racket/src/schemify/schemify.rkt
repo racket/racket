@@ -650,6 +650,8 @@
               (cond
                 [(not (symbol? u-v))
                  v]
+                [(eq? u-v 'call-with-values)
+                 '#%call-with-values]
                 [(and (via-variable-mutated-state? (hash-ref mutated u-v #f))
                       (hash-ref exports u-v #f))
                  => (lambda (ex) `(variable-ref ,(export-id ex)))]
