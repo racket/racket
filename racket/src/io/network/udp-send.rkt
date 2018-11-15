@@ -76,7 +76,7 @@
   (check who string? hostname)
   (check who port-number? port-no)
   (check-bstr who bstr start end)
-  (security-guard-check-network who hostname port-no #t))
+  (security-guard-check-network who hostname port-no 'client))
 
 ;; ----------------------------------------
 

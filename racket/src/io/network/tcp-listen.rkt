@@ -33,7 +33,7 @@
                                             (format "\n  hostname: ~a" hostname)
                                             "")
                                         (format "\n  port number: ~a" port-no))))
-  (security-guard-check-network who hostname port-no #f)
+  (security-guard-check-network who hostname port-no 'server)
   (let loop ([family RKTIO_FAMILY_ANY])
     ((atomically
       ;; Result is a thunk that might call `loop`

@@ -32,7 +32,7 @@
 (define/who (udp-open-socket [family-hostname #f] [family-port-no #f])
   (check who string? #:or-false family-hostname)
   (check who port-number? #:or-false family-port-no)
-  (security-guard-check-network who family-hostname family-port-no #f)
+  (security-guard-check-network who family-hostname family-port-no 'server)
   (atomically
    (call-with-resolved-address
     #:who who
@@ -65,7 +65,7 @@
   (check who udp? u)
   (check who string? #:or-false hostname)
   (check who listen-port-number? port-no)
-  (security-guard-check-network who hostname port-no #f)
+  (security-guard-check-network who hostname port-no 'server)
   (atomically
    (call-with-resolved-address
     #:who who
@@ -96,7 +96,7 @@
                            "last second and third arguments must be both #f or both non-#f"
                            "second argument" hostname
                            "third argument" port-no))
-  (security-guard-check-network who hostname port-no #t)
+  (security-guard-check-network who hostname port-no 'client)
   (atomically
    (cond
      [(not hostname)

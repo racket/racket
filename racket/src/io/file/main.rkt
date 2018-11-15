@@ -342,7 +342,7 @@
                                         "")
                                     (host-> path-host)))))
 
-(define/who (resolve-path p)
+(define (do-resolve-path p who)
   (check who path-string? p)
   (define host-path (->host (path->path-without-trailing-separator (->path p)) who '(exists)))
   (start-atomic)
@@ -362,6 +362,14 @@
        [(equal? new-path p) p]
        [else new-path])]
     [else (host-> r)]))
+
+(define/who (resolve-path p)
+  (do-resolve-path p who))
+
+(module+ for-simplify
+  (provide resolve-path-for-simplify)
+  (define (resolve-path-for-simplify p)
+    (do-resolve-path p 'simplify-path)))
 
 (define/who (expand-user-path p)
   (check who path-string? p)

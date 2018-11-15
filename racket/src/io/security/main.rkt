@@ -78,12 +78,17 @@
       ((security-guard-link-guard sg) check-who path dest)
       (loop (security-guard-parent sg)))))
 
-(define/who (security-guard-check-network check-who given-host port client?)
+(define/who (security-guard-check-network check-who given-host port mode)
   (check who symbol? check-who)
   (check who string? #:or-false given-host)
   (check who listen-port-number? #:or-false port)
+  (check who (lambda (s)
+               (or (eq? s 'client)
+                   (eq? s 'server)))
+         #:contract "(or/c 'client 'server)"
+         mode)
   (define host (and given-host (string->immutable-string given-host)))
   (let loop ([sg (current-security-guard)])
     (when sg
-      ((security-guard-network-guard sg) check-who host port  (if client? 'client 'server))
+      ((security-guard-network-guard sg) check-who host port mode)
       (loop (security-guard-parent sg)))))

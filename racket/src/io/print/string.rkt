@@ -50,9 +50,9 @@
                   (cond
                    [(n . <= . #xFFFF)
                     (let ([max-length (write-bytes/max #"\\u" o max-length)])
-                      (write-string/max (pad 4 (number->string n 16)) o max-length))]
+                      (write-string/max (pad 4 (string-upcase (number->string n 16))) o max-length))]
                    [else
                     (let ([max-length (write-bytes/max #"\\U" o max-length)])
-                      (write-string/max (pad 8 (number->string n 16)) o max-length))])]
+                      (write-string/max (pad 8 (string-upcase (number->string n 16))) o max-length))])]
                  [i (add1 i)])
             (loop i i max-length))])]))))
