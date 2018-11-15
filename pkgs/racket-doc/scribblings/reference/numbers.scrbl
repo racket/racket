@@ -709,14 +709,18 @@ In the two-argument case, the result is roughly the same as @racket[
 
 @defproc[(make-rectangular [x real?] [y real?]) number?]{
 
-Returns @racket[(+ x (* y 0+1i))].
+Creates a complex number with @racket[x] as the real part
+and @racket[y] as the imaginary part. That is, returns @racket[(+ x (* y 0+1i))].
 
 @mz-examples[(make-rectangular 3 4.0)]}
 
 
 @defproc[(make-polar [magnitude real?] [angle real?]) number?]{
 
-Returns @racket[(+ (* magnitude (cos angle)) (* magnitude (sin angle)
+Creates a complex number which, if thought of as a point,
+is @racket[magnitude] away from the origin and is rotated
+@racket[angle] radians counter clockwise from the positive x-axis.
+That is, returns @racket[(+ (* magnitude (cos angle)) (* magnitude (sin angle)
  0+1i))].
 
 @mz-examples[#:eval math-eval
