@@ -23,6 +23,7 @@
          "machine/main.rkt"
          "run/main.rkt"
          "port/parameter.rkt"
+         "path/system.rkt"
          (only-in "host/rktio.rkt"
                   rktio-place-init!)
          "port/place.rkt")
@@ -56,6 +57,7 @@
   (sandman-place-init!)
   (rktio-place-init!)
   (logger-init!)
+  (init-current-directory!)
   (init-current-ports! in-fd out-fd err-fd cust plumber))
 
 (module main racket/base)

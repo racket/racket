@@ -6,6 +6,7 @@
          "../security/main.rkt"
          "../file/host.rkt"
          "path.rkt"
+         "parameter.rkt"
          "directory-path.rkt")
 
 (provide find-system-path
@@ -13,7 +14,9 @@
          set-run-file!
          set-collects-dir!
          set-config-dir!
-         set-addon-dir!)
+         set-addon-dir!
+
+         init-current-directory!)
 
 (define/who (find-system-path key)
   (begin0
@@ -78,3 +81,9 @@
      (rktio_free s)
      (end-atomic)
      (path bstr (system-path-convention-type))]))
+
+(define (init-current-directory!)
+  (current-directory orig-dir)
+  (current-directory-for-user orig-dir))
+
+(void (init-current-directory!))
