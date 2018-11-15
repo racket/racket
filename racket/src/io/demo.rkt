@@ -15,9 +15,6 @@
 (current-directory (host:path->string (host:current-directory)))
 (set-string->number?! string->number)
 
-(get-machine-info)
-(exit)
-
 (define-syntax-rule (test expect rhs)
   (let ([e expect]
         [v rhs])
@@ -685,6 +682,9 @@
 (define-values (ti to) (tcp-connect "localhost" 59078))
 (test l (sync l))
 (define-values (tai tao) (tcp-accept l))
+
+(test #f (file-stream-port? i))
+(test #f (file-stream-port? o))
 
 (test 6 (write-string "hello\n" to))
 (flush-output to)

@@ -24,8 +24,9 @@
          fd-port-fd
          maybe-fd-data-extra)
 
-(struct fd-data (fd extra input?)
-  #:property prop:file-stream (lambda (fdd) (fd-data-fd fdd))
+(struct fd-data (fd extra input? file-stream?)
+  #:property prop:file-stream (lambda (fdd) (and (fd-data-file-stream? fdd)
+                                                 (fd-data-fd fdd)))
   #:property prop:data-place-message (lambda (port)
                                        (lambda ()
                                          (fd-port->place-message port))))
@@ -62,11 +63,12 @@
                        #:on-close [on-close void]
                        #:fd-refcount [fd-refcount (box 1)]
                        #:custodian [cust (current-custodian)]
+                       #:file-stream? [file-stream? #t]
 		       #:network-error? [network-error? #f])
   (define-values (port buffer-control)
     (open-input-peek-via-read
      #:name name
-     #:data (fd-data fd extra-data #t)
+     #:data (fd-data fd extra-data #t file-stream?)
      #:read-in
      ;; in atomic mode
      (lambda (dest-bstr start end copy?)
@@ -108,6 +110,7 @@
                         #:on-close [on-close void]
                         #:plumber [plumber (current-plumber)]
                         #:custodian [cust (current-custodian)]
+                        #:file-stream? [file-stream? #t]
 			#:network-error? [network-error? #f])
   (define buffer (make-bytes 4096))
   (define buffer-start 0)
@@ -175,7 +178,7 @@
   (define port
     (make-core-output-port
      #:name name
-     #:data (fd-output-data fd extra-data #f
+     #:data (fd-output-data fd extra-data #f file-stream?
                             ;; Flush function needed for `file-truncate`:
                             (lambda ()
                               (atomically

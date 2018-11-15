@@ -7,12 +7,12 @@
          file-stream-ref
          file-stream-port?)
 
-;; Property value should be a funciton that returns a file descriptor
+;; Property value should be a function that returns a file descriptor
 (define-values (prop:file-stream file-stream? file-stream-ref)
   (make-struct-type-property 'file-stream))
 
 (define (file-stream-port? p)
-  (file-stream?
+  (file-stream-ref
    (core-port-data
     (cond
       [(input-port? p) (->core-input-port p)]
@@ -20,4 +20,5 @@
       [else
        (raise-argument-error 'file-stream-port?
                              "port?"
-                             p)]))))
+                             p)]))
+   #f))
