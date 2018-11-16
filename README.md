@@ -15,9 +15,6 @@ the IRC channel.
 License
 -------
 
-Racket
-Copyright (c) 2010-2018 PLT Design Inc.
-
 Racket is distributed under the GNU Lesser General Public License
 (LGPL).  This implies that you may link Racket into proprietary
 applications, provided you follow the rules stated in the LGPL.  You can

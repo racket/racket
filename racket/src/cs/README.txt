@@ -1,49 +1,179 @@
-If you just want to build the variant of Racket that runs on Chez
-Scheme, then you probably meant to read "./c/README.txt" instead of
-this file.
+The implementation of Racket on Chez Scheme in this directory is
+organized into two layers:
 
-If you're working on the implementation of Racket-on-Chez, then it's
-more convenient to work in this directory, so keep reading here.
+ * The immediate directory contains Scheme sources to implement Racket
+   functionality on top of Chez Scheme. It references sibling
+   directories like "expander" and "io", which contain Racket code
+   that is compiled to Chez Scheme to implement Racket.
+
+ * The "c" subdirectory contains C sources and build scripts to create
+   wrapper executables that combine Chez Scheme with the Racket
+   functionality implemented in this immediate directory.
 
 
-Requirements
-------------
+========================================================================
+ Requirements
+========================================================================
 
- * Chez Scheme --- for now, use a fork at
+Building Racket-on-Chez requires both an existing Racket build and
+Chez Scheme build.
 
-      https://github.com/mflatt/ChezScheme
+The existing Racket must be "new enough" to build the current
+Racket-on-Chez version. In the worst case, it must be exactly the same
+version (using the traditional Racket implementation) as the one
+you're trying to build.
 
-   but we will eventually return to the current development version
-   from
+When you use `configure --enable-cs` or similar as described in
+"../README.txt", then a bootstrapping variant of Racket is built
+automatically. You can select a different Racket excutable by
+supplying `--enable-racket=...` to `configure`.
 
-      https://github.com/cisco/ChezScheme
+The Chez Scheme build must also be sufficiently new. See
+"../README.txt" for information on obtaining Chez Scheme.
 
-   If this build of Chez Scheme is not installed so that plain
-   `scheme` on the command line runs your installation, you can use
-   `make SCHEME=...` to set the command for `scheme`.
 
- * Racket --- a recent version
+========================================================================
+ Development versus Build
+========================================================================
 
-   By default, `make` will use the enclosing Racket build. Go back to
-   the root of this repository/distribution and build so that at least
-   the "compiler-lib" package is installed, either with just `make`
-   (for a full build) or with
+The Racket-on-Chez implementation can be built and run in two
+different ways: development mode for running directly using a Chez
+Scheme installation, and build mode for creating a `racket` or
+`racketcs` executable that combines Chez Scheme and Racket
+functionality into a single executable.
+
+Development Mode
+----------------
+
+The makefile in this directory is set up for modifying the
+implementation of Racket functionality and testing it out on a Chez
+Scheme installation.
+
+For this development mode, either Chez Scheme needs to be installed as
+`scheme`, or you must use `make SCHEME=...` to set the command for
+`scheme`.
+
+Development mode also needs a Racket installation with at least the
+"compiler-lib" package installed. By default, the makefile looks for
+Racket installed as "../../bin/racket"; if this directory is in a
+clone of the Git repository for Racket, you can get "../../bin/racket"
+with
 
       make PKGS="compiler-lib"
 
-   Note that if you build as described in "./c/README.txt", then you
-   don't need the "compiler-lib" package.
+in the clone's root directory. Alternatively, use use `make
+RACKET=...` to set the command for `racket`.
 
-   If you'd like to use an existing installation of Racket, instead,
-   you can use `make RACKET=...` to set the command for `racket`.
+The use of development mode is described in more detail further below.
 
+Development mode currently doesn't work on Windows, because the
+makefile makes too many Unix-ish assuptions.
+
+Build Mode
+----------
+
+To build a Racket-on-Chez executable, the `configure` script and
+makefile in "c" subdirectory are normally used via `configure` and
+`make` in the parent directory of this one, as described in
+"../README.txt". However, you can use them directly with something
+like
+
+   cd [build]
+   mkdir cs
+   cd cs
+   [here]/c/configure
+   make
+   make install
+
+where [here] is the directory containing this "README.txt" and [build]
+is a build directory (usually "../build" relative to [here]).
+
+The `configure` script accepts flags like `--enable-racket=...` and
+`--enable-scheme=...` to select an existing Racket and a Chez Scheme
+build directory to use for building Racket-on-Chez:
+
+ * By default, the build uses Racket as "[build]/racket/racket3m" and
+   bootstraps bytecode from "[here]/../../collects".
+
+   If you supply `--enable-racket=...` to specify a Racket executable,
+   then it must be part of a (minimal) installation.
+
+ * By default, the build looks for a Chez Scheme build directory as
+   "build/ChezScheme".
+
+   Building Racket-on-Chez requires a Chez Scheme build directory, not
+   just a Chez Scheme installation that is accessible as `scheme`.
+
+The resulting Racket-on-Chez executable has the suffix "cs". To
+generate an executable without the "cs" suffix, supply
+`--enable-csdefault` to `configure`. The precense or absence of "cs"
+affects the location of ".zo" files.
+
+Compilation on Windows does not use the `configure` script in "c".
+Instead, from the directory "[here]\..\worksp", run "csbuild.rkt"
+using an installed (minimal) Racket --- perhaps one created by running
+"[here]\..\build.bat". The "csbuild.rkt" script puts intermediate
+files in "[here]\..\build", including a Chez Scheme checkout if it's
+not already present (in which case `git` must be available).
+
+
+========================================================================
+ Machine Code versus JIT
+========================================================================
+
+Racket-on-Chez currently supports two compilation modes:
+
+ * Machine-code mode --- The compiled form of a module is machine code
+   generated by compiling either whole linklets (for small enough
+   linklets) or functions within linklets (with a "bytecode"
+   interpreter around the compiled parts).
+
+   Select this mode by seting the `PLT_CS_MACH` environment variable,
+   but it's currently the default.
+
+   In development mode or when the "cs" suffix is used for build mode,
+   compiled ".zo" files in this mode are written to a subdirectory of
+   "compiled" using the Chez Scheme platform name (e.g., "a6osx").
+
+   Set `PLT_CS_COMPILE_LIMIT` to set the maximum size of forms to
+   compile before falling back to interpreted "bytecode". The default
+   is 10000.
+
+ * JIT mode --- The compiled form of a module is an S-expression where
+   individual `lambda`s are compiled on demand.
+
+   Select this mode by seting the `PLT_CS_JIT` environment variable.
+
+   In development mode or when the "cs" suffix is used for build mode,
+   compiled ".zo" files in this mode are written to a "cs"
+   subdirectory of "compiled".
+
+   S-expressions fragments are hashed at compilation time, so that the
+   hash for each fragment is stored in the ".zo" file. At JIT time,
+   the hash is used to consult and/or update a cache (implemented as
+   an SQLite database) of machine-code forms. Set the `PLT_JIT_CACHE`
+   environment variable to change the cache file, or set the
+   environment variable to empty to disable the cache.
+
+In development mode or when the "cs" suffix is used for build mode,
+set the `PLT_ZO_PATH` environment variable to override the path used
+for ".zo" files. For example, you may want to preserve a normal build
+while also building in machine-code mode with `PLT_CS_DEBUG` set, in
+which case setting `PLT_ZO_PATH` to something like "a6osx-debug" could
+be a good idea.
+
+
+========================================================================
+ Development Mode
+========================================================================
+
+Development mode is driven by the makefile in this directory.
 
 Building
 --------
 
-Running `make` will build the Racket-on-Chez implementation, although
-not in stand-alone form. Use `make expander-demo` to run a demo that
-loads `racket/base` from source.
+Running `make` will build the Racket-on-Chez implementation. Use `make
+expander-demo` to run a demo that loads `racket/base` from source.
 
 Use `make setup` (or `make setup-v` for a verbose version) to build
 ".zo" files for collection-based libraries.
@@ -55,46 +185,6 @@ an `ARGS` variable to make, such as
    make setup ARGS="--clean -Dd"      # clears ".zo" files
    make setup ARGS="--fail-fast"      # stop at the first error
 
-
-Machine Code versus JIT
------------------------
-
-Racket on Chez Scheme currently supports two modes:
-
- * Machine-code mode --- The compiled form of a module is machine code
-    generated by compiling either whole linklets (for small enough
-    linklets) or functions within linklets (with a "bytecode"
-    interpreter around the compiled parts). Compiled ".zo" files in
-    this format are written to a subdirectory of "compiled" using the
-    Chez Scheme platform name (e.g., "a6osx").
-
-    Select this mode by seting the `PLT_CS_MACH` environment variable,
-    but it's currently the default.
-
-    Set `PLT_CS_COMPILE_LIMIT` to set the maximum size of forms to
-    compile before falling back to interpreted "bytecode". The default
-    is 10000.
-
- * JIT mode --- The compiled form of a module is an S-expression where
-    individual `lambda`s are compiled on demand. Compiled ".zo" files
-    in this format are written to a "cs" subdirectory of "compiled".
-
-    Select this mode by seting the `PLT_CS_JIT` environment variable.
-
-    S-expressions fragments are hashed at compilation time, so that
-    the hash for each fragment is stored in the ".zo" file. At JIT
-    time, the hash is used to consult and/or update a cache
-    (implemented as an SQLite database) of machine-code forms. Set the
-    `PLT_JIT_CACHE` environment variable to change the cache file, or
-    set the environment variable to empty to disable the cache.
-
-Set the `PLT_ZO_PATH` environment variable to override the path used
-for ".zo" files. For example, you may want to preserve a normal build
-while also building in machine-code mode with `PLT_CS_DEBUG` set, in
-which case setting `PLT_ZO_PATH` to something like "a6osx-debug" could
-be a good idea.
-
-
 Running
 -------
 
@@ -102,28 +192,22 @@ Use `make run ARGS="..."` to run Racket on Chez Scheme analogous to
 running plain `racket`, where command-line arguments are supplied in
 `ARGS`.
 
-
 Structure
 ---------
 
-The reimplementation on Chez Scheme is meant to export the same
-interface as the traditional Racket virtual machine in "../racket":
-the macro expander and primitive modules such as `#%kernel` and
-`#%network`.
-
-The implementation is in layers. The immediate layer over Chez Scheme
-is called "Rumble", and it implements delimited continuations,
-structures, chaperones and imperaontors, engines (for threads), and
-similar base functionality. The Rumble layer is implemeneted in Chez
-Scheme.
+The Racket-on-Chez implementation is in layers. The immediate layer
+over Chez Scheme is called "Rumble", and it implements delimited
+continuations, structures, chaperones and imperaontors, engines (for
+threads), and similar base functionality. The Rumble layer is
+implemented in Chez Scheme.
 
 The rest of the layers are implemented in Racket:
 
    thread
    io
    regexp
-   expander
    schemify
+   expander
 
 Each of those layers is implemented in a sibling directory of this
 one. Each layer is expanded (using "expander", of course) and then
@@ -193,7 +277,6 @@ Files in this directory:
          "demo/regexp.rkt". For example, you can run "demo/regexp.rkt"
          and compare the reported timing to "demo/regexp.ss".
 
-
 From Primitives to Modules
 --------------------------
 
@@ -209,13 +292,11 @@ example, "primitive/network.scm" defines the content of the
 Racket implementation in "../racket" provides those same primitive
 instances to the macro expander.
 
-
 Running "demo/expander.ss"
 --------------------------
 
 A `make expander-demo` builds and tries the expander on simple
 examples, including loading `racket/base` from source.
-
 
 Dumping Linklets and Schemified Linklets
 ----------------------------------------
@@ -240,9 +321,8 @@ compiled terms when a linklet is not compliled whole; set
 those compiled parts; and/or set `PLT_LINKLET_SHOW_POST_INTERP` to see
 the "bytecode" form.
 
-
-Development Mode
-----------------
+Safety and Debugging Mode
+-------------------------
 
 If you make changes to files in "rumble", you should turn off
 `[RUMBLE_]UNSAFE_COMP` in the makefile.
@@ -265,9 +345,11 @@ compatibility. Set `compile-as-independent?` to #t in "expander.sls"
 to make compiled Racket modules reliably compatible with changes to
 the layers here (at the expense of some performance).
 
-
 FFI Differences
 ---------------
+
+Compared to the traditional Racket implementation, Racket-on-Chez's
+FFI behaves in several different ways:
 
  * The `make-sized-byte-string` function always raises an exception,
    because a foreign address cannot be turned into a byte string whose
@@ -305,7 +387,6 @@ FFI Differences
  * Memory allocated with 'nonatomic works only in limited ways. It
    cannot be usefully passed to foreign functions, since the layout is
    not actually an array of pointers.
-
 
 Threads, Threads, Atomicity, Atomicity, and Atomicity
 -----------------------------------------------------
@@ -386,35 +467,20 @@ Status and Thoughts on Various Racket Subsystems
  * The Racket and Chez Scheme numeric systems likely differ in some
    ways, and I don't know how much work that will be.
 
- * Places are implemented as Chez Scheme threads. Possibly because a
-   GC is stop-the-world across all threads, however, this
-   implementation currently does not scale as much as the traditional
-   Racket implementation's places.
-
  * For futures, Chez Scheme exposes OS-level threads with limited
    safety guarantees. An implementation of futures can probably take
    advantage of threads with thread-unsafe primitives wrapped to
    divert to a barrier when called in a future.
 
- * GC-based memory accounting similarly seems to require new support,
-   but that can wait a while.
+ * GC-based memory accounting requires new support from Chez Scheme.
 
- * Extflonums will probably exist only on the Racket VM for a long
-   while.
-
- * For now, `make setup` builds platform-specific ".zo" files in a
-   subdirectory of "compiled" named by the Chez Scheme platform name
-   (e.g., "ta6osx"). Longer term, although bytecode as it currently
-   exists goes away, platform-independent ".zo" files might contain
-   fully expanded source (possibly also run through Chez Scheme's
-   source-to-source optimizer) with `raco setup` gaining a new step in
-   creating platform-specific compiled code.
-
+ * Extflonums will probably exist only on the traditional Racket
+   implementation for a long while.
 
 Performance Notes
 -----------------
 
-The best-case scenario for performance is current the default
+The best-case scenario for performance is currently the default
 configuration:
 
  * `UNSAFE_COMP` is enabled in "Makefile" --- currently on by default.
