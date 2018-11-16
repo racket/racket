@@ -62,7 +62,7 @@
   (define checksum-bytes (read-bytes* 8 in))
   (define type-byte (integer->char (read-byte in)))
   (define type (case type-byte
-                 [(#\0) 'file]
+                 [(#\0 #\nul) 'file]
                  [(#\1) 'hard-link]
                  [(#\2) 'link]
                  [(#\3) 'character-special]
