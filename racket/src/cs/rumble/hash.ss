@@ -282,6 +282,9 @@
     (check who hash? ht)
     (check who (procedure-arity-includes/c 2) proc)
     (cond
+     [try-order?
+      (for-each (lambda (p) (proc (car p) (cdr p)))
+                (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-for-each ht proc)]
      [else
       ;; mutable, impersonated, and weak-equal:
@@ -293,10 +296,14 @@
 
 (define/who hash-map
   (case-lambda
-   [(ht proc)
+   [(ht proc) (hash-map ht proc #f)]
+   [(ht proc try-order?)
     (check who hash? ht)
     (check who (procedure-arity-includes/c 2) proc)
     (cond
+     [try-order?
+      (map (lambda (p) (proc (car p) (cdr p)))
+           (try-sort-keys (hash-map ht cons)))]
      [(intmap? ht) (intmap-map ht proc)]
      [else
       ;; mutable, impersonated, and weak-equal:
@@ -306,9 +313,18 @@
             (cons
              (let-values ([(key val) (hash-iterate-key+value ht i)])
                (|#%app| proc key val))
-             (loop (hash-iterate-next ht i)))))])]
-   [(ht proc try-order?)
-    (hash-map ht proc)]))
+             (loop (hash-iterate-next ht i)))))])]))
+
+;; In sorted hash-table travesals, make some effort to sort the key.
+;; This attempt is useful for making hash-table traversals more
+;; deterministic, especially for marshaling operations.
+(define (try-sort-keys ps)
+  (cond
+   [(#%andmap (lambda (p) (symbol? (car p))) ps)
+    (#%list-sort (lambda (a b) (symbol<? (car a) (car b))) ps)]
+   [(#%andmap (lambda (p) (real? (car p))) ps)
+    (#%list-sort (lambda (a b) (< (car a) (car b))) ps)]
+   [else ps]))
 
 (define (hash-count ht)
   (cond
