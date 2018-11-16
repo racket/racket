@@ -9,7 +9,8 @@
   ;; If you update this list, then also update `immutable-regression-bstr`:
   `(0 #t #f ,(void) ,eof
       1 #\2 three "four" #"five" #:six #&7 #(8 9 10) (11 . 12) (13 14 . fifteen)
-      #hash((sixteen . 17) (18 . nineteen))
+      ;; Use only hash tables where the keys sort
+      #hash((sixteen . 17) (nineteen . 18))
       #hasheq((20 . "twenty-one") (22 . "twenty-three"))
       #hasheqv((24 . 25) (26 . 27))
       #s(twenty-eight 29 30 "31")
@@ -33,7 +34,7 @@
 
 ;; The fasl format is meant to be forward-compatible:
 (define immutables-regression-bstr
-  #"racket/fasl:\0\200\"\1\34$n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\200\16\bnineteen\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@\n\0\08B\34\6\16\6srcloc\23\1xopqr")
+  #"racket/fasl:\0\200\"\1\34$n\4\3\6\ao\r2\16\5three\23\4four\25\4five\21\3six\"u \3vwx\36yz\35\2{|\16\afifteen%\1\2\16\bnineteen\200\16\asixteen\177%\0\2\202\23\ntwenty-one\204\23\ftwenty-three%\2\2\206\207\210\211#\16\ftwenty-eight\3\213\214\23\00231\b\340\b\200\344\f\b\201\320\204\0\0\b\2010W\5\0\b\201\200\3566\0\b\201\200\300\r\26\b\202\0\374\371\330\b\0\0\0\b\202\0`v\363\263b\1\0\b\202\0\0\220\235\316\332\2027\b\203\25cd4a0619fb0907bc00000\t\0\0\0\0\0\200D@\t\315\314\314\314\314\314\20@\v\231\322\f\232\322\f\t\0\0\0\0\0\200F@\t\0\0\0\0\0\0Y@\n\0\08B\34\6\16\6srcloc\23\1xopqr")
 
 (for ([i (in-list immutables)])
   (test i fasl->s-exp (s-exp->fasl i)))

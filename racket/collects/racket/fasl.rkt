@@ -11,13 +11,16 @@
 
 ;; ----------------------------------------
 
-;; These wrappers are to make it harder to misuse write-byte(s)
+;; These wrappers are to make it harder to misuse write-byte[s]
 ;; (e.g. calling without the port)
+
 (define (write-byte byte out)
   (r:write-byte byte out))
 
 (define (write-bytes bstr out [start-pos 0] [end-pos (bytes-length bstr)])
   (r:write-bytes bstr out start-pos end-pos))
+
+;; ----------------------------------------
 
 (define-for-syntax constants (make-hasheq))
 
@@ -134,8 +137,11 @@
        (for ([e (in-vector v)])
          (loop e))]
       [(hash? v)
-       (for ([(k v) (in-hash v)])
-         (loop k) (loop v))]
+       (hash-for-each v
+                      (lambda (k v)
+                        (loop k)
+                        (loop v))
+                      #t)]
       [(box? v)
        (loop (unbox v))]
       [(prefab-struct-key v)
