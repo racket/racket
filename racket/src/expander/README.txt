@@ -60,12 +60,12 @@ Running:
 
    Expands the given file, instead of compiling and running it.
 
- % racket run.rkt -c <dir> --linklets -l <module-path>
+ % racket bootstrap-run.rkt -s -c <dir> --linklets -l <module-path>
 
    Compiles the given file to a set of linklets in S-expression form,
    instead of compiling and running it.
 
- % racket run.rkt -c <dir> -x
+ % racket bootstrap-run.rkt -s -c <dir> -x
 
    Checks possibility of converting a module to a stand-alone linklet
    with no imports --- used mainly to extract the expander itself.

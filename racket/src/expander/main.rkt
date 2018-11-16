@@ -75,8 +75,6 @@
          use-collection-link-paths
          use-user-specific-search-paths
          
-         compile-to-linklets
-         
          syntax?
          read-syntax
          datum->syntax syntax->datum

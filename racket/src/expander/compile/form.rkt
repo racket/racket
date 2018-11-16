@@ -44,7 +44,6 @@
                        #:definition-callback [definition-callback void]
                        #:other-form-callback [other-form-callback void]
                        #:get-module-linklet-info [get-module-linklet-info (lambda (mod-name p) #f)] ; to support submodules
-                       #:to-source? [to-source? #f]
                        #:serializable? [serializable? #t]
                        #:cross-linklet-inlining? [cross-linklet-inlining? #t])
   (define phase (compile-context-phase cctx))
@@ -252,10 +251,8 @@
       (define-values (linklet new-module-use*s)
         (performance-region
          ['compile '_ 'linklet]
-         ((if to-source?
-              (lambda (l name keys getter) (values l keys))
-              (lambda (l name keys getter)
-                (compile-linklet l name keys getter (if serializable? '(serializable) '()))))
+         ((lambda (l name keys getter)
+            (compile-linklet l name keys getter (if serializable? '(serializable) '())))
           `(linklet
             ;; imports
             (,@body-imports

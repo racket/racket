@@ -27,12 +27,10 @@
 (provide compile-module)
 
 ;; Compiles module to a set of linklets that is returned as a
-;; `compiled-in-memory` --- or a hash table containing S-expression
-;; linklets if `to-source?` is true.
+;; `compiled-in-memory`
 (define (compile-module p cctx
                         #:force-linklet-directory? [force-linklet-directory? #f]
                         #:serializable? [serializable? #f]
-                        #:to-source? [to-source? #f]
                         #:modules-being-compiled [modules-being-compiled (make-hasheq)]
                         #:need-compiled-submodule-rename? [need-compiled-submodule-rename? #t])
 
@@ -75,7 +73,6 @@
                                 #:full-module-name full-module-name
                                 #:force-linklet-directory? force-linklet-directory?
                                 #:serializable? serializable?
-                                #:to-source? to-source?
                                 #:modules-being-compiled modules-being-compiled
                                 #:pre-submodules pre-submodules
                                 #:post-submodules post-submodules
@@ -87,7 +84,6 @@
                                     #:full-module-name full-module-name
                                     #:force-linklet-directory? force-linklet-directory?
                                     #:serializable? serializable?
-                                    #:to-source? to-source?
                                     #:modules-being-compiled modules-being-compiled
                                     #:pre-submodules pre-submodules
                                     #:post-submodules post-submodules
@@ -170,7 +166,6 @@
                                                 (define ht (and modules-being-compiled
                                                                 (hash-ref modules-being-compiled mod-name #f)))
                                                 (and ht (hash-ref ht phase #f)))
-                    #:to-source? to-source?
                     #:serializable? serializable?))
    
    (when modules-being-compiled
@@ -193,9 +188,9 @@
    ;; declaration, and is shared among instances
    (define declaration-linklet
      (and serializable?
-          ((if to-source? values (lambda (s) (performance-region
-                                         ['compile 'module 'linklet]
-                                         (compile-linklet s 'decl))))
+          ((lambda (s) (performance-region
+                        ['compile 'module 'linklet]
+                        (compile-linklet s 'decl)))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -217,18 +212,18 @@
    ;; objects in the module.
    (define syntax-literals-linklet
      (and (not (syntax-literals-empty? syntax-literals))
-          ((if to-source? values (lambda (s)
-                                   (performance-region
-                                    ['compile 'module 'linklet]
-                                    (define-values (linklet new-keys)
-                                      (compile-linklet s 'syntax-literals
-                                                       (vector deserialize-instance
-                                                               empty-top-syntax-literal-instance
-                                                               empty-syntax-literals-data-instance
-                                                               empty-instance-instance)
-                                                       (lambda (inst) (values inst #f))
-                                                       (if serializable? '(serializable) '())))
-                                    linklet)))
+          ((lambda (s)
+             (performance-region
+              ['compile 'module 'linklet]
+              (define-values (linklet new-keys)
+                (compile-linklet s 'syntax-literals
+                                 (vector deserialize-instance
+                                         empty-top-syntax-literal-instance
+                                         empty-syntax-literals-data-instance
+                                         empty-instance-instance)
+                                 (lambda (inst) (values inst #f))
+                                 (if serializable? '(serializable) '())))
+              linklet))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -266,9 +261,9 @@
    (define syntax-literals-data-linklet
      (and serializable?
           (not (syntax-literals-empty? syntax-literals))
-          ((if to-source? values (lambda (s) (performance-region
-                                         ['compile 'module 'linklet]
-                                         (compile-linklet s 'syntax-literals-data))))
+          ((lambda (s) (performance-region
+                        ['compile 'module 'linklet]
+                        (compile-linklet s 'syntax-literals-data)))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -288,9 +283,9 @@
    ;; across module instances.
    (define data-linklet
      (and serializable?
-          ((if to-source? values (lambda (s) (performance-region
-                                         ['compile 'module 'linklet]
-                                         (compile-linklet s 'data))))
+          ((lambda (s) (performance-region
+                        ['compile 'module 'linklet]
+                        (compile-linklet s 'data)))
            `(linklet
              ;; imports
              (,deserialize-imports)
@@ -352,30 +347,27 @@
        ;; Just use the bundle representation directly:
        bundle]
       [else
-       ((if to-source? values hash->linklet-directory)
+       (hash->linklet-directory
         (for/fold ([ht (hasheq #f bundle)]) ([sm (in-list (append pre-submodules post-submodules))])
           (hash-set ht
                     (car sm)
-                    ((if to-source? values compiled-in-memory-linklet-directory)
+                    (compiled-in-memory-linklet-directory
                      (cdr sm)))))]))
 
-   (cond
-    [to-source? ld]
-    [else
-     ;; Save mpis and syntax for direct evaluation, instead of unmarshaling:
-     (compiled-in-memory ld
-                         self
-                         requires
-                         provides
-                         phase-to-link-module-uses
-                         (current-code-inspector)
-                         phase-to-link-extra-inspectorsss
-                         (mpis-as-vector mpis)
-                         (syntax-literals-as-vector syntax-literals)
-                         (map cdr pre-submodules)
-                         (map cdr post-submodules)
-                         #f     ; no namespace scopes
-                         #f)]))) ; not purely functional, since it declares a module
+  ;; Save mpis and syntax for direct evaluation, instead of unmarshaling:
+  (compiled-in-memory ld
+                      self
+                      requires
+                      provides
+                      phase-to-link-module-uses
+                      (current-code-inspector)
+                      phase-to-link-extra-inspectorsss
+                      (mpis-as-vector mpis)
+                      (syntax-literals-as-vector syntax-literals)
+                      (map cdr pre-submodules)
+                      (map cdr post-submodules)
+                      #f     ; no namespace scopes
+                      #f)))  ; not purely functional, since it declares a module
 
 ;; ----------------------------------------
 

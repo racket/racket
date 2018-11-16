@@ -35,13 +35,10 @@
 ;; `define-syntaxes` form, or an expression (where `begin` is treated
 ;; as an expression form). If `serializable?` is false, don't bother
 ;; generating the linklet for serialized data, because it won't be
-;; used. If `to-source?` is true, the result is a hash table containing
-;; S-expression linkets, instead of a `compiled-in-memory` containing
-;; compiled linklets.
+;; used.
 (define (compile-top p cctx
                      #:serializable? [serializable? #t]
-                     #:single-expression? [single-expression? #f]
-                     #:to-source? [to-source? #f])
+                     #:single-expression? [single-expression? #f])
   (performance-region
    ['compile (if single-expression? 'transformer 'top)]
 
@@ -72,7 +69,6 @@
                     #:body-import-instances (list top-level-instance
                                                   empty-top-syntax-literal-instance
                                                   empty-instance-instance)
-                    #:to-source? to-source?
                     #:serializable? serializable?
                     #:definition-callback (lambda () (set! purely-functional? #f))
                     #:compiled-expression-callback
@@ -91,7 +87,7 @@
        ht))
    
    (define bundle
-     ((if to-source? values hash->linklet-bundle)
+     (hash->linklet-bundle
       (add-metadata
        (cond
         [serializable?
@@ -108,16 +104,16 @@
              (compile-context-namespace cctx))))
 
          (define link-linklet
-           ((if to-source? values (lambda (s)
-                                    (performance-region
-                                     ['compile 'top 'linklet]
-                                     (define-values (linklet new-keys)
-                                       (compile-linklet s
-                                                        #f
-                                                        (vector deserialize-instance
-                                                                empty-eager-instance-instance)
-                                                        (lambda (inst) (values inst #f))))
-                                     linklet)))
+           ((lambda (s)
+              (performance-region
+               ['compile 'top 'linklet]
+               (define-values (linklet new-keys)
+                 (compile-linklet s
+                                  #f
+                                  (vector deserialize-instance
+                                          empty-eager-instance-instance)
+                                  (lambda (inst) (values inst #f))))
+               linklet))
             `(linklet
               ;; imports
               (,deserialize-imports
@@ -139,25 +135,21 @@
          ;; Will combine the linking unit with non-serialized link info
          body-linklets]))))
    
-   (cond
-    [to-source?
-     (hasheq #f bundle)]
-    [else
-     ;; If the compiled code is executed directly, it must be in its
-     ;; original phase, and we'll share the original values
-     (compiled-in-memory (hash->linklet-directory (hasheq #f bundle))
-                         #f ; self
-                         #f ; requires
-                         #f ; provides
-                         phase-to-link-module-uses
-                         (current-code-inspector)
-                         phase-to-link-extra-inspectorss
-                         (mpis-as-vector mpis)
-                         (syntax-literals-as-vector syntax-literals)
-                         null
-                         null
-                         (extract-namespace-scopes (compile-context-namespace cctx))
-                         purely-functional?)])))
+   ;; If the compiled code is executed directly, it must be in its
+   ;; original phase, and we'll share the original values
+   (compiled-in-memory (hash->linklet-directory (hasheq #f bundle))
+                       #f ; self
+                       #f ; requires
+                       #f ; provides
+                       phase-to-link-module-uses
+                       (current-code-inspector)
+                       phase-to-link-extra-inspectorss
+                       (mpis-as-vector mpis)
+                       (syntax-literals-as-vector syntax-literals)
+                       null
+                       null
+                       (extract-namespace-scopes (compile-context-namespace cctx))
+                       purely-functional?)))
 
 ;; Callback for compiling a sequence of expressions: handle `require`
 ;; (which is handled separately for modules)

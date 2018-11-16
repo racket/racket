@@ -34,9 +34,7 @@
          compile
          expand
          expand-once
-         expand-to-top-form
-
-         compile-to-linklets)
+         expand-to-top-form)
 
 ;; This `eval` is suitable as an eval handler that will be called by
 ;; the `eval` and `eval-syntax` of '#%kernel. 
@@ -71,7 +69,7 @@
 ;; by the `compile` and `compile-syntax` of '#%kernel
 ;; [Don't use keyword arguments here, because the function is
 ;;  exported for use by an embedding runtime system.]
-(define (compile s [ns (current-namespace)] [serializable? #t] [expand expand] [to-source? #f])
+(define (compile s [ns (current-namespace)] [serializable? #t] [expand expand])
   ;; The given `s` might be an already-compiled expression because it
   ;; went through some strange path, such as a `load` on a bytecode
   ;; file, which would wrap `#%top-interaction` around the compiled
@@ -86,47 +84,35 @@
       (per-top-level s ns
                      #:single (lambda (s ns as-tail?)
                                 (list (compile-single s ns expand
-                                                      serializable?
-                                                      to-source?)))
+                                                      serializable?)))
                      #:combine append
                      #:observer #f)]))
   (if (and (= 1 (length cs))
            (not (compiled-multiple-top? (car cs))))
       (car cs)
       (compiled-tops->compiled-top cs
-                                   #:to-source? to-source?
                                    #:merge-serialization? serializable?
                                    #:namespace ns)))
-
-;; Result is a hash table containing S-expressons that may have
-;; "correlated" parts in the sense of "host/correlate.rkt"; use
-;; `datum->correlated` plus `correlated->datum` to get a plain
-;; S-expression
-(define (compile-to-linklets s [ns (current-namespace)])
-  (compile s ns #t expand #t))
 
 ;; To communicate lifts from `expand-single` to `compile-single`:
 (struct lifted-parsed-begin (seq last))
 
-(define (compile-single s ns expand serializable? to-source?)
+(define (compile-single s ns expand serializable?)
   (define exp-s (expand s ns #f #t serializable?))
   (let loop ([exp-s exp-s])
     (cond
       [(parsed-module? exp-s)
        (compile-module exp-s (make-compile-context #:namespace ns)
-                       #:serializable? serializable?
-                       #:to-source? to-source?)]
+                       #:serializable? serializable?)]
       [(lifted-parsed-begin? exp-s)
        ;; expansion must have captured lifts
        (compiled-tops->compiled-top
         (for/list ([e (in-list (append (lifted-parsed-begin-seq exp-s)
                                        (list (lifted-parsed-begin-last exp-s))))])
-          (loop e))
-        #:to-source? to-source?)]
+          (loop e)))]
       [else
        (compile-top exp-s (make-compile-context #:namespace ns)
-                    #:serializable? serializable?
-                    #:to-source? to-source?)])))
+                    #:serializable? serializable?)])))
 
 ;; This `expand` is suitable as an expand handler (if such a thing
 ;; existed) to be called by `expand` and `expand-syntax`.
