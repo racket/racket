@@ -385,6 +385,7 @@
              [("-C" "--cross")
               (set! host-config-dir init-config-dir)
               (set! host-collects-dir init-collects-dir)
+              (set-cross-mode! 'force)
               (loop (cdr args))]
              [("-U" "--no-user-path")
               (set! user-specific-search-paths? #f)

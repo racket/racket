@@ -11,6 +11,9 @@
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
    [else #f]))
 
+(define cross-mode 'infer)
+(define (set-cross-mode! m) (set! cross-mode m))
+
 (define (system-type* mode)
   (case mode
     [(vm) 'chez-scheme]
@@ -29,7 +32,7 @@
                    [else (string->utf8 ".so")])]
     [(so-mode) 'local]
     [(fs-change) '#(#f #f #f #f)]
-    [(cross) 'infer]
+    [(cross) cross-mode]
     [else (raise-argument-error 'system-type
                                 (string-append
                                  "(or/c 'os 'word 'vm 'gc 'link 'machine\n"
