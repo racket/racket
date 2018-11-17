@@ -2801,6 +2801,14 @@ case of module-leve bindings; it doesn't cover local bindings.
                               (regexp-match? #rx"boom" (exn-message x)))))
 (test #t procedure? (eval 'f (module->namespace ''fails-after-f-and-before-g)))
 
+(module uses-fails-after-f-and-before-g racket/base
+  (require 'fails-after-f-and-before-g)
+  g)
+
+(err/rt-test (dynamic-require ''uses-fails-after-f-and-before-g #f)
+             (lambda (x) (and (exn:fail? x)
+                              (regexp-match? #rx"uninitialized" (exn-message x)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

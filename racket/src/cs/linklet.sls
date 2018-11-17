@@ -565,7 +565,7 @@
                  (eval-from-bytevector (linklet-code linklet) (linklet-format linklet)))
              (make-variable-reference target-instance #f)
              (append (apply append
-                            (map extract-variables
+                            (map (make-extract-variables target-instance)
                                  import-instances
                                  (linklet-importss linklet)
                                  (linklet-importss-abi linklet)))
@@ -626,19 +626,28 @@
 
   ;; Find variables or values needed from an instance for a linklet's
   ;; imports
-  (define (extract-variables inst syms imports-abi)
-    (let ([ht (instance-hash inst)])
-      (map (lambda (sym import-abi)
-             (let ([var (or (hash-ref ht sym #f)
-                            (raise-arguments-error 'instantiate-linklet
-                                                   "variable not found in imported instance"
-                                                   "instance" inst
-                                                   "name" sym))])
-               (if import-abi
-                   (variable-val var)
-                   var)))
-           syms
-           imports-abi)))
+  (define (make-extract-variables target-inst)
+    (lambda (inst syms imports-abi)
+      (let ([ht (instance-hash inst)])
+        (map (lambda (sym import-abi)
+               (let ([var (or (hash-ref ht sym #f)
+                              (raise-linking-failure "is not exported" target-inst inst sym))])
+                 (when (eq? (variable-val var) unsafe-undefined)
+                   (raise-linking-failure "is uninitialized" target-inst inst sym))
+                 (if import-abi
+                     (variable-val var)
+                     var)))
+             syms
+             imports-abi))))
+
+  (define (raise-linking-failure why target-inst inst sym)
+    (raise-arguments-error 'instantiate-linklet
+                           (string-append "mismatch;\n"
+                                          " reference to a variable that " why ";\n"
+                                          " possibly, bytecode file needs re-compile because dependencies changed")
+                           "name" (unquoted-printing-string (symbol->string sym))
+                           "exporting instance" (unquoted-printing-string (instance-name inst))
+                           "importing instance" (unquoted-printing-string (instance-name target-inst))))
 
   (define (identify-module var)
     (let ([i (car (variable-inst-box var))])
