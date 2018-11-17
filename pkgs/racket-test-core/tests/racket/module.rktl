@@ -2787,5 +2787,20 @@ case of module-leve bindings; it doesn't cover local bindings.
                   (list #'module* #'stop))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check state of a module-instance namespace when initialization
+;; is interrupted by an error
+
+(module fails-after-f-and-before-g racket/base
+  (provide f g)
+  (define (f x) (error "boom"))
+  (f 42)
+  (define g (if (zero? (random 1)) 'ok 'oops)))
+
+(err/rt-test (dynamic-require ''fails-after-f-and-before-g #f)
+             (lambda (x) (and (exn:fail? x)
+                              (regexp-match? #rx"boom" (exn-message x)))))
+(test #t procedure? (eval 'f (module->namespace ''fails-after-f-and-before-g)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
