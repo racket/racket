@@ -694,11 +694,14 @@ COPY_ARGS = $(PROP_ARGS) \
 
 SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
+# Can be redirected to `bundle-cross-from-server`:
+BUNDLE_FROM_SERVER_TARGET = bundle-from-server
+
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
 	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS)
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
-	$(MAKE) bundle-from-server $(COPY_ARGS)
+	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
@@ -719,7 +722,7 @@ distro-build-from-server:
 # process things that should not be in an installer (such as the "src"
 # directory). Then, replace the "collects" tree with the one from the
 # server. Install required packages next, because they may include
-# packages that are needed kto make core functionality work right
+# packages that are needed to make core functionality work right
 # (which as the SQLite3 library). At last, install the selected packages
 # from the server, and the run a post-adjustment script.
 bundle-from-server:
@@ -729,9 +732,15 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
 	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
+	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
+
+# For a cross build, we still need to use `$(BUNDLE_RACO)` for
+# installing packages. The host build must have all native libraries
+# that installation will need.
+bundle-cross-from-server:
+	$(MAKE) bundle-from-server $(COPY_ARGS) IN_BUNDLE_RACO="$(BUNDLE_RACO)"
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
@@ -757,8 +766,8 @@ win32-bundle:
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
 	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
+	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
