@@ -1613,7 +1613,9 @@
           (call-winder-thunk 'dw-pre pre)
           (current-winders (cons winder winders))
           (end-uninterrupted/call-hook 'dw-body)
-          (call-with-values thunk
+          (call-with-values (if (#%procedure? thunk)
+                                thunk
+                                (lambda () (|#%app| thunk)))
             (lambda args
               (start-uninterrupted 'dw-body)
               (current-winders winders)
@@ -1626,7 +1628,7 @@
    break-enabled-key (make-thread-cell #f #t)
    (begin
      (end-uninterrupted who)
-     (thunk)
+     (|#%app| thunk)
      (start-uninterrupted who))))
 
 (define (wind-in winders k)

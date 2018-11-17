@@ -480,7 +480,7 @@
                                (code-info? ci)
                                (or
                                 ;; when per-expression inspector info is available:
-                                (find-rpi (#%$continuation-return-offset k) (code-info-rpis ci))
+                                (find-rpi (#%$continuation-return-offset k) ci)
                                 ;; when only per-function source location is available:
                                 (code-info-src ci)))])
                     (and (or name src)
@@ -519,7 +519,7 @@
                                (code-info? ci)
                                (or
                                 ;; when per-expression inspector info is available:
-                                (find-rpi (#%$continuation-return-offset k) (code-info-rpis ci))
+                                (find-rpi (#%$continuation-return-offset k) ci)
                                 ;; when only per-function source location is available:
                                 (code-info-src ci)))])
                     (and (or name src)
