@@ -19,7 +19,7 @@
          (null? args))
     (raise
      (exn:fail
-      (format "error: ~a" init)
+      (string-append "error: " (symbol->string init))
       (current-continuation-marks)))]
    [(symbol? init)
     (unless (string? (car args))
