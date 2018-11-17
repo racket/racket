@@ -26,6 +26,8 @@
          "path/system.rkt"
          (only-in "host/rktio.rkt"
                   rktio-place-init!)
+         (submod "error/main.rkt"
+                 place-init)
          "port/place.rkt")
 
 (provide (all-from-out "port/main.rkt")
@@ -57,6 +59,7 @@
   (sandman-place-init!)
   (rktio-place-init!)
   (logger-init!)
+  (install-error-value->string-handler!)
   (init-current-directory!)
   (init-current-ports! in-fd out-fd err-fd cust plumber))
 
