@@ -177,7 +177,7 @@ all: xsrc
 	$(MAKE) check-sdep
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
-	$(MAKE) ../racket3m
+	$(MAKE) ../racket3m@EXE_SUFFIX@
 
 xsrcs: $(XSRCS)
 
@@ -617,14 +617,14 @@ libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 
 MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
-../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../MemoryModule.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
-	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ MemoryModule.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
+../racket@MMM@@EXE_SUFFIX@@MINGW@: libracket3m.dll.a main.@LTO@ ../MemoryModule.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
+	cd ..; @MZLINKER@ -o racket@MMM@@EXE_SUFFIX@ gc2/main.@LTO@ MemoryModule.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
 
 ../mzcom@MMM@@NOT_MINGW@:
 	$(NOOP)
 
-../mzcom@MMM@@MINGW@: libracket3m.dll.a mzcom.@LTO@ mzobj.@LTO@ ../com_glue.@LTO@ $(SPECIALIZINGOBJECTS) ../comres.o
-	cd ..; @MZLINKER@ -mwindows -o mzcom@MMM@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
+../mzcom@MMM@@EXE_SUFFIX@@MINGW@: libracket3m.dll.a mzcom.@LTO@ mzobj.@LTO@ ../com_glue.@LTO@ $(SPECIALIZINGOBJECTS) ../comres.o
+	cd ..; @MZLINKER@ -mwindows -o mzcom@MMM@@EXE_SUFFIX@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*
