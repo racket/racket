@@ -76,18 +76,20 @@
              [same-special-id? (lambda (a b)
                                  ;; Almost module-or-top-identifier=?,
                                  ;; but handle `the-cons' specially
-                                 (or (free-identifier=?
-                                      a
-                                      (if (eq? 'the-cons (syntax-e b))
-                                          cons-id
-                                          b))
-                                     (free-identifier=? 
-                                      a 
-                                      (datum->syntax
-                                       #f
-                                       (if (eq? 'the-cons (syntax-e b))
-                                           'cons
-                                           (syntax-e b))))))]
+                                 (and (identifier? a)
+                                      (identifier? b)
+                                      (or (free-identifier=?
+                                           a
+                                           (if (eq? 'the-cons (syntax-e b))
+                                               cons-id
+                                               b))
+                                          (free-identifier=?
+                                           a
+                                           (datum->syntax
+                                            #f
+                                            (if (eq? 'the-cons (syntax-e b))
+                                                'cons
+                                                (syntax-e b)))))))]
              [remove-all (lambda (lst rmv-lst)
                            (define (remove e l)
                              (cond

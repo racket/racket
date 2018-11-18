@@ -49,4 +49,6 @@
   (test an-a 'an-a (shared ([t (a 1 t)])
                      t)))
 
+(test 42 values (shared ((b ((thunk 42)))) b))
+(test 42 unbox (shared ((b (box-immutable ((thunk 42))))) b))
 (report-errs)
