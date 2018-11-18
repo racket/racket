@@ -144,11 +144,15 @@
   
   (define new-body
     (let loop ([body body])
+      (define (car* s)
+        (if (pair? s) (car s)
+            (begin (eprintf "car*: ~s\n" s)
+                   #f)))
       (cond [(null? body) null]
             [(defn? (car body))
              (for* ([d (in-list body)]
                     #:break (and (defn? d)
-                                 (hash-ref seen-defns (car (defn-syms d)) #f))
+                                 (hash-ref seen-defns (car* (defn-syms d)) #f))
                     #:break (not (safe-defn-or-expr? d))
                     #:when (defn? d))
                (add-defn-known! seen-defns (defn-syms d) (defn-rhs d)))
