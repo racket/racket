@@ -124,8 +124,7 @@
  contract-continuation-mark-key
  collapsible-contract-continuation-mark-key
  list-contract?
- can-cache-contract?
- 
+  
  ;; from private/case-arrow.rkt
  case->
 

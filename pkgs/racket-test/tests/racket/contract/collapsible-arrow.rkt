@@ -98,8 +98,7 @@
 
   (contract-eval '(define pos (flat-named-contract
                                'pos
-                               (lambda (x) (and (integer? x) (>= x 0)))
-                               #:can-cache? #t)))
+                               (lambda (x) (and (integer? x) (>= x 0))))))
   (contract-eval '(define pos->pos (-> pos pos)))
   (contract-eval '(define pos->pos->pos (-> pos->pos pos)))
 
@@ -116,8 +115,7 @@
                             ;; Check that the already contracted function only
                             ;; has one contract
                             (has-num-contracts? f 1 1)
-                            (f 1))
-                          #:can-cache? #t)
+                            (f 1)))
                           'pos 'neg)))
   (contract-eval
    '(define f2 (add-many-contracts 11 pos->pos->pos
@@ -320,7 +318,6 @@
    '(define c1 ; this is an impersonator contract
       (make-contract
        #:name 'c1
-       #:can-cache? #t
        #:val-first-projection
        (lambda (blame)
          (lambda (x)
@@ -332,7 +329,6 @@
    '(define c2 ; this is an chaperone contract
       (make-chaperone-contract
        #:name 'c2
-       #:can-cache? #t
        #:val-first-projection
        (lambda (blame)
          (lambda (x)

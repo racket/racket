@@ -8,13 +8,6 @@
 (define-syntax (parametric->/c stx)
   (syntax-case stx ()
     [(_ [x ...] c)
-     #'(parametric->/c-base [x ...] c #f)]
-    [(_ [x ...] c #:can-cache)
-     #'(parametric->/c-base [x ...] c #t)]))
-
-(define-syntax (parametric->/c-base stx)
-  (syntax-case stx ()
-    [(_ [x ...] c can-cache?)
      (begin
        (for ([x (in-list (syntax->list #'(x ...)))])
          (unless (identifier? x)
@@ -31,12 +24,11 @@
        #`(make-polymorphic-contract opaque/c
                                     '(x ...)
                                     (lambda (x ...) c)
-                                    '#,(compute-quoted-src-expression #'c)
-                                    can-cache?))]))
+                                    '#,(compute-quoted-src-expression #'c)))]))
 
 
 
-(define-struct polymorphic-contract [barrier vars body body-src-exp can-cache?]
+(define-struct polymorphic-contract [barrier vars body body-src-exp]
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
@@ -96,12 +88,6 @@
               (barrier/c negative? var)))
           (define protector
             (apply (polymorphic-contract-body c) instances))
-           ;; check that protector can be cached here
-           ;; TODO: this will check if the contract can be cached every time the
-           ;; projection is applied
-           (when (polymorphic-contract-can-cache? c)
-             (unless (can-cache-contract? protector)
-               (raise-argument-error 'parametric->/c "can-cache-contract?" protector)))
            (((get/build-late-neg-projection protector) blame) p neg-party)))
 
        (lambda (p neg-party)
@@ -136,7 +122,6 @@
    #:name (lambda (c) (barrier-contract-name c))
    #:first-order (λ (c) (barrier-contract-pred c))
    #:stronger (λ (this that) (eq? this that))
-   #:can-cache? (λ (c) #t)
    #:equivalent (λ (this that) (eq? this that))
    #:late-neg-projection
    (lambda (c)

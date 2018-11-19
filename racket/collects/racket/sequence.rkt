@@ -198,9 +198,6 @@
                       (list '#:min-count min-count)
                       '())
                   ctcs))
-   #:can-cache?
-   (for/and ([ctc (in-list ctcs)])
-     (can-cache-contract? ctc))
    #:first-order 
    (λ (val)
      (and (sequence? val)

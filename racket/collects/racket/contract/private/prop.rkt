@@ -17,7 +17,6 @@
          contract-struct-generate
          contract-struct-exercise
          contract-struct-list-contract?
-         contract-struct-can-cache?
          
          prop:flat-contract
          flat-contract-struct?
@@ -71,8 +70,7 @@
                                    val-first-projection
                                    late-neg-projection
                                    collapsible-late-neg-projection
-                                   list-contract?
-                                   can-cache? ]
+                                   list-contract? ]
   #:omit-define-syntaxes)
 
 (define (contract-property-guard prop info)
@@ -222,10 +220,6 @@
   (define prop (contract-struct-property c))
   ((contract-property-list-contract? prop) c))
 
-(define (contract-struct-can-cache? c)
-  (define prop (contract-struct-property c))
-  ((contract-property-can-cache? prop) c))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  Chaperone Contract Property
@@ -315,8 +309,7 @@
          #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
-         #:list-contract? [list-contract? (λ (c) #f)]
-         #:can-cache? [can-cache? (λ (c) #f)])
+         #:list-contract? [list-contract? (λ (c) #f)])
   (unless (or get-first-order
               get-projection
               get-val-first-projection
@@ -347,16 +340,6 @@
             "  in the #:list-contract? argument")
            list-contract?))
 
-  (unless (and (procedure? can-cache?)
-               (procedure-arity-includes? can-cache? 1))
-    (error proc-name
-           (string-append
-            "contract violation\n"
-            "  expected: (procedure-arity-includes/c 1)\n"
-            "  given: ~e\n"
-            "  in the #:can-cache? argument")
-           can-cache?))
-
   (mk (or get-name (λ (c) default-name))
       (or get-first-order get-any?)
       get-projection
@@ -373,8 +356,7 @@
            [else #f])]
         [else get-late-neg-projection])
       get-collapsible-late-neg-projection
-      list-contract?
-      can-cache?))
+      list-contract?))
 
 (define (build-context)
   (apply
@@ -438,8 +420,7 @@
 (define-struct make-contract [ name first-order projection
                                     val-first-projection late-neg-projection
                                     collapsible-late-neg-projection
-                                    stronger equivalent generate exercise list-contract?
-                                    can-cache? ]
+                                    stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -457,14 +438,12 @@
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
    #:exercise (lambda (c) (make-contract-exercise c))
-   #:list-contract? (λ (c) (make-contract-list-contract? c))
-   #:can-cache? (λ (c) (make-contract-can-cache? c))))
+   #:list-contract? (λ (c) (make-contract-list-contract? c))))
 
 (define-struct make-chaperone-contract [ name first-order projection
                                               val-first-projection late-neg-projection
                                               collapsible-late-neg-projection
-                                              stronger equivalent generate exercise list-contract?
-                                              can-cache? ]
+                                              stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -482,14 +461,12 @@
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
    #:exercise (lambda (c) (make-chaperone-contract-exercise c))
-   #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))
-   #:can-cache? (λ (c) (make-chaperone-contract-can-cache? c))))
+   #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))))
 
 (define-struct make-flat-contract [ name first-order projection
                                          val-first-projection late-neg-projection
                                          collapsible-late-neg-projection
-                                         stronger equivalent generate exercise list-contract?
-                                         can-cache? ]
+                                         stronger equivalent generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -507,8 +484,7 @@
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
    #:exercise (lambda (c) (make-flat-contract-exercise c))
-   #:list-contract? (λ (c) (make-flat-contract-list-contract? c))
-   #:can-cache? (λ (c) (make-flat-contract-can-cache? c))))
+   #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
 (define ((build-contract mk default-name proc-name first-order? equivalent-equal?)
          #:name [name #f]
@@ -521,8 +497,7 @@
          #:equivalent [equivalent #f]
          #:generate [generate (λ (fuel) #f)]
          #:exercise [exercise (λ (fuel) (values void '()))]
-         #:list-contract? [list-contract? #f]
-         #:can-cache? [can-cache? #f])
+         #:list-contract? [list-contract? #f])
 
   (unless (or first-order
               projection
@@ -559,8 +534,7 @@
       (or stronger weakest)
       (or equivalent (if equivalent-equal? equal? weakest))
       generate exercise
-      (and list-contract? #t)
-      (and can-cache? #t)))
+      (and list-contract? #t)))
 
 (define (late-neg-first-order-projection name p?)
   (λ (b)

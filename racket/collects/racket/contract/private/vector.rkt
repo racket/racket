@@ -121,9 +121,6 @@
              (contract-struct-stronger? that-elem this-elem))])]
     [else #f]))
 
-(define (can-cache-vectorof? c)
-  (can-cache-contract? (base-vectorof-elem c)))
-
 (define (vectorof-equivalent this that)
   (cond
     [(base-vectorof? that)
@@ -150,7 +147,6 @@
                                (for ([x (in-vector val)])
                                  (vfp+blame x neg-party))
                                val)))
-   #:can-cache? can-cache-vectorof?
    #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger))
 
@@ -323,8 +319,7 @@
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
-   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #t)
-   #:can-cache? can-cache-vectorof?))
+   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #t)))
 
 (define-struct (impersonator-vectorof base-vectorof) ()
   #:property prop:custom-write custom-write-property-proc
@@ -334,8 +329,7 @@
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
    #:stronger vectorof-stronger
-   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #f)
-   #:can-cache? can-cache-vectorof?))
+   #:collapsible-late-neg-projection (vectorof-collapsible-late-neg-ho-projection #f)))
 
 (define-syntax (wrap-vectorof stx)
   (syntax-case stx ()
@@ -451,10 +445,6 @@
        [else #f])]
     [else #f]))
 
-(define (can-cache-vector/c? c)
-  (for/and ([ctc (in-list (base-vector/c-elems c))])
-    (can-cache-contract? ctc)))
-
 (define (vector/c-equivalent this that)
   (cond
     [(base-vector/c? that)
@@ -471,7 +461,6 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
-   #:can-cache? can-cache-vector/c?
    #:equivalent vector/c-equivalent
    #:late-neg-projection
    (λ (ctc)
@@ -660,7 +649,6 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
-   #:can-cache? can-cache-vector/c?
    #:collapsible-late-neg-projection (vector/c-collapsible-late-neg-ho-projection #t)
    #:equivalent vector/c-equivalent))
 
@@ -671,7 +659,6 @@
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
-   #:can-cache? can-cache-vector/c?
    #:collapsible-late-neg-projection (vector/c-collapsible-late-neg-ho-projection #f)
    #:equivalent vector/c-equivalent))
 

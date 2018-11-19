@@ -192,8 +192,7 @@
              rng-ctcs rng-dep-ctcs indy-rng-ctcs
              pre/post-procs
              mandatory-args opt-args mandatory-kwds opt-kwds rest
-             mtd? here mk-wrapper mk-val-first-wrapper name-info
-             can-cache?)
+             mtd? here mk-wrapper mk-val-first-wrapper name-info)
         #:property prop:custom-write custom-write-property-proc)
 
 (define (mk-prop chaperone?)
@@ -327,34 +326,23 @@
              (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f #f)))))
    #:exercise exercise->i
    #:equivalent (λ (this that) (eq? this that))
-   #:can-cache? (λ (ctc) (->i-can-cache? ctc))
    #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 
 (struct chaperone->i ->i () #:property prop:chaperone-contract (mk-prop #t))
 (struct impersonator->i ->i () #:property prop:contract (mk-prop #f))
-(define (make-->i is-chaperone-contract? can-cache? blame-info
+(define (make-->i is-chaperone-contract? blame-info
                   arg-ctcs arg-dep-ctcs indy-arg-ctcs
                   rng-ctcs rng-dep-ctcs indy-rng-ctcs
                   pre/post-procs
                   mandatory-args opt-args mandatory-kwds opt-kwds rest
                   mtd? here mk-wrapper mk-val-first-wrapper name-info)
   (define maker (if is-chaperone-contract? chaperone->i impersonator->i))
-
-  (when can-cache?
-    (define (check-it ctc)
-      (unless (can-cache-contract? ctc)
-        (raise-argument-error '->i "can-cache-contract?" ctc)))
-    (for ([ctc (in-list arg-ctcs)]) (check-it (->i-arg-contract ctc)))
-    (for ([ctc (in-list indy-arg-ctcs)]) (check-it (cdr ctc)))
-    (for ([ctc (in-list rng-ctcs)]) (check-it (cdr ctc)))
-    (for ([ctc (in-list indy-rng-ctcs)]) (check-it (cdr ctc))))
-
   (maker blame-info
          arg-ctcs arg-dep-ctcs indy-arg-ctcs
          rng-ctcs rng-dep-ctcs indy-rng-ctcs
          pre/post-procs
          mandatory-args opt-args mandatory-kwds opt-kwds rest
-         mtd? here mk-wrapper mk-val-first-wrapper name-info can-cache?))
+         mtd? here mk-wrapper mk-val-first-wrapper name-info))
 
 
 
@@ -695,8 +683,7 @@ evaluted left-to-right.)
                                     ordered-arg/reses indicies
                                     arg/res-proj-vars indy-arg/res-proj-vars 
                                     wrapper-arg/ress indy-arg/res-vars
-                                    indy-arg-vars ordered-args indy-res-vars ordered-ress
-                                    is-can-cache?)
+                                    indy-arg-vars ordered-args indy-res-vars ordered-ress)
   
   (define (add-unsupplied-check an-arg/res wrapper-arg stx)
     (if (and (arg? an-arg/res)
@@ -735,8 +722,7 @@ evaluted left-to-right.)
                           #,wrapper-arg
                           #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
                           neg-party
-                          #t
-                          '#,is-can-cache?)
+                          #t)
                        #`(#,indy-arg/res-proj-var #,wrapper-arg neg-party)))])
             (list)))
       
@@ -767,16 +753,14 @@ evaluted left-to-right.)
                                                     swapped-blame? 
                                                     (arg/res-var an-arg/res))
                           neg-party
-                          #f
-                          '#,is-can-cache?)]
+                          #f)]
                       [(arg/res-vars an-arg/res)
                        #`(#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
                           #,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res))
                           neg-party
-                          #f
-                          '#,is-can-cache?)]
+                          #f)]
                       [else
                        #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))]
                 #,@indy-binding)
@@ -851,8 +835,7 @@ evaluted left-to-right.)
                ordered-ress res-indices
                res-proj-vars indy-res-proj-vars 
                wrapper-ress indy-res-vars
-               indy-arg-vars ordered-args indy-res-vars ordered-ress
-               (istx-is-can-cache? an-istx)))]
+               indy-arg-vars ordered-args indy-res-vars ordered-ress))]
           [args
            (bad-number-of-results blame val
                                   #,(vector-length wrapper-ress)
@@ -932,8 +915,7 @@ evaluted left-to-right.)
      ordered-args arg-indices
      arg-proj-vars indy-arg-proj-vars 
      wrapper-args indy-arg-vars
-     indy-arg-vars ordered-args indy-res-vars ordered-ress
-     (istx-is-can-cache? an-istx)))
+     indy-arg-vars ordered-args indy-res-vars ordered-ress))
   (values
    (map cdr blame-ids)
    (with-syntax ([arg-checker (or (syntax-local-infer-name stx) 'arg-checker)])
@@ -1105,8 +1087,7 @@ evaluted left-to-right.)
              ordered-args arg-indices
              arg-proj-vars indy-arg-proj-vars 
              wrapper-args indy-arg-vars
-             indy-arg-vars ordered-args indy-res-vars ordered-ress
-             (istx-is-can-cache? an-istx))))))
+             indy-arg-vars ordered-args indy-res-vars ordered-ress)))))
 
 (define-for-syntax (build-call-to-original-function args rst vars this-param)
   (define argument-list
@@ -1124,35 +1105,27 @@ evaluted left-to-right.)
       #`(f #,@argument-list)))
 
 (begin-encourage-inline
-  (define (un-dep/maybe-chaperone orig-ctc obj blame neg-party chaperone? indy-blame? can-cache?)
+  (define (un-dep/maybe-chaperone orig-ctc obj blame neg-party chaperone? indy-blame?)
     (cond
       [(and (procedure? orig-ctc)
             (procedure-arity-includes? orig-ctc 1))
-       (when can-cache?
-         (unless (can-cache-contract? orig-ctc)
-           (raise-argument-error '->i "can-cache-contract?" orig-ctc)))
        (if (or indy-blame? (orig-ctc obj))
            obj
            (raise-predicate-blame-error-failure blame obj neg-party
                                                 (contract-name orig-ctc)))]
       [(and indy-blame? (flat-contract? orig-ctc))
-       (when can-cache?
-         (unless (can-cache-contract? orig-ctc)
-           (raise-argument-error '->i "can-cache-contract?" orig-ctc)))
        obj]
       [else
        (define ctc (if chaperone?
                        (coerce-chaperone-contract '->i orig-ctc)
                        (coerce-contract '->i orig-ctc)))
-       (when can-cache?
-         (unless (can-cache-contract? ctc)
-           (raise-argument-error '->i "can-cache-contract?" ctc)))
        (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
-  (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame? can-cache?)
-    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame? can-cache?))
   
-  (define (un-dep orig-ctc obj blame neg-party indy-blame? can-cache?)
-    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f indy-blame? can-cache?)))
+  (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame?)
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame?))
+  
+  (define (un-dep orig-ctc obj blame neg-party indy-blame?)
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f indy-blame?)))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
@@ -1269,7 +1242,6 @@ evaluted left-to-right.)
         #,(syntax-property
            #`(make-->i
               #,is-chaperone-contract?
-              #,(istx-is-can-cache? an-istx)
               ;; the information needed to make the blame records and their new contexts
               '#,blame-ids
               ;; all of the non-dependent argument contracts

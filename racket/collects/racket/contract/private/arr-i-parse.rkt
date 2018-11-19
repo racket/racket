@@ -20,13 +20,12 @@ code does the parsing and validation of the syntax.
 |#
 
 ;; is-chaperone-contract? : boolean?
-;; is-can-cache? : boolean?
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
 ;; pre  : (listof pre/post?)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (listof pre/post?)
-(struct istx (is-chaperone-contract? is-can-cache? args rst pre ress post) #:transparent)
+(struct istx (is-chaperone-contract? args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -60,13 +59,12 @@ code does the parsing and validation of the syntax.
 (define (parse-->i stx)
   (if (identifier? stx)
       (raise-syntax-error #f "expected ->i to follow an open parenthesis" stx)
-      (let-values ([(is-chaperone-contract? is-can-cache?
+      (let-values ([(is-chaperone-contract?
                      raw-mandatory-doms raw-optional-doms
                      id/rest-id pre-cond range post-cond)
                     (pull-out-pieces stx)])
         (let ([candidate
                (istx is-chaperone-contract?
-                     is-can-cache?
                      (append (parse-doms stx #f raw-mandatory-doms)
                              (parse-doms stx #t raw-optional-doms))
                      id/rest-id
@@ -407,26 +405,11 @@ code does the parsing and validation of the syntax.
                       (when (null? (cdr lst))
                         (raise-syntax-error #f "expected a sequence of mandatory domain elements"
                                             stx))
-                      (when (and (keyword? (syntax-e (cadr lst)))
-                                 (not (equal? (syntax-e (cadr lst)) '#:can-cache)))
+                      (when (keyword? (syntax-e (cadr lst)))
                         (raise-syntax-error #f "unknown keyword"
                                             stx
                                             (cadr lst)))
                       (values #f #'leftover))])]
-                [(is-can-cache? can-cache-keyword leftover)
-                 (syntax-case leftover ()
-                   [(#:can-cache . more-leftover)
-                    (values #t (car (syntax->list leftover)) #'more-leftover)]
-                   [leftover
-                    (let ([lst (syntax->list #'leftover)])
-                      (when (null? lst)
-                        (raise-syntax-error #f "expected a sequence of mandatory domain elements"
-                                            stx))
-                      (when (keyword? (syntax-e (car lst)))
-                        (raise-syntax-error #f "unknown keyword"
-                                            stx
-                                            (cadr lst)))
-                      (values #f #f #'leftover))])]
                 [(raw-mandatory-doms leftover)
                  (syntax-case leftover ()
                    [((raw-mandatory-doms ...) . leftover)
@@ -503,13 +486,6 @@ code does the parsing and validation of the syntax.
                                (car (syntax->list leftover)))]
                           [x (void)])
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
-                        (when is-can-cache?
-                          (raise-syntax-error '->i
-                                              (format "cannot have both #:can-cache and ~a"
-                                                      (syntax-e #'kwd))
-                                              stx
-                                              #'kwd
-                                              (list can-cache-keyword)))
                         (loop #'pre-leftover 
                               (cons (pre/post (syntax->list #'(id ...)) 
                                               (if (equal? '#:pre/desc (syntax-e #'kwd))
@@ -539,12 +515,6 @@ code does the parsing and validation of the syntax.
                                stx
                                (car (syntax->list leftover)))]
                           [x (void)])
-                        (when is-can-cache?
-                          (raise-syntax-error '->i
-                                              "cannot have both #:can-cache and #:pre/name"
-                                              stx
-                                              (car (syntax->list leftover))
-                                              (list can-cache-keyword)))
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (unless (string? (syntax-e #'str))
                           (raise-syntax-error 
@@ -593,13 +563,6 @@ code does the parsing and validation of the syntax.
                                         (syntax-e #'kwd))
                                 stx #'post-cond)]
                           [_ (void)])
-                        (when is-can-cache?
-                          (raise-syntax-error '->i
-                                              (format "cannot have both #:can-cache and ~a"
-                                                      (syntax-e #'kwd))
-                                              stx
-                                              #'kwd
-                                              (list can-cache-keyword)))
                         (loop #'leftover
                               (cons (pre/post (syntax->list #'(id ...))
                                               (if (equal? (syntax-e #'kwd) '#:post/desc)
@@ -633,12 +596,6 @@ code does the parsing and validation of the syntax.
                           [any (raise-syntax-error 
                                 #f "cannot have a #:post with any as the range" stx #'post-cond)]
                           [_ (void)])
-                        (when is-can-cache?
-                          (raise-syntax-error '->i
-                                              "cannot have both #:can-cache and #:post/name"
-                                              stx
-                                              (car (syntax->list leftover))
-                                              (list can-cache-keyword)))
                         (unless (string? (syntax-e #'str))
                           (raise-syntax-error 
                            #f
@@ -664,7 +621,7 @@ code does the parsing and validation of the syntax.
                       (values (reverse post-conds) leftover)]))])
     (syntax-case leftover ()
       [() 
-       (values is-chaperone-contract? is-can-cache?
+       (values is-chaperone-contract?
                raw-mandatory-doms raw-optional-doms id/rest-id pre-conds
                range post-conds)]
       [(a . b)

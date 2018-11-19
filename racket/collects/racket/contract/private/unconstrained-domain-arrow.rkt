@@ -105,10 +105,6 @@
        (pairwise-stronger-contracts? (unconstrained-domain->-ranges this)
                                      (unconstrained-domain->-ranges that))))
 
-(define (can-cache-unconstrained-domain->? c)
-  (for/and ([ctc (in-list (unconstrained-domain->-ranges c))])
-    (can-cache-contract? ctc)))
-
 (define-struct unconstrained-domain-> (ranges make-wrapper-proc)
   #:property prop:custom-write custom-write-property-proc)
 
@@ -117,7 +113,6 @@
   prop:chaperone-contract
   (build-chaperone-contract-property
    #:name unconstrained-domain->-name
-   #:can-cache? can-cache-unconstrained-domain->?
    #:first-order unconstrained-domain->-first-order
    #:late-neg-projection unconstrained-domain->-projection
    #:stronger unconstrained-domain->-stronger))
@@ -127,7 +122,6 @@
   prop:chaperone-contract
   (build-chaperone-contract-property
    #:name unconstrained-domain->-name
-   #:can-cache? can-cache-unconstrained-domain->?
    #:first-order unconstrained-domain->-first-order
    #:late-neg-projection unconstrained-domain->-projection
    #:stronger unconstrained-domain->-stronger))

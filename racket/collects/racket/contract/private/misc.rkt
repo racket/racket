@@ -103,8 +103,7 @@
    `(string-len/c ,n)
    (λ (x)
      (and (string? x)
-          ((string-length x) . < . n)))
-   #:can-cache? #t))
+          ((string-length x) . < . n)))))
 
 (define (between/c-stronger this that)
   (define this-low (between/c-s-low this))
@@ -209,8 +208,7 @@
    #:stronger between/c-stronger
    #:equivalent between/c-equivalent
    #:first-order between/c-first-order
-   #:generate between/c-generate
-   #:can-cache? (λ (ctc) #t)))
+   #:generate between/c-generate))
 (define-struct (renamed-between/c between/c-s) (name))
 
 (define (maybe-neg n) (rand-choice [1/2 n] [else (- n)]))
@@ -296,7 +294,6 @@
              [4/10 (-/+ x (random))]
              [else (-/+ x (random 4294967087))])))]))
    #:stronger </>-ctc-stronger
-   #:can-cache? (λ (ctc) #t)
    #:equivalent </>-ctc-equivalent))
 
 (define (</>-ctc-stronger this that)
@@ -375,8 +372,7 @@
          [pred (flat-contract-predicate ctc)])
     (flat-named-contract
      (build-compound-type-name 'not/c ctc)
-     (λ (x) (not (pred x)))
-     #:can-cache? (can-cache-contract? ctc))))
+     (λ (x) (not (pred x))))))
 
 (struct syntax-ctc (ctc)
   #:property prop:custom-write custom-write-property-proc
@@ -387,7 +383,6 @@
                 (and (syntax-ctc? that)
                      (contract-struct-stronger? (syntax-ctc-ctc this)
                                                 (syntax-ctc-ctc that))))
-   #:can-cache? (λ (ctc) (can-cache-contract? (syntax-ctc-ctc ctc)))
    #:equivalent (λ (this that)
                   (and (syntax-ctc? that)
                        (contract-struct-equivalent? (syntax-ctc-ctc this)
@@ -467,9 +462,6 @@
        (contract-struct-stronger? (promise-base-ctc-ctc this)
                                   (promise-base-ctc-ctc that))))
 
-(define (can-cache-promise/c? c)
-  (can-cache-contract? (promise-base-ctc-ctc c)))
-
 (define (promise-ctc-equivalent? this that)
   (and (promise-base-ctc? that)
        (contract-struct-equivalent? (promise-base-ctc-ctc this)
@@ -483,7 +475,6 @@
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
-   #:can-cache? can-cache-promise/c?
    #:equivalent promise-ctc-equivalent?
    #:first-order (λ (ctc) promise?)))
 
@@ -494,7 +485,6 @@
    #:name promise-contract-name
    #:late-neg-projection promise-contract-late-neg-proj
    #:stronger promise-ctc-stronger?
-   #:can-cache? can-cache-promise/c?
    #:equivalent promise-ctc-equivalent?
    #:first-order (λ (ctc) promise?)))
 
@@ -564,10 +554,6 @@
                                            (parameter/c-out that))
                 (contract-struct-stronger? (parameter/c-in that)
                                            (parameter/c-in this)))))
-   #:can-cache?
-   (λ (ctc)
-     (and (can-cache-contract? (parameter/c-in ctc))
-          (can-cache-contract? (parameter/c-out ctc))))
    #:equivalent
    (λ (this that)
       (and (parameter/c? that)
@@ -588,7 +574,6 @@
    #:stronger procedure-arity-includes-equivalent?
    #:equivalent procedure-arity-includes-equivalent?
    #:name (λ (ctc) `(procedure-arity-includes/c ,(procedure-arity-includes/c-n ctc)))
-   #:can-cache? (λ (ctc) #t)
    #:first-order (λ (ctc)
                    (define n (procedure-arity-includes/c-n ctc))
                    (λ (x)
@@ -671,8 +656,7 @@
                 (λ (fuel) 
                   (define env (contract-random-generate-get-current-environment))
                   (λ () (random-any/c env fuel))))
-   #:first-order get-any?
-   #:can-cache? (λ (x) #t)))
+   #:first-order get-any?))
 
 (define/final-prop any/c (make-any/c))
 
@@ -696,8 +680,7 @@
    #:stronger (λ (this that) #t)
    #:equivalent (λ (this that) (none/c? that))
    #:name (λ (ctc) (none/c-name ctc))
-   #:first-order (λ (ctc) (λ (val) #f))
-   #:can-cache? (λ (ctc) #t)))
+   #:first-order (λ (ctc) (λ (val) #f))))
 
 (define/final-prop none/c (make-none/c 'none/c))
 
@@ -794,13 +777,6 @@
         (base-prompt-tag/c-call/ccs this)
         (base-prompt-tag/c-call/ccs that))))
 
-(define (can-cache-prompt-tag/c c)
-  (and
-   (for/and ([ctc (in-list (base-prompt-tag/c-ctcs c))])
-     (can-cache-contract? ctc))
-   (for/and ([ctc (in-list (base-prompt-tag/c-call/ccs c))])
-     (can-cache-contract? ctc))))
-
 ;; (listof contract) (listof contract)
 (define-struct base-prompt-tag/c (ctcs call/ccs))
 
@@ -811,7 +787,6 @@
    #:late-neg-projection (prompt-tag/c-late-neg-proj #t)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
-   #:can-cache? can-cache-prompt-tag/c
    #:equivalent prompt-tag/c-equivalent?
    #:name prompt-tag/c-name))
 
@@ -822,7 +797,6 @@
    #:late-neg-projection (prompt-tag/c-late-neg-proj #f)
    #:first-order (λ (ctc) continuation-prompt-tag?)
    #:stronger prompt-tag/c-stronger?
-   #:can-cache? can-cache-prompt-tag/c
    #:equivalent prompt-tag/c-equivalent?
    #:name prompt-tag/c-name))
 
@@ -875,9 +849,6 @@
         (base-continuation-mark-key/c-ctc this)
         (base-continuation-mark-key/c-ctc that))))
 
-(define (can-cache-continuation-mark-key/c? c)
-  (can-cache-contract? (base-continuation-mark-key/c-ctc c)))
-
 (define (continuation-mark-key/c-equivalent? this that)
   (and (base-continuation-mark-key/c? that)
        (contract-struct-equivalent?
@@ -895,7 +866,6 @@
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj chaperone-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
-   #:can-cache? can-cache-continuation-mark-key/c?
    #:equivalent continuation-mark-key/c-equivalent?
    #:name continuation-mark-key/c-name))
 
@@ -908,7 +878,6 @@
    #:late-neg-projection (continuation-mark-key/c-late-neg-proj impersonate-continuation-mark-key)
    #:first-order (λ (ctc) continuation-mark-key?)
    #:stronger continuation-mark-key/c-stronger?
-   #:can-cache? can-cache-continuation-mark-key/c?
    #:equivalent continuation-mark-key/c-equivalent?
    #:name continuation-mark-key/c-name))
 
@@ -983,10 +952,6 @@
      (pairwise-equivalent-contracts? this-ctcs that-ctcs)]
     [else #f]))
 
-(define (can-cache-evt/c? c)
-  (for/and ([ctc (in-list (chaperone-evt/c-ctcs c))])
-    (can-cache-contract? ctc)))
-
 ;; ctcs - Listof<Contract>
 (define-struct chaperone-evt/c (ctcs)
   #:property prop:chaperone-contract
@@ -994,7 +959,6 @@
    #:late-neg-projection evt/c-proj
    #:first-order evt/c-first-order
    #:stronger evt/c-stronger?
-   #:can-cache? can-cache-evt/c?
    #:equivalent evt/c-equivalent?
    #:name evt/c-name))
 
@@ -1053,9 +1017,6 @@
         (base-channel/c-ctc this)
         (base-channel/c-ctc that))))
 
-(define (can-cache-channel/c? c)
-  (can-cache-contract? (base-channel/c-ctc c)))
-
 (define (channel/c-equivalent? this that)
   (and (base-channel/c? that)
        (contract-struct-equivalent?
@@ -1072,7 +1033,6 @@
    #:late-neg-projection (channel/c-late-neg-proj chaperone-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
-   #:can-cache? can-cache-channel/c?
    #:equivalent channel/c-equivalent?
    #:name channel/c-name))
 
@@ -1084,7 +1044,6 @@
    #:late-neg-projection (channel/c-late-neg-proj impersonate-channel)
    #:first-order channel/c-first-order
    #:stronger channel/c-stronger?
-   #:can-cache? can-cache-channel/c?
    #:equivalent channel/c-equivalent?
    #:name channel/c-name))
 
@@ -1094,15 +1053,14 @@
    (coerce-flat-contract 'flat-contract-predicate x)))
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
-(define (flat-named-contract name pre-contract [generate #f] #:can-cache? [can-cache? #f])
+(define (flat-named-contract name pre-contract [generate #f])
   (cond
     [(and (not generate)
-          (not can-cache?)
           (coerce-contract/f pre-contract name))
      =>
      values]
     [(flat-contract? pre-contract)
-     (make-predicate-contract name (flat-contract-predicate pre-contract) generate can-cache?)]
+     (make-predicate-contract name (flat-contract-predicate pre-contract) generate #f)]
     [else
      (raise-argument-error 'flat-named-contract
                            "flat-contract?"
@@ -1134,8 +1092,7 @@
                      (for/and ([(k v) (in-hash x)])
                        (and (printable? k)
                             (printable? v))))))
-          #t))
-   #:can-cache? #t))
+          #t))))
 
 
 (define natural-number/c
@@ -1146,8 +1103,7 @@
           (integer? x)
           (exact? x)
           (x . >= . 0)))
-   (λ (fuel) (λ () (exact-nonnegative-integer-gen fuel)))
-   #:can-cache? #t))
+   (λ (fuel) (λ () (exact-nonnegative-integer-gen fuel)))))
 
 ;; rename-contract : contract any/c -> contract
 ;; If the argument is a flat contract, so is the result.
@@ -1274,12 +1230,11 @@
    #:name (contract-name ctc)
    #:first-order (contract-first-order ctc)
    #:late-neg-projection (λ (b) (ctc-lnp (blame-add-extra-field b field message)))
-   #:can-cache? (can-cache-contract? ctc)
    #:stronger (λ (this that) (contract-struct-stronger? ctc that))
    #:equivalent (λ (this that) (contract-struct-equivalent? ctc that))
    #:list-contract? (list-contract? ctc)))
 
-(define (flat-contract-with-explanation ? #:name [name (object-name ?)] #:can-cache? [can-cache? #f])
+(define (flat-contract-with-explanation ? #:name [name (object-name ?)])
   (define (call-? x)
     (define reason (? x))
     (unless (or (boolean? reason)
@@ -1291,7 +1246,6 @@
     reason)
   (make-flat-contract
    #:name name
-   #:can-cache? can-cache?
    #:first-order (λ (x) (equal? #t (call-? x)))
    #:late-neg-projection
    (λ (b)

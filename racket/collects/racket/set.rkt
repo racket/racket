@@ -293,13 +293,11 @@
     (define me (if chaperone-contract?
                    (make-chaperone-contract
                     #:name (set-contract-name ctc)
-                    #:can-cache? (can-cache-contract? ctc)
                     #:stronger set-contract-stronger
                     #:late-neg-projection
                     (λ (blame) (λ (val neg-party) (do-redirect val neg-party))))
                    (make-contract
                     #:name (set-contract-name ctc)
-                    #:can-cache? (can-cache-contract? ctc)
                     #:stronger set-contract-stronger
                     #:late-neg-projection
                     (λ (blame) (λ (val neg-party) (do-redirect val neg-party))))))
@@ -385,15 +383,10 @@
 (define (set-contract-stronger this that)
   #f)
 
-(define (can-cache-set-contract? c)
-  (and (can-cache-contract? (set-contract-elem/c c))
-       (can-cache-contract? (set-contract-equal-key/c c))))
-
 (struct flat-set-contract set-contract []
   #:property prop:flat-contract
   (build-flat-contract-property
     #:name set-contract-name
-    #:can-cache? can-cache-set-contract?
     #:stronger set-contract-stronger
     #:first-order flat-set-contract-first-order
     #:late-neg-projection flat-set-contract-late-neg-projection))
@@ -402,7 +395,6 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
     #:name set-contract-name
-    #:can-cache? can-cache-set-contract?
     #:stronger set-contract-stronger
     #:first-order set-contract-first-order
     #:late-neg-projection (set-contract-late-neg-projection #t)))
@@ -411,7 +403,6 @@
   #:property prop:contract
   (build-contract-property
     #:name set-contract-name
-    #:can-cache? can-cache-set-contract?
     #:stronger set-contract-stronger
     #:first-order set-contract-first-order
     #:late-neg-projection (set-contract-late-neg-projection #f)))

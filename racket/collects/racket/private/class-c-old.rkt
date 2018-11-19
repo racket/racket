@@ -1067,26 +1067,6 @@
       (and (equal? this-name that-name)
            (contract-stronger? this-ctc that-ctc)))))
 
-(define (class/c-can-cache? ctc)
-  (define ictc (class/c-internal ctc))
-  (define (check-internal ctcs)
-    (for/and ([ctc (in-list ctcs)])
-      (can-cache-contract? ctc)))
-  (define (check-external ctcs)
-    (for/and ([ctc (in-list ctcs)])
-      (or (not ctc) (can-cache-contract? ctc))))
-  (and (check-external (class/c-method-contracts ctc))
-       (check-external (class/c-field-contracts ctc))
-       (check-external (class/c-init-contracts ctc))
-       (check-external (class/c-absents ctc))
-       (check-internal (internal-class/c-inherit-contracts ictc))
-       (check-internal (internal-class/c-inherit-field-contracts ictc))
-       (check-internal (internal-class/c-super-contracts ictc))
-       (check-internal (internal-class/c-inner-contracts ictc))
-       (check-internal (internal-class/c-override-contracts ictc))
-       (check-internal (internal-class/c-augment-contracts ictc))
-       (check-internal (internal-class/c-augride-contracts ictc))))
-
 (define (check-one-equivalent names-sel ctcs-sel this that)
   (for/and ([this-name (in-list (names-sel this))]
             [this-ctc (in-list (ctcs-sel this))])
@@ -1104,7 +1084,6 @@
   #:property prop:contract
   (build-contract-property
    #:late-neg-projection class/c-late-neg-proj
-   #:can-cache? class/c-can-cache?
    #:name build-class/c-name
    #:stronger class/c-stronger
    #:equivalent class/c-equivalent
@@ -1549,7 +1528,6 @@
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
    #:first-order instanceof/c-first-order
-   #:can-cache? (λ (c) (can-cache-contract? (base-instanceof/c-class-ctc c)))
    #:equivalent instanceof/c-equivalent
    #:stronger instanceof/c-stronger))
 
@@ -1678,12 +1656,6 @@
                     any/c
                     that-ctc)))))))
 
-(define (object/c-can-cache? ctc)
-  (and (for/and ([mtd (in-list (base-object/c-method-contracts ctc))])
-         (or (just-check-existence? mtd) (can-cache-contract? mtd)))
-       (for/and ([fld (in-list (base-object/c-field-contracts ctc))])
-         (or (just-check-existence? fld) (can-cache-contract? fld)))))
-
 (define-struct base-object/c (methods method-contracts fields field-contracts)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -1696,7 +1668,6 @@
                                (base-object/c-method-contracts ctc)
                                (base-object/c-fields ctc)
                                (base-object/c-field-contracts ctc)))
-   #:can-cache? object/c-can-cache?
    #:first-order object/c-first-order
    #:equivalent object/c-equivalent
    #:stronger object/c-stronger))

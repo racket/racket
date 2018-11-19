@@ -1261,14 +1261,12 @@ symbols, and that return a symbol.
 
 @defform*/subs[#:literals (any values)
 [(->i maybe-chaperone
-      maybe-can-cache
       (mandatory-dependent-dom ...)
       dependent-rest
       pre-condition
       dependent-range
       post-condition)
  (->i maybe-chaperone
-      maybe-can-cache
       (mandatory-dependent-dom ...)
       (optional-dependent-dom ...)
       dependent-rest
@@ -1276,7 +1274,6 @@ symbols, and that return a symbol.
       dependent-range
       post-condition)]
 ([maybe-chaperone #:chaperone (code:line)]
- [maybe-chaperone #:can-cache (code:line)]
  [mandatory-dependent-dom id+ctc
                           (code:line keyword id+ctc)]
  [optional-dependent-dom id+ctc
@@ -1317,10 +1314,6 @@ contract will be a chaperone. If it is @racket[#:chaperone], all of the contract
 and results must be @tech{chaperone contracts} and the result of @racket[->i] will be
 a @tech{chaperone contract}. If it is not present, then the result
 contract will not be a @tech{chaperone contract}.
-
-The @racket[#:can-cache] keyword is like that of @racket[recursive-contract]. If present,
-all of the subcontracts must be cachable; if it is absent, there is no constraint
-placed on subcontracts.
 
 The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional

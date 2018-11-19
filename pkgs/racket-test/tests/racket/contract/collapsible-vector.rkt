@@ -276,7 +276,7 @@
 
   (test/spec-passed
    'vectorof-impersonator
-   '(let* ([ctc (vectorof (make-contract #:can-cache? #t #:late-neg-projection (lambda (b) (lambda (x n) 'foo))))]
+   '(let* ([ctc (vectorof (make-contract #:late-neg-projection (lambda (b) (lambda (x n) 'foo))))]
            [v (contract ctc (add-many-contracts 11 ctc (vector 1) 'inner-pos 'inner-neg) 'pos 'neg)])
       (vector-ref v 0)))
 
@@ -411,7 +411,7 @@
 
   (test/spec-passed
    'vector/c-impersonator
-   '(let* ([ctc (vector/c (make-contract #:can-cache? #t #:late-neg-projection (lambda (b) (lambda (x n) 'foo))))]
+   '(let* ([ctc (vector/c (make-contract #:late-neg-projection (lambda (b) (lambda (x n) 'foo))))]
            [v (contract ctc (add-many-contracts 11 ctc (vector 1) 'inner-pos 'inner-neg) 'pos 'neg)])
       (vector-ref v 0)))
 
@@ -445,8 +445,7 @@
          (define marks (current-continuation-marks))
          (define res (continuation-mark-set-first marks collapsible-contract-continuation-mark-key))
          (set-box! b (or (unbox b) res))
-         #t)
-       #:can-cache? #t)))
+         #t))))
 
   (test-true
    'collapsible-mark-present
@@ -550,8 +549,7 @@
    '(define pos
       (flat-named-contract
        'pos
-       (lambda (x) (and (integer? x) (>= x 0)))
-       #:can-cache? #t)))
+       (lambda (x) (and (integer? x) (>= x 0))))))
   
   (test-true
    'vecof-false-contracts
@@ -728,19 +726,16 @@
   (contract-eval
    '(define imp-ctc1
       (make-contract
-       #:can-cache? #t
        #:late-neg-projection (lambda (blame) (lambda (val neg) val)))))
 
   (contract-eval
    '(define imp-ctc2
       (make-contract
-       #:can-cache? #t
        #:late-neg-projection (lambda (blame) (lambda (val neg) val)))))
 
   (contract-eval
    '(define chap-ctc
       (make-chaperone-contract
-       #:can-cache? #t
        #:late-neg-projection (lambda (blame) (lambda (val neg) val)))))
 
   ;; vectorof combine
@@ -1260,7 +1255,6 @@
       (define v (contract ctc (add-many-contracts 11 ctc (vector (lambda () 1)) 'ip 'in) 'p 'n))
       (define my/c
         (make-chaperone-contract
-         #:can-cache? #t
          #:late-neg-projection
          (lambda (blame)
            (lambda (val neg)
@@ -1277,7 +1271,6 @@
   (contract-eval
    '(define my->/c
       (make-chaperone-contract
-       #:can-cache? #t
        #:late-neg-projection
        (lambda (blame)
          (lambda (val neg)
