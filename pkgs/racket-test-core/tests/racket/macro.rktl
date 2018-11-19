@@ -693,30 +693,32 @@
     (parameterize ([current-output-port o]
                    [current-error-port e]
                    [current-namespace (make-base-namespace)])
-      (call-with-continuation-prompt
-       (lambda ()
-         (eval
-          `(module m racket/base
-            (require (for-syntax racket/base))
-            
-            (define v 0)
-            
-            (begin-for-syntax
-              (struct e (p)
-                      #:property ,prop:macro ,(if (eq? prop:macro 'prop:procedure)
-                                                  0
-                                                  (list #'quote-syntax
-                                                        (syntax-property #'v
-                                                                         'not-free-identifier=?
-                                                                         #t)))
-                      #:property prop:expansion-contexts ',contexts))
-            
-            (define-syntax m (e (lambda (stx)
-                                  (displayln (syntax-local-context))
-                                  #'10)))
-            
-            ,(wrap 'm)))
-         (dynamic-require (if sub? '(submod 'm sub) ''m) #f))))
+      ;; these tests rely on errors printing to the current-error-port
+      (with-handlers ([exn:fail? (lambda (e) ((error-display-handler) (exn-message e) e))])
+        (call-with-continuation-prompt
+         (lambda ()
+           (eval
+            `(module m racket/base
+               (require (for-syntax racket/base))
+               
+               (define v 0)
+               
+               (begin-for-syntax
+                 (struct e (p)
+                   #:property ,prop:macro ,(if (eq? prop:macro 'prop:procedure)
+                                               0
+                                               (list #'quote-syntax
+                                                     (syntax-property #'v
+                                                                      'not-free-identifier=?
+                                                                      #t)))
+                   #:property prop:expansion-contexts ',contexts))
+               
+               (define-syntax m (e (lambda (stx)
+                                     (displayln (syntax-local-context))
+                                     #'10)))
+               
+               ,(wrap 'm)))
+           (dynamic-require (if sub? '(submod 'm sub) ''m) #f)))))
     (list (get-output-string o)
           (if error-rx
               (let ([m (regexp-match error-rx (get-output-string e))])
