@@ -1254,5 +1254,19 @@
   (test 'nope g struct:arity-at-least (lambda () 'nope)))
 
 ;; ----------------------------------------
+;; Make sure an indirect struct constructor reports
+;; the right arity when there are more than 6 fields
+
+(let ()
+  (struct b (case-sensitive 
+             printing-style 
+             fraction-style
+             show-sharing
+             insert-newlines
+             annotations))
+  (struct a (x y) #:super struct:b)
+  (test 8 procedure-arity a))
+
+;; ----------------------------------------
 
 (report-errs)
