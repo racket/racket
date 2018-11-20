@@ -1333,10 +1333,11 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   A @racket[#f] result indicates that no configuration directory
   is available.}
 
-@defproc[(find-links-file) path?]{
+@defproc[(find-links-file) (or/c path? #f)]{
   Returns a path to the installation's @tech[#:doc
   reference-doc]{collection links file}.  The file indicated by the
-  returned path may or may not exist.
+  returned path may or may not exist. A @racket[#f] result indicates
+  that no links file is available.
 
   @see-config[links-file]}
 
@@ -1345,7 +1346,7 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
   links file}.  The file indicated by the returned path may or may not
   exist.}
 
-@defproc[(get-links-search-files) path?]{
+@defproc[(get-links-search-files) (listof path?)]{
   Returns a list of paths to installation @tech[#:doc
   reference-doc]{collection links files} to search in
   order. (Normally, the result includes the result of
@@ -1355,10 +1356,11 @@ current-system paths while @racket[get-cross-lib-search-dirs] and
 
   @see-config[links-search-files]}
 
-@defproc[(find-pkgs-dir) path?]{
+@defproc[(find-pkgs-dir) (or/c path? #f)]{
   Returns a path to the directory containing packages with
   installation scope; the directory indicated by the returned path may
-  or may not exist.
+  or may not exist. A @racket[#f] result indicates that no package-installation
+  directory is available.
 
   @see-config[pkgs-dir]}
 
