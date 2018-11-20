@@ -246,7 +246,9 @@
   (when (null? done-bodys)
     (raise-syntax-error (string->symbol "begin (possibly implicit)")
                         "no expression after a sequence of internal definitions"
-                        (datum->syntax #f (cons 'begin init-bodys) s)))
+                        (datum->syntax #f (cons 'begin init-bodys) s)
+                        #f
+                        init-bodys))
   ;; As we finish expanding, we're no longer in a definition context
   (define finish-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes body-ctx def-ctx-scopes)
                                    [context 'expression]
