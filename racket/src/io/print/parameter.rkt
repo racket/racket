@@ -16,7 +16,7 @@
 (define-boolean-parameter print-box #t)
 (define-boolean-parameter print-unreadable #t)
 (define-boolean-parameter print-hash-table #t)
-(define-boolean-parameter print-as-expression #f)
+(define-boolean-parameter print-as-expression #t)
 (define-boolean-parameter print-vector-length #f)
 (define-boolean-parameter print-pair-curly-braces #f)
 (define-boolean-parameter print-mpair-curly-braces #t)
