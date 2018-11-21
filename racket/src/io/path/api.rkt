@@ -8,7 +8,9 @@
          (only-in '#%kernel
                   ;; get `chaperone-procedure` that doesn't support keyword arguments:
                   chaperone-procedure)
-         "path.rkt")
+         "path.rkt"
+         "simplify.rkt"
+         "directory-path.rkt")
 
 (provide path->complete-path
          current-drive
@@ -33,28 +35,32 @@
 
 ;; ----------------------------------------
 
-(define (make-guard-paths who)
+(define (make-guard-paths who normalize?)
   (case-lambda
     [()
      (security-guard-check-file who #f '(exists))
      (values)]
     [(path)
-     (when (path-string? path)
-       (->host path who '(exists)))
-     path]))
+     (cond
+       [(path-string? path)
+        (->host path who '(exists))
+        (if normalize?
+            (path->directory-path (simplify-path path))
+            path)]
+       [else path])]))
 
 (define/who current-directory
-  (let ([guard (make-guard-paths who)])
+  (let ([guard (make-guard-paths who #t)])
     (make-derived-parameter raw:current-directory guard guard)))
 
 (define/who current-directory-for-path->complete-path
-  (let ([guard (make-guard-paths 'path->complete-path)])
+  (let ([guard (make-guard-paths 'path->complete-path #f)])
     (make-derived-parameter raw:current-directory guard guard)))
 
 (define/who current-directory-for-user
-  (let ([guard (make-guard-paths who)])
+  (let ([guard (make-guard-paths who #t)])
     (make-derived-parameter raw:current-directory-for-user guard guard)))
 
 (define/who current-load-relative-directory
-  (let ([guard (make-guard-paths who)])
+  (let ([guard (make-guard-paths who #f)])
     (make-derived-parameter raw:current-load-relative-directory guard guard)))
