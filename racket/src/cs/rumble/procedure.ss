@@ -37,18 +37,18 @@
   (case-lambda
     [(proc args)
      (if (#%procedure? proc)
-         (chez:apply proc args)
-         (chez:apply (extract-procedure proc (length args)) args))]
+         (#2%apply proc args)
+         (#2%apply (extract-procedure proc (length args)) args))]
     [(proc)
      (raise-arity-error 'apply (|#%app| arity-at-least 2) proc)]
     [(proc . argss)
      (if (#%procedure? proc)
-         (chez:apply chez:apply proc argss)
+         (#2%apply #2%apply proc argss)
          (let ([len (let loop ([argss argss])
                       (cond
                        [(null? (cdr argss)) (length (car argss))]
                        [else (fx+ 1 (loop (cdr argss)))]))])
-           (chez:apply chez:apply (extract-procedure proc len) argss)))]))
+           (#2%apply #2%apply (extract-procedure proc len) argss)))]))
 
 ;; See copy in "expander.sls"
 (define-syntax (|#%app| stx)

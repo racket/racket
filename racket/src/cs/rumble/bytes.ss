@@ -147,7 +147,7 @@
         c))]
    [(a)
     (check who bytes? a)
-    (#2%bytevector-copy a)]
+    (#3%bytevector-copy a)]
    [() #vu8()]
    [args
     (let* ([size (let loop ([args args])

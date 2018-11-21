@@ -682,6 +682,9 @@
                     (string=? "attempt to assign undefined variable ~s" (condition-message v))))
            (lambda (msg marks)
              (|#%app| exn:fail:contract:variable msg marks (car (condition-irritants v))))]
+          [(and (format-condition? v)
+                (string-prefix? "~?.  Some debugging context lost" (condition-message v)))
+           exn:fail]
           [else
            exn:fail:contract])
          (exn->string v)
