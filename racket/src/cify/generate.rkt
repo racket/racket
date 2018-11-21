@@ -966,12 +966,12 @@
        (format "scheme_intern_symbol(~s)" (symbol->string e))]
       [(string? e)
        (define s (string->bytes/utf-8 e))
-       (format "scheme_make_sized_utf8_string(~s, ~a)"
-               (bytes->string/latin-1 s)
+       (format "scheme_make_sized_utf8_string(~a, ~a)"
+               (substring (format "~s" s) 1)
                (bytes-length s))]
       [(bytes? e)
-       (format "scheme_make_sized_byte_string(~s, ~a, 0)"
-               (bytes->string/latin-1 e)
+       (format "scheme_make_sized_byte_string(~a, ~a, 0)"
+               (substring (format "~s" e) 1)
                (bytes-length e))]
       [(number? e)
        (cond
