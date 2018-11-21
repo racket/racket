@@ -1,5 +1,6 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require '#%extfl
+         (for-syntax racket/base)
          "private/truncate-path.rkt"
          "private/relative-path.rkt"
          (rename-in racket/base
@@ -94,6 +95,8 @@
 
   (fasl-srcloc 38)
 
+  (fasl-extflonum-type 39)
+
   ;; Unallocated numbers here are for future extensions
 
   ;; 100 to 255 is used for small integers:
@@ -145,7 +148,10 @@
       [(box? v)
        (loop (unbox v))]
       [(prefab-struct-key v)
-       (loop (struct->vector v))]
+       => (lambda (k)
+            (loop k)
+            (for ([e (in-vector (struct->vector v) 1)])
+              (loop e)))]
       [else (void)]))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   (define path->relative-path-elements (make-path->relative-path-elements))
@@ -193,6 +199,11 @@
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
            (write-bytes (real->floating-point-bytes v 4 #f) o)]
+          [(extflonum? v)
+           (write-byte fasl-extflonum-type o)
+           (define bstr (string->bytes/utf-8 (format "~a" v)))
+           (write-fasl-integer (bytes-length bstr) o)
+           (write-bytes bstr o)]
           [(rational? v)
            (write-byte fasl-rational-type o)
            (loop (numerator v))
@@ -374,6 +385,9 @@
      [(fasl-integer-type) (intern (read-fasl-integer i))]
      [(fasl-flonum-type) (floating-point-bytes->real (read-bytes/exactly 8 i) #f)]
      [(fasl-single-flonum-type) (real->single-flonum (floating-point-bytes->real (read-bytes/exactly 4 i) #f))]
+     [(fasl-extflonum-type)
+      (define bstr (read-bytes/exactly (read-fasl-integer i) i))
+      (string->number (bytes->string/utf-8 bstr) 10 'read)]
      [(fasl-rational-type) (intern (/ (loop) (loop)))]
      [(fasl-complex-type) (intern (make-rectangular (loop) (loop)))]
      [(fasl-char-type) (intern (integer->char (read-fasl-integer i)))]
@@ -537,11 +551,11 @@
     [(<= b 127) b]
     [(>= b 132) (- b 256)]
     [(eqv? b 128)
-     (integer-bytes->integer (read-bytes/exactly 2 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 2 i) #t #f)]
     [(eqv? b 129)
-     (integer-bytes->integer (read-bytes/exactly 4 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 4 i) #t #f)]
     [(eqv? b 130)
-     (integer-bytes->integer (read-bytes/exactly 8 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 8 i) #t #f)]
     [(eqv? b 131)
      (define len (read-fasl-integer i))
      (define str (read-fasl-string i len))

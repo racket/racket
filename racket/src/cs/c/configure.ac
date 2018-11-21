@@ -61,6 +61,11 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+if test "${enable_csonly}" = "yes" ; then
+  enable_csdefault=yes
+fi
+show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
 m4_include(../ac/sdk_show.m4)
 m4_include(../ac/strip_show.m4)
 
@@ -75,6 +80,7 @@ fi
 m4_include(../ac/path_pkgscope.m4)
 
 SUB_CONFIGURE_EXTRAS=
+
 
 CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then

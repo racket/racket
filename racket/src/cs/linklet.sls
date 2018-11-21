@@ -3,7 +3,6 @@
           compile-linklet
           recompile-linklet
           eval-linklet
-          read-compiled-linklet
           instantiate-linklet
 
           read-on-demand-source
@@ -20,13 +19,9 @@
           instance-set-variable-value!
           instance-unset-variable!
 
-          linklet-directory?
-          hash->linklet-directory
-          linklet-directory->hash
-
-          linklet-bundle?
-          hash->linklet-bundle
-          linklet-bundle->hash
+          linklet-virtual-machine-bytes
+          write-linklet-bundle-hash
+          read-linklet-bundle-hash
           
           variable-reference?
           variable-reference->instance
@@ -773,30 +768,6 @@
 
   ;; --------------------------------------------------
 
-  (define-record-type linklet-directory
-    (fields hash)
-    (nongenerative #{linklet-directory cvqw30w53xy6hsjsc5ipep-0}))
-
-  (define (hash->linklet-directory ht)
-    (make-linklet-directory ht))
-  
-  (define (linklet-directory->hash ld)
-    (linklet-directory-hash ld))
-
-  (define-record-type (linklet-bundle make-linklet-bundle linklet-bundle?)
-    (fields (immutable hash))
-    (nongenerative #{linklet-bundle chqh4u4pk0me3osmzzx8pq-0}))
-
-  (define (install-linklet-bundle-write!)
-    (struct-property-set! prop:custom-write (record-type-descriptor linklet-bundle) write-linklet-bundle)
-    (struct-property-set! prop:custom-write (record-type-descriptor linklet-directory) write-linklet-directory))
-
-  (define (hash->linklet-bundle ht)
-    (make-linklet-bundle ht))
-
-  (define (linklet-bundle->hash b)
-    (linklet-bundle-hash b))
-
   (define-record variable-reference (instance      ; the use-site instance
                                      var-or-info)) ; the referenced variable, 'constant, 'mutable, #f, or 'primitive
               
@@ -888,6 +859,4 @@
 
   (set-foreign-eval! eval/foreign)
 
-  (expand-omit-library-invocations #t)
-
-  (install-linklet-bundle-write!))
+  (expand-omit-library-invocations #t))

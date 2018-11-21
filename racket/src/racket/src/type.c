@@ -133,7 +133,6 @@ scheme_init_type ()
 
   set_name(scheme_linklet_type, "<linklet>");
   set_name(scheme_instance_type, "<instance>");
-  set_name(scheme_linklet_directory_type, "<linklet-directory>");
   set_name(scheme_linklet_bundle_type, "<linklet-bundle>");
 
   set_name(scheme_eval_waiting_type, "<eval-waiting>");
@@ -568,7 +567,6 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(scheme_linklet_type, linklet_val);
   GC_REG_TRAV(scheme_instance_type, instance_val);
-  GC_REG_TRAV(scheme_linklet_directory_type, small_object);
   GC_REG_TRAV(scheme_linklet_bundle_type, small_object);
 
   GC_REG_TRAV(_scheme_ir_values_types_, bad_trav);

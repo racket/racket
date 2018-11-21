@@ -2614,7 +2614,7 @@ void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port, Scheme_Objec
 
 Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok);
 
-Scheme_Object *scheme_read_compiled(Scheme_Object *port);
+Scheme_Object *scheme_read_linklet_bundle_hash(Scheme_Object *port);
 
 #define _scheme_eval_linked_expr(obj) scheme_do_eval(obj,-1,NULL,1)
 #define _scheme_eval_linked_expr_multi(obj) scheme_do_eval(obj,-1,NULL,-1)
@@ -3355,9 +3355,6 @@ Scheme_Env *scheme_get_current_namespace_as_env();
 void scheme_set_current_namespace_as_env(Scheme_Env *env);
 
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
-
-Scheme_Object *scheme_string_to_symbol_path(char *_s, intptr_t len);
-char *scheme_symbol_path_to_string(Scheme_Object *p, intptr_t *_len);
 
 /*========================================================================*/
 /*                         errors and exceptions                          */

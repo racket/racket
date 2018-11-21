@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../host/linklet.rkt"
-         "../eval/reflect.rkt")
+         "../eval/reflect.rkt"
+         "linklet.rkt")
 
 (provide compiled-expression-recompile)
 

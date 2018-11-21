@@ -41,13 +41,13 @@ static Scheme_Linklet *eval_linklet_string(const char *str, intptr_t len, int ex
     len = strlen(str);
   port = scheme_make_sized_byte_string_input_port(str, -len); /* negative means it's constant */
 
-  expr = scheme_internal_read(port, 1, 1, -1, scheme_init_load_on_demand ? scheme_true : scheme_false);
-
   if (extract) {
     /* expr is a linklet bundle; 'startup is mapped to the linklet */
-    return (Scheme_Linklet *)scheme_hash_tree_get((Scheme_Hash_Tree *)SCHEME_PTR_VAL(expr),
+    expr = scheme_read_linklet_bundle_hash(port);
+    return (Scheme_Linklet *)scheme_hash_tree_get((Scheme_Hash_Tree *)expr,
                                                   scheme_intern_symbol("startup"));
   } else {
+    expr = scheme_internal_read(port, 1, 1, -1, scheme_init_load_on_demand ? scheme_true : scheme_false);
     return scheme_compile_and_optimize_linklet(scheme_datum_to_syntax(expr, scheme_false, 0),
                                                scheme_intern_symbol("startup"));
   }

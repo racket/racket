@@ -1,6 +1,7 @@
 #lang racket/base
 (require "compiled-in-memory.rkt"
          "multi-top-data.rkt"
+         "linklet.rkt"
          "../host/linklet.rkt")
 
 (provide compiled-tops->compiled-top

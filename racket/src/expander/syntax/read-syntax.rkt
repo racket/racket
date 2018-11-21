@@ -10,7 +10,7 @@
          "../namespace/api-module.rkt"
          "../namespace/namespace.rkt"
          "srcloc.rkt"
-         "../host/linklet.rkt")
+         "../compile/read-linklet.rkt")
 
 (provide read
          read/recursive
@@ -74,7 +74,7 @@
               #:init-c init-c
               #:readtable readtable
               #:local-graph? local-graph?
-              #:read-compiled read-compiled-linklet
+              #:read-compiled read-linklet-bundle-or-directory
               #:dynamic-require dynamic-require-reader
               #:module-declared? read-module-declared?
               #:coerce read-coerce
@@ -84,7 +84,7 @@
   (main:read-language in fail-thunk
                       #:for-syntax? #t
                       #:wrap read-to-syntax
-                      #:read-compiled read-compiled-linklet
+                      #:read-compiled read-linklet-bundle-or-directory
                       #:dynamic-require dynamic-require-reader
                       #:module-declared? read-module-declared?
                       #:coerce read-coerce

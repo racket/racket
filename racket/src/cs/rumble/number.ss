@@ -14,8 +14,9 @@
   (check who real? x)
   (exact->inexact x))
 
-(define (real->single-flonum x)
-  (raise-unsupported-error 'real->single-flonum))
+(define/who (real->single-flonum x)
+  (check who real? x)
+  (exact->inexact x))
 
 (define arithmetic-shift bitwise-arithmetic-shift)
 

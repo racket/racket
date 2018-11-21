@@ -764,6 +764,7 @@
   (set-mpair-hash!)
   (set-hash-hash!)
   (set-flvector-hash!)
+  (set-extflonum-print!)
   (set-impersonator-hash!)
   (set-procedure-impersonator-hash!)
   (set-vector-impersonator-hash!)

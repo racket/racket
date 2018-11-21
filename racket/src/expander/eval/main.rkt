@@ -15,6 +15,7 @@
                     [expand expand-in-context])
          "../compile/main.rkt"
          "../compile/compiled-in-memory.rkt"
+         "../compile/linklet.rkt"
          "top.rkt"
          "module.rkt"
          "../common/module-path.rkt"

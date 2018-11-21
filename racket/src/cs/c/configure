@@ -2475,6 +2475,11 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+if test "${enable_csonly}" = "yes" ; then
+  enable_csdefault=yes
+fi
+show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
@@ -2554,6 +2559,7 @@ fi
 
 
 SUB_CONFIGURE_EXTRAS=
+
 
 CS_INSTALLED=cs
 if test "${enable_csdefault}" = "yes" ; then

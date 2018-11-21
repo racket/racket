@@ -11,6 +11,7 @@
          "../common/module-path.rkt"
          "../compile/serialize.rkt"
          "../host/linklet.rkt"
+         "../compile/linklet.rkt"
          "../compile/instance.rkt"
          "../compile/compiled-in-memory.rkt"
          "../expand/context.rkt"

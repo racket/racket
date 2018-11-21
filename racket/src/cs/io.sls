@@ -370,6 +370,7 @@
                                "argument" arg))
       (cond
        [(and (record? arg)
+             (not (extflonum? arg))
              (or (not (impersonator? arg))
                  (record? (unsafe-struct*-ref arg 0))))
         (let ([arg (if (impersonator? arg)

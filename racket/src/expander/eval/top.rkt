@@ -14,6 +14,7 @@
          "../compile/compiled-in-memory.rkt"
          "../compile/multi-top.rkt"
          "../compile/namespace-scope.rkt"
+         "../compile/linklet.rkt"
          "../expand/context.rkt"
          "top-level-instance.rkt"
          "multi-top.rkt"

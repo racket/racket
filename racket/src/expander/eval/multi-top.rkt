@@ -1,12 +1,13 @@
 #lang racket/base
-(require "../namespace/namespace.rkt"
+(require "../host/linklet.rkt"
+         "../namespace/namespace.rkt"
          "../compile/compiled-in-memory.rkt"
          "../compile/serialize.rkt"
          "../compile/eager-instance.rkt"
          "../compile/reserved-symbol.rkt"
          "../compile/namespace-scope.rkt"
          "../compile/multi-top.rkt"
-         "../host/linklet.rkt")
+         "../compile/linklet.rkt")
 
 (provide create-compiled-in-memorys-using-shared-data)
 

@@ -21,6 +21,7 @@
          "instance.rkt"
          "form.rkt"
          "compiled-in-memory.rkt"
+         "linklet.rkt"
          "../eval/reflect.rkt"
          "../eval/reflect-name.rkt")
 

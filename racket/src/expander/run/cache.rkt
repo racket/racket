@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/file
-         file/sha1)
+         racket/port
+         file/sha1
+         "../compile/read-linklet.rkt")
 
 (provide make-cache
          get-cached-compiled
@@ -51,7 +53,12 @@
     (or (hash-ref new-table path #f)
         (and (file-exists? path)
              (file-exists? (build-path cache-dir (entry-key e)))
-             (equal? (call-with-input-file* path sha1)
+             (equal? (call-with-input-file* path (lambda (i)
+                                                   (sha1
+                                                    (input-port-append
+                                                     #f
+                                                     (open-input-string (version))
+                                                     i))))
                      (entry-content e))
              (for/and ([path (in-list (entry-dependencies e))])
                (define e (hash-ref table path #f))
@@ -85,7 +92,11 @@
          (file-exists? cached-file))
     (notify-success)
     (parameterize ([read-accept-compiled #t])
-      (call-with-input-file* cached-file read))]
+      (call-with-input-file*
+       cached-file
+       (lambda (i)
+         (read-bytes 2 i) ; consume "#~"
+         (read-linklet-bundle-or-directory i))))]
    [(and e
          (hash-ref (cache-in-memory cache) (entry-key e) #f))
     => (lambda (c)

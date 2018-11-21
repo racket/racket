@@ -10,6 +10,7 @@
          "../common/performance.rkt"
          "../eval/top-level-instance.rkt"
          "compiled-in-memory.rkt"
+         "linklet.rkt"
          "context.rkt"
          "header.rkt"
          "reserved-symbol.rkt"

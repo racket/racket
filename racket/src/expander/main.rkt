@@ -161,13 +161,16 @@
             (hash-remove (hash-remove linklet-primitives
                                       'variable-reference?)
                          'variable-reference-constant?)])
-       (declare-hash-based-module! '#%linklet linklet-primitives #:namespace ns
+       (declare-hash-based-module! '#%linklet-primitive linklet-primitives #:namespace ns
                                    #:primitive? #t
-                                   #:register-builtin? #t))
+                                   #:register-builtin? #t)
+       (declare-hash-based-module! '#%linklet-expander linklet-expander-primitives #:namespace ns)
+       (declare-reexporting-module! '#%linklet (list '#%linklet-primitive
+                                                     '#%linklet-expander)
+                                    #:namespace ns))
      (declare-hash-based-module! '#%expobs expobs-primitives #:namespace ns
                                  #:protected? #t)
      (declare-kernel-module! ns
-                             #:eval eval
                              #:main-ids (for/set ([name (in-hash-keys main-primitives)])
                                           name)
                              #:read-ids (for/set ([name (in-hash-keys read-primitives)])
