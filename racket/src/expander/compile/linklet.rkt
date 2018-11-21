@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/fasl
-         "../common/contract.rkt"
+(require "../common/contract.rkt"
          "../host/linklet.rkt"
          "write-linklet.rkt")
 
