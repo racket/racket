@@ -1419,32 +1419,41 @@
                 (contract? y)
                 (contract-stronger? x y)))
 
-         (define-values (reverse-without-redundant-ctcs reverse-without-redundant-projs)
+         (define-values (reverse-without-redundant-ctcs
+                         reverse-without-redundant-projs
+                         dropped-something?)
            (let loop ([prior-ctcs '()]
                       [prior-projs '()]
                       [this-ctc (car all-new-ctcs)]
                       [next-ctcs (cdr all-new-ctcs)]
                       [this-proj (car all-new-projs)]
-                      [next-projs (cdr all-new-projs)])
+                      [next-projs (cdr all-new-projs)]
+                      [dropped-something? #f])
              (cond
                [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
-                                          (cons this-proj prior-projs))]
+                                          (cons this-proj prior-projs)
+                                          dropped-something?)]
                [else
                 (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
                          (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
                     (loop prior-ctcs prior-projs
-                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs))
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
+                          #t)
                     (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
-                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)))])))
+                          (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)
+                          dropped-something?))])))
 
          (define unwrapped-class
            (if (has-impersonator-prop:instanceof/c-unwrapped-class? val)
                (get-impersonator-prop:instanceof/c-unwrapped-class val)
                (object-ref val)))
+
          (define wrapped-class
-           (for/fold ([class unwrapped-class])
-               ([proj (in-list reverse-without-redundant-projs)])
-             (proj class)))
+           (if dropped-something?
+               (for/fold ([class unwrapped-class])
+                         ([proj (in-list reverse-without-redundant-projs)])
+                 (proj class))
+               new-cls))
          
          (impersonate-struct
           interposed-val object-ref
