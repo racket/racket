@@ -1583,21 +1583,21 @@
       (with-handlers ([void (lambda (x) (list x))])
         (with-handlers ([integer? (lambda (x) 10)])
           (raise 'apple))))
-(test '((10)) 'exns
+(test '((20)) 'exns
       (with-handlers ([void (lambda (x) (list x))])
         (with-handlers ([integer? (lambda (x) (raise (list x)))])
-          (raise 10))))
-(test '((10)) 'exns
+          (raise 20))))
+(test '((30)) 'exns
       (let/ec esc
         (parameterize ([uncaught-exception-handler (lambda (x) (esc (list x)))])
           (with-handlers ([integer? (lambda (x) (raise (list x)))])
-            (raise 10)))))
-(test '#((10)) 'exns
+            (raise 30)))))
+(test '#((40)) 'exns
       (let/ec esc
         (with-handlers ([void (lambda (x) (vector x))])
           (parameterize ([uncaught-exception-handler (lambda (x) (esc (list x)))])
             (with-handlers ([integer? (lambda (x) (raise (list x)))])
-              (raise 10))))))
+              (raise 40))))))
 
 (test '(except) 'escape
       (let/ec k
