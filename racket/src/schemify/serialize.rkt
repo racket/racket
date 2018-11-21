@@ -181,16 +181,14 @@
                       `(cons ,a ,d))))]
            [(vector? q)
             (let ([args (map make-construct (vector->list q))])
-              (if (and (andmap quote? args)
-                       (not (impersonator? q)))
-                  `(quote ,q)
-                  `(vector ,@args)))]
+              `(vector->immutable-vector
+                ,(if (and (andmap quote? args)
+                          (not (impersonator? q)))
+                     `(quote ,q)
+                     `(vector ,@args))))]
            [(box? q)
             (let ([arg (make-construct (unbox q))])
-              (if (and (quote? arg)
-                       (not (impersonator? q)))
-                  `(quote ,q)
-                  `(box ,arg)))]
+              `(box-immutable ,arg))]
            [(prefab-struct-key q)
             => (lambda (key)
                  `(make-prefab-struct ',key ,@(map make-construct

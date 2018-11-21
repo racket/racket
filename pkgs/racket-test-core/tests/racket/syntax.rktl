@@ -2186,5 +2186,25 @@
   (test #t regexp-match? #rx"^cons: " (exn-message e)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check immutability after saving and restoring quoted constants
+
+(let ([m `(module defines-immutable-objects racket/base
+            (provide objs)
+            (define objs
+              '(#"x"
+                "x"
+                #()
+                #(1)
+                #(#:x)
+                #(#"x")
+                #&1
+                #&#:x
+                #&#"x"
+                #hasheq((a . b)))))])
+  (define c (compile m))
+  (eval c)
+  (test #t andmap immutable? (dynamic-require ''defines-immutable-objects 'objs)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
