@@ -74,6 +74,9 @@
 (define-syntax-rule (define-bytes-compare name do-name)
   (define/who name
     (case-lambda
+     [(a)
+      (check who bytes? a)
+      #t]
      [(a b)
       (check who bytes? a)
       (check who bytes? b)
@@ -82,7 +85,7 @@
       (check who bytes? a)
       (check who bytes? b)
       (for-each (lambda (arg)
-                  (check who byte? arg))
+                  (check who bytes? arg))
                 l)
       (and (do-name a b)
            (let loop ([a b] [l l])
@@ -126,13 +129,8 @@
            [(fx= va vb) (loop (fx1+ i))]
            [else #f]))]))))
 
-(define (do-bytes>=? a b) (not (do-bytes<? a b)))
-(define (do-bytes<=? a b) (not (do-bytes>? a b)))
-
 (define-bytes-compare bytes<? do-bytes<?)
-(define-bytes-compare bytes<=? do-bytes<=?)
 (define-bytes-compare bytes>? do-bytes>?)
-(define-bytes-compare bytes>=? do-bytes>=?)
 
 (define/who bytes-append
   (case-lambda 

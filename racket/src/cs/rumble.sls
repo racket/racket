@@ -285,7 +285,7 @@
           bytes->list list->bytes
           bytes->immutable-bytes
           bytes-copy! bytes-copy bytes-fill!
-          bytes=? bytes<? bytes>? bytes<=? bytes>=?
+          bytes=? bytes<? bytes>?
           bytes-append
           subbytes
 
