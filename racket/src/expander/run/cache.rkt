@@ -53,12 +53,7 @@
     (or (hash-ref new-table path #f)
         (and (file-exists? path)
              (file-exists? (build-path cache-dir (entry-key e)))
-             (equal? (call-with-input-file* path (lambda (i)
-                                                   (sha1
-                                                    (input-port-append
-                                                     #f
-                                                     (open-input-string (version))
-                                                     i))))
+             (equal? (call-with-input-file* path sha1-with-version)
                      (entry-content e))
              (for/and ([path (in-list (entry-dependencies e))])
                (define e (hash-ref table path #f))
@@ -114,7 +109,7 @@
 
 (define (cache-compiled! cache path c layer)
   (define key (sha1 (open-input-bytes (path->bytes path))))
-  (define file-content (call-with-input-file* path sha1))
+  (define file-content (call-with-input-file* path sha1-with-version))
   (define new-table (hash-set (cache-table cache) (path->string path)
                               (entry key
                                      file-content
@@ -134,6 +129,11 @@
    [else
     (hash-set! (cache-in-memory cache) key c)]))
 
-
 (define (cache->used-paths cache)
   (hash-keys (cache-used cache)))
+
+(define (sha1-with-version i)
+  (sha1 (input-port-append
+         #f
+         (open-input-string (version))
+         i)))
