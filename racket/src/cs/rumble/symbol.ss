@@ -1,14 +1,23 @@
 
 (define gensym
   (case-lambda
-   [() (chez:gensym)]
+   [() (#%gensym)]
    [(s) (cond
-         [(string? s) (chez:gensym (string->immutable-string s))]
-         [(symbol? s) (chez:gensym (chez:symbol->string s))]
+         [(string? s) (#%gensym (append-gensym-counter s))]
+         [(symbol? s) (#%gensym (append-gensym-counter (chez:symbol->string s)))]
          [else (raise-argument-error
                 'gensym
                 "(or/c symbol? string?)"
                 s)])]))
+
+(define gensym-counter (box 0))
+
+(define (append-gensym-counter s)
+  (let loop ()
+    (let ([c (#%unbox gensym-counter)])
+      (if (#%box-cas! gensym-counter c (add1 c))
+          (string-append s (number->string c))
+          (loop)))))
 
 (define/who (symbol-interned? s)
   (check who symbol? s)
