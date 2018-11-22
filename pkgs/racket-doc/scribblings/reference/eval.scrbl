@@ -581,6 +581,25 @@ information to be lost from stack traces (as reported by
 @racket[continuation-mark-set->context]). The default is @racket[#f],
 which allows such optimizations.}
 
+@defboolparam[compile-machine-independent on?]{
+
+A @tech{parameter} that determines whether a newly compiled expression
+writes in a machine-independent format (usually in @filepath{.zo}
+files). Machine-independent compiled code works for any platform and
+any Racket virtual machine. When the machine-independent compiled
+expression is read back in, it is subject to further compilation for
+the current platform and virtual machine, which can be considerably
+slower than reading a format that is fully compiled for a platform and
+virtual machine.
+
+The default is @racket[#f], unless machine-independent mode is enabled
+through the @Flag{M}/@DFlag{compile-any} command-line flag to
+stand-alone Racket (or GRacket) or through the
+@as-index{@envvar{PLT_COMPILE_ANY}} environment variable (set to any
+value).
+
+@history[#:added "7.1.0.5"]}
+
 @defboolparam[eval-jit-enabled on?]{
 
 @guidealso["JIT"]

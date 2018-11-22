@@ -1,7 +1,8 @@
 #lang racket/base
 (require "../common/contract.rkt"
          "../host/linklet.rkt"
-         "write-linklet.rkt")
+         "write-linklet.rkt"
+         "correlated-linklet.rkt")
 
 (provide linklet-directory?
          linklet-bundle?
@@ -15,6 +16,7 @@
 (struct linklet-directory (ht)
   #:property prop:custom-write (lambda (ld port mode)
                                  (write-linklet-directory ld
+                                                          (correlated-linklet-directory? ld)
                                                           linklet-directory->hash
                                                           linklet-bundle->hash
                                                           port)))
@@ -22,6 +24,7 @@
 (struct linklet-bundle (ht)
   #:property prop:custom-write (lambda (b port mode)
                                  (write-linklet-bundle b
+                                                       (correlated-linklet-bundle? b)
                                                        linklet-bundle->hash
                                                        port)))
 
@@ -73,3 +76,19 @@
 (define/who (linklet-bundle->hash ld)
   (check who linklet-bundle? ld)
   (linklet-bundle-ht ld))
+
+;; ----------------------------------------
+
+;; If there are no values that satisfy `linklet?`, then
+;; assume that we have `correlated-linklet?` values.
+
+(define (correlated-linklet-directory? ld)
+  (for/and ([(k v) (in-hash (linklet-directory->hash ld))])
+    (cond
+      [(not k) (correlated-linklet-bundle? v)]
+      [(symbol? k) (correlated-linklet-directory? v)]
+      [else #t])))
+      
+(define (correlated-linklet-bundle? b)
+  (for/and ([(k v) (in-hash (linklet-bundle->hash b))])
+    (not (linklet? v))))

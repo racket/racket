@@ -16,6 +16,7 @@
          "../compile/namespace-scope.rkt"
          "../compile/linklet.rkt"
          "../expand/context.rkt"
+         "../compile/correlated-linklet.rkt"
          "top-level-instance.rkt"
          "multi-top.rkt"
          "protect.rkt")
@@ -82,7 +83,7 @@
    (define link-instance
      (if (compiled-in-memory? c)
          (link-instance-from-compiled-in-memory c (and (not single-expression?) ns))
-         (instantiate-linklet (hash-ref h 'link)
+         (instantiate-linklet (force-compile-linklet (hash-ref h 'link))
                               (list deserialize-instance
                                     (make-eager-instance-instance
                                      #:namespace ns
@@ -137,7 +138,7 @@
                                                                           name
                                                                           val)))))
 
-       (define linklet (hash-ref h phase #f))
+       (define linklet (force-compile-linklet (hash-ref h phase #f)))
 
        (cond
         [linklet

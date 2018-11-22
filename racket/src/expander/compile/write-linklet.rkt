@@ -1,11 +1,12 @@
 #lang racket/base
 (require "../host/linklet.rkt"
-         "version-bytes.rkt")
+         "version-bytes.rkt"
+         "correlated-linklet.rkt")
 
 (provide write-linklet-bundle
          write-linklet-directory)
 
-(define (write-linklet-bundle b linklet-bundle->hash port)
+(define (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash port)
   ;; Various tools expect a particular header:
   ;;   "#~"
   ;;   length of version byte string (< 64) as one byte
@@ -15,19 +16,24 @@
   (write-bytes #"#~" port)
   (write-bytes (bytes (bytes-length version-bytes)) port)
   (write-bytes version-bytes port)
-  (write-bytes (bytes (bytes-length vm-bytes)) port)
-  (write-bytes vm-bytes port)
+  (let ([vm-bytes (if as-correlated-linklet?
+                      correlated-linklet-vm-bytes
+                      vm-bytes)])
+    (write-bytes (bytes (bytes-length vm-bytes)) port)
+    (write-bytes vm-bytes port))
   (write-bytes #"B" port)
   (write-bytes (make-bytes 20 0) port)
   ;; The rest is whatever the VM wants
-  (write-linklet-bundle-hash (linklet-bundle->hash b) port))
+  (if as-correlated-linklet?
+      (write-correlated-linklet-bundle-hash (linklet-bundle->hash b) port)
+      (write-linklet-bundle-hash (linklet-bundle->hash b) port)))
 
-(define (linklet-bundle->bytes b linklet-bundle->hash)
+(define (linklet-bundle->bytes b as-correlated-linklet? linklet-bundle->hash)
   (define o (open-output-bytes))
-  (write-linklet-bundle b linklet-bundle->hash o)
+  (write-linklet-bundle b as-correlated-linklet? linklet-bundle->hash o)
   (get-output-bytes o))
 
-(define (write-linklet-directory ld linklet-directory->hash linklet-bundle->hash port)
+(define (write-linklet-directory ld as-correlated-linklet? linklet-directory->hash linklet-bundle->hash port)
   ;; Various tools expect a particular header:
   ;;   "#~"
   ;;   length of version byte string (< 64) as one byte
@@ -46,51 +52,54 @@
   ;; A bundle name corresponds to a list of symbols. Each symbol in the list is
   ;; prefixed with either: its length as a byte if less than 255; 255 followed by
   ;; a 4-byte integer for the length.
-  (write-bytes #"#~" port)
-  (write-byte (bytes-length version-bytes) port)
-  (write-bytes version-bytes port)
-  (write-byte (bytes-length vm-bytes) port)
-  (write-bytes vm-bytes port)
-  (write-bytes #"D" port)
-  ;; Flatten a directory of bundles into a vector of pairs, where
-  ;; each pair has the encoded bundle name and the bundle bytes  
-  (define (flatten-linklet-directory ld rev-name-prefix accum)
-    (define-values (new-accum saw-bundle?)
-      (for/fold ([accum accum] [saw-bundle? #f]) ([(key value) (in-hash (linklet-directory->hash ld))])
-        (cond
-          [(eq? key #f)
-           (values (cons (cons (encode-name rev-name-prefix)
-                               (linklet-bundle->bytes value linklet-bundle->hash))
-                         accum)
-                   #t)]
-          [else
-           (values (flatten-linklet-directory value (cons key rev-name-prefix) accum)
-                   saw-bundle?)])))
-    (cond
-      [saw-bundle? new-accum]
-      [else (cons (cons (encode-name rev-name-prefix)
-                        #"#f")
-                  new-accum)]))
-  (define bundles (list->vector
-                   (sort (flatten-linklet-directory ld '() '())
-                         (lambda (a b) (bytes<? (car a) (car b))))))
-  (define len (vector-length bundles))
-  (define initial-offset (+ 2 ; "#~"
-                            1 ; version length
-                            (bytes-length version-bytes)
-                            1 ; vm length
-                            (bytes-length vm-bytes)
-                            1 ; D
-                            4)) ; bundle count
-  (write-int len port) ; bundle count
-  ;; Compute bundle offsets
-  (define btree-size (compute-btree-size bundles len))
-  (define node-offsets (compute-btree-node-offsets bundles len initial-offset))
-  (define bundle-offsets (compute-bundle-offsets bundles len (+ initial-offset btree-size)))
-  (write-directory-btree bundles node-offsets bundle-offsets len port)
-  ;; Write the bundles
-  (for ([i (in-range len)])
-    (write-bytes (cdr (vector-ref bundles i)) port)))
+  (let ([vm-bytes (if as-correlated-linklet?
+                      correlated-linklet-vm-bytes
+                      vm-bytes)])
+    (write-bytes #"#~" port)
+    (write-byte (bytes-length version-bytes) port)
+    (write-bytes version-bytes port)
+    (write-byte (bytes-length vm-bytes) port)
+    (write-bytes vm-bytes port)
+    (write-bytes #"D" port)
+    ;; Flatten a directory of bundles into a vector of pairs, where
+    ;; each pair has the encoded bundle name and the bundle bytes  
+    (define (flatten-linklet-directory ld rev-name-prefix accum)
+      (define-values (new-accum saw-bundle?)
+        (for/fold ([accum accum] [saw-bundle? #f]) ([(key value) (in-hash (linklet-directory->hash ld))])
+          (cond
+            [(eq? key #f)
+             (values (cons (cons (encode-name rev-name-prefix)
+                                 (linklet-bundle->bytes value as-correlated-linklet? linklet-bundle->hash))
+                           accum)
+                     #t)]
+            [else
+             (values (flatten-linklet-directory value (cons key rev-name-prefix) accum)
+                     saw-bundle?)])))
+      (cond
+        [saw-bundle? new-accum]
+        [else (cons (cons (encode-name rev-name-prefix)
+                          #"#f")
+                    new-accum)]))
+    (define bundles (list->vector
+                     (sort (flatten-linklet-directory ld '() '())
+                           (lambda (a b) (bytes<? (car a) (car b))))))
+    (define len (vector-length bundles))
+    (define initial-offset (+ 2 ; "#~"
+                              1 ; version length
+                              (bytes-length version-bytes)
+                              1 ; vm length
+                              (bytes-length vm-bytes)
+                              1 ; D
+                              4)) ; bundle count
+    (write-int len port) ; bundle count
+    ;; Compute bundle offsets
+    (define btree-size (compute-btree-size bundles len))
+    (define node-offsets (compute-btree-node-offsets bundles len initial-offset))
+    (define bundle-offsets (compute-bundle-offsets bundles len (+ initial-offset btree-size)))
+    (write-directory-btree bundles node-offsets bundle-offsets len port)
+    ;; Write the bundles
+    (for ([i (in-range len)])
+      (write-bytes (cdr (vector-ref bundles i)) port))))
 
 ;; Encode a bundle name (as a reversed list of symbols) as a single
 ;; byte string

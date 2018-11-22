@@ -1357,6 +1357,7 @@ enum {
   MZCONFIG_COMPILE_MODULE_CONSTS,
   MZCONFIG_USE_JIT,
   MZCONFIG_DISALLOW_INLINE,
+  MZCONFIG_COMPILE_MACHINE_INDEPENDENT,
 
   MZCONFIG_CUSTODIAN,
   MZCONFIG_INSPECTOR,
@@ -1835,6 +1836,7 @@ MZ_EXTERN int scheme_hash_percent_syntax_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_hash_percent_globals_only; /* Defaults to 0 */
 MZ_EXTERN int scheme_binary_mode_stdio; /* Windows-specific; Defaults to 0 */
 MZ_EXTERN int scheme_startup_use_jit; /* Defaults to 1 */
+MZ_EXTERN int scheme_startup_compile_machine_independent; /* Defaults to 0 */
 MZ_EXTERN int scheme_ignore_user_paths; /* Defaults to 0 */
 MZ_EXTERN int scheme_ignore_link_paths; /* Defaults to 0 */
 
@@ -1842,6 +1844,7 @@ MZ_EXTERN void scheme_set_case_sensitive(int);
 MZ_EXTERN void scheme_set_allow_set_undefined(int);
 MZ_EXTERN void scheme_set_binary_mode_stdio(int);
 MZ_EXTERN void scheme_set_startup_use_jit(int);
+MZ_EXTERN void scheme_set_startup_compile_machine_independent(int);
 MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
 MZ_EXTERN void scheme_set_ignore_link_paths(int);

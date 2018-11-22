@@ -1154,6 +1154,7 @@
                                           #:full-module-name (and enclosing-self
                                                                   (resolved-module-path-name module-name)))
                     #:serializable? (expand-context-for-serializable? ctx)
+                    #:to-correlated-linklet? (expand-context-to-correlated-linklet? ctx)
                     #:modules-being-compiled modules-being-compiled
                     #:need-compiled-submodule-rename? #f))
   (set-box! compiled-module-box compiled-module)
@@ -1363,6 +1364,7 @@
                                           #:full-module-name (resolved-module-path-name module-name))
                     #:force-linklet-directory? #t
                     #:serializable? (expand-context-for-serializable? ctx)
+                    #:to-correlated-linklet? (expand-context-to-correlated-linklet? ctx)
                     #:modules-being-compiled modules-being-compiled
                     #:need-compiled-submodule-rename? #f))
   (hash-set! compiled-submodules name (cons is-star? compiled-submodule))

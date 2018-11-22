@@ -181,7 +181,11 @@
 
 /* globals */
 SHARED_OK int scheme_startup_use_jit = INIT_JIT_ON;
+SHARED_OK int scheme_startup_compile_machine_independent = 0;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
+void scheme_set_startup_compile_machine_independent(int v) {
+  scheme_startup_compile_machine_independent = v;
+}
 
 /* THREAD LOCAL SHARED */
 THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
@@ -213,6 +217,7 @@ static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv);
 static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_machine_independent(int argc, Scheme_Object **argv);
 
 void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
 
@@ -262,6 +267,7 @@ scheme_init_eval (Scheme_Startup_Env *env)
   ADD_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   ADD_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   ADD_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
+  ADD_PARAMETER("compile-machine-independent",   compile_machine_independent,  MZCONFIG_COMPILE_MACHINE_INDEPENDENT, env);
 }
 
 void scheme_init_eval_places()
@@ -3901,6 +3907,14 @@ static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv)
 {
   return scheme_param_config("compile-context-preservation-enabled", 
 			     scheme_make_integer(MZCONFIG_DISALLOW_INLINE),
+			     argc, argv,
+			     -1, NULL, NULL, 1);
+}
+
+static Scheme_Object *compile_machine_independent(int argc, Scheme_Object **argv)
+{
+  return scheme_param_config("compile-machine-independent", 
+			     scheme_make_integer(MZCONFIG_COMPILE_MACHINE_INDEPENDENT),
 			     argc, argv,
 			     -1, NULL, NULL, 1);
 }

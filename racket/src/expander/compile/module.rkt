@@ -22,6 +22,7 @@
          "form.rkt"
          "compiled-in-memory.rkt"
          "linklet.rkt"
+         "correlated-linklet.rkt"
          "../eval/reflect.rkt"
          "../eval/reflect-name.rkt")
 
@@ -32,6 +33,7 @@
 (define (compile-module p cctx
                         #:force-linklet-directory? [force-linklet-directory? #f]
                         #:serializable? [serializable? #f]
+                        #:to-correlated-linklet? [to-correlated-linklet? #f]
                         #:modules-being-compiled [modules-being-compiled (make-hasheq)]
                         #:need-compiled-submodule-rename? [need-compiled-submodule-rename? #t])
 
@@ -74,6 +76,7 @@
                                 #:full-module-name full-module-name
                                 #:force-linklet-directory? force-linklet-directory?
                                 #:serializable? serializable?
+                                #:to-correlated-linklet? to-correlated-linklet?
                                 #:modules-being-compiled modules-being-compiled
                                 #:pre-submodules pre-submodules
                                 #:post-submodules post-submodules
@@ -85,6 +88,7 @@
                                     #:full-module-name full-module-name
                                     #:force-linklet-directory? force-linklet-directory?
                                     #:serializable? serializable?
+                                    #:to-correlated-linklet? to-correlated-linklet?
                                     #:modules-being-compiled modules-being-compiled
                                     #:pre-submodules pre-submodules
                                     #:post-submodules post-submodules
@@ -167,7 +171,8 @@
                                                 (define ht (and modules-being-compiled
                                                                 (hash-ref modules-being-compiled mod-name #f)))
                                                 (and ht (hash-ref ht phase #f)))
-                    #:serializable? serializable?))
+                    #:serializable? serializable?
+                    #:to-correlated-linklet? to-correlated-linklet?))
    
    (when modules-being-compiled
      ;; Record this module's linklets for cross-module inlining among (sub)modules
@@ -189,9 +194,12 @@
    ;; declaration, and is shared among instances
    (define declaration-linklet
      (and serializable?
-          ((lambda (s) (performance-region
-                        ['compile 'module 'linklet]
-                        (compile-linklet s 'decl)))
+          ((lambda (s)
+             (if to-correlated-linklet?
+                 (make-correlated-linklet s 'decl)
+                 (performance-region
+                  ['compile 'module 'linklet]
+                  (compile-linklet s 'decl))))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -214,17 +222,19 @@
    (define syntax-literals-linklet
      (and (not (syntax-literals-empty? syntax-literals))
           ((lambda (s)
-             (performance-region
-              ['compile 'module 'linklet]
-              (define-values (linklet new-keys)
-                (compile-linklet s 'syntax-literals
-                                 (vector deserialize-instance
-                                         empty-top-syntax-literal-instance
-                                         empty-syntax-literals-data-instance
-                                         empty-instance-instance)
-                                 (lambda (inst) (values inst #f))
-                                 (if serializable? '(serializable) '())))
-              linklet))
+             (if to-correlated-linklet?
+                 (make-correlated-linklet s 'syntax-literals)
+                 (performance-region
+                  ['compile 'module 'linklet]
+                  (define-values (linklet new-keys)
+                    (compile-linklet s 'syntax-literals
+                                     (vector deserialize-instance
+                                             empty-top-syntax-literal-instance
+                                             empty-syntax-literals-data-instance
+                                             empty-instance-instance)
+                                     (lambda (inst) (values inst #f))
+                                     (if serializable? '(serializable) '())))
+                  linklet)))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -262,9 +272,11 @@
    (define syntax-literals-data-linklet
      (and serializable?
           (not (syntax-literals-empty? syntax-literals))
-          ((lambda (s) (performance-region
-                        ['compile 'module 'linklet]
-                        (compile-linklet s 'syntax-literals-data)))
+          ((lambda (s) (if to-correlated-linklet?
+                           (make-correlated-linklet s 'syntax-literals-data)
+                           (performance-region
+                            ['compile 'module 'linklet]
+                            (compile-linklet s 'syntax-literals-data))))
            `(linklet
              ;; imports
              (,deserialize-imports
@@ -284,9 +296,11 @@
    ;; across module instances.
    (define data-linklet
      (and serializable?
-          ((lambda (s) (performance-region
-                        ['compile 'module 'linklet]
-                        (compile-linklet s 'data)))
+          ((lambda (s) (if to-correlated-linklet?
+                           (make-correlated-linklet s 'data)
+                           (performance-region
+                            ['compile 'module 'linklet]
+                            (compile-linklet s 'data))))
            `(linklet
              ;; imports
              (,deserialize-imports)
@@ -348,12 +362,13 @@
        ;; Just use the bundle representation directly:
        bundle]
       [else
-       (hash->linklet-directory
-        (for/fold ([ht (hasheq #f bundle)]) ([sm (in-list (append pre-submodules post-submodules))])
-          (hash-set ht
-                    (car sm)
-                    (compiled-in-memory-linklet-directory
-                     (cdr sm)))))]))
+       (define ht
+         (for/fold ([ht (hasheq #f bundle)]) ([sm (in-list (append pre-submodules post-submodules))])
+           (hash-set ht
+                     (car sm)
+                     (compiled-in-memory-linklet-directory
+                      (cdr sm)))))
+       (hash->linklet-directory ht)]))
 
   ;; Save mpis and syntax for direct evaluation, instead of unmarshaling:
   (compiled-in-memory ld

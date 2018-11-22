@@ -1,7 +1,8 @@
 #lang racket/base
 (require "version-bytes.rkt"
          "linklet.rkt"
-         "../host/linklet.rkt")
+         "../host/linklet.rkt"
+         "correlated-linklet.rkt")
 
 (provide read-linklet-bundle-or-directory)
 
@@ -23,7 +24,9 @@
                                         in))))
     (define vm-len (min 63 (read-byte in)))
     (define vm (read-bytes vm-len in))
-    (unless (equal? vm vm-bytes)
+    (define as-correlated-linklet? (equal? vm correlated-linklet-vm-bytes))
+    (unless (or as-correlated-linklet?
+                (equal? vm vm-bytes))
       (raise-arguments-error 'read-compiled-linklet
                              "virtual-machine mismatch"
                              "expected" (bytes->string/utf-8 vm-bytes)
@@ -37,7 +40,9 @@
     (cond
       [(eqv? tag (char->integer #\B))
        (define sha-1 (read-bytes 20 in))
-       (define b-ht (read-linklet-bundle-hash in))
+       (define b-ht (if as-correlated-linklet?
+                        (read-correlated-linklet-bundle-hash in)
+                        (read-linklet-bundle-hash in)))
        (hash->linklet-bundle
         (add-hash-code (if initial?
                            (strip-submodule-references b-ht)

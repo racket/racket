@@ -23,7 +23,8 @@
          "namespace-scope.rkt"
          "expr.rkt"
          "extra-inspector.rkt"
-         "correlate.rkt")
+         "correlate.rkt"
+         "correlated-linklet.rkt")
 
 (provide compile-forms
 
@@ -45,6 +46,7 @@
                        #:other-form-callback [other-form-callback void]
                        #:get-module-linklet-info [get-module-linklet-info (lambda (mod-name p) #f)] ; to support submodules
                        #:serializable? [serializable? #t]
+                       #:to-correlated-linklet? [to-correlated-linklet? #f]
                        #:cross-linklet-inlining? [cross-linklet-inlining? #t])
   (define phase (compile-context-phase cctx))
   (define self (compile-context-self cctx))
@@ -246,44 +248,38 @@
       (define module-use*s
         (module-uses-add-extra-inspectorsss (link-info-link-module-uses li)
                                             (link-info-extra-inspectorsss li)))
-      ;; Compile the linklet with support for cross-module inlining, which
-      ;; means that the set of imports can change:
+      (define body-linklet
+        `(linklet
+             ;; imports
+             (,@body-imports
+              ,@(link-info-imports li))
+             ;; exports
+             (,@(link-info-def-decls li)
+              ,@(for/list ([binding-sym (in-list (header-binding-syms-in-order
+                                                  (hash-ref phase-to-header phase)))])
+                  (define def-sym (hash-ref binding-sym-to-define-sym binding-sym))
+                  (if (eq? def-sym binding-sym)
+                      def-sym
+                      `[,def-sym ,binding-sym])))
+           ;; body
+           ,@(reverse bodys)
+           ,@body-suffix-forms))
       (define-values (linklet new-module-use*s)
-        (performance-region
-         ['compile '_ 'linklet]
-         ((lambda (l name keys getter)
-            (compile-linklet l name keys getter (if serializable? '(serializable) '())))
-          `(linklet
-            ;; imports
-            (,@body-imports
-             ,@(link-info-imports li))
-            ;; exports
-            (,@(link-info-def-decls li)
-             ,@(for/list ([binding-sym (in-list (header-binding-syms-in-order
-                                                 (hash-ref phase-to-header phase)))])
-                 (define def-sym (hash-ref binding-sym-to-define-sym binding-sym))
-                 (if (eq? def-sym binding-sym)
-                     def-sym
-                     `[,def-sym ,binding-sym])))
-            ;; body
-            ,@(reverse bodys)
-            ,@body-suffix-forms)
-          'module
-          ;; Support for cross-module optimization starts with a vector
-          ;; of keys for the linklet imports; we use `module-use` values
-          ;; as keys, plus #f or an instance (=> cannot be pruned) for
-          ;; each boilerplate linklet
-          (list->vector (append body-import-instances
-                                module-use*s))
-          ;; To complete cross-module support, map a key (which is a `module-use`)
-          ;; to a linklet and an optional vector of keys for that linklet's
-          ;; imports:
-          (make-module-use-to-linklet cross-linklet-inlining?
-                                      (compile-context-namespace cctx)
-                                      get-module-linklet-info
-                                      module-use*s))))
-      (values phase (cons linklet (list-tail (vector->list new-module-use*s)
-                                             (length body-imports))))))
+        (cond
+          [to-correlated-linklet?
+           (values (make-correlated-linklet body-linklet 'module) module-use*s)]
+          [else
+           ;; Compile the linklet with support for cross-module inlining, which
+           ;; means that the set of imports can change:
+           (compile-module-linklet body-linklet
+                                   #:body-imports body-imports
+                                   #:body-import-instances body-import-instances
+                                   #:get-module-linklet-info get-module-linklet-info
+                                   #:serializable? serializable?
+                                   #:module-use*s module-use*s
+                                   #:cross-linklet-inlining? cross-linklet-inlining?
+                                   #:namespace (compile-context-namespace cctx))]))
+      (values phase (cons linklet new-module-use*s))))
   
   (define body-linklets
     (for/hasheq ([(phase l+mu*s) (in-hash body-linklets+module-use*s)])
@@ -301,7 +297,8 @@
                 [(extra-inspectorsss) (in-value (module-uses-extract-extra-inspectorsss
                                                  (cdr l+mu*s)
                                                  (car l+mu*s)
-                                                 cross-linklet-inlining?
+                                                 (and cross-linklet-inlining?
+                                                      (not to-correlated-linklet?))
                                                  (length body-imports)))]
                 #:when extra-inspectorsss)
       (values phase extra-inspectorsss)))
@@ -382,6 +379,42 @@
   (if v
       (correlated-property e 'compiler-hint:cross-module-inline v)
       e))
+
+;; ----------------------------------------
+
+;; Compile the linklet with support for cross-module inlining, which
+;; means that the set of imports can change: return a compiled linklet
+;; and a list of `module-use*`
+(define (compile-module-linklet body-linklet
+                                #:body-imports body-imports
+                                #:body-import-instances body-import-instances
+                                #:get-module-linklet-info get-module-linklet-info
+                                #:serializable? serializable?
+                                #:module-use*s module-use*s
+                                #:cross-linklet-inlining? cross-linklet-inlining?
+                                #:namespace namespace)
+  (define-values (linklet new-module-use*s)
+    (performance-region
+     ['compile '_ 'linklet]
+     ((lambda (l name keys getter)
+        (compile-linklet l name keys getter (if serializable? '(serializable) '())))
+      body-linklet
+      'module
+      ;; Support for cross-module optimization starts with a vector
+      ;; of keys for the linklet imports; we use `module-use` values
+      ;; as keys, plus #f or an instance (=> cannot be pruned) for
+      ;; each boilerplate linklet
+      (list->vector (append body-import-instances
+                            module-use*s))
+      ;; To complete cross-module support, map a key (which is a `module-use`)
+      ;; to a linklet and an optional vector of keys for that linklet's
+      ;; imports:
+      (make-module-use-to-linklet cross-linklet-inlining?
+                                  namespace
+                                  get-module-linklet-info
+                                  module-use*s))))
+  (values linklet (list-tail (vector->list new-module-use*s)
+                             (length body-imports))))
 
 ;; ----------------------------------------
 

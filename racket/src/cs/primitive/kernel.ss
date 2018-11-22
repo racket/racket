@@ -184,6 +184,7 @@
   [compile-allow-set!-undefined (known-constant)]
   [compile-context-preservation-enabled (known-constant)]
   [compile-enforce-module-constants (known-constant)]
+  [compile-machine-independent (known-constant)]
   [complete-path? (known-procedure 2)]
   [complex? (known-procedure/succeeds 2)]
   [cons (known-procedure/succeeds 4)]

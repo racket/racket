@@ -40,7 +40,8 @@
                omit-debugging?
                platform-independent-zo-mode?
                linklet-performance-init!
-               linklet-performance-report!))
+               linklet-performance-report!
+               compile-machine-independent))
 
  (linklet-performance-init!)
  (unless omit-debugging?
@@ -108,6 +109,7 @@
                           [else "compiled"]))))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
+   (define compile-machine-independent? (getenv "PLT_COMPILE_ANY"))
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -424,6 +426,9 @@
                 (loop (cdr args))]
                [else
                 (raise-bad-switch arg within-arg)])]
+             [("-M")
+              (set! compile-machine-independent? #t)
+              (loop (cdr args))]
              [("--")
               (cond
                [(or (null? (cdr args)) (not (pair? (cadr args))))
@@ -564,6 +569,8 @@
      (|#%app| use-compiled-file-paths compiled-file-paths)
      (|#%app| use-user-specific-search-paths user-specific-search-paths?)
      (|#%app| load-on-demand-enabled load-on-demand?)
+     (when compile-machine-independent?
+       (|#%app| compile-machine-independent #t))
      (boot)
      (when (and stderr-logging
                 (not (null? stderr-logging)))

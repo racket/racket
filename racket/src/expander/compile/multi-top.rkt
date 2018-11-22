@@ -19,6 +19,7 @@
 ;; top of a tree, we repeat work only twice and avoid non-linear
 ;; behavior.)
 (define (compiled-tops->compiled-top all-cims
+                                     #:to-correlated-linklet? [to-correlated-linklet? #f]
                                      #:merge-serialization? [merge-serialization? #f]
                                      #:namespace [ns #f]) ; need for `merge-serialization?`
   (define cims (remove-nontail-purely-functional all-cims))

@@ -7972,6 +7972,7 @@ static void make_initial_config(Scheme_Thread *p)
 
   init_param(cells, paramz, MZCONFIG_COMPILE_MODULE_CONSTS, scheme_true);
   init_param(cells, paramz, MZCONFIG_USE_JIT, scheme_startup_use_jit ? scheme_true : scheme_false);
+  init_param(cells, paramz, MZCONFIG_COMPILE_MACHINE_INDEPENDENT, scheme_startup_compile_machine_independent ? scheme_true : scheme_false);
 
   {
     Scheme_Object *s;

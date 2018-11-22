@@ -31,6 +31,7 @@
           compile-enforce-module-constants
           compile-context-preservation-enabled
           compile-allow-set!-undefined
+          compile-machine-independent
           eval-jit-enabled
           load-on-demand-enabled
 
@@ -818,6 +819,9 @@
     (make-parameter #f (lambda (v) (and v #t))))
 
   (define compile-allow-set!-undefined
+    (make-parameter #f (lambda (v) (and v #t))))
+
+  (define compile-machine-independent
     (make-parameter #f (lambda (v) (and v #t))))
 
   (define eval-jit-enabled
