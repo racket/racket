@@ -214,7 +214,9 @@
         ;; environment (such as the top level) other than a module
         ;; context; register as a linklet import
         (register-required-variable-use! (compile-context-header cctx)
-                                         mpi
+                                         (if (inside-module-context? mpi (compile-context-self cctx))
+                                             (compile-context-self cctx)
+                                             mpi)
                                          (module-binding-phase b)
                                          (module-binding-sym b)
                                          (or (module-binding-extra-inspector b)

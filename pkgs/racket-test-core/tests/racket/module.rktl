@@ -2811,4 +2811,33 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module assigns-to-self-variable-through-namespace racket/base
+  (require (for-syntax racket/base))
+  (define x 1)
+  (set! x 2)
+
+  (define-syntax z
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ b)
+         #'(set! x b)])))
+
+  (define-syntax y
+    (make-set!-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ a b)
+          #'(set! x b)]))))
+
+  (define ns (variable-reference->namespace
+              (#%variable-reference)))
+
+  (eval `(set! x 3) ns)
+  (eval `(z 4) ns)
+  (eval `(set! y 45) ns))
+
+(dynamic-require ''assigns-to-self-variable-through-namespace #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
