@@ -27,7 +27,7 @@
          "correlated-linklet.rkt")
 
 (provide compile-forms
-
+         compile-module-linklet
          compile-namespace-scopes)
 
 (struct link-info (link-module-uses imports extra-inspectorsss def-decls))
@@ -386,6 +386,7 @@
 ;; means that the set of imports can change: return a compiled linklet
 ;; and a list of `module-use*`
 (define (compile-module-linklet body-linklet
+                                #:compile-linklet [compile-linklet compile-linklet]
                                 #:body-imports body-imports
                                 #:body-import-instances body-import-instances
                                 #:get-module-linklet-info get-module-linklet-info

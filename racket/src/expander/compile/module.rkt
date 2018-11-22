@@ -200,20 +200,8 @@
                  (performance-region
                   ['compile 'module 'linklet]
                   (compile-linklet s 'decl))))
-           `(linklet
-             ;; imports
-             (,deserialize-imports
-              [,mpi-vector-id])
-             ;; exports
-             (self-mpi
-              requires
-              provides
-              phase-to-link-modules)
-             ;; body
-             (define-values (self-mpi) ,(add-module-path-index! mpis self))
-             (define-values (requires) ,(generate-deserialize requires mpis #:syntax-support? #f))
-             (define-values (provides) ,(generate-deserialize provides mpis #:syntax-support? #f))
-             (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)))))
+           (generate-module-declaration-linklet mpis self requires provides
+                                                phase-to-link-module-uses-expr))))
    
    ;; Assemble a linklet that shifts syntax objects on demand.
    ;; Include an encoding of the root expand context, if any, so that
@@ -301,15 +289,7 @@
                            (performance-region
                             ['compile 'module 'linklet]
                             (compile-linklet s 'data))))
-           `(linklet
-             ;; imports
-             (,deserialize-imports)
-             ;; exports
-             (,mpi-vector-id)
-             ;; body
-             (define-values (,inspector-id) (current-code-inspector))
-             (define-values (,mpi-vector-id)
-               ,(generate-module-path-index-deserialize mpis))))))
+           (generate-module-data-linklet mpis))))
    
    ;; Combine linklets with other metadata as the bundle:
    (define bundle

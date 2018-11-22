@@ -528,12 +528,12 @@ handler} in tail position with @racket[stx].}
 
 @defproc[(compiled-expression-recompile [ce compiled-expression?]) compiled-expression?]{
 
-Recompiles @racket[ce], effectively re-running optimization passes to
-produce an equivalent compiled form with potentially different
-performance characteristics.
-
-If @racket[ce] includes module forms, then only phase-0 code in the
-immediate module (not in submodules) is recompiled.
+Recompiles @racket[ce]. If @racket[ce] was compiled as
+machine-independent and @racket[compile-machine-independent] is
+@racket[#f], then recompiling effectively converts to the current
+machine format. Otherwise, recompiling effectively re-runs
+optimization passes to produce an equivalent compiled form with
+potentially different performance characteristics.
 
 @history[#:added "6.3"]}
 

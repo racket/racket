@@ -2839,5 +2839,53 @@ case of module-leve bindings; it doesn't cover local bindings.
 (dynamic-require ''assigns-to-self-variable-through-namespace #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check machine-independent compilation and
+;; machine-dependent recompilation
+
+(let ()
+  (define m (parameterize ([compile-machine-independent #t])
+              (compile
+               ;; The intent of this module is to exercise cross-module
+               ;; inlining when moving from machine-independent to
+               ;; machine-dependent. The `x` should be inlined from a submodule
+               ;; and `map` should be inlined --- but we don't actually
+               ;; check, currently.
+               `(module should-inline-when-fully-compiled racket/base
+                  (module sub racket/base
+                    (define x 1)
+                    (provide x))
+                  (require 'sub)
+                  (define (f g)
+                    (map (lambda (y) x) g))))))
+
+  (define (check-vm bstr vm)
+    (define vm-bstr (string->bytes/utf-8 (symbol->string vm)))
+    (define expect (bytes-append #"#~"
+                                 (bytes (string-length (version)))
+                                 (string->bytes/utf-8 (version))
+                                 (bytes (bytes-length vm-bstr))
+                                 vm-bstr))
+    (test #t equal? expect (subbytes bstr 0 (min (bytes-length bstr) (bytes-length expect)))))
+
+  (define o (open-output-bytes))
+  (write m o)
+  (check-vm (get-output-bytes o) 'linklet)
+  
+  (define m2
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes (get-output-bytes o)))))
+  
+  (define re-m (compiled-expression-recompile m))
+  (define re-m2 (compiled-expression-recompile m2))
+
+  (define re-o (open-output-bytes))
+  (write re-m re-o)
+  (check-vm (get-output-bytes re-o) (system-type 'vm))
+
+  (define re-o2 (open-output-bytes))
+  (write re-m2 re-o2)
+  (check-vm (get-output-bytes re-o2) (system-type 'vm)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

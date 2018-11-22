@@ -30,6 +30,8 @@
          "boot/runtime-primitive.rkt"
          "boot/handler.rkt"
          "syntax/api.rkt"
+         (only-in "compile/recompile.rkt"
+                  compiled-expression-recompile)
          (only-in racket/private/config find-main-config)
          (only-in "syntax/cache.rkt" cache-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
@@ -126,7 +128,9 @@
          read-accept-compiled
 
          syntax-shift-phase-level
-         bound-identifier=?)
+         bound-identifier=?
+
+         compiled-expression-recompile)
 
 ;; ----------------------------------------
 

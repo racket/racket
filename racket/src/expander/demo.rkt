@@ -17,15 +17,30 @@
   (expand (namespace-syntax-introduce (datum->syntax #f e) ns)
           ns))
 
-(define (compile+eval-expression e #:namespace [ns demo-ns])
+(define (expand+compile-expression e
+                                   #:namespace [ns demo-ns]
+                                   #:serializable? [serializable? #f])
   (define exp-e (expand-expression e #:namespace ns))
-  (define c (compile (if check-reexpand? exp-e e) ns check-serialize?))
+  (define c (compile (if check-reexpand? exp-e e) ns (or serializable?
+                                                         check-serialize?)))
   (define ready-c (if check-serialize?
                       (let ([o (open-output-bytes)])
                         (display c o)
                         (parameterize ([read-accept-compiled #t])
                           (read (open-input-bytes (get-output-bytes o)))))
                       c))
+  (values exp-e ready-c))
+
+(define (compile-expression e
+                            #:namespace [ns demo-ns]
+                            #:serializable? [serializable? #f])
+  (define-values (exp-e ready-c)
+    (expand+compile-expression e #:namespace ns #:serializable? serializable?))
+  ready-c)
+
+(define (compile+eval-expression e #:namespace [ns demo-ns])
+  (define-values (exp-e ready-c)
+    (expand+compile-expression e #:namespace ns))
   (values exp-e
           (eval ready-c ns)))
 
@@ -1421,3 +1436,19 @@
                         (quote-syntax car))
      (free-identifier=? (syntax-binding-set->syntax bs 'cdr)
                         (quote-syntax cdr)))))
+
+;; ----------------------------------------
+;; Machine-independent compilation format and recompilation
+
+(let ([mi-c (parameterize ([compile-machine-independent #t])
+              (compile-expression `(module to-recompile '#%kernel
+                                     (define-values (x) 0)
+                                     (print x)
+                                     (newline))
+                                  #:serializable? #t))])
+  (parameterize ([current-namespace demo-ns])
+    (define c2 (compiled-expression-recompile mi-c))
+    (eval c2 demo-ns)
+    (check-print
+     (namespace-require ''to-recompile demo-ns)
+     0)))
