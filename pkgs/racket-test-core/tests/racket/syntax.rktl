@@ -2203,7 +2203,14 @@
                 #hasheq((a . b)))))])
   (define c (compile m))
   (eval c)
-  (test #t andmap immutable? (dynamic-require ''defines-immutable-objects 'objs)))
+  (test #t andmap immutable? (dynamic-require ''defines-immutable-objects 'objs))
+  (define-values (i o) (make-pipe))
+  (write c o)
+  (close-output-port o)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval (parameterize ([read-accept-compiled #t])
+            (read i)))
+    (test #t andmap immutable? (dynamic-require ''defines-immutable-objects 'objs))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
