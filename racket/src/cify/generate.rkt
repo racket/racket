@@ -977,6 +977,15 @@
        (cond
          [(always-fixnum? e)
           (format "scheme_make_integer(~a)" e)]
+         [(exact-integer? e)
+          (cond
+            [(and (< e (expt 2 63))
+                  (>= e (- (expt 2 63))))
+             (format "scheme_make_integer_value_from_long_halves(~aL, ~aL)"
+                     (bitwise-and e (sub1 (expt 2 32)))
+                     (arithmetic-shift e -32))]
+            [else
+             (error 'generate-quite "number is too large: ~e" e)])]
          [(eqv? e +inf.0) "scheme_inf_object"]
          [(eqv? e -inf.0) "scheme_minus_inf_object"]
          [(eqv? e +nan.0) "scheme_nan_object"]

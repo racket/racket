@@ -482,7 +482,7 @@ static MZ_INLINE Scheme_Object *c_string_ref(Scheme_Object *v, Scheme_Object *i)
 
 static MZ_INLINE Scheme_Object *c_bytes_ref(Scheme_Object *v, Scheme_Object *i)
 {
-  int c = SCHEME_BYTE_STR_VAL(v)[SCHEME_INT_VAL(i)];
+  int c = ((unsigned char *)SCHEME_BYTE_STR_VAL(v))[SCHEME_INT_VAL(i)];
   return scheme_make_integer(c);
 }
 
