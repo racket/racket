@@ -131,12 +131,16 @@
 
 ;; Merge inspectors from potentially different paths through imported linklets
 (define (module-use-merge-extra-inspectorss! existing-mu* mu*)
-  (define extra-inspectorss (module-use*-extra-inspectorss mu*))
   (define existing-extra-inspectorss (module-use*-extra-inspectorss existing-mu*))
+  (define extra-inspectorss (module-use*-extra-inspectorss mu*))
   (define new-extra-inspectorss
-    (for/fold ([new-extra-inspectorss existing-extra-inspectorss]) ([(sym extra-inspectors) (in-hash extra-inspectorss)])
-      (hash-set new-extra-inspectorss
-                sym
-                (extra-inspectors-merge extra-inspectors
-                                        (hash-ref new-extra-inspectorss sym (seteq))))))
+    (cond
+      [(not existing-extra-inspectorss) extra-inspectorss]
+      [(not extra-inspectorss) existing-extra-inspectorss]
+      [else
+       (for/fold ([new-extra-inspectorss existing-extra-inspectorss]) ([(sym extra-inspectors) (in-hash extra-inspectorss)])
+         (hash-set new-extra-inspectorss
+                   sym
+                   (extra-inspectors-merge extra-inspectors
+                                           (hash-ref new-extra-inspectorss sym (seteq)))))]))
   (set-module-use*-extra-inspectorss! existing-mu* new-extra-inspectorss))
