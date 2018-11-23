@@ -19,6 +19,7 @@
   glob
   in-glob
   glob-match?
+  glob-quote
   glob-capture-dotfiles?)
 
 (require
@@ -107,6 +108,16 @@
              (or (ends-with-path-sep? ps)
                  (directory-exists? ps))))))
 
+(define (glob-quote ps)
+  (if (path? ps)
+    (string->path (glob-quote/string (path->string ps)))
+    (glob-quote/string ps)))
+
+(define (glob-unquote ps)
+  (if (path? ps)
+    (string->path (glob-unquote/string (path->string ps)))
+    (glob-unquote/string ps)))
+
 ;; -----------------------------------------------------------------------------
 ;; -- parsing
 
@@ -175,10 +186,10 @@
     (let loop ([unamb* '()] [elem* elem*])
       (cond
        [(or (null? elem*) (has-**? (car elem*)))
-        (values (normalize-path (path*->path (reverse unamb*)))
+        (values (normalize-path (path*->path (map glob-unquote (reverse unamb*))))
                 (if (not (null? elem*)) '** #f))]
        [(has-glob-pattern? (car elem*))
-        (values (normalize-path (path*->path (reverse unamb*)))
+        (values (normalize-path (path*->path (map glob-unquote (reverse unamb*))))
                 (if (ormap has-**? (cdr elem*)) '** elem*))]
        [else
         (loop (cons (car elem*) unamb*) (cdr elem*))])))
@@ -387,6 +398,45 @@
             ;; keep everything else
             (string c)])))
       (string-join str* ""))))
+
+(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\]))
+
+(define (glob-quote/string str)
+  (define str*
+    ;; add #\\ before all wildcards
+    (for/list ([c (in-string str)])
+      (if (memq c GLOB-WILDCARD-CHAR*)
+        (string #\\ c)
+        (string c))))
+  (apply string-append str*))
+
+(module+ test
+  (test-case "glob-quote/string"
+    (check-equal? (glob-quote/string "a") "a")
+    (check-equal? (glob-quote/string "a*") "a\\*")
+    (check-equal? (glob-quote/string "*][?") "\\*\\]\\[\\?")
+    (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")))
+
+(define (glob-unquote/string str)
+  (define str*
+    ;; examine `str` in reverse, remove #\\ from escaped wildcards
+    (let loop ([c* (reverse (string->list str))]
+               [i (- (string-length str) 1)])
+      (cond
+        [(null? c*)
+         '()]
+        [(and (memq (car c*) GLOB-WILDCARD-CHAR*)
+              (escaped? str i))
+         (cons (string (car c*)) (loop (cddr c*) (- i 2)))]
+        [else
+         (cons (string (car c*)) (loop (cdr c*) (- i 1)))])))
+  (apply string-append (reverse str*)))
+
+(module+ test
+  (test-case "glob-unquote/string"
+    (check-equal? (glob-unquote/string "a") "a")
+    (check-equal? (glob-unquote/string "foo\\*rkt") "foo*rkt")
+    (check-equal? (glob-unquote/string "?\\?\\]\\[\\*") "??][*")))
 
 ;; flatten-glob : glob/c -> (listof path-string?)
 (define (flatten-glob pattern)
