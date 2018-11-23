@@ -529,8 +529,8 @@ handler} in tail position with @racket[stx].}
 @defproc[(compiled-expression-recompile [ce compiled-expression?]) compiled-expression?]{
 
 Recompiles @racket[ce]. If @racket[ce] was compiled as
-machine-independent and @racket[compile-machine-independent] is
-@racket[#f], then recompiling effectively converts to the current
+machine-independent and @racket[current-compile-target-machine] is
+not set to @racket[#f], then recompiling effectively converts to the current
 machine format. Otherwise, recompiling effectively re-runs
 optimization passes to produce an equivalent compiled form with
 potentially different performance characteristics.
@@ -581,24 +581,42 @@ information to be lost from stack traces (as reported by
 @racket[continuation-mark-set->context]). The default is @racket[#f],
 which allows such optimizations.}
 
-@defboolparam[compile-machine-independent on?]{
+@defparam[current-compile-target-machine target (or/c #f (and/c symbol? compile-target-machine?))]{
 
-A @tech{parameter} that determines whether a newly compiled expression
-writes in a machine-independent format (usually in @filepath{.zo}
-files). Machine-independent compiled code works for any platform and
-any Racket virtual machine. When the machine-independent compiled
+A @tech{parameter} that determines the platform and/or virtual machine
+target for a newly compiled expression.
+
+If the target is @racket[#f], the the compiled expression writes in a
+machine-independent format (usually in @filepath{.zo} files).
+Machine-independent compiled code works for any platform and any
+Racket virtual machine. When the machine-independent compiled
 expression is read back in, it is subject to further compilation for
 the current platform and virtual machine, which can be considerably
 slower than reading a format that is fully compiled for a platform and
 virtual machine.
 
-The default is @racket[#f], unless machine-independent mode is enabled
-through the @Flag{M}/@DFlag{compile-any} command-line flag to
-stand-alone Racket (or GRacket) or through the
-@as-index{@envvar{PLT_COMPILE_ANY}} environment variable (set to any
-value).
+The default is something other than @racket[#f], unless
+machine-independent mode is enabled through the
+@Flag{M}/@DFlag{compile-any} command-line flag to stand-alone Racket
+(or GRacket) or through the @as-index{@envvar{PLT_COMPILE_ANY}}
+environment variable (set to any value).
 
-@history[#:added "7.1.0.5"]}
+@history[#:added "7.1.0.6"]}
+
+
+@defproc[(compile-target-machine? [sym symbol?]) boolean?]{
+
+Reports whether @racket[sym] is a supported compilation target for the
+currently running Racket.
+
+When @racket[(system-type 'vm)] reports @racket['racket], then the
+only target symbol is @racket['racket]. When @racket[(system-type
+'vm)] reports @racket['chez-scheme], then a symbol corresponding to
+the current platform is a target, and other targets may also be
+supported.
+
+@history[#:added "7.1.0.6"]}
+
 
 @defboolparam[eval-jit-enabled on?]{
 

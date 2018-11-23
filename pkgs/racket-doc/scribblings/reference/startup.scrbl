@@ -345,8 +345,8 @@ flags:
 
   @item{@FlagFirst{M} or @DFlagFirst{compile-any} : Enables
         machine-independent bytecode by setting the
-        @racket[compile-machine-independent] parameter to
-        @racket[#t].}
+        @racket[current-compile-target-machine] parameter to
+        @racket[#f].}
 
   @item{@FlagFirst{d} or @DFlagFirst{no-delay} : Disables on-demand
         parsing of compiled code and syntax objects by setting the

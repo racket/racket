@@ -73,7 +73,7 @@
 ;;  exported for use by an embedding runtime system.]
 (define (compile s [ns (current-namespace)] [serializable? #t] [expand expand])
   (define to-correlated-linklet? (and serializable?
-                                      (compile-machine-independent)))
+                                      (not (current-compile-target-machine))))
   ;; The given `s` might be an already-compiled expression because it
   ;; went through some strange path, such as a `load` on a bytecode
   ;; file, which would wrap `#%top-interaction` around the compiled

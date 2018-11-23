@@ -21,7 +21,7 @@
   (unless (compiled-expression? c)
     (raise-argument-error 'compiled-expression-recompile "compiled-expression?" c))
   (cond
-    [(compile-machine-independent)
+    [(not (current-compile-target-machine))
      ;; There's no use for machine-independent mode, and
      ;; `recompile-bundle` assumes that it should actually compile
      c]

@@ -2843,7 +2843,7 @@ case of module-leve bindings; it doesn't cover local bindings.
 ;; machine-dependent recompilation
 
 (let ()
-  (define m (parameterize ([compile-machine-independent #t])
+  (define m (parameterize ([current-compile-target-machine #f])
               (compile
                ;; The intent of this module is to exercise cross-module
                ;; inlining when moving from machine-independent to

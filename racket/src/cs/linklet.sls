@@ -31,7 +31,8 @@
           compile-enforce-module-constants
           compile-context-preservation-enabled
           compile-allow-set!-undefined
-          compile-machine-independent
+          current-compile-target-machine
+          compile-target-machine?
           eval-jit-enabled
           load-on-demand-enabled
 
@@ -821,8 +822,20 @@
   (define compile-allow-set!-undefined
     (make-parameter #f (lambda (v) (and v #t))))
 
-  (define compile-machine-independent
-    (make-parameter #f (lambda (v) (and v #t))))
+  (define current-compile-target-machine
+    (make-parameter (machine-type) (lambda (v)
+                                     (unless (or (not v)
+                                                 (and (symbol? v)
+                                                      (compile-target-machine? v)))
+                                       (raise-argument-error 'current-compile-target-machine
+                                                             "(or/c #f (and/c symbol? compile-target-machine?))"
+                                                             v))
+                                     v)))
+
+  (define (compile-target-machine? v)
+    (unless (symbol? v)
+      (raise-argument-error 'compile-target-machine? "symbol?" v))
+    (eq? v (machine-type)))
 
   (define eval-jit-enabled
     (make-parameter #t (lambda (v) (and v #t))))

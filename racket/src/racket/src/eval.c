@@ -217,7 +217,8 @@ static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv);
 static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
-static Scheme_Object *compile_machine_independent(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_target_machine(int argc, Scheme_Object **argv);
+static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv);
 
 void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, Scheme_Object *alt_full);
 
@@ -267,7 +268,9 @@ scheme_init_eval (Scheme_Startup_Env *env)
   ADD_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
   ADD_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   ADD_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
-  ADD_PARAMETER("compile-machine-independent",   compile_machine_independent,  MZCONFIG_COMPILE_MACHINE_INDEPENDENT, env);
+  ADD_PARAMETER("current-compile-target-machine",    compile_target_machine,  MZCONFIG_COMPILE_TARGET_MACHINE, env);
+
+  ADD_PRIM_W_ARITY("compile-target-machine?",        compile_is_target_machine,                       1, 1, env);
 }
 
 void scheme_init_eval_places()
@@ -3911,12 +3914,20 @@ static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv)
 			     -1, NULL, NULL, 1);
 }
 
-static Scheme_Object *compile_machine_independent(int argc, Scheme_Object **argv)
+static Scheme_Object *compile_target_machine(int argc, Scheme_Object **argv)
 {
-  return scheme_param_config("compile-machine-independent", 
-			     scheme_make_integer(MZCONFIG_COMPILE_MACHINE_INDEPENDENT),
-			     argc, argv,
-			     -1, NULL, NULL, 1);
+  return scheme_param_config2("current-compile-target-machine", 
+                              scheme_make_integer(MZCONFIG_COMPILE_TARGET_MACHINE),
+                              argc, argv,
+                              -1, scheme_compile_target_check, 
+                              "(or/c #f (and/c symbol? compile-target-machine?))", 0);
+}
+
+static Scheme_Object *compile_is_target_machine(int argc, Scheme_Object **argv)
+{
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("compile-target-machine?", "symbol?", 0, argc, argv);
+  return scheme_compile_target_check(argc, argv);
 }
 
 static Scheme_Object *

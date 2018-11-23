@@ -4025,4 +4025,6 @@ HANDLE scheme_dll_load_library(const char *s, const wchar_t *ws, int *_mode);
 void *scheme_dll_get_proc_address(HANDLE m, const char *name, int dll_mode);
 #endif
 
+Scheme_Object *scheme_compile_target_check(int argc, Scheme_Object **argv);
+
 #endif /* __mzscheme_private__ */

@@ -52,7 +52,7 @@ In @indexed-racket['link] mode, the possible symbol results are:
 @item{@indexed-racket['framework] (Mac OS)}
 ]
 
-Future ports of Racket may expand the list of @racket['os],
+Future ports of Racket may expand the list of @racket['os], @racket['vm],
 @racket['gc], and @racket['link] results.
 
 In @indexed-racket['machine] mode, then the result is a string, which

@@ -41,7 +41,7 @@
                platform-independent-zo-mode?
                linklet-performance-init!
                linklet-performance-report!
-               compile-machine-independent))
+               current-compile-target-machine))
 
  (linklet-performance-init!)
  (unless omit-debugging?
@@ -570,7 +570,7 @@
      (|#%app| use-user-specific-search-paths user-specific-search-paths?)
      (|#%app| load-on-demand-enabled load-on-demand?)
      (when compile-machine-independent?
-       (|#%app| compile-machine-independent #t))
+       (|#%app| current-compile-target-machine #f))
      (boot)
      (when (and stderr-logging
                 (not (null? stderr-logging)))
