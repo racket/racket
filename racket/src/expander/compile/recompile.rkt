@@ -101,15 +101,21 @@
   ;; optimization while recompiling the per-phase body units, and then
   ;; regenerate the data linklets because optimization can add new
   ;; linklet import.s
-  (define h (linklet-bundle->hash b))
+  (define orig-h (linklet-bundle->hash b))
 
-  (define (eval-linklet* l)
-    (eval-linklet (force-compile-linklet l)))
+  ;; Force compilation of linklets that are not the module body:
+  (define h (for/hasheq ([(k v) (in-hash orig-h)])
+              (cond
+                [(and (not (exact-integer? k))
+                      (correlated-linklet? v))
+                 (values k (force-compile-linklet v))]
+                [else (values k v)])))
+
   (define data-instance
-    (instantiate-linklet (eval-linklet* (hash-ref h 'data))
+    (instantiate-linklet (eval-linklet (hash-ref h 'data))
                          (list deserialize-instance)))
   (define declaration-instance
-    (instantiate-linklet (eval-linklet* (hash-ref h 'decl))
+    (instantiate-linklet (eval-linklet (hash-ref h 'decl))
                          (list deserialize-instance
                                data-instance)))
   (define (decl key)

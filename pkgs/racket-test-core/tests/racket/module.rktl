@@ -2855,6 +2855,7 @@ case of module-leve bindings; it doesn't cover local bindings.
                     (define x 1)
                     (provide x))
                   (require 'sub)
+                  (define y #'y)
                   (define (f g)
                     (map (lambda (y) x) g))))))
 
