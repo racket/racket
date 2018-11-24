@@ -199,18 +199,22 @@ The symbols in @racket[options] must be distinct, otherwise
                                [import-keys #f #f]
                                [get-import (any/c . -> . (values (or/c linklet? #f)
                                                                  (or/c vector? #f)))
-                                           (lambda (import-key) (values #f #f))])
+                                           (lambda (import-key) (values #f #f))]
+                               [options (listof (or/c 'serializable 'unsafe 'static)) '(serializable)])
             linklet?]
            [(recompile-linklet [linklet linklet?]
                                [name any/c]
                                [import-keys vector?]
                                [get-import (any/c . -> . (values (or/c linklet? #f)
                                                                  (or/c vector? #f)))
-                                           (lambda (import-key) (values #f #f))])
+                                           (lambda (import-key) (values #f #f))]
+                               [options (listof (or/c 'serializable 'unsafe 'static)) '(serializable)])
              (values linklet? vector?)])]{
 
 Like @racket[compile-linklet], but takes an already-compiled linklet
-and potentially optimizes it further.}
+and potentially optimizes it further.
+
+@history[#:changed "7.1.0.6" @elem{Added the @racket[options] argument.}]}
 
 
 @defproc[(eval-linklet [linklet linklet?]) linklet?]{

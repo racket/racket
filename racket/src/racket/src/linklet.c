@@ -147,7 +147,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
 
   ADD_FOLDING_PRIM("linklet?", linklet_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 5, 2, 2, env);
-  ADD_PRIM_W_ARITY2("recompile-linklet", recompile_linklet, 1, 4, 2, 2, env);
+  ADD_PRIM_W_ARITY2("recompile-linklet", recompile_linklet, 1, 5, 2, 2, env);
   ADD_IMMED_PRIM("eval-linklet", eval_linklet, 1, 1, env);
   ADD_PRIM_W_ARITY2("instantiate-linklet", instantiate_linklet, 2, 4, 0, -1, env);
   ADD_PRIM_W_ARITY("linklet-import-variables", linklet_import_variables, 1, 1, env);
@@ -365,6 +365,47 @@ void extract_import_info(const char *who, int argc, Scheme_Object **argv,
     *_get_import = NULL;
 }
 
+static void parse_compile_options(const char *who, int arg_pos,
+                                  int argc, Scheme_Object **argv,
+                                  int *_unsafe, int *_static_mode)
+{
+  Scheme_Object *redundant = NULL, *flag, *flags = argv[arg_pos];
+  int serializable = 0;
+  int unsafe = *_unsafe;
+  int static_mode = *_static_mode;
+  
+  while (SCHEME_PAIRP(flags)) {
+    flag = SCHEME_CAR(flags);
+    if (SAME_OBJ(flag, serializable_symbol)) {
+      if (serializable && !redundant)
+        redundant = flag;
+      serializable = 1;
+    } else if (SAME_OBJ(flag, unsafe_symbol)) {
+      if (unsafe && !redundant)
+        redundant = flag;
+      unsafe = 1;
+    } else if (SAME_OBJ(flag, static_symbol)) {
+      if (static_mode && !redundant)
+        redundant = flag;
+      static_mode = 1;
+    } else
+      break;
+    flags = SCHEME_CDR(flags);
+  }
+
+  if (!SCHEME_NULLP(flags))
+    scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe)", arg_pos, argc, argv);
+
+  if (redundant)
+    scheme_contract_error("compile-linklet", "redundant option",
+                          "redundant option", 1, redundant,
+                          "supplied options", 1, argv[arg_pos],
+                          NULL);
+
+  *_unsafe = unsafe;
+  *_static_mode = static_mode;
+}
+
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *e, *import_keys, *get_import, *a[2];
@@ -383,37 +424,8 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
   if (!SCHEME_STXP(e))
     e = scheme_datum_to_syntax(e, scheme_false, DTS_CAN_GRAPH);
 
-  if (argc > 4) {
-    Scheme_Object *flags, *redundant = NULL, *flag;
-    int serializable = 0;
-      
-    flags = argv[4];
-    while (SCHEME_PAIRP(flags)) {
-      flag = SCHEME_CAR(flags);
-      if (SAME_OBJ(flag, serializable_symbol)) {
-        if (serializable && !redundant)
-          redundant = flag;
-        serializable = 1;
-      } else if (SAME_OBJ(flag, unsafe_symbol)) {
-        if (unsafe && !redundant)
-          redundant = flag;
-        unsafe = 1;
-      } else if (SAME_OBJ(flag, static_symbol)) {
-        if (static_mode && !redundant)
-          redundant = flag;
-        static_mode = 1;
-      } else
-        break;
-      flags = SCHEME_CDR(flags);
-    }
-    if (!SCHEME_NULLP(flags))
-      scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe)", 4, argc, argv);
-    if (redundant)
-      scheme_contract_error("compile-linklet", "redundant option",
-                            "redundant option", 1, redundant,
-                            "supplied options", 1, argv[4],
-                            NULL);
-  }
+  if (argc > 4)
+    parse_compile_options("compile-linklet", 4, argc, argv, &unsafe, &static_mode);
 
   e = (Scheme_Object *)compile_and_or_optimize_linklet(e, NULL, name, &import_keys, get_import,
                                                        unsafe, static_mode);
@@ -430,7 +442,8 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *import_keys, *get_import, *a[2];
   Scheme_Linklet *linklet;
-    
+  int unsafe = 0, static_mode = 0;
+
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
     scheme_wrong_contract("recompile-linklet", "linklet?", 0, argc, argv);
 
@@ -453,8 +466,12 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
                           "given keys", 1, scheme_make_integer(SCHEME_VEC_SIZE(import_keys)),
                           NULL);
   }
+
+  if (argc > 4)
+    parse_compile_options("recompile-linklet", 4, argc, argv, &unsafe, &static_mode);
   
-  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import, 0, 0);
+  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import,
+                                            unsafe, static_mode);
 
   if (import_keys) {
     a[0] = (Scheme_Object *)linklet;
