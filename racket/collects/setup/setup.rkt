@@ -18,6 +18,7 @@
                #:tidy? [tidy? #f]
                #:avoid-main? [avoid-main? #f]
                #:force-user-docs? [force-user-docs? #f]
+               #:compile-any? [compile-any? #f]
                #:jobs [parallel #f]
                #:fail-fast? [fail-fast? #f])
   (parameterize 
@@ -49,6 +50,10 @@
     [avoid-main-installation (if avoid-main? #t (avoid-main-installation))]
 
     [force-user-docs (if force-user-docs? #t (force-user-docs))]
+
+    [current-compile-target-machine (if compile-any?
+                                        #f
+                                        (current-compile-target-machine))]
 
     [fail-fast fail-fast?]
     

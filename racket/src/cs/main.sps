@@ -426,7 +426,7 @@
                 (loop (cdr args))]
                [else
                 (raise-bad-switch arg within-arg)])]
-             [("-M")
+             [("-M" "--compile-any")
               (set! compile-machine-independent? #t)
               (loop (cdr args))]
              [("--")

@@ -327,6 +327,9 @@
                           [current-directory (if (memq 'set-directory options)
                                                  dir
                                                  (current-directory))]
+                          [current-compile-target-machine (if (memq 'compile-any options)
+                                                              #f
+                                                              (current-compile-target-machine))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]
@@ -365,9 +368,11 @@
                   #:use-places? use-places?))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree
+                          #:options [options '()]
                           #:use-places? [use-places? #t])
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
-  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '(set-directory)))
+  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error
+                                      (append options '(set-directory))))
   (parallel-build collects-queue worker-count
                   #:use-places? use-places?))
 

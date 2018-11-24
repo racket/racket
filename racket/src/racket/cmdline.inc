@@ -784,7 +784,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-q";
     else if (!strcmp("--no-jit", argv[0]))
       argv[0] = "-j";
-    else if (!strcmp("--compile-mi", argv[0]))
+    else if (!strcmp("--compile-any", argv[0]))
       argv[0] = "-M";
     else if (!strcmp("--no-delay", argv[0]))
       argv[0] = "-d";
@@ -1424,7 +1424,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # else
 	 "  -j, --no-jit : No effect, since the just-in-time compiler is unavailable\n"
 # endif
-	 "  -M, --compile-mi : Compile to machine-independent form\n"
+	 "  -M, --compile-any : Compile to machine-independent form\n"
          "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
 	 "  -W <levels>, --warn <levels> : Set stderr logging to <levels>\n"

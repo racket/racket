@@ -52,16 +52,19 @@ in-place:
 cpus-in-place:
 	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
 
+# For -M, etc., to pick the target machine for compilation:
+SETUP_MACHINE_FLAGS =
+
 # Explicitly propagate variables for non-GNU `make's:
 LIBSETUP = -N raco -l- raco setup
 
 # Update before install to avoid needless work on the initial build,
 # and use `--no-setup` plus an explicit `raco setup` for the same reason.
-UPDATE_PKGS_ARGS = --all --auto --no-setup --scope installation
-INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
+UPDATE_PKGS_ARGS = --all --auto --no-setup --scope installation $(SETUP_MACHINE_FLAGS)
+INSTALL_PKGS_ARGS = $(JOB_OPTIONS) $(SETUP_MACHINE_FLAGS) --no-setup --pkgs \
                     --skip-installed --scope installation --deps search-auto \
                     $(REQUIRED_PKGS) $(PKGS)
-ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(SETUP_MACHINE_FLAGS)
 
 plain-in-place:
 	$(MAKE) plain-minimal-in-place
@@ -174,7 +177,8 @@ MORE_CONFIGURE_ARGS =
 
 SELF_UP = 
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
-INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
+PLT_SETUP_OPTIONS_qq = PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS) $(SETUP_MACHINE_FLAGS)"
+INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) $(PLT_SETUP_OPTIONS_qq)
 
 BASE_INSTALL_TARGET = plain-base-install
 
@@ -545,8 +549,7 @@ WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
-LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
-SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS)
+SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS) $(SETUP_MACHINE_FLAGS)
 REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
@@ -623,7 +626,7 @@ build-from-catalog:
 	$(MAKE) set-server-config
 	$(USER_RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
 	$(USER_RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS) $(TEST_PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
-	$(USER_RACO) setup --avoid-main $(JOB_OPTIONS)
+	$(USER_RACO) setup $(SETUP_MACHINE_FLAGS) --avoid-main $(JOB_OPTIONS)
 
 server-cache-config:
 	$(USER_RACO) pkg config -i --set download-cache-dir build/cache

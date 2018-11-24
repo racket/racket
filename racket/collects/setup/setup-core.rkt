@@ -1114,7 +1114,10 @@
                                                       has-module-suffix?)))))
             (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct
-                              #:use-places? (parallel-use-places))
+                              #:use-places? (parallel-use-places)
+                              #:options (if (not (current-compile-target-machine))
+                                            '(compile-any)
+                                            '()))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode

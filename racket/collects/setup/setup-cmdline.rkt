@@ -126,6 +126,11 @@
      [("--force-user-docs") "User-specific documentation even if matching installation"
       (add-flags '((force-user-docs #t)))]
      #:help-labels
+     " -------------------------- target machine ------------------------- "
+     #:once-each
+     [("-M" "--compile-any") "Compile to machine-independent form"
+      (add-flags `((current-compile-target-machine #f)))]
+     #:help-labels
      " ------------------------------ modes ------------------------------ "
      #:once-each
      [("-j" "--jobs" "--workers") n "Use <n> parallel jobs"
