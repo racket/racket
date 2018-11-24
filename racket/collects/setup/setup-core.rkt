@@ -2026,6 +2026,7 @@
 
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
+  (setup-printf "target machine" "~a" (or (current-compile-target-machine) 'any))
   (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
