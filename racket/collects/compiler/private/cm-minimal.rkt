@@ -605,6 +605,7 @@
                   #f])]
               [(and zo-exists?
                     src-sha1
+                    (equal? (version) (deps-version deps))
                     (equal? src-sha1 (and (pair? (deps-sha1s deps))
                                           (deps-src-sha1 deps)))
                     (equal? (get-dep-sha1s (deps-imports deps) up-to-date collection-cache read-src-syntax path->mode roots seen
