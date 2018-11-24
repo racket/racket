@@ -319,7 +319,7 @@ Running Build Farms
 
 The `installers` target of the makefile will do everything to generate
 installers: build a server on the current machine, run clients on
-hosts specified via CONFIG, and start/stop VirtualBox virtual machines
+hosts specified via `CONFIG`, and start/stop VirtualBox virtual machines
 that act as client machines.
 
 See the documentation of the "distro-build" package for a description
@@ -334,7 +334,7 @@ drives the build farm, and the resulting installers are in
 installer filenames in "build/installer/table.rktd". A log file
 for each client is written to "build/log".
 
-The default CONFIG path is "build/site.rkt", so you could put your
+The default `CONFIG` path is "build/site.rkt", so you could put your
 configuration file there and omit the `CONFIG` argument to `make`. A
 default configuration file is created there automatically. Supply
 `CONFIG_MODE=...` to pass a configuration mode on to your
@@ -354,6 +354,12 @@ arguments via `PKGS`, `SERVER` plus `SERVER_PORT` plus `SERVER_HOSTS`,
 respectively. The site configuration's top-level options for packages
 and documentation search URL are used to configure the set of packages
 that are available to client machines to include in installers.
+
+The `SETUP_MACHINE_FLAGS` argument to the makefile affects how
+bytecode is compiled on the server for distribrution to clients. Use
+`SETUP_MACHINE_FLAGS=-M` when building clients with the variant 'cs,
+since that will significantly speed up client builds with only a
+modest slowdown on the server.
 
 For each installer written to "build/installers", the installer's name
 is

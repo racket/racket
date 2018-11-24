@@ -812,7 +812,7 @@ client-from-site:
 # Drive installer build across server and clients:
 
 DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
-               $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
+               $(CLEAN_MODE) $(SETUP_MACHINE_FLAGS) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
 DRIVE_CMD_q = $(USER_RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
