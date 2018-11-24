@@ -399,7 +399,7 @@
             (string c)])))
       (string-join str* ""))))
 
-(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\,))
+(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\, #\\))
 
 (define (glob-quote/string str)
   (define str*
@@ -416,7 +416,8 @@
     (check-equal? (glob-quote/string "a*") "a\\*")
     (check-equal? (glob-quote/string "*][?") "\\*\\]\\[\\?")
     (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")
-    (check-equal? (glob-quote/string "},{foo,bar}") "\\}\\,\\{foo\\,bar\\}")))
+    (check-equal? (glob-quote/string "},{foo,bar}") "\\}\\,\\{foo\\,bar\\}")
+    (check-equal? (glob-quote/string "\\") "\\\\")))
 
 (define (glob-unquote/string str)
   (define str*
