@@ -724,7 +724,8 @@ distro-build-from-server:
 # Copy our local build into a "bundle/racket" build, dropping in the
 # process things that should not be in an installer (such as the "src"
 # directory). Then, replace the "collects" tree with the one from the
-# server. Install required packages next, because they may include
+# server. Run `raco setup` in case the replacing "collects" tree needs
+# recompiling. Install required packages next, because they may include
 # packages that are needed to make core functionality work right
 # (which as the SQLite3 library). At last, install the selected packages
 # from the server, and the run a post-adjustment script.
@@ -735,6 +736,7 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
 	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(IN_BUNDLE_RACO) setup -l racket/base
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
@@ -769,6 +771,7 @@ win32-bundle:
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
 	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(WIN32_IN_BUNDLE_RACO) setup -l racket/base
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
