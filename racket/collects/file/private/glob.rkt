@@ -399,7 +399,7 @@
             (string c)])))
       (string-join str* ""))))
 
-(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\]))
+(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\,))
 
 (define (glob-quote/string str)
   (define str*
@@ -415,7 +415,8 @@
     (check-equal? (glob-quote/string "a") "a")
     (check-equal? (glob-quote/string "a*") "a\\*")
     (check-equal? (glob-quote/string "*][?") "\\*\\]\\[\\?")
-    (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")))
+    (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")
+    (check-equal? (glob-quote/string "},{foo,bar}") "\\}\\,\\{foo\\,bar\\}")))
 
 (define (glob-unquote/string str)
   (define str*
@@ -436,7 +437,8 @@
   (test-case "glob-unquote/string"
     (check-equal? (glob-unquote/string "a") "a")
     (check-equal? (glob-unquote/string "foo\\*rkt") "foo*rkt")
-    (check-equal? (glob-unquote/string "?\\?\\]\\[\\*") "??][*")))
+    (check-equal? (glob-unquote/string "?\\?\\]\\[\\*") "??][*")
+    (check-equal? (glob-unquote/string "\\}a\\,") "}a,")))
 
 ;; flatten-glob : glob/c -> (listof path-string?)
 (define (flatten-glob pattern)

@@ -119,16 +119,16 @@ Examples:
   This operation accesses the filesystem.
 }
 
-@defproc*[([(glob-quote [pattern string?]) string?]
-           [(glob-quote [pattern path?]) path?]
+@defproc*[([(glob-quote [str string?]) string?]
+           [(glob-quote [path path?]) path?]
 )]{
-  Escapes all @tech{glob wildcards} in the given string or path string,
-  but not braces.
+  Escapes all @tech{glob wildcards} and @tech{glob meta-wildcards} in the given
+  string or path string.
 
   @examples[#:eval glob-eval
     (glob-quote "*.rkt")
     (glob-quote "[Ff]ile?{zip,tar.gz}")
-    (glob-quote "[")
+    (glob-quote "]")
   ]
 }
 
