@@ -241,10 +241,10 @@
            ;; compute one hash from all hashes
            (sha1 (get-output-bytes p))))))
 
-(define (write-deps code path->mode roots path src-sha1
+(define (write-deps code zo-name path->mode roots path src-sha1
                     external-deps external-module-deps reader-deps 
                     up-to-date collection-cache read-src-syntax)
-  (let ([dep-path (path-add-extension (get-compilation-path path->mode roots path) #".dep")]
+  (let ([dep-path (path-replace-extension zo-name #".dep")]
         [deps (remove-duplicates (append (get-deps code path)
                                          external-module-deps ; can create cycles if misused!
                                          reader-deps))]
@@ -272,8 +272,8 @@
                  op)
           (newline op))))))
 
-(define (write-updated-deps deps assume-compiled-sha1 path->mode roots path)
-  (let ([dep-path (path-add-extension (get-compilation-path path->mode roots path) #".dep")])
+(define (write-updated-deps deps assume-compiled-sha1 zo-name)
+  (let ([dep-path (path-replace-extension zo-name #".dep")])
     (with-compile-output dep-path
       (lambda (op tmp-path)
         (write (list* (version)
@@ -393,7 +393,8 @@
                                   collection-cache)]
           [else
            (get-module-code path (path->mode path) compile
-                            (lambda (a b) #f) ; extension handler
+                            #:choose (lambda (src zo so) 'src)
+                            #:extension-handler (lambda (a b) #f)
                             #:roots (list (car roots))
                             #:source-reader read-src-syntax)]))))
   (define dest-roots (list (car roots)))
@@ -459,14 +460,18 @@
                 (write-bytes s out)))))
         ;; redundant, but close as early as possible:
         (close-output-port out)
-        ;; Note that we check time and write .deps before returning from
+        ;; Note that we check time and write ".dep" before returning from
         ;; with-compile-output...
         (verify-times path tmp-name)
+        ;; Explicitly delete target file before writing ".dep", just so
+        ;; ".dep" is doesn't claim a description of the wrong file
+        (when (file-exists? zo-name)
+          (try-delete-file zo-name #f))
         (cond
           [use-existing-deps
-           (write-updated-deps use-existing-deps assume-compiled-sha1 path->mode roots path)]
+           (write-updated-deps use-existing-deps assume-compiled-sha1 zo-name)]
           [else
-           (write-deps code path->mode dest-roots path src-sha1
+           (write-deps code zo-name path->mode dest-roots path src-sha1
                        external-deps external-module-deps reader-deps 
                        up-to-date collection-cache read-src-syntax)])))
     (trace-printf "wrote zo file: ~a" zo-name)))
@@ -556,9 +561,6 @@
                (lambda ()
                  (when ok-to-compile?
                    (log-compile-event path (if recompile-from 'start-recompile 'start-compile))
-                   (when zo-exists?
-                     (unless (equal? zo-name recompile-from)
-                       (try-delete-file zo-name #f)))
                    (trace-printf "~acompiling ~a" (if recompile-from "re" "") actual-path)
                    (parameterize ([depth (+ (depth) 1)])
                      (with-handlers ([exn:get-module-code?
