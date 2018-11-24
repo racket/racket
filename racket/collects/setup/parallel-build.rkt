@@ -38,6 +38,9 @@
         (hash-set!
          locks fn
          (match v
+           ['done
+            (wrkr/send wrkr (list 'compiled))
+            'done]
            [(list w waitlst) 
             (hash-set! depends wrkr (cons w fn))
             (let ([fns (check-cycles wrkr (hash) null)])
@@ -57,7 +60,7 @@
           (for ([x (second (hash-ref locks fn))])
             (hash-remove! depends x)
             (wrkr/send x (list 'compiled)))
-          (hash-remove! locks fn)]))
+          (hash-set! locks fn 'done)]))
     (define/private (check-cycles w seen fns)
       (cond
        [(hash-ref seen w #f) fns]
