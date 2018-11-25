@@ -310,10 +310,6 @@
 	(if (on? "--trust-zos")
             (trust-zos #t)
             (void))
-	(if (or (on? "-M")
-                (on? "--compile-any"))
-            (current-compile-target-machine #f)
-            (void))
 	(current-load/use-compiled (mk))))
 
   ;; This has to be dynamic, so we get a chance to turn off

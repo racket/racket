@@ -31,8 +31,6 @@
                       (current-target-plt-directory-getter))]
                  [trust-existing-zos (or (has-x-flag? 'trust-existing-zos)
                                          (trust-existing-zos))]
-                 [current-compile-target-machine (get-x-flag 'current-compile-target-machine
-                                                             (current-compile-target-machine))]
                  [specific-collections x-specific-collections]
                  [specific-packages x-specific-packages]
                  [archives x-archives]

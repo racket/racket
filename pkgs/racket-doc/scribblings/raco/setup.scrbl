@@ -236,11 +236,6 @@ flags:
   content as the main installation.}
 
 ]}
-@item{Selecting the target machine:
-@itemize[
- @item{@DFlag{compile-any} or @Flag{M} --- compile bytecode to a
-       machine-independent form.}
-]}
 @item{Selecting parallelism and other build modes:
 @itemize[
 

@@ -14,7 +14,7 @@
          (for-syntax racket/base
                      syntax/strip-context))
 
-(define (setup what no-setup? compile-any? fail-fast? setup-collects jobs)
+(define (setup what no-setup? fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
               no-setup?
               (not (member (getenv "PLT_PKG_NOSETUP") '(#f ""))))
@@ -28,7 +28,6 @@
                                      setup-collects))
              #:tidy? #t
              #:make-doc-index? #t
-             #:compile-any? compile-any?
              #:jobs jobs
              #:fail-fast? fail-fast?)
       ((current-pkg-error)
@@ -254,7 +253,7 @@
                                          (pkg-desc p a-type* name checksum #f
                                                    #:path (and (eq? a-type* 'clone)
                                                                (path->complete-path clone))))))))
-                  (setup "installed" no-setup compile-any fail-fast setup-collects jobs))))]
+                  (setup "installed" no-setup fail-fast setup-collects jobs))))]
             ;; ----------------------------------------
             [update
              "Update packages"
@@ -358,7 +357,7 @@
                                       #:infer-clone-from-dir? (not (or link static-link copy))
                                       #:dry-run? dry-run
                                       #:use-trash? (not no-trash)))))
-                  (setup "updated" no-setup compile-any #f setup-collects jobs))))]
+                  (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
             [remove
              "Remove packages"
@@ -386,7 +385,7 @@
                                #:force? force
                                #:dry-run? dry-run
                                #:use-trash? (not no-trash))))
-                (setup "removed" no-setup compile-any #f setup-collects jobs)))]
+                (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [new
              "Populate a new directory with the stubs of a package"
@@ -485,7 +484,7 @@
                                               (and binary-lib 'binary-lib))
                                   #:force-strip? force
                                   #:dry-run? dry-run))))
-                (setup "migrated" no-setup compile-any #f setup-collects jobs)))]
+                (setup "migrated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [create
              "Bundle package from a directory or installed package"
@@ -675,8 +674,7 @@
    #:dry-run-flags
    ([#:bool dry-run () ("Don't actually change package installation")])
    #:job-flags
-   ([#:bool compile-any ("-M") ("Compile to machine-independent form")]
-    [#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
+   ([#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
     [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
     [#:bool batch () ("Disable interactive mode and all prompts")])
    #:trash-flags

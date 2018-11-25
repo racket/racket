@@ -613,8 +613,6 @@ sub-commands.
   @item{@DFlag{dry-run} --- Prevents changes to the current installation. All installation and update work is
                             staged and checked, but the final installation step is skipped.}
 
-  @item{@DFlag{compile-any} or @Flag{M} --- Compiles bytecode to a machine-independent form.}
-
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
@@ -747,7 +745,6 @@ the given @nonterm{pkg-source}s.
  @item{@DFlag{pull} @nonterm{mode} --- Same as for @command-ref{install}}
 
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
- @item{@DFlag{compile-any} or @Flag{M} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -789,7 +786,6 @@ the given @nonterm{pkg}s.
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
- @item{@DFlag{compile-any} or @Flag{M} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -881,7 +877,6 @@ package is created.
   @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
   @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
-  @item{@DFlag{compile-any} or @Flag{M} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]

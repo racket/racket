@@ -243,9 +243,9 @@ cross-compilation mode is used and that any foreign libraries needed
 for build time can be found, but many cross-compilation scenarios work
 without `-C`.
 
-Specify `SETUP_MACHINE_FLAGS=...` to set flags for `raco setup` and
-`raco pkg install` that control the target machine of compiled
-bytecode. For example `SETUP_MACHINE_FLAGS=-M` causes the generated
+Specify `SETUP_MACHINE_FLAGS=...` to set Racket flags that control the
+target machine of compiled bytecode for `raco setup` and `raco pkg
+install`. For example `SETUP_MACHINE_FLAGS=-M` causes the generated
 bytecode to be machine-independent, which is mainly useful when the
 generated installation will be used as a template for other platforms.
 

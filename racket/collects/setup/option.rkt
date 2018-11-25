@@ -89,10 +89,6 @@
 (define-flag-param doc-pdf-dest #f)
 (define-flag-param fail-fast #f)
 
-(defined-flag-params (cons (cons 'current-compile-target-machine
-                                 current-compile-target-machine)
-                           (defined-flag-params)))
-
 (define specific-collections (make-parameter null))
 (define specific-packages (make-parameter null))
 (define specific-planet-dirs (make-parameter null))
