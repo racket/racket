@@ -544,7 +544,7 @@ SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 # Helper macros:
 USER_CONFIG = -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
 USER_RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
-USER_RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
+USER_RACO = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) $(USER_CONFIG) -N raco -l- raco
 WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
