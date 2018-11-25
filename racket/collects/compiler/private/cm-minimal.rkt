@@ -571,7 +571,7 @@
                                         (raise ex))])
                        (compile-zo* path->mode roots path src-sha1 read-src-syntax zo-name up-to-date collection-cache
                                     #:recompile-from recompile-from
-                                    #:assume-compiled-sha1 assume-compiled-sha1
+                                    #:assume-compiled-sha1 (force assume-compiled-sha1)
                                     #:use-existing-deps use-existing-deps)))
                    (trace-printf "~acompiled ~a" (if recompile-from "re" "") actual-path)))
                (lambda ()
@@ -584,7 +584,8 @@
             (define (build/recompile)
               (build #:recompile-from zo-name
                      #:assume-compiled-sha1 (or (deps-assume-compiled-sha1 deps)
-                                                (call-with-input-file* zo-name sha1))
+                                                ;; delay until lock is held:
+                                                (delay (call-with-input-file* zo-name sha1)))
                      #:use-existing-deps deps))
             (define src-sha1 (and zo-exists?
                                   deps
