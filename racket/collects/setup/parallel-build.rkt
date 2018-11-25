@@ -319,10 +319,9 @@
                                                        (format-error x #:long? #f #:to-string? #t))))])
            (parameterize ([parallel-lock-client lock-client]
                           [compile-context-preservation-enabled (member 'disable-inlining options )]
-                          [manager-trace-handler
-                            (lambda (p)
-                              (when (member 'very-verbose options)
-                                (printf "  ~a\n" p)))]
+                          [manager-trace-handler (if (member 'very-verbose options)
+                                                     (lambda (p) (printf "  ~a\n" p))
+                                                     (manager-trace-handler))]
                           [current-namespace (make-base-empty-namespace)]
                           [current-directory (if (memq 'set-directory options)
                                                  dir
