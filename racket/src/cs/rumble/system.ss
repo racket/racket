@@ -31,11 +31,12 @@
                    [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
                    [else (string->utf8 ".so")])]
     [(so-mode) 'local]
-    [(fs-change) '#(#f #f #f #f)]
+    [(fs-change) '#(#f #f #f #f)] ; when this changes, change "gen-system.rkt", too
+    [(target-machine) (machine-type)]
     [(cross) cross-mode]
     [else (raise-argument-error 'system-type
                                 (string-append
-                                 "(or/c 'os 'word 'vm 'gc 'link 'machine\n"
+                                 "(or/c 'os 'word 'vm 'gc 'link 'machine 'target-machine\n"
                                  "      'so-suffix 'so-mode 'fs-change 'cross)")
                                 mode)]))
 

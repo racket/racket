@@ -4,10 +4,10 @@
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(system-type [mode (or/c 'os 'word 'vm 'gc 'link 'machine
+@defproc[(system-type [mode (or/c 'os 'word 'vm 'gc 'link 'machine 'target-machine
                                   'so-suffix 'so-mode 'fs-change 'cross)
                             'os])
-         (or/c symbol? string? bytes? exact-positive-integer? vector?)]{
+         (or/c symbol? string? bytes? exact-positive-integer? vector? #f)]{
 
 Returns information about the operating system, build mode, or machine
 for a running Racket. (Installation tools should use @racket[cross-system-type],
@@ -59,6 +59,13 @@ In @indexed-racket['machine] mode, then the result is a string, which
 contains further details about the current machine in a
 platform-specific format.
 
+In @indexed-racket['target-machine] mode, the result is a symbol for
+the running Racket's native bytecode format, or it is @racket[#f] if
+there is no native format other than the machine-independent format.
+If the result is a symbol, then @racket[compile-target-machine?] returns
+@racket[#t] when applied to the symbol; see also
+@racket[current-compile-target-machine].
+
 In @indexed-racket['so-suffix] mode, then the result is a byte string
 that represents the file extension used for shared objects on the
 current platform. The byte string starts with a period, so it is
@@ -107,7 +114,8 @@ The possible symbols are:
 ]
 
 @history[#:changed "6.8.0.2" @elem{Added @racket['vm] mode.}
-         #:changed "6.9.0.1" @elem{Added @racket['cross] mode.}]}
+         #:changed "6.9.0.1" @elem{Added @racket['cross] mode.}
+         #:changed "7.1.0.6" @elem{Added @racket['target-machine] mode.}]}
 
 
 @defproc[(system-language+country) string?]{

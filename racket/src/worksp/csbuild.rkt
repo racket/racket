@@ -256,3 +256,8 @@
             (format "mrstart~a.sln" pltslnver)
             "/p:Configuration=Release"
             (format "/p:Platform=~a" buildmode)))
+
+(system*! (find-exe)
+          "../cs/c/gen-system.rkt"
+          (format "../../lib/system~a.rktd" cs-suffix)
+          machine)

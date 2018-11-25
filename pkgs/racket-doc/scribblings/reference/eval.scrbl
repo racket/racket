@@ -613,7 +613,8 @@ When @racket[(system-type 'vm)] reports @racket['racket], then the
 only target symbol is @racket['racket]. When @racket[(system-type
 'vm)] reports @racket['chez-scheme], then a symbol corresponding to
 the current platform is a target, and other targets may also be
-supported.
+supported. The @racket['target-machine] mode of @racket[system-type]
+reports the running Racket's native target machine.
 
 @history[#:added "7.1.0.6"]}
 
