@@ -291,9 +291,24 @@
             (define base (simplify-path* base*))
             (loop (cdr paths)
                   (if (member base bases) bases (cons base bases)))))))
-  (append (map (lambda (p) `(read-bytecode ,p)) paths)
-          (map (lambda (b) `(read-bytecode ,(build-path b "compiled"))) bases)
-          (map (lambda (b) `(exists ,b)) bases)))
+  (add-compiled-file-roots
+   (append (map (lambda (p) `(read-bytecode ,p)) paths)
+           (map (lambda (b) `(read-bytecode ,(build-path b "compiled"))) bases)
+           (map (lambda (b) `(exists ,b)) bases))))
+
+;; For each 'read-bytecode entry in lm for each root in
+;; `(current-compiled-file-roots)`, add the rerooted path
+(define (add-compiled-file-roots l)
+  (append
+   l
+   (for/list ([e (in-list l)]
+              #:when (eq? 'read-bytecode (car e))
+              ;; For every absolute root, add this directory
+              ;; under that root:
+              [root (in-list (current-compiled-file-roots))]
+              #:when (and (path? root)
+                          (absolute-path? root)))
+     `(read-bytecode ,(reroot-path (cadr e) root)))))
 
 ;; takes a module-spec list and returns all module paths that are needed
 ;; ==> ignores (lib ...) modules
@@ -1016,24 +1031,25 @@
              (append (sandbox-override-collection-paths)
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
-     `(,@(map (lambda (p) `(read-bytecode ,p))
-              (apply
-               append
-               (for/list ([l (current-library-collection-links)])
-                 (cond
-                  [(not l)
-                   (current-library-collection-paths)]
-                  [(hash? l)
-                   (hash-values l)]
-                  [else
-                   (if (file-exists? l)
-                       (call-and-accumulate-captured-filesystem-accesses
-                        saw-accesses
-                        (lambda ()
-                          (append
-                           (links #:root? #t #:file l)
-                           (map cdr (links #:file l #:with-path? #t)))))
-                       null)]))))
+     `(,@(add-compiled-file-roots
+          (map (lambda (p) `(read-bytecode ,p))
+               (apply
+                append
+                (for/list ([l (current-library-collection-links)])
+                  (cond
+                    [(not l)
+                     (current-library-collection-paths)]
+                    [(hash? l)
+                     (hash-values l)]
+                    [else
+                     (if (file-exists? l)
+                         (call-and-accumulate-captured-filesystem-accesses
+                          saw-accesses
+                          (lambda ()
+                            (append
+                             (links #:root? #t #:file l)
+                             (map cdr (links #:file l #:with-path? #t)))))
+                         null)])))))
        ,@(for/list ([l (current-library-collection-links)]
                     #:when (path? l))
            `(read ,l))
@@ -1044,7 +1060,8 @@
                      [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
            `(read ,(build-path l f)))
        (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
-       (read-bytecode ,(PLANET-BASE-DIR))
+       ,@(add-compiled-file-roots
+          (list `(read-bytecode ,(PLANET-BASE-DIR))))
        (exists ,(find-system-path 'addon-dir))
        ,@(for/list ([dir (get-lib-search-dirs)])
            `(read ,dir))
