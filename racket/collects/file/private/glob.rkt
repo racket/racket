@@ -113,11 +113,6 @@
     (string->path (glob-quote/string (path->string ps)))
     (glob-quote/string ps)))
 
-(define (glob-unquote ps)
-  (if (path? ps)
-    (string->path (glob-unquote/string (path->string ps)))
-    (glob-unquote/string ps)))
-
 ;; -----------------------------------------------------------------------------
 ;; -- parsing
 
@@ -186,10 +181,10 @@
     (let loop ([unamb* '()] [elem* elem*])
       (cond
        [(or (null? elem*) (has-**? (car elem*)))
-        (values (normalize-path (path*->path (map glob-unquote (reverse unamb*))))
+        (values (normalize-path (path*->path (map glob-element->filename (reverse unamb*))))
                 (if (not (null? elem*)) '** #f))]
        [(has-glob-pattern? (car elem*))
-        (values (normalize-path (path*->path (map glob-unquote (reverse unamb*))))
+        (values (normalize-path (path*->path (map glob-element->filename (reverse unamb*))))
                 (if (ormap has-**? (cdr elem*)) '** elem*))]
        [else
         (loop (cons (car elem*) unamb*) (cdr elem*))])))
@@ -399,7 +394,12 @@
             (string c)])))
       (string-join str* ""))))
 
-(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\, #\\))
+(define (glob-element->filename ps)
+  (if (path? ps)
+    (string->path (glob-element->filename/string (path->string ps)))
+    (glob-element->filename/string ps)))
+
+(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\,))
 
 (define (glob-quote/string str)
   (define str*
@@ -417,9 +417,9 @@
     (check-equal? (glob-quote/string "*][?") "\\*\\]\\[\\?")
     (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")
     (check-equal? (glob-quote/string "},{foo,bar}") "\\}\\,\\{foo\\,bar\\}")
-    (check-equal? (glob-quote/string "\\") "\\\\")))
+    (check-equal? (glob-quote/string "\\") "\\")))
 
-(define (glob-unquote/string str)
+(define (glob-element->filename/string str)
   (define str*
     ;; examine `str` in reverse, remove #\\ from escaped wildcards
     (let loop ([c* (reverse (string->list str))]
@@ -435,11 +435,12 @@
   (apply string-append (reverse str*)))
 
 (module+ test
-  (test-case "glob-unquote/string"
-    (check-equal? (glob-unquote/string "a") "a")
-    (check-equal? (glob-unquote/string "foo\\*rkt") "foo*rkt")
-    (check-equal? (glob-unquote/string "?\\?\\]\\[\\*") "??][*")
-    (check-equal? (glob-unquote/string "\\}a\\,") "}a,")))
+  (test-case "glob-element->filename/string"
+    (check-equal? (glob-element->filename/string "a") "a")
+    (check-equal? (glob-element->filename/string "foo\\*rkt") "foo*rkt")
+    (check-equal? (glob-element->filename/string "?\\?\\]\\[\\*") "??][*")
+    (check-equal? (glob-element->filename/string "\\}a\\,") "}a,")
+    (check-equal? (glob-element->filename/string "\\normal") "\\normal")))
 
 ;; flatten-glob : glob/c -> (listof path-string?)
 (define (flatten-glob pattern)
