@@ -40,7 +40,7 @@
             mixin
             interface interface* interface?
             object% object? externalizable<%> printable<%> writable<%> equal<%>
-            object=? object-or-false=?
+            object=? object-or-false=? object=-hash-code
             new make-object instantiate
             send send/apply send/keyword-apply send* send+ dynamic-send
             class-field-accessor class-field-mutator with-method
@@ -4430,15 +4430,21 @@ An example
         (and o1 o2 (-object=? o1 o2)))]))
 
 (define (-object=? o1 o2)
-  (let* ([orig-o1 (if (has-original-object? o1) (original-object o1) o1)]
-         [orig-o2 (if (has-original-object? o2) (original-object o2) o2)]
-         [orig-orig-o1 (if (wrapped-object? orig-o1)
-                           (wrapped-object-object orig-o1)
-                           orig-o1)]
-         [orig-orig-o2 (if (wrapped-object? orig-o2)
-                           (wrapped-object-object orig-o2)
-                           orig-o2)])
-    (eq? orig-orig-o1 orig-orig-o2)))
+  (eq? (object=-original-object o1)
+       (object=-original-object o2)))
+
+(define (object=-original-object o)
+  (define orig-o (if (has-original-object? o) (original-object o) o))
+  (define orig-orig-o
+    (if (wrapped-object? orig-o)
+        (wrapped-object-object orig-o)
+        orig-o))
+  orig-orig-o)
+
+(define (object=-hash-code o)
+  (unless (object? o)
+    (raise-argument-error 'object=-hash-code "object?" 0 o))
+  (eq-hash-code (object=-original-object o)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4837,7 +4843,8 @@ An example
          class?
          mixin
          (rename-out [_interface interface]) interface* interface?
-         object% object? object=? object-or-false=? externalizable<%> printable<%> writable<%> equal<%>
+         object% object? object=? object-or-false=? object=-hash-code
+         externalizable<%> printable<%> writable<%> equal<%>
          new make-object instantiate
          get-field set-field! field-bound? field-names
          dynamic-get-field dynamic-set-field!

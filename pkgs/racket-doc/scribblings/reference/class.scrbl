@@ -2509,6 +2509,11 @@ returns @racket[#t] if both arguments are @racket[#f].
 
 @history[#:added "6.1.1.8"]}
 
+@defproc[(object=-hash-code [o object?]) fixnum?]{
+ Returns the hash code for @racket[o] that corresponds to
+ the equality relation @racket[object=?].
+
+@history[#:added "7.1.0.6"]}
 
 @defproc[(object->vector [object object?] [opaque-v any/c #f]) vector?]{
 
