@@ -15,7 +15,8 @@
 ;; config: definitions
 
 (provide get-config-table
-         to-path)
+         to-path
+         combine-search)
 
 (define (get-config-table find-config-dir)
   (delay/sync

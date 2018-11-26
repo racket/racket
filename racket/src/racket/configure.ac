@@ -80,6 +80,8 @@ AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for lo
 AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
 
+m4_include(../ac/crossany_arg.m4)
+
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then
@@ -239,6 +241,8 @@ if test "${enable_racket}" != "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+
+m4_include(../ac/crossany.m4)
 
 ###### Some defaults #######
 
@@ -1505,6 +1509,8 @@ AC_SUBST(BOOT_MODE)
 AC_SUBST(STARTUP_AS_BYTECODE)
 AC_SUBST(STARTUP_AS_C)
 AC_SUBST(STARTUP_AS_AUTO)
+
+AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 mk_needed_dir()
 {

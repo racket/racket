@@ -171,7 +171,7 @@ no-cgc-needed:
 	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
 
 ALL_CPPFLAGS = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/src $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
-MKSYSTEM_ARGS = -cqu $(srcdir)/mksystem.rkt system.rktd "$(CPP) $(ALL_CPPFLAGS) $(srcdir)/src/systype.c" "@MMM_INSTALLED@"
+MKSYSTEM_ARGS = -cqu $(srcdir)/mksystem.rkt system.rktd "$(CPP) $(ALL_CPPFLAGS) $(srcdir)/src/systype.c" "@MMM_INSTALLED@" @CROSS_COMPILE_TARGET_KIND@
 
 sysinfer@CGC@:
 	@RUN_RACKET_CGC@ $(MKSYSTEM_ARGS) "@RUN_RACKET_CGC@" "$(RUN_THIS_RACKET_CGC)"

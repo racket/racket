@@ -26,6 +26,7 @@ m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
 AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
+m4_include(../ac/crossany_arg.m4)
 
 m4_include(../ac/sdk.m4)
 
@@ -78,6 +79,8 @@ if test "${enable_xonx}" == "" ; then
 fi
 
 m4_include(../ac/path_pkgscope.m4)
+
+m4_include(../ac/crossany.m4)
 
 SUB_CONFIGURE_EXTRAS=
 
@@ -449,6 +452,7 @@ AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
+AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 makefiles="Makefile"
 

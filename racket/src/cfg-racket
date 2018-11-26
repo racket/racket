@@ -624,6 +624,7 @@ enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subdirs
+CROSS_COMPILE_TARGET_KIND
 STARTUP_AS_AUTO
 STARTUP_AS_C
 STARTUP_AS_BYTECODE
@@ -837,6 +838,7 @@ enable_gcov
 enable_noopt
 enable_ubsan
 enable_jitframe
+enable_crossany
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1496,6 +1498,7 @@ Optional Features:
   --enable-noopt          drop -O C flags (useful for low-level debugging)
   --enable-ubsan          compile with -fsanitize=undefined)
   --enable-jitframe       x86_64: use frame pointer for internal calls
+  --enable-crossany       Record own cross target as machine-independent
 
 Some influential environment variables:
   CC          C compiler command
@@ -2872,6 +2875,13 @@ if test "${enable_jitframe+set}" = set; then :
 fi
 
 
+# Check whether --enable-crossany was given.
+if test "${enable_crossany+set}" = set; then :
+  enableval=$enable_crossany;
+fi
+
+
+
 ###### Some flags imply other flags #######
 
 if test "${enable_smalloskit}" = "yes" ; then
@@ -3292,6 +3302,14 @@ fi
 
 
 
+
+
+show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
+
+CROSS_COMPILE_TARGET_KIND=machine
+if test "${enable_crossany}" = "yes" ; then
+  CROSS_COMPILE_TARGET_KIND=any
+fi
 
 
 ###### Some defaults #######
@@ -6843,6 +6861,8 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
 
 
 

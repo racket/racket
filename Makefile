@@ -582,7 +582,17 @@ win32-pkgs-catalog:
 # These targets require GNU `make', so that we don't have to propagate
 # variables through all of the target layers.
 
+SERVER_COMPILE_MACHINE = machine-specific
+ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
+                              MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
+
 server:
+	if [ "$(SERVER_COMPILE_MACHINE)" = "any" ] ; \
+         then $(MAKE) plain-server $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
+         else $(MAKE) plain-server ; fi
+
+plain-server:
+	rm -rf build/zo
 	$(MAKE) base
 	$(MAKE) server-from-base
 

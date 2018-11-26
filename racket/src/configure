@@ -30,7 +30,7 @@ for arg in $*; do
     --enable-scheme=*)
       supplied_scheme=yes
       ;;
-    --help)
+    --help | -h)
       echo $0:
       echo see --help-racket or --help-cs, since the traditional Racket "(3m/CGC)" build
       echo and the Chez Scheme "(CS)" build support different options. If you use

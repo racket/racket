@@ -30,12 +30,18 @@
                                                            'library-subpath
                                                            'library-subpath-convention
                                                            system-type-symbols))])
-                                    (hash-ref ht sym #f))
+                                    (not (void? (hash-ref ht sym (void)))))
                                   (not
                                    (and (for/and ([sym (in-list system-type-symbols)]
                                                   #:unless (or (eq? sym 'machine)
                                                                (eq? sym 'gc)))
-                                          (equal? (hash-ref ht sym #f) (system-type sym)))
+                                          (define v (hash-ref ht sym))
+                                          (or (equal? v (system-type sym))
+                                              ;; If 'target-machine is set to #f, that's
+                                              ;; for SERVER_COMPILE_MACHINE=any mode
+                                              (and (not v)
+                                                   (eq? sym 'target-machine)
+                                                   (eq? (system-type 'cross) 'infer))))
                                         (equal? (bytes->path (hash-ref ht 'library-subpath)
                                                              (hash-ref ht 'library-subpath-convention))
                                                 (system-library-subpath #f))))
@@ -57,8 +63,10 @@
         "(or/c 'os 'word 'gc 'vm 'link 'machine 'target-machine 'so-suffix 'so-mode 'fs-change)"
         mode))
      (compute-cross!)
-     (or (hash-ref cross-system-table mode #f)
-         (system-type mode))]))
+     (define v (hash-ref cross-system-table mode (void)))
+     (if (eq? v (void))
+         (system-type mode)
+         v)]))
 
 (define (cross-system-library-subpath [mode (begin
                                               (compute-cross!)

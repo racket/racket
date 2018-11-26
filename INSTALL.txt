@@ -247,7 +247,9 @@ Specify `SETUP_MACHINE_FLAGS=...` to set Racket flags that control the
 target machine of compiled bytecode for `raco setup` and `raco pkg
 install`. For example `SETUP_MACHINE_FLAGS=-M` causes the generated
 bytecode to be machine-independent, which is mainly useful when the
-generated installation will be used as a template for other platforms.
+generated installation will be used as a template for other platforms
+or for cross-compilation.
+
 
 Installing Packages
 -------------------
@@ -355,12 +357,6 @@ respectively. The site configuration's top-level options for packages
 and documentation search URL are used to configure the set of packages
 that are available to client machines to include in installers.
 
-The `SETUP_MACHINE_FLAGS` argument to the makefile affects how
-bytecode is compiled on the server for distribrution to clients. Use
-`SETUP_MACHINE_FLAGS=-M` when building clients with the variant 'cs,
-since that will significantly speed up client builds with only a
-modest slowdown on the server.
-
 For each installer written to "build/installers", the installer's name
 is
 
@@ -373,6 +369,16 @@ normalizing the Windows results to "i386-win32" and "x86_63-win32",
 for the client in the site configuration, and <ext> is
 platform-specific: ".sh" for Unix (including Linux), ".dmg" or ".pkg"
 for Mac OS, and ".exe" for Windows.
+
+When building clients with variant 'cs, you can speed up the build
+process by using `SERVER_COMPILE_MACHINE=any` with `make installers`.
+That mode causes the server to send built packages to clients in
+machine-independent form, which will need to be recompiled to the
+client's native format for bytecode, but recompiling from
+machine-independent form can be much faster than compiling from
+source. Beware that `SERVER_COMPILE_MACHINE=any`cannot be used in
+a respository checkout formerly used without it, unless you first
+run `raco setup --clean`.
 
 Generating Installer Web Sites
 ------------------------------

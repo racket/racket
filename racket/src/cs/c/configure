@@ -622,6 +622,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CROSS_COMPILE_TARGET_KIND
 CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_PREFIX
@@ -761,6 +762,7 @@ enable_noopt
 enable_csdefault
 enable_csonly
 enable_parent
+enable_crossany
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1400,6 +1402,7 @@ Optional Features:
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)
+  --enable-crossany       Record own cross target as machine-independent
 
 Some influential environment variables:
   CC          C compiler command
@@ -2415,6 +2418,12 @@ if test "${enable_parent+set}" = set; then :
   enableval=$enable_parent;
 fi
 
+# Check whether --enable-crossany was given.
+if test "${enable_crossany+set}" = set; then :
+  enableval=$enable_crossany;
+fi
+
+
 
 
 enable_quartz=no
@@ -2556,6 +2565,14 @@ fi
 
 
 
+
+
+show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
+
+CROSS_COMPILE_TARGET_KIND=machine
+if test "${enable_crossany}" = "yes" ; then
+  CROSS_COMPILE_TARGET_KIND=any
+fi
 
 
 SUB_CONFIGURE_EXTRAS=
@@ -4603,6 +4620,7 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

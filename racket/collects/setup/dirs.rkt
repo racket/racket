@@ -188,8 +188,10 @@
 
 (define host-lib-search-dirs
   (delay/sync
-   (or (to-path (hash-ref (force host-config) 'lib-search-dirs #f))
-       (list (build-path
-              (exe-relative-path->complete-path (find-system-path 'host-collects-dir))
-              'up
-              "lib")))))
+   (combine-search
+    (to-path (hash-ref (force host-config) 'lib-search-dirs #f))
+    (list (find-user-lib-dir)
+          (build-path
+           (exe-relative-path->complete-path (find-system-path 'host-collects-dir))
+           'up
+           "lib")))))

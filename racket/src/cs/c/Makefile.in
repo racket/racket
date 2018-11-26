@@ -237,7 +237,7 @@ common-install:
 	$(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/starter"
 	$(ICP) $(srcdir)/../../start/starter-sh "$(DESTDIR)$(libpltdir)/starter-sh"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" "$(DESTDIR)$(libpltdir)/starter" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
-	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(MACH)
+	$(RACKET) -cu "$(srcdir)/gen-system.rkt" $(DESTDIR)$(libpltdir)/system$(CS_INSTALLED).rktd $(MACH) @CROSS_COMPILE_TARGET_KIND@
 
 unix-install:
 	$(MAKE) common-install
