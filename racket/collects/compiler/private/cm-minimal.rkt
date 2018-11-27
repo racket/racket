@@ -173,7 +173,14 @@
   ;; Attempt to delete, but give up if it doesn't work:
   (with-handlers ([exn:fail:filesystem? void])
     (when noisy? (trace-printf "deleting ~a" path))
-    (with-compiler-security-guard (delete-file path))))
+    (with-compiler-security-guard (delete-file* path))))
+
+(define (delete-file* path)
+  (if (eq? 'windows (system-type))
+      ;; Using `delete-directory/files` tries deleting by first moving
+      ;; to the temporary folder:
+      (delete-directory/files path #:must-exist? #f)
+      (delete-file path)))
 
 (define (compilation-failure path->mode roots path zo-name keep-zo-name date-path reason)
   (unless (equal? zo-name keep-zo-name)
@@ -185,7 +192,29 @@
   (call-with-atomic-output-file 
    path
    #:security-guard (pick-security-guard)
-   proc))
+   proc
+   ;; On Windows, if some other process/place is reading the file, then
+   ;; an atomic move cannot succeed. Pause and try again, up to a point,
+   ;; then give up on atomicity.
+   #:rename-fail-handler (let ([amt 0.01])
+                           (lambda (exn tmp-path)
+                             (cond
+                              [(and amt
+                                    (eq? 'windows (system-type))
+                                    (exn:fail:filesystem:errno? exn)
+                                    (let ([errno (exn:fail:filesystem:errno-errno exn)])
+                                      (and (eq? 'windows (cdr errno))
+                                           (eqv? (car errno) 5)))) ; ERROR_ACCESS_DENIED
+                               (cond
+                                [(< amt 0.5)
+                                 (sleep amt)
+                                 (set! amt (* 2 amt))]
+                                [else
+                                 ;; Give up an atomicity
+                                 (try-delete-file path)
+                                 ;; And give up on trying to handle errors
+                                 (set! amt #f)])]
+                              [else (raise exn)])))))
 
 (define-syntax-rule
   (with-compiler-security-guard expr)
@@ -1047,7 +1076,7 @@
                (define to-delete (path-add-extension (get-compilation-path path->mode roots path) #".zo"))
                (when (file-exists? to-delete)
                  (trace-printf "deleting:  ~s" to-delete)
-                 (with-compiler-security-guard (delete-file to-delete))))]
+                 (with-compiler-security-guard (delete-file* to-delete))))]
             [(if cp->m
                  (not (equal? (current-path->mode) cp->m))
                  (let ([current-cfp (use-compiled-file-paths)])

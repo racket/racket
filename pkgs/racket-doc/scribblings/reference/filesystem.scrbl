@@ -1240,14 +1240,17 @@ needed.}
 
 @defproc[(call-with-atomic-output-file [file path-string?] 
                                        [proc ([port output-port?] [tmp-path path?]  . -> . any)]
-                                       [#:security-guard security-guard (or/c #f security-guard?) #f])
+                                       [#:security-guard security-guard (or/c #f security-guard?) #f]
+                                       [#:rename-fail-handler rename-fail-handler (or/c #f (exn:fail:filesystem? path> . -> . any)) #f])
          any]{
 
 Opens a temporary file for writing in the same directory as
 @racket[file], calls @racket[proc] to write to the temporary file, and
-then atomically moves the temporary file in place of @racket[file].
-The atomic move simply uses @racket[rename-file-or-directory] on Unix
-and Mac OS, but it uses an extra rename step (see below) on Windows
+then atomically (except on Windows) moves the temporary file in place of @racket[file].
+The move simply uses @racket[rename-file-or-directory] on Unix
+and Mac OS, and it uses @racket[rename-file-or-directory] on Windows
+if @racket[rename-fail-handler] is provided; otherwise, on Windows,
+the moves uses an extra rename step (see below) on Windows
 to avoid problems due to concurrent readers of @racket[file].
 
 The @racket[proc] function is called with an output port for the
@@ -1259,11 +1262,24 @@ temporary files on exceptions.
 
 Windows prevents programs from deleting or replacing files that are
 open, but it allows renaming of open files. Therefore, on Windows,
-@racket[call-with-atomic-output-file] creates a second temporary file
-@racket[_extra-tmp-file], renames @racket[file] to
+@racket[call-with-atomic-output-file] by default creates a second
+temporary file @racket[_extra-tmp-file], renames @racket[file] to
 @racket[_extra-tmp-file], renames the temporary file written by
 @racket[proc] to @racket[file], and finally deletes
-@racket[_extra-tmp-file].}
+@racket[_extra-tmp-file]. Since that process is not atomic, however,
+@racket[rename-file-or-directory] is used if
+@racket[rename-fail-handler] is provided, where
+@racket[rename-file-or-directory] has some chance of being atomic,
+since that the source and destination of the moves will be in the same
+directory; any filesystem exception while attempting to rename the
+file is send to @racket[rename-fail-handler], which can
+re-@racket[raise] the exception or simply return to try again, perhaps
+after a delay. In addition to a filesystem exception, the
+@racket[rename-fail-handler] procedure also receives the temporary
+file path to be moved to @racket[path]. The
+@racket[rename-fail-handler] argument is used only on Windows.
+
+@history[#:changed "7.1.0.6" @elem{Added the @racket[#:rename-fail-handler] argument.}]}
 
 
 @defproc[(get-preference [name symbol?]
