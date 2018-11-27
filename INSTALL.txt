@@ -371,12 +371,12 @@ platform-specific: ".sh" for Unix (including Linux), ".dmg" or ".pkg"
 for Mac OS, and ".exe" for Windows.
 
 When building clients with variant 'cs, you can speed up the build
-process by using `SERVER_COMPILE_MACHINE=any` with `make installers`.
+process by using `SERVER_COMPILE_MACHINE=-M` with `make installers`.
 That mode causes the server to send built packages to clients in
 machine-independent form, which will need to be recompiled to the
 client's native format for bytecode, but recompiling from
 machine-independent form can be much faster than compiling from
-source. Beware that `SERVER_COMPILE_MACHINE=any`cannot be used in
+source. Beware that `SERVER_COMPILE_MACHINE=-M`cannot be used in
 a respository checkout formerly used without it, unless you first
 run `raco setup --clean`.
 

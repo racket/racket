@@ -524,8 +524,8 @@ CLEAN_MODE =
 # setup operations:
 JOB_OPTIONS =
 
-# A command to run after the server has started; normally set by
-# the `installers' target:
+# $(USER_RACKET) arguments for a command to run after the server has
+# started; normally set by the `installers' target:
 SERVE_DURING_CMD_qq =
 
 # ------------------------------------------------------------
@@ -582,12 +582,12 @@ win32-pkgs-catalog:
 # These targets require GNU `make', so that we don't have to propagate
 # variables through all of the target layers.
 
-SERVER_COMPILE_MACHINE = machine-specific
+SERVER_COMPILE_MACHINE =
 ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
                               MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
 
 server:
-	if [ "$(SERVER_COMPILE_MACHINE)" = "any" ] ; \
+	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ; \
          then $(MAKE) plain-server $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
          else $(MAKE) plain-server ; fi
 
@@ -662,7 +662,7 @@ built-catalog:
 # as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	$(USER_RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
+	$(USER_RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(USER_RACKET) $(SERVE_DURING_CMD_qq)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
@@ -825,10 +825,10 @@ client-from-site:
 # Drive installer build across server and clients:
 
 DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
-               $(CLEAN_MODE) $(SETUP_MACHINE_FLAGS) "$(CONFIG)" "$(CONFIG_MODE)" \
+               $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
-DRIVE_CMD_q = $(USER_RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
+DRIVE_CMD_q = -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
 installers:
