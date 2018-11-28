@@ -3441,7 +3441,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           || SAME_OBJ(app->rator, scheme_unsafe_cdr_proc)) {
         Scheme_Object *p;
         p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars);
-        if (SAME_OBJ(p, scheme_list_pair_p_proc))
+        if (predicate_implies(p, scheme_list_p_proc))
           return scheme_list_p_proc;
       }
 
