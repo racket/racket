@@ -148,7 +148,9 @@
                    (if (and pos (pair? args))
                        (apply
                         string-append
-                        "\n  other arguments:"
+                        "\n  argument position: "
+                        (nth-str (add1 pos))
+                        "\n  other arguments...:"
                         (let loop ([pos pos] [args (cons arg args)])
                           (cond
                            [(null? args) '()]
