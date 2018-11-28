@@ -98,17 +98,13 @@ EOS
         (lambda () (expand/display #<<EOS
 language: c
 
-# Based from: https://github.com/greghendershott/travis-racket
-
-# Optional: Remove to use Travis CI's older infrastructure.
-sudo: false
+# Based on: https://github.com/greghendershott/travis-racket
 
 env:
   global:
     # Supply a global RACKET_DIR environment variable. This is where
     # Racket will be installed. A good idea is to use ~/racket because
-    # that doesn't require sudo to install and is therefore compatible
-    # with Travis CI's newer container infrastructure.
+    # that doesn't require sudo to install.
     - RACKET_DIR=~/racket
   matrix:
     # Supply at least one RACKET_VERSION environment variable. This is
@@ -118,9 +114,9 @@ env:
     # Supply more than one RACKET_VERSION (as in the example below) to
     # create a Travis-CI build matrix to test against multiple Racket
     # versions.
-    - RACKET_VERSION=6.0
-    - RACKET_VERSION=6.5
-    - RACKET_VERSION=6.11
+    - RACKET_VERSION=6.12
+    - RACKET_VERSION=7.0
+    - RACKET_VERSION=7.1
     - RACKET_VERSION=HEAD
 
 matrix:
@@ -134,7 +130,7 @@ before_install:
 - export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
 
 install:
- - raco pkg install --deps search-auto
+ - raco pkg install --auto --name <<name>>
 
 before_script:
 
@@ -146,7 +142,7 @@ script:
 
 after_success:
  - raco setup --check-pkg-deps --pkgs <<name>>
- - raco pkg install --deps search-auto cover cover-coveralls
+ - raco pkg install --auto cover cover-coveralls
  - raco cover -b -f coveralls -d $TRAVIS_BUILD_DIR/coverage .
 
 EOS
