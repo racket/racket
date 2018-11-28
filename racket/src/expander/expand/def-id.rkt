@@ -55,7 +55,7 @@
                (symbol-interned? sym))
           sym
           (let loop ([pos 1])
-            (define s (string->unreadable-symbol (format "~a.~a" sym pos)))
+            (define s (string->unreadable-symbol (string-append (symbol->string sym) "." (number->string pos))))
             (if (defined-as-other? (hash-ref defined-syms-at-phase s #f) id phase top-level-bind-scope)
                 (loop (add1 pos))
                 s))))

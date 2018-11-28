@@ -183,7 +183,8 @@
       [else
        (define sym (cond
                      [(not bulk-prefix) out-sym]
-                     [else (string->symbol (format "~a~a" bulk-prefix out-sym))]))
+                     [else (string->symbol (string-append (symbol->string bulk-prefix)
+                                                          (symbol->string out-sym)))]))
        (define already-defined?
          (cond
            [(and check-and-remove?

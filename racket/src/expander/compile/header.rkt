@@ -212,7 +212,9 @@
 (define (select-fresh sym header)
   (if (symbol-conflicts? sym header)
       (let loop ([pos 1])
-        (define new-sym (string->symbol (format "~a/~a" pos sym)))
+        (define new-sym (string->symbol (string-append (number->string pos)
+                                                       "/"
+                                                       (symbol->string sym))))
         (if (symbol-conflicts? new-sym header)
             (loop (add1 pos))
             new-sym))
