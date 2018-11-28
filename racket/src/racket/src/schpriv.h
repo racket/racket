@@ -3420,6 +3420,9 @@ int scheme_byte_string_has_null(Scheme_Object *o);
 int scheme_any_string_has_null(Scheme_Object *o);
 #define CHAR_STRING_W_NO_NULLS "string-no-nuls?"
 
+int scheme_string_compare(Scheme_Object *s1, Scheme_Object *s2);
+int scheme_bytes_compare(Scheme_Object *s1, Scheme_Object *s2);
+
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_make_arity(mzshort minc, mzshort maxc);

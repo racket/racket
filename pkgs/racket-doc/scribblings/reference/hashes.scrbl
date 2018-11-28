@@ -384,14 +384,30 @@ change does not affect a traversal if the key has been seen already,
 otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
-If @racket[try-order?] is true, then the order of keys and values
-passed to @racket[proc] is normalized under certain circumstances,
-such as when the keys are all symbols and @racket[hash] is not an
-@tech{impersonator}.
-
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
+If @racket[try-order?] is true, then the order of keys and values
+passed to @racket[proc] is normalized under certain
+circumstances---including when every key is one of the following and
+with the following order (earlier bullets before later):
+
+@itemlist[
+ @item{@tech{booleans} sorted @racket[#f] before @racket[#t];}
+ @item{@tech{characters} sorted by @racket[char<?];}
+ @item{@tech{real numbers} sorted by @racket[<];}
+ @item{@tech{symbols} sorted with @tech{uninterned} symbols before
+       @tech{unreadable symbols} before @tech{interned} symbols,
+       then sorted by @racket[symbol<?];}
+ @item{@tech{keywords} sorted by @racket[keyword<?];}
+ @item{@tech{strings} sorted by @racket[string<?];}
+ @item{@tech{byte strings} sorted by @racket[bytes<?];}
+ @item{@racket[null];}
+ @item{@|void-const|; and}
+ @item{@racket[eof].}
+]
+
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
+         #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
@@ -440,7 +456,8 @@ See @racket[hash-map] for information about @racket[try-order?] and
 about modifying @racket[hash] within @racket[proc].
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}
+         #:changed "7.1.0.7" @elem{Added guarantees for @racket[try-order?].}]}
 
 
 @defproc[(hash-count [hash hash?])

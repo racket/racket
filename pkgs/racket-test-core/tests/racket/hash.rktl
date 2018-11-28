@@ -6,6 +6,58 @@
 (require racket/hash)
 
 ;; ----------------------------------------
+;; Hash-key sorting:
+
+(let ([u/apple (string->uninterned-symbol "apple")]
+      [u/banana (string->uninterned-symbol "banana")]
+      [u/coconut (string->uninterned-symbol "coconut")]
+      [apple (string->unreadable-symbol "apple")]
+      [banana (string->unreadable-symbol "banana")]
+      [coconut (string->unreadable-symbol "coconut")])
+  (test (list #f #t
+              #\a #\b #\c #\u3BB
+              (- (expt 2 79))
+              -3 -2 -1
+              0
+              1/2 0.75 8.5f-1
+              1 2 3
+              (expt 2 79)
+              u/apple u/banana u/coconut
+              apple banana coconut
+              'apple 'banana 'coconut 'coconut+
+              '#:apple '#:banana '#:coconut
+              "Apple"
+              "apple" "banana" "coconut"
+              #"Apple"
+              #"apple" #"banana" #"coconut"
+              null
+              (void)
+              eof)
+        'ordered
+        (hash-map (hash #t 'x
+                        #f 'x
+                        #\a 'a #\b 'b #\c 'c #\u3BB 'lam
+                        1 'a 2 'b 3 'c
+                        1/2 'n 0.75 'n 8.5f-1 'n
+                        0 'z
+                        -1 'a -2 'b -3 'c
+                        (expt 2 79) 'b
+                        (- (expt 2 79)) 'b
+                        "Apple" 'a
+                        "apple" 'a "banana" 'b "coconut" 'c
+                        #"Apple" 'a
+                        #"apple" 'a #"banana" 'b #"coconut" 'c
+                        u/apple 'a u/banana 'b u/coconut 'c
+                        apple 'a banana 'b coconut 'c
+                        'apple 'a 'banana 'b 'coconut 'c 'coconut+ '+
+                        '#:apple 'a '#:banana 'b '#:coconut 'c
+                        null 'one
+                        (void) 'one
+                        eof 'one)
+                  (lambda (k v) k)
+                  #t)))
+
+;; ----------------------------------------
 
 (test #hash([4 . four] [3 . three] [1 . one] [2 . two])
       hash-union #hash([1 . one] [2 . two]) #hash([3 . three] [4 . four]))
@@ -411,7 +463,6 @@
                           (v) in-hash-values in-weak-hash-values values)
 (hash-remove-iterate-test* [make-weak-hash make-weak-hasheq make-weak-hasheqv]
                            (p) in-hash-pairs in-weak-hash-pairs car)
-
 
 ;; ----------------------------------------
 

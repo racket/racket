@@ -320,11 +320,53 @@
 ;; deterministic, especially for marshaling operations.
 (define (try-sort-keys ps)
   (cond
-   [(#%andmap (lambda (p) (symbol? (car p))) ps)
-    (#%list-sort (lambda (a b) (symbol<? (car a) (car b))) ps)]
-   [(#%andmap (lambda (p) (real? (car p))) ps)
-    (#%list-sort (lambda (a b) (< (car a) (car b))) ps)]
+   [(#%andmap (lambda (p) (orderable? (car p))) ps)
+    (#%list-sort (lambda (a b) (orderable<? (car a) (car b))) ps)]
    [else ps]))
+
+(define (orderable-major v)
+  (cond
+   [(boolean? v)    0]
+   [(char? v)       1]
+   [(real? v)       2]
+   [(symbol? v)     3]
+   [(keyword? v)    4]
+   [(string? v)     5]
+   [(bytevector? v) 6]
+   [(null? v)       7]
+   [(void? v)       8]
+   [(eof-object? v) 9]
+   [else #f]))
+
+(define (orderable? v) (orderable-major v))
+
+(define (orderable<? a b)
+  (let ([am (orderable-major a)]
+        [bm (orderable-major b)])
+    (cond
+     [(or (not am) (not bm))
+      #f]
+     [(fx=? am bm)
+      (cond
+       [(boolean? a) (not a)]
+       [(char? a) (char<? a b)]
+       [(real? a) (< a b)]
+       [(symbol? a)
+        (cond
+         [(symbol-interned? a)
+          (and (symbol-interned? b)
+               (symbol<? a b))]
+         [(symbol-interned? b) #t]
+         [(symbol-unreadable? a)
+          (and (symbol-unreadable? b)
+               (symbol<? a b))]
+         [(symbol-unreadable? b) #t]
+         [else (symbol<? a b)])]
+       [(keyword? a) (keyword<? a b)]
+       [(string? a) (string<? a b)]
+       [(bytevector? a) (bytes<? a b)]
+       [else #f])]
+     [else (fx<? am bm)])))
 
 (define (hash-count ht)
   (cond

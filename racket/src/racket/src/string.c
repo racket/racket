@@ -4170,6 +4170,21 @@ static int mz_strcmp(const char *who, unsigned char *str1, intptr_t l1, unsigned
   return endres;
 }
 
+int scheme_string_compare(Scheme_Object *a, Scheme_Object *b)
+{
+  return mz_char_strcmp(NULL,
+                        SCHEME_CHAR_STR_VAL(a),  SCHEME_CHAR_STRTAG_VAL(a),
+                        SCHEME_CHAR_STR_VAL(b),  SCHEME_CHAR_STRTAG_VAL(b),
+                        0, 0);
+}
+
+int scheme_bytes_compare(Scheme_Object *a, Scheme_Object *b)
+{
+  return mz_strcmp(NULL,
+                   (unsigned char *)SCHEME_BYTE_STR_VAL(a),  SCHEME_BYTE_STRTAG_VAL(a),
+                   (unsigned char *)SCHEME_BYTE_STR_VAL(b),  SCHEME_BYTE_STRTAG_VAL(b));
+}
+
 /**********************************************************************/
 /*                  byte string conversion                            */
 /**********************************************************************/
