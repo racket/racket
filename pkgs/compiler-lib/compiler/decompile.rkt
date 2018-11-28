@@ -84,6 +84,8 @@
         (decompile-module top)])]
     [(linkl? top)
      (decompile-linklet top)]
+    [(faslable-correlated-linklet? top)
+     (strip-correlated (faslable-correlated-linklet-expr top))]
     [else `(quote ,top)]))
 
 (define (decompile-module-with-submodules l-dir name-list main-l)
@@ -107,11 +109,16 @@
     (let ([data-l (hash-ref ht 'data #f)]
           [decl-l (hash-ref ht 'decl #f)])
       (define (zo->linklet l)
-        (let ([o (open-output-bytes)])
-          (zo-marshal-to (linkl-bundle (hasheq 'data l)) o)
-          (parameterize ([read-accept-compiled #t])
-            (define b (read (open-input-bytes (get-output-bytes o))))
-            (hash-ref (linklet-bundle->hash b) 'data))))
+        (cond
+          [(faslable-correlated-linklet? l)
+           (compile-linklet (strip-correlated (faslable-correlated-linklet-expr l))
+                            (faslable-correlated-linklet-name l))]
+          [else
+           (let ([o (open-output-bytes)])
+             (zo-marshal-to (linkl-bundle (hasheq 'data l)) o)
+             (parameterize ([read-accept-compiled #t])
+               (define b (read (open-input-bytes (get-output-bytes o))))
+               (hash-ref (linklet-bundle->hash b) 'data)))]))
       (cond
         [(and data-l
               decl-l)
@@ -226,7 +233,11 @@
                                          #:when import-shape)
                                 `[,import ,import-shape]))
            '(source-names: ,source-names)
-           ,@body-l))]))
+           ,@body-l))]
+    [(struct faslable-correlated-linklet (expr name))
+     (match (strip-correlated expr)
+       [`(linklet ,imports ,exports ,body-l ...)
+        body-l])]))
 
 (define (decompile-data-linklet l)
   (match l
@@ -247,6 +258,28 @@
            [else
             (decompile-linklet l)])]
        [else
+        (decompile-linklet l)])]
+    [(struct faslable-correlated-linklet (expr name))
+     (match (strip-correlated expr)
+       [`(linklet ,_ ,_
+           ,_
+           (define-values ,_
+             (lambda ,_
+               (begin
+                 (vector-copy! ,_ ,_ (let-values (((.inspector) #f))
+                                       (deserialize .mpi-vector .inspector .bulk-binding-registry
+                                                    ',num-mutables ',mutable-vec
+                                                    ',num-shares ',share-vec
+                                                    ',mutable-fill-vec
+                                                    ',result-vec)))
+                 ,_))))
+        (decompile-deserialize '.mpi-vector '.inspector '.bulk-binding-registry
+                               num-mutables mutable-vec
+                               num-shares share-vec
+                               mutable-fill-vec
+                               result-vec)]
+       [else
+        (log-error ">> HERE ~.s" (strip-correlated expr))
         (decompile-linklet l)])]
     [else
      (decompile-linklet l)]))
@@ -717,7 +750,24 @@
     [else
      (error 'deserialize "bad fill encoding: ~v" (vector-ref vec pos))]))
   
-  
+;; ----------------------------------------
+
+(struct faslable-correlated-linklet (expr name)
+  #:prefab)
+
+(struct faslable-correlated (e source position line column span name)
+  #:prefab)
+
+(define (strip-correlated v)
+  (let strip ([v v])
+    (cond
+      [(pair? v)
+       (cons (strip (car v))
+             (strip (cdr v)))]
+      [(faslable-correlated? v)
+       (strip (faslable-correlated-e v))]
+      [else v])))
+
 ;; ----------------------------------------
 
 #;
