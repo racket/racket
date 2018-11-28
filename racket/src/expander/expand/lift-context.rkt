@@ -71,11 +71,11 @@
 (define (get-and-clear-lifts! lifts)
   (box-clear! (lift-context-lifts lifts)))
 
-(define (make-local-lift lift-env counter)
+(define (make-local-lift lift-env counter local-sym)
   (lambda (ids rhs phase)
     (define keys
       (for/list ([id (in-list ids)])
-        (define key (add-local-binding! id phase counter))
+        (define key (add-local-binding! id phase counter #:local-sym local-sym))
         (set-box! lift-env (env-extend (unbox lift-env) key variable))
         key))
     (values ids (lifted-bind ids keys rhs))))

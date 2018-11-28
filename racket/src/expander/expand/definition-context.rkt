@@ -83,9 +83,12 @@
                        (add-intdef-scopes (add-intdef-scopes pre-id intdef #:always? #t)
                                           extra-intdefs)))
   (log-expand ctx 'rename-list intdef-ids)
+  (define counter (root-expand-context-counter ctx))
+  (define local-sym (and (expand-context-normalize-locals? ctx) 'loc))
   (define syms (for/list ([intdef-id (in-list intdef-ids)])
-                 (add-local-binding! intdef-id phase (root-expand-context-counter ctx)
-                                     #:frame-id (internal-definition-context-frame-id intdef))))
+                 (add-local-binding! intdef-id phase counter
+                                     #:frame-id (internal-definition-context-frame-id intdef)
+                                     #:local-sym local-sym)))
   (define vals
     (cond
      [s

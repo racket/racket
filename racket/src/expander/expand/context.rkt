@@ -69,6 +69,7 @@
           observer   ; logging observer (for the macro debugger)
           for-serializable? ; accumulate submodules as serializable?
           to-correlated-linklet? ; compile to machine-independent linklets?
+          normalize-locals? ; forget original local-variable names
           should-not-encounter-macros?)) ; #t when "expanding" to parse
 
 (define (make-expand-context ns
@@ -117,6 +118,7 @@
                   observer
                   for-serializable?
                   to-correlated-linklet?
+                  to-correlated-linklet? ; normalize-locals?
                   #f))
 
 (define (copy-root-expand-context ctx root-ctx)
