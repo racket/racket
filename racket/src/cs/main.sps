@@ -110,6 +110,7 @@
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
    (define compile-machine-independent? (getenv "PLT_COMPILE_ANY"))
+   (define embedded-load-in-places #f)
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -345,7 +346,7 @@
                   (set! loads
                         (cons
                          (lambda ()
-                           ;; (register-embedded-load n m)
+                           (set! embedded-load-in-places (list n m))
                            (embedded-load n m #f #t)
                            (embedded-load m p #f #f))
                          loads)))
@@ -610,6 +611,9 @@
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
+      (when embedded-load-in-places
+        (let-values ([(n m) (apply values embedded-load-in-places)])
+          (embedded-load n m #f #t)))
       (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
