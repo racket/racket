@@ -294,7 +294,7 @@
                        loads))
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config 'lib)))]
-             [("-u" "--script")
+             [("-u" "--require-script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads
                       (cons
@@ -302,7 +302,8 @@
                          (namespace-require+ `(file ,file-name)))
                        loads))
                 (no-init! saw)
-                (flags-loop rest-args (see saw 'non-config 'lib)))]
+                (set-run-file! (string->path file-name))
+                (flags-loop (cons "--" rest-args) (see saw 'non-config 'lib)))]
              [("-f" "--load")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads
@@ -311,6 +312,15 @@
                          (load file-name))
                        loads))
                 (flags-loop rest-args (see saw 'non-config)))]
+             [("-r" "--script")
+              (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
+                (set! loads
+                      (cons
+                       (lambda ()
+                         (load file-name))
+                       loads))
+                (set-run-file! (string->path file-name))
+                (flags-loop (cons "--" rest-args) (see saw 'non-config)))]
              [("-e" "--eval")
               (let-values ([(expr rest-args) (next-arg "expression" arg within-arg args)])
                 (set! loads
@@ -438,7 +448,8 @@
                 (loop (cons (cadr args) (cons (car args) (cddr args))))])]
              [else
               (cond
-               [(eqv? (string-ref arg 0) #\-)
+               [(and (eqv? (string-ref arg 0) #\-)
+                     (> (string-length arg) 1))
                 (cond
                  [(and (> (string-length arg) 2)
                        (not (eqv? (string-ref arg 1) #\-)))
