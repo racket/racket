@@ -57,8 +57,8 @@ SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(
 ABS_BOOT = $(SETUP_COMMON_BOOT) ignored $(builddir)/ignored.d
 ABS_RACKET = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt --exec $(RACKET)`"
 ABS_SCHEME_SRC = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(SCHEME_SRC)`"
-ABS_SRCDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(srcdir)`"
-ABS_BUILDDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt $(builddir)`"
+ABS_SRCDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt --no-trailing-sep $(srcdir)`"
+ABS_BUILDDIR = "`$(RACKET) $(ABS_BOOT) $(srcdir)/../absify.rkt --no-trailing-sep $(builddir)`"
 
 SETUP_BOOT = -O 'info@compiler/cm' $(SETUP_COMMON_BOOT)
 
