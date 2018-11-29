@@ -2289,8 +2289,9 @@
     (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) c ...)))
     (test '#s(PS 1 2) syntax->datum (quasisyntax #s(PS a (unsyntax b))))
     (test '#s(PS 1 2 3 4 5) syntax->datum (quasisyntax #s(PS a (unsyntax b) c ...)))
-    #|
     (test '#(1 2 3 4 5) syntax->datum (quasisyntax #(a (unsyntax b) (unsyntax-splicing ds))))
+    (test '#(3 4 5) syntax->datum (quasisyntax #((unsyntax-splicing ds))))
+    #|
     (test '#s(PS 1 2 3 4 5) syntax->datum
           (quasisyntax #s(PS a (unsyntax b) (unsyntax-splicing ds))))
     |#))
