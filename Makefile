@@ -577,19 +577,25 @@ win32-pkgs-catalog:
 	$(MAKE) pkgs-catalog $(COPY_PKGS_ARGS)
 
 # ------------------------------------------------------------
-# On a server platform (for an installer build):
-
-# These targets require GNU `make', so that we don't have to propagate
-# variables through all of the target layers.
+# Handle `SERVER_COMPILE_MACHINE` for various targets
 
 SERVER_COMPILE_MACHINE =
 ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
                               MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
 
-server:
+with-setup-flags:
 	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ; \
-         then $(MAKE) plain-server $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
-         else $(MAKE) plain-server ; fi
+         then $(MAKE) $(NEXT_TARGET) $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
+         else $(MAKE) $(NEXT_TARGET) ; fi
+
+# ------------------------------------------------------------
+# On a server platform (for an installer build):
+
+# These targets require GNU `make', so that we don't have to propagate
+# variables through all of the target layers.
+
+server:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-server
 
 plain-server:
 	rm -rf build/zo
@@ -818,7 +824,10 @@ FROM_SITE_ARGS = SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$
                  DOC_SEARCH="http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
                  $(PROP_ARGS)
 
-client-from-site: 
+client-from-site:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-client-from-site
+
+plain-client-from-site:
 	make client $(FROM_SITE_ARGS)
 
 # ------------------------------------------------------------
@@ -837,6 +846,9 @@ installers:
 
 # Server is already built; start it and drive clients:
 installers-from-built:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-installers-from-built
+
+plain-installers-from-built:
 	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Just the clients, assuming server is already running:
@@ -853,6 +865,9 @@ site:
 DOC_CATALOGS = build/built/catalog build/native/catalog
 
 site-from-installers:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-site-from-installers
+
+plain-site-from-installers:
 	rm -rf build/docs
 	$(USER_RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
 	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
@@ -865,4 +880,7 @@ snapshot-site:
 	$(MAKE) snapshot-at-site
 
 snapshot-at-site:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-snapshot-at-site
+
+plain-snapshot-at-site:
 	$(USER_RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)
