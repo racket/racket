@@ -80,7 +80,8 @@
                 environment-variables-ref
                 current-environment-variables
                 find-system-path
-                build-path)
+                build-path
+                format)
           (only (thread)
                 current-process-milliseconds)
           (regexp)
@@ -643,8 +644,8 @@
                                           " reference to a variable that " why ";\n"
                                           " possibly, bytecode file needs re-compile because dependencies changed")
                            "name" (unquoted-printing-string (symbol->string sym))
-                           "exporting instance" (unquoted-printing-string (instance-name inst))
-                           "importing instance" (unquoted-printing-string (instance-name target-inst))))
+                           "exporting instance" (unquoted-printing-string (format "~a" (instance-name inst)))
+                           "importing instance" (unquoted-printing-string (format "~a" (instance-name target-inst)))))
 
   (define (identify-module var)
     (let ([i (car (variable-inst-box var))])

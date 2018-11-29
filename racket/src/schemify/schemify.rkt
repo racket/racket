@@ -211,14 +211,19 @@
                                      for-cify? for-jitify?
                                      unsafe-mode?))
         (match form
-          [`(define-values ,ids ,_)
+          [`(define-values ,ids ,rhs)
+           (define simple-rhs? (simple? rhs prim-knowns knowns imports mutated))
            (append
-            (if (or for-jitify? for-cify?)
-                (reverse accum-exprs)
-                (make-expr-defns accum-exprs))
+            (let ([accum-exprs (if simple-rhs?
+                                   accum-exprs
+                                   (append (make-set-variables)
+                                           accum-exprs))])
+              (if (or for-jitify? for-cify?)
+                  (reverse accum-exprs)
+                  (make-expr-defns accum-exprs)))
             (cons
              schemified 
-             (let id-loop ([ids ids] [accum-exprs null] [accum-ids accum-ids])
+             (let id-loop ([ids ids] [accum-exprs null] [accum-ids (if simple-rhs? accum-ids null)])
                (cond
                 [(wrap-null? ids) (loop (wrap-cdr l) mut-l accum-exprs accum-ids)]
                 [(or (or for-jitify? for-cify?)
@@ -235,13 +240,17 @@
                 [else
                  (id-loop (wrap-cdr ids) accum-exprs (cons (unwrap (wrap-car ids)) accum-ids))]))))]
           [`,_
-           ;; In case `schemified` triggers an error, sync exported variables
-           (define set-vars (make-set-variables))
            (cond
-             [(null? set-vars)
-              (loop (wrap-cdr l) mut-l (cons schemified accum-exprs) null)]
+             [(simple? form prim-knowns knowns imports mutated)
+              (loop (wrap-cdr l) mut-l (cons schemified accum-exprs) accum-ids)]
              [else
-              (loop (wrap-cdr l) mut-l (cons schemified (append (reverse set-vars) accum-exprs)) null)])])])))
+              ;; In case `schemified` triggers an error, sync exported variables
+              (define set-vars (make-set-variables))
+              (cond
+                [(null? set-vars)
+                 (loop (wrap-cdr l) mut-l (cons schemified accum-exprs) null)]
+                [else
+                 (loop (wrap-cdr l) mut-l (cons schemified (append (reverse set-vars) accum-exprs)) null)])])])])))
   ;; Return both schemified and known-binding information, where
   ;; the later is used for cross-linklet optimization
   (values schemified knowns mutated))
