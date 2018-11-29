@@ -289,6 +289,20 @@ fi
 
 m4_include(../ac/strip.m4)
 
+############## Makefile includes ################
+
+if test "$INCLUDEDEP" = "#" ; then
+  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+  if test "$is_gmake" = "" ; then
+     INCLUDEDEP="-include"
+  fi
+fi
+
+if test "$INCLUDEDEP" != "#" ; then
+  RKTL_PRE="compiled/"
+  RKTL_POST=".rktl"
+fi
+
 ############## C flags ################
 
 AC_LANG_C
@@ -437,6 +451,8 @@ AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(RKTLINKER)
 AC_SUBST(INCLUDEDEP)
+AC_SUBST(RKTL_PRE)
+AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)

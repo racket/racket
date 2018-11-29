@@ -638,6 +638,8 @@ OSX
 MACH
 SCHEME_DIR
 RACKET
+RKTL_POST
+RKTL_PRE
 INCLUDEDEP
 RKTLINKER
 STRIP_LIB_DEBUG
@@ -4026,6 +4028,20 @@ $as_echo "$set_strip_lib" >&6; }
 fi
 
 
+############## Makefile includes ################
+
+if test "$INCLUDEDEP" = "#" ; then
+  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+  if test "$is_gmake" = "" ; then
+     INCLUDEDEP="-include"
+  fi
+fi
+
+if test "$INCLUDEDEP" != "#" ; then
+  RKTL_PRE="compiled/"
+  RKTL_POST=".rktl"
+fi
+
 ############## C flags ################
 
 ac_ext=c
@@ -4620,6 +4636,8 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+
 
 
 

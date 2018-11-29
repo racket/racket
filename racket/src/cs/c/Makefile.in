@@ -78,12 +78,12 @@ CS_PROGS = RACKET="$(RACKET)" SCHEME="$(SCHEME)" CONVERT_RACKET="$(CONVERT_RACKE
 CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@
 
 build-racket-so:
-	$(MAKE) expander
-	$(MAKE) thread
-	$(MAKE) io
-	$(MAKE) regexp
-	$(MAKE) schemify
-	$(MAKE) known
+	$(MAKE) @RKTL_PRE@expander@RKTL_POST@
+	$(MAKE) @RKTL_PRE@thread@RKTL_POST@
+	$(MAKE) @RKTL_PRE@io@RKTL_POST@
+	$(MAKE) @RKTL_PRE@regexp@RKTL_POST@
+	$(MAKE) @RKTL_PRE@schemify@RKTL_POST@
+	$(MAKE) @RKTL_PRE@known@RKTL_POST@
 	cd $(srcdir)/.. && $(RACKET_SO_ENV) $(MAKE) "$(builddir)/racket.so" $(CS_PROGS) $(CS_OPTS) BUILDDIR="$(builddir)/"
 
 bounce:
@@ -99,22 +99,22 @@ bounce:
 # place of `raco make` (to avoid a dependency on a package for `raco
 # make`).
 
-expander:
+@RKTL_PRE@expander@RKTL_POST@:
 	cd $(srcdir)/../../expander && $(MAKE) expander-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
-thread:
+@RKTL_PRE@thread@RKTL_POST@:
 	cd $(srcdir)/../../thread && $(MAKE) thread-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
-io:
+@RKTL_PRE@io@RKTL_POST@:
 	cd $(srcdir)/../../io && $(MAKE) io-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
-regexp:
+@RKTL_PRE@regexp@RKTL_POST@:
 	cd $(srcdir)/../../regexp && $(MAKE) regexp-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
-schemify:
+@RKTL_PRE@schemify@RKTL_POST@:
 	cd $(srcdir)/../../schemify && $(MAKE) schemify-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
-known:
+@RKTL_PRE@known@RKTL_POST@:
 	cd $(srcdir)/../../schemify && $(MAKE) known-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
 scheme:
@@ -127,6 +127,13 @@ scheme-make:
 
 racket.boot: racket.so
 	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @COMPRESS_COMP@ racket.so racket.boot
+
+@INCLUDEDEP@ compiled/expander.d
+@INCLUDEDEP@ compiled/thread.d
+@INCLUDEDEP@ compiled/io.d
+@INCLUDEDEP@ compiled/regexp.d
+@INCLUDEDEP@ compiled/schemify.d
+@INCLUDEDEP@ compiled/known.d
 
 # ----------------------------------------
 # Unix
