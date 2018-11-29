@@ -323,13 +323,17 @@
 
 ;; Try the raco interface:
 (require setup/dirs
-	 mzlib/file)
-(define mzc (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
-                                                   "mzc.exe"
-                                                   "mzc")))
-(define raco (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
-                                                    "raco.exe"
-                                                    "raco")))
+	 mzlib/file
+         compiler/find-exe)
+(define (add-suffixes s)
+  (define me (path-replace-suffix (find-exe) #""))
+  (define ending (regexp-match #rx#"(?i:racket)([cs3mg]*)$" me))
+  (define s2 (string-append s (bytes->string/utf-8 (cadr ending))))
+  (if (eq? 'windows (system-type))
+      (string-append s2 ".exe")
+      s2))
+(define mzc (build-path (find-console-bin-dir) (add-suffixes "mzc")))
+(define raco (build-path (find-console-bin-dir) (add-suffixes "raco")))
 
 (define (system+ . args)
   (printf "> ~a\n" (car (reverse args)))
