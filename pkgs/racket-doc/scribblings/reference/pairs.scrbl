@@ -1235,7 +1235,11 @@ key value from each list element, so two items are considered equal if
 @defproc[(filter-map [proc procedure?] [lst list?] ...+)
          list?]{
 
-Returns @racket[(filter (lambda (x) x) (map proc lst ...))], but without
+Like @racket[(map proc lst ...)], except that, if @racket[proc]
+returns @racket[#false], that element is omitted from the resulting list. 
+In other words, @racket[filter-map] is equivalent to 
+@racket[(filter (lambda (x) x) (map proc lst ...))], but more efficient, 
+because @racket[filter-map] avoids
 building the intermediate list.
 
 @mz-examples[#:eval list-eval
