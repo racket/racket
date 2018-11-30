@@ -31,6 +31,7 @@
               instance-variable-value
               instance-set-variable-value!
               instance-unset-variable!
+              instance-describe-variable!
 
               linklet-virtual-machine-bytes
               write-linklet-bundle-hash

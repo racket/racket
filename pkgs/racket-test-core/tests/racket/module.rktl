@@ -1257,6 +1257,30 @@
   (write c (open-output-bytes)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the prompt around a module definitions works and allows
+;; assignment to an otherwise mutable variable:
+
+(module assigns-to-variable-through-a-continuation racket/base
+  (provide result)
+  (define x (let/cc k k))
+  (set! x x)
+  (x 5)
+  (define result x))
+
+(test 5 dynamic-require ''assigns-to-variable-through-a-continuation 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the prompt around a module definitions does not allow
+;; assignment to an otherwise constant binding.
+
+(module tries-to-assign-to-variable-through-a-continuation racket/base
+  (define x (let/cc k k))
+  (x 5))
+
+(err/rt-test (dynamic-require ''tries-to-assign-to-variable-through-a-continuation #f)
+             exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that skipping definitions (but continuing
 ;; with the rest of a module body) is disallowed.
 

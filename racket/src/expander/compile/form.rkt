@@ -46,6 +46,7 @@
                        #:other-form-callback [other-form-callback void]
                        #:get-module-linklet-info [get-module-linklet-info (lambda (mod-name p) #f)] ; to support submodules
                        #:serializable? [serializable? #t]
+                       #:module-prompt? [module-prompt? #f]
                        #:to-correlated-linklet? [to-correlated-linklet? #f]
                        #:cross-linklet-inlining? [cross-linklet-inlining? #t])
   (define phase (compile-context-phase cctx))
@@ -276,6 +277,7 @@
                                    #:body-import-instances body-import-instances
                                    #:get-module-linklet-info get-module-linklet-info
                                    #:serializable? serializable?
+                                   #:module-prompt? module-prompt?
                                    #:module-use*s module-use*s
                                    #:cross-linklet-inlining? cross-linklet-inlining?
                                    #:namespace (compile-context-namespace cctx))]))
@@ -391,6 +393,7 @@
                                 #:body-import-instances body-import-instances
                                 #:get-module-linklet-info get-module-linklet-info
                                 #:serializable? serializable?
+                                #:module-prompt? module-prompt?
                                 #:module-use*s module-use*s
                                 #:cross-linklet-inlining? cross-linklet-inlining?
                                 #:namespace namespace)
@@ -398,7 +401,13 @@
     (performance-region
      ['compile '_ 'linklet]
      ((lambda (l name keys getter)
-        (compile-linklet l name keys getter (if serializable? '(serializable) '())))
+        (compile-linklet l name keys getter (if serializable?
+                                                (if module-prompt?
+                                                    '(serializable use-prompt)
+                                                    '(serializable))
+                                                (if module-prompt?
+                                                    '(use-prompt)
+                                                    '()))))
       body-linklet
       'module
       ;; Support for cross-module optimization starts with a vector

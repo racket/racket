@@ -175,6 +175,7 @@
                                                               empty-module-body-instance)
                                 #:get-module-linklet-info find-submodule
                                 #:serializable? #t
+                                #:module-prompt? #t
                                 #:module-use*s module-use*s
                                 #:cross-linklet-inlining? #t
                                 #:namespace ns))

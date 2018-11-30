@@ -172,6 +172,7 @@
                                                                 (hash-ref modules-being-compiled mod-name #f)))
                                                 (and ht (hash-ref ht phase #f)))
                     #:serializable? serializable?
+                    #:module-prompt? #t
                     #:to-correlated-linklet? to-correlated-linklet?))
    
    (when modules-being-compiled

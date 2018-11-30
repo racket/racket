@@ -12,6 +12,7 @@
          known-procedure/can-inline/need-imports known-procedure/can-inline/need-imports?
          known-procedure/can-inline/need-imports-needed
          known-procedure/succeeds known-procedure/succeeds?
+         known-procedure/pure known-procedure/pure?
          known-struct-type known-struct-type? known-struct-type-type
          known-struct-type-field-count known-struct-type-pure-constructor?
          known-constructor known-constructor? known-constructor-type
@@ -50,14 +51,17 @@
 (struct known-procedure/can-inline/need-imports (needed) ; (list (cons <sym> (cons <sym> <#f-or-index>)) ...)
   #:prefab #:omit-define-syntaxes #:super struct:known-procedure/can-inline)
 
-;; procedure that succeeds for all arguments and is functional so that it can be reordered
+;; procedure that never raises an exception or otherwise captures/escapes the calling context
 (struct known-procedure/succeeds () #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
+
+;; procedure that accepts any arguments and is functional so that it can be reordered
+(struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
 
 (struct known-struct-type (type field-count pure-constructor?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
 ;; procedures with a known connection to a structure type:
-(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
-(struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+(struct known-constructor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
+(struct known-predicate (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure/pure)
 (struct known-accessor (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 (struct known-mutator (type) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 (struct known-field-accessor (type-id pos) #:prefab #:omit-define-syntaxes #:super struct:known-accessor)

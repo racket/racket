@@ -11,7 +11,8 @@
 ;; Check whether an expression is simple in the sense that its order
 ;; of evaluation isn't detectable. This function receives both
 ;; schemified and non-schemified expressions.
-(define (simple? e prim-knowns knowns imports mutated)
+(define (simple? e prim-knowns knowns imports mutated
+                 #:pure? [pure? #t])
   (let simple? ([e e])
     (match e
       [`(lambda . ,_) #t]
@@ -34,12 +35,18 @@
        (and (for/and ([rhs (in-list rhss)])
               (simple? rhs))
             (simple? body))]
+      [`(begin ,es ...)
+       #:guard (not pure?)
+       (for/and ([e (in-list es)])
+         (simple? e))]
       [`(,proc . ,args)
        (let ([proc (unwrap proc)])
          (and (symbol? proc)
               (let ([v (or (hash-ref-either knowns imports proc)
                            (hash-ref prim-knowns proc #f))])
-                (and (known-procedure/succeeds? v)
+                (and (if pure?
+                         (known-procedure/pure? v)
+                         (known-procedure/succeeds? v))
                      (bitwise-bit-set? (known-procedure-arity-mask v) (length args))))
               (simple-mutated-state? (hash-ref mutated proc #f))
               (for/and ([arg (in-list args)])

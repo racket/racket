@@ -672,13 +672,15 @@
                                           #:phase phase))))
   (define vals
     (call-with-values (lambda ()
-                        (parameterize ([current-namespace ns]
-                                       [eval-jit-enabled #f])
-                          (parameterize-like
-                           #:with ([current-expand-context ctx])
-                           (if compiled
-                               (eval-single-top compiled ns)
-                               (direct-eval p ns (root-expand-context-self-mpi ctx))))))
+                        (call-with-continuation-barrier
+                         (lambda ()
+                           (parameterize ([current-namespace ns]
+                                          [eval-jit-enabled #f])
+                             (parameterize-like
+                              #:with ([current-expand-context ctx])
+                              (if compiled
+                                  (eval-single-top compiled ns)
+                                  (direct-eval p ns (root-expand-context-self-mpi ctx))))))))
       list))
   (unless (= (length vals) (length ids))
     (apply raise-result-arity-error

@@ -78,6 +78,8 @@
                   ;; for cify:
                   #t
                   ;; unsafe mode:
+                  #t
+                  ;; no prompts:
                   #t)))
 
 (printf "Lift...\n")

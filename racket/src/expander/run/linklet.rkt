@@ -99,6 +99,9 @@
    [(procedure? fail-k) (fail-k)]
    [else fail-k]))
 
+(define (instance-describe-variable! i sym desc)
+  (void))
+
 ;; ----------------------------------------
 
 (define undefined (gensym 'undefined))

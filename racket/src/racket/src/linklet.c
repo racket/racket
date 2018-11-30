@@ -37,6 +37,7 @@ SHARED_OK static int recompile_every_compile = 0;
 static Scheme_Object *serializable_symbol;
 static Scheme_Object *unsafe_symbol;
 static Scheme_Object *static_symbol;
+static Scheme_Object *use_prompt_symbol;
 static Scheme_Object *constant_symbol;
 static Scheme_Object *consistent_symbol;
 static Scheme_Object *noncm_symbol;
@@ -74,6 +75,7 @@ static Scheme_Object *instance_variable_names(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_variable_value(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_unset_variable(int argc, Scheme_Object **argv);
+static Scheme_Object *instance_describe_variable(int argc, Scheme_Object **argv);
 
 static Scheme_Object *variable_p(int argc, Scheme_Object **argv);
 static Scheme_Object *variable_instance(int argc, Scheme_Object **argv);
@@ -121,9 +123,11 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   REGISTER_SO(serializable_symbol);
   REGISTER_SO(unsafe_symbol);
   REGISTER_SO(static_symbol);
+  REGISTER_SO(use_prompt_symbol);
   serializable_symbol = scheme_intern_symbol("serializable");
   unsafe_symbol = scheme_intern_symbol("unsafe");
   static_symbol = scheme_intern_symbol("static");
+  use_prompt_symbol = scheme_intern_symbol("use-prompt");
 
   REGISTER_SO(constant_symbol);
   REGISTER_SO(consistent_symbol);
@@ -165,6 +169,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY2("instance-variable-value", instance_variable_value, 2, 3, 0, -1, env);
   ADD_PRIM_W_ARITY("instance-set-variable-value!", instance_set_variable_value, 3, 4, env);
   ADD_PRIM_W_ARITY("instance-unset-variable!", instance_unset_variable, 2, 2, env);
+  ADD_PRIM_W_ARITY("instance-describe-variable!", instance_describe_variable, 3, 3, env);
 
   ADD_FOLDING_PRIM_UNARY_INLINED("variable-reference?", variable_p, 1, 1, 1, env);
   ADD_IMMED_PRIM("variable-reference->instance", variable_instance, 1, 2, env);
@@ -373,6 +378,7 @@ static void parse_compile_options(const char *who, int arg_pos,
   int serializable = 0;
   int unsafe = *_unsafe;
   int static_mode = *_static_mode;
+  int use_prompt_mode = 0;
   
   while (SCHEME_PAIRP(flags)) {
     flag = SCHEME_CAR(flags);
@@ -388,13 +394,17 @@ static void parse_compile_options(const char *who, int arg_pos,
       if (static_mode && !redundant)
         redundant = flag;
       static_mode = 1;
+    } else if (SAME_OBJ(flag, use_prompt_symbol)) {
+      if (use_prompt_mode && !redundant)
+        redundant = flag;
+      use_prompt_mode = 1;
     } else
       break;
     flags = SCHEME_CDR(flags);
   }
 
   if (!SCHEME_NULLP(flags))
-    scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe)", arg_pos, argc, argv);
+    scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe 'static 'use-prompt)", arg_pos, argc, argv);
 
   if (redundant)
     scheme_contract_error("compile-linklet", "redundant option",
@@ -831,6 +841,16 @@ static Scheme_Object *instance_unset_variable(int argc, Scheme_Object **argv)
 
   b = scheme_instance_variable_bucket(argv[1], (Scheme_Instance *)argv[0]);
   b->val = NULL;
+
+  return scheme_void;
+}
+
+static Scheme_Object *instance_describe_variable(int argc, Scheme_Object **argv)
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_instance_type))
+    scheme_wrong_contract("instance-describe-variable!", "instance?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("instance-describe-variable!", "symbol?", 1, argc, argv);
 
   return scheme_void;
 }
