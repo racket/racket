@@ -9,19 +9,19 @@ A @deftech{logger} accepts events that contain information to be
 logged for interested parties. A @deftech{log receiver} represents an
 interested party that receives logged events asynchronously. Each
 event has a topic and level of detail, and a @tech{log receiver} subscribes to
-logging events at a certain level of detail (and higher) for a specific topic or for all topics. The
-levels, in increasing order of detail, are @racket['fatal],
+logging events at a certain level of detail (and lower) for a specific topic or for all topics. The
+levels, in increasing order of detail, are @racket['none], @racket['fatal],
 @racket['error], @racket['warning], @racket['info], and
 @racket['debug].
 
 To help organize logged events, a @tech{logger} can have a default topic and/or
-a parent logger. Every event reported to a logger is also propagated to
-its parent (if any), while the event message is prefixed with the logger's topic (if
+a parent logger. Every event reported to a logger is propagated to
+its parent (if any), and the event message is prefixed with the logger's topic (if
 any) if the message doesn't already have a topic. Furthermore, events that are propagated
 from a logger to its parent can be filtered by level and topic.
 
 On start-up, Racket creates an initial logger that is used to
-record events from the core run-time system. For example, an
+record events from the core run-time system. For example, a
 @racket['debug] event is reported for each garbage collection (see
 @secref["gc-model"]). For this initial logger, two log receivers are
 also created: one that writes events to the process's original error
@@ -39,8 +39,9 @@ through environment variables:
 
        The environment variable's value can be a @nonterm{level}:
        @litchar{none}, @litchar{fatal}, @litchar{error},
-       @litchar{warning}, @litchar{info}, or @litchar{debug}; all
-       events the corresponding level of higher are printed. After an
+       @litchar{warning}, @litchar{info}, or @litchar{debug} (from low detail
+       to high detail); all
+       events at the corresponding level of detail or lower are printed. After an
        initial @nonterm{level}, the value can contain
        whitespace-separated specifications of the form
        @nonterm{level}@litchar["@"]@nonterm{topic}, which prints
