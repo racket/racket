@@ -742,6 +742,7 @@
             ;; ----------------------------------------
             ;; Determine whether and how to rebuild the file:
             (define src-sha1 (and deps
+                                  (equal? (version) (deps-version deps))
                                   (deps-src-sha1 deps)
                                   (get-source-sha1 path)))
             (cond
