@@ -194,6 +194,15 @@
                    (args->env ids env stack-depth))
                  (vector (count->mask count rest?)
                          (compile-body body new-env (+ stack-depth count)))))]
+      [`(call-with-module-prompt (lambda () . ,body))
+       (vector 'cwmp0 (compile-body body env stack-depth))]
+      [`(call-with-module-prompt (lambda () . ,body) ',ids ',constances ,vars ...)
+       (vector 'cwmp
+               (compile-body body env stack-depth)
+               ids
+               constances
+               (for/list ([var (in-list vars)])
+                 (compile-expr var env stack-depth)))]
       [`(variable-set! ,dest-id ,e ',constance)
        (define dest-var (hash-ref env (unwrap dest-id)))
        (vector 'set-variable!
@@ -384,12 +393,22 @@
                 (if (matching-argument-count? mask len)
                     (interpret b (push-stack stack vs mask))
                     (loop (cdr clauses)))])]))]
+        [#(cwmp0 ,b)
+         ((hash-ref primitives 'call-with-module-prompt)
+          (lambda () (interpret b stack)))]
+        [#(cwmp ,b ,ids ,constances ,var-es)
+         (apply (hash-ref primitives 'call-with-module-prompt)
+                (lambda () (interpret b stack))
+                ids
+                constances
+                (for/list ([e (in-list var-es)])
+                  (interpret e stack)))]
         [#(lambda ,mask ,b)
          (make-arity-wrapper-procedure
           (lambda args
             (if (matching-argument-count? mask (length args))
                 (interpret b (push-stack stack args mask))
-                (error "arity error")))
+                (error 'lambda "arity error: ~s" args)))
           mask
           #f)]
         [#(case-lambda ,mask)
@@ -399,7 +418,7 @@
             (define len (length args))
             (let loop ([i 2])
               (cond
-                [(= i n) (error "arity error")]
+                [(= i n) (error 'case-lambda "arity error: ~s")]
                 [else
                  (interp-match
                   (unsafe-vector*-ref b i)
@@ -433,7 +452,7 @@
   (define count (if rest?
                     (integer-length mask)
                     (sub1 (integer-length mask))))
-  (let loop ([stack stack] [vals vals] [count (if rest? (sub1 count) count)])
+  (let loop ([stack stack] [vals vals] [count count])
     (cond
       [(zero? count)
        (if rest? (cons vals stack) stack)]
@@ -441,7 +460,9 @@
        (loop (cons (car vals) stack) (cdr vals) (sub1 count))])))
 
 (define (count->mask count rest?)
-  (arithmetic-shift (if rest? -1 1) count))
+  (if rest?
+      (bitwise-xor -1 (sub1 (arithmetic-shift 1 (sub1 count))))
+      (arithmetic-shift 1 count)))
 
 ;; ----------------------------------------
 

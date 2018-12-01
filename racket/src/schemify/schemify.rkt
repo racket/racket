@@ -171,8 +171,7 @@
 
 (define (schemify-body* l prim-knowns imports exports
                         for-jitify? allow-set!-undefined? add-import!
-                        for-cify? unsafe-mode? no-prompt?/in)
-  (define no-prompt? (or no-prompt?/in for-jitify? for-cify?))
+                        for-cify? unsafe-mode? no-prompt?)
   ;; Various conversion steps need information about mutated variables,
   ;; where "mutated" here includes visible implicit mutation, such as
   ;; a variable that might be used before it is defined:
@@ -279,7 +278,9 @@
                 (for/list ([id (in-list ids)])
                   (make-define-variable id exports knowns mutated extra-variables)))
               (cons
-               (make-expr-defn expr)
+               (if for-jitify?
+                   expr
+                   (make-expr-defn expr))
                (append defns
                        (loop (wrap-cdr l) mut-l null null)))])))
         ;; Dispatch on the schemified form, distinguishing definitions

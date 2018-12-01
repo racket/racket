@@ -6,7 +6,7 @@
 ;; with JIT compilation of the `lambda` or separate ahead-of-time
 ;; compilation (as opposed to compiling a whole linklet).
 
-;; If `convert-size-threashold` is #f, then every `lambda` is
+;; If `convert-size-threshold` is #f, then every `lambda` is
 ;; converted. If it's a number, then only `lambda`s smaller than the
 ;; threshold are converted, and and no `lambda` within a converted
 ;; `lambda` is converted. So, supplying a numerical threshold is
@@ -146,10 +146,12 @@
           (match v
             [`(variable-set! ,var-id ,id . ,_)
              (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id)))]
-            [`(define ,_ (begin (variable-set! . ,vs) (void)))
-             (loop `(variable-set! . ,vs) env)]
-            [`(define ,id ,rhs) (plain-add-args env id)]
-            [`(define-values ,ids ,rhs) (plain-add-args env ids)]
+            [`(call-with-module-prompt ,_ ',ids ,_ ,var-ids ...)
+             (for/fold ([env env]) ([id (in-list ids)]
+                                    [var-id (in-list var-ids)])
+               (hash-set env (unwrap id) `(variable-ref ,(unwrap var-id))))]
+            [`(define ,id ,rhs) (plain-add-args env id #f)]
+            [`(define-values ,ids ,rhs) (plain-add-args env ids #f)]
             [`(begin . ,vs)
              (for/fold ([env env]) ([v (in-wrap-list vs)])
                (loop v env))]
@@ -162,8 +164,6 @@
              ;; From now on, a direct reference is ok
              (set! top-env (hash-set top-env (unwrap id) '#:direct)))
            v]
-          [`(define ,_ (begin (variable-set! . ,vs) (void)))
-           (car (loop (list `(variable-set! . ,vs))))]
           [`(define ,id ,rhs)
            ;; If there's a direct reference to `id` in `rhs`, then
            ;; `id` must not be mutable
@@ -332,6 +332,13 @@
        (values (reannotate v `(,call-with-values-id ,new-proc1 ,new-proc2))
                new-free2
                new-lifts2)]
+      [`(call-with-module-prompt ,proc ,var-info ...)
+       (define proc-convert-mode (convert-mode-called convert-mode))
+       (define-values (new-proc new-free new-lifts)
+         (jitify-expr proc env mutables free lifts proc-convert-mode #f in-name))
+       (values (reannotate v `(call-with-module-prompt ,new-proc . ,var-info))
+               new-free
+               new-lifts)]
       [`(#%app ,_ ...)
        (define-values (new-vs new-free new-lifts)
          (jitify-body (wrap-cdr v) env mutables free lifts (convert-mode-non-tail convert-mode) #f in-name))
@@ -489,12 +496,16 @@
   ;; ----------------------------------------
 
   ;; When mutables and convert mode are not relevant:
-  (define (plain-add-args env args)
+  (define (plain-add-args env args [replace? #t])
     (define (add-one id)
-      (hash-set env (unwrap id) '#:direct))
+      (define u-id (unwrap id))
+      (if (or replace?
+              (not (hash-ref env u-id #f)))
+          (hash-set env u-id '#:direct)
+          env))
     (match args
       [`(,id . ,args)
-       (plain-add-args (add-one id) args)]
+       (plain-add-args (add-one id) args replace?)]
       [`() env]
       [`,id (add-one id)]))
 
