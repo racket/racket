@@ -1,6 +1,5 @@
 #lang racket/base
-(require (for-syntax racket/base)
-         racket/unsafe/ops)
+(require (for-syntax racket/base))
 
 ;; All patterns for an interpreter matcher are vectors,
 ;; and each vector element is an unquote or a symbol
@@ -26,7 +25,7 @@
                           [i (in-naturals)])
                  (syntax-case e (unquote)
                    [,id #'#t]
-                   [s #`(eq? 's (unsafe-vector*-ref v #,i))])))]))
+                   [s #`(eq? 's (vector*-ref v #,i))])))]))
 
 (define-syntax (let-vars stx)
   (syntax-case stx ()
@@ -37,5 +36,5 @@
                                   [,id #t]
                                   [_ #f]))
                 (syntax-case e (unquote)
-                  [,id #`[id (unsafe-vector*-ref v #,i)]]))
+                  [,id #`[id (vector*-ref v #,i)]]))
          . body)]))

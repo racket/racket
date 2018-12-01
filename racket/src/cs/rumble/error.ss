@@ -310,6 +310,18 @@
                        upper-bound
                        #f)]))
 
+(define (arguments->context-string args)
+  (cond
+   [(null? args) ""]
+   [else
+    (apply string-append
+           "\n  arguments...: "
+           (let loop ([args args])
+             (cond
+              [(null? args) '()]
+              [else (cons (string-append "\n   " (error-value->string (car args)))
+                          (loop (cdr args)))])))]))
+
 (define/who (raise-arity-error name arity . args)
   (check who (lambda (p) (or (symbol? name) (procedure? name)))
          :contract "(or/c symbol? procedure?)"
@@ -328,9 +340,11 @@
      "arity mismatch;\n"
      " the expected number of arguments does not match the given number\n"
      (expected-arity-string arity)
-     "  given: " (number->string (length args)))
+     "  given: " (number->string (length args))
+     (arguments->context-string args))
     (current-continuation-marks))))
 
+  
 (define/who (raise-arity-mask-error name mask . args)
   (check who (lambda (p) (or (symbol? name) (procedure? name)))
          :contract "(or/c symbol? procedure?)"
@@ -361,11 +375,15 @@
      " expected number of values not received\n"
      "  received: " (number->string (length args)) "\n" 
      "  expected: " (number->string num-expected-args)
-     (or where ""))
+     (or where "")
+     (arguments->context-string args))
     (current-continuation-marks))))
 
 (define (raise-binding-result-arity-error expected-args args)
-  (raise-result-arity-error #f (length expected-args) "\n  at: local-binding form" args))
+  (apply raise-result-arity-error #f
+         (length expected-args)
+         "\n  at: local-binding form"
+         args))
 
 (define raise-unsupported-error
   (case-lambda

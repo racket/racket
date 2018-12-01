@@ -137,7 +137,8 @@ Racket-on-Chez currently supports two compilation modes:
 
    Set `PLT_CS_COMPILE_LIMIT` to set the maximum size of forms to
    compile before falling back to interpreted "bytecode". The default
-   is 10000.
+   is 10000. Setting `PLT_CS_COMPILE_LIMIT` to 0 effectively turns
+   the implementation into a pure interpreter.
 
  * JIT mode --- The compiled form of a module is an S-expression where
    individual `lambda`s are compiled on demand.
@@ -485,17 +486,9 @@ configuration:
 
  * `UNSAFE_COMP` is enabled in "Makefile" --- currently on by default.
 
-   Effectiveness: Matters the most for "rumble.so", which has its own
-   setting, but otherwise by itself affects a from-source
-   `racket/base` expansion by about 5%. See also the interaction with
-   `compile-as-independent?`.
-
- * `RUMBLE_UNSAFE_COMP` is enabled in "Makefile" --- applies to
-   "rumble.so" even if `UNSAFE_COMP` is disabled.
-
    Effectiveness: Can mean a 10-20% improvement in loading
-   `racket/base` from source. Since the Rumble implementation is in
-   pretty good shape, `RUMBLE_UNSAFE_COMP` is enabled by default.
+   `racket/base` from source. Since the implementation is in pretty
+   good shape, `UNSAFE_COMP` is enabled by default.
 
  * `compile-as-independent?` is #f in "expander.sls" --- currently set
    to #f by default. See "Development Mode" above for more

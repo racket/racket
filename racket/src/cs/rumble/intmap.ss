@@ -219,7 +219,10 @@
          [x4 (fxior x3 (fxsrl x3 4))]
          [x5 (fxior x4 (fxsrl x4 8))]
          [x6 (fxior x5 (fxsrl x5 16))]
-         [x7 (fxior x6 (fxsrl x6 32))])
+         [x7 (meta-cond
+              [(> (fixnum-width) 32)
+               (fxior x6 (fxsrl x6 32))]
+              [else x6])])
     (fxxor x7 (fxsrl x7 1))))
 
 ;; basic utils
