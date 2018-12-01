@@ -869,6 +869,7 @@ site-from-installers:
 
 plain-site-from-installers:
 	rm -rf build/docs
+	rm -rf "build/zo`pwd`/build/docs"
 	$(USER_RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
 	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
 

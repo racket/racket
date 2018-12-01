@@ -178,6 +178,7 @@
                                 #:module-prompt? #t
                                 #:module-use*s module-use*s
                                 #:cross-linklet-inlining? #t
+                                #:load-modules? #t
                                 #:namespace ns))
       (values phase (cons linklet new-module-use*s))))
 

@@ -280,6 +280,7 @@
                                    #:module-prompt? module-prompt?
                                    #:module-use*s module-use*s
                                    #:cross-linklet-inlining? cross-linklet-inlining?
+                                   #:load-modules? #f
                                    #:namespace (compile-context-namespace cctx))]))
       (values phase (cons linklet new-module-use*s))))
   
@@ -396,6 +397,7 @@
                                 #:module-prompt? module-prompt?
                                 #:module-use*s module-use*s
                                 #:cross-linklet-inlining? cross-linklet-inlining?
+                                #:load-modules? load-modules?
                                 #:namespace namespace)
   (define-values (linklet new-module-use*s)
     (performance-region
@@ -420,6 +422,7 @@
       ;; to a linklet and an optional vector of keys for that linklet's
       ;; imports:
       (make-module-use-to-linklet cross-linklet-inlining?
+                                  load-modules?
                                   namespace
                                   get-module-linklet-info
                                   module-use*s))))
@@ -428,7 +431,8 @@
 
 ;; ----------------------------------------
 
-(define (make-module-use-to-linklet cross-linklet-inlining? ns get-module-linklet-info init-mu*s)
+(define (make-module-use-to-linklet cross-linklet-inlining? load-modules?
+                                    ns get-module-linklet-info init-mu*s)
   ;; Inlining might reach the same module though different indirections;
   ;; use a consistent `module-use` value so that the compiler knows to
   ;; collapse them to a single import
@@ -460,7 +464,7 @@
       (values #f #f)]
      [mu*-or-instance
       (define mu* mu*-or-instance)
-      (define mod-name (module-path-index-resolve (module-use-module mu*)))
+      (define mod-name (module-path-index-resolve (module-use-module mu*) load-modules?))
       (define mli (or (get-module-linklet-info mod-name (module-use-phase mu*))
                       (namespace->module-linklet-info ns
                                                       mod-name
