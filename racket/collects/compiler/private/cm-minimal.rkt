@@ -157,7 +157,17 @@
 (define deps-imports cdddr)
 
 (define (get-compilation-path path->mode roots path)
-  (let-values ([(dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots)])
+  (let-values ([(dir name) (get-compilation-dir+name path
+                                                     #:modes (list (path->mode path))
+                                                     #:roots roots
+                                                     ;; In cross-multi mode, we need to default to the
+                                                     ;; ".zo" file that is written first, otherwise we
+                                                     ;; may pick the first root where there's no ".dep"
+                                                     ;; written yet when the second root on has a ".dep"
+                                                     ;; and the ".zo" is not yet in place
+                                                     #:default-root (if (cross-multi-compile? roots)
+                                                                        (cadr roots)
+                                                                        (car roots)))])
     (build-path dir name)))
 
 (define (touch path)
@@ -233,7 +243,7 @@
                                                (get-source-sha1 (path-replace-extension p #".ss"))))])
     (call-with-input-file* p sha1)))
 
-(define (get-dep-sha1s deps up-to-date collection-cache read-src-syntax path->mode roots seen
+(define (get-dep-sha1s for-path deps up-to-date collection-cache read-src-syntax path->mode roots seen
                        #:must-exist? must-exist?)
   (let ([l (for/fold ([l null]) ([dep (in-list deps)])
              (and l
@@ -256,7 +266,9 @@
                       ;; apparently, we're forced to use the source of the module,
                       ;; so compute a sha1 from it instead of the bytecode
                       (cons (cons (get-source-sha1 p) dep) l)]
-                     [else #f]))))])
+                     [else
+                      (trace-printf "no hash available toward ~a: ~a" for-path p)
+                      #f]))))])
     (and l
          (let ([p (open-output-string)]
                [l (map (lambda (v) 
@@ -296,7 +308,8 @@
           (write (list* (version)
                         (current-compile-target-machine)
                         (cons (or src-sha1 (get-source-sha1 path))
-                              (get-dep-sha1s deps up-to-date collection-cache read-src-syntax path->mode roots #hash()
+                              (get-dep-sha1s path
+                                             deps up-to-date collection-cache read-src-syntax path->mode roots #hash()
                                              #:must-exist? #t))
                         (sort deps s-exp<?))
                  op)
@@ -343,7 +356,7 @@
 
 (define (cross-multi-compile? roots)
   ;; Combination of cross-installation mode, compiling to machine-independent form,
-  ;; and multiple compiled-file roots triggers a special mutli-target compilation mode.
+  ;; and multiple compiled-file roots triggers a special multi-target compilation mode.
   ;; Write code compiled for the running Racket to the first root, and write code for
   ;; the cross-compile target to the second root --- but count the cross-compile target
   ;; as machine-independent if it would be the same as the current target.
@@ -547,6 +560,7 @@
         ;; with-compile-output...
         (verify-times path tmp-name)
         (when (equal? recompile-from zo-name)
+          (trace-printf "recompiling in-place: ~a" zo-name)
           ;; In the case of recompiling, make sure that any concurrent
           ;; process always sees recompile possibilities by writing
           ;; the expected sha1 into ".dep" before deleting the ".zo"
@@ -646,7 +660,7 @@
 ;; Beware that if a ".dep" file provides a SHA-1 for the generated
 ;; bytecode (because the bytecode was once recompiled from
 ;; machine-independent bytecode) but the bytecode file isn't present,
-;; then dependent files will assume that compiling will produce te
+;; then dependent files will assume that compiling will produce the
 ;; same SHA-1. That limitation is necessary to avoid recompilation
 ;; when one concurrent processes is recompiling and other processes
 ;; are checking whether they can use or merely recompile existing
@@ -745,6 +759,7 @@
                                   (equal? (version) (deps-version deps))
                                   (deps-src-sha1 deps)
                                   (get-source-sha1 path)))
+            (define-syntax-rule (explain v e) (or v (and e #f)))
             (cond
               [(and (not src-sha1)
                     (not (file-exists? actual-path)))
@@ -764,15 +779,27 @@
                   (cond
                     [trying-sha1? #f]
                     [else (build/sync)])])]
-              [(and src-sha1
-                    (equal? (version) (deps-version deps))
-                    (equal? src-sha1 (and (pair? (deps-sha1s deps))
-                                          (deps-src-sha1 deps)))
-                    (equal? (get-dep-sha1s (deps-imports deps) up-to-date collection-cache read-src-syntax path->mode roots seen
-                                           #:must-exist? #f)
-                            (deps-imports-sha1 deps))
-                    (or (eq? (deps-machine deps) (current-compile-target-machine))
-                        (not (deps-machine deps))))
+              [(and (explain src-sha1
+                             (trace-printf "no source hash: ~a" path))
+                    (explain (equal? (version) (deps-version deps))
+                             (trace-printf "different version: ~a" path))
+                    (explain (equal? src-sha1 (and (pair? (deps-sha1s deps))
+                                                   (deps-src-sha1 deps)))
+                             (trace-printf "source hash changed: ~a" path))
+                    (explain (or (eq? (deps-machine deps) (current-compile-target-machine))
+                                 (not (deps-machine deps))
+                                 (and (cross-multi-compile? roots)
+                                      (eq? (system-type 'target-machine) (deps-machine deps))))
+                             (trace-printf "wrong machine: ~a" path))
+                    (let ([imports-sha1
+                           (get-dep-sha1s path
+                                          (deps-imports deps) up-to-date collection-cache read-src-syntax path->mode roots seen
+                                          #:must-exist? #f)])
+                      (explain (equal? imports-sha1 (deps-imports-sha1 deps))
+                               (trace-printf "different dependency deps for ~a: ~a ~a"
+                                             zo-name
+                                             imports-sha1
+                                             (deps-imports-sha1 deps)))))
                ;; We need to recompile the file from machine-independent bytecode,
                ;; or maybe just update the file's modification date
                (trace-printf "hash-equivalent: ~a" zo-name)
@@ -845,6 +872,7 @@
      ;; if we have to read the compiled form and that failed (e.g., because
      ;; the file's not there), then return #f overall:
      (let ([sha-1 (or assume-compiled-sha1 path-sha1)])
+       (trace-printf "compiled hash for ~a: ~a ~a ~a" path sha-1 (and assume-compiled-sha1 #t) imports-sha1)
        (and sha-1
             (string-append sha-1 imports-sha1))))))
 
@@ -853,7 +881,12 @@
 ;; falling back normally to bytecode, and returning "" insteda of
 ;; #f if compiled code is not available:
 (define (get-compiled-sha1 path->mode roots path)
-  (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
+  (define-values (dir name) (get-compilation-dir+name path
+                                                      #:modes (list (path->mode path))
+                                                      #:roots roots
+                                                      #:default-root (if (cross-multi-compile? roots)
+                                                                         (cadr roots)
+                                                                         (car roots))))
   (let ([dep-path (build-path dir (path-add-extension name #".dep"))])
     (or (try-file-sha1 (build-path dir "native" (system-library-subpath)
                                    (path-add-extension name (system-type
@@ -887,7 +920,9 @@
                       #:sha1-only? [sha1-only? #f])
   (define orig-path (simple-form-path path0))
   (define (read-deps path)
-    (with-handlers ([exn:fail:filesystem? (lambda (ex) (list #f "none" '(#f . #f)))])
+    (with-handlers ([exn:fail:filesystem? (lambda (ex)
+                                            (trace-printf "failed reading ~a" path)
+                                            (list #f "none" '(#f . #f)))])
       (with-module-reading-parameterization
        (lambda ()
          (call-with-input-file*
@@ -930,7 +965,10 @@
             (cond
               [(not (and (deps-has-version? deps)
                          (equal? (version) (deps-version deps))))
-               (trace-printf "newer version...")
+               (trace-printf "old version ~a for ~a..."
+                             (and (deps-has-version? deps)
+                                  (deps-version deps))
+                             path)
                #t]
               [(not (and (deps-has-machine? deps)
                          (or (eq? (current-compile-target-machine) (deps-machine deps))
@@ -940,7 +978,10 @@
                          (or sha1-only?
                              (deps-machine deps)
                              (not (cross-multi-compile? roots)))))
-               (trace-printf "different machine...")
+               (trace-printf "different machine ~a for ~a..."
+                             (and (deps-has-machine? deps)
+                                  (deps-machine deps))
+                             path)
                #t]
               [(> path-time (or path-zo-time -inf.0))
                (trace-printf "newer src... ~a > ~a" path-time path-zo-time)
@@ -948,7 +989,7 @@
                                  #:trying-sha1? sha1-only?)]
               [(different-source-sha1-and-dep-recorded path deps)
                => (lambda (difference)
-                    (trace-printf "different src hash... ~a" difference)
+                    (trace-printf "different src hash ~a for ~a..." difference path)
                     (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                       #:trying-sha1? sha1-only?))]
               [(ormap-strict
@@ -958,12 +999,13 @@
                   (define t
                     (if ext?
                         (cons (or (try-file-time d) +inf.0) #f)
-                        (compile-root path->mode roots d up-to-date collection-cache read-src-syntax new-seen)))
+                        (compile-root path->mode roots d up-to-date collection-cache read-src-syntax new-seen
+                                      #:sha1-only? sha1-only?)))
                   (and t
                        (car t)
                        (> (car t) (or path-zo-time -inf.0))
-                       (begin (trace-printf "newer: ~a (~a > ~a)..."
-                                            d (car t) path-zo-time)
+                       (begin (trace-printf "newer for ~a: ~a (~a > ~a)..."
+                                            path d (car t) path-zo-time)
                               #t)))
                 (deps-imports deps))
                (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen

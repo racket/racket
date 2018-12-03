@@ -1059,6 +1059,7 @@
            (define dir  (cc-path cc))
            (define info (cc-info cc))
            (compile-directory-zos dir info
+                                  #:verbose (verbose)
                                   #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
@@ -2027,6 +2028,8 @@
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
   (setup-printf "target machine" "~a" (or (current-compile-target-machine) 'any))
+  (when (cross-installation?)
+    (setup-printf "cross-installation" "yes"))
   (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
@@ -2043,6 +2046,12 @@
     (setup-printf #f "  ~a" p))
   (when (use-user-specific-search-paths)
     (setup-printf #f "  ~a" (find-user-links-file)))
+  (let ([roots (current-compiled-file-roots)])
+    (unless (or (equal? roots '(same))
+                (equal? roots (build-path 'same)))
+      (setup-printf "compiled-file roots" "")
+      (for ([p roots])
+        (setup-printf #f "  ~a" p))))
   (setup-printf "main docs" "~a" (find-doc-dir))
 
   (when (and (not (null? (archives))) no-specific-collections?)

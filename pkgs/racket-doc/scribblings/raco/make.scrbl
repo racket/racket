@@ -776,7 +776,8 @@ See also @racket[managed-compile-zo].}
 
 @defproc[(get-compilation-dir+name [path path-string?]
                                    [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
-                                   [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+                                   [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                                   [#:default-root default-root (or/c path-string? 'same) (car roots)])
          (values path? path?)]{
 
 Determines the directory that holds the bytecode form of @racket[path]
@@ -787,24 +788,32 @@ for each element of @racket[roots] checking @racket[modes] in order.
 The first such directory that contains a file whose name matches
 @racket[path] with @filepath{.zo} added (in the sense of
 @racket[path-add-suffix]) is reported as the return directory path.
-If no such file is found, the result corresponds to the first elements
-of @racket[modes] and @racket[roots].}
+If no such file is found, the result corresponds to the first element
+of @racket[modes] combined with @racket[default-roots].
+
+@history[#:changed "7.1.0.9" @elem{Added the @racket[#:default-root] argument.}]}
 
 @defproc[(get-compilation-dir [path path-string?]
                               [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
-                              [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+                              [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                              [#:default-root default-root (or/c path-string? 'same) (car roots)])
          path?]{
 
-The same as @racket[get-compilation-dir+name], but returning only the first result.}
+The same as @racket[get-compilation-dir+name], but returning only the first result.
+
+@history[#:changed "7.1.0.9" @elem{Added the @racket[#:default-root] argument.}]}
 
 @defproc[(get-compilation-bytecode-file [path path-string?]
                                         [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
-                                        [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
+                                        [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                                        [#:default-root default-root (or/c path-string? 'same) (car roots)])
          path?]{
 
 The same as @racket[get-compilation-dir+name], but combines the
 results and adds a @filepath{.zo} suffix to arrive at a bytecode file
-path.}
+path.
+
+@history[#:changed "7.1.0.9" @elem{Added the @racket[#:default-root] argument.}]}
 
 @; ----------------------------------------------------------------------
 
