@@ -285,7 +285,7 @@ otherwise, the result is as many lists as supplied @racket[id]s
            ([x '(tvp tofu seitan tvp tofu)]
             #:unless (member x acc))
   x)
-(for/lists (firsts seconds #:result (list first seconds))
+(for/lists (firsts seconds #:result (list firsts seconds))
            ([pr '((1 . 2) (3 . 4) (5 . 6))])
   (values (car pr) (cdr pr)))
 ]
