@@ -3,12 +3,14 @@
          scribble/examples
          (for-label file/glob racket/sequence)]
 
+@(define glob-eval (make-base-eval '(require file/glob)))
+
 @title[#:tag "glob"]{Globbing}
 
 @defmodule[file/glob]{The @racketmodname[file/glob] library implements
 @hyperlink["https://en.wikipedia.org/wiki/Glob_(programming)"]{globbing}
 for @racket[path-string?] values. A @emph{glob} is a path string that matches
-a set of path strings using the following @emph{wildcards}:
+a set of path strings using the following @deftech[#:key "glob-wildcard"]{wildcards}:
 @itemlist[
 @item{
   A sextile (@tt{*}) matches any sequence of characters in a file or directory
@@ -47,7 +49,7 @@ that accepts a glob or a sequence of globs.
 }
 
 All @racketmodname[file/glob] functions accept @racket[glob/c] values.
-These functions also recognize braces (@tt|{{}}|) as a @emph{meta-wildcard} for
+These functions also recognize braces (@tt|{{}}|) as a @deftech[#:key "glob-meta-wildcard"]{meta-wildcard} for
 describing multiple globs.
 @margin-note{Braces are interpreted @emph{before} any other wildcards.}
 
@@ -115,6 +117,19 @@ Examples:
   @racket[glob-match?] does not check that @racket[path] exists.
 
   This operation accesses the filesystem.
+}
+
+@defproc*[([(glob-quote [str string?]) string?]
+           [(glob-quote [path path?]) path?]
+)]{
+  Escapes all @tech{glob wildcards} and @tech{glob meta-wildcards} in the given
+  string or path string.
+
+  @examples[#:eval glob-eval
+    (glob-quote "*.rkt")
+    (glob-quote "[Ff]ile?{zip,tar.gz}")
+    (glob-quote "]")
+  ]
 }
 
 @defparam[glob-capture-dotfiles? capture-dotfiles? boolean? #:value #f]{

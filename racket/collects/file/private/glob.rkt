@@ -19,6 +19,7 @@
   glob
   in-glob
   glob-match?
+  glob-quote
   glob-capture-dotfiles?)
 
 (require
@@ -107,6 +108,11 @@
              (or (ends-with-path-sep? ps)
                  (directory-exists? ps))))))
 
+(define (glob-quote ps)
+  (if (path? ps)
+    (string->path (glob-quote/string (path->string ps)))
+    (glob-quote/string ps)))
+
 ;; -----------------------------------------------------------------------------
 ;; -- parsing
 
@@ -175,10 +181,10 @@
     (let loop ([unamb* '()] [elem* elem*])
       (cond
        [(or (null? elem*) (has-**? (car elem*)))
-        (values (normalize-path (path*->path (reverse unamb*)))
+        (values (normalize-path (path*->path (map glob-element->filename (reverse unamb*))))
                 (if (not (null? elem*)) '** #f))]
        [(has-glob-pattern? (car elem*))
-        (values (normalize-path (path*->path (reverse unamb*)))
+        (values (normalize-path (path*->path (map glob-element->filename (reverse unamb*))))
                 (if (ormap has-**? (cdr elem*)) '** elem*))]
        [else
         (loop (cons (car elem*) unamb*) (cdr elem*))])))
@@ -387,6 +393,65 @@
             ;; keep everything else
             (string c)])))
       (string-join str* ""))))
+
+;; glob-element->filename : (and/c path-string?
+;;                                 (not/c has-**?)
+;;                                 (not/c has-glob-pattern?)) -> path-string?
+;; Convert a pattern with no (unescaped) glob wildcards into a value suitable
+;; for use in `file-exists?` queries --- by removing the escape characters
+;; from the wildcards.
+;;
+;; (If a pattern has wildcards, then it is converted to a regexp and compared
+;;  to filenames via `directory-list` and `regexp-match?`.
+;;  If not, the pattern goes through this conversion function and is compared
+;;  to filenames using `file-exists?` and `directory-exists?`.)
+(define (glob-element->filename ps)
+  (if (path? ps)
+    (string->path (glob-element->filename/string (path->string ps)))
+    (glob-element->filename/string ps)))
+
+(define GLOB-WILDCARD-CHAR* '(#\* #\? #\[ #\] #\{ #\} #\,))
+
+(define (glob-element->filename/string str)
+  (define str*
+    ;; examine `str` in reverse, remove #\\ from escaped wildcards
+    (let loop ([c* (reverse (string->list str))]
+               [i (- (string-length str) 1)])
+      (cond
+        [(null? c*)
+         '()]
+        [(and (memq (car c*) GLOB-WILDCARD-CHAR*)
+              (escaped? str i))
+         (cons (string (car c*)) (loop (cddr c*) (- i 2)))]
+        [else
+         (cons (string (car c*)) (loop (cdr c*) (- i 1)))])))
+  (apply string-append (reverse str*)))
+
+(module+ test
+  (test-case "glob-element->filename/string"
+    (check-equal? (glob-element->filename/string "a") "a")
+    (check-equal? (glob-element->filename/string "foo\\*rkt") "foo*rkt")
+    (check-equal? (glob-element->filename/string "?\\?\\]\\[\\*") "??][*")
+    (check-equal? (glob-element->filename/string "\\}a\\,") "}a,")
+    (check-equal? (glob-element->filename/string "\\normal") "\\normal")))
+
+(define (glob-quote/string str)
+  (define str*
+    ;; add #\\ before all wildcards
+    (for/list ([c (in-string str)])
+      (if (memq c GLOB-WILDCARD-CHAR*)
+        (string #\\ c)
+        (string c))))
+  (apply string-append str*))
+
+(module+ test
+  (test-case "glob-quote/string"
+    (check-equal? (glob-quote/string "a") "a")
+    (check-equal? (glob-quote/string "a*") "a\\*")
+    (check-equal? (glob-quote/string "*][?") "\\*\\]\\[\\?")
+    (check-equal? (glob-quote/string "racket/**/base") "racket/\\*\\*/base")
+    (check-equal? (glob-quote/string "},{foo,bar}") "\\}\\,\\{foo\\,bar\\}")
+    (check-equal? (glob-quote/string "\\") "\\")))
 
 ;; flatten-glob : glob/c -> (listof path-string?)
 (define (flatten-glob pattern)
