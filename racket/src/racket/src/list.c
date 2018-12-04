@@ -1790,13 +1790,13 @@ name ## _prim (int argc, Scheme_Object *argv[]) \
 
 LISTFUNC3(cdddr, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c pair?))")
 
-LISTFUNC3(caddr, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c (cons/c any/c pair?) any/c)")
+LISTFUNC3(caddr, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c pair?))")
 LISTFUNC3(cdadr, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c pair? any/c))")
-LISTFUNC3(cddar, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, "(cons/c any/c (cons/c any/c pair?))")
+LISTFUNC3(cddar, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c pair?) any/c)")
 
-LISTFUNC3(cdaar, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c any/c (cons/c pair? any/c))")
+LISTFUNC3(cdaar, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c pair? any/c) any/c)")
 LISTFUNC3(cadar, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c pair?) any/c)")
-LISTFUNC3(caadr, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, "(cons/c (cons/c pair? any/c) any/c)")
+LISTFUNC3(caadr, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c pair? any/c))")
 
 LISTFUNC3(caaar, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c pair? any/c) any/c)")
 
@@ -1815,22 +1815,22 @@ name ## _prim (int argc, Scheme_Object *argv[]) \
 
 LISTFUNC4(cddddr, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c (cons/c any/c pair?)))")
 
-LISTFUNC4(cadddr, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, "(cons/c (cons/c any/c (cons/c any/c pair?)) any/c)")
-LISTFUNC4(cdaddr, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c (cons/c any/c pair?) any/c))")
-LISTFUNC4(cddadr, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c any/c (cons/c pair? any/c)))")
-LISTFUNC4(cdddar, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, "(cons/c any/c (cons/c any/c (cons/c any/c pair?)))")
+LISTFUNC4(cadddr, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c (cons/c any/c pair?)))")
+LISTFUNC4(cdaddr, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c (cons/c pair? any/c)))")
+LISTFUNC4(cddadr, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c (cons/c any/c pair?) any/c))")
+LISTFUNC4(cdddar, SCHEME_CDR, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c (cons/c any/c pair?)) any/c)")
 
-LISTFUNC4(caaddr, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c (cons/c (cons/c any/c pair?) any/c) any/c)")
-LISTFUNC4(cadadr, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, "(cons/c (cons/c any/c (cons/c pair? any/c)) any/c)")
+LISTFUNC4(caaddr, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, "(cons/c any/c (cons/c any/c (cons/c pair? any/c)))")
+LISTFUNC4(cadadr, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c (cons/c any/c pair?) any/c))")
 LISTFUNC4(caddar, SCHEME_CAR, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c (cons/c any/c pair?)) any/c)")
 LISTFUNC4(cdaadr, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c (cons/c pair? any/c) any/c))")
-LISTFUNC4(cdadar, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, "(cons/c any/c (cons/c (cons/c any/c pair?) any/c))")
-LISTFUNC4(cddaar, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c any/c (cons/c any/c (cons/c pair? any/c)))")
+LISTFUNC4(cdadar, SCHEME_CDR, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c (cons/c pair? any/c)) any/c)")
+LISTFUNC4(cddaar, SCHEME_CDR, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c (cons/c any/c pair?) any/c) any/c)")
 
-LISTFUNC4(cdaaar, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, "(cons/c any/c (cons/c (cons/c pair? any/c) any/c))")
-LISTFUNC4(cadaar, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c any/c (cons/c pair? any/c)) any/c)")
-LISTFUNC4(caadar, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c (cons/c any/c pair?) any/c) any/c)")
-LISTFUNC4(caaadr, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, "(cons/c (cons/c (cons/c pair? any/c) any/c) any/c)")
+LISTFUNC4(cdaaar, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c (cons/c pair? any/c) any/c) any/c)")
+LISTFUNC4(cadaar, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c (cons/c any/c pair?) any/c) any/c)")
+LISTFUNC4(caadar, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, SCHEME_CAR, "(cons/c (cons/c any/c (cons/c pair? any/c)) any/c)")
+LISTFUNC4(caaadr, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, SCHEME_CDR, "(cons/c any/c (cons/c (cons/c pair? any/c) any/c))")
 
 LISTFUNC4(caaaar, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, SCHEME_CAR, "(cons/c (cons/c (cons/c pair? any/c) any/c) any/c)")
 
