@@ -526,7 +526,7 @@
   [make-plumber (known-procedure/pure 1)]
   [make-polar (known-procedure 4)]
   [make-prefab-struct (known-procedure -2)]
-  [make-pseudo-random-generator (known-procedure 1)]
+  [make-pseudo-random-generator (known-procedure 1)] ; not pure, depends on (current-milliseconds)
   [make-reader-graph (known-procedure 2)]
   [make-rectangular (known-procedure 4)]
   [make-security-guard (known-procedure 24)]
@@ -631,7 +631,7 @@
   [port-writes-special? (known-procedure 2)]
   [positive? (known-procedure 2)]
   [prefab-key->struct-type (known-procedure 4)]
-  [prefab-key? (known-procedure 2)]
+  [prefab-key? (known-procedure 2)] ; not pure, the argument may have a mutable vector
   [prefab-struct-key (known-procedure 2)]
   [pregexp (known-procedure 6)]
   [pregexp? (known-procedure/pure 2)]
@@ -868,7 +868,7 @@
   [struct:exn:fail:unsupported (known-constant)]
   [struct:exn:fail:user (known-constant)]
   [struct:srcloc (known-constant)]
-  [struct? (known-procedure 2)]
+  [struct? (known-procedure 2)] ; not pure, depends on (current-inspector)
   [sub1 (known-procedure 2)]
   [subbytes (known-procedure 12)]
   [subprocess (known-procedure -16)]
@@ -936,7 +936,7 @@
   [unquoted-printing-string (known-procedure 2)]
   [unquoted-printing-string-value (known-procedure 2)]
   [unquoted-printing-string? (known-procedure 2)]
-  [values (known-procedure/pure -1)]
+  [values (known-procedure -1)] ; not marked as pure, because it is not single valued
   [vector (known-procedure/pure -1)]
   [vector->immutable-vector (known-procedure 2)]
   [vector->list (known-procedure 2)]
