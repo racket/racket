@@ -522,6 +522,14 @@
       (lambda (x) (and (vector? x) (eq? (vector-ref x 0) (vector-ref x 1)))) 
       #2((1 2)))
 
+;; Immutable vectors and boxes from `read-syntax`
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#(a b c)"))))
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#5(a b c)"))))
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#&a"))))
+(test #f immutable? (read (open-input-string "#(a b c)")))
+(test #f immutable? (read (open-input-string "#5(a b c)")))
+(test #f immutable? (read (open-input-string "#&a")))
+
 (define (graph-error-tests readstr graph-ok?)
   (err/rt-test (readstr "#0#") exn:fail:read?)
   (err/rt-test (readstr "#0=#0#") exn:fail:read?)
