@@ -43,6 +43,16 @@
        (define b-ht (if as-correlated-linklet?
                         (read-correlated-linklet-bundle-hash in)
                         (read-linklet-bundle-hash in)))
+       (unless (hash? b-ht)
+         (raise-arguments-error 'read-linklet-bundle-hash
+                                "bad read result"
+                                "expected" "hash/c"
+                                "found" (format "~s" b-ht)
+                                "in" (let ([n (object-name in)])
+                                       (if (path? n)
+                                           (path->string n)
+                                           in))))
+
        (hash->linklet-bundle
         (add-hash-code (if initial?
                            (strip-submodule-references b-ht)
