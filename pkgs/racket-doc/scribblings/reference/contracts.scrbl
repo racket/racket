@@ -31,6 +31,7 @@ constraints.
        racket/contract/private/guts
        racket/contract/private/prop
        racket/contract/private/blame
+       racket/contract/collapsible
        racket/contract/private/ds
        racket/contract/private/opt
        racket/contract/private/basic-opters
@@ -2134,6 +2135,10 @@ accepted by the third argument to @racket[datum->syntax].
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
            #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> blame? (values (-> any/c any/c any/c) collapsible-contract?)))
+           #f]
           [#:val-first-projection
            val-first-proj
            (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
@@ -2161,6 +2166,10 @@ accepted by the third argument to @racket[datum->syntax].
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
+           #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> blame? (values (-> any/c any/c any/c) collapsible-contract?)))
            #f]
           [#:val-first-projection 
            val-first-proj
@@ -2190,6 +2199,10 @@ accepted by the third argument to @racket[datum->syntax].
            late-neg-proj
            (or/c #f (-> blame? (-> any/c any/c any/c)))
            #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> blame? (values (-> any/c any/c any/c) collapsible-contract?)))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
@@ -2214,7 +2227,7 @@ accepted by the third argument to @racket[datum->syntax].
 )]{
 
 These functions build simple higher-order contracts, @tech{chaperone contracts},
-and @tech{flat contracts}, respectively.  They both take the same set of three
+and @tech{flat contracts}, respectively.  They all take the same set of three
 optional arguments: a name, a first-order predicate, and a blame-tracking projection.
 For @racket[make-flat-contract], see also @racket[flat-contract-with-explanation].
 
@@ -2242,6 +2255,14 @@ The @racket[late-neg-proj] argument defines the behavior of applying
  wrapped with a @tech{chaperone} or @tech{impersonator} to enforce the
  contract), or signal a contract violation using @racket[raise-blame-error].
  The default is @racket[#f].
+ 
+ The @racket[collapsible-late-neg-proj] argument takes the place of the
+ @racket[late-neg-proj] argument for contracts that support collapsing.
+ If it is supplied, this argument accepts a @tech{blame object} that is
+ missing one party. It must return two values. The first value must be
+ a function that accepts both the value that is getting the contract and
+ the name of the missing blame party, in that order. The second value should
+ be a collapsible representation of the contract.
  
 The projection @racket[proj] and @racket[val-first-proj] are older mechanisms for
  defining the behavior of applying the contract.  The @racket[proj] argument
@@ -2323,7 +2344,8 @@ to determine if this is a contract that accepts only @racket[list?] values.
 ]
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
-         #:changed "6.90.0.30" @list{Added the @racket[#:equivalent] argument.}]
+         #:changed "6.90.0.30" @list{Added the @racket[#:equivalent] argument.}
+         #:changed "7.1.0.2" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
@@ -2396,6 +2418,17 @@ contracts.  The error messages assume that the function named by
  See @racket[make-contract] for more details.
   
  @history[#:added "6.2.900.11"]
+}
+
+@defproc[(get/build-collapsible-late-neg-projection [c contract?])
+         (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))]{
+ Returns the @racket[_collapsible-late-neg] projection for @racket[c].
+              
+ If @racket[c] does not have a @racket[_collapsible-late-neg] projection,
+ then this function uses the original projection for it and constructs a leaf
+ as its collapsible representation.
+  
+ @history[#:added "7.1.0.2"]
 }
 
 @defparam[skip-projection-wrapper? wrap? boolean? #:value #f]{
@@ -2748,6 +2781,10 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
            late-neg-proj
            (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
            #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> contract? (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
@@ -2793,6 +2830,10 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
+           #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> contract? (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))))
            #f]
           [#:val-first-projection 
            val-first-proj
@@ -2849,6 +2890,10 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
           [#:late-neg-projection
            late-neg-proj
            (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
+           #f]
+          [#:collapsible-late-neg-projection
+           collapsible-late-neg-proj
+           (or/c #f (-> contract? (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))))
            #f]
           [#:val-first-projection 
            val-first-proj
@@ -2908,6 +2953,10 @@ a contract.  It is specified in terms of seven properties:
    defining the behavior of the contract (The @racket[get-projection]
    and @racket[val-first-proj] arguments also specify the projection,
    but using a different signature. They are here for backwards compatibility.);}
+  @item{@racket[collapsible-late-neg-proj], similar to @racket[late-neg-proj]
+   which produces a blame-tracking projection defining the behavior of the
+   contract, this function additionally specifies the collapsible behavior
+   of the contract;}
   @item{@racket[stronger], a predicate that determines whether this
    contract (passed in the first argument) is stronger than some other
    contract (passed in the second argument) and whose default always
@@ -2929,8 +2978,9 @@ a contract.  It is specified in terms of seven properties:
    to determine if this contract accepts only @racket[list?]s.}
 ]
 
-At least one of the @racket[late-neg-proj], @racket[get-projection],
-@racket[val-first-proj], or @racket[get-first-order] must be non-@racket[#f].
+At least one of the @racket[late-neg-proj], @racket[collapsible-late-neg-proj],
+@racket[get-projection], @racket[val-first-proj], or @racket[get-first-order]
+must be non-@racket[#f].
 
 These accessors are passed as (optional) keyword arguments to
 @racket[build-contract-property], and are applied to instances of the
@@ -2959,7 +3009,8 @@ arguments as @racket[build-contract-property].  The differences are:
          #:changed "6.1.1.4"
          @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
          #:changed "6.90.0.30"
-         @list{Added the @racket[#:equivalent] argument.}]
+         @list{Added the @racket[#:equivalent] argument.}
+         #:changed "7.1.0.2" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @deftogether[(
@@ -3477,6 +3528,143 @@ yield a significantly smaller memory footprint than
 add contracts to libraries that @racketmodname[racket/contract]
 uses to implement some of the more sophisticated
 parts of the contract system.
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "collapsible"]{Collapsible Contracts}
+@defmodule*/no-declare[(racket/contract/collapsible)]
+@declare-exporting-ctc[racket/contract/collapsible]
+
+@;{
+ prop:collapsible-contract
+ collapsible-contract?
+ merge
+ collapsible-guard
+ build-collapsible-contract-property
+ (struct-out collapsible-ho/c)
+ (struct-out collapsible-leaf/c)
+  build-collapsible-leaf
+ impersonator-prop:collapsible
+ has-impersonator-prop:collapsible?
+ get-impersonator-prop:collapsible
+ (struct-out collapsible-property)
+ (struct-out collapsible-count-property)
+ (struct-out collapsible-wrapper-property)
+}
+
+@defthing[prop:collapsible-contract struct-type-property?]{
+ Structures implementing this property are usable as collapsible contracts.
+}
+
+@defproc[(collapsible-contract? [v any/c]) boolean?]{
+A predicate recognizing structures with the @racket[prop:collapsible-contract] property.}
+
+@defproc[(merge [new-cc collapsible-contract?]
+                [new-neg any/c]
+                [old-cc collapsible-contract?]
+                [old-neg any/c])
+         collapsible-contract?]{
+ Combine two collapsible contracts into a single collapsible contract.
+ The @racket[new-neg] and @racket[old-neg] arguments are expected to be
+ blame parties similar to those passed to a @tech{late neg projection}.
+}
+
+@defproc[(collapsible-guard [cc collapsible-contract?]
+                            [val any/c]
+                            [neg-party any/c])
+         any/c]{
+ Similar to a @tech{late neg projection}, this function guards the value @racket[val]
+ with the collapsible contract @racket[cc].
+}
+
+@defproc[(collapsible-contract-property? [v any/c]) boolean?]{
+ This predicate indicates that a value can be used as the property for
+ @racket[prop:collapsible-contract].
+}
+
+@defproc[(build-collapsible-contract-property
+          [#:try-merge try-merge
+           (or/c #f
+                 (-> collapsible-contract?
+                     any/c
+                     collapsible-contract?
+                     any/c
+                     (or/c #f collapsible-contract?)))
+           #f]
+          [#:collapsible-guard collapsible-guard
+           (-> collapsible-contract? any/c any/c any/c)
+           (λ (cc v neg)
+             (error
+              "internal error: contract does not support `collapsible-guard`" ctc))])
+         collapsible-contract-property?]{
+ Constructs a @deftech{collapsible contract property} from a merging function and a guard.
+ The @racket[try-merge] argument is similar to @racket[merge], but may return @racket[#f] instead
+ of a collapsible contract and may be specialized to a particular collapsible contract.
+ The @racket[collapsible-guard] argument should be specialized to the particular collapsible
+ contract being implemented.
+}
+
+@defstruct*[collapsible-ho/c
+            ([latest-blame blame?]
+             [missing-party any/c]
+             [latest-ctc contract?])]{
+ A common parent structure for collapsible contracts for higher-order values.
+ The @racket[latest-blame] field holds the blame object for the most recent
+ contract attached. Similarly, the @racket[missing-party] filed holds the latest
+ missing party passed to the contract. The @racket[latest-contract] field stores
+ the most recent contract attached to the value.
+}
+
+@defstruct*[collapsible-leaf/c
+            ([proj-list (listof (-> any/c any/c any/c))]
+             [contract-list (listof contract?)]
+             [blame-list (listof blame?)]
+             [missing-party-list (listof any/c)])]{
+ A structure representing the leaf nodes of a collapsible contract. The @racket[proj-list]
+ field holds a list of partially applied @tech{late neg projections}. The @racket[contract-list],
+ @racket[blame-list], and @racket[missing-party-list] fields hold a list of contracts,
+ blame objects, and blame missing parties respectively.
+}
+
+@deftogether[(@defthing[impersonator-prop:collapsible impersonator-property?]
+              @defproc[(has-impersonator-prop:collapsible? [v any/c]) boolean?]
+              @defproc[(get-impersonator-prop:collapsible [v any/c]) collapsible-property?])]{
+ An impersonator property (and its accessors) that should be attached to chaperoned or impersonated
+ values that are guarded with a collapsible contract.
+}
+
+@defstruct*[collapsible-property ([c-c collapsible-contract?]
+                                  [neg-party any/c]
+                                  [ref (or/c #f impersonator?)])]{
+ The parent struct of properties that should be attached to chaperones or impersonators
+ of values protected with a collapsible contract. The @racket[c-c] field stores the collapsible
+ contract that is or will in the future be attached to the the value. The @racket[neg-party] field
+ stores the latest missing blame party passed to the contract on the value. The @racket[ref] field
+ is mutable and stores a reference to the chaperone or impersonator to which this property is
+ attached. This is necessary to determine whether an unknown chaperone has been attached to a value
+ after it has been protected by a collapsible contract.
+}
+@defstruct*[(collapsible-count-property collapsible-property)
+            ([count natural-number/c]
+             [prev (or/c collapsible-count-property? any/c)])]{
+ This property is associated with the @racket[impersonator-prop:collapsible] property before
+ the value completely enters the collapsible mode. These properties keep track of the number of
+ contracts on a value in the @racket[_count] field, and hold a reference to the previous
+ @deftech{count property} in the @racket[prev] field or the original value without a contract. This
+ allows the contract system to traverse the chain of attached contracts and merge them into a single
+ collapsible contract to protect the original value.
+}
+@defstruct*[(collapsible-wrapper-property collapsible-property)
+            ([checking-wrapper impersonator?])]{
+ This property is used when a value is guarded by a collapsible contract. The
+ @racket[checking-wrapper] field holds a chaperone or impersonator that dispatches to the
+ collapsible contract stored in this property to perform any necessary contract checks. When
+ the value receives another contract and merging happens, the checking wrapper will remain the
+ same even though the specific collapsible contract attached to the value may change.
+}
+
+@; ------------------------------------------------------------------------
+
 
 @section{Legacy Contracts}
 

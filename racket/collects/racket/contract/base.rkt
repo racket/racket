@@ -141,6 +141,7 @@
  contract-projection
  contract-val-first-projection
  get/build-late-neg-projection
+ get/build-collapsible-late-neg-projection
  get/build-val-first-projection
 
  suggest/c

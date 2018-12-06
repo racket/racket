@@ -6,7 +6,8 @@
                                make-chaperone-contract
                                make-flat-contract))
          "private/guts.rkt"
-         "private/blame.rkt")
+         "private/blame.rkt"
+         "private/collapsible-common.rkt")
 
 (provide 
  prop:contract

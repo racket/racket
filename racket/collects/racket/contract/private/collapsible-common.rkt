@@ -11,7 +11,9 @@
          (struct-out collapsible-wrapper-property)
          build-collapsible-leaf
          prop:collapsible-contract
+         collapsible-contract-property?
          build-collapsible-contract-property
+         collapsible-contract-property?
          collapsible-contract?
          merge
          collapsible-guard
@@ -82,7 +84,7 @@
          #:try-merge [try-merge #f]
          #:collapsible-guard
          [collapsible-guard
-          (lambda (ctc val)
+          (lambda (ctc val neg)
             (error "internal error: contract does not support `collapsible-guard`" ctc))])
   (collapsible-contract-property
    (or try-merge (lambda (_1 _2 _3 _4) #f))
