@@ -8,7 +8,6 @@
          "private/cc-struct.rkt"
          setup/parallel-do
          racket/class
-         racket/future
          compiler/find-exe
          racket/place
          syntax/modresolve
