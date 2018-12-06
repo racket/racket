@@ -103,7 +103,8 @@
 (prep-chez-scheme scheme-dir machine)
 
 (parameterize ([current-directory (build-path scheme-dir machine "c")])
-  (system*! "nmake" (format "Makefile.~a" machine)))
+  (system*! "nmake"
+	    (format "Makefile.~a" machine)))
 
 ;; ----------------------------------------
 

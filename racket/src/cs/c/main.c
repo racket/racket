@@ -29,6 +29,22 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 
 #include "../../start/config.inc"
 
+#ifdef WIN32
+typedef void *(*scheme_dll_open_proc)(const char *name, int as_global);
+typedef void *(*scheme_dll_find_object_proc)(void *h, const char *name);
+static scheme_dll_open_proc embedded_dll_open;
+static scheme_dll_find_object_proc scheme_dll_find_object;
+static void scheme_set_dll_procs(scheme_dll_open_proc open, scheme_dll_find_object_proc find)
+{
+  embedded_dll_open = open;
+  scheme_dll_find_object = find;
+}
+# include "../../start/embedded_dll.inc"
+#else
+# define embedded_dll_open NULL
+# define scheme_dll_find_object NULL
+#endif
+
 char *boot_file_data = "BooT FilE OffsetS:xxxxyyyyyzzzz";
 static int boot_file_offset = 18;
 
@@ -296,8 +312,8 @@ static int bytes_main(int argc, char **argv,
   long segment_offset;
 #ifdef WIN32
   wchar_t *dll_path;
-  HMODULE dll;
   racket_boot_t racket_boot_p;
+  long boot_rsrc_offset = 0;
 #endif
   
   do_pre_filter_cmdline_arguments(&argc, &argv);
@@ -308,10 +324,21 @@ static int bytes_main(int argc, char **argv,
   }
 
 #ifdef WIN32
-# define racket_boot racket_boot_p
-  dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
+  parse_embedded_dlls();
+  register_embedded_dll_hooks();
+  if (embedded_dll_open) {
+    void *dll;
+    dll = embedded_dll_open("libracketcsxxxxxxx.dll", 1);
+    boot_rsrc_offset = in_memory_get_offset("libracketcsxxxxxxx.dll");
+    racket_boot_p = (racket_boot_t)scheme_dll_find_object(dll, "racket_boot");
+    dll_path = get_self_executable_path();
+  } else {
+    HMODULE dll;
+    dll_path = load_delayed_dll_x(NULL, "libracketcsxxxxxxx.dll", &dll);
+    racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
+  }
   boot_exe = string_to_utf8(dll_path);
-  racket_boot_p = (racket_boot_t)GetProcAddress(dll, "racket_boot");
+# define racket_boot racket_boot_p
 #else
   boot_exe = get_self_path(exec_file);
 #endif
@@ -331,7 +358,7 @@ static int bytes_main(int argc, char **argv,
   boot_offset = find_boot_section(boot_exe);
 #endif
 #ifdef WIN32
-  boot_offset = find_resource_offset(dll_path, 259);
+  boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
 #endif
 
   pos1 += boot_offset;
@@ -343,7 +370,8 @@ static int bytes_main(int argc, char **argv,
               extract_coldir(), extract_configdir(), extract_dlldir(),
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
-	      wm_is_gracket, gracket_guid);
+	      wm_is_gracket, gracket_guid,
+	      embedded_dll_open, scheme_dll_find_object);
   
   return 0;
 }
