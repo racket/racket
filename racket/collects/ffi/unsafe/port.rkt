@@ -18,39 +18,49 @@
                     unsafe-poll-ctx-fd-wakeup))
   (provide (protect-out unsafe-fd->evt))
 
-  (struct fd-evt (sfd mode [closed? #:mutable])
+  (define socket-different?
+    (case (system-type 'os)
+      [(windows) #t]
+      [else #f]))
+
+  (struct fd-evt (sfd mode socket? [closed? #:mutable])
     #:property prop:evt
     (unsafe-poller
      (lambda (self wakeups)
        (define sfd (fd-evt-sfd self))
        (define mode (fd-evt-mode self))
+       (define socket? (fd-evt-socket? self))
        (cond
          [(fd-evt-closed? self)
           (values (list self) #f)]
-         [(unsafe-poll-fd sfd mode)
+         [(unsafe-poll-fd sfd mode socket?)
           (values (list self) #f)]
          [else
           (when wakeups
-            (unsafe-poll-ctx-fd-wakeup wakeups sfd mode))
+            (unsafe-poll-ctx-fd-wakeup wakeups sfd mode #;socket?))
           (values #f self)]))))
 
-  ;; sfd=>{read,write}-evt : (Hasheqv Nat => fd-evt)
-  (define sfd=>read-evt  (make-hasheqv))
-  (define sfd=>write-evt (make-hasheqv))
+  ;; {file-descriptor,socket}=>{read,write}-evt : (Hasheqv Nat => fd-evt)
+  (define file-descriptor=>read-evt  (make-hasheqv))
+  (define file-descriptor=>write-evt (make-hasheqv))
+  (define socket=>read-evt  (if socket-different? (make-hasheqv) file-descriptor=>read-evt))
+  (define socket=>write-evt (if socket-different? (make-hasheqv) file-descriptor=>write-evt))
 
   ;; Differences between unsafe-fd->evt and unsafe-{file-descriptor,socket}->semaphore:
-  ;; - treats fd as socket (cf unsafe-poll-fd, unsafe-poll-ctx-fd-wakeup)
   ;; - level-triggered, not edge-triggered
   ;; - no cooperation with ports created by unsafe-{file-descriptor,socket}->port
 
-  (define (unsafe-fd->evt sfd mode)
+  (define (unsafe-fd->evt sfd mode [socket0? #t])
+    (define socket? (and socket0? #t))
+    (define sfd=>read-evt  (if socket? socket=>read-evt  file-descriptor=>read-evt))
+    (define sfd=>write-evt (if socket? socket=>write-evt file-descriptor=>write-evt))
     (unless (exact-integer? sfd)
-      (raise-argument-error 'unsafe-fd->evt "handle-integer?" 0 sfd mode))
+      (raise-argument-error 'unsafe-fd->evt "handle-integer?" 0 sfd mode socket0?))
     (unsafe-start-atomic)
     (begin0
         (case mode
-          [(read)  (hash-ref! sfd=>read-evt  sfd (lambda () (fd-evt sfd mode #f)))]
-          [(write) (hash-ref! sfd=>write-evt sfd (lambda () (fd-evt sfd mode #f)))]
+          [(read)  (hash-ref! sfd=>read-evt  sfd (lambda () (fd-evt sfd mode socket? #f)))]
+          [(write) (hash-ref! sfd=>write-evt sfd (lambda () (fd-evt sfd mode socket? #f)))]
           [(check-read)  (hash-ref sfd=>read-evt  sfd #f)]
           [(check-write) (hash-ref sfd=>write-evt sfd #f)]
           [(remove)
@@ -69,7 +79,7 @@
            (unsafe-end-atomic)
            (raise-argument-error 'unsafe-fd->evt
                                  "(or/c 'read 'write 'check-read 'check-write 'remove)"
-                                 1 sfd mode)])
+                                 1 sfd mode socket0?)])
       (unsafe-end-atomic))))
 
 (require (submod "." fd-evt))
