@@ -1323,8 +1323,6 @@ static void *instantiate_linklet_k(void)
   Scheme_Hash_Tree *source_names;
   Scheme_Performance_State perf_state;
 
-  scheme_performance_record_start(&perf_state);
-
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
@@ -1339,6 +1337,8 @@ static void *instantiate_linklet_k(void)
     p->ku.k.i3 = use_prompt;
     return (Scheme_Object *)scheme_enlarge_runstack(depth, instantiate_linklet_k);
   }
+
+  scheme_performance_record_start(&perf_state);
 
   if (!linklet->jit_ready) {
     b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);
