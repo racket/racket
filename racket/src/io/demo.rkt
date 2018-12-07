@@ -91,6 +91,18 @@
   #:property prop:custom-write (lambda (v o mode)
                                  (fprintf o "<~a>" (animal-name v))))
 
+(test "apple" (format "~a" 'apple))
+(test "apple" (format "~a" "apple"))
+(test "apple" (format "~a" #"apple"))
+(test "#:apple" (format "~a" '#:apple))
+(test "17.5" (format "~a" 17.5))
+
+(test "apple" (format "~s" 'apple))
+(test "\"apple\"" (format "~s" "apple"))
+(test "#\"apple\"" (format "~s" #"apple"))
+(test "#:apple" (format "~s" '#:apple))
+(test "17.5" (format "~s" 17.5))
+
 (test "1\n\rx0!\"hi\"" (format "1~%~  \n  \rx~ ~o~c~s" 0 #\! "hi"))
 
 (test "*(1 2 3 apple\t\u0001 end <spot> file 1\"2\"3 #hash((a . 1) (b . 2)))*"

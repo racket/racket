@@ -3,18 +3,13 @@
          "../port/parameter.rkt"
          "../port/output-port.rkt"
          "../port/string-port.rkt"
+         "../string/convert.rkt"
          "printf.rkt")
 
-(provide format
-         fprintf
+(provide fprintf
          printf
-         eprintf)
-
-(define/who (format fmt . args)
-  (check who string? fmt)
-  (define o (open-output-string))
-  (do-printf 'printf o fmt args)
-  (get-output-string o))
+         eprintf
+         format)
 
 (define/who (fprintf o fmt . args)
   (check who output-port? o)
@@ -28,3 +23,36 @@
 (define/who (eprintf fmt . args)
   (check who string? fmt)
   (do-printf who (current-error-port) fmt args))
+
+;; ----------------------------------------
+
+(define (general-format fmt args)
+  (check 'format string? fmt)
+  (define o (open-output-string))
+  (do-printf 'format o fmt args)
+  (get-output-string o))
+
+(define (simple-format a)
+  (cond
+    [(boolean? a) (string-copy (if a "#t" "#f"))]
+    [(number? a) (number->string a)]
+    [(symbol? a) (symbol->string a)]
+    [(keyword? a) (string-append "#:" (keyword->string a))]
+    [else #f]))
+
+(define format
+  (case-lambda
+    [(fmt a)
+     (cond
+       [(or (equal? fmt "~a") (equal? fmt "~A"))
+        (or (simple-format a)
+            (cond
+              [(bytes? a) (bytes->string/utf-8 a #\?)]
+              [(string? a) (string-copy a)]
+              [else (general-format fmt (list a))]))]
+       [(or (equal? fmt "~s") (equal? fmt "~S"))
+        (or (simple-format a)
+            (general-format fmt (list a)))]
+       [else (general-format fmt (list a))])]
+    [(fmt . args)
+     (general-format fmt args)]))
