@@ -5,6 +5,7 @@
 
 (require racket/flonum
          racket/function
+         racket/list
          (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
