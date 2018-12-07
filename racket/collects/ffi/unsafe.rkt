@@ -2081,8 +2081,11 @@
 ;; optimize away the call or arguments, so that calling
 ;; `void/reference-sink` ensures that arguments are retained.
 (define* void/reference-sink
-  (let ([proc void])
+  (let ([e (make-ephemeron (void) (void))])
     (case-lambda
-      [(v) (proc v)]
-      [(v1 v2) (proc v1 v2)]
-      [args (set! proc (lambda args (void))) (proc args)])))
+      [(v) (ephemeron-value e (void) v)]
+      [(v1 v2)
+       (ephemeron-value e (ephemeron-value e (void) v1) v2)]
+      [args
+       (for/fold ([r (void)]) ([v (in-list args)])
+         (ephemeron-value e r v))])))

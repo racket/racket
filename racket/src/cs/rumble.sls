@@ -687,7 +687,7 @@
                 record-field-mutator))
 
   (define/no-lift none (chez:gensym "none"))
-  (define/no-lift none2 (chez:gensym "none2"))
+  (define/no-lift none2 (chez:gensym "none2")) ; never put this in an emphemeron
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")

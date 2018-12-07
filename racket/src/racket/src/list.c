@@ -776,7 +776,7 @@ scheme_init_list (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("ephemeron-value",
 			     scheme_make_immed_prim(ephemeron_value,
 						    "ephemeron-value",
-						    1, 2),
+						    1, 3),
 			     env);
   scheme_addto_prim_instance("ephemeron?",
 			     scheme_make_folding_prim(ephemeronp,
@@ -4063,6 +4063,10 @@ static Scheme_Object *make_ephemeron(int argc, Scheme_Object **argv)
 static Scheme_Object *ephemeron_value(int argc, Scheme_Object **argv)
 {
   Scheme_Object *v;
+
+  /* If there's an argv[2], it will stay live until here, since
+     there's no way for the GC to know that we're not using that
+     value. */
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_ephemeron_type))
     scheme_wrong_contract("ephemeron-value", "ephemeron?", 0, argc, argv);

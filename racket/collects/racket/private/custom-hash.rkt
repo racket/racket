@@ -176,10 +176,10 @@
      (hash-set! intern key (make-ephemeron key wrapped-key))
      wrapped-key]
     [else
-     (define wrapped-key (ephemeron-value e))
-     (or wrapped-key
-         ;; Ephemeron was just cleared; try again
-         (wrap-key spec key))]))
+     ;; Supplying `key` as the third argument to `ephemeron-value`
+     ;; ensures that the  value isn't lost between the time that
+     ;; we get the ephemeron and the time that we get the value:
+     (ephemeron-value e #f key)]))
 
 (define (hash-check-key who d key)
   (define spec (custom-hash-spec d))

@@ -177,7 +177,13 @@ the table refers back to its key, then the table will retain the value
 and therefore the key; the mapping will never be removed from the
 table even if the key becomes otherwise inaccessible. To avoid that
 problem, instead of mapping the key to the value, map the key to an
-@tech{ephemeron} that pairs the key and value.}
+@tech{ephemeron} that pairs the key and value. Beware further,
+however, that an ephemeron's value might be cleared between retrieving
+an ephemeron and extracting its value, depending on whether the key is
+otherwise reachable. For @racket[eq?]-based mappings, consider using
+the pattern @racket[(ephemeron-value _ephemeron #f _key)] to extract
+the value of @racket[_ephemeron] while ensuring that @racket[_key] is
+retained until the value is extracted.}
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
