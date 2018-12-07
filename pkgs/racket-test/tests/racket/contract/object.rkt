@@ -422,7 +422,8 @@
                   'pos 'neg))
       log)
 
-   '(c b a) '(c c b b a a))
+   '(c b a)
+   '(c c c c c c c c c c c b b b b b b b b b b b a a a a a a a a a a a))
 
   ;; this tests the situation where the double-wrapping avoidance
   ;; kicks in. The second part of the result, '(a b b a a), indicates
