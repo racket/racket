@@ -2345,7 +2345,7 @@ to determine if this is a contract that accepts only @racket[list?] values.
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
          #:changed "6.90.0.30" @list{Added the @racket[#:equivalent] argument.}
-         #:changed "7.1.0.2" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
+         #:changed "7.1.0.9" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
@@ -2428,7 +2428,7 @@ contracts.  The error messages assume that the function named by
  then this function uses the original projection for it and constructs a leaf
  as its collapsible representation.
   
- @history[#:added "7.1.0.2"]
+ @history[#:added "7.1.0.9"]
 }
 
 @defparam[skip-projection-wrapper? wrap? boolean? #:value #f]{
@@ -2464,7 +2464,7 @@ of the @tech{blame object} and the missing party should be used instead.
 Inserts a continuation mark that informs the contract profiler that the current contract
 is collapsible.
 
-@history[#:added "7.0.0.20"]
+@history[#:added "7.1.0.9"]
 }
 
 @defform[(contract-pos/neg-doubling e1 e2)]{
@@ -3010,7 +3010,7 @@ arguments as @racket[build-contract-property].  The differences are:
          @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
          #:changed "6.90.0.30"
          @list{Added the @racket[#:equivalent] argument.}
-         #:changed "7.1.0.2" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
+         #:changed "7.1.0.9" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @deftogether[(
