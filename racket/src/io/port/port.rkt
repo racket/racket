@@ -10,13 +10,17 @@
 (struct core-port (name      ; anything, reported as `object-name` for the port
                    data      ; anything, effectively a subtype indicator
 
-                   close     ; -> (void)
+                   ;; A "method" or "-*>" gets this value back as its
+                   ;; first argument:
+                   self      ; anything, passed to every method
+
+                   close     ; -*> (void)
                    ;;          Called in atomic mode.
 
-                   count-lines!  ; #f or procedure called in atomic mode
-                   get-location  ; #f or procedure called in atomic mode
-                   file-position ; #f, port, or procedure called in atomic mode
-                   buffer-mode   ; #f or procedure in atomic mode
+                   count-lines!  ; #f or method called in atomic mode
+                   get-location  ; #f or method called in atomic mode
+                   file-position ; #f, port, or method called in atomic mode
+                   buffer-mode   ; #f or method in atomic mode
 
                    closed        ; `closed-state`
 

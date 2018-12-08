@@ -37,15 +37,16 @@
        [(pipe-input-port? p) (->core-input-port p)]
        [(pipe-output-port? p) (->core-output-port p)]
        [else
-        (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)])))))
+        (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)])))
+   (core-port-self p)))
 
 (define pipe-write-position
   (case-lambda
-    [(p) ((pipe-data-write-position (core-port-data p)))]
-    [(p pos) ((pipe-data-write-position (core-port-data p)) pos)]))
+    [(p) ((pipe-data-write-position (core-port-data p)) (core-port-self p))]
+    [(p pos) ((pipe-data-write-position (core-port-data p)) (core-port-self p) pos)]))
 
 (define (pipe-discard-all p)
-  ((pipe-data-discard-all (core-port-data p))))
+  ((pipe-data-discard-all (core-port-data p)) (core-port-self p)))
 
 (define/who (make-pipe [limit #f] [input-name 'pipe] [output-name 'pipe])
   (check who #:or-false exact-positive-integer? limit)
@@ -70,18 +71,18 @@
   (define data
     (pipe-data
      ;; get-content-length
-     (lambda ()
+     (lambda (self)
        (atomically (content-length)))
      ;; write-position
      (case-lambda
-       [() (or write-pos end)]
-       [(pos)
+       [(self) (or write-pos end)]
+       [(self pos)
         ;; `pos` must be between `start` and `end`
         (if (fx= pos end)
             (set! write-pos #f)
             (set! write-pos pos))])
      ;; discard-all
-     (lambda ()
+     (lambda (self)
        (set! peeked-amt 0)
        (set! start 0)
        (set! end 0)
@@ -153,13 +154,14 @@
     (make-core-input-port
      #:name input-name
      #:data data
+     #:self #f
 
      #:prepare-change
-     (lambda ()
+     (lambda (self)
        (pause-waiting-commit))
      
      #:read-byte
-     (lambda ()
+     (lambda (self)
        (assert-atomic)
        (cond
          [(input-empty?)
@@ -181,7 +183,7 @@
           (bytes-ref bstr pos)]))
 
      #:read-in
-     (lambda (dest-bstr dest-start dest-end copy?)
+     (lambda (self dest-bstr dest-start dest-end copy?)
        (assert-atomic)
        (cond
          [(input-empty?)
@@ -210,7 +212,7 @@
             (progress!))]))
 
      #:peek-byte
-     (lambda ()
+     (lambda (self)
        (assert-atomic)
        (cond
          [(input-empty?)
@@ -222,7 +224,7 @@
           (bytes-ref bstr start)]))
      
      #:peek-in
-     (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
+     (lambda (self dest-bstr dest-start dest-end skip progress-evt copy?)
        (assert-atomic)
        (define content-amt (content-length))
        (cond
@@ -257,19 +259,19 @@
              amt])]))
 
      #:byte-ready
-     (lambda (work-done!)
+     (lambda (self work-done!)
        (assert-atomic)
        (or output-closed?
            (not (fx= 0 (content-length)))))
 
      #:close
-     (lambda ()
+     (lambda (self)
        (unless input-closed?
          (set! input-closed? #t)
          (progress!)))
 
      #:get-progress-evt
-     (lambda ()
+     (lambda (self)
        (atomically
         (cond
           [input-closed? always-evt]
@@ -281,7 +283,7 @@
      #:commit
      ;; Allows `amt` to be zero and #f for other arguments,
      ;; which is helpful for `open-input-peek-via-read`.
-     (lambda (amt progress-evt ext-evt finish)
+     (lambda (self amt progress-evt ext-evt finish)
        (assert-atomic)
        ;; `progress-evt` is a `semepahore-peek-evt`, and `ext-evt`
        ;; is constrained; we can send them over to different threads
@@ -318,12 +320,13 @@
     (make-core-output-port
      #:name output-name
      #:data data
+     #:self #f
 
      #:evt write-ready-evt
      
      #:write-out
      ;; in atomic mode
-     (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+     (lambda (self src-bstr src-start src-end nonblock? enable-break? copy?)
        (assert-atomic)
        (let try-again ()
          (define top-pos (if (fx= start 0)
@@ -413,12 +416,12 @@
             (maybe-grow)])))
 
      #:count-write-evt-via-write-out
-     (lambda (v bstr start)
+     (lambda (self v bstr start)
        (port-count! op v bstr start))
 
      #:close
      ;; in atomic mode
-     (lambda ()
+     (lambda (self)
        (unless output-closed?
          (set! output-closed? #t)
          (when write-ready-sema

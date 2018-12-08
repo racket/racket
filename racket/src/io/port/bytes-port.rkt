@@ -57,13 +57,14 @@
     (make-core-input-port
      #:name name
      #:data (input-bytes-data)
+     #:self #f
 
      #:prepare-change
-     (lambda ()
+     (lambda (self)
        (pause-waiting-commit))
 
      #:read-byte
-     (lambda ()
+     (lambda (self)
        (let ([pos i])
          (if (pos . < . len)
              (begin
@@ -73,7 +74,7 @@
              eof)))
      
      #:read-in
-     (lambda (dest-bstr start end copy?)
+     (lambda (self dest-bstr start end copy?)
        (define pos i)
        (cond
          [(pos . < . len)
@@ -85,14 +86,14 @@
          [else eof]))
      
      #:peek-byte
-     (lambda ()
+     (lambda (self)
        (let ([pos i])
          (if (pos . < . len)
              (bytes-ref bstr pos)
              eof)))
      
      #:peek-in
-     (lambda (dest-bstr start end skip progress-evt copy?)
+     (lambda (self dest-bstr start end skip progress-evt copy?)
        (define pos (+ i skip))
        (cond
          [(and progress-evt (sync/timeout 0 progress-evt))
@@ -104,22 +105,22 @@
          [else eof]))
 
      #:byte-ready
-     (lambda (work-done!)
+     (lambda (self work-done!)
        (i . < . len))
 
      #:close
-     (lambda ()
+     (lambda (self)
        (set! commit-manager #f) ; to indicate closed
        (progress!))
 
      #:get-progress-evt
-     (lambda ()
+     (lambda (self)
        (unless progress-sema
          (set! progress-sema (make-semaphore)))
        (semaphore-peek-evt progress-sema))
 
      #:commit
-     (lambda (amt progress-evt ext-evt finish)
+     (lambda (self amt progress-evt ext-evt finish)
        (unless commit-manager
          (set! commit-manager (make-commit-manager)))
        (commit-manager-wait
@@ -136,8 +137,8 @@
 
      #:file-position
      (case-lambda
-       [() (or alt-pos i)]
-       [(new-pos)
+       [(self) (or alt-pos i)]
+       [(self new-pos)
         (set! i (if (eof-object? new-pos)
                     len
                     (min len new-pos)))
@@ -161,16 +162,26 @@
     (make-core-output-port
      #:name name
      #:data (output-bytes-data i (lambda () (pipe-discard-all i)))
+     #:self o
      #:evt o
-     #:write-out (core-output-port-write-out o)
-     #:close (core-port-close o)
-     #:get-write-evt (core-output-port-get-write-evt o)
-     #:get-location (core-port-get-location o)
-     #:count-lines! (core-port-count-lines! o)
+     #:write-out o
+     #:close
+     (lambda (o) ((core-port-close o) (core-port-self o)))
+     #:get-write-evt
+     (and (core-output-port-get-write-evt o)
+          (lambda (o bstr start-k end-k)
+            ((core-output-port-get-write-evt o) (core-port-self o) bstr start-k end-k)))
+     #:get-location
+     (and (core-port-get-location o)
+          (lambda (o) ((core-port-get-location o) (core-port-self o))))
+     #:count-lines!
+     (and (core-port-count-lines! o)
+          (lambda (o)
+            ((core-port-count-lines! o) (core-port-self o))))
      #:file-position
      (case-lambda
-       [() (pipe-write-position o)]
-       [(new-pos)
+       [(o) (pipe-write-position o)]
+       [(o new-pos)
         (define len (pipe-content-length i))
         (cond
           [(eof-object? new-pos)
@@ -185,7 +196,7 @@
                                     "position" new-pos))
            (pipe-write-position o len)
            (define amt (- new-pos len))
-           ((core-output-port-write-out o) (make-bytes amt 0) 0 amt #f #f #f)
+           ((core-output-port-write-out o) (core-port-self o) (make-bytes amt 0) 0 amt #f #f #f)
            (void)]
           [else
            (pipe-write-position o new-pos)])])))

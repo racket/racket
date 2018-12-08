@@ -69,9 +69,10 @@
     (open-input-peek-via-read
      #:name name
      #:data (fd-data fd extra-data #t file-stream?)
+     #:self #f
      #:read-in
      ;; in atomic mode
-     (lambda (dest-bstr start end copy?)
+     (lambda (self dest-bstr start end copy?)
        (define n (rktio_read_in rktio fd dest-bstr start end))
        (cond
          [(rktio-error? n)
@@ -86,7 +87,7 @@
      #:read-is-atomic? #t
      #:close
      ;; in atomic mode
-     (lambda ()
+     (lambda (self)
        (on-close)
        (fd-close fd fd-refcount)
        (unsafe-custodian-unregister fd custodian-reference))
@@ -178,6 +179,7 @@
   (define port
     (make-core-output-port
      #:name name
+     #:self #f
      #:data (fd-output-data fd extra-data #f file-stream?
                             ;; Flush function needed for `file-truncate`:
                             (lambda ()
@@ -188,7 +190,7 @@
      
      #:write-out
      ;; in atomic mode
-     (lambda (src-bstr src-start src-end nonbuffer/nonblock? enable-break? copy?)
+     (lambda (self src-bstr src-start src-end nonbuffer/nonblock? enable-break? copy?)
        (cond
          [(= src-start src-end)
           ;; Flush request
@@ -218,12 +220,12 @@
             [else n])]))
 
      #:count-write-evt-via-write-out
-     (lambda (v bstr start)
+     (lambda (self v bstr start)
        (port-count! port v bstr start))
 
      #:close
      ;; in atomic mode
-     (lambda ()
+     (lambda (self)
        (flush-buffer-fully #f) ; can temporarily leave atomic mode
        (when buffer ; <- in case a concurrent close succeeded
          (on-close)
@@ -282,7 +284,7 @@
 (define (make-file-position fd buffer-control)
   ;; in atomic mode
   (case-lambda
-    [()
+    [(self)
      (define ppos (rktio_get_file_position rktio fd))
      (cond
        [(rktio-error? ppos)
@@ -292,7 +294,7 @@
         (define pos (rktio_filesize_ref ppos))
         (rktio_free ppos)
         (buffer-control pos)])]
-    [(pos)
+    [(self pos)
      (buffer-control)
      (define r
        (rktio_set_file_position rktio

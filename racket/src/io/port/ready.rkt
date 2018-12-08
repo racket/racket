@@ -21,7 +21,7 @@
        (start-atomic)
        (prepare-change in)
        (check-not-closed who in)
-       (define r (byte-ready void))
+       (define r (byte-ready (core-port-self in) void))
        (end-atomic)
        (eq? #t r)])))
 
@@ -31,7 +31,7 @@
     (cond
       [(byte-ready? in)
        (define peek-byte (core-input-port-peek-byte in))
-       (define b (and peek-byte (atomically (peek-byte))))
+       (define b (and peek-byte (atomically (peek-byte (core-port-self in)))))
        (cond
          [(and b
                (or (eof-object? b)
