@@ -132,7 +132,7 @@
           (wrap-check-write-evt-result '|user port write| r start end non-block/buffer?)]
          [else r])]))
 
-  (define (get-write-evt self bstr start end)
+  (define (get-write-evt self orig-out bstr start end)
     (end-atomic)
     (define r (user-get-write-evt bstr start end))
     (unless (evt? r)

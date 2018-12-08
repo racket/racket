@@ -154,14 +154,18 @@
 
 ;; ----------------------------------------
 
-(struct output-bytes-data (i reset))
+(struct output-bytes-data (o get))
 
 (define (open-output-bytes [name 'string])
-  (define-values (i o) (make-pipe))
+  (define-values (i/none o) (make-pipe-ends #:need-input? #f))
   (define p
     (make-core-output-port
      #:name name
-     #:data (output-bytes-data i (lambda () (pipe-discard-all i)))
+     #:data (output-bytes-data o (lambda (o bstr start-pos discard?)
+                                   ;; in atomic mode
+                                   (pipe-get-content o bstr start-pos)
+                                   (when discard?
+                                     (pipe-discard-all o))))
      #:self o
      #:evt o
      #:write-out o
@@ -169,8 +173,8 @@
      (lambda (o) ((core-port-close o) (core-port-self o)))
      #:get-write-evt
      (and (core-output-port-get-write-evt o)
-          (lambda (o bstr start-k end-k)
-            ((core-output-port-get-write-evt o) (core-port-self o) bstr start-k end-k)))
+          (lambda (o orig-o bstr start-k end-k)
+            ((core-output-port-get-write-evt o) (core-port-self o) o bstr start-k end-k)))
      #:get-location
      (and (core-port-get-location o)
           (lambda (o) ((core-port-get-location o) (core-port-self o))))
@@ -182,7 +186,7 @@
      (case-lambda
        [(o) (pipe-write-position o)]
        [(o new-pos)
-        (define len (pipe-content-length i))
+        (define len (pipe-content-length o))
         (cond
           [(eof-object? new-pos)
            (pipe-write-position o len)]
@@ -201,6 +205,7 @@
           [else
            (pipe-write-position o new-pos)])])))
   (when (port-count-lines-enabled)
+    (port-count-lines! o)
     (port-count-lines! p))
   p)
 
@@ -210,19 +215,21 @@
          o)
   (check who exact-nonnegative-integer? start-pos)
   (check who exact-nonnegative-integer? #:or-false end-pos)
-  (let ([o (->core-output-port o)])
-    (define i (output-bytes-data-i (core-port-data o)))
-    (define len (pipe-content-length i))
+  (let ([bstr-o (->core-output-port o)])
+    (define o (output-bytes-data-o (core-port-data bstr-o)))
+    (start-atomic)
+    (define len (pipe-content-length o))
     (when (start-pos . > . len)
+      (end-atomic)
       (raise-range-error who "port content" "starting " start-pos o 0 len #f))
     (when end-pos
       (unless (<= start-pos end-pos len)
+        (end-atomic)
         (raise-range-error who "port content" "ending " end-pos o 0 len start-pos)))
     (define amt (- (min len (or end-pos len)) start-pos))
     (define bstr (make-bytes amt))
-    (peek-bytes! bstr start-pos i)
-    (when reset?
-      ((output-bytes-data-reset (core-port-data o))))
+    ((output-bytes-data-get (core-port-data bstr-o)) o bstr start-pos reset?)
+    (end-atomic)
     bstr))
 
 ;; ----------------------------------------

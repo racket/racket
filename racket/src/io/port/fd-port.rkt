@@ -220,7 +220,7 @@
             [else n])]))
 
      #:count-write-evt-via-write-out
-     (lambda (self v bstr start)
+     (lambda (self port v bstr start)
        (port-count! port v bstr start))
 
      #:close

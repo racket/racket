@@ -70,8 +70,10 @@
    write-out-special ; (any no-block/buffer? enable-break? -*> boolean?)
    ;;          Called in atomic mode.
 
-   get-write-evt ; (bstr start-k end-k -*> evt?)
+   get-write-evt ; (port bstr start-k end-k -*> evt?)
    ;;            Called in atomic mode.
+   ;;            Note the extra "self" argument as a port, which is useful
+   ;;            for implementing `count-write-evt-via-write-out`.
    ;;            The given bstr should not be exposed to untrusted code.
 
    get-write-special-evt ; (-*> evt?)
@@ -142,11 +144,11 @@
                         (and count-write-evt-via-write-out
                              ;; If `write-out` is always atomic (in no-block, no-buffer mode),
                              ;; then an event can poll `write-out`:
-                             (lambda (self src-bstr src-start src-end)
+                             (lambda (self o src-bstr src-start src-end)
                                (write-evt
                                 ;; in atomic mode:
                                 (lambda (self-evt)
-                                  (define v (write-out self src-bstr src-start src-end #f #f #t))
+                                  (define v (write-out self o src-bstr src-start src-end #f #f #t))
                                   (when (exact-integer? v)
                                     (count-write-evt-via-write-out self v src-bstr src-start))
                                   (if (evt? v)
