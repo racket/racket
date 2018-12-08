@@ -248,7 +248,7 @@
               (cond [(equal? m #"\"") (read-string)]
                     [(equal? m #"[")  (read-list 'array #rx#"^\\]" read-json)]
                     [(equal? m #"{")  (read-hash)])))]
-      [else (err "bad input")]))
+      [else (err (format "bad input~n ~e" (peek-bytes (sub1 (error-print-width)) 0 i)))]))
   ;;
   (read-json #t))
 
