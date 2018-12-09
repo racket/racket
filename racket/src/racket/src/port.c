@@ -4202,6 +4202,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
     return scheme_void;
   } else {
     mzlonglong pll;
+    int already_ungot = 0;
     if (f) {
       pll = BIG_OFF_T_IZE(ftello)(f);
     } else if (fd) {
@@ -4210,6 +4211,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
       sz = rktio_get_file_position(scheme_rktio, fd);
       if (!sz) {
         pll = do_tell(argv[0], 0);
+        already_ungot = 1;
       } else {
         pll = *sz;
         free(sz);
@@ -4247,7 +4249,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
     }
 
     /* Back up for un-gotten & peeked chars: */
-    if (SCHEME_INPUT_PORTP(argv[0])) {
+    if (!already_ungot && SCHEME_INPUT_PORTP(argv[0])) {
       Scheme_Input_Port *ip;
       ip = scheme_input_port_record(argv[0]);
       pll -= ip->ungotten_count;
