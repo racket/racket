@@ -1133,7 +1133,7 @@
                                   (and pre-cont?
                                        (lambda (val idx) (pre-cont? val)))
                                   (and post-cont?
-                                       (lambda (pos val idx) (post-cont? pos val))))))))
+                                       (lambda (pos val idx) (post-cont? (car pos) val))))))))
 
   (define (in-value v)
     (make-do-sequence (lambda ()

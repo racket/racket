@@ -98,6 +98,23 @@
 
 (test-sequence [(a b c) (0 1 2)] (in-indexed '(a b c)))
 
+;; Make sure `in-indexed` doesn't provide a bad position to the underlying
+;; sequence
+(let ()
+  (define pre-poss '())
+  (define post-poss '())
+  (define naturals-sequence
+    (make-do-sequence (thunk (values identity
+                                     add1
+                                     1
+                                     (lambda (pos) (set! pre-poss (cons pos pre-poss)) #t)
+                                     #f
+                                     (lambda (pos val) (set! post-poss (cons pos post-poss)) #t)))))
+  (let-values (((next? next) (sequence-generate (in-indexed naturals-sequence))))
+    (for ((n 3)) (next)))
+  (test '(3 2 1) values pre-poss)
+  (test '(2 1) values post-poss))
+
 (let ()
   (define (counter) (define n 0) (lambda ([d 1]) (set! n (+ d n)) n))
   (test-sequence [(1 2 3 4)] (for/list ([x (in-producer (counter))] [y (in-range 4)]) x))
