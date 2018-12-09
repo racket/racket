@@ -195,7 +195,19 @@
        (stack-info-forget! stk-i stack-depth pos len)
        (define new-rhss (list->vector
                          (compile-list rhss env stack-depth stk-i #f)))
-       (vector 'let pos new-rhss new-body)]
+       (or
+        ;; Merge nested `let`s into a `let*` to reduce vector nesting
+        (cond
+          [(vector? new-body)
+           (interp-match
+            new-body
+            [#(let ,pos2 ,rhss2 ,b)
+             (vector 'let* (list pos pos2) (list new-rhss rhss2) b)]
+            [#(let* ,poss ,rhsss ,b)
+             (vector 'let* (cons pos poss) (cons new-rhss rhsss) b)]
+            [#() #f])]
+          [else #f])
+        (vector 'let pos new-rhss new-body))]
       [`(letrec . ,_) (compile-letrec e env stack-depth stk-i tail?)]
       [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail?)]
       [`(begin . ,vs)
@@ -522,6 +534,18 @@
                [else
                 (define-values (new-stack val) (interpret (vector*-ref rhss i) stack))
                 (stack-set (loop (fx+ i 1) new-stack) (fx+ i pos) val)])))
+         (interpret b body-stack tail?)]
+        [#(let* ,poss ,rhsss ,b)
+         (define body-stack
+           (for/fold ([stack stack]) ([pos (in-list poss)]
+                                      [rhss (in-list rhsss)])
+             (define len (vector*-length rhss))
+             (let loop ([i 0] [stack stack])
+               (cond
+                 [(fx= i len) stack]
+                 [else
+                  (define-values (new-stack val) (interpret (vector*-ref rhss i) stack))
+                  (stack-set (loop (fx+ i 1) new-stack) (fx+ i pos) val)]))))
          (interpret b body-stack tail?)]
         [#(letrec ,pos ,rhss ,b)
          (define len (vector*-length rhss))
