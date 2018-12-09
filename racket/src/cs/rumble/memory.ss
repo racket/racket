@@ -254,6 +254,8 @@
        (lambda (o) (eq? o v)))]
     [(eq? 'code (car args))
      #%$code?]
+    [(eq? 'procedure (car args))
+     #%procedure?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
     [(symbol? (car args))

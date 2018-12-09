@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../common/fixnum.rkt"
+         "../common/object.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -19,6 +20,12 @@
 
 (define/who (open-input-bytes bstr [name 'string])
   (check who bytes? bstr)
+  (define p (make-input-bytes (bytes->immutable-bytes bstr) name))
+  (when (port-count-lines-enabled)
+    (port-count-lines! p))
+  p)
+
+(define-constructor (make-input-bytes bstr name)
   (define-fixnum i 0)
   (define alt-pos #f)
   (define len (bytes-length bstr))
@@ -53,111 +60,116 @@
          (set! commit-manager (make-commit-manager)))
        (commit-manager-wait commit-manager progress-evt ext-evt finish)]))
 
-  (define p
-    (make-core-input-port
-     #:name name
-     #:data (input-bytes-data)
-     #:self #f
+  (make-core-input-port
+   #:name name
+   #:data (input-bytes-data)
+   #:self self
 
-     #:prepare-change
-     (lambda (self)
-       (pause-waiting-commit))
+   #:prepare-change
+   (method
+    (lambda ()
+      (pause-waiting-commit)))
 
-     #:read-byte
-     (lambda (self)
-       (let ([pos i])
-         (if (pos . < . len)
-             (begin
-               (set! i (add1 pos))
-               (progress!)
-               (bytes-ref bstr pos))
-             eof)))
-     
-     #:read-in
-     (lambda (self dest-bstr start end copy?)
-       (define pos i)
-       (cond
-         [(pos . < . len)
-          (define amt (min (- end start) (- len pos)))
-          (set! i (+ pos amt))
-          (bytes-copy! dest-bstr start bstr pos (+ pos amt))
-          (progress!)
-          amt]
-         [else eof]))
-     
-     #:peek-byte
-     (lambda (self)
-       (let ([pos i])
-         (if (pos . < . len)
-             (bytes-ref bstr pos)
-             eof)))
-     
-     #:peek-in
-     (lambda (self dest-bstr start end skip progress-evt copy?)
-       (define pos (+ i skip))
-       (cond
-         [(and progress-evt (sync/timeout 0 progress-evt))
-          #f]
-         [(pos . < . len)
-          (define amt (min (- end start) (- len pos)))
-          (bytes-copy! dest-bstr start bstr pos (+ pos amt))
-          amt]
-         [else eof]))
+   #:read-byte
+   (method
+    (lambda ()
+      (let ([pos i])
+        (if (pos . < . len)
+            (begin
+              (set! i (add1 pos))
+              (progress!)
+              (bytes-ref bstr pos))
+            eof))))
 
-     #:byte-ready
-     (lambda (self work-done!)
-       (i . < . len))
+   #:read-in
+   (method
+    (lambda (dest-bstr start end copy?)
+      (define pos i)
+      (cond
+        [(pos . < . len)
+         (define amt (min (- end start) (- len pos)))
+         (set! i (+ pos amt))
+         (bytes-copy! dest-bstr start bstr pos (+ pos amt))
+         (progress!)
+         amt]
+        [else eof])))
 
-     #:close
-     (lambda (self)
-       (set! commit-manager #f) ; to indicate closed
-       (progress!))
+   #:peek-byte
+   (method
+    (lambda ()
+      (let ([pos i])
+        (if (pos . < . len)
+            (bytes-ref bstr pos)
+            eof))))
 
-     #:get-progress-evt
-     (lambda (self)
-       (unless progress-sema
-         (set! progress-sema (make-semaphore)))
-       (semaphore-peek-evt progress-sema))
+   #:peek-in
+   (method
+    (lambda (dest-bstr start end skip progress-evt copy?)
+      (define pos (+ i skip))
+      (cond
+        [(and progress-evt (sync/timeout 0 progress-evt))
+         #f]
+        [(pos . < . len)
+         (define amt (min (- end start) (- len pos)))
+         (bytes-copy! dest-bstr start bstr pos (+ pos amt))
+         amt]
+        [else eof])))
 
-     #:commit
-     (lambda (self amt progress-evt ext-evt finish)
-       (unless commit-manager
-         (set! commit-manager (make-commit-manager)))
-       (commit-manager-wait
-        commit-manager
-        progress-evt ext-evt
-        ;; in atomic mode, maybe in a different thread:
-        (lambda ()
-          (let ([amt (min amt (- len i))])
-            (define dest-bstr (make-bytes amt))
-            (bytes-copy! dest-bstr 0 bstr i (+ i amt))
-            (set! i (+ i amt))
-            (progress!)
-            (finish dest-bstr)))))
+   #:byte-ready
+   (method
+    (lambda (work-done!)
+      (i . < . len)))
 
-     #:file-position
-     (case-lambda
-       [(self) (or alt-pos i)]
-       [(self new-pos)
-        (set! i (if (eof-object? new-pos)
-                    len
-                    (min len new-pos)))
-        (set! alt-pos
-              (and new-pos
-                   (not (eof-object? new-pos))
-                   (new-pos . > . i)
-                   new-pos))])))
+   #:close
+   (method
+    (lambda ()
+      (set! commit-manager #f) ; to indicate closed
+      (progress!)))
 
-  (when (port-count-lines-enabled)
-    (port-count-lines! p))
-  p)
+   #:get-progress-evt
+   (method
+    (lambda ()
+      (unless progress-sema
+        (set! progress-sema (make-semaphore)))
+      (semaphore-peek-evt progress-sema)))
+
+   #:commit
+   (method
+    (lambda (amt progress-evt ext-evt finish)
+      (unless commit-manager
+        (set! commit-manager (make-commit-manager)))
+      (commit-manager-wait
+       commit-manager
+       progress-evt ext-evt
+       ;; in atomic mode, maybe in a different thread:
+       (lambda ()
+         (let ([amt (min amt (- len i))])
+           (define dest-bstr (make-bytes amt))
+           (bytes-copy! dest-bstr 0 bstr i (+ i amt))
+           (set! i (+ i amt))
+           (progress!)
+           (finish dest-bstr))))))
+
+   #:file-position
+   (method
+    (case-lambda
+      [() (or alt-pos i)]
+      [(new-pos)
+       (set! i (if (eof-object? new-pos)
+                   len
+                   (min len new-pos)))
+       (set! alt-pos
+             (and new-pos
+                  (not (eof-object? new-pos))
+                  (new-pos . > . i)
+                  new-pos))]))))
 
 ;; ----------------------------------------
 
 (struct output-bytes-data (o get))
 
 (define (open-output-bytes [name 'string])
-  (define-values (i/none o) (make-pipe-ends #:need-input? #f))
+  (define-values (i/none o) (make-pipe-ends #f name name #:need-input? #f))
   (define p
     (make-core-output-port
      #:name name
@@ -196,7 +208,7 @@
              (end-atomic)
              (raise-arguments-error 'file-position
                                     "new position is too large"
-                                    "port" p
+                                    "port" o
                                     "position" new-pos))
            (pipe-write-position o len)
            (define amt (- new-pos len))

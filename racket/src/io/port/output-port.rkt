@@ -148,9 +148,9 @@
                                (write-evt
                                 ;; in atomic mode:
                                 (lambda (self-evt)
-                                  (define v (write-out self o src-bstr src-start src-end #f #f #t))
+                                  (define v (write-out self src-bstr src-start src-end #f #f #t))
                                   (when (exact-integer? v)
-                                    (count-write-evt-via-write-out self v src-bstr src-start))
+                                    (count-write-evt-via-write-out self o v src-bstr src-start))
                                   (if (evt? v)
                                       (values #f (replace-evt v self-evt))
                                       (values (list v) #f)))))))

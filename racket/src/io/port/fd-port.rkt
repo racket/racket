@@ -247,8 +247,8 @@
                         [(pos)
                          (+ pos (- buffer-end buffer-start))]))
      #:buffer-mode (case-lambda
-                     [() buffer-mode]
-                     [(mode) (set! buffer-mode mode)])))
+                     [(self) buffer-mode]
+                     [(self mode) (set! buffer-mode mode)])))
 
   (define custodian-reference
     (register-fd-close cust fd fd-refcount flush-handle port))
