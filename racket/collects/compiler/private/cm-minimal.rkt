@@ -447,7 +447,16 @@
                                          ;; Propagate everything else:
                                          'debug))
   (define receiver (make-log-receiver accomplice-logger 'info 'cm-accomplice))
-  
+
+  (define dest-roots (list (car roots)))
+  (define-values (code-dir code-name)
+    (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots dest-roots))
+  (define zo-name
+    ;; If we have multiple roots, make sure that compilation uses the first one
+    (if (or (pair? (cdr roots)) (not orig-zo-name))
+        (build-path code-dir (path-add-suffix code-name #".zo"))
+        orig-zo-name))
+
   ;; Compile the code:
   (define code
     (parameterize ([current-reader-guard
@@ -482,6 +491,11 @@
         managed-compiled-context-key
         path
         (cond
+          [(and (equal? recompile-from zo-name)
+                (not (current-compile-target-machine)))
+           ;; We don't actually need to do anything, so
+           ;; avoid updating the file
+           #f]
           [recompile-from
            (recompile-module-code recompile-from
                                   path
@@ -493,29 +507,22 @@
                             #:extension-handler (lambda (a b) #f)
                             #:roots (list (car roots))
                             #:source-reader read-src-syntax)]))))
-  (define dest-roots (list (car roots)))
-  (define-values (code-dir code-name)
-    (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots dest-roots))
-  (define zo-name
-    ;; If we have multiple roots, make sure that compilation uses the first one
-    (if (or (pair? (cdr roots)) (not orig-zo-name))
-        (build-path code-dir (path-add-suffix code-name #".zo"))
-        orig-zo-name))
 
   ;; Get all accomplice data:
-  (let loop ()
-    (let ([l (sync/timeout 0 receiver)])
-      (when l
-        (when (and (eq? (vector-ref l 0) 'info)
-                   (file-dependency? (vector-ref l 2))
-                   (path? (file-dependency-path (vector-ref l 2))))
-          (external-dep! (file-dependency-path (vector-ref l 2))
-                         (file-dependency-module? (vector-ref l 2))
-                         (and (file-dependency/options? (vector-ref l 2))
-                              (hash-ref (file-dependency/options-table (vector-ref l 2))
-                                        'indirect
-                                        #f))))
-        (loop))))
+  (when code
+    (let loop ()
+      (let ([l (sync/timeout 0 receiver)])
+        (when l
+          (when (and (eq? (vector-ref l 0) 'info)
+                     (file-dependency? (vector-ref l 2))
+                     (path? (file-dependency-path (vector-ref l 2))))
+            (external-dep! (file-dependency-path (vector-ref l 2))
+                           (file-dependency-module? (vector-ref l 2))
+                           (and (file-dependency/options? (vector-ref l 2))
+                                (hash-ref (file-dependency/options-table (vector-ref l 2))
+                                          'indirect
+                                          #f))))
+          (loop)))))
 
   ;; Write the code and dependencies:
   (when code
