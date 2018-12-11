@@ -1388,6 +1388,41 @@
 (err/rt-test (srcloc->string 1))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a module load triggered by `#lang` or `#reader` is in
+;; a root namespace, including the call to the loaded function
+
+(module provides-a-reader-to-check-phase racket/base
+  (provide read read-syntax)
+
+  (define (check)
+    (unless (zero? (namespace-base-phase (current-namespace)))
+      (error "reader callback with current namespace at the wrong phase:"
+             (namespace-base-phase (current-namespace)))))
+
+  (check)
+
+  (define (read . args) (check) 'ok)
+  (define (read-syntax . args) (check) #''ok))
+
+;; Check in top level:
+(test 'ok
+      'reader-module-phase
+      (let-syntax ([anything
+                    (lambda (stx)
+                      (parameterize ([read-accept-reader #t])
+                        (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
+        (anything)))
+
+;; Check module:
+(module m racket/base
+  (require (for-syntax racket/base))
+  (let-syntax ([anything
+                (lambda (stx)
+                  (parameterize ([read-accept-reader #t])
+                    (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
+    (anything)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

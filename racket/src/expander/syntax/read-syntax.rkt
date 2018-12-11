@@ -75,7 +75,8 @@
               #:readtable readtable
               #:local-graph? local-graph?
               #:read-compiled read-linklet-bundle-or-directory
-              #:dynamic-require dynamic-require-reader
+              #:call-with-root-namespace call-with-root-namespace
+              #:dynamic-require dynamic-require
               #:module-declared? read-module-declared?
               #:coerce read-coerce
               #:coerce-key read-coerce-key)))
@@ -85,7 +86,8 @@
                       #:for-syntax? #t
                       #:wrap read-to-syntax
                       #:read-compiled read-linklet-bundle-or-directory
-                      #:dynamic-require dynamic-require-reader
+                      #:call-with-root-namespace call-with-root-namespace
+                      #:dynamic-require dynamic-require
                       #:module-declared? read-module-declared?
                       #:coerce read-coerce
                       #:coerce-key read-coerce-key))
@@ -162,11 +164,10 @@
 
 ;; ----------------------------------------
 
-(define (dynamic-require-reader mod-path sym [fail-thunk default-dynamic-require-fail-thunk])
+(define (call-with-root-namespace thunk)
   (define root-ns (namespace-root-namespace (current-namespace)))
   (if root-ns
       ;; Switch to the root namespace:
       (parameterize ([current-namespace root-ns])
-        (dynamic-require mod-path sym fail-thunk))
-      ;; Current namespace is a root namespace:
-      (dynamic-require mod-path sym fail-thunk)))
+        (thunk))
+      (thunk)))

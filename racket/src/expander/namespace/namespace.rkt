@@ -147,7 +147,9 @@
 (define (namespace->namespace-at-phase ns phase)
   (or (small-hash-ref (namespace-phase-to-namespace ns) phase #f)
       (let ([p-ns (struct-copy namespace ns
-                               [phase phase])])
+                               [phase phase]
+                               [root-namespace (or (namespace-root-namespace ns)
+                                                   ns)])])
         (small-hash-set! (namespace-phase-to-namespace ns) phase p-ns)
         p-ns)))
 
