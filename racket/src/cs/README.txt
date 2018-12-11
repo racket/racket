@@ -198,7 +198,7 @@ Structure
 
 The Racket-on-Chez implementation is in layers. The immediate layer
 over Chez Scheme is called "Rumble", and it implements delimited
-continuations, structures, chaperones and imperaontors, engines (for
+continuations, structures, chaperones and impersonators, engines (for                                          
 threads), and similar base functionality. The Rumble layer is
 implemented in Chez Scheme.
 
