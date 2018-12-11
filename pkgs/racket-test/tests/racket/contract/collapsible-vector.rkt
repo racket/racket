@@ -3,7 +3,8 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
-                 'racket/contract)])
+                 'racket/contract
+                 'racket/contract/collapsible)])
 
   (contract-eval
    '(define (add-many-contracts n ctc val [pos 'pos] [neg 'neg])

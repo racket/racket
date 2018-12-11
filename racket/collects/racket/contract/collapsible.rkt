@@ -1,6 +1,10 @@
 #lang racket/base
 (require "private/collapsible-common.rkt"
-         (submod "private/collapsible-common.rkt" properties))
+         (submod "private/collapsible-common.rkt" properties)
+         (only-in "private/guts.rkt"
+                  get/build-collapsible-late-neg-projection
+                  collapsible-contract-continuation-mark-key
+                  with-collapsible-contract-continuation-mark))
 
 (provide 
  ;; collapsible functions and structures
@@ -18,4 +22,7 @@
  collapsible-guard
  impersonator-prop:collapsible
  has-impersonator-prop:collapsible?
- get-impersonator-prop:collapsible)
+ get-impersonator-prop:collapsible
+ get/build-collapsible-late-neg-projection
+ collapsible-contract-continuation-mark-key
+ with-collapsible-contract-continuation-mark)

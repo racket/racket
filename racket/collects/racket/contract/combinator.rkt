@@ -6,8 +6,7 @@
                                make-chaperone-contract
                                make-flat-contract))
          "private/guts.rkt"
-         "private/blame.rkt"
-         "private/collapsible-common.rkt")
+         "private/blame.rkt")
 
 (provide 
  prop:contract
@@ -75,9 +74,7 @@
  
  contract-continuation-mark-key
  with-contract-continuation-mark
- collapsible-contract-continuation-mark-key
- with-collapsible-contract-continuation-mark
- 
+
  (struct-out wrapped-extra-arg-arrow)
  contract-custom-write-property-proc
  (rename-out [contract-custom-write-property-proc custom-write-property-proc])

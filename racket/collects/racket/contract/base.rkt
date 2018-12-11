@@ -122,7 +122,6 @@
  has-blame?
  value-blame
  contract-continuation-mark-key
- collapsible-contract-continuation-mark-key
  list-contract?
   
  ;; from private/case-arrow.rkt
@@ -141,7 +140,6 @@
  contract-projection
  contract-val-first-projection
  get/build-late-neg-projection
- get/build-collapsible-late-neg-projection
  get/build-val-first-projection
 
  suggest/c

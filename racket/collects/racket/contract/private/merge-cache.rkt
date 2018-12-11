@@ -4,16 +4,7 @@
 
 (require (for-syntax racket/base))
 
-;; How to evict things from the cache after some length of time ...
-;; Which functions are safe to put in the cache?
-;; known-good-contract?
-;; log all the predicates used in the benchmark
-;; TODO: use a thread cell here ...
-
 ;; weak hashtable never cleared
-;; if reach a threshold, throw away and start over
-;; limit cache size to 10, and use some LRU policy (sort ...) (priority queue)
-;; make define/merged-cache form to define caches in  the 3 places .. 
 (define MERGE-CACHE (make-thread-cell (make-weak-hasheq)))
 
 (require (for-syntax racket/base))

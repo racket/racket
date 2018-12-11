@@ -2420,17 +2420,6 @@ contracts.  The error messages assume that the function named by
  @history[#:added "6.2.900.11"]
 }
 
-@defproc[(get/build-collapsible-late-neg-projection [c contract?])
-         (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))]{
- Returns the @racket[_collapsible-late-neg] projection for @racket[c].
-              
- If @racket[c] does not have a @racket[_collapsible-late-neg] projection,
- then this function uses the original projection for it and constructs a leaf
- as its collapsible representation.
-  
- @history[#:added "7.1.0.9"]
-}
-
 @defparam[skip-projection-wrapper? wrap? boolean? #:value #f]{
  The functions @racket[make-chaperone-contract] and 
  @racket[build-chaperone-contract-property] wrap their
@@ -2458,13 +2447,6 @@ form. Otherwise (e.g., in the case of @racket[_late-neg] projections), a pair
 of the @tech{blame object} and the missing party should be used instead.
 
 @history[#:added "6.4.0.4"]
-}
-
-@defform[(with-collapsible-contract-continuation-mark body ...)]{
-Inserts a continuation mark that informs the contract profiler that the current contract
-is collapsible.
-
-@history[#:added "7.1.0.9"]
 }
 
 @defform[(contract-pos/neg-doubling e1 e2)]{
@@ -3418,13 +3400,6 @@ currently being checked.
 @history[#:added "6.4.0.4"]
 }
 
-@defthing[collapsible-contract-continuation-mark-key continuation-mark-key?]{
-Key used by continuation marks that are present during collapsible contract checking.
-The value of these marks are @racket[#t] if the current contract is collapsible.
-
-@history[#:added "6.9.0.2"]
-}
-
 @defproc[(contract-custom-write-property-proc [c contract?] 
                                               [p output-port?]
                                               [mode (or/c #f #t 0 1)])
@@ -3534,22 +3509,37 @@ parts of the contract system.
 @section[#:tag "collapsible"]{Collapsible Contracts}
 @defmodule*/no-declare[(racket/contract/collapsible)]
 @declare-exporting-ctc[racket/contract/collapsible]
+@history[#:added "7.1.0.9"]
 
-@;{
- prop:collapsible-contract
- collapsible-contract?
- merge
- collapsible-guard
- build-collapsible-contract-property
- (struct-out collapsible-ho/c)
- (struct-out collapsible-leaf/c)
-  build-collapsible-leaf
- impersonator-prop:collapsible
- has-impersonator-prop:collapsible?
- get-impersonator-prop:collapsible
- (struct-out collapsible-property)
- (struct-out collapsible-count-property)
- (struct-out collapsible-wrapper-property)
+@deftech{Collapsible contracts} are an optimization in the contract system designed
+to avoid a particular pathological build up of contract wrappers on higher-order
+values. The @racket[vectorof], @racket[vector/c], and @racket[->] contract
+combinators support collapsing for vector contracts and function contracts for
+functions returning a single value.
+
+@bold{Warning}: the features described in this section are experimental
+and may not be sufficient to implement new collapsible contracts. Implementing
+new collapsible contracts requires the use of unsafe chaperones and impersonators
+which are only supported for vector and procedure values. This documentation exists
+primarily to allow future maintenance of the @racket[racket/contract/collapsible] library/
+
+@defproc[(get/build-collapsible-late-neg-projection [c contract?])
+         (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))]{
+ Returns the @racket[_collapsible-late-neg] projection for @racket[c].
+
+ If @racket[c] does not have a @racket[_collapsible-late-neg] projection,
+ then this function uses the original projection for it and constructs a leaf
+ as its collapsible representation.
+}
+
+@defthing[collapsible-contract-continuation-mark-key continuation-mark-key?]{
+Key used by continuation marks that are present during collapsible contract checking.
+The value of these marks are @racket[#t] if the current contract is collapsible.
+}
+
+@defform[(with-collapsible-contract-continuation-mark body ...)]{
+Inserts a continuation mark that informs the contract profiler that the current contract
+is collapsible.
 }
 
 @defthing[prop:collapsible-contract struct-type-property?]{

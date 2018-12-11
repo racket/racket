@@ -138,4 +138,5 @@
       ;; with the old implementation it is more like 20 seconds
       ;; on my laptop and about .3 seconds with the new one
       (< (- cpu gc) 5000))
-   #t))
+   #t
+   do-not-double-wrap))
