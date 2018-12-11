@@ -47,6 +47,10 @@ SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 CPUS = 
 
+.PHONY: all-in-place
+all-in-place: in-place cs-in-place
+	echo DONE
+
 in-place:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-in-place PKGS="$(PKGS)" ; \
