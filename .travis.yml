@@ -29,11 +29,13 @@ matrix:
   - os: linux
     compiler: clang
     env: PATH=./racket/bin:$PATH TARGET="cs"
+
 before_script:
 - git config --global user.email "travis-test@racket-lang.org"
 - git config --global user.name "Travis Tester"
 
 script:
+- test $TRAVIS_BRANCH != coverity_scan || exit 0
 - make $TARGET  \
        CPUS="2"  \
        PKGS="racket-test db-test unstable-flonum-lib net-test"  \
