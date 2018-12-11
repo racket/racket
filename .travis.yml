@@ -3,11 +3,11 @@ language: c
 
 matrix:
   include:
-  - os: osx
-    compiler: clang
-    env: PATH=./racket/bin:$PATH
   - os: linux
     compiler: gcc
+    env: PATH=./racket/bin:$PATH
+  - os: osx
+    compiler: clang
     env: PATH=./racket/bin:$PATH
   - os: linux
     compiler: clang
