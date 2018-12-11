@@ -60,7 +60,7 @@
        (define read-in (core-input-port-read-in in))
        (cond
          [(procedure? read-in)
-          (define v (read-in bstr start end copy-bstr?))
+          (define v (read-in (core-port-self in) bstr start end copy-bstr?))
           (let result-loop ([v v])
             (cond
               [(and (integer? v) (not (eq? v 0)))
@@ -140,7 +140,7 @@
        (define peek-in (core-input-port-peek-in in))
        (cond
          [(procedure? peek-in)
-          (define v (peek-in bstr start end skip progress-evt copy-bstr?))
+          (define v (peek-in (core-port-self in) bstr start end skip progress-evt copy-bstr?))
           (end-atomic)
           (let result-loop ([v v])
             (cond
@@ -187,7 +187,7 @@
       [(closed-state-closed? (core-port-closed in))
        (check-not-closed who in)]
       [else
-       (define b (read-byte))
+       (define b (read-byte (core-port-self in)))
        (cond
          [(eof-object? b)
           (end-atomic)
@@ -218,7 +218,7 @@
     (start-atomic)
     (prepare-change in)
     (check-not-closed who in)
-    (define b (peek-byte))
+    (define b (peek-byte (core-port-self in)))
     (end-atomic)
     (cond
       [(evt? b)

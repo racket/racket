@@ -26,7 +26,7 @@
   (define closed (core-port-closed p))
   (unless (closed-state-closed? closed)
     (atomically
-     ((core-port-close p))
+     ((core-port-close p) (core-port-self p))
      (set-closed-state! closed))))
 
 ;; in atomic mode

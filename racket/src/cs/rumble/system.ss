@@ -11,6 +11,9 @@
    [(getenv "PLT_CS_MAKE_UNIX_STYLE_MACOS") #t]
    [else #f]))
 
+(define cross-mode 'infer)
+(define (set-cross-mode! m) (set! cross-mode m))
+
 (define (system-type* mode)
   (case mode
     [(vm) 'chez-scheme]
@@ -22,17 +25,18 @@
     [(word) (if (> (fixnum-width) 32) 64 32)]
     [(gc) 'cs]
     [(link) 'framework]
-    [(machine) "localhost info..."]
+    [(machine) (get-machine-info)]
     [(so-suffix) (case (machine-type)
                    [(a6osx ta6osx i3osx ti3osx) (string->utf8 ".dylib")]
                    [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
                    [else (string->utf8 ".so")])]
     [(so-mode) 'local]
-    [(fs-change) '#(#f #f #f #f)]
-    [(cross) 'infer]
+    [(fs-change) '#(#f #f #f #f)] ; when this changes, change "gen-system.rkt", too
+    [(target-machine) (machine-type)]
+    [(cross) cross-mode]
     [else (raise-argument-error 'system-type
                                 (string-append
-                                 "(or/c 'os 'word 'vm 'gc 'link 'machine\n"
+                                 "(or/c 'os 'word 'vm 'gc 'link 'machine 'target-machine\n"
                                  "      'so-suffix 'so-mode 'fs-change 'cross)")
                                 mode)]))
 
@@ -61,3 +65,7 @@
     [(a6s2 ta6s2) "x86_64-solaris"]
     [(i3s2 ti3s2) "i386-solaris"]
     [else "unix"]))
+
+(define get-machine-info (lambda () "localhost info..."))
+(define (set-get-machine-info! proc)
+  (set! get-machine-info proc))

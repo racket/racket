@@ -3,6 +3,11 @@
   (fields str)
   (nongenerative #{extflonum lb32cq34kbljz9rpowkzge-0}))
 
+(define (set-extflonum-print!)
+  (record-writer (record-type-descriptor extflonum)
+                 (lambda (e p wr)
+                   (#%display (extflonum-str e) p))))
+
 ;; used by `string->number`
 (define (extflonum-string? s)
   ;; It's an extflonum if there's any #\t

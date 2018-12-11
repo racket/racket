@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../host/thread.rkt"
+         "../host/pthread.rkt"
          "evt.rkt"
          "place-message.rkt")
 
@@ -9,13 +10,17 @@
 (struct core-port (name      ; anything, reported as `object-name` for the port
                    data      ; anything, effectively a subtype indicator
 
-                   close     ; -> (void)
+                   ;; A "method" or "-*>" gets this value back as its
+                   ;; first argument:
+                   self      ; anything, passed to every method
+
+                   close     ; -*> (void)
                    ;;          Called in atomic mode.
 
-                   count-lines!  ; #f or procedure called in atomic mode
-                   get-location  ; #f or procedure called in atomic mode
-                   file-position ; #f, port, or procedure called in atomic mode
-                   buffer-mode   ; #f or procedure in atomic mode
+                   count-lines!  ; #f or method called in atomic mode
+                   get-location  ; #f or method called in atomic mode
+                   file-position ; #f, port, or method called in atomic mode
+                   buffer-mode   ; #f or method in atomic mode
 
                    closed        ; `closed-state`
 
@@ -27,6 +32,7 @@
                    [column #:mutable] ; count UTF-8 characters in line
                    [position #:mutable]) ; count UTF-8 characters
   #:authentic
+  #:property prop:unsafe-authentic-override #t ; allow evt chaperone
   #:property prop:object-name (struct-field-index name)
   #:property prop:secondary-evt port->evt
   #:property prop:place-message (lambda (p)

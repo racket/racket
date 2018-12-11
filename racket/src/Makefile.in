@@ -48,6 +48,9 @@ COPYING = "$(srcdir)/COPYING-libscheme.txt" \
           "$(srcdir)/COPYING.txt"
 
 all:
+	$(MAKE) @MAIN_MAKE_TARGET@
+
+racket-variant:
 	$(MAKE) @MAIN_VARIANT@
 
 TAGS:
@@ -79,6 +82,14 @@ both:
 	$(MAKE) cgc
 	$(MAKE) 3m
 
+racketcs:
+	$(MAKE) @CS_BOOTSTRAP_HELP@
+	cd cs; $(MAKE)
+
+.PHONY: cs
+cs:
+	$(MAKE) racketcs
+
 # Cross-compilation helper:
 
 no-local-racket:
@@ -95,18 +106,21 @@ local/Makefile:
 # Install (common) ----------------------------------------
 
 INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
-SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
 SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
 SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
 
 install:
+	$(MAKE) install-@MAIN_MAKE_TARGET@
+
+install-racket-variant:
 	$(MAKE) install-@MAIN_VARIANT@
 
 plain-install:
 	if [ "$(DESTDIR)" != "" ]; then \
           echo "cannot use plain-install with DESTDIR=$(DESTDIR)"; exit 1; \
         fi
-	$(MAKE) plain-install-@MAIN_VARIANT@
+	$(MAKE) plain-install-@MAIN_MAKE_TARGET@
 
 install-common-first:
 	case "$(DESTDIR)" in \
@@ -232,6 +246,29 @@ install-no-both:
 
 install-gracket-both:
 	cd gracket; $(MAKE) install-both
+
+# CS install ----------------------------------------
+
+CS_SETUP_INSTALL_TARGET = setup-install
+
+install-cs-common:
+	$(MAKE) install-common-first
+	cd cs; $(MAKE) plain-install
+	$(MAKE) install-common-middle
+	cd cs; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
+	$(MAKE) install-common-last
+
+install-racketcs:
+	$(MAKE) install-cs-common
+
+plain-install-racketcs:
+	$(MAKE) install-cs-common CS_SETUP_INSTALL_TARGET=no-setup-install
+
+install-cs:
+	$(MAKE) install-racketcs
+
+plain-install-cs:
+	$(MAKE) plain-install-racketcs
 
 # Docs install ----------------------------------------
 

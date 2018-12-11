@@ -75,7 +75,9 @@
                       (flvector-set! vec i e))])
         vec])]))
        
-  (wrap vec
+  (wrap (if (read-config-for-syntax? config)
+            (vector->immutable-vector vec)
+            vec)
         in
         config
         opener))

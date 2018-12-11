@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "../host/pthread.rkt"
          "port.rkt"
          "evt.rkt")
 
@@ -35,7 +36,11 @@
 ;; since it can invoke an artitrary function
 (define (->core-input-port v)
   (cond
-    [(core-input-port? v) v]
+    [(core-input-port? v) (if (impersonator? v)
+                              ;; If there's an impersonator, it's only
+                              ;; an evt impersonator
+                              (unsafe-strip-impersonator v)
+                              v)]
     [(input-port? v)
      (let ([p (input-port-ref v)])
        (cond
@@ -57,7 +62,7 @@
    ;; the burden of re-checking for a closed port. Leave atomic mode
    ;; explicitly before raising an exception.
 
-   prepare-change ; #f or (-> void)
+   prepare-change ; #f or (-*> void)
    ;;               Called in atomic mode
    ;;               May leave atomic mode temporarily, but on return,
    ;;               ensures that other atomic operations are ok to
@@ -68,14 +73,14 @@
    ;;               atomic mode is left. The `close` operation
    ;;               is *not* guarded by a call to `prepare-change`.
 
-   read-byte ; #f or (-> (or/c byte? eof-object? evt?))
+   read-byte ; #f or (-*> (or/c byte? eof-object? evt?))
    ;;          Called in atomic mode.
    ;;          This shortcut is optional.
    ;;          Non-blocking byte read, where an event must be
    ;;          returned if no byte is available. The event's result
    ;;          is ignored, so it should not consume a byte.
 
-   read-in   ; port or (bytes start-k end-k copy? -> (or/c integer? ...))
+   read-in   ; port or (bytes start-k end-k copy? -*> (or/c integer? ...))
    ;;          Called in atomic mode.
    ;;          A port value redirects to the port. Otherwise, the function
    ;;          never blocks, and can assume `(- end-k start-k)` is non-zero.
@@ -85,21 +90,21 @@
    ;;          documented for `make-input-port`, except that a pipe result
    ;;          is not allowed (or, more precisely, it's treated as an event).
 
-   peek-byte ; #f or (-> (or/c byte? eof-object? evt?))
+   peek-byte ; #f or (-*> (or/c byte? eof-object? evt?))
    ;;          Called in atomic mode.
    ;;          This shortcut is optional.
    ;;          Non-blocking byte read, where an event must be
    ;;          returned if no byte is available. The event's result
    ;;          is ignored.
 
-   peek-in   ; port or (bytes start-k end-k skip-k progress-evt copy? -> (or/c integer? ...))
+   peek-in   ; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))
    ;;          Called in atomic mode.
    ;;          A port value redirects to the port. Otherwise, the function
    ;;          never blocks, and it can assume that `(- end-k start-k)` is non-zero.
    ;;          The `copy?` flag is the same as for `read-in`.  The return values
    ;;          are the same as documented for `make-input-port`.
 
-   byte-ready  ; port or ((->) -> (or/c boolean? evt))
+   byte-ready  ; port or ((->) -*> (or/c boolean? evt))
    ;;          Called in atomic mode.
    ;;          A port value makes sense when `peek-in` has a port value.
    ;;          Otherwise, check whether a peek on one byte would succeed
@@ -107,15 +112,15 @@
    ;;          that effectively does the same. The event's value doesn't
    ;;          matter, because it will be wrapped to return some original
    ;;          port. When `byte-ready` is a function, it should call the
-   ;;          given funciton (for its side effect) when work has been
+   ;;          given function (for its side effect) when work has been
    ;;          done that might unblock this port or some other port.
 
-   get-progress-evt ; #f or (-> evt?)
+   get-progress-evt ; #f or (-*> evt?)
    ;;           *Not* called in atomic mode.
    ;;           Optional support for progress events, and may be
    ;;           called on a closed port.
 
-   commit    ; (amt-k progress-evt? evt? (bytes? -> any) -> boolean)
+   commit    ; (amt-k progress-evt? evt? (bytes? -> any) -*> boolean)
    ;;          Called in atomic mode.
    ;;          Goes with `get-progress-evt`. The final `evt?`
    ;;          argument is constrained to a few kinds of events;
@@ -128,30 +133,35 @@
    [read-handler #:mutable])
   #:authentic
   #:property prop:input-port-evt (lambda (i)
-                                   (cond
-                                     [(closed-state-closed? (core-port-closed i))
-                                      always-evt]
-                                     [else
-                                      (define byte-ready (core-input-port-byte-ready i))
-                                      (cond
-                                        [(input-port? byte-ready)
-                                         byte-ready]
-                                        [else
-                                         (poller-evt
-                                          (poller
-                                           (lambda (self poll-ctx)
-                                             (define v (byte-ready (lambda ()
-                                                                     (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
-                                             (cond
-                                               [(evt? v)
-                                                (values #f v)]
-                                               [(eq? v #t)
-                                                (values (list #t) #f)]
-                                               [else
-                                                (values #f self)]))))])])))
+                                   ;; not atomic mode
+                                   (let ([i (->core-input-port i)])
+                                     (cond
+                                       [(closed-state-closed? (core-port-closed i))
+                                        always-evt]
+                                       [else
+                                        (define byte-ready (core-input-port-byte-ready i))
+                                        (cond
+                                          [(input-port? byte-ready)
+                                           byte-ready]
+                                          [else
+                                           (poller-evt
+                                            (poller
+                                             (lambda (self poll-ctx)
+                                               ;; atomic mode
+                                               (define v (byte-ready (core-port-self i)
+                                                                     (lambda ()
+                                                                       (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
+                                               (cond
+                                                 [(evt? v)
+                                                  (values #f v)]
+                                                 [(eq? v #t)
+                                                  (values (list #t) #f)]
+                                                 [else
+                                                  (values #f self)]))))])]))))
 
 (define (make-core-input-port #:name name
                               #:data [data #f]
+                              #:self self
                               #:prepare-change [prepare-change #f]
                               #:read-byte [read-byte #f]
                               #:read-in read-in
@@ -168,6 +178,7 @@
                               #:buffer-mode [buffer-mode #f])
   (core-input-port name
                    data
+                   self
 
                    close
                    count-lines!
@@ -197,7 +208,8 @@
 
 (define empty-input-port
   (make-core-input-port #:name 'empty
-                        #:read-in (lambda (bstr start-k end-k copy?) eof)
-                        #:peek-in (lambda (bstr start-k end-k skip-k copy?) eof)
-                        #:byte-ready (lambda (did-work!) #f)
+                        #:self #f
+                        #:read-in (lambda (self bstr start-k end-k copy?) eof)
+                        #:peek-in (lambda (self bstr start-k end-k skip-k copy?) eof)
+                        #:byte-ready (lambda (self did-work!) #f)
                         #:close void))

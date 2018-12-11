@@ -45,7 +45,7 @@
                                         (if port-no
                                             (format "\n  port number: ~a" port-no)
                                             ""))))
-  (security-guard-check-network who hostname port-no #t)
+  (security-guard-check-network who hostname port-no 'client)
   (atomically
    (call-with-resolved-address
     hostname port-no

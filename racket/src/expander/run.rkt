@@ -313,7 +313,7 @@
  [linklets?
   (pretty-write (correlated->datum
                  (datum->correlated
-                  (apply-to-module compile-to-linklets startup-module) #f)))]
+                  (apply-to-module compile startup-module) #f)))]
  [else
   ;; Load and run the requested module
   (parameterize ([current-command-line-arguments (list->vector args)])

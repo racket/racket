@@ -73,7 +73,10 @@
          add-module-path-index!/pos
          generate-module-path-index-deserialize
          mpis-as-vector
-         
+
+         generate-module-data-linklet
+         generate-module-declaration-linklet
+
          generate-deserialize
 
          deserialize-instance
@@ -195,6 +198,36 @@
       (and (pair? d)
            (or (has-symbol? (car d) vars)
                (has-symbol? (cdr d) vars)))))
+
+;; ----------------------------------------
+
+(define (generate-module-data-linklet mpis)
+  `(linklet
+    ;; imports
+    (,deserialize-imports)
+    ;; exports
+    (,mpi-vector-id)
+    ;; body
+    (define-values (,inspector-id) (current-code-inspector))
+    (define-values (,mpi-vector-id)
+      ,(generate-module-path-index-deserialize mpis))))
+
+(define (generate-module-declaration-linklet mpis self requires provides
+                                             phase-to-link-module-uses-expr)
+  `(linklet
+    ;; imports
+    (,deserialize-imports
+     [,mpi-vector-id])
+    ;; exports
+    (self-mpi
+     requires
+     provides
+     phase-to-link-modules)
+    ;; body
+    (define-values (self-mpi) ,(add-module-path-index! mpis self))
+    (define-values (requires) ,(generate-deserialize requires mpis #:syntax-support? #f))
+    (define-values (provides) ,(generate-deserialize provides mpis #:syntax-support? #f))
+    (define-values (phase-to-link-modules) ,phase-to-link-module-uses-expr)))
 
 ;; ----------------------------------------
 ;; Module-use serialization --- as an expression, like module path

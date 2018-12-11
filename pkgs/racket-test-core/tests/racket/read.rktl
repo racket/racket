@@ -522,6 +522,14 @@
       (lambda (x) (and (vector? x) (eq? (vector-ref x 0) (vector-ref x 1)))) 
       #2((1 2)))
 
+;; Immutable vectors and boxes from `read-syntax`
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#(a b c)"))))
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#5(a b c)"))))
+(test #t immutable? (syntax-e (read-syntax #f (open-input-string "#&a"))))
+(test #f immutable? (read (open-input-string "#(a b c)")))
+(test #f immutable? (read (open-input-string "#5(a b c)")))
+(test #f immutable? (read (open-input-string "#&a")))
+
 (define (graph-error-tests readstr graph-ok?)
   (err/rt-test (readstr "#0#") exn:fail:read?)
   (err/rt-test (readstr "#0=#0#") exn:fail:read?)
@@ -1378,6 +1386,41 @@
 (test "x.rkt::100" srcloc->string (chaperone-struct (make-srcloc "x.rkt" #f #f 100 8)
                                                     srcloc-line (lambda (s v) v)))
 (err/rt-test (srcloc->string 1))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that a module load triggered by `#lang` or `#reader` is in
+;; a root namespace, including the call to the loaded function
+
+(module provides-a-reader-to-check-phase racket/base
+  (provide read read-syntax)
+
+  (define (check)
+    (unless (zero? (namespace-base-phase (current-namespace)))
+      (error "reader callback with current namespace at the wrong phase:"
+             (namespace-base-phase (current-namespace)))))
+
+  (check)
+
+  (define (read . args) (check) 'ok)
+  (define (read-syntax . args) (check) #''ok))
+
+;; Check in top level:
+(test 'ok
+      'reader-module-phase
+      (let-syntax ([anything
+                    (lambda (stx)
+                      (parameterize ([read-accept-reader #t])
+                        (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
+        (anything)))
+
+;; Check module:
+(module m racket/base
+  (require (for-syntax racket/base))
+  (let-syntax ([anything
+                (lambda (stx)
+                  (parameterize ([read-accept-reader #t])
+                    (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
+    (anything)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

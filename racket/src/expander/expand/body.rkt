@@ -128,8 +128,11 @@
          (log-expand body-ctx 'rename-one (datum->syntax #f (list ids (m 'rhs))))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))
          (define counter (root-expand-context-counter ctx))
+         (define local-sym (and (expand-context-normalize-locals? ctx) 'loc))
          (define keys (for/list ([id (in-list ids)])
-                        (add-local-binding! id phase counter #:frame-id frame-id #:in exp-body)))
+                        (add-local-binding! id phase counter
+                                            #:frame-id frame-id #:in exp-body
+                                            #:local-sym local-sym)))
          (define extended-env (for/fold ([env (expand-context-env body-ctx)]) ([key (in-list keys)]
                                                                                [id (in-list ids)])
                                 (env-extend env key (local-variable id))))
@@ -174,8 +177,11 @@
          (log-expand body-ctx 'rename-one (datum->syntax #f (list ids (m 'rhs))))
          (define new-dups (check-no-duplicate-ids ids phase exp-body dups))
          (define counter (root-expand-context-counter ctx))
+         (define local-sym (and (expand-context-normalize-locals? ctx) 'mac))
          (define keys (for/list ([id (in-list ids)])
-                        (add-local-binding! id phase counter #:frame-id frame-id #:in exp-body)))
+                        (add-local-binding! id phase counter
+                                            #:frame-id frame-id #:in exp-body
+                                            #:local-sym local-sym)))
          (log-expand body-ctx 'prepare-env)
          (prepare-next-phase-namespace ctx)
          (log-expand body-ctx 'enter-bind)
@@ -246,7 +252,9 @@
   (when (null? done-bodys)
     (raise-syntax-error (string->symbol "begin (possibly implicit)")
                         "no expression after a sequence of internal definitions"
-                        (datum->syntax #f (cons 'begin init-bodys) s)))
+                        (datum->syntax #f (cons 'begin init-bodys) s)
+                        #f
+                        init-bodys))
   ;; As we finish expanding, we're no longer in a definition context
   (define finish-ctx (struct*-copy expand-context (accumulate-def-ctx-scopes body-ctx def-ctx-scopes)
                                    [context 'expression]

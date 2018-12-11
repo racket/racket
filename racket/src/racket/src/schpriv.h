@@ -2614,7 +2614,7 @@ void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port, Scheme_Objec
 
 Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok);
 
-Scheme_Object *scheme_read_compiled(Scheme_Object *port);
+Scheme_Object *scheme_read_linklet_bundle_hash(Scheme_Object *port);
 
 #define _scheme_eval_linked_expr(obj) scheme_do_eval(obj,-1,NULL,1)
 #define _scheme_eval_linked_expr_multi(obj) scheme_do_eval(obj,-1,NULL,-1)
@@ -3356,9 +3356,6 @@ void scheme_set_current_namespace_as_env(Scheme_Env *env);
 
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
 
-Scheme_Object *scheme_string_to_symbol_path(char *_s, intptr_t len);
-char *scheme_symbol_path_to_string(Scheme_Object *p, intptr_t *_len);
-
 /*========================================================================*/
 /*                         errors and exceptions                          */
 /*========================================================================*/
@@ -3422,6 +3419,9 @@ const char *scheme_hostname_error(int err);
 int scheme_byte_string_has_null(Scheme_Object *o);
 int scheme_any_string_has_null(Scheme_Object *o);
 #define CHAR_STRING_W_NO_NULLS "string-no-nuls?"
+
+int scheme_string_compare(Scheme_Object *s1, Scheme_Object *s2);
+int scheme_bytes_compare(Scheme_Object *s1, Scheme_Object *s2);
 
 Scheme_Object *scheme_do_exit(int argc, Scheme_Object *argv[]);
 
@@ -4027,5 +4027,7 @@ int scheme_is_syntax(Scheme_Object *v);
 HANDLE scheme_dll_load_library(const char *s, const wchar_t *ws, int *_mode);
 void *scheme_dll_get_proc_address(HANDLE m, const char *name, int dll_mode);
 #endif
+
+Scheme_Object *scheme_compile_target_check(int argc, Scheme_Object **argv);
 
 #endif /* __mzscheme_private__ */

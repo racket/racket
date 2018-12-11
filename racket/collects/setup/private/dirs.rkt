@@ -15,7 +15,8 @@
 ;; config: definitions
 
 (provide get-config-table
-         to-path)
+         to-path
+         combine-search)
 
 (define (get-config-table find-config-dir)
   (delay/sync
@@ -265,7 +266,8 @@
   config:apps-dir
   find-apps-dir
   find-user-apps-dir #:default (build-path "share" "applications")
-  (chain-to (lambda () (build-path (find-share-dir) "applications"))))
+  (chain-to (lambda () (let ([p (find-share-dir)])
+                         (and p (build-path p "applications"))))))
 
 ;; ----------------------------------------
 ;; "man"
@@ -302,10 +304,14 @@
 
 (define (find-links-file)
   (or (force config:links-file)
-      (build-path (find-share-dir) "links.rktd")))
+      (let ([p (find-share-dir)])
+        (and p (build-path p "links.rktd")))))
 (define (get-links-search-files)
   (combine-search (force config:links-search-files)
-                  (list (find-links-file))))
+                  (let ([p (find-links-file)])
+                    (if p
+                        (list p)
+                        null))))
 
 (define (find-user-links-file [vers (get-installation-name)])
   (build-path (find-system-path 'addon-dir)
@@ -321,7 +327,8 @@
   get-false
   config:pkgs-search-dirs
   get-pkgs-search-dirs
-  (chain-to (lambda () (build-path (find-share-dir) "pkgs"))))
+  (chain-to (lambda () (let ([p (find-share-dir)])
+                         (and p (build-path p "pkgs"))))))
 
 (provide find-user-pkgs-dir)
 (define (find-user-pkgs-dir [vers (get-installation-name)])

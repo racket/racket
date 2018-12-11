@@ -583,6 +583,7 @@ PACKAGE_BUGREPORT=
 PACKAGE_URL=
 
 ac_unique_file="embed-boot.rkt"
+enable_option_checking=no
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
@@ -621,11 +622,15 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+CROSS_COMPILE_TARGET_KIND
+CS_COMPILED_SUBDIR
+CS_INSTALLED
 FRAMEWORK_PREFIX
 FRAMEWORK_INSTALL_DIR
 SCHEME_CONFIG_ARGS
 MAKE_BUILD_SCHEME
 SCHEME_SRC
+ELF_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
 NOT_OSX
@@ -633,8 +638,12 @@ OSX
 MACH
 SCHEME_DIR
 RACKET
+RKTL_POST
+RKTL_PRE
 INCLUDEDEP
 RKTLINKER
+STRIP_LIB_DEBUG
+STRIP_DEBUG
 ICP
 STATIC_AR
 RANLIB
@@ -643,6 +652,7 @@ AR
 EGREP
 GREP
 CPP
+STRIP
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -650,6 +660,35 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+MAKE_LOCAL_RACKET
+CS_BOOTSTRAP_HELP
+MAIN_MAKE_TARGET
+MAIN_VARIANT
+CGC_CAP_INSTALLED
+CGC_INSTALLED
+CGC
+MMM_CAP_INSTALLED
+MMM_INSTALLED
+MMM
+INSTALL_ORIG_TREE
+LIBFINISH
+MAKE_GRACKET
+MAKE_COPYTREE
+GR_APP_CONFIG_PATH
+GUI_CONFIG_PATH
+CONFIG_PATH
+GR_APP_COLLECTS_PATH
+GUI_COLLECTS_PATH
+COLLECTS_PATH
+includepltdir
+etcpltdir
+sharepltdir
+libpltdir_rel
+libpltdir
+appsdir
+collectsdir
+MAKE_INSTALL_PKGSCOPE
+INSTALL_PKGSCOPE
 target_os
 target_vendor
 target_cpu
@@ -674,8 +713,8 @@ mandir
 localedir
 libdir
 psdir
-pdfdir
-dvidir
+appsdir
+collectsdir
 htmldir
 infodir
 docdir
@@ -708,10 +747,24 @@ enable_standalone
 enable_pthread
 enable_iconv
 enable_compress
-enable_xonx
+enable_origtree
+enable_pkgscope
+enable_docs
+enable_usersetup
 enable_racket
 enable_scheme
 enable_mach
+enable_sdk
+enable_xonx
+enable_macprefix
+enable_libfw
+enable_userfw
+enable_mac64
+enable_noopt
+enable_csdefault
+enable_csonly
+enable_parent
+enable_crossany
 '
       ac_precious_vars='build_alias
 host_alias
@@ -765,8 +818,8 @@ oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
 infodir='${datarootdir}/info'
 htmldir='${docdir}'
-dvidir='${docdir}'
-pdfdir='${docdir}'
+collectsdir='${exec_prefix}/share/${PACKAGE}/collects'
+appsdir='${exec_prefix}/share/applications'
 psdir='${docdir}'
 libdir='${exec_prefix}/lib'
 localedir='${datarootdir}/locale'
@@ -848,10 +901,10 @@ do
   -docdir=* | --docdir=* | --docdi=* | --doc=* | --do=*)
     docdir=$ac_optarg ;;
 
-  -dvidir | --dvidir | --dvidi | --dvid | --dvi | --dv)
-    ac_prev=dvidir ;;
-  -dvidir=* | --dvidir=* | --dvidi=* | --dvid=* | --dvi=* | --dv=*)
-    dvidir=$ac_optarg ;;
+  -collectsdir | --collectsdir | --collectsdi | --collectsd | --collects | --dv)
+    ac_prev=collectsdir ;;
+  -collectsdir=* | --collectsdir=* | --collectsdi=* | --collectsd=* | --collects=* | --dv=*)
+    collectsdir=$ac_optarg ;;
 
   -enable-* | --enable-*)
     ac_useropt=`expr "x$ac_option" : 'x-*enable-\([^=]*\)'`
@@ -998,10 +1051,10 @@ do
   | --progr-tra=* | --program-tr=* | --program-t=*)
     program_transform_name=$ac_optarg ;;
 
-  -pdfdir | --pdfdir | --pdfdi | --pdfd | --pdf | --pd)
-    ac_prev=pdfdir ;;
-  -pdfdir=* | --pdfdir=* | --pdfdi=* | --pdfd=* | --pdf=* | --pd=*)
-    pdfdir=$ac_optarg ;;
+  -appsdir | --appsdir | --appsdi | --appsd | --apps | --pd)
+    ac_prev=appsdir ;;
+  -appsdir=* | --appsdir=* | --appsdi=* | --appsd=* | --apps=* | --pd=*)
+    appsdir=$ac_optarg ;;
 
   -psdir | --psdir | --psdi | --psd | --ps)
     ac_prev=psdir ;;
@@ -1148,7 +1201,7 @@ fi
 # Check all directory arguments for consistency.
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
-		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
+		oldincludedir docdir infodir htmldir collectsdir appsdir psdir \
 		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
@@ -1297,24 +1350,15 @@ For better control, use the options below.
 
 Fine tuning of the installation directories:
   --bindir=DIR            user executables [EPREFIX/bin]
-  --sbindir=DIR           system admin executables [EPREFIX/sbin]
-  --libexecdir=DIR        program executables [EPREFIX/libexec]
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
-  --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
-  --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
-  --oldincludedir=DIR     C header files for non-gcc [/usr/include]
   --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
   --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
-  --infodir=DIR           info documentation [DATAROOTDIR/info]
-  --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]
   --mandir=DIR            man documentation [DATAROOTDIR/man]
   --docdir=DIR            documentation root [DATAROOTDIR/doc/PACKAGE]
-  --htmldir=DIR           html documentation [DOCDIR]
-  --dvidir=DIR            dvi documentation [DOCDIR]
-  --pdfdir=DIR            pdf documentation [DOCDIR]
-  --psdir=DIR             ps documentation [DOCDIR]
+  --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]
+  --appsdir=DIR           .desktop files [EPREFIX/share/applications]
 _ACEOF
 
   cat <<\_ACEOF
@@ -1339,10 +1383,28 @@ Optional Features:
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-compress       compress compiled code
-  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
+  --enable-origtree       install with original directory structure
+  --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
+  --enable-docs           build docs on install (enabled by default)
+  --enable-usersetup      setup user-specific files on install
   --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-scheme=<path>  Chez Scheme build directory at <path>
   --enable-mach=<mac>     Use Chez Scheme machine type <mach>
+  --enable-sdk=<path>     use Mac OS 10.4 SDK directory
+  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
+  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-ios=<path>     use iOS SDK directory
+  --enable-sysroot=<path> use sysroot directory (e.g., for Android)
+  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
+  --enable-macprefix      allow --prefix with a Mac OS install
+  --enable-libfw          install Mac OS frameworks to /Library/Frameworks
+  --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
+  --enable-mac64          allow 64-bit Mac OS build (enabled by default)
+  --enable-strip          strip debug on install (usually enabled by default)
+  --enable-csdefault      use CS as default build
+  --enable-csonly         build CS only
+  --enable-parent         Create "../Makefile" (internal use)
+  --enable-crossany       Record own cross target as machine-independent
 
 Some influential environment variables:
   CC          C compiler command
@@ -2210,6 +2272,9 @@ test -n "$target_alias" &&
   program_prefix=${target_alias}-
 
 
+
+
+
 # Check whether --enable-shared was given.
 if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
@@ -2235,10 +2300,30 @@ if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
 fi
 
-# Check whether --enable-xonx was given.
-if test "${enable_xonx+set}" = set; then :
-  enableval=$enable_xonx;
+
+# Check whether --enable-origtree was given.
+if test "${enable_origtree+set}" = set; then :
+  enableval=$enable_origtree;
 fi
+
+# Check whether --enable-pkgscope was given.
+if test "${enable_pkgscope+set}" = set; then :
+  enableval=$enable_pkgscope;
+fi
+
+
+# Check whether --enable-docs was given.
+if test "${enable_docs+set}" = set; then :
+  enableval=$enable_docs;
+else
+  enable_docs=yes
+fi
+
+# Check whether --enable-usersetup was given.
+if test "${enable_usersetup+set}" = set; then :
+  enableval=$enable_usersetup;
+fi
+
 
 # Check whether --enable-racket was given.
 if test "${enable_racket+set}" = set; then :
@@ -2253,6 +2338,119 @@ fi
 # Check whether --enable-mach was given.
 if test "${enable_mach+set}" = set; then :
   enableval=$enable_mach;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
+
+# Check whether --enable-xonx was given.
+if test "${enable_xonx+set}" = set; then :
+  enableval=$enable_xonx;
+fi
+
+# Check whether --enable-macprefix was given.
+if test "${enable_macprefix+set}" = set; then :
+  enableval=$enable_macprefix;
+fi
+
+# Check whether --enable-libfw was given.
+if test "${enable_libfw+set}" = set; then :
+  enableval=$enable_libfw;
+fi
+
+# Check whether --enable-userfw was given.
+if test "${enable_userfw+set}" = set; then :
+  enableval=$enable_userfw;
+fi
+
+# Check whether --enable-mac64 was given.
+if test "${enable_mac64+set}" = set; then :
+  enableval=$enable_mac64;
+else
+  enable_mac64=yes
+fi
+
+
+# Check whether --enable-noopt was given.
+if test "${enable_noopt+set}" = set; then :
+  enableval=$enable_noopt;
+fi
+
+
+STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
+strip_debug_flags=""
+enable_strip_by_default=yes
+strip_needs_dash_s=no
+
+# Check whether --enable-csdefault was given.
+if test "${enable_csdefault+set}" = set; then :
+  enableval=$enable_csdefault;
+fi
+
+# Check whether --enable-csonly was given.
+if test "${enable_csonly+set}" = set; then :
+  enableval=$enable_csonly;
+fi
+
+# Check whether --enable-parent was given.
+if test "${enable_parent+set}" = set; then :
+  enableval=$enable_parent;
+fi
+
+# Check whether --enable-crossany was given.
+if test "${enable_crossany+set}" = set; then :
+  enableval=$enable_crossany;
+fi
+
+
+
+
+enable_quartz=no
+if test "${enable_xonx}" = "yes" ; then
+  enable_quartz=no
+else
+  case "$host_os" in
+  darwin*)
+    enable_quartz=yes
+    if test "${enable_origtree}" != "no" ; then
+      enable_origtree=yes
+    fi
+    if test "${prefix}" != "NONE" ; then
+      if test "${enable_macprefix}" != "yes" ; then
+        echo "ERROR: --prefix not allowed for a Mac OS build, unless either"
+        echo "         --enable-xonx is supplied (to create a Unix-style"
+        echo "           build), or "
+        echo "         --enable-macprefix is supplied (to allow a Mac-style"
+        echo "           installation, even though --prefix is normally used"
+        echo "           for Unix-style installations)"
+        exit 1
+      fi
+    fi
+  ;;
+  esac
 fi
 
 
@@ -2288,6 +2486,55 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+if test "${enable_csonly}" = "yes" ; then
+  enable_csdefault=yes
+fi
+show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
+show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
+
+show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
+show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
+
+if test "${enable_sdk}" != "" ; then
+   if test "${enable_sdk5}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk5"
+   fi
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-sdk6"
+   fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.4 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk5}" != "" ; then
+   if test "${enable_sdk6}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-sdk6"
+   fi
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.5 SDK directory ${enable_sdk}"
+fi
+if test "${enable_sdk6}" != "" ; then
+   if test "${enable_ios}" != "" ; then
+     echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
+   fi
+   echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
+fi
+if test "${enable_ios}" != "" ; then
+   echo "=== Using ios SDK directory ${enable_ios}"
+fi
+
+if test "${enable_sysroot}" != "" ; then
+   echo "=== Using sysroot directory ${enable_sysroot}"
+fi
+
+show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
+show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
+
+
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
@@ -2295,6 +2542,234 @@ fi
 if test "${enable_xonx}" == "" ; then
   enable_xonx=no
 fi
+
+INSTALL_PKGSCOPE=user
+MAKE_INSTALL_PKGSCOPE=preserve
+if test "${enable_pkgscope}" != "" ; then
+  case "${enable_pkgscope}" in
+   installation)
+     INSTALL_PKGSCOPE=installation
+     ;;
+   user)
+     INSTALL_PKGSCOPE=user
+     ;;
+   shared)
+     INSTALL_PKGSCOPE=shared
+     ;;
+   *)
+     echo "Unrecognized package scope: ${enable_pkgscope}"
+     exit 1
+     ;;
+  esac
+  echo "=== Package scope: " $INSTALL_PKGSCOPE
+  MAKE_INSTALL_PKGSCOPE=adjust
+fi
+
+
+
+
+
+show_explicitly_enabled "${enable_crossany}" "Own cross-compile target as machine-independent"
+
+CROSS_COMPILE_TARGET_KIND=machine
+if test "${enable_crossany}" = "yes" ; then
+  CROSS_COMPILE_TARGET_KIND=any
+fi
+
+
+SUB_CONFIGURE_EXTRAS=
+
+
+CS_INSTALLED=cs
+if test "${enable_csdefault}" = "yes" ; then
+  CS_INSTALLED=""
+fi
+
+CS_COMPILED_SUBDIR=1
+if test "${enable_csdefault}" = "yes" ; then
+  CS_COMPILED_SUBDIR=0
+fi
+
+
+############## Install targets ################
+
+PREFIX_PATH_RELATIVE=/../..
+
+
+unixstyle=no
+if test "${prefix}" != "NONE" ; then
+  if test "${enable_origtree}" != "yes" ; then
+    unixstyle=yes
+  fi
+fi
+if test "${exec_prefix}" != "NONE" ; then
+ unixstyle=yes
+fi
+if test "${bindir}" != '${exec_prefix}/bin' ; then
+ unixstyle=yes
+fi
+if test "${datadir}" != '${prefix}/share' ; then
+ # Newer autoconf uses datarootdir:
+ if test "${datadir}" = '${datarootdir}' ; then
+   if test "${datarootdir}" != '${prefix}/share' ; then
+    unixstyle=yes
+   fi
+ else
+   unixstyle=yes
+ fi
+fi
+if test "${libdir}" != '${exec_prefix}/lib' ; then
+ unixstyle=yes
+fi
+if test "${includedir}" != '${prefix}/include' ; then
+ unixstyle=yes
+fi
+if test "${mandir}" != '${prefix}/man' ; then
+ if test "${mandir}" = '${datarootdir}/man' ; then
+   if test "${datarootdir}" != '${prefix}/share' ; then
+    unixstyle=yes
+   fi
+ else
+   unixstyle=yes
+ fi
+fi
+if test "${docdir}" != '${datarootdir}/doc/${PACKAGE}' ; then
+  unixstyle=yes
+fi
+if test "${collectsdir}" != '${exec_prefix}/share/${PACKAGE}/collects' ; then
+  unixstyle=yes
+fi
+if test "${appsdir}" != '${exec_prefix}/share/applications' ; then
+  unixstyle=yes
+fi
+
+MAKE_COPYTREE=no
+if test "${unixstyle}" = "no" ; then
+  if test "${prefix}" = "NONE" ; then
+    inplacebuild=yes
+    prefix=`cd "${srcdir}/..${PREFIX_PATH_RELATIVE}" && pwd`
+  else
+    MAKE_COPYTREE=copytree
+  fi
+  bindir='${prefix}/bin'
+  libpltdir='${prefix}/lib'
+  libpltdir_rel='lib'
+  sharepltdir='${prefix}/share'
+  etcpltdir='${prefix}/etc'
+  includepltdir='${prefix}/include'
+  docdir='${prefix}/doc'
+  mandir='${prefix}/man'
+  collectsdir='${prefix}/collects'
+  appsdir='${prefix}/share/applications'
+  COLLECTS_PATH="../collects"
+  CONFIG_PATH="../etc"
+  GR_APP_COLLECTS_PATH="../../../../collects"
+  GR_APP_CONFIG_PATH="../../../../etc"
+  INSTALL_ORIG_TREE=yes
+else
+  if test "${prefix}" = "NONE" ; then
+    # Set prefix explicitly so we can use it during configure
+    prefix="${ac_default_prefix}"
+  fi
+  libpltdir="${libdir}/"'${PACKAGE}'
+  libpltdir_rel=""
+  if test "${libpltdir}" = '${exec_prefix}/lib/${PACKAGE}' ; then
+    if test "${bindir}" = '${exec_prefix}/bin' ; then
+      libpltdir_rel="lib/"'${PACKAGE}'
+    fi
+  fi
+  sharepltdir="${datadir}/"'${PACKAGE}'
+  etcpltdir="${sysconfdir}/"'${PACKAGE}'
+  includepltdir="${includedir}/"'${PACKAGE}'
+  MAKE_COPYTREE=copytree
+  COLLECTS_PATH='${collectsdir}'
+  CONFIG_PATH='${etcpltdir}'
+  GR_APP_COLLECTS_PATH="${COLLECTS_PATH}"
+  GR_APP_CONFIG_PATH="${CONFIG_PATH}"
+  INSTALL_ORIG_TREE=no
+fi
+
+GUI_COLLECTS_PATH="${COLLECTS_PATH}"
+GUI_CONFIG_PATH="${CONFIG_PATH}"
+
+CS_BOOTSTRAP_HELP="no-3m"
+
+########################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################
+
+show_path_results()
+{
+  if test "${inplacebuild}" = "yes" ; then
+    echo ">>> Installation is in-place:"
+    echo "      ${srcdir}/.."
+    echo "    Configure with --prefix if you wanted to install somewhere else."
+    if test "${enable_quartz}" != "yes" ; then
+      echo "    The --prefix option also makes the installed files better conform"
+      echo "    to Unix installation conventions. (The configure script will show"
+      echo "    you specific installation paths when --prefix is used.)"
+    fi
+    if test "${enable_shared}" != "yes" ; then
+      echo "    Alternately, you can simply "'`'"mv' the in-place installation after"
+      echo "    running "'`'"make install'."
+    fi
+  else
+    echo ">>> Installation targets:"
+    echo " executables        : ${bindir}/..."
+    echo " core docs          : ${docdir}/..."
+    echo " C libraries        : ${libdir}/..."
+    echo " C headers          : ${includepltdir}/..."
+    echo " platform libraries : ${libpltdir}/..."
+    echo " common libraries   : ${sharepltdir}/..."
+    echo " base collections   : ${collectsdir}/..."
+    echo " configuration      : ${etcpltdir}/..."
+    echo " .desktop files     : ${appsdir}/..."
+    echo " man pages          : ${mandir}/..."
+    echo "     where prefix = ${prefix}"
+    echo "  and datarootdir = ${datarootdir}"
+    if test "${unixstyle}" = "yes" ; then
+      echo "  and exec_prefix = ${exec_prefix}"
+      echo "  and PACKAGE = racket"
+    fi
+  fi
+}
+
+
+
+############## init variables ################
 
 skip_iconv_check=no
 use_flag_pthread=yes
@@ -2305,8 +2780,9 @@ OSX="not_osx"
 NOT_OSX=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+ELF_COMP=""
 
-FRAMEWORK_INSTALL_DIR='$(srcdir)/../../../lib/'
+FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
@@ -3204,6 +3680,10 @@ fi
 
 ############## platform tests ################
 
+MACH_HOST_CPU="${host_cpu}"
+extra_scheme_config_args=
+disable_curses_arg=--disable-curses
+
 case "$host_os" in
   solaris2*)
     MACH_OS=s2
@@ -3227,7 +3707,9 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
-    LIBS="${LIBS} -lncurses"
+    LIBS="${LIBS} -lrt"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   osf1*)
     ;;
@@ -3249,10 +3731,93 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+      strip_needs_dash_s=yes
+    fi
+
+        if test "${enable_sdk}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4 -DEXTRA_EXCEPTION_STUBS"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk} -mmacosx-version-min=10.4"
+      if test "${CC}" = "gcc" ; then
+        CC=gcc-4.0
+      fi
+      if test "${CPP}" = "gcc -E" ; then
+        CPP="gcc-4.0 -E"
+        need_cpp_in_extras=yes
+      fi
+      if test "${LD}" = "gcc" ; then
+        LD=gcc-4.0
+        need_ld_in_extras=yes
+      fi
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+      need_cc_in_extras=yes
+      if test "$ORIG_CC_FOR_BUILD" = "" ; then
+        CC_FOR_BUILD="$CC"
+      fi
+    fi
+
+    if test "${enable_sdk5}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk5} -mmacosx-version-min=10.5"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    if test "${enable_sdk6}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    # Force 32-bit build unless mac64 is enabled:
+    if test "${enable_mac64}" != "yes" ; then
+      if test "$host_cpu" != "powerpc" ; then
+        if test "${ORIG_CC}" = "" ; then
+           PREFLAGS="${PREFLAGS} -m32"
+           CPPFLAGS="${CPPFLAGS} -m32"
+           LDFLAGS="${LDFLAGS} -m32"
+           # To make the libffi build work, we have to fold -m32 into CC
+           # instead of CFLAGS:
+           SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"' -m32"'
+           need_cc_in_extras=no
+        fi
+      fi
+    fi
+
+
+
+    if test "${enable_libfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    elif test "${enable_userfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    else
+      FRAMEWORK_INSTALL_DIR='${libpltdir}'
+      FRAMEWORK_REL_INSTALL=yes
+      if test "${libpltdir_rel}" = "" ; then
+        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
+      else
+        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+      fi
+    fi
+
+    if test "${enable_mac64}" == "no"; then
+      MACH_HOST_CPU="x86"
+      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
+
+    # ncurses.h is always available
+    disable_curses_arg=""
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -3281,7 +3846,7 @@ if test "${enable_pthread}" = "yes" ; then
   thread_config_arg="--threads"
 fi
 
-case "$host_cpu" in
+case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
     ;;
@@ -3312,10 +3877,169 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
+fi
+
+############## Strip tool ################
+
+if test "${enable_strip}" = "" ; then
+  if test "${enable_strip_by_default}" = "yes" ; then
+    enable_strip=yes
+  fi
+fi
+
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
+
+if test "${enable_strip}" = "yes" ; then
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
+set dummy ${ac_tool_prefix}strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$STRIP"; then
+  ac_cv_prog_STRIP="$STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_STRIP="${ac_tool_prefix}strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+STRIP=$ac_cv_prog_STRIP
+if test -n "$STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $STRIP" >&5
+$as_echo "$STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_STRIP"; then
+  ac_ct_STRIP=$STRIP
+  # Extract the first word of "strip", so it can be a program name with args.
+set dummy strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_STRIP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_STRIP"; then
+  ac_cv_prog_ac_ct_STRIP="$ac_ct_STRIP" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_STRIP="strip"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_STRIP=$ac_cv_prog_ac_ct_STRIP
+if test -n "$ac_ct_STRIP"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_STRIP" >&5
+$as_echo "$ac_ct_STRIP" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_STRIP" = x; then
+    STRIP=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    STRIP=$ac_ct_STRIP
+  fi
+else
+  STRIP="$ac_cv_prog_STRIP"
+fi
+
+  # Used to add -S flag, but not all `strip' variants support it:
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${strip_needs_dash_s}" = "yes" ; then
+    check_strip_dash_s=yes
+  fi
+  if test "${check_strip_dash_s}" = "yes" ; then
+    # Can only support library stripping if something like "-S" is available:
+     msg="for strip -S"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    set_strip_lib=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int f() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  try_archive_conftest
+else
+  set_strip_lib=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
+$as_echo "$set_strip_lib" >&6; }
+    if test "${strip_needs_dash_s}" = "yes" ; then
+      STRIP_DEBUG="${STRIP_LIB_DEBUG}"
+    fi
+  fi
+fi
+
+
+############## Makefile includes ################
+
+if test "$INCLUDEDEP" = "#" ; then
+  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+  if test "$is_gmake" = "" ; then
+     INCLUDEDEP="-include"
+  fi
+fi
+
+if test "$INCLUDEDEP" != "#" ; then
+  RKTL_PRE="compiled/"
+  RKTL_POST=".rktl"
 fi
 
 ############## C flags ################
@@ -3912,6 +4636,14 @@ fi
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+
+
+
+
+
+
+
 
 
 
@@ -5218,4 +5950,4 @@ fi
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; ${abssrcdir}/../../rktio/configure
+cd rktio; eval "${abssrcdir}/../../rktio/configure ${SUB_CONFIGURE_EXTRAS}"

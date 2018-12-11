@@ -544,7 +544,9 @@
     (define lift-env (and local? (box empty-env)))
     (define lift-ctx (make-lift-context
                       (if local?
-                          (make-local-lift lift-env (root-expand-context-counter ctx))
+                          (make-local-lift lift-env
+                                           (root-expand-context-counter ctx)
+                                           (and (expand-context-normalize-locals? ctx) 'lift))
                           (make-top-level-lift ctx))
                       #:module*-ok? (and (not local?) (eq? context 'module))))
     (define capture-ctx (struct*-copy expand-context ctx
@@ -670,13 +672,15 @@
                                           #:phase phase))))
   (define vals
     (call-with-values (lambda ()
-                        (parameterize ([current-namespace ns]
-                                       [eval-jit-enabled #f])
-                          (parameterize-like
-                           #:with ([current-expand-context ctx])
-                           (if compiled
-                               (eval-single-top compiled ns)
-                               (direct-eval p ns (root-expand-context-self-mpi ctx))))))
+                        (call-with-continuation-barrier
+                         (lambda ()
+                           (parameterize ([current-namespace ns]
+                                          [eval-jit-enabled #f])
+                             (parameterize-like
+                              #:with ([current-expand-context ctx])
+                              (if compiled
+                                  (eval-single-top compiled ns)
+                                  (direct-eval p ns (root-expand-context-self-mpi ctx))))))))
       list))
   (unless (= (length vals) (length ids))
     (apply raise-result-arity-error
@@ -711,7 +715,7 @@
                         #:for-track? [for-track? #f]
                         #:keep-for-parsed? [keep-for-parsed? #f]
                         #:keep-for-error? [keep-for-error? #f])
-  (define d (syntax-e s))
+  (define d (syntax-e/no-taint s))
   (define keep-e (cond
                   [(symbol? d) d]
                   [(and (pair? d) (syntax-identifier? (car d))) (syntax-e (car d))]
@@ -719,6 +723,10 @@
   (cond
    [(expand-context-to-parsed? ctx)
     (and (or keep-for-parsed? keep-for-error?) (datum->syntax #f keep-e s s))]
+   [(and for-track? (pair? d) keep-e)
+    ;; Synthesize form to preserve just source and properties for tracking
+    ;; without affecting the identifier that is kept in 'origin
+    (datum->syntax #f (list (car d)) s s)]
    [else
     (syntax-rearm (datum->syntax (syntax-disarm s) keep-e s s)
                   s)]))

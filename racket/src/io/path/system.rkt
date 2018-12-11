@@ -4,13 +4,19 @@
          "../host/rktio.rkt"
          "../host/error.rkt"
          "../security/main.rkt"
-         "path.rkt")
+         "../file/host.rkt"
+         "path.rkt"
+         "parameter.rkt"
+         "directory-path.rkt")
 
 (provide find-system-path
          set-exec-file!
          set-run-file!
          set-collects-dir!
-         set-config-dir!)
+         set-config-dir!
+         set-addon-dir!
+
+         init-current-directory!)
 
 (define/who (find-system-path key)
   (begin0
@@ -23,12 +29,13 @@
                                         (string->path "../etc"))]
       [(collects-dir host-collects-dir) (or collects-dir
                                             (string->path "../collects"))]
-      [(orig-dir) (string->path (|#%app| current-directory))]
+      [(orig-dir) orig-dir]
       [(temp-dir) (rktio-system-path who RKTIO_PATH_TEMP_DIR)]
       [(sys-dir) (rktio-system-path who RKTIO_PATH_SYS_DIR)]
       [(pref-dir) (rktio-system-path who RKTIO_PATH_PREF_DIR)]
       [(pref-file) (rktio-system-path who RKTIO_PATH_PREF_FILE)]
-      [(addon-dir) (rktio-system-path who RKTIO_PATH_ADDON_DIR)]
+      [(addon-dir) (or addon-dir
+                       (rktio-system-path who RKTIO_PATH_ADDON_DIR))]
       [(home-dir) (rktio-system-path who RKTIO_PATH_HOME_DIR)]
       [(desk-dir) (rktio-system-path who RKTIO_PATH_DESK_DIR)]
       [(doc-dir) (rktio-system-path who RKTIO_PATH_DOC_DIR)]
@@ -50,11 +57,17 @@
 (define run-file #f)
 (define (set-run-file! p) (set! run-file p))
 
+(define orig-dir (path->directory-path
+                  (host-> (rktio_to_bytes (rktio_get_current_directory rktio)))))
+
 (define collects-dir #f)
 (define (set-collects-dir! p) (set! collects-dir p))
 
 (define config-dir #f)
 (define (set-config-dir! p) (set! config-dir p))
+
+(define addon-dir #f)
+(define (set-addon-dir! p) (set! addon-dir p))
 
 (define (rktio-system-path who key)
   (start-atomic)
@@ -68,3 +81,9 @@
      (rktio_free s)
      (end-atomic)
      (path bstr (system-path-convention-type))]))
+
+(define (init-current-directory!)
+  (current-directory orig-dir)
+  (current-directory-for-user orig-dir))
+
+(void (init-current-directory!))

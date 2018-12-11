@@ -41,4 +41,8 @@
   (test/pos-blame
    'stream/c9
    '(stream-first (stream-rest (contract (stream/c (and/c integer? (first-or/c 0 positive?)))
-                                         (stream 0 -1) 'pos 'neg)))))
+                                         (stream 0 -1) 'pos 'neg))))
+
+  (test/spec-passed
+   'stream/impersonator-ctc
+   '(contract (stream/c (make-contract #:first-order (lambda (x) #t))) empty-stream 'pos 'neg)))

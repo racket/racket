@@ -5,6 +5,7 @@
          "../host/pthread.rkt"
          "../sandman/main.rkt"
          "../file/error.rkt"
+         "../network/error.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -23,18 +24,22 @@
          fd-port-fd
          maybe-fd-data-extra)
 
-(struct fd-data (fd extra input?)
-  #:property prop:file-stream (lambda (fdd) (fd-data-fd fdd))
+(struct fd-data (fd extra input? file-stream?)
+  #:property prop:file-stream (lambda (fdd) (and (fd-data-file-stream? fdd)
+                                                 (fd-data-fd fdd)))
+  #:property prop:data-place-message (lambda (port)
+                                       (lambda ()
+                                         (fd-port->place-message port))))
+
+(struct fd-output-data fd-data (flush)
   #:property prop:file-truncate (case-lambda
                                   [(fdd pos)
+                                   ((fd-output-data-flush fdd))
                                    (check-rktio-error*
                                     (rktio_set_file_size rktio
                                                          (fd-data-fd fdd)
                                                          pos)
-                                    "error setting file size")])
-  #:property prop:data-place-message (lambda (port)
-                                       (lambda ()
-                                         (fd-port->place-message port))))
+                                    "error setting file size")]))
 
 (define (maybe-fd-data-extra data)
   (and (fd-data? data)
@@ -57,19 +62,24 @@
                        #:extra-data [extra-data #f]
                        #:on-close [on-close void]
                        #:fd-refcount [fd-refcount (box 1)]
-                       #:custodian [cust (current-custodian)])
+                       #:custodian [cust (current-custodian)]
+                       #:file-stream? [file-stream? #t]
+		       #:network-error? [network-error? #f])
   (define-values (port buffer-control)
     (open-input-peek-via-read
      #:name name
-     #:data (fd-data fd extra-data #t)
+     #:data (fd-data fd extra-data #t file-stream?)
+     #:self #f
      #:read-in
      ;; in atomic mode
-     (lambda (dest-bstr start end copy?)
+     (lambda (self dest-bstr start end copy?)
        (define n (rktio_read_in rktio fd dest-bstr start end))
        (cond
          [(rktio-error? n)
           (end-atomic)
-          (raise-filesystem-error #f n "error reading from stream port")]
+	  (if network-error?
+              (raise-network-error #f n "error reading from stream port")
+              (raise-filesystem-error #f n "error reading from stream port"))]
          [(eqv? n RKTIO_READ_EOF) eof]
          [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ (core-port-closed port))
                                (lambda (v) 0))]
@@ -77,7 +87,7 @@
      #:read-is-atomic? #t
      #:close
      ;; in atomic mode
-     (lambda ()
+     (lambda (self)
        (on-close)
        (fd-close fd fd-refcount)
        (unsafe-custodian-unregister fd custodian-reference))
@@ -87,7 +97,7 @@
                         [() (buffer-control)]
                         [(pos) (buffer-control pos)]))))
   (define custodian-reference
-    (register-fd-close cust fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount #f port))
   port)
 
 ;; ----------------------------------------
@@ -100,7 +110,9 @@
                         #:fd-refcount [fd-refcount (box 1)]
                         #:on-close [on-close void]
                         #:plumber [plumber (current-plumber)]
-                        #:custodian [cust (current-custodian)])
+                        #:custodian [cust (current-custodian)]
+                        #:file-stream? [file-stream? #t]
+			#:network-error? [network-error? #f])
   (define buffer (make-bytes 4096))
   (define buffer-start 0)
   (define buffer-end 0)
@@ -126,7 +138,9 @@
        (cond
          [(rktio-error? n)
           (end-atomic)
-          (raise-filesystem-error #f n "error writing to stream port")]
+	  (if network-error?
+              (raise-network-error #f n "error writing to stream port")
+              (raise-filesystem-error #f n "error writing to stream port"))]
          [(zero? n)
           #f]
          [else
@@ -165,13 +179,18 @@
   (define port
     (make-core-output-port
      #:name name
-     #:data (fd-data fd extra-data #f)
+     #:self #f
+     #:data (fd-output-data fd extra-data #f file-stream?
+                            ;; Flush function needed for `file-truncate`:
+                            (lambda ()
+                              (atomically
+                               (flush-buffer-fully #f))))
 
      #:evt evt
      
      #:write-out
      ;; in atomic mode
-     (lambda (src-bstr src-start src-end nonbuffer/nonblock? enable-break? copy?)
+     (lambda (self src-bstr src-start src-end nonbuffer/nonblock? enable-break? copy?)
        (cond
          [(= src-start src-end)
           ;; Flush request
@@ -194,17 +213,19 @@
           (cond
             [(rktio-error? n)
              (end-atomic)
-             (raise-filesystem-error #f n "error writing to stream port")]
+	     (if network-error?
+		 (raise-network-error #f n "error writing to stream port")
+		 (raise-filesystem-error #f n "error writing to stream port"))]
             [(zero? n) (wrap-evt evt (lambda (v) #f))]
             [else n])]))
 
      #:count-write-evt-via-write-out
-     (lambda (v bstr start)
+     (lambda (self port v bstr start)
        (port-count! port v bstr start))
 
      #:close
      ;; in atomic mode
-     (lambda ()
+     (lambda (self)
        (flush-buffer-fully #f) ; can temporarily leave atomic mode
        (when buffer ; <- in case a concurrent close succeeded
          (on-close)
@@ -226,11 +247,11 @@
                         [(pos)
                          (+ pos (- buffer-end buffer-start))]))
      #:buffer-mode (case-lambda
-                     [() buffer-mode]
-                     [(mode) (set! buffer-mode mode)])))
+                     [(self) buffer-mode]
+                     [(self mode) (set! buffer-mode mode)])))
 
   (define custodian-reference
-    (register-fd-close cust fd fd-refcount port))
+    (register-fd-close cust fd fd-refcount flush-handle port))
 
   (set-fd-evt-closed! evt (core-port-closed port))
 
@@ -263,7 +284,7 @@
 (define (make-file-position fd buffer-control)
   ;; in atomic mode
   (case-lambda
-    [()
+    [(self)
      (define ppos (rktio_get_file_position rktio fd))
      (cond
        [(rktio-error? ppos)
@@ -273,7 +294,7 @@
         (define pos (rktio_filesize_ref ppos))
         (rktio_free ppos)
         (buffer-control pos)])]
-    [(pos)
+    [(self pos)
      (buffer-control)
      (define r
        (rktio_set_file_position rktio
@@ -331,12 +352,14 @@
 
 ;; ----------------------------------------
 
-(define (register-fd-close custodian fd fd-refcount port)
+(define (register-fd-close custodian fd fd-refcount flush-handle port)
   (define closed (core-port-closed port))
   (unsafe-custodian-register custodian
                              fd
                              ;; in atomic mode
                              (lambda (fd)
+                               (when flush-handle
+                                 (plumber-flush-handle-remove! flush-handle))
                                (fd-close fd fd-refcount)
                                (set-closed-state! closed))
                              #f

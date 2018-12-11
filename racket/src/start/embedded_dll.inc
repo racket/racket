@@ -38,7 +38,7 @@ static void parse_embedded_dlls()
 {
   long rsrc_pos;
 
-  rsrc_pos = find_resource_offset(258);
+  rsrc_pos = find_resource_offset(get_self_executable_path(), 258, 0);
   if (rsrc_pos) {
     HANDLE fd = open_self();
     
@@ -138,6 +138,19 @@ static void *in_memory_find_object(void *h, const char *name)
     }
     return NULL;
   }
+}
+
+static long in_memory_get_offset(const char *name)
+{
+  int i;
+
+  for (i = 0; embedded_dlls[i].name; i++) {
+    if (!_stricmp(embedded_dlls[i].name, name)) {
+      return embedded_dlls[i].pos;
+    }
+  }
+  
+  return 0;
 }
 
 static void register_embedded_dll_hooks()

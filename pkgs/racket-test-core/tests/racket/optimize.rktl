@@ -2535,6 +2535,25 @@
   (test-reduce 'k:list-pair? '(cdr (list 1)) #f)
 )
 
+(test-comp '(lambda (z)
+              (when (and (list? z) (pair? z))
+                (list? (cdr z))))
+           '(lambda (z)
+              (when (and (list? z) (pair? z))
+                #t)))
+(test-comp '(lambda (z)
+              (when (list? z)
+                (list? (unsafe-cdr z))))
+           '(lambda (z)
+              (when (list? z)
+                #t)))
+(test-comp '(lambda (z)
+              (when (list? z)
+                (list? (cdr z))))
+           '(lambda (z)
+              (when (list? z)
+                (begin (cdr z) #t))))
+
 (let ([test-bin
        (lambda (bin-name)
          (test-comp `(lambda (z)
@@ -6368,6 +6387,42 @@
       (let ([only (lambda () ((car (list proc)) '(5)))])
         (let ([also-only only])
           (also-only))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module optimizes-to-with-immediate-continuation-mark-in-noninlined racket/base
+  (define (call/icm proc)
+    (call-with-immediate-continuation-mark
+     'x
+     (lambda (v)
+       ;; The constant '(1 2 3) currently prevents inlining
+       (if (proc '(1 2 3))
+           (proc v)
+           #f))))
+
+  (define (call/cm proc)
+    (if (zero? (random 1))
+        (with-continuation-mark
+         'x 'y
+         (proc))
+        ;; disable inline:
+        '(3 4 5)))
+
+  (define result
+    (let ([in? #f]
+          [result #f])
+      (call/cm
+       (lambda ()
+         (set! in? #t)
+         (call/icm
+          (lambda (v)
+            (set! result v)))
+         (set! in? #f)))
+      result))
+
+  (provide result))
+
+(test #f dynamic-require ''optimizes-to-with-immediate-continuation-mark-in-noninlined 'result)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -892,7 +892,7 @@
                = >>= <<= ^= += *= /= -= %= \|= &= ++ --
                return if for while else switch case XFORM_OK_ASSIGN
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
-               __typeof sizeof __builtin_object_size
+               __typeof __typeof__ sizeof __builtin_object_size
             
                ;; These don't act like functions:
                setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
@@ -913,7 +913,7 @@
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf __isinff128
                __inline_isnanl __inline_isnan __inline_signbit __inline_signbitf __inline_signbitd __inline_signbitl
                __builtin_popcount __builtin_clz __builtin_isnan __builtin_isinf __builtin_signbit
-               __builtin_signbitf __builtin_signbitd __builtin_signbitl __builtin_isinf_sign
+               __builtin_signbitf __builtin_signbitd __builtin_signbitl __builtin_isinf_sign __builtin_trap
                _Generic
                __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno
@@ -938,7 +938,7 @@
                       non-functions)
             ht))
 
-	(define args-unevaled '(sizeof __typeof __builtin_object_size))
+	(define args-unevaled '(sizeof __typeof __typeof__ __builtin_object_size))
 	(define args-unevaled-table
           (let ([ht (make-hasheq)])
             (for-each (lambda (s)
@@ -1562,7 +1562,11 @@
                        (seq-close body-v)
                        (list->seq (process-top-level (seq->list (seq-in body-v)) where can-drop-vars?))))
                     (cdddr e))]
-            
+            [(and (eq? (tok-n (car e)) 'inline)
+                  (pair? (cdr e))
+                  (eq? (tok-n (cadr e)) 'namespace))
+             ;; inline namespace is something we can ignore?
+             e]
             [(typedef? e)
              (when show-info?
                (printf "/* TYPEDEF */\n"))
@@ -1804,7 +1808,8 @@
         
         (define (struct-decl? e)
           (and (memq (tok-n (car e)) '(struct enum))
-               (ormap braces? (cdr e))))
+               (ormap braces? (cdr e))
+               (not (function? e))))
         
         (define (class-decl? e)
           (memq (tok-n (car e)) '(class)))

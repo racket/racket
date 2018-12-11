@@ -172,8 +172,6 @@ static Scheme_Object *read_box(Scheme_Object *port,
 static Scheme_Object *read_hash(Scheme_Object *port,
 				int opener, char closer, int kind,
 				ReadParams *params);
-static Scheme_Object *read_compiled(Scheme_Object *port,
-				    ReadParams *params);
 static void unexpected_closer(int ch,
 			      Scheme_Object *port);
 static int next_is_delim(Scheme_Object *port);
@@ -684,8 +682,6 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
             return read_quote("unquoting #`@", unsyntax_splicing_symbol, 3, port, params);
           } else
             return read_quote("unquoting #`", unsyntax_symbol, 2, port, params);
-	case '~':
-          return read_compiled(port, params);
         case '^':
           {
             ch = scheme_getc(port);
@@ -3613,234 +3609,10 @@ static intptr_t read_simple_number_from_port(Scheme_Object *port)
           + (d << 24));
 }
 
-static void install_byecode_hash_code(CPort *rp, char *hash_code)
+static Scheme_Object *read_linklet_bundle_hash(Scheme_Object *port,
+                                               int can_read_unsafe,
+                                               Scheme_Object *delay_load_info)
 {
-  mzlonglong l = 0;
-  int i;
-
-  for (i = 0; i < 20; i++) {
-    l ^= ((umzlonglong)(hash_code[i]) << ((i % 8) * 8));
-  }
-
-  /* Make sure the hash code leaves lots of room for
-     run-time generated indices: */
-# define LARGE_SPAN ((mzlonglong)1 << 40)
-
-  if (!l) l = LARGE_SPAN;
-  if (l > 0) l = -l;
-  if (l > (-LARGE_SPAN)) l -= LARGE_SPAN;
-  rp->bytecode_hash = l;
-}
-
-char *scheme_symbol_path_to_string(Scheme_Object *p, intptr_t *_len)
-{
-  Scheme_Object *pr;
-  intptr_t len = 0, l;
-  unsigned char *s;
-
-  for (pr = p; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
-    l = SCHEME_SYM_LEN(SCHEME_CAR(pr));
-    if (l < 255)
-      len += l + 1;
-    else
-      len += l + 1 + 4;
-  }
-  *_len = len;
-
-  s = scheme_malloc_atomic(len + 1);
-  s[len] = 0;
-  
-  len = 0;
-  for (pr = p; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
-    l = SCHEME_SYM_LEN(SCHEME_CAR(pr));
-    if (l < 255) {
-      s[len++] = l;
-    } else {
-      s[len++] = 255;
-      s[len++] = (l & 0xFF);
-      s[len++] = ((l >> 8) & 0xFF);
-      s[len++] = ((l >> 16) & 0xFF);
-      s[len++] = ((l >> 24) & 0xFF);
-    }
-    memcpy(s + len, SCHEME_SYM_VAL(SCHEME_CAR(pr)), l);
-    len += l;
-  }
-
-  return (char *)s;
-}
-
-Scheme_Object *scheme_string_to_symbol_path(char *_s, intptr_t len)
-{
-  unsigned char *s = (unsigned char *)_s;
-  char *e, buffer[32];
-  uintptr_t pos = 0, l;
-  Scheme_Object *first = NULL, *last = NULL, *pr;
-
-  while (pos < len) {
-    l = s[pos++];
-    if ((l == 255) && ((len - pos) > 4)) {
-      l = (s[pos] | (s[pos+1] << 8) | (s[pos+2] << 16) | (s[pos+3] << 24));
-      pos += 4;
-    }
-    if (l > len - pos)
-      l = len - pos;
-    if (l < 32)
-      e = buffer;
-    else
-      e = scheme_malloc_atomic(l + 1);
-    memcpy(e, s + pos, l);
-    e[l] = 0;
-    pos += l;
-
-    if (!valid_utf8(e, l))
-      return scheme_null;
-
-    pr = scheme_make_pair(scheme_intern_exact_symbol(e, l), scheme_null);
-    if (last)
-      SCHEME_CDR(last) = pr;
-    else
-      first = pr;
-    last = pr;
-  }
-
-  return first ? first : scheme_null;
-}
-
-/* Installs into `ht` a mapping of offset -> (listof symbol) */
-static void read_linklet_directory(Scheme_Object *port, Scheme_Hash_Table *ht, int depth, intptr_t bundle_pos)
-{
-  char *s;
-  Scheme_Object *v, *p;
-  int len, left, right;
-  intptr_t got, offset;
-
-  if (depth > 32)
-    scheme_read_err(port, "read (compiled): linklet-module directory tree is imbalanced");
-  
-  len = read_simple_number_from_port(port);
-  if (len < 0) 
-    scheme_read_err(port, "read (compiled): linklet-bundle name read failed");
-
-  s = scheme_malloc_atomic(len + 1);
-  got = scheme_get_bytes(port, len, s, 0);
-
-  if (got != len)
-    v = NULL;
-  else {
-    s[len] = 0;
-    v = scheme_string_to_symbol_path(s, len);
-    for (p = v; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
-      if (!SCHEME_SYMBOLP(SCHEME_CAR(p))) {
-        v = NULL;
-        break;
-      }
-    }
-    if (v && scheme_hash_get(ht, v))
-      v = NULL;
-  }
-
-  if (!v)
-    scheme_read_err(port, "read (compiled): linklet-bundle name read failed");
-
-  offset = read_simple_number_from_port(port); /* offset */
-  (void)read_simple_number_from_port(port); /* length */
-
-  scheme_hash_set(ht, scheme_make_integer(offset+bundle_pos), v);
-
-  left = read_simple_number_from_port(port);
-  right = read_simple_number_from_port(port);
-
-  if (left)
-    read_linklet_directory(port, ht, depth+1, bundle_pos);
-  if (right)
-    read_linklet_directory(port, ht, depth+1, bundle_pos);
-}
-
-Scheme_Object *wrap_as_linklet_directory(Scheme_Hash_Tree *ht)
-{
-  Scheme_Object *v;
-  v = scheme_alloc_small_object();
-  v->type = scheme_linklet_directory_type;
-  SCHEME_PTR_VAL(v) = (Scheme_Object *)ht;
-  return v;
-}
-
-static Scheme_Object *bundle_list_to_hierarchical_directory(Scheme_Object *bundles)
-{
-  Scheme_Hash_Tree *accum, *next;
-  Scheme_Object *p, *v, *path, *stack;
-  int len, prev_len, i;
-  
-  /* The bundles list is in post-order, so we can build directories
-     bottom-up */
-
-  prev_len = 0;
-  stack = scheme_null;
-  accum = scheme_make_hash_tree(0);
-
-  while (1) {
-    MZ_ASSERT(SCHEME_PAIRP(bundles));
-    p = SCHEME_CAR(bundles);
-    path = SCHEME_CAR(p);
-    v = SCHEME_CDR(p);
-
-    MZ_ASSERT(SCHEME_FALSEP(v) || SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_bundle_type));
-
-    len = scheme_list_length(path);
-
-    if (len < prev_len)
-      return NULL;
-
-    while (len > prev_len + 1) {
-      stack = scheme_make_pair((Scheme_Object *)accum, stack);
-      prev_len++;
-      accum = scheme_make_hash_tree(0);
-    }
-
-    for (i = 0; i < prev_len - 1; i++) {
-      path = SCHEME_CDR(path);
-    }
-
-    if (len == prev_len) {
-      if (!SCHEME_FALSEP(v)) {
-        MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_bundle_type));
-        accum = scheme_hash_tree_set(accum, scheme_false, v);
-      }
-
-      if (!len)
-        return wrap_as_linklet_directory(accum);
-
-      next = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
-      stack = SCHEME_CDR(stack);
-      next = scheme_hash_tree_set(next, SCHEME_CAR(path), wrap_as_linklet_directory(accum));
-      prev_len--;
-      accum = next;
-    } else {
-      MZ_ASSERT(len == prev_len + 1);
-      if (prev_len)
-        path = SCHEME_CDR(path);
-      next = scheme_make_hash_tree(0);
-      if (!SCHEME_FALSEP(v)) {
-        MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_bundle_type));
-        next = scheme_hash_tree_set(next, scheme_false, v);
-      }
-      accum = scheme_hash_tree_set(accum, SCHEME_CAR(path), wrap_as_linklet_directory(next));
-    }
-      
-    bundles = SCHEME_CDR(bundles);
-    if (SCHEME_NULLP(bundles))
-      return NULL;
-  }
-}
-
-/* "#~" has been read */
-static Scheme_Object *read_compiled(Scheme_Object *port,
-				    ReadParams *params)
-{
-  Scheme_Hash_Table *directory = NULL; /* position -> symbol-path */
-  Scheme_Object *bundles = scheme_null; /* list of (cons symbol-path bundle-or-#f) */
-  intptr_t bundle_pos;
-  int bundles_to_read = 0;
   Scheme_Object *result;
   intptr_t size, shared_size, got, offset;
   CPort *rp;
@@ -3849,360 +3621,221 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   intptr_t *so;
   Scheme_Load_Delay *delay_info;
   Scheme_Hash_Table **local_ht;
-  int all_short, mode;
+  int all_short;
   int perma_cache = use_perma_cache;
   Scheme_Object *dir;
   Scheme_Config *config;
-  char hash_code[20];
   Scheme_Performance_State perf_state;
 
   scheme_performance_record_start(&perf_state);
 
-  while (1) {
-    bundle_pos = SCHEME_INT_VAL(scheme_file_position(1, &port)) - 2; /* -2 for "#~" */
-    
-    /* Check version: */
-    size = scheme_get_byte(port);
-    {
-      char buf[64];
-      
-      if (size < 0) size = 0;
-      if (size > 63) size = 63;
-      
-      got = scheme_get_bytes(port, size, buf, 0);
-      buf[got] = 0;
-      
-      if (!params->skip_zo_vers_check)
-        if (strcmp(buf, MZSCHEME_VERSION))
-          scheme_read_err(port,
-                          "read (compiled): wrong version for compiled code\n"
-                          "  compiled version: %s\n"
-                          "  expected version: %s",
-                          (buf[0] ? buf : "???"), MZSCHEME_VERSION);
-    }
-    
-    mode = scheme_get_byte(port);
-    if (mode == 'D') {
-      /* a linklet directory */
-      if (directory)
-        scheme_read_err(port,
-                        "read (compiled): found unexpected linklet directory nesting");
-      (void)read_simple_number_from_port(port); /* count */
-      directory = scheme_make_hash_table_equal();
-      read_linklet_directory(port, directory, 0, bundle_pos);
-      bundles_to_read = directory->count;
-    } else if (mode == 'B') {
-      /* single module or other top-level form */
+  /* Allow delays? */
+  if (delay_load_info) {
+    delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
+    SET_REQUIRED_TAG(delay_info->type = scheme_rt_delay_load_info);
+    delay_info->path = delay_load_info;
+  } else
+    delay_info = NULL;
 
-      /* Allow delays? */
-      if (params->delay_load_info) {
-        delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
-        SET_REQUIRED_TAG(delay_info->type = scheme_rt_delay_load_info);
-        delay_info->path = params->delay_load_info;
-      } else
-        delay_info = NULL;
-
-      /* Module hash code */
-      got = scheme_get_bytes(port, 20, hash_code, 0);
-
-      symtabsize = read_simple_number_from_port(port);
+  symtabsize = read_simple_number_from_port(port);
   
-      /* Load table mapping symtab indices to stream positions: */
+  /* Load table mapping symtab indices to stream positions: */
 
-      all_short = scheme_get_byte(port);
-      if (symtabsize < 0)
-        so = NULL;
-      else
-        so = (intptr_t *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
-                                               scheme_check_overflow(symtabsize, sizeof(intptr_t), 0));
-      if (!so)
-        scheme_read_err(port,
-                        "read (compiled): could not allocate symbol table of size %" PRIdPTR,
-                        symtabsize);
-      if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
-          != ((all_short ? 2 : 4) * (symtabsize - 1)))
-        scheme_read_err(port,
-                        "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
-                        got, (all_short ? 2 : 4) * (symtabsize - 1));
-      {
-        /* This loop runs top to bottom, since sizeof(long) may be larger
-           than the decoded integers (but it's never shorter) */
-        intptr_t j, v;
-        unsigned char *so_c = (unsigned char *)so;
-        for (j = symtabsize - 1; j--; ) {
-          if (all_short) {
-            v = so_c[j * 2]
-              + (so_c[j * 2 + 1] << 8);
-          } else {
-            v = so_c[j * 4]
-              + (so_c[j * 4 + 1] << 8)
-              + (so_c[j * 4 + 2] << 16)
-              + (so_c[j * 4 + 3] << 24);
-          }
-          so[j] = v;
-        }
-      }
-
-      /* Continue reading content */
-
-      shared_size = read_simple_number_from_port(port);
-      size = read_simple_number_from_port(port);
-
-      if (shared_size >= size) {
-        scheme_read_err(port,
-                        "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
-                        shared_size, size);
-      }
-
-      rp = MALLOC_ONE_RT(CPort);
-      SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
-      {
-        unsigned char *st;
-        st = (unsigned char *)scheme_malloc_fail_ok(scheme_malloc_atomic, size + 1);
-        rp->start = st;
-      }
-      rp->pos = 0;
-      {
-        intptr_t base;
-        scheme_tell_all(port, NULL, NULL, &base);
-        rp->base = base;
-      }
-      offset = SCHEME_INT_VAL(scheme_file_position(1, &port));
-      rp->orig_port = port;
-      rp->size = size;
-      if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
-        scheme_read_err(port,
-                        "read (compiled): ill-formed code (bad count: %ld != %ld"
-                        ", started at %ld)",
-                        got, size, rp->base);
-
-      local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
-
-      symtab = MALLOC_N(Scheme_Object *, symtabsize);
-      rp->symtab_size = symtabsize;
-      rp->ht = local_ht;
-      rp->symtab = symtab;
-      rp->unsafe_ok = params->can_read_unsafe;
-
-      {
-        Scheme_Hash_Table *se_ht;
-        se_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-        rp->symtab_entries = se_ht;
-        if (delay_info)
-          delay_info->symtab_entries = se_ht;
-      }
-
-      config = scheme_current_config();
-
-      dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
-      if (SCHEME_TRUEP(dir))
-        dir = scheme_path_to_directory_path(dir);
-      rp->relto = dir;
-
-      install_byecode_hash_code(rp, hash_code);
-
-      rp->shared_offsets = so;
-      rp->delay_info = delay_info;
-
-      rp->symtab_refs = scheme_null;
-
-      if (!delay_info) {
-        /* Read shared parts: */
-        intptr_t j, len;
-        Scheme_Object *v;
-        len = symtabsize;
-        for (j = 1; j < len; j++) {
-          if (!symtab[j]) {
-            v = read_compact(rp, 0);
-            v = resolve_symtab_refs(v, rp);
-            symtab[j] = v;
-          } else {
-            if (j+1 < len)
-              rp->pos = so[j];
-            else
-              rp->pos = shared_size;
-          }
-        }
+  all_short = scheme_get_byte(port);
+  if (symtabsize < 0)
+    so = NULL;
+  else
+    so = (intptr_t *)scheme_malloc_fail_ok(scheme_malloc_atomic, 
+                                           scheme_check_overflow(symtabsize, sizeof(intptr_t), 0));
+  if (!so)
+    scheme_read_err(port,
+                    "read (compiled): could not allocate symbol table of size %" PRIdPTR,
+                    symtabsize);
+  if ((got = scheme_get_bytes(port, (all_short ? 2 : 4) * (symtabsize - 1), (char *)so, 0)) 
+      != ((all_short ? 2 : 4) * (symtabsize - 1)))
+    scheme_read_err(port,
+                    "read (compiled): ill-formed code (bad table count: %" PRIdPTR " != %" PRIdPTR ")",
+                    got, (all_short ? 2 : 4) * (symtabsize - 1));
+  {
+    /* This loop runs top to bottom, since sizeof(long) may be larger
+       than the decoded integers (but it's never shorter) */
+    intptr_t j, v;
+    unsigned char *so_c = (unsigned char *)so;
+    for (j = symtabsize - 1; j--; ) {
+      if (all_short) {
+        v = so_c[j * 2]
+          + (so_c[j * 2 + 1] << 8);
       } else {
-        scheme_reserve_file_descriptor();
-        rp->pos = shared_size; /* skip shared part */
-        delay_info->file_offset = offset;
-        delay_info->size = shared_size;
-        delay_info->symtab_size = rp->symtab_size;
-        delay_info->symtab = rp->symtab;
-        delay_info->shared_offsets = rp->shared_offsets;
-        delay_info->relto = rp->relto;
-        delay_info->unsafe_ok = rp->unsafe_ok;
-        delay_info->bytecode_hash = rp->bytecode_hash;
-
-        if (SAME_OBJ(delay_info->path, scheme_true))
-          perma_cache = 1;
-
-        if (perma_cache) {
-          unsigned char *cache;
-          cache = (unsigned char *)scheme_malloc_atomic(shared_size);
-          memcpy(cache, rp->start, shared_size);
-          delay_info->cached = cache;
-          delay_info->cached_port = port;
-          delay_info->perma_cache = 1;
-        }
+        v = so_c[j * 4]
+          + (so_c[j * 4 + 1] << 8)
+          + (so_c[j * 4 + 2] << 16)
+          + (so_c[j * 4 + 3] << 24);
       }
-
-      /* Read main body: */
-      result = read_compact(rp, 1);
-
-      if (delay_info) {
-        if (delay_info->ut)
-          delay_info->ut->rp = NULL; /* clean up */
-      }
-
-      if (*local_ht)
-        scheme_read_err(port, "read (compiled): unexpected graph structure");
-
-      if (!SCHEME_HASHTRP(result))
-        scheme_read_err(port, "read (compiled): bundle content is not an immutable hash");
-
-      {
-        mzlonglong i;
-        Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)result;
-        Scheme_Object *key, *val;
-
-        if (!scheme_starting_up) {
-          i = scheme_hash_tree_next(t, -1);
-          while (i != -1) {
-            scheme_hash_tree_index(t, i, &key, &val);
-            if (validate_loaded_linklet
-                && SAME_TYPE(SCHEME_TYPE(val), scheme_linklet_type)
-                && !((Scheme_Linklet *)val)->reject_eval)
-              scheme_validate_linklet(rp, (Scheme_Linklet *)val);
-            i = scheme_hash_tree_next(t, i);
-          }
-        }
-      
-        /* If no exception, the resulting code is ok. */
-
-        /* Install module hash code, if any. This code is used to register
-           the module in scheme_module_execute(), and it's used to
-           find a registered module in the default load handler. */
-        {
-          int i;
-          for (i = 0; i < 20; i++) {
-            if (hash_code[i]) break;
-          }
-
-          if (i < 20) {
-            result = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)result,
-                                                           hash_code_symbol,
-                                                           scheme_make_sized_byte_string(hash_code, 20, 1));
-          }
-        }
-      }
-
-      if (!directory) {
-        /* Since we're loading an individual bundle, strip submodule references */
-        result = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)result, pre_symbol, NULL);
-        result = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)result, post_symbol, NULL);
-      }
-
-      {
-        Scheme_Object *v;
-        v = scheme_alloc_small_object();
-        v->type = scheme_linklet_bundle_type;
-        SCHEME_PTR_VAL(v) = result;
-        result = v;
-      }
-      
-      if (directory) {
-        Scheme_Object *v;
-
-        /* Find bundle's symbol path by its starting position */
-        v = scheme_hash_get(directory, scheme_make_integer(bundle_pos));
-        if (!v)
-          scheme_read_err(port, "read (compiled): cannot match bundle position to linklet-directory path");
-                
-        bundles = scheme_make_pair(scheme_make_pair(v, result), bundles);
-        bundles_to_read--;
-
-        if (!bundles_to_read) {
-          /* convert flattened directory into hierarchical form */
-          v = bundle_list_to_hierarchical_directory(bundles);
-          if (!v)
-            scheme_read_err(port, "read (compiled): bad shape for bundle-directory tree");
-          scheme_performance_record_end("read", &perf_state);
-          return v;
-        }
-        /* otherwise, continue reading bundles */
-      } else {
-        scheme_performance_record_end("read", &perf_state);
-        return result;
-      }
-    } else {
-      scheme_read_err(port, "read (compiled): found bad mode");
-    }
-
-
-    while (1) {
-      int c1, c2;
-
-      c1 = scheme_get_byte(port);
-      c2 = scheme_get_byte(port);
-
-      if ((c1 != '#') || ((c2 != '~') && (c2 != 'f')))
-        scheme_read_err(port,
-                        "read (compiled): no `#~' for next linklet (%d to go) in a linklet directory",
-                        bundles_to_read);
-      
-      if (c2 == 'f') {
-        /* Got #f in place of a bundle */
-        Scheme_Object *v;
-        
-        bundle_pos = SCHEME_INT_VAL(scheme_file_position(1, &port)) - 2; /* -2 for "#f" */
-        v = scheme_hash_get(directory, scheme_make_integer(bundle_pos));
-        if (!v)
-          scheme_read_err(port, "read (compiled): cannot match empty-bundle position to linklet-directory path");
-
-        bundles = scheme_make_pair(scheme_make_pair(v, scheme_false), bundles);
-        bundles_to_read--;
-
-        if (!bundles_to_read) {
-          /* convert flattened directory into hierarchical form */
-          v = bundle_list_to_hierarchical_directory(bundles);
-          if (!v)
-            scheme_read_err(port, "read (compiled): bad shape for bundle-directory tree");
-          scheme_performance_record_end("read", &perf_state);
-          return v;
-        }
-      } else {
-        /* continue outer loop to read next bundle */
-        break;
-      }
+      so[j] = v;
     }
   }
-}
 
-Scheme_Object *scheme_read_compiled(Scheme_Object *port)
-{
-  Scheme_Config *config;
-  Scheme_Object *v, *v2;
-  ReadParams params;
+  /* Continue reading content */
+
+  shared_size = read_simple_number_from_port(port);
+  size = read_simple_number_from_port(port);
+  
+  if (shared_size >= size) {
+    scheme_read_err(port,
+                    "read (compiled): ill-formed code (shared size %ld >= total size %ld)",
+                    shared_size, size);
+  }
+
+  rp = MALLOC_ONE_RT(CPort);
+  SET_REQUIRED_TAG(rp->type = scheme_rt_compact_port);
+  {
+    unsigned char *st;
+    st = (unsigned char *)scheme_malloc_fail_ok(scheme_malloc_atomic, size + 1);
+    rp->start = st;
+  }
+  rp->pos = 0;
+  {
+    intptr_t base;
+    scheme_tell_all(port, NULL, NULL, &base);
+    rp->base = base;
+  }
+  offset = SCHEME_INT_VAL(scheme_file_position(1, &port));
+  rp->orig_port = port;
+  rp->size = size;
+  if ((got = scheme_get_bytes(port, size, (char *)rp->start, 0)) != size)
+    scheme_read_err(port,
+                    "read (compiled): ill-formed code (bad count: %ld != %ld"
+                    ", started at %ld)",
+                    got, size, rp->base);
+
+  local_ht = MALLOC_N(Scheme_Hash_Table *, 1);
+
+  symtab = MALLOC_N(Scheme_Object *, symtabsize);
+  rp->symtab_size = symtabsize;
+  rp->ht = local_ht;
+  rp->symtab = symtab;
+  rp->unsafe_ok = can_read_unsafe;
+
+  {
+    Scheme_Hash_Table *se_ht;
+    se_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    rp->symtab_entries = se_ht;
+    if (delay_info)
+      delay_info->symtab_entries = se_ht;
+  }
 
   config = scheme_current_config();
 
-  params.skip_zo_vers_check = 0;
+  dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
+  if (SCHEME_TRUEP(dir))
+    dir = scheme_path_to_directory_path(dir);
+  rp->relto = dir;
+  
+  rp->shared_offsets = so;
+  rp->delay_info = delay_info;
+  
+  rp->symtab_refs = scheme_null;
+  
+  if (!delay_info) {
+    /* Read shared parts: */
+    intptr_t j, len;
+    Scheme_Object *v;
+    len = symtabsize;
+    for (j = 1; j < len; j++) {
+      if (!symtab[j]) {
+        v = read_compact(rp, 0);
+        v = resolve_symtab_refs(v, rp);
+        symtab[j] = v;
+      } else {
+        if (j+1 < len)
+          rp->pos = so[j];
+        else
+          rp->pos = shared_size;
+      }
+    }
+  } else {
+    scheme_reserve_file_descriptor();
+    rp->pos = shared_size; /* skip shared part */
+    delay_info->file_offset = offset;
+    delay_info->size = shared_size;
+    delay_info->symtab_size = rp->symtab_size;
+    delay_info->symtab = rp->symtab;
+    delay_info->shared_offsets = rp->shared_offsets;
+    delay_info->relto = rp->relto;
+    delay_info->unsafe_ok = rp->unsafe_ok;
+    delay_info->bytecode_hash = rp->bytecode_hash;
+
+    if (SAME_OBJ(delay_info->path, scheme_true))
+      perma_cache = 1;
+
+    if (perma_cache) {
+      unsigned char *cache;
+      cache = (unsigned char *)scheme_malloc_atomic(shared_size);
+      memcpy(cache, rp->start, shared_size);
+      delay_info->cached = cache;
+      delay_info->cached_port = port;
+      delay_info->perma_cache = 1;
+    }
+  }
+
+  /* Read main body: */
+  result = read_compact(rp, 1);
+
+  if (delay_info) {
+    if (delay_info->ut)
+      delay_info->ut->rp = NULL; /* clean up */
+  }
+
+  if (*local_ht)
+    scheme_read_err(port, "read (compiled): unexpected graph structure");
+
+  if (!SCHEME_HASHTRP(result))
+    scheme_read_err(port, "read (compiled): bundle content is not an immutable hash");
+
+  {
+    mzlonglong i;
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)result;
+    Scheme_Object *key, *val;
+
+    if (!scheme_starting_up) {
+      i = scheme_hash_tree_next(t, -1);
+      while (i != -1) {
+        scheme_hash_tree_index(t, i, &key, &val);
+        if (validate_loaded_linklet
+            && SAME_TYPE(SCHEME_TYPE(val), scheme_linklet_type)
+            && !((Scheme_Linklet *)val)->reject_eval)
+          scheme_validate_linklet(rp, (Scheme_Linklet *)val);
+        i = scheme_hash_tree_next(t, i);
+      }
+    }
+      
+    /* If no exception, the resulting code is ok. */
+  }
+
+  scheme_performance_record_end("read", &perf_state);
+  return result;
+}
+
+Scheme_Object *scheme_read_linklet_bundle_hash(Scheme_Object *port)
+{
+  Scheme_Config *config;
+  int can_read_unsafe;
+  Scheme_Object *delay_load_info, *v, *v2;
+
+  config = scheme_current_config();
 
   v = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
   v2 = scheme_get_initial_inspector();
-  params.can_read_unsafe = SAME_OBJ(v, v2);
+  can_read_unsafe = SAME_OBJ(v, v2);
 
   v = scheme_get_param(config, MZCONFIG_DELAY_LOAD_INFO);
   if (SCHEME_TRUEP(v))
-    params.delay_load_info = v;
+    delay_load_info = v;
   else
-    params.delay_load_info = NULL;
+    delay_load_info = NULL;
 
-  return read_compiled(port, &params);
+  return read_linklet_bundle_hash(port, can_read_unsafe, delay_load_info);
 }
-
 
 THREAD_LOCAL_DECL(static Scheme_Load_Delay *clear_bytes_chain);
 

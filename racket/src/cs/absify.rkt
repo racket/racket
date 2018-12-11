@@ -4,6 +4,7 @@
 
 (define same-up? #f)
 (define exec? #f)
+(define no-trailing-sep? #f)
 
 (define-values (orig-p extras)
   (command-line
@@ -12,6 +13,8 @@
     (set! same-up? #t)]
    [("--exec") "Find executable path"
     (set! exec? #t)]
+   [("--no-trailing-sep") "Avoid a trailing \"/\""
+    (set! no-trailing-sep? #t)]
    #:args
    (path . extra)
    (values path extra)))
@@ -29,8 +32,14 @@
 		  p)
 	      p))
 	orig-p))
+
+  (define (fix-trailing p)
+    (if no-trailing-sep?
+        (let-values ([(base name dir?) (split-path p)])
+          (build-path base name))
+        p))
   
-  (display (simplify-path (path->complete-path p)))])
+  (display (fix-trailing (simplify-path (path->complete-path p))))])
   
 ;; In case there are extra arguments to an executable, preserve them
 (for ([e (in-list extras)])

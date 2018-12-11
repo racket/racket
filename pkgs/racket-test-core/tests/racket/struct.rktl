@@ -1105,7 +1105,7 @@
   (define thing.id! (make-struct-field-mutator thing-set! 0))
 
   (test #t struct-mutator-procedure? thing.id!)
-  (err/rt-test (thing.id!  'new-val))
+  (err/rt-test (thing.id! (make-thing 1) 'new-val))
   
   (let ([f #f])
     ;; defeat inlining to ensure that thunk is JITted:
@@ -1252,6 +1252,20 @@
   (test #f f 5)
   (test 'nope g 5 (lambda () 'nope))
   (test 'nope g struct:arity-at-least (lambda () 'nope)))
+
+;; ----------------------------------------
+;; Make sure an indirect struct constructor reports
+;; the right arity when there are more than 6 fields
+
+(let ()
+  (struct b (case-sensitive 
+             printing-style 
+             fraction-style
+             show-sharing
+             insert-newlines
+             annotations))
+  (struct a (x y) #:super struct:b)
+  (test 8 procedure-arity a))
 
 ;; ----------------------------------------
 

@@ -1,7 +1,7 @@
 
 #################################################################
 # This is the source for the `configure` script, to be compiled #
-# by autoconf (use `make-configure` in "../../racket").         #
+# by autoconf (use `make-configure` in "../../ac").             #
 #################################################################
 
 AC_INIT([embed-boot.rkt])
@@ -10,15 +10,25 @@ AC_CONFIG_HEADERS([cs_config.h])
 AC_CONFIG_AUX_DIR(../../lt)
 AC_CANONICAL_SYSTEM
 
+AC_DISABLE_OPTION_CHECKING
+
 AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code])
-AC_ARG_ENABLE(xonx,       [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS])
+m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mac>     Use Chez Scheme machine type <mach>])
+m4_include(../ac/sdk_arg.m4)
+m4_include(../ac/strip_arg.m4)
+AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
+AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
+AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
+m4_include(../ac/crossany_arg.m4)
+
+m4_include(../ac/sdk.m4)
 
 show_explicitly_disabled()
 {
@@ -52,6 +62,14 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 
+if test "${enable_csonly}" = "yes" ; then
+  enable_csdefault=yes
+fi
+show_explicitly_enabled "${enable_csdefault}" "executables without suffix"
+
+m4_include(../ac/sdk_show.m4)
+m4_include(../ac/strip_show.m4)
+
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
@@ -59,6 +77,32 @@ fi
 if test "${enable_xonx}" == "" ; then
   enable_xonx=no
 fi
+
+m4_include(../ac/path_pkgscope.m4)
+
+m4_include(../ac/crossany.m4)
+
+SUB_CONFIGURE_EXTRAS=
+
+
+CS_INSTALLED=cs
+if test "${enable_csdefault}" = "yes" ; then
+  CS_INSTALLED=""
+fi
+
+CS_COMPILED_SUBDIR=1
+if test "${enable_csdefault}" = "yes" ; then
+  CS_COMPILED_SUBDIR=0
+fi
+
+
+############## Install targets ################
+
+PREFIX_PATH_RELATIVE=/../..
+
+m4_include(../ac/path.m4)
+
+############## init variables ################
 
 skip_iconv_check=no
 use_flag_pthread=yes
@@ -69,8 +113,9 @@ OSX="not_osx"
 NOT_OSX=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+ELF_COMP=""
 
-FRAMEWORK_INSTALL_DIR='$(srcdir)/../../../lib/'
+FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
@@ -90,6 +135,10 @@ AC_CHECK_LIB(m, fmod)
 AC_CHECK_LIB(dl, dlopen)
 
 ############## platform tests ################
+
+MACH_HOST_CPU="${host_cpu}"
+extra_scheme_config_args=
+disable_curses_arg=--disable-curses
 
 case "$host_os" in
   solaris2*)
@@ -114,7 +163,9 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
-    LIBS="${LIBS} -lncurses"
+    LIBS="${LIBS} -lrt"
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   osf1*)
     ;;
@@ -136,10 +187,39 @@ case "$host_os" in
     else
       CONFIGURE_RACKET_SO_COMPILE="env PLT_CS_MAKE_UNIX_STYLE_MACOS=y"
       CPPFLAGS="${CPPFLAGS} -DRACKET_XONX"
+      strip_needs_dash_s=yes
+    fi
+
+    m4_include(../ac/sdk_mac.m4)
+
+    if test "${enable_libfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    elif test "${enable_userfw}" = "yes" ; then
+      FRAMEWORK_INSTALL_DIR=~/Library/Frameworks
+      FRAMEWORK_REL_INSTALL=no
+      FRAMEWORK_PREFIX=''
+    else
+      FRAMEWORK_INSTALL_DIR='${libpltdir}'
+      FRAMEWORK_REL_INSTALL=yes
+      if test "${libpltdir_rel}" = "" ; then
+        FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
+      else
+        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+      fi
+    fi
+
+    if test "${enable_mac64}" == "no"; then
+      MACH_HOST_CPU="x86"
+      extra_scheme_config_args="--32"
     fi
 
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
+
+    # ncurses.h is always available
+    disable_curses_arg=""
     ;;
   nto-qnx*)
     MACH_OS=qnx
@@ -168,7 +248,7 @@ if test "${enable_pthread}" = "yes" ; then
   thread_config_arg="--threads"
 fi
 
-case "$host_cpu" in
+case "$MACH_HOST_CPU" in
   x86_64)
     MACH="${thread_prefix}a6${MACH_OS}"
     ;;
@@ -199,10 +279,28 @@ if test "${enable_mach}" != "" ; then
   MACH="${enable_mach}"
 fi
 
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
+fi
+
+############## Strip tool ################
+
+m4_include(../ac/strip.m4)
+
+############## Makefile includes ################
+
+if test "$INCLUDEDEP" = "#" ; then
+  is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
+  if test "$is_gmake" = "" ; then
+     INCLUDEDEP="-include"
+  fi
+fi
+
+if test "$INCLUDEDEP" != "#" ; then
+  RKTL_PRE="compiled/"
+  RKTL_POST=".rktl"
 fi
 
 ############## C flags ################
@@ -349,8 +447,12 @@ AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
 AC_SUBST(STATIC_AR)
 AC_SUBST(ICP)
+AC_SUBST(STRIP_DEBUG)
+AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(RKTLINKER)
 AC_SUBST(INCLUDEDEP)
+AC_SUBST(RKTL_PRE)
+AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
@@ -358,11 +460,15 @@ AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
+AC_SUBST(ELF_COMP)
 AC_SUBST(SCHEME_SRC)
 AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
+AC_SUBST(CS_INSTALLED)
+AC_SUBST(CS_COMPILED_SUBDIR)
+AC_SUBST(CROSS_COMPILE_TARGET_KIND)
 
 makefiles="Makefile"
 
@@ -371,4 +477,4 @@ AC_OUTPUT($makefiles)
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; ${abssrcdir}/../../rktio/configure
+cd rktio; eval "${abssrcdir}/../../rktio/configure ${SUB_CONFIGURE_EXTRAS}"

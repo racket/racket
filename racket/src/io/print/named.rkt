@@ -17,6 +17,8 @@
              (symbol->print-string name #:for-type? #t)]
             [(path? name) ; especially for input & output ports
              (path->string name)]
+            [(string? name)
+             name]
             [else #f])])
     (cond
       [name-str

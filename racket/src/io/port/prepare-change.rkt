@@ -1,5 +1,6 @@
 #lang racket/base
-(require "input-port.rkt")
+(require "port.rkt"
+         "input-port.rkt")
 
 (provide prepare-change)
 
@@ -8,4 +9,4 @@
 (define (prepare-change in)
   (define prepare-change (core-input-port-prepare-change in))
   (when prepare-change
-    (prepare-change)))
+    (prepare-change (core-port-self in))))

@@ -7,7 +7,10 @@
 (define compile-file
   (case-lambda
     [(src)
-     (define cdir (build-path (path-only src) "compiled"))
+     (define cdir (build-path (path-only src) (let ([l (use-compiled-file-paths)])
+                                                (if (pair? l)
+                                                    (car l)
+                                                    "compiled"))))
      (make-directory* cdir)
      (compile-file src (build-path cdir (path-add-suffix (file-name-from-path src) #".zo")))]
     [(src dest) 

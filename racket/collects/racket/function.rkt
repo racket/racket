@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base racket/list syntax/name)
-         racket/list racket/match racket/private/arity)
+         racket/list racket/private/arity)
 
 (provide identity const thunk thunk* negate curry curryr
          (all-from-out racket/private/arity)
@@ -49,7 +49,7 @@
     (cond
       [(eqv? mask 0) #f]
       [(negative? mask) +inf.0]
-      [else (integer-length (sub1 mask))]))
+      [else (sub1 (integer-length mask))]))
 
   ; arity-mask? exact-nonnegative-integer? -> arity-mask?
   ;

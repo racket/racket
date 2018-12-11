@@ -1231,6 +1231,22 @@
    "provide/contract66-m1")
 
   (contract-error-test
+   'provide/contract-struct-out
+   #'(begin
+       (eval '(module pos racket/base
+                (require racket/contract)
+                (provide
+                 (contract-out
+                  [struct (b not-a) ()])
+
+                 (struct a ())
+                 (struct b a ())))))
+   (λ (x)
+     (and (exn:fail:syntax? x)
+          (regexp-match #rx"^contract-out: expected a struct name"
+                        (exn-message x)))))
+
+  (contract-error-test
    'contract-error-test8
    #'(begin
        (eval '(module pce1-bug scheme/base

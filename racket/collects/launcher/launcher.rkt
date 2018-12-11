@@ -534,7 +534,9 @@
                           dest))
   (define dir (if user?
                   (find-user-apps-dir)
-                  (find-apps-dir)))
+                  (or (find-apps-dir)
+                      (error 'installed-executable-path->desktop-path
+                             "no installation directory is available"))))
   (path-replace-extension (build-path dir (file-name-from-path dest))
                           #".desktop"))
 

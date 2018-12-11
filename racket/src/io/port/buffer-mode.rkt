@@ -20,7 +20,7 @@
        (atomically
         (check-not-closed who p)
         (and buffer-mode
-             (buffer-mode))))]
+             (buffer-mode (core-port-self p)))))]
     [(p mode)
      (unless (or (input-port? p) (output-port? p))
        (raise-argument-error who "port?" p))
@@ -36,7 +36,7 @@
         (define buffer-mode (core-port-buffer-mode p))
         (cond
           [buffer-mode
-           (buffer-mode mode)
+           (buffer-mode (core-port-self p) mode)
            #t]
           [else #f])))
      (cond

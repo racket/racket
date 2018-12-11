@@ -120,6 +120,6 @@
   (define ht (environment-variables-ht e))
   (cond
     [(not ht)
-     (environment-variables-names (environment-variables-copy e))]
+     (map normalize-key (environment-variables-names (environment-variables-copy e)))]
     [else
      (hash-keys ht)]))

@@ -44,9 +44,15 @@
   (make-instance 'empty-stx #f 'constant
                  get-syntax-literal!-id (lambda (pos) #f)
                  'get-encoded-root-expand-ctx #f))
+(void (instance-describe-variable! empty-syntax-literals-instance
+                                   get-syntax-literal!-id
+                                   '(procedure/succeeds 2)))
 
 (define empty-module-body-instance
   (make-module-body-instance-instance #:set-transformer! (lambda (name val) (void))))
+(void (instance-describe-variable! empty-module-body-instance
+                                   set-transformer!-id
+                                   '(procedure/succeeds 4)))
 
 (define empty-top-syntax-literal-instance
   (make-instance 'top-syntax-literal #f 'constant

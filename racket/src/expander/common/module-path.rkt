@@ -30,6 +30,8 @@
          top-level-module-path-index?
          non-self-module-path-index?
 
+         inside-module-context?
+
          resolve-module-path
          current-module-name-resolver
          build-module-name
@@ -374,6 +376,17 @@
 
 (define (non-self-module-path-index? mpi)
   (and (module-path-index-path mpi) #t))
+
+(define (inside-module-context? mpi inside-mpi)
+  (or (eq? mpi inside-mpi)
+      ;; Also recognize the "inside" context created by
+      ;; `shift-to-inside-root-context` for use with
+      ;; a module's namespace
+      (and (module-path-index? mpi)
+           (module-path-index? inside-mpi)
+           (module-path-index-resolved mpi)
+           (eq? (module-path-index-resolved mpi)
+                (module-path-index-resolved inside-mpi)))))
 
 ;; ----------------------------------------
 

@@ -106,4 +106,22 @@
           (hash-set knowns (unwrap prop:s) (known-struct-type-property/immediate-guard))]
          [else knowns]))
       #f)]
+    [`(define-values ,ids ,rhs)
+     (let loop ([rhs rhs])
+       (match rhs
+         [`(let-values () ,rhs) (loop rhs)]
+         [`(values ,rhss ...)
+          (cond
+            [(equal? (length ids) (length rhss))
+             (values
+              (for/fold ([knowns knowns]) ([id (in-list ids)]
+                                           [rhs (in-list rhss)])
+                (define-values (new-knowns info)
+                  (find-definitions `(define-values (,id) ,rhs)
+                                    prim-knowns knowns imports mutated unsafe-mode?
+                                    #:optimize? optimize?))
+                new-knowns)
+              #f)]
+            [else (values knowns #f)])]
+         [`,_  (values knowns #f)]))]
     [`,_ (values knowns #f)]))

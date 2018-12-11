@@ -1035,9 +1035,10 @@
       (write (compile e) o)
       (define s (get-output-bytes o))
       (define vlen (bytes-ref s 2))
+      (define vmlen (bytes-ref s (+ 3 vlen)))
       ;; Add a hash, so that loading this module in two contexts tries to
       ;; use the same loaded bytecode and same JIT-generated code:
-      (bytes-copy! s (+ 4 vlen)
+      (bytes-copy! s (+ 5 vlen vmlen)
                    (subbytes
                     (bytes-append (string->bytes/utf-8 (format "~s" (bytes-length s)))
                                   (make-bytes 20 0))
@@ -1256,6 +1257,30 @@
   (write c (open-output-bytes)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the prompt around a module definitions works and allows
+;; assignment to an otherwise mutable variable:
+
+(module assigns-to-variable-through-a-continuation racket/base
+  (provide result)
+  (define x (let/cc k k))
+  (set! x x)
+  (x 5)
+  (define result x))
+
+(test 5 dynamic-require ''assigns-to-variable-through-a-continuation 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the prompt around a module definitions does not allow
+;; assignment to an otherwise constant binding.
+
+(module tries-to-assign-to-variable-through-a-continuation racket/base
+  (define x (let/cc k k))
+  (x 5))
+
+(err/rt-test (dynamic-require ''tries-to-assign-to-variable-through-a-continuation #f)
+             exn:fail:contract:variable?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that skipping definitions (but continuing
 ;; with the rest of a module body) is disallowed.
 
@@ -1356,17 +1381,18 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (define (install-module-hashes! s start len c)
   (define vlen (bytes-ref s (+ start 2)))
-  (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
+  (define vslen (bytes-ref s (+ start 3 vlen)))
+  (define mode (integer->char (bytes-ref s (+ start 4 vlen vslen))))
   (case mode
     [(#\B)
      (define h (make-bytes 20 (+ 42 c)))
-     (bytes-copy! s (+ start 4 vlen) h)]
+     (bytes-copy! s (+ start 5 vlen vslen) h)]
     [(#\D)
      (define (read-num rel-pos)
        (define pos (+ start rel-pos))
        (integer-bytes->integer s #t #f pos (+ pos 4)))
-     (define count (read-num (+ 4 vlen)))
-     (for/fold ([pos (+ 8 vlen)]) ([i (in-range count)])
+     (define count (read-num (+ 5 vlen vslen)))
+     (for/fold ([pos (+ 9 vlen vslen)]) ([i (in-range count)])
        (define pos-pos (+ pos 4 (read-num pos)))
        (define mod-start (read-num pos-pos))
        (define mod-len (read-num (+ pos-pos 4)))
@@ -2771,6 +2797,119 @@ case of module-leve bindings; it doesn't cover local bindings.
   (provide result))
 
 (test 6 dynamic-require ''shaodws-c-and-imports-the-rest 'result)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure #%module-begin respects the stop list when module* is present
+
+(module module-begin-stop-list racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (stop stx)
+    (raise-syntax-error #f "don't expand me!" stx))
+  (begin-for-syntax
+    (local-expand #'(#%plain-module-begin (#%expression (stop)))
+                  'module-begin
+                  (list #'module* #'stop))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check state of a module-instance namespace when initialization
+;; is interrupted by an error
+
+(module fails-after-f-and-before-g racket/base
+  (provide f g)
+  (define (f x) (error "boom"))
+  (f 42)
+  (define g (if (zero? (random 1)) 'ok 'oops)))
+
+(err/rt-test (dynamic-require ''fails-after-f-and-before-g #f)
+             (lambda (x) (and (exn:fail? x)
+                              (regexp-match? #rx"boom" (exn-message x)))))
+(test #t procedure? (eval 'f (module->namespace ''fails-after-f-and-before-g)))
+
+(module uses-fails-after-f-and-before-g racket/base
+  (require 'fails-after-f-and-before-g)
+  g)
+
+(err/rt-test (dynamic-require ''uses-fails-after-f-and-before-g #f)
+             (lambda (x) (and (exn:fail? x)
+                              (regexp-match? #rx"uninitialized" (exn-message x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module assigns-to-self-variable-through-namespace racket/base
+  (require (for-syntax racket/base))
+  (define x 1)
+  (set! x 2)
+
+  (define-syntax z
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ b)
+         #'(set! x b)])))
+
+  (define-syntax y
+    (make-set!-transformer
+     (lambda (stx)
+       (syntax-case stx ()
+         [(_ a b)
+          #'(set! x b)]))))
+
+  (define ns (variable-reference->namespace
+              (#%variable-reference)))
+
+  (eval `(set! x 3) ns)
+  (eval `(z 4) ns)
+  (eval `(set! y 45) ns))
+
+(dynamic-require ''assigns-to-self-variable-through-namespace #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check machine-independent compilation and
+;; machine-dependent recompilation
+
+(let ()
+  (define m (parameterize ([current-compile-target-machine #f])
+              (compile
+               ;; The intent of this module is to exercise cross-module
+               ;; inlining when moving from machine-independent to
+               ;; machine-dependent. The `x` should be inlined from a submodule
+               ;; and `map` should be inlined --- but we don't actually
+               ;; check, currently.
+               `(module should-inline-when-fully-compiled racket/base
+                  (module sub racket/base
+                    (define x 1)
+                    (provide x))
+                  (require 'sub)
+                  (define y #'y)
+                  (define (f g)
+                    (map (lambda (y) x) g))))))
+
+  (define (check-vm bstr vm)
+    (define vm-bstr (string->bytes/utf-8 (symbol->string vm)))
+    (define expect (bytes-append #"#~"
+                                 (bytes (string-length (version)))
+                                 (string->bytes/utf-8 (version))
+                                 (bytes (bytes-length vm-bstr))
+                                 vm-bstr))
+    (test #t equal? expect (subbytes bstr 0 (min (bytes-length bstr) (bytes-length expect)))))
+
+  (define o (open-output-bytes))
+  (write m o)
+  (check-vm (get-output-bytes o) 'linklet)
+  
+  (define m2
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes (get-output-bytes o)))))
+  
+  (define re-m (compiled-expression-recompile m))
+  (define re-m2 (compiled-expression-recompile m2))
+
+  (define re-o (open-output-bytes))
+  (write re-m re-o)
+  (check-vm (get-output-bytes re-o) (system-type 'vm))
+
+  (define re-o2 (open-output-bytes))
+  (write re-m2 re-o2)
+  (check-vm (get-output-bytes re-o2) (system-type 'vm)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

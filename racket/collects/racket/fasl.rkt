@@ -1,10 +1,25 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require '#%extfl
+         (for-syntax racket/base)
          "private/truncate-path.rkt"
-         "private/relative-path.rkt")
+         "private/relative-path.rkt"
+         (rename-in racket/base
+                    [write-byte r:write-byte]
+                    [write-bytes r:write-bytes]))
 
 (provide s-exp->fasl
          fasl->s-exp)
+
+;; ----------------------------------------
+
+;; These wrappers are to make it harder to misuse write-byte[s]
+;; (e.g. calling without the port)
+
+(define (write-byte byte out)
+  (r:write-byte byte out))
+
+(define (write-bytes bstr out [start-pos 0] [end-pos (bytes-length bstr)])
+  (r:write-bytes bstr out start-pos end-pos))
 
 ;; ----------------------------------------
 
@@ -80,6 +95,8 @@
 
   (fasl-srcloc 38)
 
+  (fasl-extflonum-type 39)
+
   ;; Unallocated numbers here are for future extensions
 
   ;; 100 to 255 is used for small integers:
@@ -122,10 +139,19 @@
       [(vector? v)
        (for ([e (in-vector v)])
          (loop e))]
+      [(hash? v)
+       (hash-for-each v
+                      (lambda (k v)
+                        (loop k)
+                        (loop v))
+                      #t)]
       [(box? v)
        (loop (unbox v))]
       [(prefab-struct-key v)
-       (loop (struct->vector v))]
+       => (lambda (k)
+            (loop k)
+            (for ([e (in-vector (struct->vector v) 1)])
+              (loop e)))]
       [else (void)]))
   (define (treat-immutable? v) (or (not keep-mutable?) (immutable? v)))
   (define path->relative-path-elements (make-path->relative-path-elements))
@@ -173,6 +199,11 @@
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
            (write-bytes (real->floating-point-bytes v 4 #f) o)]
+          [(extflonum? v)
+           (write-byte fasl-extflonum-type o)
+           (define bstr (string->bytes/utf-8 (format "~a" v)))
+           (write-fasl-integer (bytes-length bstr) o)
+           (write-bytes bstr o)]
           [(rational? v)
            (write-byte fasl-rational-type o)
            (loop (numerator v))
@@ -285,10 +316,10 @@
            (write-fasl-integer (hash-count v) o)
            (hash-for-each v (lambda (k v) (loop k) (loop v)) #t)]
           [(regexp? v)
-           (write-byte (if (pregexp? v) fasl-pregexp-type fasl-regexp-type))
+           (write-byte (if (pregexp? v) fasl-pregexp-type fasl-regexp-type) o)
            (write-fasl-string (object-name v) o)]
           [(byte-regexp? v)
-           (write-byte (if (byte-pregexp? v) fasl-byte-pregexp-type fasl-byte-regexp-type))
+           (write-byte (if (byte-pregexp? v) fasl-byte-pregexp-type fasl-byte-regexp-type) o)
            (write-fasl-bytes (object-name v) o)]
           [else
            (raise-arguments-error 'fasl-write
@@ -328,7 +359,7 @@
                 ;; Faster to work with a byte string:
                 (let ([bstr (read-bytes/exactly len init-i)])
                   (mcons bstr 0))))
-  
+
   (define (intern v) (if intern? (datum-intern-literal v) v))
   (let loop ()
     (define type (read-byte/no-eof i))
@@ -354,6 +385,9 @@
      [(fasl-integer-type) (intern (read-fasl-integer i))]
      [(fasl-flonum-type) (floating-point-bytes->real (read-bytes/exactly 8 i) #f)]
      [(fasl-single-flonum-type) (real->single-flonum (floating-point-bytes->real (read-bytes/exactly 4 i) #f))]
+     [(fasl-extflonum-type)
+      (define bstr (read-bytes/exactly (read-fasl-integer i) i))
+      (string->number (bytes->string/utf-8 bstr) 10 'read)]
      [(fasl-rational-type) (intern (/ (loop) (loop)))]
      [(fasl-complex-type) (intern (make-rectangular (loop) (loop)))]
      [(fasl-char-type) (intern (integer->char (read-fasl-integer i)))]
@@ -434,7 +468,7 @@
          (+ (- type fasl-small-integer-start) fasl-lowest-small-integer)]
         [else
          (read-error "unrecognized fasl tag" "tag" type)])])))
-      
+
 ;; ----------------------------------------
 
 ;; Integer encoding:
@@ -517,22 +551,21 @@
     [(<= b 127) b]
     [(>= b 132) (- b 256)]
     [(eqv? b 128)
-     (integer-bytes->integer (read-bytes/exactly 2 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 2 i) #t #f)]
     [(eqv? b 129)
-     (integer-bytes->integer (read-bytes/exactly 4 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 4 i) #t #f)]
     [(eqv? b 130)
-     (integer-bytes->integer (read-bytes/exactly 8 i) #f #f)]
+     (integer-bytes->integer (read-bytes/exactly 8 i) #t #f)]
     [(eqv? b 131)
      (define len (read-fasl-integer i))
-     (define str (read-string len i))
+     (define str (read-fasl-string i len))
      (unless (and (string? str) (= len (string-length str)))
        (read-error "truncated stream at number"))
      (string->number str 16)]
     [else
      (read-error "internal error on integer mode")]))
 
-(define (read-fasl-string i)
-  (define len (read-fasl-integer i))
+(define (read-fasl-string i [len (read-fasl-integer i)])
   (define bstr (read-bytes/exactly len i))
   (bytes->string/utf-8 bstr))
 

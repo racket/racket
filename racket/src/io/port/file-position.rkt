@@ -34,10 +34,10 @@
                  [else (->core-output-port p)])])
        (define file-position (core-port-file-position cp))
        (cond
-         [(and (procedure? file-position) (procedure-arity-includes? file-position 1))
+         [(and (procedure? file-position) (procedure-arity-includes? file-position 2))
           (atomically
            (check-not-closed who cp)
-           (file-position pos))]
+           (file-position (core-port-self cp) pos))]
          [else
           (raise-arguments-error who
                                  "setting position allowed for file-stream and string ports only"
@@ -62,7 +62,7 @@
        (do-simple-file-position who file-position fail-k)]
       [else
        (define pos (or (and file-position
-                            (file-position))
+                            (file-position (core-port-self p)))
                        (core-port-offset p)))
        (end-atomic)
        (or pos (fail-k))])))

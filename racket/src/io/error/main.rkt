@@ -19,7 +19,7 @@
          (null? args))
     (raise
      (exn:fail
-      (format "error: ~a" init)
+      (string-append "error: " (symbol->string init))
       (current-continuation-marks)))]
    [(symbol? init)
     (unless (string? (car args))
@@ -51,7 +51,7 @@
 
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder
-(void
+(define (install-error-value->string-handler!)
  (error-value->string-handler
   (lambda (v len)
     (unless (exact-nonnegative-integer? len)
@@ -61,3 +61,8 @@
     (define o (open-output-string))
     (do-global-print 'default-error-value->string-handler v o 0 len)
     (get-output-string o))))
+
+(void (install-error-value->string-handler!))
+
+(module+ place-init
+  (provide install-error-value->string-handler!))

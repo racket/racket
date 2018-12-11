@@ -74,11 +74,16 @@
 (define-values (prop:place-message place-message? place-message-ref)
   (make-struct-type-property 'place-message))
 
+(define-values (prop:unsafe-authentic-override unsafe-authentic-override? unsafe-authentic-override-ref)
+  (make-struct-type-property 'authentic-override))
+
 (primitive-table '#%pthread
                  (hasheq 'unsafe-make-place-local box
                          'unsafe-place-local-ref unbox
                          'unsafe-place-local-set! set-box!
-                         'unsafe-add-global-finalizer (lambda (v proc) (void))))
+                         'unsafe-add-global-finalizer (lambda (v proc) (void))
+                         'unsafe-strip-impersonator (lambda (v) v)
+                         'prop:unsafe-authentic-override prop:unsafe-authentic-override))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread
@@ -135,3 +140,10 @@
                          'unsafe-add-pre-poll-callback! (lambda (proc) (void))
                          'set-get-subprocesses-time! void
                          'prop:place-message prop:place-message))
+
+(primitive-table '#%windows-version
+                 (hasheq 'get-windows-version (lambda ()
+                                                (values 'major
+                                                        'minor
+                                                        'build-number
+                                                        #"CSDVersion (possibly empty)"))))

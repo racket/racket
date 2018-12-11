@@ -45,7 +45,9 @@
   (define version-bs (string->bytes/latin-1 (version)))
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
-
+  (define vm-bs #"racket")
+  (write-bytes (bytes (bytes-length vm-bs)) outp)
+  (write-bytes vm-bs outp)
   (write-byte (char->integer #\D) outp)
 
   (struct bundle-bytes (code-bstr name-list name-bstr offset))
@@ -87,8 +89,9 @@
   (write-bytes (int->bytes (length pre-bundle-bytess)) outp)
   ;; Size of btree:
   (define header-size
-    (+ 8
-       (string-length (version))))
+    (+ 9
+       (string-length (version))
+       (string-length "racket")))
   (define btree-size
     (+ header-size
        (apply + (for/list ([mb (in-list pre-bundle-bytess)])
@@ -232,6 +235,9 @@
   (define version-bs (string->bytes/latin-1 (version)))
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
+  (define vm-bs #"racket")
+  (write-bytes (bytes (bytes-length vm-bs)) outp)
+  (write-bytes vm-bs outp)
 
   ;; "B" is for linklet "bundle" (as opposed to a linklet directory)
   (write-byte (char->integer #\B) outp)

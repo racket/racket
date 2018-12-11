@@ -743,7 +743,7 @@
         (with-handlers ([exn:fail? (lambda (x) null)])
           (with-input-from-file path read)))
       (when (and (pair? deps) (list? deps))
-        (for ([s (in-list (cddr deps))])
+        (for ([s (in-list (cdddr deps))])
           (unless (external-dep? s)
               (define new-s (dep->path s))
               (when (path-string? new-s) (hash-set! dependencies new-s #t))))))
@@ -887,7 +887,7 @@
                   (define p (build-path (cc-path cc) v))
                   (unless (or (file-exists? p)
                               (bytecode-file-exists? p))
-                    (error "installer file does not exista: " p)))))
+                    (error "installer file does not exist: " p)))))
             (define installer
               (with-handlers ([exn:fail?
                                (lambda (exn)
@@ -1059,6 +1059,7 @@
            (define dir  (cc-path cc))
            (define info (cc-info cc))
            (compile-directory-zos dir info
+                                  #:verbose (verbose)
                                   #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
@@ -1114,7 +1115,10 @@
                                                       has-module-suffix?)))))
             (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct
-                              #:use-places? (parallel-use-places))
+                              #:use-places? (parallel-use-places)
+                              #:options (if (not (current-compile-target-machine))
+                                            '(compile-any)
+                                            '()))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode
@@ -2023,6 +2027,9 @@
 
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
+  (setup-printf "target machine" "~a" (or (current-compile-target-machine) 'any))
+  (when (cross-installation?)
+    (setup-printf "cross-installation" "yes"))
   (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
@@ -2039,6 +2046,12 @@
     (setup-printf #f "  ~a" p))
   (when (use-user-specific-search-paths)
     (setup-printf #f "  ~a" (find-user-links-file)))
+  (let ([roots (current-compiled-file-roots)])
+    (unless (or (equal? roots '(same))
+                (equal? roots (build-path 'same)))
+      (setup-printf "compiled-file roots" "")
+      (for ([p roots])
+        (setup-printf #f "  ~a" p))))
   (setup-printf "main docs" "~a" (find-doc-dir))
 
   (when (and (not (null? (archives))) no-specific-collections?)

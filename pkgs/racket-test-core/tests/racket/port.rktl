@@ -921,6 +921,21 @@
 
   (delete-file path))
 
+;; Check `file-position`, OS-level pipes, and peek
+(when (and (memq (system-type) '(unix macosx))
+           (file-exists? "/bin/cat"))
+  (define-values (sp stdout-in stdin-out stderr-in) (subprocess #f #f #f "/bin/cat"))
+  (write-bytes #"abcd\n" stdin-out)
+  (close-output-port stdin-out)
+  (test 0 file-position stdout-in)
+  (test #"abc" peek-bytes 3 0 stdout-in)
+  (test 0 file-position stdout-in)
+  (test #\a read-char stdout-in)
+  (test 1 file-position stdout-in)
+  (close-input-port stdout-in)
+  (close-input-port stderr-in)
+  (subprocess-wait sp))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check reader error-message formatting for a struct port
 

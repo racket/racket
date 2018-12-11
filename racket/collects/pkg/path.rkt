@@ -36,7 +36,8 @@
   (if (path? scope)
       scope
       (case scope
-        [(installation) (find-pkgs-dir)]
+        [(installation) (or (find-pkgs-dir)
+                            (error 'get-pkgs-dir "no installation-scope packages directory is available"))]
         [(user) (find-user-pkgs-dir user-version)]
         [else (error "unknown package scope")])))
 

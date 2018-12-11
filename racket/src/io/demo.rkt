@@ -12,7 +12,7 @@
                   [current-directory host:current-directory]
                   [path->string host:path->string]))
 
-(current-directory (host:path->string (host:current-directory)))
+(path->string (current-directory))
 (set-string->number?! string->number)
 
 (define-syntax-rule (test expect rhs)
@@ -90,6 +90,18 @@
 (struct animal (name weight)
   #:property prop:custom-write (lambda (v o mode)
                                  (fprintf o "<~a>" (animal-name v))))
+
+(test "apple" (format "~a" 'apple))
+(test "apple" (format "~a" "apple"))
+(test "apple" (format "~a" #"apple"))
+(test "#:apple" (format "~a" '#:apple))
+(test "17.5" (format "~a" 17.5))
+
+(test "apple" (format "~s" 'apple))
+(test "\"apple\"" (format "~s" "apple"))
+(test "#\"apple\"" (format "~s" #"apple"))
+(test "#:apple" (format "~s" '#:apple))
+(test "17.5" (format "~s" 17.5))
 
 (test "1\n\rx0!\"hi\"" (format "1~%~  \n  \rx~ ~o~c~s" 0 #\! "hi"))
 
@@ -682,6 +694,9 @@
 (define-values (ti to) (tcp-connect "localhost" 59078))
 (test l (sync l))
 (define-values (tai tao) (tcp-accept l))
+
+(test #f (file-stream-port? i))
+(test #f (file-stream-port? o))
 
 (test 6 (write-string "hello\n" to))
 (flush-output to)

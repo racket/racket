@@ -207,6 +207,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_console.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_main.c"
 				>
 			</File>

@@ -284,13 +284,13 @@
     [(mpair? v)
      (print-mlist p who v mode o max-length graph config)]
     [(custom-write? v)
-     (let ([o (make-output-port/max o max-length)])
+     (let ([o/m (make-output-port/max o max-length)])
        (set-port-handlers-to-recur!
-        o
+        o/m
         (lambda (v o mode)
-          (p who v mode o (output-port/max-max-length o max-length) graph config)))
-       ((custom-write-accessor v) v o mode)
-       (output-port/max-max-length o max-length))]
+          (p who v mode o (output-port/max-max-length o/m max-length) graph config)))
+       ((custom-write-accessor v) v o/m mode)
+       (output-port/max-max-length o/m max-length))]
     [(struct? v)
      (cond
        [(eq? mode PRINT-MODE/UNQUOTED)

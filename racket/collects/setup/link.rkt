@@ -31,7 +31,8 @@
   (define file (or in-file
                    (if user?
                        (build-path (find-system-path 'addon-dir) user-version "links.rktd")
-                       (find-links-file))))
+                       (or (find-links-file)
+                           (error 'links "no installation links file is available")))))
 
   (define need-repair? #f)
 

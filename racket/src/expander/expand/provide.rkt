@@ -234,7 +234,7 @@
 
   (define (add-prefix sym)
     (if prefix-sym
-        (string->symbol (format "~a~a" prefix-sym sym))
+        (string->symbol (string-append (symbol->string prefix-sym) (symbol->string sym)))
         sym))
 
   (define found (make-hasheq))

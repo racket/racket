@@ -309,12 +309,14 @@
                           sym)]
                     [(adjust-prefix? adjust)
                      (string->symbol
-                      (format "~a~a" (adjust-prefix-sym adjust) sym))]
+                      (string-append (symbol->string (adjust-prefix-sym adjust))
+                                     (symbol->string sym)))]
                     [(adjust-all-except? adjust)
                      (and (not (and (set-member? (adjust-all-except-syms adjust) sym)
                                     (hash-set! done-syms sym #t)))
                           (string->symbol
-                           (format "~a~a" (adjust-all-except-prefix-sym adjust) sym)))]
+                           (string-append (symbol->string (adjust-all-except-prefix-sym adjust))
+                                          (symbol->string sym))))]
                     [(adjust-rename? adjust)
                      (and (eq? sym (adjust-rename-from-sym adjust))
                           (hash-set! done-syms sym #t)

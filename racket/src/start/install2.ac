@@ -1,0 +1,32 @@
+if test "${inplacebuild}" = "yes" ; then
+  echo ">>> Installation is in-place:"
+  echo "      ${srcdir}/.."
+  echo "    Configure with --prefix if you wanted to install somewhere else."
+  if test "${enable_quartz}" != "yes" ; then
+    echo "    The --prefix option also makes the installed files better conform"
+    echo "    to Unix installation conventions. (The configure script will show"
+    echo "    you specific installation paths when --prefix is used.)"
+  fi
+  if test "${enable_shared}" != "yes" ; then
+    echo "    Alternately, you can simply "'`'"mv' the in-place installation after"
+    echo "    running "'`'"make install'."
+  fi
+else
+  echo ">>> Installation targets:"
+  echo " executables        : ${bindir}/..."
+  echo " core docs          : ${docdir}/..."
+  echo " C libraries        : ${libdir}/..."
+  echo " C headers          : ${includepltdir}/..."
+  echo " platform libraries : ${libpltdir}/..."
+  echo " common libraries   : ${sharepltdir}/..."
+  echo " base collections   : ${collectsdir}/..."
+  echo " configuration      : ${etcpltdir}/..."
+  echo " .desktop files     : ${appsdir}/..."
+  echo " man pages          : ${mandir}/..."
+  echo "     where prefix = ${prefix}"
+  echo "  and datarootdir = ${datarootdir}"
+  if test "${unixstyle}" = "yes" ; then
+    echo "  and exec_prefix = ${exec_prefix}"
+    echo "  and PACKAGE = racket"
+  fi
+fi

@@ -684,6 +684,8 @@
 
                 [all-parent-struct-count/names 
                  (get-field-counts/struct-names struct-name provide-stx)]
+                [_ (and (syntax? super-id)
+                        (a:lookup-struct-info super-id provide-stx))] ;; for the error check
                 [parent-struct-count (if (null? all-parent-struct-count/names)
                                          #f
                                          (let ([pp (cdr all-parent-struct-count/names)])

@@ -100,7 +100,7 @@
    dest
    (lambda (outfile)
      (let-values ([(p) (open-output-bytes)])
-       (write (hash->linklet-bundle (hasheq 'startup linklet)) p)
+       (write-linklet-bundle-hash (hasheq 'startup linklet) p)
        (let-values ([(s) (get-output-bytes p)])
          (fprintf outfile "#if 0 ~a\n" version-comparisons)
          (fprintf outfile "# include \"startup.inc\"\n")         

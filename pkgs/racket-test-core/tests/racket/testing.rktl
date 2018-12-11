@@ -38,7 +38,7 @@ something that isn't a procedure. That name is used in the
 transcript.
 
 |#
-
+(require (for-syntax racket/base))
 
 (define teval eval)
 
@@ -105,15 +105,20 @@ transcript.
       (set! number-of-tests (add1 number-of-tests))
       (printf "~s ==> " form)
       (flush-output)
-      (let ([res (if (procedure? fun)
-                   (if kws (keyword-apply fun kws kvs args) (apply fun args))
-                   (car args))])
-        (printf "~s\n" res)
-        (let ([ok? (equal? expect res)])
-          (unless ok?
-            (record-error (list res expect form))
-            (printf "  BUT EXPECTED ~s\n" expect))
-          ok?)))
+      (with-handlers ([(λ (e) (not (exn:break? e))) ;; handle "exceptions" that are arbitrary values
+                       (λ (e)
+                         (printf "GOT EXN ~s\n" e)
+                         (record-error (list `(EXN ,e) expect form))
+                         (printf "  BUT EXPECTED ~s\n" expect))])
+        (let ([res (if (procedure? fun)
+                       (if kws (keyword-apply fun kws kvs args) (apply fun args))
+                       (car args))])
+          (printf "~s\n" res)
+          (let ([ok? (equal? expect res)])
+            (unless ok?
+              (record-error (list res expect form))
+              (printf "  BUT EXPECTED ~s\n" expect))
+            ok?))))
     (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
     (define (test    expect fun         . args) (test* expect fun args #f #f))
     (make-keyword-procedure test/kw test)))

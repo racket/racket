@@ -39,7 +39,7 @@
   (when progress-evt
     (check-progress-evt who progress-evt orig-in))
   (let ([in (->core-input-port orig-in)])
-    (define peek-byte (core-input-port-read-byte in))
+    (define peek-byte (core-input-port-peek-byte in))
     (cond
       [peek-byte (do-peek-byte who peek-byte in orig-in)]
       [else

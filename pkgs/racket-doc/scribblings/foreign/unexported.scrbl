@@ -14,7 +14,7 @@ the Racket built-in @racketmodname['#%foreign] module.  The
 @racketmodname['#%foreign] module is not intended for direct use, but
 it exports the following procedures (among others).
 
-@defproc[(ffi-obj [objname (or/c string? bytes? symbol?)]
+@defproc[(ffi-obj [objname bytes?]
                   [lib (or/c ffi-lib? path-string? #f)])
          ffi-obj?]{
 
@@ -25,7 +25,7 @@ then @racket[ffi-lib] is used to create a library object.}
 
 @defproc*[([(ffi-obj? [x any/c]) boolean?]
            [(ffi-obj-lib [obj ffi-obj?]) ffi-lib?]
-           [(ffi-obj-name [obj ffi-obj?]) string?])]{
+           [(ffi-obj-name [obj ffi-obj?]) bytes?])]{
 
 A predicate for objects returned by @racket[ffi-obj], and accessor
 functions that return its corresponding library object and name.

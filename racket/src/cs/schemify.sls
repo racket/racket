@@ -8,6 +8,8 @@
           linklet-bigger-than?
           prim-knowns
           known-procedure
+          known-procedure/pure
+          known-procedure/succeeds
           a-known-constant)
   (import (except (chezpart)
                   datum->syntax)

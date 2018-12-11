@@ -5,7 +5,8 @@
          racket/struct
          compiler/zo-structs
          racket/dict
-         racket/set)
+         racket/set
+         racket/fasl)
 
 (provide zo-parse)
 (provide (all-from-out compiler/zo-structs))
@@ -734,20 +735,21 @@
     (error 'zo-parse "not a bytecode stream"))
 
   (cond
-   [(equal? #"#f" tag) #f]
+   [(equal? #"#f" tag) (values #f #f)]
    [else
     (define version (read-bytes (min 63 (read-byte port)) port))
-    (read-char port)]))
+    (define vm (read-bytes (min 63 (read-byte port)) port))
+    (values vm (read-char port))]))
 
 ;; path -> bytes
 ;; implementes read.c:read_compiled
 (define (zo-parse [port (current-input-port)])
   (define init-pos (file-position port))
 
-  (define mode (read-prefix port #f))
+  (define-values (vm mode) (read-prefix port #f))
 
   (case mode
-    [(#\B) (linkl-bundle (zo-parse-top port))]
+    [(#\B) (linkl-bundle (zo-parse-top port vm))]
     [(#\D)
      (struct sub-info (name start len))
      (define sub-infos
@@ -787,14 +789,14 @@
            (error 'zo-parse 
                   "next bundle expected at ~a, currently at ~a"
                   (+ init-pos (sub-info-start sub-info)) pos))
-         (define tag (read-prefix port #t))
+         (define-values (vm tag) (read-prefix port #t))
          (define sub
            (cond
              [(not tag) #f]
              [else
               (unless (eq? tag #\B)
                 (error 'zo-parse "expected a bundle"))
-              (define sub (and tag (zo-parse-top port #f)))
+              (define sub (and tag (zo-parse-top port vm #f)))
               (unless (hash? sub)
                 (error 'zo-parse "expected a bundle hash"))
               (linkl-bundle sub)]))
@@ -802,50 +804,61 @@
     [else
      (error 'zo-parse "bad file format specifier")]))
 
-(define (zo-parse-top [port (current-input-port)] [check-end? #t])
+(define (zo-parse-top port vm [check-end? #t])
 
   ;; Skip module hash code
   (read-bytes 20 port)
 
-  (define symtabsize (read-simple-number port))
+  (define (check-end)
+    (when check-end?
+      (unless (eof-object? (read-byte port))
+        (error 'zo-parse "file too big"))))
 
-  (define all-short (read-byte port))
+  (cond
+    [(equal? vm #"linklet")
+     (define s (fasl->s-exp port))
+     (check-end)
+     s]
+    [(equal? vm #"racket")
+     (define symtabsize (read-simple-number port))
 
-  (define cnt (* (if (not (zero? all-short)) 2 4)
-                 (sub1 symtabsize)))
+     (define all-short (read-byte port))
 
-  (define so (read-bytes cnt port))
+     (define cnt (* (if (not (zero? all-short)) 2 4)
+                    (sub1 symtabsize)))
 
-  (define so* (list->vector (split-so all-short so)))
+     (define so (read-bytes cnt port))
 
-  (define shared-size (read-simple-number port))
-  (define size* (read-simple-number port))
+     (define so* (list->vector (split-so all-short so)))
 
-  (when (shared-size . >= . size*) 
-    (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
+     (define shared-size (read-simple-number port))
+     (define size* (read-simple-number port))
 
-  (define rst-start (file-position port))
+     (when (shared-size . >= . size*) 
+       (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
 
-  (file-position port (+ rst-start size*))
- 
-  (when check-end?
-    (unless (eof-object? (read-byte port))
-      (error 'zo-parse "File too big")))
+     (define rst-start (file-position port))
 
-  (define symtab (make-vector symtabsize (not-ready)))
+     (file-position port (+ rst-start size*))
+     
+     (check-end)
 
-  (define cp
-    (make-cport 0 shared-size port size* rst-start symtab so*))
+     (define symtab (make-vector symtabsize (not-ready)))
 
-  (for ([i (in-range 1 symtabsize)])
-    (read-symref cp i #f 'table))
+     (define cp
+       (make-cport 0 shared-size port size* rst-start symtab so*))
 
-  #;(printf "Parsed table:\n")
-  #;(for ([(i v) (in-dict (cport-symtab cp))])
-      (printf "~a = ~a\n" i (placeholder-get v)))
-  (set-cport-pos! cp shared-size)
-  
-  (make-reader-graph (read-compact cp)))
+     (for ([i (in-range 1 symtabsize)])
+       (read-symref cp i #f 'table))
+
+     #;(printf "Parsed table:\n")
+     #;(for ([(i v) (in-dict (cport-symtab cp))])
+         (printf "~a = ~a\n" i (placeholder-get v)))
+     (set-cport-pos! cp shared-size)
+     
+     (make-reader-graph (read-compact cp))]
+    [else
+     (error 'zo-parse "cannot parse for virtual machine: ~s" vm)]))
 
 ;; ----------------------------------------
 

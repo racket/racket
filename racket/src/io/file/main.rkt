@@ -36,7 +36,9 @@
          filesystem-root-list
 
          ;; For the expander to register `maybe-raise-missing-module`:
-         set-maybe-raise-missing-module!)
+         set-maybe-raise-missing-module!
+	 ;; To resolve a cycle with the definition of `simplify-path`
+	 set-simplify-path-for-directory-list!)
 
 (define/who (directory-exists? p)
   (check who path-string? p)
@@ -65,9 +67,18 @@
                                         "")
                                     (host-> host-path)))))
 
+(define simplify-path/dl (lambda (p) p))
+(define (set-simplify-path-for-directory-list! proc)
+  (set! simplify-path/dl proc))
+
 (define/who (directory-list [p (current-directory)])
   (check who path-string? p)
-  (define host-path (->host p who '(read)))
+  (define host-path/initial (->host p who '(read)))
+  (define host-path (case (system-type)
+		      [(windows)
+		       ;; Need to avoid "." and "..", so simplify
+		       (->host (simplify-path/dl (host-> host-path/initial)) #f '())]
+		      [else host-path/initial]))
   (atomically
    (call-with-resource
     (rktio_directory_list_start rktio host-path)
@@ -331,7 +342,7 @@
                                         "")
                                     (host-> path-host)))))
 
-(define/who (resolve-path p)
+(define (do-resolve-path p who)
   (check who path-string? p)
   (define host-path (->host (path->path-without-trailing-separator (->path p)) who '(exists)))
   (start-atomic)
@@ -351,6 +362,14 @@
        [(equal? new-path p) p]
        [else new-path])]
     [else (host-> r)]))
+
+(define/who (resolve-path p)
+  (do-resolve-path p who))
+
+(module+ for-simplify
+  (provide resolve-path-for-simplify)
+  (define (resolve-path-for-simplify p)
+    (do-resolve-path p 'simplify-path)))
 
 (define/who (expand-user-path p)
   (check who path-string? p)

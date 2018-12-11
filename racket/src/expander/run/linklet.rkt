@@ -99,6 +99,9 @@
    [(procedure? fail-k) (fail-k)]
    [else fail-k]))
 
+(define (instance-describe-variable! i sym desc)
+  (void))
+
 ;; ----------------------------------------
 
 (define undefined (gensym 'undefined))
@@ -331,7 +334,13 @@
 (define (eval-linklet c)
   c)
 
-(define (read-compiled-linklet in)
+(define (linklet-virtual-machine-bytes)
+  #"source")
+
+(define (write-linklet-bundle-hash ld in)
+  (write ld in))
+
+(define (read-linklet-bundle-hash in)
   (read in))
 
 ;; Convert linklet to a procedure
@@ -389,28 +398,6 @@
 
 (define (s-expr-linklet-body linklet)
   (unmarshal (list-tail linklet 3)))
-
-;; ----------------------------------------
-
-(struct linklet-directory (table)
-        #:prefab)
-
-(define (hash->linklet-directory ht)
-  (linklet-directory ht))
-
-(define (linklet-directory->hash ld)
-  (linklet-directory-table ld))
-
-;; ----------------------------------------
-
-(struct linklet-bundle (table)
-        #:prefab)
-
-(define (hash->linklet-bundle ht)
-  (linklet-bundle ht))
-
-(define (linklet-bundle->hash ld)
-  (linklet-bundle-table ld))
 
 ;; ----------------------------------------
 

@@ -258,13 +258,21 @@ is accumulated into a result with @racket[*].
 ]}
 
 
-@defform[(for/lists (id ...) (for-clause ...) body-or-break ... body)]{
+@defform[(for/lists (id ... maybe-result)
+                    (for-clause ...)
+           body-or-break ... body)
+         #:grammar
+         ([maybe-result (code:line) (code:line #:result result-expr)])]{
 
 Similar to @racket[for/list], but the last @racket[body] expression
-should produce as many values as given @racket[id]s, and the result is
-as many lists as supplied @racket[id]s. The @racket[id]s are bound to
+should produce as many values as given @racket[id]s.
+The @racket[id]s are bound to
 the lists accumulated so far in the @racket[for-clause]s and
 @racket[body]s.
+
+If a @racket[result-expr] is provided, it is used as with @racket[for/fold]
+when iteration terminates;
+otherwise, the result is as many lists as supplied @racket[id]s
 
 @examples[
 (for/lists (l1 l2 l3)
@@ -277,7 +285,14 @@ the lists accumulated so far in the @racket[for-clause]s and
            ([x '(tvp tofu seitan tvp tofu)]
             #:unless (member x acc))
   x)
-]}
+(for/lists (firsts seconds #:result (list firsts seconds))
+           ([pr '((1 . 2) (3 . 4) (5 . 6))])
+  (values (car pr) (cdr pr)))
+]
+
+@history[
+ #:changed "7.1.0.2" @elem{Added the @racket[#:result] form.}
+ ]}
 
 
 @defform[(for/first (for-clause ...) body-or-break ... body)]{ Iterates like
@@ -365,7 +380,7 @@ nested.
 
 @deftogether[(
 @defform[(for*/list (for-clause ...) body-or-break ... body)]
-@defform[(for*/lists (id ...) (for-clause ...) body-or-break ... body)]
+@defform[(for*/lists (id ... maybe-result) (for-clause ...) body-or-break ... body)]
 @defform[(for*/vector maybe-length (for-clause ...) body-or-break ... body)]
 @defform[(for*/hash (for-clause ...) body-or-break ... body)]
 @defform[(for*/hasheq (for-clause ...) body-or-break ... body)]

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "port.rkt"
          "output-port.rkt"
          "custom-port.rkt"
          "pipe.rkt")
@@ -101,7 +102,7 @@
                       [else r]))))
 
   ;; in atomic mode
-  (define (write-out bstr start end non-block/buffer? enable-break? copy?)
+  (define (write-out self bstr start end non-block/buffer? enable-break? copy?)
     (cond
       [output-pipe
        (cond
@@ -109,9 +110,10 @@
               (= start end)
               (not (sync/timeout 0 output-pipe)))
           (set! output-pipe #f)
-          (write-out bstr start end non-block/buffer? enable-break? copy?)]
+          (write-out self bstr start end non-block/buffer? enable-break? copy?)]
          [else
-          ((core-output-port-write-out output-pipe) bstr start end non-block/buffer? enable-break? copy?)])]
+          (define write-out (core-output-port-write-out output-pipe))
+          (write-out (core-port-self output-pipe) bstr start end non-block/buffer? enable-break? copy?)])]
       [else
        (define r
          ;; Always tell user port to re-enable breaks if it blocks, since
@@ -125,12 +127,12 @@
        (check-write-result '|user port write| r start end non-block/buffer?)
        (cond
          [(pipe-output-port? r)
-          (write-out bstr start end non-block/buffer? enable-break? copy?)]
+          (write-out self bstr start end non-block/buffer? enable-break? copy?)]
          [(evt? r)
           (wrap-check-write-evt-result '|user port write| r start end non-block/buffer?)]
          [else r])]))
 
-  (define (get-write-evt bstr start end)
+  (define (get-write-evt self orig-out bstr start end)
     (end-atomic)
     (define r (user-get-write-evt bstr start end))
     (unless (evt? r)
@@ -138,7 +140,7 @@
     (start-atomic)
     (wrap-check-write-evt-result '|user port write-evt| r start end #t))
 
-  (define (write-out-special v non-block/buffer? enable-break?)
+  (define (write-out-special self v non-block/buffer? enable-break?)
     (let ([enable-break? (and (not non-block/buffer?) (break-enabled))])
       (parameterize-break #f
         (non-atomically
@@ -150,7 +152,7 @@
 
   (define count-lines!
     (and user-count-lines!
-         (lambda () (end-atomic) (user-count-lines!) (start-atomic))))
+         (lambda (self) (end-atomic) (user-count-lines!) (start-atomic))))
 
   (define-values (init-offset file-position)
     (make-init-offset+file-position user-init-position))
@@ -160,13 +162,14 @@
          (make-buffer-mode user-buffer-mode #:output? #t)))
 
   ;; in atomic mode
-  (define (close)
+  (define (close self)
     (end-atomic)
     (user-close)
     (start-atomic))
 
   (make-core-output-port
    #:name name
+   #:self #f
    #:evt evt
    #:write-out
    (if (output-port? user-write-out)
@@ -178,7 +181,9 @@
        user-write-out-special
        (and user-write-out-special write-out-special))
    #:get-write-evt (and user-get-write-evt get-write-evt)
-   #:get-write-special-evt user-get-write-special-evt
+   #:get-write-special-evt (and user-get-write-special-evt
+                                (lambda (self v)
+                                  (user-get-write-special-evt v)))
    #:get-location get-location
    #:count-lines! count-lines!
    #:init-offset init-offset

@@ -323,12 +323,13 @@
   (for/fold ([data-pos data-start]) ([e (in-list entries)])
     (cond
      [(resource? e)
-      (define len (align-data-size (bytes-length (resource-content e))))
+      (define len (bytes-length (resource-content e)))
+      (define a-len (align-data-size len))
       (integer->dword (+ data-pos virtual-addr) p)
       (integer->dword len p)
       (integer->dword (resource-codepage e) p)
       (integer->dword 0 p)
-      (+ data-pos len)]
+      (+ data-pos a-len)]
      [else
       data-pos]))
   
@@ -389,9 +390,9 @@
 
 (define (same-alignment orig new)
   (cond
-   [(bitwise-bit-set? orig 1)
+   [(bitwise-bit-set? orig 0)
     new]
-   [(bitwise-bit-set? new 1)
+   [(bitwise-bit-set? new 0)
     (same-alignment orig (add1 new))]
    [else
     (arithmetic-shift (same-alignment

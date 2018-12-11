@@ -13,12 +13,17 @@
                            x-archives)
   (parse-cmdline (current-command-line-arguments)))
 
-(define (has-x-flag? s)
+(define (get-x-flag s default)
   (define a (assq s x-flags))
-  (and a (cadr a)))
+  (if a
+      (cadr a)
+      default))
+
+(define (has-x-flag? s)
+  (get-x-flag s #f))
 
 (define (go orig-compile-file-paths)
-  ;; Conver parse-cmdline results into parameter settings:
+  ;; Convert parse-cmdline results into parameter settings:
   (parameterize ([current-target-plt-directory-getter
                   (if (has-x-flag? 'all-users)
                       (lambda (preferred main-collects-parent-dir choices) 

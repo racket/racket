@@ -41,11 +41,24 @@
                              (procedure-arity-includes? wrap 1))
                   (raise-result-error who "(procedure-arity-includes/c 1)" wrap))
                 (handle-evt new-evt
-                            (lambda (r)
-                              (let ([new-r (wrap r)])
-                                (when chaperone?
-                                  (check-chaperone-of what new-r r))
-                                new-r)))]
+                            (lambda rs
+                              (call-with-values
+                               (lambda () (apply wrap rs))
+                               (lambda new-rs
+                                 (unless (= (length rs) (length new-rs))
+                                   (raise
+                                    (exn:fail:contract:arity
+                                     (string-append
+                                      what " " (if chaperone? "chaperone" "impersonator")
+                                      ": result wrapper returned wrong number of values\n"
+                                      "  expected count: " (number->string (length rs)) "\n"
+                                      "  returned count: " (number->string (length new-rs)))
+                                     (current-continuation-marks))))
+                                 (when chaperone?
+                                   (for ([r (in-list rs)]
+                                         [new-r (in-list new-rs)])
+                                     (check-chaperone-of what new-r r)))
+                                 (apply values new-rs)))))]
                [args
                 (raise
                  (exn:fail:contract:arity

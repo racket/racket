@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../host/thread.rkt"
          "parameter.rkt"
+         "port.rkt"
          "output-port.rkt"
          "pipe.rkt")
 
@@ -10,16 +11,20 @@
 
 (define/who (flush-output [p (current-output-port)])
   (check who output-port? p)
-  (let ([p (->core-output-port p)])
-    (let loop ()
-      (define r (atomically
-                 ((core-output-port-write-out p) #"" 0 0 #f #f #f)))
-      (let r-loop ([r r])
-        (cond
-          [(eq? r 0) (void)]
-          [(not r) (loop)]
-          [(evt? r) (r-loop (sync r))]
-          [else (error 'flush-output "weird result")])))))
+  (let wo-loop ([p p])
+    (let ([write-out (core-output-port-write-out (->core-output-port p))])
+      (cond
+        [(procedure? write-out)
+         (let loop ()
+           (define r (atomically
+                      (write-out (core-port-self p) #"" 0 0 #f #f #f)))
+           (let r-loop ([r r])
+             (cond
+               [(eq? r 0) (void)]
+               [(not r) (loop)]
+               [(evt? r) (r-loop (sync r))]
+               [else (error 'flush-output "weird result")])))]
+        [else (wo-loop write-out)]))))
 
 ;; ----------------------------------------
 

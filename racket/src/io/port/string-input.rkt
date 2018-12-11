@@ -3,6 +3,7 @@
          "../host/thread.rkt"
          "parameter.rkt"
          "read-and-peek.rkt"
+         "port.rkt"
          "input-port.rkt"
          (submod "bytes-input.rkt" internal)
          "../string/utf-8-decode.rkt"
@@ -200,7 +201,7 @@
       (start-atomic)
       (prepare-change in)
       (check-not-closed who in)
-      (define b (read-byte))
+      (define b (read-byte (core-port-self in)))
       (cond
         [(fixnum? b)
          (port-count-byte! in b)
@@ -315,7 +316,7 @@
   (let ([in (->core-input-port in)])
     (define peek-byte (and (zero? skip-k)
                            (core-input-port-peek-byte in)))
-    (define b (and peek-byte (atomically (peek-byte))))
+    (define b (and peek-byte (atomically (peek-byte (core-port-self in)))))
     (cond
       [(and b
             (or (eof-object? b)

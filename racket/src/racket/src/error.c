@@ -1136,6 +1136,11 @@ void scheme_warning(char *msg, ...)
 			   scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PORT));
 }
 
+void scheme_ensure_console_ready()
+{
+  rktio_create_console();
+}
+
 void scheme_log(Scheme_Logger *logger, int level, int flags,
                 const char *msg, ...)
 {

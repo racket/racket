@@ -28,6 +28,11 @@
 ;; synthesized accessors, because they're relevant only for the second
 ;; pass and recorded in an `indirected`.
 ;;
+;; The `lifts` table can also contain `lambda` and `case-lambda` forms
+;; mapped to '#:empty, meaning that the closure is empty relative to the
+;; enclosing linklet and can be lifted so that each is allocated once per
+;; linklet.
+;;
 ;; An identifier registered in `locals` maps to either 'ready or 'early,
 ;; where 'early is used during the right-hand side of a letrec that is
 ;; not all `lambda`s.
@@ -118,7 +123,8 @@
     (for/or ([v (in-wrap-list vs)])
       (lift-in-expr? v)))
 
-  ;; Under a `lambda`; any local bindings to functions?
+  ;; Under a `lambda`; any local bindings to functions or
+  ;; `[case-]lambda`s that might be closed?
   (define (lift? v)
     (match v
       [`(let . ,_) (lift?/let v)]
@@ -126,8 +132,10 @@
       [`(letrec* . ,_) (lift?/let v)]
       [`(let-values . ,_) (lift?/let v)]
       [`(letrec-values . ,_) (lift?/let v)]
-      [`(lambda ,_ . ,body) (lift?/seq body)]
+      [`(lambda ,_ . ,body) #t #;(lift?/seq body)]
       [`(case-lambda [,_ . ,bodys] ...)
+       #t
+       #;
        (for/or ([body (in-list bodys)])
          (lift?/seq body))]
       [`(begin . ,vs) (lift?/seq vs)]
@@ -183,8 +191,13 @@
          (cond
            [(zero? (hash-count lifts)) v]
            [else
-            `(letrec ,(extract-lifted-bindings lifts)
-               ,(reannotate v `(lambda ,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts #hasheq()))))]))]
+            (define empties (box null))
+            (define lifted-bindings (extract-lifted-bindings lifts empties))
+            (define new-body
+              (reannotate v `(lambda ,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts #hasheq() empties))))
+            `(letrec ,(append (unbox empties)
+                              lifted-bindings)
+               ,new-body)]))]
       [`(case-lambda [,argss . ,bodys] ...)
        ;; Lift each clause separately, then splice results:
        (let ([lams (for/list ([args (in-list argss)]
@@ -249,7 +262,7 @@
 
   ;; Returns a set of free variables and a set of bound variables
   ;; (paired together) while potentially mutating `lifts`
-  (define (compute-lifts! v frees+binds lifts locals)
+  (define (compute-lifts! v frees+binds lifts locals [called? #f])
     (match v
       [`(let ([,ids ,rhss] ...) . ,body)
        (for ([id (in-list ids)]
@@ -269,13 +282,24 @@
       [`((letrec* ([,id ,rhs]) ,rator) ,rands ...)
        (compute-lifts! `(letrec ([,id ,rhs]) (,rator . ,rands)) frees+binds lifts locals)]
       [`(lambda ,args . ,body)
-       (let ([frees+binds (compute-seq-lifts! body frees+binds lifts (add-args args locals))])
-         (remove-frees/add-binds args frees+binds lifts))]
+       (let* ([body-frees+binds (cons (car empty-frees+binds) (cdr frees+binds))]
+              [body-frees+binds (compute-seq-lifts! body body-frees+binds lifts (add-args args locals))]
+              [body-frees+binds (remove-frees/add-binds args body-frees+binds lifts)])
+         (when (and (zero? (frees-count body-frees+binds)) (not called?))
+           (record-empty-closure! lifts v))
+         (cons (union (car body-frees+binds) (car frees+binds))
+               (cdr body-frees+binds)))]
       [`(case-lambda [,argss . ,bodys] ...)
-       (for/fold ([frees+binds frees+binds]) ([args (in-list argss)]
-                                  [body (in-list bodys)])
-         (let ([frees+binds (compute-seq-lifts! body frees+binds lifts (add-args args locals))])
-           (remove-frees/add-binds args frees+binds lifts)))]
+       (define init-frees+binds (cons (car empty-frees+binds) (cdr frees+binds)))
+       (define new-frees+binds
+         (for/fold ([frees+binds init-frees+binds]) ([args (in-list argss)]
+                                                     [body (in-list bodys)])
+           (let ([frees+binds (compute-seq-lifts! body frees+binds lifts (add-args args locals))])
+             (remove-frees/add-binds args frees+binds lifts))))
+       (when (and (zero? (frees-count new-frees+binds)) (not called?))
+         (record-empty-closure! lifts v))
+       (cons (union (car new-frees+binds) (car frees+binds))
+             (cdr new-frees+binds))]
       [`(begin . ,vs)
        (compute-seq-lifts! vs frees+binds lifts locals)]
       [`(begin0 . ,vs)
@@ -302,6 +326,10 @@
          (compute-lifts! rhs frees+binds lifts locals))]
       [`(#%variable-reference . ,_)
        (error 'internal-error "lift: unexpected variable reference")]
+      [`(call-with-values ,producer ,consumer)
+       (let* ([frees+binds (compute-lifts! producer frees+binds lifts locals #t)]
+              [frees+binds (compute-lifts! consumer frees+binds lifts locals #t)])
+         frees+binds)]
       [`(,rator . ,rands)
        (define f (unwrap rator))
        (let ([frees+binds
@@ -394,7 +422,7 @@
   ;; other lifted functions that it calls. Also, clear `mutated` and
   ;; `var-ref` information from `lifts` in the returned table.
   (define (close-and-convert-lifts lifts)
-    (define new-lifts (make-hash))
+    (define new-lifts (make-hasheq))
     ;; Copy over `liftable`s:
     (for ([(f info) (in-hash lifts)])
       (when (liftable? info)
@@ -450,36 +478,44 @@
                                                  #:unless (liftable? (hash-ref lifts f #f)))
                                         f)
                                       symbol<?)))
+    ;; Copy over empty-closure records:
+    (for ([(f info) (in-hash lifts)])
+      (when (eq? info '#:empty)
+        (hash-set! new-lifts f info)))
     ;; Return new lifts
     new-lifts)
 
   ;; ----------------------------------------
   ;; Pass 2: convert calls based on previously collected information
     
-  (define (convert-lifted-calls-in-expr v lifts frees)
+  (define (convert-lifted-calls-in-expr v lifts frees empties)
     (let convert ([v v])
       (match v
         [`(let . ,_)
-         (convert-lifted-calls-in-let v lifts frees)]
+         (convert-lifted-calls-in-let v lifts frees empties)]
         [`(letrec . ,_)
-         (convert-lifted-calls-in-letrec v lifts frees)]
+         (convert-lifted-calls-in-letrec v lifts frees empties)]
         [`(letrec* . ,_)
-         (convert-lifted-calls-in-letrec v lifts frees)]
+         (convert-lifted-calls-in-letrec v lifts frees empties)]
         [`((letrec ([,id ,rhs]) ,rator) ,rands ...)
          (convert (reannotate v `(letrec ([,id ,rhs]) (,rator . ,rands))))]
         [`((letrec* ([,id ,rhs]) ,rator) ,rands ...)
          (convert (reannotate v `(letrec* ([,id ,rhs]) (,rator . ,rands))))]
         [`(lambda ,args . ,body)
-         (reannotate v `(lambda ,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts frees)))]
+         (lift-if-empty
+          v lifts empties
+          (reannotate v `(lambda ,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts frees empties))))]
         [`(case-lambda [,argss . ,bodys] ...)
-         (reannotate v `(case-lambda
-                          ,@(for/list ([args (in-list argss)]
-                                       [body (in-list bodys)])
-                              `[,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts frees)])))]
+         (lift-if-empty
+          v lifts empties
+          (reannotate v `(case-lambda
+                           ,@(for/list ([args (in-list argss)]
+                                        [body (in-list bodys)])
+                               `[,args . ,(convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)]))))]
         [`(begin . ,vs)
-         (reannotate v `(begin . ,(convert-lifted-calls-in-seq vs lifts frees)))]
+         (reannotate v `(begin . ,(convert-lifted-calls-in-seq vs lifts frees empties)))]
         [`(begin0 . ,vs)
-         (reannotate v `(begin0 . ,(convert-lifted-calls-in-seq vs lifts frees)))]
+         (reannotate v `(begin0 . ,(convert-lifted-calls-in-seq vs lifts frees empties)))]
         [`(quote . ,_) v]
         [`(if ,tst ,thn ,els)
          (reannotate v `(if ,(convert tst) ,(convert thn) ,(convert els)))]
@@ -497,7 +533,7 @@
         [`(#%variable-reference . ,_)
          (error 'internal-error "lift: unexpected variable reference")]
         [`(,rator . ,rands)
-         (let ([rands (convert-lifted-calls-in-seq rands lifts frees)])
+         (let ([rands (convert-lifted-calls-in-seq rands lifts frees empties)])
            (define f (unwrap rator))
            (cond
              [(and (symbol? f)
@@ -518,28 +554,28 @@
                               `(unbox ,v)))]
            [else v])])))
   
-  (define (convert-lifted-calls-in-seq vs lifts frees)
+  (define (convert-lifted-calls-in-seq vs lifts frees empties)
     (reannotate vs (for/list ([v (in-wrap-list vs)])
-                     (convert-lifted-calls-in-expr v lifts frees))))
+                     (convert-lifted-calls-in-expr v lifts frees empties))))
 
-  (define (convert-lifted-calls-in-let v lifts frees)
+  (define (convert-lifted-calls-in-let v lifts frees empties)
     (match v
       [`(,let-id ([,ids ,rhss] ...) . ,body)
        (define bindings
          (for/list ([id (in-list ids)]
                     [rhs (in-list rhss)]
                     #:unless (liftable? (hash-ref lifts (unwrap id) #f)))
-           `[,id ,(let ([rhs (convert-lifted-calls-in-expr rhs lifts frees)])
+           `[,id ,(let ([rhs (convert-lifted-calls-in-expr rhs lifts frees empties)])
                     (if (indirected? (hash-ref lifts (unwrap id) #f))
                         `(box ,rhs)
                         rhs))]))
        (define new-body
-         (convert-lifted-calls-in-seq body lifts frees))
+         (convert-lifted-calls-in-seq body lifts frees empties))
        (reannotate
         v
         (rebuild-let let-id bindings new-body))]))
 
-  (define (convert-lifted-calls-in-letrec v lifts frees)
+  (define (convert-lifted-calls-in-letrec v lifts frees empties)
     (match v
       [`(,let-id ([,ids ,rhss] ...) . ,body)
        (define pre-bindings
@@ -551,7 +587,7 @@
          (for/list ([id (in-list ids)]
                     [rhs (in-list rhss)]
                     #:unless (liftable? (hash-ref lifts (unwrap id) #f)))
-           (define new-rhs (convert-lifted-calls-in-expr rhs lifts frees))
+           (define new-rhs (convert-lifted-calls-in-expr rhs lifts frees empties))
            (cond
              [(indirected? (hash-ref lifts (unwrap id) #f))
               `[,(gensym) (set-box! ,id ,new-rhs)]]
@@ -561,16 +597,16 @@
              pre-bindings
              (append pre-bindings bindings)))
        (define new-body
-         (convert-lifted-calls-in-seq body lifts frees))
+         (convert-lifted-calls-in-seq body lifts frees empties))
        (reannotate
         v
         (rebuild-let let-id new-bindings new-body))]))
 
-  (define (convert-lifted-calls-in-seq/box-mutated vs ids lifts frees)
+  (define (convert-lifted-calls-in-seq/box-mutated vs ids lifts frees empties)
     (let loop ([ids ids])
       (cond
         [(wrap-null? ids)
-         (convert-lifted-calls-in-seq vs lifts frees)]
+         (convert-lifted-calls-in-seq vs lifts frees empties)]
         [(wrap-pair? ids)
          (define id (wrap-car ids))
          (if (indirected? (hash-ref lifts (unwrap id) #f))
@@ -581,7 +617,7 @@
 
   ;; Create bindings for lifted functions, adding new arguments
   ;; as the functions are lifted
-  (define (extract-lifted-bindings lifts)
+  (define (extract-lifted-bindings lifts empties)
     (for/list ([(f proc) (in-hash lifts)]
                #:when (liftable? proc))
       (let* ([new-args (liftable-frees proc)]
@@ -590,13 +626,13 @@
              [rhs (liftable-expr proc)])
         `[,f ,(match rhs
                 [`(lambda ,args . ,body)
-                 (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees)])
+                 (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
                    (reannotate rhs `(lambda ,(append new-args args) . ,body)))]
                 [`(case-lambda [,argss . ,bodys] ...)
                  (reannotate rhs `(case-lambda
                                     ,@(for/list ([args (in-list argss)]
                                                  [body (in-list bodys)])
-                                        (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees)])
+                                        (let ([body (convert-lifted-calls-in-seq/box-mutated body args lifts frees empties)])
                                           `[,(append new-args args) . ,body]))))])])))
 
 
@@ -660,6 +696,9 @@
     (cons (hash-set (car frees+binds) var #t)
           (cdr frees+binds)))
 
+  (define (frees-count frees+binds)
+    (hash-count (car frees+binds)))
+
   ;; Remove a group of arguments (a list or improper list) from a set
   ;; as the variable go out of scope, including any associated mutator
   ;; and variable-reference variables, but keep variables for lifted
@@ -702,6 +741,17 @@
         (car body)]
        [else `(begin . ,body)]))
 
+  (define (record-empty-closure! lifts v)
+    (hash-set! lifts v '#:empty))
+
+  (define (lift-if-empty v lifts empties new-v)
+    (cond
+      [(hash-ref lifts v #f)
+       (define id (gensym 'procz))
+       (set-box! empties (cons `[,id ,new-v] (unbox empties)))
+       id]
+      [else new-v]))
+   
   ;; ----------------------------------------
   ;; Go
   

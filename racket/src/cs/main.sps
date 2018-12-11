@@ -21,6 +21,7 @@
                load
                dynamic-require
                namespace-require
+               embedded-load
                module-declared?
                module->language-info
                module-path-index-join
@@ -39,7 +40,8 @@
                omit-debugging?
                platform-independent-zo-mode?
                linklet-performance-init!
-               linklet-performance-report!))
+               linklet-performance-report!
+               current-compile-target-machine))
 
  (linklet-performance-init!)
  (unless omit-debugging?
@@ -53,35 +55,62 @@
                           (bytes->string/locale s #\?)
                           s))
           the-command-line-arguments/maybe-bytes))
+   (define (->path s)
+     (cond
+      [(bytes? s) (bytes->path s)]
+      [else (string->path s)]))
 
+   (define builtin-argc 9)
    (seq
-    (unless (>= (length the-command-line-arguments) 5)
-      (error 'racket "expected `self`, `collects`, and `libs` paths plus `segment-offset` and `is-gui?` to start"))
-    (set-exec-file! (path->complete-path (car the-command-line-arguments))))
-   (define init-collects-dir (let ([s (cadr the-command-line-arguments)])
-                               (if (equal? s "") 'disable (string->path s))))
-   (define init-config-dir (string->path (or (getenv "PLTCONFIGDIR")
-                                             (caddr the-command-line-arguments))))
-   (define segment-offset (#%string->number (list-ref the-command-line-arguments 3)))
-   (define gracket? (string=? "true" (list-ref the-command-line-arguments 4)))
+    (unless (>= (length the-command-line-arguments) builtin-argc)
+      (error 'racket (string-append
+		      "expected `exec-file`, `run-file`, `collects`, and `etc` paths"
+		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
+		      " `wm-is-gracket`, and `gracket-guid`"
+		      " to start")))
+    (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 0)))
+    (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1))))
+   (define init-collects-dir (let ([s (list-ref the-command-line-arguments/maybe-bytes 2)])
+                               (if (or (equal? s "")
+                                       (equal? s '#vu8()))
+                                   'disable
+                                   (->path s))))
+   (define init-config-dir (->path (or (getenv "PLTCONFIGDIR")
+                                       (list-ref the-command-line-arguments/maybe-bytes 3))))
+   (define segment-offset (#%string->number (list-ref the-command-line-arguments 4)))
+   (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 5)))
+   (define gracket? (string=? "true" (list-ref the-command-line-arguments 6)))
+   (define wm-is-gracket (string->number (list-ref the-command-line-arguments 7)))
+   (define gracket-guid (list-ref the-command-line-arguments 8))
 
    (seq
     (when (foreign-entry? "racket_exit")
-      (#%exit-handler (foreign-procedure "racket_exit" (int) void))))
+      (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
+
+    ;; For Windows:
+    (unsafe-register-process-global (string->bytes/utf-8 "PLT_WM_IS_GRACKET")
+				    (ptr-add #f wm-is-gracket))
+    (unsafe-register-process-global (string->bytes/utf-8 "PLT_GRACKET_GUID")
+				    (bytes-append (string->bytes/utf-8 gracket-guid) #vu8(0))))
 
    (define compiled-file-paths
-     (list (string->path (string-append "compiled/"
-                                        (cond
-                                         [(getenv "PLT_ZO_PATH")
-                                          => (lambda (s)
-                                               (unless (and (not (equal? s ""))
-                                                            (relative-path? s))
-                                                 (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
-                                               s)]
-                                         [platform-independent-zo-mode? "cs"]
-                                         [else (symbol->string (machine-type))])))))
+     (list (string->path (cond
+                          [cs-compiled-subdir?
+                           (string-append "compiled/"
+                                          (cond
+                                           [(getenv "PLT_ZO_PATH")
+                                            => (lambda (s)
+                                                 (unless (and (not (equal? s ""))
+                                                              (relative-path? s))
+                                                   (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
+                                                 s)]
+                                           [platform-independent-zo-mode? "cs"]
+                                           [else (symbol->string (machine-type))]))]
+                          [else "compiled"]))))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
+   (define compile-machine-independent? (getenv "PLT_COMPILE_ANY"))
+   (define embedded-load-in-places #f)
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -160,12 +189,12 @@
                                      "gui-interactive.rkt"
                                      "interactive.rkt"))])
               (and (file-exists? p) p))
-            (hash-ref (call-with-input-file
-                       (build-path (find-main-config) "config.rktd")
-                       read)
-                      (if gracket? 'gui-interactive-file 'interactive-file)
-                      #f)
-            (if gracket? 'racket/interactive 'racket/gui/interactive)))
+            (let ([config-fn (build-path (find-main-config) "config.rktd")])
+              (and (file-exists? config-fn)
+                   (hash-ref (call-with-input-file config-fn read)
+                             (if gracket? 'gui-interactive-file 'interactive-file)
+                             #f)))
+            (if gracket? 'racket/gui/interactive 'racket/interactive)))
       (default-continuation-prompt-tag)
       (lambda args #f)))
 
@@ -182,6 +211,7 @@
    (define exit-value 0)
    (define host-collects-dir init-collects-dir)
    (define host-config-dir init-config-dir)
+   (define addon-dir #f)
 
    (define (no-init! saw)
      (unless (saw? saw 'top)
@@ -201,6 +231,13 @@
      (when (equal? what "")
        (error 'racket "empty ~a after ~a switch" what (or within-flag flag))))
 
+   (define (raise-bad-switch arg within-arg)
+     (raise-user-error 'racket "bad switch: ~a~a"
+                       arg
+                       (if within-arg
+                           (format " within: ~a" within-arg)
+                           "")))
+
    (define-syntax string-case
      ;; Assumes that `arg` is a variable
      (syntax-rules ()
@@ -214,7 +251,7 @@
    (define remaining-command-line-arguments '#())
 
    (seq
-    (let flags-loop ([args (list-tail the-command-line-arguments 5)]
+    (let flags-loop ([args (list-tail the-command-line-arguments builtin-argc)]
                      [saw (hasheq)])
       ;; An element of `args` can become `(cons _arg _within-arg)`
       ;; due to splitting multiple flags with a single "-"
@@ -258,7 +295,7 @@
                        loads))
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config 'lib)))]
-             [("-u" "--script")
+             [("-u" "--require-script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads
                       (cons
@@ -266,7 +303,8 @@
                          (namespace-require+ `(file ,file-name)))
                        loads))
                 (no-init! saw)
-                (flags-loop rest-args (see saw 'non-config 'lib)))]
+                (set-run-file! (string->path file-name))
+                (flags-loop (cons "--" rest-args) (see saw 'non-config 'lib)))]
              [("-f" "--load")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
                 (set! loads
@@ -275,6 +313,15 @@
                          (load file-name))
                        loads))
                 (flags-loop rest-args (see saw 'non-config)))]
+             [("-r" "--script")
+              (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
+                (set! loads
+                      (cons
+                       (lambda ()
+                         (load file-name))
+                       loads))
+                (set-run-file! (string->path file-name))
+                (flags-loop (cons "--" rest-args) (see saw 'non-config)))]
              [("-e" "--eval")
               (let-values ([(expr rest-args) (next-arg "expression" arg within-arg args)])
                 (set! loads
@@ -282,6 +329,28 @@
                        (lambda ()
                          (eval (read (open-input-string expr))))
                        loads))
+                (flags-loop rest-args (see saw 'non-config)))]
+             [("-k")
+              (let*-values ([(n rest-args) (next-arg "starting and ending offsets" arg within-arg args)]
+                            [(m rest-args) (next-arg "first ending offset" arg within-arg (cons "-k" rest-args))]
+                            [(p rest-args) (next-arg "second ending offset" arg within-arg (cons "-k" rest-args))])
+                (let* ([add-segment-offset
+                        (lambda (s what)
+                          (let ([n (#%string->number s)])
+                            (unless (exact-integer? n)
+                              (raise-user-error 'racket "bad ~a: ~a" what s))
+                            (#%number->string (+ n segment-offset))))]
+                       [n (add-segment-offset n "starting offset")]
+                       [m (add-segment-offset m "first ending offset")]
+                       [p (add-segment-offset p "second ending offset")])
+                  (set! loads
+                        (cons
+                         (lambda ()
+                           (set! embedded-load-in-places (list n m))
+                           (embedded-load n m #f #t)
+                           (embedded-load m p #f #f))
+                         loads)))
+                (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-m" "--main")
               (set! loads
@@ -298,7 +367,8 @@
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
-              (flags-loop (cddr args) (see saw 'non-config))]
+              (no-init! saw)
+              (flags-loop (cdr args) (see saw 'non-config))]
              [("-c" "--no-compiled")
               (set! compiled-file-paths '())
               (loop (cdr args))]
@@ -306,6 +376,10 @@
               (let-values ([(lib-name rest-args) (next-arg "library name" arg within-arg args)])
                 (when init-library
                   (set! init-library `(lib ,lib-name)))
+                (loop rest-args))]
+             [("-A" "--addon")
+              (let-values ([(addon-path rest-args) (next-arg "addon directory" arg within-arg args)])
+                (set! addon-dir addon-path)
                 (loop rest-args))]
              [("-X" "--collects")
               (let-values ([(collects-path rest-args) (next-arg "collects path" arg within-arg args)])
@@ -324,6 +398,7 @@
              [("-C" "--cross")
               (set! host-config-dir init-config-dir)
               (set! host-collects-dir init-collects-dir)
+              (set-cross-mode! 'force)
               (loop (cdr args))]
              [("-U" "--no-user-path")
               (set! user-specific-search-paths? #f)
@@ -346,6 +421,25 @@
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
                 (set-run-file! (string->path name))
                 (loop rest-args))]
+             [("-J")
+              (cond
+               [gracket?
+                (let-values ([(wm-class rest-args) (next-arg "WM_CLASS string" arg within-arg args)])
+                  (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-wm-class")
+                                                  (bytes-append (string->bytes/utf-8 wm-class) #vu8(0)))
+                  (loop rest-args))]
+               [else
+                (raise-bad-switch arg within-arg)])]
+             [("-K")
+              (cond
+               [gracket?
+                (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-no-front") #vu8(1))
+                (loop (cdr args))]
+               [else
+                (raise-bad-switch arg within-arg)])]
+             [("-M" "--compile-any")
+              (set! compile-machine-independent? #t)
+              (loop (cdr args))]
              [("--")
               (cond
                [(or (null? (cdr args)) (not (pair? (cadr args))))
@@ -355,7 +449,8 @@
                 (loop (cons (cadr args) (cons (car args) (cddr args))))])]
              [else
               (cond
-               [(eqv? (string-ref arg 0) #\-)
+               [(and (eqv? (string-ref arg 0) #\-)
+                     (> (string-length arg) 1))
                 (cond
                  [(and (> (string-length arg) 2)
                        (not (eqv? (string-ref arg 1) #\-)))
@@ -364,11 +459,7 @@
                                      (cdr (string->list arg)))
                                 (cdr args)))]
                  [else
-                  (raise-user-error 'racket "bad switch: ~a~a"
-                                    arg
-                                    (if within-arg
-                                        (format " within: ~a" within-arg)
-                                        ""))])]
+                  (raise-bad-switch arg within-arg)])]
                [else
                 ;; Non-flag argument
                 (finish args saw)])])))))
@@ -490,6 +581,8 @@
      (|#%app| use-compiled-file-paths compiled-file-paths)
      (|#%app| use-user-specific-search-paths user-specific-search-paths?)
      (|#%app| load-on-demand-enabled load-on-demand?)
+     (when compile-machine-independent?
+       (|#%app| current-compile-target-machine #f))
      (boot)
      (when (and stderr-logging
                 (not (null? stderr-logging)))
@@ -518,9 +611,17 @@
       (regexp-place-init!)
       (expander-place-init!)
       (initialize-place!)
+      (when embedded-load-in-places
+        (let-values ([(n m) (apply values embedded-load-in-places)])
+          (embedded-load n m #f #t)))
       (lambda ()
         (let ([f (dynamic-require mod sym)])
           (f pch)))))
+
+   (let ([a (or addon-dir
+                (getenv "PLTADDONDIR"))])
+     (when a
+       (set-addon-dir! (path->complete-path a))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler
@@ -530,7 +631,7 @@
           (apply orig args)))))
 
    (when version?
-     (printf "Welcome to Racket v~a [cs]\n" (version)))
+     (printf "Welcome to Racket v~a [cs].\n" (version)))
    (call-in-main-thread
     (lambda ()
       (initialize-place!)

@@ -120,7 +120,8 @@ otherwise.}
                              [name any/c #f]
                              [import-keys #f #f]
                              [get-import #f #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static)) '(serializable)])
+                             [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                                      '(serializable)])
             linklet?]
            [(compile-linklet [form (or/c correlated? any/c)]
                              [name any/c]
@@ -128,7 +129,8 @@ otherwise.}
                              [get-import (or/c #f (any/c . -> . (values (or/c linklet? instance? #f)
                                                                         (or/c vector? #f))))
                                          #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static)) '(serializable)])
+                             [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                                      '(serializable)])
             (values linklet? vector?)])]{
 
 Takes an S-expression or @tech{correlated object} for a
@@ -190,8 +192,14 @@ at most once. Compilation with @racket['static] is intended to improve
 the performance of references within the linklet to defined and
 imported variables.
 
+If @racket['no-prompt] is included in @racket[options], then when the
+resulting linklet is instantiated, the @racket[_use-prompt?] argument
+to @racket[instantiate-linklet] may be treated as @racket[#f].
+
 The symbols in @racket[options] must be distinct, otherwise
-@exnraise[exn:fail:contract].}
+@exnraise[exn:fail:contract].
+
+@history[#:changed "7.1.0.8" @elem{Added the @racket['no-prompt] option.}]}
 
 
 @defproc*[([(recompile-linklet [linklet linklet?]
@@ -199,18 +207,25 @@ The symbols in @racket[options] must be distinct, otherwise
                                [import-keys #f #f]
                                [get-import (any/c . -> . (values (or/c linklet? #f)
                                                                  (or/c vector? #f)))
-                                           (lambda (import-key) (values #f #f))])
+                                           (lambda (import-key) (values #f #f))]
+                               [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                                        '(serializable)])
             linklet?]
            [(recompile-linklet [linklet linklet?]
                                [name any/c]
                                [import-keys vector?]
                                [get-import (any/c . -> . (values (or/c linklet? #f)
                                                                  (or/c vector? #f)))
-                                           (lambda (import-key) (values #f #f))])
+                                           (lambda (import-key) (values #f #f))]
+                               [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                                        '(serializable)])
              (values linklet? vector?)])]{
 
 Like @racket[compile-linklet], but takes an already-compiled linklet
-and potentially optimizes it further.}
+and potentially optimizes it further.
+
+@history[#:changed "7.1.0.6" @elem{Added the @racket[options] argument.}
+         #:changed "7.1.0.8" @elem{Added the @racket['no-prompt] option.}]}
 
 
 @defproc[(eval-linklet [linklet linklet?]) linklet?]{
@@ -411,6 +426,38 @@ Changes @racket[instance] so that it does not export a variable as
 variable. If a variable for @racket[name] exists as constant, the
 @exnraise[exn:fail:contract].}
 
+
+@defproc[(instance-describe-variable! [instance instance?]
+                                      [name symbol?]
+                                      [desc-v any/c])
+          void?]{
+
+Registers information about @racket[name] in @racket[instance] that
+may be useful for compiling linklets where the instance is return via
+the @racket[_get-import] callback to @racket[compile-linklet]. The
+@racket[desc-v] description can be any value; the recognized
+descriptions depend on virtual machine, but may include the following:
+
+@itemlist[
+
+ @item{@racket[`(procedure ,arity-mask)] --- the value is always a
+       procedure that is not impersonated and not a structure, and its
+       arity in the style of @racket[procedure-arity-mask] is
+       @racket[arity-mask].}
+
+ @item{@racket[`(procedure/succeeds ,arity-mask)] --- like
+       @racket[`(procedure ,arity-mask)], but for a procedure that
+       never raises an exception of otherwise captures or escapes the
+       calling context.}
+
+ @item{@racket[`(procedure/pure ,arity-mask)] --- like
+       @racket[`(procedure/succeeds ,arity-mask)], but with no
+       observable side effects, so a call to the procedure can be
+       reordered.}
+
+]
+
+@history[#:added "7.1.0.8"]}
 
 @defproc[(variable-reference->instance [varref variable-reference?]
                                        [ref-site? any/c #f])

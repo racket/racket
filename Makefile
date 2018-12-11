@@ -29,9 +29,12 @@ PKGS = main-distribution main-distribution-test
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
+# For -M, etc., to pick the target machine for compilation:
+SETUP_MACHINE_FLAGS =
+
 # In case of cross-installation, point explicitly to local content:
-RUN_RACKET = $(PLAIN_RACKET) -G racket/etc -X racket/collects
-WIN32_RUN_RACKET = $(WIN32_PLAIN_RACKET) -G racket/etc -X racket/collects
+RUN_RACKET = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects
+WIN32_RUN_RACKET = $(WIN32_PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) -G racket/etc -X racket/collects
 
 RUN_RACO = $(RUN_RACKET) -N raco -l- raco
 WIN32_RUN_RACO = $(WIN32_RUN_RACKET) -N raco -l- raco
@@ -140,7 +143,7 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base CONFIGURE_ARGS_qq='$(CONFIGURE_ARGS_qq) $(CONFIG_PREFIX_ARGS)' $(UNIX_BASE_ARGS)
+	$(MAKE) base MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(CONFIG_PREFIX_ARGS)" $(UNIX_BASE_ARGS)
 	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
@@ -169,11 +172,17 @@ set-src-catalog:
 # an empty set of link files, so that any installation-wide
 # links or packages are ignored during the base build.
 
-CONFIGURE_ARGS_qq = 
+CONFIGURE_ARGS_qq =
+MORE_CONFIGURE_ARGS = 
 
 SELF_UP = 
 SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
-INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
+PLT_SETUP_OPTIONS_qq = PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
+INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) $(PLT_SETUP_OPTIONS_qq) SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
+
+BASE_INSTALL_TARGET = plain-base-install
+
+WIN32_BUILD_LEVEL = 3m
 
 base:
 	if [ "$(CPUS)" = "" ] ; \
@@ -188,8 +197,11 @@ plain-base:
 	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
-	cd racket/src/build; $(MAKE) $(SELF_FLAGS_qq)
-	cd racket/src/build; $(MAKE) install $(INSTALL_SETUP_ARGS)
+	cd racket/src/build; $(MAKE) racket-variant $(SELF_FLAGS_qq)
+	$(MAKE) $(BASE_INSTALL_TARGET)
+
+plain-base-install:
+	cd racket/src/build; $(MAKE) install-racket-variant $(INSTALL_SETUP_ARGS)
 
 base-config:
 	mkdir -p build/config
@@ -199,7 +211,7 @@ win32-base:
 	$(MAKE) win32-remove-setup-dlls
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	cmd /c racket\src\worksp\build-at racket\src\worksp ..\..\..\build\config $(WIN32_BUILD_LEVEL) $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
 # Start by removing DLLs that may be loaded by `raco setup`
 win32-remove-setup-dlls:
@@ -209,8 +221,10 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\libeay32.dll cmd /c del racket\lib\libeay32.dll
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
-racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
+SRC_MAKEFILE_CONFIG = configure
+
+racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
+	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 
 # For cross-compilation, build a native executable with no configure options:
@@ -226,9 +240,17 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
 # ------------------------------------------------------------
 # Racket-on-Chez build
 
+# If `RACKETCS_SUFFIX` is set to the empty string, the Racket-on-Chez
+# is build as `racket` instead of `racketcs`. Also, if `RACKET`
+# is not set, then `--enable-csdefault` is added to 
+RACKETCS_SUFFIX = cs
+
 # If `RACKET` is not set, then we bootstrap by first building the
 # traditional virtual machine
 RACKET =
+
+# The built traditional Racket:
+RACKET_BUILT_FOR_CS = racket/src/build/racket/racket3m
 
 # If `SCHEME_SRC` is not set, then we'll download a copy of
 # Chez Scheme from `CHEZ_SCHEME_REPO`
@@ -237,10 +259,15 @@ DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 MAKE_BUILD_SCHEME = y
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
+GIT_CLONE_ARGS_qq = --depth 1
+
+# Altenative source for Chez Scheme repo, normally set by
+# the distro-build client driver
+EXTRA_REPOS_BASE = 
 
 # Redirected for `cs-as-is` and `cs-base`:
-BASE_TARGET = plain-minimal-in-place
 CS_SETUP_TARGET = plain-in-place-after-base
+WIN32_CS_SETUP_TARGET = win32-in-place-after-base
 
 cs:
 	if [ "$(CPUS)" = "" ] ; \
@@ -252,7 +279,7 @@ plain-cs:
          then $(MAKE) scheme-src ; fi
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) racket-then-cs ; \
-         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+         else $(MAKE) cs-only RACKET="$(RACKET)" ; fi
 
 cpus-cs:
 	$(MAKE) -j $(CPUS) plain-cs JOB_OPTIONS="-j $(CPUS)"
@@ -261,31 +288,38 @@ cs-in-place:
 	$(MAKE) cs
 
 cs-base:
-	if [ "$(CPUS)" = "" ] ; \
-         then $(MAKE) plain-cs-base ; \
-         else $(MAKE) cpus-cs-base CPUS="$(CPUS)" ; fi
-
-plain-cs-base:
 	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
 
-cpus-cs-base:
-	$(MAKE) -j $(CPUS) plain-cs-base JOB_OPTIONS="-j $(CPUS)"
-
 cs-as-is:
-	$(MAKE) cs BASE_TARGET=plain-base CS_SETUP_TARGET=in-place-setup
+	$(MAKE) cs CS_SETUP_TARGET=in-place-setup
+
+CS_CONFIG_TARGET = no-cfg-cs
 
 cs-after-racket:
 	if [ "$(RACKET)" = "" ] ; \
-         then $(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)" ; \
-         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
+         then $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot ; \
+         else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" CS_CONFIG_TARGET=run-cfg-cs ; fi
+
+RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
 
 racket-then-cs:
-	$(MAKE) $(BASE_TARGET) PKGS="compiler-lib parser-tools-lib"
-	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) -D -l compiler parser-tools
-	$(MAKE) cs-after-racket-with-racket RACKET="$(PLAIN_RACKET)"
+	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
+         then $(MAKE) racket-configured-then-cs $(RACKETCS_SUFFIX_CONFIG) ; \
+         else $(MAKE) racket-configured-then-cs ; fi
 
-ABS_RACKET = "`$(RACKET) racket/src/cs/absify.rkt --exec $(RACKET)`"
-ABS_SCHEME_SRC = "`$(RACKET) racket/src/cs/absify.rkt $(SCHEME_SRC)`"
+racket-configured-then-cs:
+	$(MAKE) plain-base BASE_INSTALL_TARGET=nothing-after-base
+	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot
+
+cs-only:
+	$(MAKE) racket/src/build/Makefile SRC_MAKEFILE_CONFIG=cfg-cs
+	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)"
+
+SETUP_BOOT_MODE = --chain
+ABS_SETUP_BOOT = -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled
+ABS_BOOT = $(ABS_SETUP_BOOT) ignored racket/src/build/ignored.d
+ABS_RACKET = `$(RACKET) $(ABS_BOOT) racket/src/cs/absify.rkt --exec $(RACKET)`
+ABS_SCHEME_SRC = `$(RACKET) $(ABS_BOOT) racket/src/cs/absify.rkt $(SCHEME_SRC)`
 
 cs-after-racket-with-racket:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
@@ -293,21 +327,29 @@ cs-after-racket-with-racket:
 	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=n ; fi
 
 cs-after-racket-with-racket-and-scheme-src:
+	$(RACKET) -O "info@compiler/cm" $(ABS_BOOT) racket/src/cs/absify.rkt just-to-compile-absify
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
 
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/Makefile
 	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
-	cd racket/src/build/cs; $(MAKE) install RACKET="$(RACKET)" $(INSTALL_SETUP_ARGS)
-	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racketcs
+	cd racket/src/build; $(MAKE) install-cs RACKET="$(RACKET)" CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
+	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
 
 nothing-after-base:
 	echo base done
 
-racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
+racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
 	mkdir -p cd racket/src/build/cs
-	cd racket/src/build/cs; ../../cs/c/configure
+	cd racket/src/build/cs; ../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	$(MAKE) $(CS_CONFIG_TARGET)
+
+run-cfg-cs:
+	cd racket/src/build; ../cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+
+no-cfg-cs:
+	echo done
 
 scheme-src:
 	$(MAKE) racket/src/build/ChezScheme
@@ -315,28 +357,55 @@ scheme-src:
 
 racket/src/build/ChezScheme:
 	mkdir -p racket/src/build
-	cd racket/src/build && git clone $(CHEZ_SCHEME_REPO)
+	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
+          then cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO) ChezScheme ; \
+          else $(MAKE) clone-ChezScheme-as-extra GIT_CLONE_ARGS_qq="" ; fi
 
 update-ChezScheme:
 	cd racket/src/build/ChezScheme && git pull && git submodule update
 
-WIN32_CS_COPY_ARGS_EXCEPT_PKGS = SRC_CATALOG="$(SRC_CATALOG)"
-WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
+clone-ChezScheme-as-extra:
+	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
+	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
+
+WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
+                                     SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
+WIN32_CS_COPY_ARGS_EXCEPT_SUT = PKGS="$(PKGS)" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
+WIN32_CS_COPY_ARGS = PKGS="$(PKGS)" WIN32_CS_SETUP_TARGET=$(WIN32_CS_SETUP_TARGET) $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT)
+WIN32_CS_COPY_ARGS_BOOT = $(WIN32_CS_COPY_ARGS) SETUP_BOOT_MODE="$(SETUP_BOOT_MODE)" WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
+
+WIN32_BOOT_ARGS = SETUP_BOOT_MODE=--boot WIN32_BUILD_LEVEL=cgc WIN32_PLAIN_RACKET=racket\racketcgc
 
 win32-cs:
-	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_CS_COPY_ARGS)
-	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+	IF "$(RACKET)" == "" $(MAKE) win32-racket-then-cs $(WIN32_BOOT_ARGS) $(WIN32_CS_COPY_ARGS)
+	IF not "$(RACKET)" == "" $(MAKE) win32-just-cs RACKET="$(RACKET)" $(WIN32_CS_COPY_ARGS)
+
+win32-cs-base:
+	$(MAKE) win32-cs $(WIN32_CS_COPY_ARGS_EXCEPT_SUT) RACKET="$(RACKET)" WIN32_CS_SETUP_TARGET=nothing-after-base
 
 win32-racket-then-cs:
-	$(MAKE) win32-minimal-in-place PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS)
-	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) SCHEME_SRC="$(SCHEME_SRC)" $(WIN32_CS_COPY_ARGS)
+	$(MAKE) win32-base PKGS="" $(WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT) WIN32_BUILD_LEVEL="$(WIN32_BUILD_LEVEL)"
+	$(MAKE) win32-just-cs RACKET=$(WIN32_PLAIN_RACKET) $(WIN32_CS_COPY_ARGS_BOOT)
+
+CSBUILD_ARGUMENTS = --scheme-dir "$(SCHEME_SRC)" --pull \
+                    --racketcs-suffix "$(RACKETCS_SUFFIX)" \
+                    --boot-mode "$(SETUP_BOOT_MODE)" \
+                    --extra-repos-base "$(EXTRA_REPOS_BASE)" \
+                    -- $(GIT_CLONE_ARGS_qq)
+
+WIN32_SETUP_BOOT = -O "info@compiler/cm" \
+                   -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled \
+                   ignored racket/src/build/ignored.d
 
 win32-just-cs:
-	cmd /c $(RACKET) racket\src\worksp\csbuild.rkt --scheme-dir "$(SCHEME_SRC)"
+	IF NOT EXIST racket\src\build cmd /c mkdir racket\src\build
+	cmd /c $(RACKET) $(WIN32_SETUP_BOOT) racket\src\worksp\csbuild.rkt $(CSBUILD_ARGUMENTS)
 	IF NOT EXIST build\config cmd /c mkdir build\config
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
-	racket\racketcs -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
-	$(MAKE) win32-in-place-after-base WIN32_PLAIN_RACKET=racket\racketcs $(WIN32_CS_COPY_ARGS)
+	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
+	$(MAKE) $(WIN32_CS_SETUP_TARGET) WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
 
 # ------------------------------------------------------------
 # Configuration options for building installers
@@ -455,8 +524,8 @@ CLEAN_MODE =
 # setup operations:
 JOB_OPTIONS =
 
-# A command to run after the server has started; normally set by
-# the `installers' target:
+# $(USER_RACKET) arguments for a command to run after the server has
+# started; normally set by the `installers' target:
 SERVE_DURING_CMD_qq =
 
 # ------------------------------------------------------------
@@ -473,14 +542,13 @@ SVR_PRT = $(SERVER):$(SERVER_PORT)
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
 # Helper macros:
-USER_CONFIG = -G build/user/config -X racket/collects -A build/user
+USER_CONFIG = -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
 USER_RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
-USER_RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
+USER_RACO = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) $(USER_CONFIG) -N raco -l- raco
 WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
-LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS)
 REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
@@ -509,12 +577,28 @@ win32-pkgs-catalog:
 	$(MAKE) pkgs-catalog $(COPY_PKGS_ARGS)
 
 # ------------------------------------------------------------
+# Handle `SERVER_COMPILE_MACHINE` for various targets
+
+SERVER_COMPILE_MACHINE =
+ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
+                              MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
+
+with-setup-flags:
+	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ; \
+         then $(MAKE) $(NEXT_TARGET) $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
+         else $(MAKE) $(NEXT_TARGET) ; fi
+
+# ------------------------------------------------------------
 # On a server platform (for an installer build):
 
 # These targets require GNU `make', so that we don't have to propagate
 # variables through all of the target layers.
 
 server:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-server
+
+plain-server:
+	rm -rf build/zo
 	$(MAKE) base
 	$(MAKE) server-from-base
 
@@ -584,7 +668,7 @@ built-catalog:
 # as the copy of the server's "collects" tree:
 built-catalog-server:
 	if [ -d ".git" ]; then git update-server-info ; fi
-	$(USER_RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(SERVE_DURING_CMD_qq)
+	$(USER_RACKET) -l distro-build/serve-catalog $(CONFIG_MODE_q) "$(SERVER_HOSTS)" $(SERVER_PORT) $(USER_RACKET) $(SERVE_DURING_CMD_qq)
 
 # Demonstrate how a catalog server for binary packages works,
 # which involves creating package archives in "binary" mode
@@ -605,11 +689,17 @@ binary-catalog-server:
 # keep the "build/user" directory on the grounds that the
 # client is the same as the server.
 
+# These can get replaced by `cs-base` and `win32-cs-base`:
+CLIENT_BASE = base
+WIN32_CLIENT_BASE = win32-base
+
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
             PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" BUILD_STAMP="$(BUILD_STAMP)" \
+	    EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)" \
+            UNPACK_COLLECTS_FLAGS="$(UNPACK_COLLECTS_FLAGS)" \
             DIST_NAME="$(DIST_NAME)" DIST_BASE=$(DIST_BASE) \
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
@@ -623,17 +713,20 @@ COPY_ARGS = $(PROP_ARGS) \
 
 SET_BUNDLE_CONFIG_q = $(BUNDLE_CONFIG) "$(INSTALL_NAME)" "$(BUILD_STAMP)" "$(DOC_SEARCH)" $(DIST_CATALOGS_q)
 
+# Can be redirected to `bundle-cross-from-server`:
+BUNDLE_FROM_SERVER_TARGET = bundle-from-server
+
 client:
 	if [ ! -d build/log ] ; then rm -rf build/user ; fi
-	$(MAKE) base $(COPY_ARGS)
+	$(MAKE) $(CLIENT_BASE) $(COPY_ARGS)
 	$(MAKE) distro-build-from-server $(COPY_ARGS)
-	$(MAKE) bundle-from-server $(COPY_ARGS)
+	$(MAKE) $(BUNDLE_FROM_SERVER_TARGET) $(COPY_ARGS)
 	$(USER_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) installer-from-bundle $(COPY_ARGS)
 
 win32-client:
 	IF EXIST build\user cmd /c del /f /s /q build\user
-	$(MAKE) win32-base $(COPY_ARGS)
+	$(MAKE) $(WIN32_CLIENT_BASE) $(COPY_ARGS)
 	$(MAKE) win32-distro-build-from-server $(COPY_ARGS)
 	$(MAKE) win32-bundle-from-server $(COPY_ARGS)
 	$(WIN32_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
@@ -647,8 +740,9 @@ distro-build-from-server:
 # Copy our local build into a "bundle/racket" build, dropping in the
 # process things that should not be in an installer (such as the "src"
 # directory). Then, replace the "collects" tree with the one from the
-# server. Install required packages next, because they may include
-# packages that are needed kto make core functionality work right
+# server. Run `raco setup` in case the replacing "collects" tree needs
+# recompiling. Install required packages next, because they may include
+# packages that are needed to make core functionality work right
 # (which as the SQLite3 library). At last, install the selected packages
 # from the server, and the run a post-adjustment script.
 bundle-from-server:
@@ -657,10 +751,17 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/unixstyle-install bundle racket bundle/racket
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
-	$(USER_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
+	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(IN_BUNDLE_RACO) setup -l racket/base
+	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
+
+# For a cross build, we still need to use `$(BUNDLE_RACO)` for
+# installing packages. The host build must have all native libraries
+# that installation will need.
+bundle-cross-from-server:
+	$(MAKE) bundle-from-server $(COPY_ARGS) IN_BUNDLE_RACO="$(BUNDLE_RACO)"
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
@@ -685,9 +786,10 @@ win32-bundle:
 
 win32-bundle-from-server:
 	$(MAKE) win32-bundle $(COPY_ARGS)
-	$(WIN32_RACKET) -l distro-build/unpack-collects http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
-	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
+	$(WIN32_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
+	$(WIN32_IN_BUNDLE_RACO) setup -l racket/base
+	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
+	$(WIN32_IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
@@ -722,17 +824,20 @@ FROM_SITE_ARGS = SERVER_CATALOG_PATH=$(SITE_PATH)catalog/ SERVER_COLLECTS_PATH=$
                  DOC_SEARCH="http://$(SERVER):$(SERVER_PORT)/$(SITE_PATH)doc/local-redirect/index.html" \
                  $(PROP_ARGS)
 
-client-from-site: 
+client-from-site:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-client-from-site
+
+plain-client-from-site:
 	make client $(FROM_SITE_ARGS)
 
 # ------------------------------------------------------------
 # Drive installer build across server and clients:
 
 DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
-               $(CLEAN_MODE) "$(CONFIG)" "$(CONFIG_MODE)" \
+               $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
-DRIVE_CMD_q = $(USER_RACKET) -l- distro-build/drive-clients $(DRIVE_ARGS_q)
+DRIVE_CMD_q = -l- distro-build/drive-clients $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
 installers:
@@ -741,6 +846,9 @@ installers:
 
 # Server is already built; start it and drive clients:
 installers-from-built:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-installers-from-built
+
+plain-installers-from-built:
 	$(MAKE) built-catalog-server SERVE_DURING_CMD_qq='$(DRIVE_CMD_q)'
 
 # Just the clients, assuming server is already running:
@@ -757,7 +865,11 @@ site:
 DOC_CATALOGS = build/built/catalog build/native/catalog
 
 site-from-installers:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-site-from-installers
+
+plain-site-from-installers:
 	rm -rf build/docs
+	rm -rf "build/zo`pwd`/build/docs"
 	$(USER_RACKET) -l- distro-build/install-for-docs build/docs $(CONFIG_MODE_q) "$(PKGS)" $(DOC_CATALOGS)
 	$(USER_RACKET) -l- distro-build/assemble-site $(CONFIG_MODE_q)
 
@@ -769,4 +881,7 @@ snapshot-site:
 	$(MAKE) snapshot-at-site
 
 snapshot-at-site:
+	$(MAKE) with-setup-flags NEXT_TARGET=plain-snapshot-at-site
+
+plain-snapshot-at-site:
 	$(USER_RACKET) -l- distro-build/manage-snapshots $(CONFIG_MODE_q)

@@ -13,13 +13,10 @@ COMPRESS_COMP = # --compress
 # Controls whether Racket layers are built with expression-level debugging:
 DEBUG_COMP = # --debug
 
-# Controls whether Rumble is built as unsafe:
-RUMBLE_UNSAFE_COMP = --unsafe
-
 COMPILE_FILE = $(SCHEME) --script compile-file.ss $(UNSAFE_COMP) $(COMPRESS_COMP) $(DEBUG_COMP) --dest "$(BUILDDIR)"
 COMPILE_FILE_DEPS = compile-file.ss include.ss place-register.ss 
 
-RACKET_SETUP_ARGS = ../../bin/racket ../collects ../etc 0 false
+RACKET_SETUP_ARGS = ../../bin/racket ../../bin/racket ../collects ../etc 0 true false 0 ""
 
 PRIMITIVES_TABLES = primitive/kernel.ss primitive/unsafe.ss primitive/flfxnum.ss \
                     primitive/paramz.ss primitive/extfl.ss primitive/network.ss \
@@ -277,6 +274,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/unsafe.ss \
               rumble/extfl.ss \
               rumble/place.ss \
+              rumble/errno-data.ss \
               rumble/foreign.ss \
               rumble/future.ss \
               rumble/version.ss \
@@ -284,7 +282,7 @@ RUMBLE_SRCS = rumble/define.ss \
               ../racket/src/schvers.h
 
 $(BUILDDIR)rumble.so: $(RUMBLE_DEPS) rumble.sls $(RUMBLE_SRCS) $(COMPILE_FILE_DEPS)
-	$(COMPILE_FILE) $(RUMBLE_UNSAFE_COMP) rumble.sls $(RUMBLE_DEPS)
+	$(COMPILE_FILE) rumble.sls $(RUMBLE_DEPS)
 
 $(BUILDDIR)chezpart.so: chezpart.sls $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) chezpart.sls

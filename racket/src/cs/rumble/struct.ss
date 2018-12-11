@@ -346,7 +346,8 @@
 ;; ----------------------------------------
 
 ;; Records which fields of an rtd are mutable, where an rtd that is
-;; not in the table has no mutable fields:
+;; not in the table has no mutable fields, and the field list can be
+;; empty if a parent type is mutable:
 (define rtd-mutables (make-ephemeron-eq-hashtable))
 
 ;; Accessors and mutators that need a position are wrapped in these records:
@@ -507,7 +508,7 @@
                [all-immutables (if (integer? proc-spec)
                                    (cons proc-spec immutables)
                                    immutables)]
-               [mutables (immutables->mutables all-immutables init-count)])
+               [mutables (immutables->mutables all-immutables init-count auto-count)])
           (when (not parent-rtd*)
             (record-type-equal-procedure rtd default-struct-equal?)
             (record-type-hash-procedure rtd default-struct-hash))
@@ -517,8 +518,8 @@
                              (cons prop:procedure props)
                              props))])
             (with-global-lock* (hashtable-set! rtd-props rtd props)))
-          (unless (equal? '#() mutables)
-            (with-global-lock* (hashtable-set! rtd-mutables rtd mutables)))
+          (with-global-lock*
+           (register-mutables! mutables rtd parent-rtd*))
           ;; Copy parent properties for this type:
           (for-each (lambda (prop)
                       (let loop ([prop prop])
@@ -555,53 +556,61 @@
 ;; A weak, `equal?`-based hash table that maps (cons prefab-key
 ;; total-field-count) to rtd. We'll create a table without a lock, and
 ;; we'll use it for all places, which means that we need to use a
-;; global lock to access the table.
+;; global lock to access the table. Compute a hash code outside the
+;; lock, though, just in case computing the code needs the lock.
 (define prefabs #f)
 
 ;; Call with lock:
-(define (prefab-ref prefab-key+count)
+(define (prefab-ref prefab-key+count code)
   (and prefabs
-       (weak-hash-ref prefabs prefab-key+count #f)))
+       (weak-hash-ref prefabs prefab-key+count #f code equal?)))
 
 (define (prefab-key+count->rtd prefab-key+count)
-  (cond
-   [(with-global-lock (prefab-ref prefab-key+count))
-    => (lambda (rtd) rtd)]
-   [else
-    (let* ([prefab-key (car prefab-key+count)]
-           [name (if (symbol? prefab-key)
-                     prefab-key
-                     (car prefab-key))]
-           [parent-prefab-key+count
-            (prefab-key->parent-prefab-key+count (car prefab-key+count))]
-           [parent-rtd (and parent-prefab-key+count
-                            (prefab-key+count->rtd parent-prefab-key+count))]
-           [total-count (- (cdr prefab-key+count)
-                           (if parent-prefab-key+count
-                               (cdr parent-prefab-key+count)
-                               0))]
-           [uid (encode-prefab-key+count-as-symbol prefab-key+count)]
-           [rtd (make-record-type-descriptor name
-                                             parent-rtd
-                                             uid #f #f
-                                             (make-fields total-count))]
-           [mutables (prefab-key-mutables prefab-key)])
-      (with-global-lock
-       (cond
-        [(prefab-ref prefab-key+count)
-         ;; rtd was created concurrently
-         => (lambda (rtd) rtd)]
-        [else
-         (putprop uid 'prefab-key+count prefab-key+count)
-         (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
-         (weak-hash-set! prefabs prefab-key+count rtd)
-         (unless parent-rtd
-           (record-type-equal-procedure rtd default-struct-equal?)
-           (record-type-hash-procedure rtd default-struct-hash))
-         (unless (equal? mutables '#())
-           (hashtable-set! rtd-mutables rtd mutables))
-         (inspector-set! rtd 'prefab)
-         rtd])))]))
+  (let ([code (equal-hash-code prefab-key+count)])
+    (cond
+     [(with-global-lock (prefab-ref prefab-key+count code))
+      => (lambda (rtd) rtd)]
+     [else
+      (let* ([prefab-key (car prefab-key+count)]
+             [name (if (symbol? prefab-key)
+                       prefab-key
+                       (car prefab-key))]
+             [parent-prefab-key+count
+              (prefab-key->parent-prefab-key+count (car prefab-key+count))]
+             [parent-rtd (and parent-prefab-key+count
+                              (prefab-key+count->rtd parent-prefab-key+count))]
+             [total-count (- (cdr prefab-key+count)
+                             (if parent-prefab-key+count
+                                 (cdr parent-prefab-key+count)
+                                 0))]
+             [uid (encode-prefab-key+count-as-symbol prefab-key+count)]
+             [rtd (make-record-type-descriptor name
+                                               parent-rtd
+                                               uid #f #f
+                                               (make-fields total-count))]
+             [mutables (prefab-key-mutables prefab-key)])
+        (with-global-lock
+         (cond
+          [(prefab-ref prefab-key+count code)
+           ;; rtd was created concurrently
+           => (lambda (rtd) rtd)]
+          [else
+           (putprop uid 'prefab-key+count prefab-key+count)
+           (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
+           (weak-hash-set! prefabs prefab-key+count rtd code equal?)
+           (unless parent-rtd
+             (record-type-equal-procedure rtd default-struct-equal?)
+             (record-type-hash-procedure rtd default-struct-hash))
+           (register-mutables! mutables rtd parent-rtd)
+           (inspector-set! rtd 'prefab)
+           rtd])))])))
+
+;; call with lock held
+(define (register-mutables! mutables rtd parent-rtd)
+  (unless (and (equal? '#() mutables)
+               (or (not parent-rtd)
+                   (not (hashtable-contains? rtd-mutables parent-rtd))))
+    (hashtable-set! rtd-mutables rtd mutables)))
 
 (define (check-accessor-or-mutator-index who rtd pos)
   (let* ([total-count (#%vector-length (record-type-field-names rtd))])
@@ -653,11 +662,22 @@
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
              [p (record-field-mutator rtd abs-pos)]
              [wrap-p
-              (escapes-ok
-                (lambda (v a)
-                  (if (impersonator? v)
-                      (impersonate-set! p rtd pos abs-pos v a)
-                      (p v a))))])
+              (if (struct-type-field-mutable? rtd pos)
+                  (lambda (v a)
+                    (if (impersonator? v)
+                        (impersonate-set! p rtd pos abs-pos v a)
+                        (p v a)))
+                  (lambda (v a)
+                    (raise-arguments-error (string->symbol
+                                            (string-append (symbol->string (record-type-name rtd))
+                                                           "-"
+                                                           (if name
+                                                               (symbol->string name)
+                                                               (string-append "field" (number->string pos)))
+                                                           "!"))
+                                           "cannot modify value of immutable field in structure"
+                                           "structure" v
+                                           "field index" pos)))])
         (register-struct-field-mutator! wrap-p rtd pos)
         wrap-p))]
    [(pbm pos)
@@ -798,7 +818,7 @@
                                      (apply guard (append-n args init*-count (list name))))
                                  (lambda results
                                    (unless (= (length results) init*-count)
-                                     (raise-result-arity-error "calling guard procedure" init*-count results))
+                                     (apply raise-result-arity-error '|calling guard procedure| init*-count #f results))
                                    (loop (cdr guards)
                                          (if (= init*-count (length args))
                                              results
@@ -976,6 +996,12 @@
 
 (define-values (prop:authentic authentic? authentic-ref)
   (make-struct-type-property 'authentic (lambda (val info) #t)))
+
+;; A performance hack: cancels `prop:authentic` in
+;; `impersonator-struct`, but leaves Schemify with the impression that
+;; the structure type is authentic
+(define-values (prop:authentic-override authentic-override? authentic-override-ref)
+  (make-struct-type-property 'authentic-override (lambda (val info) #t)))
 
 (define (struct-type-immediate-transparent? rtd)
   (let ([insp (inspector-ref rtd)])

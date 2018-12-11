@@ -85,11 +85,22 @@ Returns a new @tech{ephemeron} whose key is @racket[key] and whose
 value is initially @racket[v].}
 
 
-@defproc[(ephemeron-value [ephemeron ephemeron?] [gced-v any/c #f]) any/c]{
+@defproc[(ephemeron-value [ephemeron ephemeron?] [gced-v any/c #f] [retain-v any/c #f]) any/c]{
 
 Returns the value contained in @racket[ephemeron]. If the garbage
 collector has proven that the key for @racket[ephemeron] is only
-weakly reachable, then the result is @racket[gced-v] (which defaults to @racket[#f]).}
+weakly reachable, then the result is @racket[gced-v] (which defaults to @racket[#f]).
+
+The @racket[retain-v] argument is retained as reachable until the
+ephemeron's value is extracted. It is useful, for example, when
+@racket[_ephemeron] was obtained through a weak, @racket[eq?]-based
+mapping from @racket[_key] and @racket[_ephemeron] was created with
+@racket[_key] as the key; in that case, supplying @racket[_key] as
+@racket[retain-v] ensures that @racket[_ephemeron] retains its value
+long enough for it to be extracted, even if @racket[_key] is otherwise
+unreachable.
+
+@history[#:changed "7.1.0.10" @elem{Added the @racket[retain-v] argument.}]}
 
 
 @defproc[(ephemeron? [v any/c]) boolean?]{

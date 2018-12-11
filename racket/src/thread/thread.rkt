@@ -82,6 +82,8 @@
            check-for-break
            current-break-suspend
 
+           set-force-atomic-timeout-callback!
+
            break-max))
 
 ;; Exports needed by "place.rkt":
@@ -387,6 +389,10 @@
   (define sleeping (sandman-add-sleeping-thread! t ext-events))
   (set-thread-sleeping! t sleeping))
 
+(define force-atomic-timeout-callback void)
+(define (set-force-atomic-timeout-callback! proc)
+  (set! force-atomic-timeout-callback proc))
+
 ;; in atomic mode
 ;; Removes a thread from its thread group, so it won't be scheduled;
 ;; returns a thunk to be called in out of atomic mode to swap out the
@@ -405,8 +411,11 @@
   ;; by a custodian callback
   (lambda ()
     (when (eq? t (current-thread))
-      (when (positive? (current-atomic))
-        (internal-error "attempt to deschedule the current thread in atomic mode"))
+      (let loop ()
+        (when (positive? (current-atomic))
+          (if (force-atomic-timeout-callback)
+              (loop)
+              (internal-error "attempt to deschedule the current thread in atomic mode"))))
       (engine-block)
       (check-for-break))))
 

@@ -57,7 +57,8 @@
 (define f1:+ (make-keyword-procedure
               (lambda (kws kw-args x)
                 (cons x kw-args))
-              (lambda (x) (list x))))
+              (let ([f1:+ (lambda (x) (list x))])
+                f1:+)))
 (define f1:+/drop (make-keyword-procedure
                    (lambda (kws kw-args x)
                      kw-args)

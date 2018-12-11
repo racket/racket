@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../host/rktio.rkt"
          "../port/port.rkt"
+         "../port/close.rkt"
          "../port/input-port.rkt"
          "../port/output-port.rkt"
          "../port/fd-port.rkt"
@@ -20,10 +21,14 @@
     (if (input-port? port)
         (lambda (fd name)
           (open-input-fd fd name
-                         #:extra-data (tcp-data #f #t)))
+                         #:extra-data (tcp-data #f #t)
+                         #:file-stream? #f
+			 #:network-error? #t))
         (lambda (fd name)
           (open-output-fd fd name
-                          #:extra-data (tcp-data #t #f))))))
+                          #:extra-data (tcp-data #t #f)
+                          #:file-stream? #f
+			  #:network-error? #t)))))
 
 (define (open-input-output-tcp fd name #:close? [close? #t])
   (define refcount (box (if close? 2 3)))
@@ -36,7 +41,9 @@
                   (lambda ()
                     (unless (tcp-data-abandon-in? extra-data)
                       (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))
-                  #:fd-refcount refcount)
+                  #:fd-refcount refcount
+                  #:file-stream? #f
+		  #:network-error? #t)
    (open-output-fd fd name
                    #:extra-data extra-data
                    #:on-close
@@ -45,7 +52,9 @@
                      (unless (tcp-data-abandon-out? extra-data)
                        (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))
                    #:fd-refcount refcount
-                   #:buffer-mode 'block)))
+                   #:buffer-mode 'block
+                   #:file-stream? #f
+		   #:network-error? #t)))
 
 (define (port-tcp-data p)
   (maybe-fd-data-extra 
@@ -61,10 +70,20 @@
 (define/who (tcp-port? p)
   (tcp-data? (port-tcp-data p)))
 
-(define/who (tcp-abandon-port p)
+(define/who (tcp-abandon-port given-p)
+  (define p (cond
+              [(input-port? given-p)
+               (->core-input-port given-p)]
+              [(output-port? given-p)
+               (->core-output-port given-p)]
+              [else #f]))
   (define data (port-tcp-data p))
   (unless (tcp-data? data)
     (raise-argument-error who "tcp-port?" p))
   (if (input-port? p)
-      (set-tcp-data-abandon-in?! data #t)
-      (set-tcp-data-abandon-out?! data #t)))
+      (begin
+        (set-tcp-data-abandon-in?! data #t)
+        (close-port p))
+      (begin
+        (set-tcp-data-abandon-out?! data #t)
+        (close-port p))))

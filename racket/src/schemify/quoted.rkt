@@ -16,6 +16,7 @@
     [(impersonator? q) #t] ; i.e., strip impersonators when serializaing
     [(path? q) #t]
     [(regexp? q) #t]
+    [(srcloc? q) #t]
     [(byte-regexp? q) #t]
     [(keyword? q) #t]
     [(hash? q) #t]

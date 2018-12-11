@@ -23,10 +23,12 @@ GLOBALS = --no-global \
           ++global-ok "string->number?" \
           ++global-ok "printable-regexp?" \
           ++global-ok do-global-print \
+          ++global-ok simplify-path/dl \
           ++global-ok exec-file \
           ++global-ok run-file \
           ++global-ok collects-dir \
-          ++global-ok config-dir
+          ++global-ok config-dir \
+          ++global-ok addon-dir
 
 io-src: $(RKTIO_DEP)
 	$(RACO) make ../expander/bootstrap-run.rkt

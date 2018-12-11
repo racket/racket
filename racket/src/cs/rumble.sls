@@ -171,6 +171,8 @@
           impersonator-property-accessor-procedure?
           impersonator-ephemeron
           prop:impersonator-of
+          (rename [strip-impersonator unsafe-strip-impersonator] ; not exported to Racket
+                  [prop:authentic-override prop:unsafe-authentic-override])  ; not exported to Racket
 
           impersonate-procedure
           chaperone-procedure
@@ -283,7 +285,7 @@
           bytes->list list->bytes
           bytes->immutable-bytes
           bytes-copy! bytes-copy bytes-fill!
-          bytes=? bytes<? bytes>? bytes<=? bytes>=?
+          bytes=? bytes<? bytes>?
           bytes-append
           subbytes
 
@@ -475,6 +477,8 @@
           system-type
           system-path-convention-type
           system-library-subpath-string ; not exported to Racket
+          set-get-machine-info!         ; not exported to Racket
+          set-cross-mode!               ; not exported to Racket
 
           unsafe-car
           unsafe-cdr
@@ -683,7 +687,7 @@
                 record-field-mutator))
 
   (define/no-lift none (chez:gensym "none"))
-  (define/no-lift none2 (chez:gensym "none2"))
+  (define/no-lift none2 (chez:gensym "none2")) ; never put this in an emphemeron
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
@@ -738,6 +742,7 @@
   (include "rumble/unsafe.ss")
   (include "rumble/extfl.ss")
   (include "rumble/place.ss")
+  (include "rumble/errno-data.ss")
   (include "rumble/foreign.ss")
   (include "rumble/future.ss")
   (include "rumble/inline.ss")
@@ -759,6 +764,7 @@
   (set-mpair-hash!)
   (set-hash-hash!)
   (set-flvector-hash!)
+  (set-extflonum-print!)
   (set-impersonator-hash!)
   (set-procedure-impersonator-hash!)
   (set-vector-impersonator-hash!)

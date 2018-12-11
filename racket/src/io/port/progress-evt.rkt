@@ -2,6 +2,7 @@
 (require "../common/check.rkt"
          "../host/thread.rkt"
          "parameter.rkt"
+         "port.rkt"
          "input-port.rkt"
          "count.rkt"
          "check.rkt")
@@ -40,7 +41,7 @@
   (let ([in (->core-input-port orig-in)])
     (define get-progress-evt (core-input-port-get-progress-evt in))
     (if get-progress-evt
-        (progress-evt orig-in (get-progress-evt))
+        (progress-evt orig-in (get-progress-evt (core-port-self in)))
         (raise-arguments-error 'port-progress-evt
                                "port does not provide progress evts"
                                "port" orig-in))))
@@ -58,7 +59,7 @@
     (atomically
      ;; We specially skip a check on whether the port is closed,
      ;; since that's handled as the progress evt becoming ready
-     (commit amt (progress-evt-evt progress-evt) evt
+     (commit (core-port-self in) amt (progress-evt-evt progress-evt) evt
              ;; in atomic mode (but maybe leaves atomic mode in between)
              (lambda (bstr)
                (port-count! in (bytes-length bstr) bstr 0))))))

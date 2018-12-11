@@ -484,7 +484,10 @@
         (let ([code (or ready-code
                         (get-module-code just-filename
                                          #:submodule-path submod-path
-                                         "compiled"
+                                         (let ([l (use-compiled-file-paths)])
+                                           (if (pair? l)
+                                               (car l)
+                                               "compiled"))
                                          compiler
                                          (if on-extension
                                              (lambda (f l?)
@@ -543,18 +546,28 @@
                                  (module-compiled-submodules code #f null)
                                  #t
                                  null))
-                              (eval no-submodule-code)
                               (let ([module-path
                                      (if (path? module-path)
                                          (path->complete-path module-path)
                                          module-path)])
+                                (unless (module-declared? module-path)
+                                  (parameterize ([current-module-declare-name
+                                                  (module-path-index-resolve (module-path-index-join
+                                                                              module-path
+                                                                              #f))])
+                                    (eval no-submodule-code)))
                                 (define e (expand `(,#'module m racket/kernel
                                                      (#%require (only ,module-path)
                                                                 racket/runtime-path)
                                                      (runtime-paths ,module-path))))
                                 (syntax-case e (quote)
                                   [(_ m mz (#%mb req (quote (spec ...))))
-                                   (syntax->datum #'(spec ...))]
+                                   (for/list ([p (in-list (syntax->datum #'(spec ...)))])
+                                     ;; Strip variable reference from 'module specs, because
+                                     ;; we don't need them and they retain the namespace:
+                                     (if (and (pair? p) (eq? 'module (car p)))
+                                         (list 'module (cadr p))
+                                         p))]
                                   [_else (error 'create-empbedding-executable
                                                 "expansion mismatch when getting external paths: ~e"
                                                 (syntax->datum e))]))))]

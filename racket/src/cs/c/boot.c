@@ -1,12 +1,19 @@
-#ifndef _MSC_VER
+#ifndef WIN32
 # include <unistd.h>
 #endif
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "scheme.h"
 #include "rktio.h"
+
+#ifdef WIN32
+# define BOOT_EXTERN __declspec(dllexport)
+#else
+# define BOOT_EXTERN extern
+#endif
 #include "boot.h"
 
 #define RACKET_AS_BOOT
@@ -32,7 +39,7 @@ const char *get_framework_path() {
   for (i = 0; i < c; i++) {
     s = _dyld_get_image_name(i);
     len = strlen(s);
-    if ((len > 9) && !strcmp("CS/Racket", s + len - 9)) {
+    if ((len > 7) && !strcmp("/Racket", s + len - 7)) {
       char *s2;
       s2 = strdup(s);
       strcpy(s2 + len - 6, "boot");
@@ -72,16 +79,25 @@ static void racket_exit(int v)
   exit(v);
 }
 
+static int racket_errno()
+{
+  return errno;
+}
+
 static void init_foreign()
 {
 # include "rktio.inc"
   Sforeign_symbol("racket_exit", (void *)racket_exit);
+  Sforeign_symbol("racket_errno", (void *)racket_errno);
 }
 
-void racket_boot(int argc, char **argv, char *self, long segment_offset,
-                 char *coldir, char *configdir,
+void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
+		 char *boot_exe, long segment_offset,
+                 char *coldir, char *configdir, /* wchar_t * */void *dlldir,
                  int pos1, int pos2, int pos3,
-                 int is_gui)
+                 int cs_compiled_subdir, int is_gui,
+		 int wm_is_gracket, char *gracket_guid,
+		 void *dll_open, void *dll_find_object)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -90,7 +106,14 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
 #ifdef RACKET_USE_FRAMEWORK
   const char *fw_path;
 #endif
- 
+
+#ifdef WIN32
+  if (dlldir)
+    rktio_set_dll_path((wchar_t *)dlldir);
+  if (dll_open)
+    rktio_set_dll_procs(dll_open, dll_find_object);
+#endif
+
   Sscheme_init(NULL);
 
 #ifdef RACKET_USE_FRAMEWORK
@@ -101,7 +124,7 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
   Sregister_boot_file(path_append(fw_path, "racket.boot"));
 # endif
 #else
-  fd = open(self, O_RDONLY | BOOT_O_BINARY);
+  fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
 
   {
     int fd1, fd2;
@@ -110,12 +133,12 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
     lseek(fd1, pos1, SEEK_SET);    
     Sregister_boot_file_fd("petite", fd1);
     
-    fd2 = open(self, O_RDONLY | BOOT_O_BINARY);
+    fd2 = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
     lseek(fd2, pos2, SEEK_SET);
     Sregister_boot_file_fd("scheme", fd2);
 
 # ifdef RACKET_AS_BOOT
-    fd = open(self, O_RDONLY | BOOT_O_BINARY);
+    fd = open(boot_exe, O_RDONLY | BOOT_O_BINARY);
     lseek(fd, pos3, SEEK_SET);
     Sregister_boot_file_fd("racket", fd);
 # endif
@@ -127,17 +150,22 @@ void racket_boot(int argc, char **argv, char *self, long segment_offset,
   {
     ptr l = Snil;
     int i;
-    char segment_offset_s[32];
+    char segment_offset_s[32], wm_is_gracket_s[32];
 
     for (i = argc; i--; ) {
       l = Scons(Sbytevector(argv[i]), l);
     }
+    l = Scons(Sbytevector(gracket_guid), l);
+    sprintf(wm_is_gracket_s, "%d", wm_is_gracket);
+    l = Scons(Sbytevector(wm_is_gracket_s), l);
     l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
+    l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);
     sprintf(segment_offset_s, "%ld", segment_offset);
     l = Scons(Sbytevector(segment_offset_s), l);
     l = Scons(Sbytevector(configdir), l);
     l = Scons(Sbytevector(coldir), l);
-    l = Scons(Sbytevector(self), l);
+    l = Scons(Sbytevector(run_file), l);
+    l = Scons(Sbytevector(exec_file), l);
 
 #ifdef RACKET_AS_BOOT
     {

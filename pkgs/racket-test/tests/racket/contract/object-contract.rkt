@@ -1425,7 +1425,9 @@
   (test #f (contract-eval 'object=?) o1 (contract-eval '(new object%)))
   (test #t (contract-eval 'object=?) o1 o2)
   (test #t (contract-eval 'object=?) o2 o1)
-  (test #f (contract-eval 'object=?) (contract-eval '(new object%)) o2))
+  (test #f (contract-eval 'object=?) (contract-eval '(new object%)) o2)
+  (test ((contract-eval 'object=-hash-code) o1) (contract-eval 'object=-hash-code) o1)
+  (test ((contract-eval 'object=-hash-code) o1) (contract-eval 'object=-hash-code) o2))
 
 (ctest #t
        method-in-interface?

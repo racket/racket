@@ -20,10 +20,14 @@
          "network/main.rkt"
          "foreign/main.rkt"
          "unsafe/main.rkt"
+         "machine/main.rkt"
          "run/main.rkt"
          "port/parameter.rkt"
+         "path/system.rkt"
          (only-in "host/rktio.rkt"
                   rktio-place-init!)
+         (submod "error/main.rkt"
+                 place-init)
          "port/place.rkt")
 
 (provide (all-from-out "port/main.rkt")
@@ -46,6 +50,7 @@
          (all-from-out "network/main.rkt")
          (all-from-out "foreign/main.rkt")
          (all-from-out "unsafe/main.rkt")
+         (all-from-out "machine/main.rkt")
          (all-from-out "run/main.rkt")
          make-place-ports+fds
          io-place-init!)
@@ -54,6 +59,8 @@
   (sandman-place-init!)
   (rktio-place-init!)
   (logger-init!)
+  (install-error-value->string-handler!)
+  (init-current-directory!)
   (init-current-ports! in-fd out-fd err-fd cust plumber))
 
 (module main racket/base)

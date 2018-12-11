@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "port.rkt"
          "output-port.rkt"
          "parameter.rkt"
          "count.rkt")
@@ -30,7 +31,7 @@
         [else
          (let loop ()
            (start-atomic)
-           (define r (write-out-special v (not retry?) #f))
+           (define r (write-out-special (core-port-self o) v (not retry?) #f))
            (let result-loop ([r r])
              (cond
                [(not r)
@@ -61,4 +62,4 @@
       (raise-arguments-error who
                              "port does not support special-value events"
                              "port" o))
-    (get-write-special-evt v)))
+    (get-write-special-evt (core-port-self o) v)))

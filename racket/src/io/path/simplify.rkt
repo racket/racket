@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../file/main.rkt"
+         (submod "../file/main.rkt" for-simplify)
          "path.rkt"
          "check.rkt"
          "check-path.rkt"
@@ -55,7 +56,7 @@
                  (loop (cdr l) base accum seen)]
                 [(eq? 'up (car l))
                  (define new-base (combine base accum))
-                 (define target (resolve-path new-base))
+                 (define target (resolve-path-for-simplify new-base))
                  (define-values (from-base new-seen)
                    (cond
                      [(eq? target new-base) (values new-base seen)]
@@ -105,6 +106,8 @@
                     (unc-without-trailing-separator? simpler-p)))
            (path->directory-path simpler-p)
            simpler-p)])]))
+
+(void (set-simplify-path-for-directory-list! simplify-path))
 
 ;; ----------------------------------------
 

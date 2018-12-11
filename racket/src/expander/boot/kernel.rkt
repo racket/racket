@@ -20,7 +20,6 @@
          declare-reexporting-module!)
 
 (define (declare-kernel-module! ns
-                                #:eval eval
                                 #:main-ids main-ids
                                 #:read-ids read-ids)
   (copy-runtime-module! '#%kernel

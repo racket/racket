@@ -1577,14 +1577,35 @@ are checked for the appropriate wrapper.  If they have it, they are unwrapped;
 if they do not, a contract violation is signaled.
 
 @examples[#:eval (contract-eval) #:once
-(define/contract (check x y)
-  (parametric->/c [X] (boolean? X . -> . X))
-  (if (or (not x) (equal? y 'surprise))
-      'invalid
-      y))
-(check #t 'ok)
-(eval:error (check #f 'ignored))
-(check #t 'surprise)
+(define swap-ctc (parametric->/c [A B] (-> A B (values B A))))
+
+(define/contract (good-swap a b)
+  swap-ctc
+  (values b a))
+
+(good-swap 1 2)
+
+
+(define/contract (bad-swap a b)
+  swap-ctc
+  (values a b))
+
+(eval:error (bad-swap 1 2))
+
+
+(define/contract (copy-first a _b)
+  swap-ctc
+  (values a a))
+
+(eval:error (let ((v 'same-symbol)) (copy-first v v)))
+
+(define/contract (inspect-first a b)
+  swap-ctc
+  (if (integer? a)
+    (+ a b)
+    (raise-user-error "an opaque wrapped value is not an integer")))
+
+(eval:error (inspect-first 1 2))
 ]
 }
 

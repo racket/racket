@@ -47,9 +47,10 @@
   (make-core-output-port
    #:name (object-name o)
    #:data (lambda () max-length)
+   #:self o
    #:evt o
    #:write-out
-   (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+   (lambda (o src-bstr src-start src-end nonblock? enable-break? copy?)
      (cond
        [max-length
         (define len (- src-end src-start))

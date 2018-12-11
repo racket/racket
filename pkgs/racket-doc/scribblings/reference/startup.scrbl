@@ -343,6 +343,11 @@ flags:
         native-code just-in-time compiler by setting the
         @racket[eval-jit-enabled] parameter to @racket[#f].}
 
+  @item{@FlagFirst{M} or @DFlagFirst{compile-any} : Enables
+        machine-independent bytecode by setting the
+        @racket[current-compile-target-machine] parameter to
+        @racket[#f].}
+
   @item{@FlagFirst{d} or @DFlagFirst{no-delay} : Disables on-demand
         parsing of compiled code and syntax objects by setting the
         @racket[read-on-demand-source] parameter to @racket[#f].}
@@ -456,7 +461,8 @@ of the collapsed set.
 Extra arguments following the last option are available from the
 @indexed-racket[current-command-line-arguments] parameter.
 
-@history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}]
+@history[#:changed "6.90.0.17" @elem{Added @Flag{O}/@DFlag{stdout}.}
+         #:changed "7.1.0.5" @elem{Added @Flag{M}/@DFlag{compile-any}.}]
 
 @; ----------------------------------------------------------------------
 

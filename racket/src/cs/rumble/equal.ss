@@ -89,7 +89,7 @@
                            (equal? (unbox orig-a) (unbox orig-b) ctx)))))]
            [(record? a)
             (and (record? b)
-                 ;; Check for for `prop:impersonator-of`
+                 ;; Check for `prop:impersonator-of`
                  (let ([a2 (and (not (eq? mode 'chaperone-of?))
                                 (extract-impersonator-of mode a))]
                        [b2 (and (eq? mode 'equal?)
@@ -100,19 +100,25 @@
                      ;; other forms of checking
                      (or (check-union-find ctx a b)
                          (let ([ctx (deeper-context ctx)])
-                           (equal? (or a a2) (or b b2) ctx)))]
+                           (equal? (or a2 a) (or b2 b) ctx)))]
                     [else
                      ;; No `prop:impersonator-of`, so check for
                      ;; `prop:equal+hash` or transparency
                      (let ([rec-equal? (record-equal-procedure a b)])
                        (and rec-equal?
                             (or (check-union-find ctx a b)
-                                (if eql?
-                                    (rec-equal? orig-a orig-b eql?)
-                                    (let ([ctx (deeper-context ctx)])
-                                      (rec-equal? orig-a orig-b
-                                                  (lambda (a b)
-                                                    (equal? a b ctx))))))))])))]
+                                (cond
+                                 [eql?
+                                  (rec-equal? orig-a orig-b eql?)]
+                                 [(and (eq? mode 'chaperone-of?)
+                                       (with-global-lock* (hashtable-contains? rtd-mutables (record-rtd a))))
+                                  ;; Mutable records must be `eq?` for `chaperone-of?`
+                                  #f]
+                                 [else
+                                  (let ([ctx (deeper-context ctx)])
+                                    (rec-equal? orig-a orig-b
+                                                (lambda (a b)
+                                                  (equal? a b ctx))))]))))])))]
            [(and (eq? mode 'chaperone-of?)
                  ;; Mutable strings and bytevectors must be `eq?` for `chaperone-of?`
                  (or (mutable-string? a)
@@ -129,7 +135,7 @@
 
 (define/who (equal?/recur a b eql?)
   (check who (procedure-arity-includes/c 2) eql?)
-  (do-equal? a b 'equal?/recur eql?))
+  (do-equal? a b 'equal? eql?))
 
 ;; ----------------------------------------
 

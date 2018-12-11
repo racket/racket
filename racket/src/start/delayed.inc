@@ -23,7 +23,7 @@ static int _dlldir_offset = 14; /* Skip permanent tag */
 START_XFORM_SKIP;
 # endif
 
-static void load_delayed_dll(HINSTANCE me, const char *lib) 
+static wchar_t *load_delayed_dll_x(HINSTANCE me, const char *lib, HMODULE *_loaded) 
 {
   /* Don't use the C library here! */
   const wchar_t *dlldir = _dlldir + _dlldir_offset;
@@ -63,6 +63,7 @@ static void load_delayed_dll(HINSTANCE me, const char *lib)
     {
       wchar_t *t;
       int j, i;
+      HMODULE loaded;
 
       t = (wchar_t *)GlobalAlloc(GMEM_FIXED, 2048 * sizeof(wchar_t));
       for (i = 0; dlldir[i]; i++) {
@@ -75,10 +76,22 @@ static void load_delayed_dll(HINSTANCE me, const char *lib)
       }
       t[i] = 0;
 
-      if (!LoadLibraryW(t)) {
+      loaded = LoadLibraryW(t);
+      if (!loaded) {
 	MessageBoxW(NULL, t, L"Failure: cannot load DLL", MB_OK);
 	ExitProcess(1);
       }
+
+      if (_loaded) *_loaded = loaded;
+      return t;
     }
   }
+
+  /* Should not get here */
+  return NULL;
+}
+
+static void load_delayed_dll(HINSTANCE me, const char *lib)
+{
+  (void)load_delayed_dll_x(me, lib, NULL);
 }

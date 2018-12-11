@@ -38,7 +38,7 @@
        (set-core-port-position! p (add1 (or (core-port-offset p) 0)))
        (define count-lines! (core-port-count-lines! p))
        (when count-lines!
-         (count-lines!))))))
+         (count-lines! (core-port-self p)))))))
 
 (define/who (port-counts-lines? p)
   (core-port-count?
@@ -61,7 +61,7 @@
         (define get-location (core-port-get-location p))
         (cond
           [get-location
-           (get-location)]
+           (get-location (core-port-self p))]
           [else
            (values (core-port-line p)
                    (core-port-column p)

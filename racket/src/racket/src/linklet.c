@@ -37,6 +37,7 @@ SHARED_OK static int recompile_every_compile = 0;
 static Scheme_Object *serializable_symbol;
 static Scheme_Object *unsafe_symbol;
 static Scheme_Object *static_symbol;
+static Scheme_Object *use_prompt_symbol;
 static Scheme_Object *constant_symbol;
 static Scheme_Object *consistent_symbol;
 static Scheme_Object *noncm_symbol;
@@ -58,10 +59,13 @@ static Scheme_Object *linklet_p(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv);
-static Scheme_Object *read_compiled_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_import_variables(int argc, Scheme_Object **argv);
 static Scheme_Object *linklet_export_variables(int argc, Scheme_Object **argv);
+
+static Scheme_Object *linklet_vm_bytes(int argc, Scheme_Object **argv);
+static Scheme_Object *write_linklet_bundle_hash(int argc, Scheme_Object **argv);
+static Scheme_Object *read_linklet_bundle_hash(int argc, Scheme_Object **argv);
 
 static Scheme_Object *instance_p(int argc, Scheme_Object **argv);
 static Scheme_Object *make_instance(int argc, Scheme_Object **argv);
@@ -71,14 +75,7 @@ static Scheme_Object *instance_variable_names(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_variable_value(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object **argv);
 static Scheme_Object *instance_unset_variable(int argc, Scheme_Object **argv);
-
-static Scheme_Object *linklet_directory_p(int argc, Scheme_Object **argv);
-static Scheme_Object *linklet_directory_to_hash(int argc, Scheme_Object **argv);
-static Scheme_Object *hash_to_linklet_directory(int argc, Scheme_Object **argv);
-
-static Scheme_Object *linklet_bundle_p(int argc, Scheme_Object **argv);
-static Scheme_Object *linklet_bundle_to_hash(int argc, Scheme_Object **argv);
-static Scheme_Object *hash_to_linklet_bundle(int argc, Scheme_Object **argv);
+static Scheme_Object *instance_describe_variable(int argc, Scheme_Object **argv);
 
 static Scheme_Object *variable_p(int argc, Scheme_Object **argv);
 static Scheme_Object *variable_instance(int argc, Scheme_Object **argv);
@@ -126,9 +123,11 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   REGISTER_SO(serializable_symbol);
   REGISTER_SO(unsafe_symbol);
   REGISTER_SO(static_symbol);
+  REGISTER_SO(use_prompt_symbol);
   serializable_symbol = scheme_intern_symbol("serializable");
   unsafe_symbol = scheme_intern_symbol("unsafe");
   static_symbol = scheme_intern_symbol("static");
+  use_prompt_symbol = scheme_intern_symbol("use-prompt");
 
   REGISTER_SO(constant_symbol);
   REGISTER_SO(consistent_symbol);
@@ -152,12 +151,15 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
 
   ADD_FOLDING_PRIM("linklet?", linklet_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY2("compile-linklet", compile_linklet, 1, 5, 2, 2, env);
-  ADD_PRIM_W_ARITY2("recompile-linklet", recompile_linklet, 1, 4, 2, 2, env);
+  ADD_PRIM_W_ARITY2("recompile-linklet", recompile_linklet, 1, 5, 2, 2, env);
   ADD_IMMED_PRIM("eval-linklet", eval_linklet, 1, 1, env);
-  ADD_PRIM_W_ARITY("read-compiled-linklet", read_compiled_linklet, 1, 1, env);
   ADD_PRIM_W_ARITY2("instantiate-linklet", instantiate_linklet, 2, 4, 0, -1, env);
   ADD_PRIM_W_ARITY("linklet-import-variables", linklet_import_variables, 1, 1, env);
   ADD_PRIM_W_ARITY("linklet-export-variables", linklet_export_variables, 1, 1, env);
+
+  ADD_PRIM_W_ARITY("linklet-virtual-machine-bytes", linklet_vm_bytes, 0, 0, env);
+  ADD_PRIM_W_ARITY("write-linklet-bundle-hash", write_linklet_bundle_hash, 2, 2, env);
+  ADD_PRIM_W_ARITY("read-linklet-bundle-hash", read_linklet_bundle_hash, 1, 1, env);
 
   ADD_FOLDING_PRIM("instance?", instance_p, 1, 1, 1, env);
   ADD_PRIM_W_ARITY("make-instance", make_instance, 1, -1, env);
@@ -167,14 +169,7 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY2("instance-variable-value", instance_variable_value, 2, 3, 0, -1, env);
   ADD_PRIM_W_ARITY("instance-set-variable-value!", instance_set_variable_value, 3, 4, env);
   ADD_PRIM_W_ARITY("instance-unset-variable!", instance_unset_variable, 2, 2, env);
-
-  ADD_FOLDING_PRIM("linklet-directory?", linklet_directory_p, 1, 1, 1, env);
-  ADD_PRIM_W_ARITY("hash->linklet-directory", hash_to_linklet_directory, 1, 1, env);
-  ADD_PRIM_W_ARITY("linklet-directory->hash", linklet_directory_to_hash, 1, 1, env);
-
-  ADD_FOLDING_PRIM("linklet-bundle?", linklet_bundle_p, 1, 1, 1, env);
-  ADD_PRIM_W_ARITY("hash->linklet-bundle", hash_to_linklet_bundle, 1, 1, env);
-  ADD_PRIM_W_ARITY("linklet-bundle->hash", linklet_bundle_to_hash, 1, 1, env);
+  ADD_PRIM_W_ARITY("instance-describe-variable!", instance_describe_variable, 3, 3, env);
 
   ADD_FOLDING_PRIM_UNARY_INLINED("variable-reference?", variable_p, 1, 1, 1, env);
   ADD_IMMED_PRIM("variable-reference->instance", variable_instance, 1, 2, env);
@@ -375,6 +370,52 @@ void extract_import_info(const char *who, int argc, Scheme_Object **argv,
     *_get_import = NULL;
 }
 
+static void parse_compile_options(const char *who, int arg_pos,
+                                  int argc, Scheme_Object **argv,
+                                  int *_unsafe, int *_static_mode)
+{
+  Scheme_Object *redundant = NULL, *flag, *flags = argv[arg_pos];
+  int serializable = 0;
+  int unsafe = *_unsafe;
+  int static_mode = *_static_mode;
+  int use_prompt_mode = 0;
+  
+  while (SCHEME_PAIRP(flags)) {
+    flag = SCHEME_CAR(flags);
+    if (SAME_OBJ(flag, serializable_symbol)) {
+      if (serializable && !redundant)
+        redundant = flag;
+      serializable = 1;
+    } else if (SAME_OBJ(flag, unsafe_symbol)) {
+      if (unsafe && !redundant)
+        redundant = flag;
+      unsafe = 1;
+    } else if (SAME_OBJ(flag, static_symbol)) {
+      if (static_mode && !redundant)
+        redundant = flag;
+      static_mode = 1;
+    } else if (SAME_OBJ(flag, use_prompt_symbol)) {
+      if (use_prompt_mode && !redundant)
+        redundant = flag;
+      use_prompt_mode = 1;
+    } else
+      break;
+    flags = SCHEME_CDR(flags);
+  }
+
+  if (!SCHEME_NULLP(flags))
+    scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe 'static 'use-prompt)", arg_pos, argc, argv);
+
+  if (redundant)
+    scheme_contract_error("compile-linklet", "redundant option",
+                          "redundant option", 1, redundant,
+                          "supplied options", 1, argv[arg_pos],
+                          NULL);
+
+  *_unsafe = unsafe;
+  *_static_mode = static_mode;
+}
+
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *e, *import_keys, *get_import, *a[2];
@@ -393,37 +434,8 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
   if (!SCHEME_STXP(e))
     e = scheme_datum_to_syntax(e, scheme_false, DTS_CAN_GRAPH);
 
-  if (argc > 4) {
-    Scheme_Object *flags, *redundant = NULL, *flag;
-    int serializable = 0;
-      
-    flags = argv[4];
-    while (SCHEME_PAIRP(flags)) {
-      flag = SCHEME_CAR(flags);
-      if (SAME_OBJ(flag, serializable_symbol)) {
-        if (serializable && !redundant)
-          redundant = flag;
-        serializable = 1;
-      } else if (SAME_OBJ(flag, unsafe_symbol)) {
-        if (unsafe && !redundant)
-          redundant = flag;
-        unsafe = 1;
-      } else if (SAME_OBJ(flag, static_symbol)) {
-        if (static_mode && !redundant)
-          redundant = flag;
-        static_mode = 1;
-      } else
-        break;
-      flags = SCHEME_CDR(flags);
-    }
-    if (!SCHEME_NULLP(flags))
-      scheme_wrong_contract("compile-linklet", "(listof/c 'serializable 'unsafe)", 4, argc, argv);
-    if (redundant)
-      scheme_contract_error("compile-linklet", "redundant option",
-                            "redundant option", 1, redundant,
-                            "supplied options", 1, argv[4],
-                            NULL);
-  }
+  if (argc > 4)
+    parse_compile_options("compile-linklet", 4, argc, argv, &unsafe, &static_mode);
 
   e = (Scheme_Object *)compile_and_or_optimize_linklet(e, NULL, name, &import_keys, get_import,
                                                        unsafe, static_mode);
@@ -440,7 +452,8 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *import_keys, *get_import, *a[2];
   Scheme_Linklet *linklet;
-    
+  int unsafe = 0, static_mode = 0;
+
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
     scheme_wrong_contract("recompile-linklet", "linklet?", 0, argc, argv);
 
@@ -463,8 +476,12 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
                           "given keys", 1, scheme_make_integer(SCHEME_VEC_SIZE(import_keys)),
                           NULL);
   }
+
+  if (argc > 4)
+    parse_compile_options("recompile-linklet", 4, argc, argv, &unsafe, &static_mode);
   
-  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import, 0, 0);
+  linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import,
+                                            unsafe, static_mode);
 
   if (import_keys) {
     a[0] = (Scheme_Object *)linklet;
@@ -503,12 +520,57 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv)
   return (Scheme_Object *)linklet;
 }
 
-static Scheme_Object *read_compiled_linklet(int argc, Scheme_Object **argv)
+static Scheme_Object *linklet_vm_bytes(int argc, Scheme_Object **argv)
+{
+  return scheme_make_byte_string("racket");
+}
+
+static Scheme_Object *read_linklet_bundle_hash(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_INPUT_PORTP(argv[0]))
-    scheme_wrong_contract("read-compiled-linklet", "input-port?", 0, argc, argv);
+    scheme_wrong_contract("read-linklet-bundle-hash", "input-port?", 0, argc, argv);
 
-  return scheme_read_compiled(argv[0]);
+  return scheme_read_linklet_bundle_hash(argv[0]);
+}
+
+static Scheme_Object *write_linklet_bundle_hash(int argc, Scheme_Object **argv)
+{
+  mzlonglong pos;
+  Scheme_Object *k, *v;
+  Scheme_Hash_Tree *hash;
+  
+  if (!SCHEME_HASHTRP(argv[0])
+      || !SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(argv[0])))
+    scheme_wrong_contract("write-linklet-bundle-hash",
+                          "(and/c hash? hash-eq? immutable? (not/c impersonator?))",
+                          0, argc, argv);
+
+  if (!SCHEME_OUTPUT_PORTP(argv[1]))
+    scheme_wrong_contract("write-linklet-bundle-hash", "output-port?", 0, argc, argv);
+
+  hash = (Scheme_Hash_Tree *)argv[0];
+
+  /* mapping: keys must be symbols and fixnums */
+
+  pos = scheme_hash_tree_next(hash, -1);
+  while (pos != -1) {
+    scheme_hash_tree_index(hash, pos, &k, &v);
+    if (!SCHEME_SYMBOLP(k) && !SCHEME_INTP(k)) {
+      scheme_contract_error("write-linklet-bundle-hash",
+                            "key in given hash is not a symbol or fixnum",
+                            "key", 1, k,
+                            NULL);
+    }
+    pos = scheme_hash_tree_next(hash, pos);
+  }
+
+  v = scheme_alloc_small_object();
+  v->type = scheme_linklet_bundle_type;
+  SCHEME_PTR_VAL(v) = argv[0];
+
+  scheme_write(v, argv[1]);
+
+  return scheme_void;
 }
 
 static Scheme_Object *instantiate_linklet(int argc, Scheme_Object **argv)
@@ -783,114 +845,14 @@ static Scheme_Object *instance_unset_variable(int argc, Scheme_Object **argv)
   return scheme_void;
 }
 
-static Scheme_Object *linklet_directory_p(int argc, Scheme_Object **argv)
+static Scheme_Object *instance_describe_variable(int argc, Scheme_Object **argv)
 {
-  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_directory_type)
-          ? scheme_true
-          : scheme_false);
-}
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_instance_type))
+    scheme_wrong_contract("instance-describe-variable!", "instance?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("instance-describe-variable!", "symbol?", 1, argc, argv);
 
-static Scheme_Object *linklet_directory_to_hash(int argc, Scheme_Object **argv)
-{
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_directory_type))
-    scheme_wrong_contract("linklet-directory->hash", "linklet-directory?", 0, argc, argv);
-
-  return SCHEME_PTR_VAL(argv[0]);
-}
-
-static Scheme_Object *hash_to_linklet_directory(int argc, Scheme_Object **argv)
-{
-  mzlonglong pos;
-  Scheme_Object *k, *v;
-  Scheme_Hash_Tree *hash;
-  
-  if (!SCHEME_HASHTRP(argv[0])
-      || !SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(argv[0])))
-    scheme_wrong_contract("hash->linklet-directory",
-                          "(and/c hash? hash-eq? immutable? (not/c impersonator?))",
-                          0, argc, argv);
-  hash = (Scheme_Hash_Tree *)argv[0];
-
-  /* mapping: #f -> bundle, sym -> linklet directory */
-
-  pos = scheme_hash_tree_next(hash, -1);
-  while (pos != -1) {
-    scheme_hash_tree_index(hash, pos, &k, &v);
-    if (SCHEME_FALSEP(k)) {
-      if (!SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_bundle_type))
-        scheme_contract_error("hash->linklet-directory",
-                              "value for #f key is not a linklet bundle",
-                              "value", 1, v,
-                              NULL);
-    } else if (SCHEME_SYMBOLP(k)) {
-      if (!SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_directory_type))
-        scheme_contract_error("hash->linklet-directory",
-                              "value for symbol key is not a linklet directory",
-                              "key", 1, k,
-                              "value", 1, v,
-                              NULL);
-    } else {
-      scheme_contract_error("hash->linklet-directory",
-                            "key in given hash is not #f or a symbol",
-                            "key", 1, k,
-                            NULL);
-    }
-    pos = scheme_hash_tree_next(hash, pos);
-  }
-
-  v = scheme_alloc_small_object();
-  v->type = scheme_linklet_directory_type;
-  SCHEME_PTR_VAL(v) = argv[0];
-  return v;
-}
-
-static Scheme_Object *linklet_bundle_p(int argc, Scheme_Object **argv)
-{
-  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_bundle_type)
-          ? scheme_true
-          : scheme_false);
-}
-
-static Scheme_Object *linklet_bundle_to_hash(int argc, Scheme_Object **argv)
-{
-  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_bundle_type))
-    scheme_wrong_contract("linklet-bundle->hash", "linklet-bundle?", 0, argc, argv);
-
-  return SCHEME_PTR_VAL(argv[0]);
-}
-
-static Scheme_Object *hash_to_linklet_bundle(int argc, Scheme_Object **argv)
-{
-  mzlonglong pos;
-  Scheme_Object *k, *v;
-  Scheme_Hash_Tree *hash;
-  
-  if (!SCHEME_HASHTRP(argv[0])
-      || !SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(argv[0])))
-    scheme_wrong_contract("hash->linklet-bundle",
-                          "(and/c hash? hash-eq? immutable? (not/c impersonator?))",
-                          0, argc, argv);
-
-  hash = (Scheme_Hash_Tree *)argv[0];
-
-  /* mapping: keys must be symbols and fixnums */
-
-  pos = scheme_hash_tree_next(hash, -1);
-  while (pos != -1) {
-    scheme_hash_tree_index(hash, pos, &k, &v);
-    if (!SCHEME_SYMBOLP(k) && !SCHEME_INTP(k)) {
-      scheme_contract_error("hash->linklet-bundle",
-                            "key in given hash is not a symbol or fixnum",
-                            "key", 1, k,
-                            NULL);
-    }
-    pos = scheme_hash_tree_next(hash, pos);
-  }
-
-  v = scheme_alloc_small_object();
-  v->type = scheme_linklet_bundle_type;
-  SCHEME_PTR_VAL(v) = argv[0];
-  return v;
+  return scheme_void;
 }
 
 static Scheme_Object *variable_p(int argc, Scheme_Object **argv)
@@ -1361,8 +1323,6 @@ static void *instantiate_linklet_k(void)
   Scheme_Hash_Tree *source_names;
   Scheme_Performance_State perf_state;
 
-  scheme_performance_record_start(&perf_state);
-
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
@@ -1377,6 +1337,8 @@ static void *instantiate_linklet_k(void)
     p->ku.k.i3 = use_prompt;
     return (Scheme_Object *)scheme_enlarge_runstack(depth, instantiate_linklet_k);
   }
+
+  scheme_performance_record_start(&perf_state);
 
   if (!linklet->jit_ready) {
     b = scheme_get_param(scheme_current_config(), MZCONFIG_USE_JIT);

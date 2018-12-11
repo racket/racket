@@ -61,6 +61,7 @@
               #:source [source #f]
               #:for-syntax? [for-syntax? #f]
               #:read-compiled [read-compiled #f]       ; see "config.rkt"
+              #:call-with-root-namespace [call-with-root-namespace #f] ; see "config.rkt"
               #:dynamic-require [dynamic-require #f]   ; see "config.rkt"
               #:module-declared? [module-declared? #f] ; see "config.rkt"
               #:coerce [coerce #f]                     ; see "config.rkt"
@@ -85,6 +86,7 @@
                         #:for-syntax? for-syntax?
                         #:wrap wrap
                         #:read-compiled read-compiled
+                        #:call-with-root-namespace call-with-root-namespace
                         #:dynamic-require dynamic-require
                         #:module-declared? module-declared?
                         #:coerce coerce
@@ -111,6 +113,7 @@
                        #:wrap [wrap #f]
                        #:read-compiled [read-compiled #f]
                        #:dynamic-require [dynamic-require #f]
+                       #:call-with-root-namespace [call-with-root-namespace #f]
                        #:module-declared? [module-declared? #f]
                        #:coerce [coerce #f]
                        #:coerce-key [coerce-key #f])
@@ -119,6 +122,7 @@
                                    #:for-syntax? for-syntax?
                                    #:wrap wrap
                                    #:read-compiled read-compiled
+                                   #:call-with-root-namespace call-with-root-namespace
                                    #:dynamic-require dynamic-require
                                    #:module-declared? module-declared?
                                    #:coerce coerce

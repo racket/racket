@@ -235,7 +235,8 @@
 ;;  the file is reliably deleted if there's a break.
 (define (call-with-atomic-output-file path 
                                       proc
-                                      #:security-guard [guard #f])
+                                      #:security-guard [guard #f]
+                                      #:rename-fail-handler [rename-fail-handler #f])
   (unless (path-string? path)
     (raise-argument-error 'call-with-atomic-output-file "path-string?" path))
   (unless (and (procedure? proc)
@@ -244,6 +245,10 @@
   (unless (or (not guard)
               (security-guard? guard))
     (raise-argument-error 'call-with-atomic-output-file "(or/c #f security-guard?)" guard))
+  (unless (or (not rename-fail-handler)
+              (procedure? rename-fail-handler)
+              (procedure-arity-includes? rename-fail-handler 2))
+    (raise-argument-error 'call-with-atomic-output-file "(or/c #f (procedure-arity-includes/c 2))" rename-fail-handler))
   (define (try-delete-file path [noisy? #t])
     ;; Attempt to delete, but give up if it doesn't work:
     (with-handlers ([exn:fail:filesystem? void])
@@ -268,13 +273,28 @@
      (lambda ()
        (parameterize ([current-security-guard (or guard (current-security-guard))])
          (if ok?
-             (if (eq? (system-type) 'windows)
-                 (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
-                   (with-handlers ([exn:fail:filesystem? void])
-                     (rename-file-or-directory path tmp-path2 #t))
-                   (rename-file-or-directory tmp-path path #t)
-                   (try-delete-file tmp-path2))
-                 (rename-file-or-directory tmp-path path #t))
+             (with-handlers ([void (lambda (exn)
+                                     (try-delete-file tmp-path)
+                                     (raise exn))])
+               (if (eq? (system-type) 'windows)
+                   (cond
+                     [rename-fail-handler
+                      (let loop ()
+                        (with-handlers* ([exn:fail:filesystem?
+                                          (lambda (exn)
+                                            (call-with-break-parameterization
+                                             bp
+                                             (lambda () (rename-fail-handler exn tmp-path)))
+                                            (loop))])
+                          (rename-file-or-directory tmp-path path #t)
+                          void))]
+                     [else
+                      (let ([tmp-path2 (make-temporary-file "tmp~a" #f (path-only path))])
+                        (with-handlers ([exn:fail:filesystem? void])
+                          (rename-file-or-directory path tmp-path2 #t))
+                        (rename-file-or-directory tmp-path path #t)
+                        (try-delete-file tmp-path2))])
+                   (rename-file-or-directory tmp-path path #t)))
              (try-delete-file tmp-path)))))))
 
 (define (with-pref-params thunk)

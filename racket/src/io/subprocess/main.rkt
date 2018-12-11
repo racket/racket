@@ -13,7 +13,8 @@
          "../file/host.rkt"
          "../string/convert.rkt"
          "../locale/string.rkt"
-         "../envvar/main.rkt")
+         "../envvar/main.rkt"
+         "../sandman/main.rkt")
 
 (provide (rename-out [do-subprocess subprocess])
          subprocess?
@@ -34,7 +35,12 @@
   (poller (lambda (sp ctx)
             (define v (rktio_poll_process_done rktio (subprocess-process sp)))
             (if (eqv? v 0)
-                (values #f sp)
+                (begin
+                  (sandman-poll-ctx-add-poll-set-adder!
+                   ctx
+                   (lambda (ps)
+                     (rktio_poll_add_process rktio (subprocess-process sp) ps)))
+                  (values #f sp))
                 (values (list sp) #f)))))
 
 (define do-subprocess

@@ -3617,8 +3617,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
       fd_ok = 1;
     }
     else if (SAME_OBJ(ip->sub_type, fd_input_port_type)) {
-      fd = rktio_fd_system_fd(scheme_rktio, ((Scheme_FD *)ip->port_data)->fd);
-      fd_ok = 1;
+      if (rktio_fd_is_terminal(scheme_rktio, ((Scheme_FD *)ip->port_data)->fd))
+	return scheme_true;
+      else
+	return scheme_false;
     }
   } else if (SCHEME_OUTPUT_PORTP(p)) {
     Scheme_Output_Port *op;
@@ -3633,8 +3635,10 @@ Scheme_Object *scheme_terminal_port_p(int argc, Scheme_Object *argv[])
       fd_ok = 1;
     }
     else if (SAME_OBJ(op->sub_type, fd_output_port_type))  {
-      fd = rktio_fd_system_fd(scheme_rktio, ((Scheme_FD *)op->port_data)->fd);
-      fd_ok = 1;
+      if (rktio_fd_is_terminal(scheme_rktio, ((Scheme_FD *)op->port_data)->fd))
+	return scheme_true;
+      else
+	return scheme_false;
     }
   }
 
@@ -4198,6 +4202,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
     return scheme_void;
   } else {
     mzlonglong pll;
+    int already_ungot = 0;
     if (f) {
       pll = BIG_OFF_T_IZE(ftello)(f);
     } else if (fd) {
@@ -4206,6 +4211,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
       sz = rktio_get_file_position(scheme_rktio, fd);
       if (!sz) {
         pll = do_tell(argv[0], 0);
+        already_ungot = 1;
       } else {
         pll = *sz;
         free(sz);
@@ -4243,7 +4249,7 @@ do_file_position(const char *who, int argc, Scheme_Object *argv[], int can_false
     }
 
     /* Back up for un-gotten & peeked chars: */
-    if (SCHEME_INPUT_PORTP(argv[0])) {
+    if (!already_ungot && SCHEME_INPUT_PORTP(argv[0])) {
       Scheme_Input_Port *ip;
       ip = scheme_input_port_record(argv[0]);
       pll -= ip->ungotten_count;

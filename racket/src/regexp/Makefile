@@ -25,9 +25,14 @@ demo:
 	$(RACO) make demo.rkt
 	$(RACKET) demo.rkt
 
-# Writes the extracted, compiled, decompiled expander to compiled/regexp.rkt
+# Writes the extracted, compiled, decompiled regexp to compiled/regexp.rkt
 decompile:
 	$(RACO) make ../expander/bootstrap-run.rkt
 	$(RACKET) $(RKT_ARGS) ../expander/bootstrap-run.rkt -t main.rkt -c compiled/cache-src -s -x -D -o compiled/regexp.rkt
+
+# Writes the extracted, compiled regexp to compiled/exp.zo
+bytecode:
+	$(RACO) make ../expander/bootstrap-run.rkt
+	$(RACKET) $(RKT_ARGS) ../expander/bootstrap-run.rkt -t main.rkt -c compiled/cache-src -s -x -B -o compiled/regexp.zo
 
 .PHONY: regexp-src regexp-src-generate demo decompile

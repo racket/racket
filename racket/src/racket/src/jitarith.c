@@ -2188,7 +2188,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
                                int unsafe_fx, int unsafe_fl,
                                int dest)
 {
-  int c, i, non_simple_c = 0, stack_c, use_fx = !unsafe_fl, trigger_arg = 0;
+  int c, i, non_simple_c = 0, stack_c, use_fx = !unsafe_fl, trigger_arg = 0, use_short;
   Scheme_Object *non_simples[MAX_NON_SIMPLE_ARGS], **alt_args, *v;
   Branch_Info for_nary_branch;
   Branch_Info_Addr nary_addrs[3];
@@ -2267,7 +2267,8 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   CHECK_LIMIT();
   mz_rs_sync();
 
-  __START_SHORT_JUMPS__(c < 100);
+  use_short = c < 100;
+  __START_SHORT_JUMPS__(use_short);
 
   if (trigger_arg >= c) {
     /* we don't expect this to happen, since constant-folding normally
@@ -2276,7 +2277,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     trigger_arg = 0;
   }
 
-  extract_nary_arg(JIT_R0, trigger_arg, jitter, app, alt_args, c < 100);
+  extract_nary_arg(JIT_R0, trigger_arg, jitter, app, alt_args, use_short);
   CHECK_LIMIT();
 
   if (unsafe_fl < 1) {
@@ -2308,7 +2309,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       int delta = stack_c - c;
       for (i = 0; i < c; i++) {
         if (delta) {
-          extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
+          extract_nary_arg(JIT_R0, i, jitter, app, alt_args, use_short);
           CHECK_LIMIT();
           jit_stxi_p(WORDS_TO_BYTES(i+delta), JIT_RUNSTACK, JIT_R0);
         } else
@@ -2332,9 +2333,9 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     GC_CAN_IGNORE jit_insn *refskip;
     if ((unsafe_fx > 0) || (unsafe_fl > 0)) {
       /* No dispatch so far, so jump to fast path to skip #f result */
-      __START_TINY_JUMPS__(1);
+      __START_INNER_TINY__(use_short);
       refskip = jit_jmpi(jit_forward());
-      __END_TINY_JUMPS__(1);
+      __END_INNER_TINY__(use_short);
     } else
       refskip = NULL;
     
@@ -2343,9 +2344,9 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     refdone3 = jit_jmpi(jit_forward());
 
     if (refskip) {
-      __START_TINY_JUMPS__(1);
+      __START_INNER_TINY__(use_short);
       mz_patch_ucbranch(refskip);
-      __END_TINY_JUMPS__(1);
+      __END_INNER_TINY__(use_short);
     }
   } else {
     reffalse = NULL;
@@ -2360,7 +2361,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
         if (i != trigger_arg) {
           v = app->args[i+1];
           if (!SCHEME_FLOATP(v)) {
-            extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
+            extract_nary_arg(JIT_R0, i, jitter, app, alt_args, use_short);
             (void)jit_bmsi_ul(refslow, JIT_R0, 0x1);
             jit_ldxi_s(JIT_R0, JIT_R0, &((Scheme_Object *)0x0)->type);
             (void)jit_bnei_i(refslow, JIT_R0, scheme_double_type);
@@ -2373,19 +2374,19 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     args_unboxed = ((arith != ARITH_MIN) && (arith != ARITH_MAX)); /* no unboxing for min & max */
     if (args_unboxed)
       jitter->unbox++;
-    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, c < 100);
+    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, use_short);
     CHECK_LIMIT();
     for (i = 1; i < c; i++) {
       if (!arith && (i > 1))
-        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, c < 100);
-      extract_nary_arg((args_unboxed ? JIT_R0 : JIT_R1), i, jitter, app, alt_args, c < 100);
+        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, use_short);
+      extract_nary_arg((args_unboxed ? JIT_R0 : JIT_R1), i, jitter, app, alt_args, use_short);
       if ((i == c - 1) && args_unboxed) --jitter->unbox; /* box last result */
       if (!arith) init_nary_branches(&for_nary_branch, nary_addrs);
-      __END_SHORT_JUMPS__(c < 100);
+      __END_SHORT_JUMPS__(use_short);
       scheme_generate_arith(jitter, NULL, NULL, scheme_void, 2, arith, cmp, 0,
-                            !arith ? &for_nary_branch : NULL, c < 100, 0, 1, NULL,
+                            !arith ? &for_nary_branch : NULL, use_short, 0, 1, NULL,
                             JIT_R0);
-      __START_SHORT_JUMPS__(c < 100);
+      __START_SHORT_JUMPS__(use_short);
       if (!arith) patch_nary_branches(jitter, &for_nary_branch, reffalse);
       CHECK_LIMIT();
     }
@@ -2407,7 +2408,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
         if (i != trigger_arg) {
           v = app->args[i+1];
           if (!SCHEME_INTP(v)) {
-            extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
+            extract_nary_arg(JIT_R0, i, jitter, app, alt_args, use_short);
             CHECK_LIMIT();
             (void)jit_bmci_ul(refslow, JIT_R0, 0x1);
             CHECK_LIMIT();
@@ -2417,18 +2418,18 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     }
     /* All fixnums, so inline fast fixnum combination;
        on overflow, bail out to refslow. */
-    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, c < 100);
+    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, use_short);
     for (i = 1; i < c; i++) {
       if (!arith && (i > 1))
-        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, c < 100);
-      extract_nary_arg(JIT_R1, i, jitter, app, alt_args, c < 100);
+        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, use_short);
+      extract_nary_arg(JIT_R1, i, jitter, app, alt_args, use_short);
       CHECK_LIMIT();
       if (!arith) init_nary_branches(&for_nary_branch, nary_addrs);
-      __END_SHORT_JUMPS__(c < 100);
+      __END_SHORT_JUMPS__(use_short);
       scheme_generate_arith(jitter, NULL, NULL, scheme_void, 2, arith, cmp, 0,
-                            !arith ? &for_nary_branch : NULL, c < 100, 1, 0, refslow,
+                            !arith ? &for_nary_branch : NULL, use_short, 1, 0, refslow,
                             JIT_R0);
-      __START_SHORT_JUMPS__(c < 100);
+      __START_SHORT_JUMPS__(use_short);
       if (!arith) patch_nary_branches(jitter, &for_nary_branch, reffalse);
       CHECK_LIMIT();
     }
@@ -2447,7 +2448,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   if (refdone3)
     mz_patch_ucbranch(refdone3);
 
-  __END_SHORT_JUMPS__(c < 100);
+  __END_SHORT_JUMPS__(use_short);
 
   if (stack_c) {
     mz_rs_inc(stack_c); /* no sync */

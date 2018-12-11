@@ -1,4 +1,4 @@
-(define datums (make-weak-hash))
+(define-thread-local datums (make-weak-hash))
 
 (define intern-regexp? #f)
 (define (set-intern-regexp?! p) (set! intern-regexp? p))

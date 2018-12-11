@@ -669,10 +669,10 @@
                     (c e #t))))))))
 
 (define default-compile-handler
-  ;; Constrained to a single argument:
+  ;; Constrained to two arguments:
   (lambda (s immediate-eval?) (compile s
-                                  (current-namespace)
-                                  (not immediate-eval?))))
+                                       (current-namespace)
+                                       (not immediate-eval?))))
 
 (define (default-read-interaction src in)
   (unless (input-port? in)

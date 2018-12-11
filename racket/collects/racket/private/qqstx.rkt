@@ -241,12 +241,15 @@
                              depth
                              same-k
                              (lambda (v bindings)
-                               (convert-k (datum->syntax
-                                           stx
-                                           (list->vector (syntax->list v))
-                                           stx
-                                           stx)
-                                          bindings)))]
+                               (let ([stx-lst/#f (syntax->list v)])
+                                 (convert-k (datum->syntax
+                                             stx
+                                             (if stx-lst/#f
+                                                 (list->vector stx-lst/#f)
+                                                 (vector-immutable (cons #'~@! v)))
+                                             stx
+                                             stx)
+                                            bindings))))]
                       [(prefab-struct-key (syntax-e stx))
                        (let* ([d (syntax-e stx)]
                               [key (prefab-struct-key d)]

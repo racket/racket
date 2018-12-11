@@ -15,6 +15,7 @@
                     [expand expand-in-context])
          "../compile/main.rkt"
          "../compile/compiled-in-memory.rkt"
+         "../compile/linklet.rkt"
          "top.rkt"
          "module.rkt"
          "../common/module-path.rkt"
@@ -28,15 +29,14 @@
          "reflect.rkt"
          "../expand/log.rkt"
          "../expand/parsed.rkt"
-         "../common/performance.rkt")
+         "../common/performance.rkt"
+         "../compile/correlated-linklet.rkt")
 
 (provide eval
          compile
          expand
          expand-once
-         expand-to-top-form
-
-         compile-to-linklets)
+         expand-to-top-form)
 
 ;; This `eval` is suitable as an eval handler that will be called by
 ;; the `eval` and `eval-syntax` of '#%kernel. 
@@ -71,7 +71,9 @@
 ;; by the `compile` and `compile-syntax` of '#%kernel
 ;; [Don't use keyword arguments here, because the function is
 ;;  exported for use by an embedding runtime system.]
-(define (compile s [ns (current-namespace)] [serializable? #t] [expand expand] [to-source? #f])
+(define (compile s [ns (current-namespace)] [serializable? #t] [expand expand])
+  (define to-correlated-linklet? (and serializable?
+                                      (not (current-compile-target-machine))))
   ;; The given `s` might be an already-compiled expression because it
   ;; went through some strange path, such as a `load` on a bytecode
   ;; file, which would wrap `#%top-interaction` around the compiled
@@ -86,67 +88,69 @@
       (per-top-level s ns
                      #:single (lambda (s ns as-tail?)
                                 (list (compile-single s ns expand
-                                                      serializable?
-                                                      to-source?)))
+                                                      #:serializable? serializable?
+                                                      #:to-correlated-linklet? to-correlated-linklet?)))
                      #:combine append
                      #:observer #f)]))
   (if (and (= 1 (length cs))
            (not (compiled-multiple-top? (car cs))))
       (car cs)
       (compiled-tops->compiled-top cs
-                                   #:to-source? to-source?
+                                   #:to-correlated-linklet? to-correlated-linklet?
                                    #:merge-serialization? serializable?
                                    #:namespace ns)))
-
-;; Result is a hash table containing S-expressons that may have
-;; "correlated" parts in the sense of "host/correlate.rkt"; use
-;; `datum->correlated` plus `correlated->datum` to get a plain
-;; S-expression
-(define (compile-to-linklets s [ns (current-namespace)])
-  (compile s ns #t expand #t))
 
 ;; To communicate lifts from `expand-single` to `compile-single`:
 (struct lifted-parsed-begin (seq last))
 
-(define (compile-single s ns expand serializable? to-source?)
-  (define exp-s (expand s ns #f #t serializable?))
+(define (compile-single s ns expand
+                        #:serializable? serializable?
+                        #:to-correlated-linklet? to-correlated-linklet?)
+  (define exp-s (expand s ns #f #t serializable? to-correlated-linklet?))
   (let loop ([exp-s exp-s])
     (cond
       [(parsed-module? exp-s)
        (compile-module exp-s (make-compile-context #:namespace ns)
                        #:serializable? serializable?
-                       #:to-source? to-source?)]
+                       #:to-correlated-linklet? to-correlated-linklet?)]
       [(lifted-parsed-begin? exp-s)
        ;; expansion must have captured lifts
        (compiled-tops->compiled-top
+        #:to-correlated-linklet? to-correlated-linklet?
         (for/list ([e (in-list (append (lifted-parsed-begin-seq exp-s)
                                        (list (lifted-parsed-begin-last exp-s))))])
-          (loop e))
-        #:to-source? to-source?)]
+          (loop e)))]
       [else
        (compile-top exp-s (make-compile-context #:namespace ns)
                     #:serializable? serializable?
-                    #:to-source? to-source?)])))
+                    #:to-correlated-linklet? to-correlated-linklet?)])))
 
 ;; This `expand` is suitable as an expand handler (if such a thing
 ;; existed) to be called by `expand` and `expand-syntax`.
 ;; [Don't use keyword arguments here, because the function is
 ;;  exported for use by an embedding runtime system.]
-(define (expand s [ns (current-namespace)] [observable? #f] [to-parsed? #f] [serializable? #f])
+(define (expand s
+                [ns (current-namespace)] [observable? #f] [to-parsed? #f]
+                [serializable? #f] [to-correlated-linklet? #f])
   (define observer (and observable? (current-expand-observe)))
   (when observer (...log-expand observer ['start-top]))
   (parameterize ([current-expand-observe #f])
     (per-top-level s ns
-                   #:single (lambda (s ns as-tail?) (expand-single s ns observer to-parsed? serializable?))
+                   #:single (lambda (s ns as-tail?) (expand-single s ns observer to-parsed?
+                                                                   #:serializable? serializable?
+                                                                   #:to-correlated-linklet? to-correlated-linklet?))
                    #:combine cons
                    #:wrap re-pair
                    #:observer observer)))
 
-(define (expand-single s ns observer to-parsed? serializable?)
+(define (expand-single s ns observer to-parsed?
+                       #:serializable? serializable?
+                       #:to-correlated-linklet? [to-correlated-linklet? #f])
   (define rebuild-s (keep-properties-only s))
   (define ctx (make-expand-context ns
                                    #:to-parsed? to-parsed?
                                    #:for-serializable? serializable?
+                                   #:to-correlated-linklet? to-correlated-linklet?
                                    #:observer observer))
   (define-values (require-lifts lifts exp-s) (expand-capturing-lifts s ctx))
   (cond
@@ -156,14 +160,16 @@
                                        lifts
                                        exp-s rebuild-s
                                        #:adjust-form (lambda (form)
-                                                       (expand-single form ns observer to-parsed? serializable?)))]
+                                                       (expand-single form ns observer to-parsed?
+                                                                      #:serializable? serializable?)))]
    [else
     (log-top-lift-begin-before ctx require-lifts lifts exp-s ns)
     (define new-s
       (wrap-lifts-as-begin (append require-lifts lifts)
                            #:adjust-form (lambda (form)
                                            (log-expand ctx 'next)
-                                           (expand-single form ns observer to-parsed? serializable?))
+                                           (expand-single form ns observer to-parsed?
+                                                          #:serializable? serializable?))
                            #:adjust-body (lambda (form)
                                            (cond
                                              [to-parsed? form]
@@ -172,7 +178,8 @@
                                               ;; This re-expansion should be unnecessary, but we do it
                                               ;; for a kind of consistentcy with `expand/capture-lifts`
                                               ;; and for expansion observers
-                                              (expand-single form ns observer to-parsed? serializable?)]))
+                                              (expand-single form ns observer to-parsed?
+                                                             #:serializable? serializable?)]))
                            exp-s
                            (namespace-phase ns)))
     (log-top-begin-after ctx new-s)

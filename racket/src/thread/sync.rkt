@@ -413,6 +413,7 @@
                                     (wrap-evt always-evt (lambda (a) generated))))
             (loop sr (add1 retries) polled-all-so-far?))]
          [(and (never-evt? new-evt)
+               (not (evt-impersonator? new-evt))
                (null? (syncer-interrupts sr))
                (null? (syncer-commits sr))
                (null? (syncer-abandons sr)))
@@ -539,6 +540,7 @@
       (define e (syncer-evt sr))
       (and (or (async-evt? e)
                (never-evt? e))
+           (not (evt-impersonator? e))
            (loop (syncer-next sr)))]))))
 
 ;; Install a callback to reschedule the current thread if an

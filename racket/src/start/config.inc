@@ -3,6 +3,13 @@
 
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
+#if defined(__GNUC__)
+# define PRESERVE_IN_EXECUTABLE __attribute__((used))
+#else
+# define PRESERVE_IN_EXECUTABLE /* empty */
+#endif
+
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_cmdline_exe_hack = (char *)
   ("[Replace me for EXE hack                                       "
    "                                                              ]");
@@ -14,6 +21,7 @@ char * volatile scheme_cmdline_exe_hack = (char *)
 #else
 # define GC_PRECISION_TYPE "c"
 #endif
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRECISION_TYPE;
 /* The format of bINARy tYPe is e?[zr]i[3cs].
    e indicates a starter executable
@@ -29,6 +37,7 @@ char * volatile scheme_binary_type_hack = "bINARy tYPe:" INITIAL_BIN_TYPE GC_PRE
 # endif
 #endif
 
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_coldir = "coLLECTs dIRECTORy:" /* <- this tag stays, so we can find it again */
                        INITIAL_COLLECTS_DIRECTORY 
                        "\0\0" /* <- 1st nul terminates path, 2nd terminates path list */
@@ -59,6 +68,7 @@ static int _coldir_offset = 19; /* Skip permanent tag */
 # endif
 #endif
 
+PRESERVE_IN_EXECUTABLE
 char * volatile scheme_configdir = "coNFIg dIRECTORy:" /* <- this tag stays, so we can find it again */
                        INITIAL_CONFIG_DIRECTORY
                        "\0"
@@ -152,12 +162,12 @@ wchar_t *get_self_executable_path() XFORM_SKIP_PROC
   return path;
 }
 
-static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id) XFORM_SKIP_PROC
+static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id, long delta) XFORM_SKIP_PROC
 {
   DWORD got, val;
   WORD name_count, id_count;
   
-  SetFilePointer(fd, pos + 12, 0, FILE_BEGIN);
+  SetFilePointer(fd, pos + 12 + delta, 0, FILE_BEGIN);
   ReadFile(fd, &name_count, 2, &got, NULL);
   ReadFile(fd, &id_count, 2, &got, NULL);
 
@@ -175,20 +185,17 @@ static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id) XFORM_SKIP_PR
   return 0;
 }
 
-static long find_resource_offset(int id) XFORM_SKIP_PROC
+static long find_resource_offset(wchar_t *path, int id, long delta) XFORM_SKIP_PROC
 {
   /* Find the resource of type `id` */
-  wchar_t *path;
   HANDLE fd;
 
-  path = get_self_executable_path();
   fd = CreateFileW(path, GENERIC_READ,
                    FILE_SHARE_READ | FILE_SHARE_WRITE,
                    NULL,
                    OPEN_EXISTING,
                    0,
                    NULL);
-  free(path);
 
   if (fd == INVALID_HANDLE_VALUE)
     return 0;
@@ -197,16 +204,16 @@ static long find_resource_offset(int id) XFORM_SKIP_PROC
     WORD num_sections, head_size;
     char name[8];
     
-    SetFilePointer(fd, 60, 0, FILE_BEGIN);
+    SetFilePointer(fd, 60+delta, 0, FILE_BEGIN);
     ReadFile(fd, &val, 4, &got, NULL);
-    SetFilePointer(fd, val+4+2, 0, FILE_BEGIN); /* Skip "PE\0\0" tag and machine */
+    SetFilePointer(fd, val+4+2+delta, 0, FILE_BEGIN); /* Skip "PE\0\0" tag and machine */
     ReadFile(fd, &num_sections, 2, &got, NULL);
     SetFilePointer(fd, 12, 0, FILE_CURRENT); /* time stamp + symbol table */
     ReadFile(fd, &head_size, 2, &got, NULL);
 
     sec_pos = val+4+20+head_size;
     while (num_sections--) {
-      SetFilePointer(fd, sec_pos, 0, FILE_BEGIN);
+      SetFilePointer(fd, sec_pos+delta, 0, FILE_BEGIN);
       ReadFile(fd, &name, 8, &got, NULL);
       if ((name[0] == '.')
           && (name[1] == 'r')
@@ -218,24 +225,24 @@ static long find_resource_offset(int id) XFORM_SKIP_PROC
         ReadFile(fd, &virtual_addr, 4, &got, NULL);
         SetFilePointer(fd, 4, 0, FILE_CURRENT); /* skip file size */
         ReadFile(fd, &rsrcs, 4, &got, NULL);
-        SetFilePointer(fd, rsrcs, 0, FILE_BEGIN);
+        SetFilePointer(fd, rsrcs+delta, 0, FILE_BEGIN);
         
         /* We're at the resource table; step through 3 layers */
-        pos = find_by_id(fd, rsrcs, rsrcs, id);
+        pos = find_by_id(fd, rsrcs, rsrcs, id, delta);
 	if (pos) {
-	  pos = find_by_id(fd, rsrcs, pos, 1);
+	  pos = find_by_id(fd, rsrcs, pos, 1, delta);
 	  if (pos) {
-	    pos = find_by_id(fd, rsrcs, pos, 1033);
+	    pos = find_by_id(fd, rsrcs, pos, 1033, delta);
 
 	    if (pos) {
 	      /* pos is the reource data entry */
-	      SetFilePointer(fd, pos, 0, FILE_BEGIN);
+	      SetFilePointer(fd, pos+delta, 0, FILE_BEGIN);
 	      ReadFile(fd, &val, 4, &got, NULL);
 	      pos = val - virtual_addr + rsrcs;
 
 	      CloseHandle(fd);
 
-	      return pos;
+	      return pos+delta;
 	    }
 	  }
 	}
@@ -253,7 +260,7 @@ static long find_resource_offset(int id) XFORM_SKIP_PROC
 
 static long get_segment_offset() XFORM_SKIP_PROC
 {
-  return find_resource_offset(257);
+  return find_resource_offset(get_self_executable_path(), 257, 0);
 }
 
 #endif

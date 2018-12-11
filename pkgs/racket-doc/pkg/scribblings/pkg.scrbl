@@ -1229,7 +1229,7 @@ The following @filepath{info.rkt} fields are used by the package manager:
        See also @secref["setup-check-deps" #:doc raco-doc].}
 
  @item{@definfofield{build-deps} --- like @racketidfont{deps}, but for
-       dependencies that can be dropped in a @tech{binary package},
+       dependencies that can be omitted from a @tech{binary package},
        which does not include sources; see @secref["strip"] and
        @secref["setup-check-deps" #:doc raco-doc]. The
        @racketidfont{build-deps} and @racketidfont{deps} lists are

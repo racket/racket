@@ -3,6 +3,7 @@
          "../run/cache.rkt"
          "../compile/serialize.rkt"
          "../compile/module-use.rkt"
+         "../compile/linklet.rkt"
          (prefix-in new: "../common/module-path.rkt"))
 
 (provide (struct-out compiled-module)

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../common/check.rkt"
          "../host/thread.rkt"
+         "port.rkt"
          "output-port.rkt"
          "parameter.rkt"
          "write.rkt"
@@ -81,7 +82,7 @@
        (raise-arguments-error who
                               "port does not support output events"
                               "port" out))
-     (get-write-evt bstr start-pos end-pos))))
+     (get-write-evt (core-port-self out) out bstr start-pos end-pos))))
 
 (define/who (port-writes-atomic? out)
   (check who output-port? out)

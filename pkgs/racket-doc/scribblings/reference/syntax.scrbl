@@ -860,10 +860,10 @@ corresponds to the default @tech{module name resolver}.
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
- @defsubform*[((submod root-module submod-path-element ...)
+ @defsubform*[((submod root-module-path submod-path-element ...)
                (submod "." submod-path-element ...)
                (submod ".." submod-path-element ...))]{
-  Identifies a @tech{submodule} within the module specified by @racket[root-module]
+  Identifies a @tech{submodule} within the module specified by @racket[root-module-path]
   or relative to the current module in the case of @racket[(submod "." ....)],
   where  @racket[(submod ".." submod-path-element ...)] is equivalent to
   @racket[(submod "." ".." submod-path-element ...)].
@@ -2844,7 +2844,7 @@ and the result of the @racket[_expr] takes the place of the
 @racket[(#,unquote-splicing-id _expr)] similarly escapes, but the
 @racket[_expr] must produce a list, and its elements are spliced as
 multiple values place of the @racket[(#,unquote-splicing-id _expr)], which
-must appear as the @racket[car] or a quoted pair, as an element of a
+must appear as the @racket[car] of a quoted pair, as an element of a
 quoted vector, or as an element of a quoted @tech{prefab} structure;
 in the case of a pair, if the @racket[cdr] of the relevant quoted pair
 is empty, then @racket[_expr] need not produce a list, and its result
@@ -2901,7 +2901,14 @@ and @racket[unquote-splicing] expressions. For example, in
 ]
 
 a single tail @racket['(2 3)] is used for every evaluation of the
-@racket[quasiquote] expression.
+@racket[quasiquote] expression. When allocating fresh data,
+the @racket[quasiquote] form allocates mutable vectors, mutable boxes
+and immutable hashes.
+
+@mz-examples[
+(immutable? `#(,0))
+(immutable? `#hash((a . ,0)))
+]
 
 }
 

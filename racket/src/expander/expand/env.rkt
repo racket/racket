@@ -96,11 +96,18 @@
                                #:shadow-except shadow-except))
 
 ;; Helper for registering a local binding in a set of scopes:
-(define (add-local-binding! id phase counter #:frame-id [frame-id #f] #:in [in-s #f])
+(define (add-local-binding! id phase counter
+                            #:local-sym local-sym
+                            #:frame-id [frame-id #f]
+                            #:in [in-s #f])
   (check-id-taint id in-s)
-  (set-box! counter (add1 (unbox counter)))
-  (define key (string->uninterned-symbol (format "~a_~a" (syntax-e id) (unbox counter))))
-  (add-binding-in-scopes! (syntax-scope-set id phase) (syntax-e id) (make-local-binding key #:frame-id frame-id))
+  (define c (add1 (unbox counter)))
+  (set-box! counter c)
+  (define sym (syntax-content id))
+  (define key (string->uninterned-symbol (string-append (symbol->string (or local-sym sym))
+                                                        "_"
+                                                        (number->string c))))
+  (add-binding-in-scopes! (syntax-scope-set id phase) sym (make-local-binding key #:frame-id frame-id))
   key)
 
 (define (check-id-taint id in-s)

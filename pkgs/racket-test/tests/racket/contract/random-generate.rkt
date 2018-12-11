@@ -92,6 +92,28 @@
 (check-not-exn (λ () (test-contract-generation (*list/c boolean? number? char?))))
 (check-not-exn (λ () (test-contract-generation (-> (*list/c boolean? number? char?) any))))
 
+(check-not-exn (λ () (test-contract-generation (hash/c boolean? boolean?))))
+(check-not-exn (λ () (test-contract-generation (hash/c char? integer?))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? integer?))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? (-> number? boolean?)))))
+(check-not-exn (λ () (test-contract-generation (hash/c string? (hash/c integer? string?)))))
+(check-not-exn (λ () (test-contract-generation (hash/c (hash/c string? integer?) (hash/c integer? string?)))))
+
+(define hash/c-list
+  (for/list ([i (in-range 100)])
+    (contract-random-generate
+     (hash/c integer? integer?))))
+
+;; hash/c should periodically generate empty hashes
+(check-pred
+ (λ (v) (not (empty? v)))
+ (filter hash-empty? hash/c-list))
+
+;; hash/c should periodically generate hashes with multiple elements
+(check-pred
+ (λ (v) (not (empty? v)))
+ (filter (λ (h) (> (length (hash-values h)) 1)) hash/c-list))
+
 (check-not-exn
  (λ ()
    (test-contract-generation
@@ -490,6 +512,14 @@
  void?
  (contract (-> (and/c #f #t) any)
            (λ (_) 'thing)
+           'pos
+           'neg))
+
+(check-exercise
+ 10
+ pos-exn?
+ (contract (hash/c symbol? (-> integer? boolean?))
+           (make-hash (list (cons 'lam (λ (n) (+ n 1)))))
            'pos
            'neg))
 

@@ -1,4 +1,4 @@
-The core `racket` executable has minimal library dependencies. In
+The core Racket executable has minimal library dependencies. In
 contrast, libraries implemented in various packages, such as the
 "draw" or "math" packages, rely on additional C-implemented libraries,
 such as Cairo, GMP, etc., all of which are loaded dynamically. On Unix
@@ -6,9 +6,9 @@ variants, we expect users to install C-implemented libraries (usually
 through the operating system's package manager). For Windows and Mac
 OS, we supply pre-built libraries in platform-specific packages; the
 corresponding Racket packages include platform-specific dependencies
-on those packages. The "x86_64-linux-natipkg" variant of Racket
-is like Windows and Mac OS, expecting packages to supply native
-libraries for 64-bit Linux.
+on those packages. The "x86_64-linux-natipkg" variant of Racket is
+like Windows and Mac OS, expecting packages to supply native libraries
+for 64-bit Linux.
 
 This directory contains scripts and patches to build Windows, Mac OS,
 and Linux libraries in a consistent and portable way. Naturally, the

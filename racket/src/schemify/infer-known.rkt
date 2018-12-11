@@ -94,7 +94,7 @@
          (extract-lambda* body))]
     [`(letrec-values ([(,id) ,rhs]) ,body)
      (if (wrap-eq? id body)
-         (extract-lambda rhs)
+         (extract-lambda* rhs)
          (extract-lambda* body))]
     [`(let-values ,_ ,body) (extract-lambda* body)]
     [`(letrec-values ,_ ,body) (extract-lambda* body)]

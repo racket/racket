@@ -360,7 +360,7 @@ rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t
       } else {
 	if (SetEndOfFile((HANDLE)fd)) {
 	  /* we assume that this works: */
-	  (void)SetFilePointer((HANDLE)fd, lo_w, &hi_w, FILE_BEGIN);
+	  (void)SetFilePointer((HANDLE)fd, old_lo_w, &old_hi_w, FILE_BEGIN);
 	  return 1;
 	}
         get_windows_error();

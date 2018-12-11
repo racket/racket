@@ -36,7 +36,7 @@ The @racket[sha1] function composes @racket[bytes->hex-string] with
          (sha1-bytes [in (or/c bytes? input-port?)]
                      [start exact-nonnegative-integer? 0]
                      [end (or/c #f exact-nonnegative-integer?) #f])
-         string?]{
+         bytes?]{
 
 The same as @racket[sha1-bytes] from @racketmodname[racket/base],
 returns a 20-byte byte string that represents the SHA-1 hash of the

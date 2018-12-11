@@ -1,6 +1,7 @@
 #lang racket/base
 (require "compiled-in-memory.rkt"
          "multi-top-data.rkt"
+         "linklet.rkt"
          "../host/linklet.rkt")
 
 (provide compiled-tops->compiled-top
@@ -18,7 +19,7 @@
 ;; top of a tree, we repeat work only twice and avoid non-linear
 ;; behavior.)
 (define (compiled-tops->compiled-top all-cims
-                                     #:to-source? [to-source? #f]
+                                     #:to-correlated-linklet? [to-correlated-linklet? #f]
                                      #:merge-serialization? [merge-serialization? #f]
                                      #:namespace [ns #f]) ; need for `merge-serialization?`
   (define cims (remove-nontail-purely-functional all-cims))
@@ -30,7 +31,7 @@
       (for/hasheq ([cim (in-list cims)]
                    [i (in-naturals)])
         (values (string->symbol (number->string i))
-                ((if to-source? values compiled-in-memory-linklet-directory)
+                (compiled-in-memory-linklet-directory
                  cim))))
     (define ht (if merge-serialization?
                    (hash-set sequence-ht
@@ -42,22 +43,19 @@
                                         0
                                         (build-shared-data-linklet cims ns))))))
                    sequence-ht))
-    (cond
-     [to-source? ht]
-     [else
-      (compiled-in-memory (hash->linklet-directory ht)
-                          #f ; self
-                          #f ; requires
-                          #f ; provides
-                          #hasheqv()
-                          #f
-                          #hasheqv()
-                          #() ; mpis
-                          #() ; syntax-literals
-                          cims
-                          null
-                          #f
-                          #f)])]))
+    (compiled-in-memory (hash->linklet-directory ht)
+                        #f ; self
+                        #f ; requires
+                        #f ; provides
+                        #hasheqv()
+                        #f
+                        #hasheqv()
+                        #() ; mpis
+                        #() ; syntax-literals
+                        cims
+                        null
+                        #f
+                        #f)]))
 
 ;; Decode a sequence of compiled top-level forms by unpacking the
 ;; linklet directory into a list of linklet directories

@@ -23,4 +23,6 @@
         unsafe-make-place-local
         unsafe-place-local-ref
         unsafe-place-local-set!
-        unsafe-add-global-finalizer)
+        unsafe-add-global-finalizer
+        unsafe-strip-impersonator
+        prop:unsafe-authentic-override)

@@ -18,7 +18,7 @@
 
 ;; in atomic mode
 (define (make-get-location user-get-location)
-  (lambda ()
+  (lambda (self)
     (end-atomic)
     (call-with-values
      (lambda () (user-get-location))
@@ -58,7 +58,7 @@
       [(input-port? user-init-position) user-init-position]
       [(output-port? user-init-position) user-init-position]
       [(procedure? user-init-position)
-       (lambda ()
+       (lambda (self)
          (define pos (user-init-position))
          (unless (or (not pos) (exact-positive-integer? pos))
            (raise-result-error '|user port init-position| "(or/c exact-positive-integer? #f)" pos))
@@ -78,7 +78,7 @@
 
 (define (make-buffer-mode user-buffer-mode #:output? [output? #f])
   (case-lambda
-    [()
+    [(self)
      (end-atomic)
      (define m (user-buffer-mode))
      (cond
@@ -91,6 +91,6 @@
                                 "(or/c 'block 'line 'none #f)"
                                 "(or/c 'block 'none #f)")
                             m)])]
-    [(m)
+    [(self m)
      (non-atomically
       (user-buffer-mode m))]))

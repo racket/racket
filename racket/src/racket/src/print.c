@@ -1749,161 +1749,6 @@ static int is_graph_point(Scheme_Hash_Table *ht, Scheme_Object *obj)
     return 0;
 }
 
-static Scheme_Object *write_bundles_to_strings_k(void);
-
-/* Bundles are written so that all of the link subdirectories content
-   of a link directory are together and terminated by a bundle or
-   #f (i.e., post-order traversal) */
-static Scheme_Object *write_bundles_to_strings(Scheme_Object *accum_l,
-                                               Scheme_Object *ld,
-                                               Scheme_Object *name_list)
-{
-  Scheme_Hash_Tree *ht;
-  mzlonglong pos;
-  Scheme_Object *k, *v, *bundle = scheme_false;
-
-#ifdef DO_STACK_CHECK
-#include "mzstkchk.h"
-  {
-    Scheme_Thread *p = scheme_current_thread;
-    
-    p->ku.k.p1 = accum_l;
-    p->ku.k.p2 = ld;
-    p->ku.k.p3 = name_list;
-    
-    return scheme_handle_stack_overflow(write_bundles_to_strings_k);
-  }
-#endif
-
-  ht = (Scheme_Hash_Tree *)SCHEME_PTR_VAL(ld);
-
-  pos = scheme_hash_tree_next(ht, -1);
-  while (pos != -1) {
-    scheme_hash_tree_index(ht, pos, &k, &v);
-    if (SCHEME_SYMBOLP(k)) {
-      MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_directory_type));
-
-      accum_l = write_bundles_to_strings(accum_l, v, scheme_make_pair(k, name_list));
-    } else {
-      MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_linklet_bundle_type));
-      bundle = v;
-    }
-    pos = scheme_hash_tree_next(ht, pos);
-  }
-
-  /* write root bundle, if any, or #f */
-  {
-    intptr_t len, nlen;
-    char *s, *ns;
-    
-    ns = scheme_symbol_path_to_string(scheme_reverse(name_list), &nlen);
-    s = scheme_write_to_string(bundle, &len);
-    
-    accum_l = scheme_make_pair(scheme_make_pair(scheme_make_sized_byte_string(ns, nlen, 0),
-                                                scheme_make_sized_byte_string(s, len, 0)),
-                               accum_l);
-  }
-
-  return accum_l;
-}
-
-static Scheme_Object *write_bundles_to_strings_k(void)
-{
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Object *accum_l = (Scheme_Object *)p->ku.k.p1;
-  Scheme_Object *ld = (Scheme_Object *)p->ku.k.p2;
-  Scheme_Object *name_list = (Scheme_Object *)p->ku.k.p3;
-
-  p->ku.k.p1 = NULL;
-  p->ku.k.p2 = NULL;
-  p->ku.k.p3 = NULL;
-
-  return write_bundles_to_strings(accum_l, ld, name_list);
-}
-
-typedef struct Bundle_And_Offset {
-  Scheme_Object *bundle;
-  Scheme_Object *offset;
-} Bundle_And_Offset;
-
-static int compare_bundles(const void *_am, const void *_bm)
-{
-  Scheme_Object *a = ((Bundle_And_Offset *)_am)->bundle;
-  Scheme_Object *b = ((Bundle_And_Offset *)_bm)->bundle;
-  intptr_t i, alen, blen;
-  unsigned char *as, *bs;
-
-  a = SCHEME_CAR(a);
-  b = SCHEME_CAR(b);
-
-  alen = SCHEME_BYTE_STRLEN_VAL(a);
-  blen = SCHEME_BYTE_STRLEN_VAL(b);
-  as = (unsigned char *)SCHEME_BYTE_STR_VAL(a);
-  bs = (unsigned char *)SCHEME_BYTE_STR_VAL(b);
-
-  for (i = 0; (i < alen) && (i < blen); i++) {
-    if (as[i] != bs[i])
-      return as[i] - bs[i];
-  }
-  
-  return (alen - blen);
-}
-
-static intptr_t compute_bundle_subtrees(Bundle_And_Offset *a, intptr_t *subtrees, 
-                                        int start, int count, intptr_t offset) 
-{
-  int midpt = start + (count / 2);
-  Scheme_Object *o = SCHEME_CAR(a[midpt].bundle);
-  intptr_t len;
-
-  len = SCHEME_BYTE_STRLEN_VAL(o);
-  offset += 4 + len + 16;
-
-  if (midpt > start)
-    offset = compute_bundle_subtrees(a, subtrees, start, midpt - start, offset);
-  subtrees[midpt] = offset;
-
-  count -= (midpt - start + 1);
-  if (count)
-    return compute_bundle_subtrees(a, subtrees, midpt + 1, count, offset);
-  else
-    return offset;
-}
-
-static intptr_t write_bundle_tree(PrintParams *pp, Bundle_And_Offset *a, 
-                                  intptr_t *subtrees,
-                                  int start, int count, intptr_t offset) 
-{
-  int midpt = start + (count / 2);
-  Scheme_Object *o = SCHEME_CAR(a[midpt].bundle);
-  intptr_t len;
-
-  len = SCHEME_BYTE_STRLEN_VAL(o);
-  print_number(pp, len);
-  print_this_string(pp, SCHEME_BYTE_STR_VAL(o), 0, len);
-  print_number(pp, SCHEME_INT_VAL(a[midpt].offset));
-  print_number(pp, SCHEME_BYTE_STRLEN_VAL(SCHEME_CDR(a[midpt].bundle)));
-  offset += 20 + len;
-
-  if (midpt > start)
-    print_number(pp, offset);
-  else
-    print_number(pp, 0);
-  count -= (midpt - start + 1);
-  if (count)
-    print_number(pp, subtrees[midpt]);
-  else
-    print_number(pp, 0);
-
-  if (midpt > start)
-    offset = write_bundle_tree(pp, a, subtrees, start, midpt - start, offset);
-  if (count)
-    offset = write_bundle_tree(pp, a, subtrees, midpt + 1, count, offset);
-
-  return offset;
-}
-
-
 static int
 print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       Scheme_Marshal_Tables *mt, PrintParams *pp)
@@ -3302,58 +3147,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         set_symtab_shared(mt, obj);
       }
     }
-  else if (!compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_linklet_directory_type))
-    {
-      /* Write directory content with an index at the beginning */
-      Scheme_Object *p, *accum_l;
-      Bundle_And_Offset *a;
-      intptr_t *subtrees, offset, init_offset;
-      int count, i;
-
-      init_offset = 2 + 1 + strlen(MZSCHEME_VERSION) + 1 + 4;
-
-      accum_l = write_bundles_to_strings(scheme_null, obj, scheme_null);
-      
-      for (p = accum_l, count = 0; !SCHEME_NULLP(p); p = SCHEME_CDR(p)) {
-        count++;
-      }
-      a = MALLOC_N(Bundle_And_Offset, count);
-      for (p = accum_l, i = 0; !SCHEME_NULLP(p); p = SCHEME_CDR(p), i++) {
-        a[i].bundle = SCHEME_CAR(p);
-      }
-      my_qsort(a, count, sizeof(Bundle_And_Offset), compare_bundles);
-      offset = init_offset;
-      for (i = 0; i < count; i++) {
-        offset += SCHEME_BYTE_STRLEN_VAL(SCHEME_CAR(a[i].bundle)) + 20;
-      }
-      for (i = 0; i < count; i++) {
-        a[i].offset = scheme_make_integer(offset);
-        offset += SCHEME_BYTE_STRLEN_VAL(SCHEME_CDR(a[i].bundle));
-      }
-      /* a is in sorted (for btree) order */
-
-      subtrees = MALLOC_N_ATOMIC(intptr_t, count);
-      (void)compute_bundle_subtrees(a, subtrees, 0, count, init_offset);
-
-      print_this_string(pp, "#~", 0, 2);
-      print_one_byte(pp, strlen(MZSCHEME_VERSION));
-      print_this_string(pp, MZSCHEME_VERSION, 0, -1);
-
-      /* "D" means "linklet directory": */
-      print_this_string(pp, "D", 0, 1);
-      print_number(pp, count);
-      
-      /* Write the bundle directory as a binary search tree. */
-      (void)write_bundle_tree(pp, a, subtrees, 0, count, init_offset);
-
-      /* Write the bundles: */
-      for (i = 0; i < count; i++) {
-        print_this_string(pp, 
-                          SCHEME_BYTE_STR_VAL(SCHEME_CDR(a[i].bundle)),
-                          0,
-                          SCHEME_BYTE_STRLEN_VAL(SCHEME_CDR(a[i].bundle)));
-      }
-    }
   else if ((compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_linklet_type))
            || SAME_TYPE(SCHEME_TYPE(obj), scheme_linklet_bundle_type))
     {
@@ -3380,8 +3173,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
         MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(obj), scheme_linklet_bundle_type));
         v = SCHEME_PTR_VAL(obj); /* extract hash table from a linklet bundle */
-
-        print_this_string(pp, "#~", 0, 2);
 
         mt = MALLOC_ONE_RT(Scheme_Marshal_Tables);
         SET_REQUIRED_TAG(mt->type = scheme_rt_marshal_info);
@@ -3433,16 +3224,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 
                         -1, &st_len);
 
-	/* Remember version: */
-        print_one_byte(pp, strlen(MZSCHEME_VERSION));
-	print_this_string(pp, MZSCHEME_VERSION, 0, -1);
-
-        print_this_string(pp, "B", 0, 1);  /* "B" means "bundle" */
-
-        /* Leave space for a module hash code */
-        print_this_string(pp, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 0, 20);
-
-        if (mt->st_refs->count != mt->sorted_keys_count)
+	if (mt->st_refs->count != mt->sorted_keys_count)
           scheme_signal_error("shared key count somehow changed");
 
 	print_number(pp, mt->st_refs->count + 1);

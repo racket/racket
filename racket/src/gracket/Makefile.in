@@ -85,11 +85,11 @@ MRSTATIC_STUB =
 
 MZEXTRAEXPORT='GCDIR=$(GCDIRECTORY)'
 
-LINKRESULT_wx_xt = gracket@CGC@
+LINKRESULT_wx_xt = gracket@CGC@@EXE_SUFFIX@
 LINKRESULT_wx_mac = GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 LINKRESULT = $(LINKRESULT_@WXVARIANT@)
 
-SETUP_BOOT = -O "info@compiler/cm error" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
+SETUP_BOOT = -O "info@compiler/cm" -l- setup @BOOT_MODE@ $(srcdir)/../setup-go.rkt ../compiled
 
 # Incremented each time the binaries change:
 DOWNLOAD_BIN_VERSION = 1
@@ -217,7 +217,7 @@ GRACKET_NAME@MINGW@ = GRacket
 
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
-	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) gracket/gracket@CGC@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 
@@ -232,7 +232,7 @@ install-lib-3m-wx_xt:
 
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
-	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) gracket/gracket@MMM@@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @GUI_COLLECTS_PATH@ @GUI_CONFIG_PATH@
 

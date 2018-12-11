@@ -1,8 +1,13 @@
-(module mkincludes '#%kernel
+(module mksystem '#%kernel
   ;; Arguments are
-  ;;   <output-file> [<cpp-command> <3m-exe-suffix> <run-racket-command> <this-racket-command>]
+  ;;   <output-file> [<cpp-command> <3m-exe-suffix> <cross-target-kind> <run-racket-command> <this-racket-command>]
   (define-values (args) (current-command-line-arguments))
-  
+
+  (define-values (mi-target?)
+    (if (> (vector-length args) 3)
+        (equal? "any" (vector-ref args 3))
+        #f))
+
   (define-values (ht)
     (if (if (= (vector-length args) 1)
             #t
@@ -22,6 +27,7 @@
               'so-suffix (system-type 'so-suffix)
               'so-mode (system-type 'so-mode)
               'fs-change (system-type 'fs-change)
+              'target-machine (if mi-target? #f 'racket)
               'library-subpath (path->bytes (system-library-subpath #f))
               'library-subpath-convention (system-path-convention-type))
         ;; Cross-compiling; use `cpp` to get details
@@ -64,6 +70,7 @@
                             'so-suffix (string->bytes/utf-8 (get-string "system_type_so_suffix"))
                             'so-mode (get-symbol "system_type_so_mode")
                             'fs-change '#(#f #f #f #f)
+                            'target-machine (if mi-target? #f 'racket)
                             'library-subpath (string->bytes/utf-8 library-subpath)
                             'library-subpath-convention (if (eq? os 'windows)
                                                             'windows

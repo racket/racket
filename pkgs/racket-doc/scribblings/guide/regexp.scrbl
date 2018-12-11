@@ -500,10 +500,13 @@ needed to ensure an overall match.
 (regexp-match #rx"<.*?>" "<tag1> <tag2> <tag3>")
 ]
 
-The non-greedy quantifiers are respectively: @litchar{*?},
-@litchar{+?}, @litchar{??}, @litchar["{"]@math{m}@litchar["}?"],
-@litchar["{"]@math{m}@litchar{,}@math{n}@litchar["}?"].  Note the two
-uses of the metacharacter @litchar{?}.
+The non-greedy quantifiers are @litchar{*?}, @litchar{+?},
+@litchar{??}, @litchar["{"]@math{m}@litchar["}?"], and
+@litchar["{"]@math{m}@litchar{,}@math{n}@litchar["}?"], although
+@litchar["{"]@math{m}@litchar["}?"] is always the same as
+@litchar["{"]@math{m}@litchar["}"]. Note that the metacharacter
+@litchar{?} has two different uses, and both uses are represented in
+@litchar{??}.
 
 @; ----------------------------------------
 

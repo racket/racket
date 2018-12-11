@@ -8,7 +8,6 @@
          "private/cc-struct.rkt"
          setup/parallel-do
          racket/class
-         racket/future
          compiler/find-exe
          racket/place
          syntax/modresolve
@@ -38,6 +37,9 @@
         (hash-set!
          locks fn
          (match v
+           ['done
+            (wrkr/send wrkr (list 'compiled))
+            'done]
            [(list w waitlst) 
             (hash-set! depends wrkr (cons w fn))
             (let ([fns (check-cycles wrkr (hash) null)])
@@ -57,7 +59,7 @@
           (for ([x (second (hash-ref locks fn))])
             (hash-remove! depends x)
             (wrkr/send x (list 'compiled)))
-          (hash-remove! locks fn)]))
+          (hash-set! locks fn 'done)]))
     (define/private (check-cycles w seen fns)
       (cond
        [(hash-ref seen w #f) fns]
@@ -316,14 +318,16 @@
                                                        (format-error x #:long? #f #:to-string? #t))))])
            (parameterize ([parallel-lock-client lock-client]
                           [compile-context-preservation-enabled (member 'disable-inlining options )]
-                          [manager-trace-handler
-                            (lambda (p)
-                              (when (member 'very-verbose options)
-                                (printf "  ~a\n" p)))]
+                          [manager-trace-handler (if (member 'very-verbose options)
+                                                     (lambda (p) (printf "  ~a\n" p))
+                                                     (manager-trace-handler))]
                           [current-namespace (make-base-empty-namespace)]
                           [current-directory (if (memq 'set-directory options)
                                                  dir
                                                  (current-directory))]
+                          [current-compile-target-machine (if (memq 'compile-any options)
+                                                              #f
+                                                              (current-compile-target-machine))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]
@@ -362,9 +366,11 @@
                   #:use-places? use-places?))
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree
+                          #:options [options '()]
                           #:use-places? [use-places? #t])
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
-  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '(set-directory)))
+  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error
+                                      (append options '(set-directory))))
   (parallel-build collects-queue worker-count
                   #:use-places? use-places?))
 

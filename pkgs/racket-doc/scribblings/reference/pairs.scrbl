@@ -265,7 +265,7 @@ The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[
-  (list-tail (list 1 2 3 4) 2)
+  (list-tail (list 1 2 3 4 5) 2)
   (list-tail (cons 1 2) 1)
   (eval:error (list-tail (cons 1 2) 2))
   (list-tail 'not-a-pair 0)]}
@@ -952,7 +952,7 @@ The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
-  (take '(1 2 3 4) 2)
+  (take '(1 2 3 4 5) 2)
   (take 'non-list 0)]}
 
 
@@ -1021,7 +1021,7 @@ The @racket[lst] argument need not actually be a list; @racket[lst]
 must merely end with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
-  (take-right '(1 2 3 4) 2)
+  (take-right '(1 2 3 4 5) 2)
   (take-right 'non-list 0)]}
 
 
@@ -1036,7 +1036,7 @@ The @racket[lst] argument need not actually be a list; @racket[lst] must
 merely end with a chain of at least @racket[pos] pairs.
 
 @mz-examples[#:eval list-eval
-  (drop-right '(1 2 3 4) 2)
+  (drop-right '(1 2 3 4 5) 2)
   (drop-right 'non-list 0)]}
 
 
@@ -1235,7 +1235,11 @@ key value from each list element, so two items are considered equal if
 @defproc[(filter-map [proc procedure?] [lst list?] ...+)
          list?]{
 
-Returns @racket[(filter (lambda (x) x) (map proc lst ...))], but without
+Like @racket[(map proc lst ...)], except that, if @racket[proc]
+returns @racket[#false], that element is omitted from the resulting list. 
+In other words, @racket[filter-map] is equivalent to 
+@racket[(filter (lambda (x) x) (map proc lst ...))], but more efficient, 
+because @racket[filter-map] avoids
 building the intermediate list.
 
 @mz-examples[#:eval list-eval

@@ -21,6 +21,7 @@
                       source
                       * wrap          ; wrapper applied to each datum, intended for syntax objects
                       read-compiled   ; for `#~`: input-port -> any/c
+                      call-with-root-namespace ; around extension callback
                       dynamic-require ; for reader extensions: module-path sym -> any
                       module-declared? ; for `#lang`: module-path -> any/c
                       coerce        ; coerce for syntax or not: any boolean -> any
@@ -46,6 +47,7 @@
          #:next-readtable [next-readtable readtable]
          #:wrap [wrap #f #;(lambda (s-exp srcloc) s-exp)]
          #:read-compiled [read-compiled #f]
+         #:call-with-root-namespace [call-with-root-namespace #f]
          #:dynamic-require [dynamic-require #f]
          #:module-declared? [module-declared? #f]
          #:coerce [coerce #f]
@@ -59,6 +61,9 @@
                (or read-compiled
                    (lambda (in)
                      (error 'read "no `read-compiled` provided")))
+               (or call-with-root-namespace
+                   (lambda (thunk)
+                     (error 'read "no `call-with-root-namespace` provided")))
                (or dynamic-require
                    (lambda (mod-path sym failure-k)
                      (error 'read "no `dynamic-require` provided")))
