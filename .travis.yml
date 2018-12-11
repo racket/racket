@@ -79,5 +79,5 @@ addons:
       description: "The Racket Programming Language"
     notification_email: pmatos@linki.tools
     build_command_prepend: cd racket/src && ./configure
-    build_command: make -j 2
+    build_command: make -j 2 && make -j 2 cs
     branch_pattern: coverity_scan
