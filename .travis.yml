@@ -76,6 +76,7 @@ notifications:
 before_install:
 - test $TRAVIS_BRANCH != coverity_scan -o ${TRAVIS_JOB_NUMBER##*.} = 1 || exit 0
 - echo -n | openssl s_client -connect https://scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+- echo '\nracket-all:\n\t$(MAKE) all\n\t$(MAKE) cs\n' >> racket/src/Makefile.in
 
 env:
   global:
@@ -90,5 +91,5 @@ addons:
       description: "The Racket Programming Language"
     notification_email: pmatos@linki.tools
     build_command_prepend: cd racket/src && ./configure
-    build_command: make -j 2 && make -j 2 cs
+    build_command: make -j 2 racket-all
     branch_pattern: coverity_scan
