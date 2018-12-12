@@ -27,15 +27,17 @@
   (define-syntax log-info (make-define-log 'info #'(current-logger) #'(logger-name l)))
   (define-syntax log-debug (make-define-log 'debug #'(current-logger) #'(logger-name l)))
 
-  (define (check-logger who)
-    (lambda (v)
-      (unless (logger? v)
-        (raise-argument-error who "logger?" v))
-      v))
+  (define (check-logger-or-false who v)
+    (unless (or (not v) (logger? v))
+      (raise-argument-error who "(or/c logger? #f)" v))
+    v)
 
   (define-syntax (define-logger stx)
     (syntax-case stx ()
-      [(_ X)
+      [(d-l X)
+       (syntax/loc stx
+         (d-l X #:parent (current-logger)))]
+      [(d-l X #:parent parent)
        (let* ([X #'X]
               [mk (lambda (mode)
                     (datum->syntax X (string->symbol (format "log-~a-~a" (syntax-e X) mode)) X))])
@@ -50,7 +52,7 @@
                         (datum->syntax X (string->symbol (format "~a-logger" (syntax-e X))) X)]
                        [X X])
            #'(begin
-               (define X-logger (make-logger 'X (current-logger)))
+               (define X-logger (make-logger 'X (check-logger-or-false 'd-l parent)))
                (define-syntax log-X-fatal (make-define-log 'fatal #'X-logger #''X))
                (define-syntax log-X-error (make-define-log 'error #'X-logger #''X))
                (define-syntax log-X-warning (make-define-log 'warning #'X-logger #''X))
