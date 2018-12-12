@@ -999,7 +999,7 @@
                     (trace-printf "different src hash ~a for ~a..." difference path)
                     (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                       #:trying-sha1? sha1-only?))]
-              [(ormap-strict
+              [((if sha1-only? ormap ormap-strict)
                 (lambda (p)
                   (define ext? (external-dep? p))
                   (define d (collects-relative*->path (dep->encoded-path p) collection-cache))
@@ -1008,18 +1008,23 @@
                         (cons (or (try-file-time d) +inf.0) #f)
                         (compile-root path->mode roots d up-to-date collection-cache read-src-syntax new-seen
                                       #:sha1-only? sha1-only?)))
-                  (and t
-                       (car t)
-                       (> (car t) (or path-zo-time -inf.0))
-                       (begin (trace-printf "newer for ~a: ~a (~a > ~a)..."
-                                            path d (car t) path-zo-time)
-                              #t)))
+                  (cond
+                    [(not t) #t]
+                    [else (and (car t)
+                               (> (car t) (or path-zo-time -inf.0))
+                               (begin (trace-printf "newer for ~a: ~a (~a > ~a)..."
+                                                    path d (car t) path-zo-time)
+                                      #t))]))
                 (deps-imports deps))
                (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen
                                  #:trying-sha1? sha1-only?)]
               [else #f]))
           (cond
-           [(and needs-build? sha1-only?) #f]
+           [(and needs-build? sha1-only?)
+            (hash-set! up-to-date (cons 'needs-build? main-path) #t)
+            (unless (eq? main-path alt-path)
+              (hash-set! up-to-date (cons 'needs-build? alt-path) #t))
+            #f]
            [else
             (when needs-build?
               (maybe-compile-zo deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen))
@@ -1050,8 +1055,13 @@
         (and v
              (hash-set! up-to-date orig-path v)
              v))
-      (begin (trace-printf "checking: ~a" orig-path)
-             (do-check))))
+      (cond
+        [(and sha1-only?
+              (hash-ref up-to-date (cons 'needs-build? orig-path) #f))
+         #f]
+        [else
+         (trace-printf "checking: ~a" orig-path)
+         (do-check)])))
 
 (define (ormap-strict f l)
   (cond
