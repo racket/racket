@@ -1,6 +1,10 @@
 sudo: false
 language: c
 
+branches:
+  except:
+    - wip-coverity-scan
+
 matrix:
   include:
   - os: linux
