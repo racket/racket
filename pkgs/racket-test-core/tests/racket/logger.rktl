@@ -291,5 +291,34 @@
   (sync s))
 
 ; --------------------
+; `define-logger` with explicit parent
+
+(let ()
+  (define-logger parent)
+  (define-logger child #:parent parent-logger)
+  (define r (make-log-receiver parent-logger 'warning 'child))
+  (log-child-debug "debug")
+  (test #f sync/timeout 0 r)
+  (log-child-warning "warning")
+  (test "child: warning" (lambda (v) (vector-ref v 1)) (sync r)))
+
+(let ()
+  (define-logger parent)
+  (define parent-receiver (make-log-receiver parent-logger 'warning 'no-parent))
+  (parameterize ([current-logger parent-logger])
+    (define-logger no-parent #:parent #f)
+    (define no-parent-receiver (make-log-receiver no-parent-logger 'warning 'no-parent))
+    (log-no-parent-warning "warning")
+    (test #f sync/timeout 0 parent-receiver)
+    (test "no-parent: warning" (lambda (v) (vector-ref v 1)) (sync no-parent-receiver))))
+
+(err/rt-test
+ (let ()
+   (define-logger test #:parent 'not-a-logger)
+   (void))
+ exn:fail:contract?
+ #rx"define-logger: contract violation.+expected: \\(or/c logger\\? #f\\).+given: 'not-a-logger")
+
+; --------------------
 
 (report-errs)

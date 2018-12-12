@@ -132,7 +132,9 @@ Reports @racket[logger]'s default topic, if any.}
 A @tech{parameter} that determines the @tech{current logger}.}
 
 
-@defform[(define-logger id)]{
+@defform[(define-logger id maybe-parent)
+         #:grammar ([maybe-parent (code:line) (code:line #:parent parent-expr)])
+         #:contracts ([parent-expr (or/c logger? #f)])]{
 
 Defines @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal},
 @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-error},
@@ -142,10 +144,14 @@ Defines @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal},
 like @racket[log-fatal], @racket[log-error],@racket[log-warning],
 @racket[log-info], and @racket[log-debug]. The @racket[define-logger]
 form also defines @racket[id]@racketidfont{-logger}, which is a logger with
-default topic @racket['@#,racket[id]] that is a child of @racket[(current-logger)];
-the @racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal},
-@|etc| forms use this new logger. The new logger is
-created when @racket[define-logger] is evaluated.}
+default topic @racket['@#,racket[id]] that is a child of the result of
+@racket[parent-expr] (if @racket[parent-expr] does not produce @racket[#f]),
+or of @racket[(current-logger)] if @racket[parent-expr] not provided; the
+@racketkeywordfont{log-}@racket[id]@racketkeywordfont{-fatal}, @|etc| forms
+use this new logger. The new logger is created when @racket[define-logger]
+is evaluated.
+
+@history[#:changed "7.1.0.9" @elem{Added the @racket[#:parent] option.}]}
 
 @; ----------------------------------------
 @section{Logging Events}
