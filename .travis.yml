@@ -91,6 +91,5 @@ addons:
       name: "LinkiTools/racket"
       description: "The Racket Programming Language"
     notification_email: pmatos@linki.tools
-    build_command_prepend: cd racket/src && ./configure
-    build_command: make -j 2 racket-all
+    build_command: make PKGS="" CPUS=2 all-in-place
     branch_pattern: coverity_scan
