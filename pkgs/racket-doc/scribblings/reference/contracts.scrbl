@@ -2345,7 +2345,7 @@ to determine if this is a contract that accepts only @racket[list?] values.
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
          #:changed "6.90.0.30" @list{Added the @racket[#:equivalent] argument.}
-         #:changed "7.1.0.9" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
+         #:changed "7.1.0.10" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
@@ -2992,7 +2992,7 @@ arguments as @racket[build-contract-property].  The differences are:
          @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
          #:changed "6.90.0.30"
          @list{Added the @racket[#:equivalent] argument.}
-         #:changed "7.1.0.9" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
+         #:changed "7.1.0.10" @list{Added the @racket[#:collapsible-late-neg-projection] argument.}]
 }
 
 @deftogether[(
@@ -3509,7 +3509,7 @@ parts of the contract system.
 @section[#:tag "collapsible"]{Collapsible Contracts}
 @defmodule*/no-declare[(racket/contract/collapsible)]
 @declare-exporting-ctc[racket/contract/collapsible]
-@history[#:added "7.1.0.9"]
+@history[#:added "7.1.0.10"]
 
 @deftech{Collapsible contracts} are an optimization in the contract system designed
 to avoid a particular pathological build up of contract wrappers on higher-order
@@ -3543,7 +3543,9 @@ is collapsible.
 }
 
 @defthing[prop:collapsible-contract struct-type-property?]{
- Structures implementing this property are usable as collapsible contracts.
+ Structures implementing this property are usable as collapsible contracts. The value
+ associated with this property should be constructed by calling
+ @racket[build-collapsible-contract-property].
 }
 
 @defproc[(collapsible-contract? [v any/c]) boolean?]{
