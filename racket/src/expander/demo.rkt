@@ -1440,7 +1440,7 @@
 ;; ----------------------------------------
 ;; Machine-independent compilation format and recompilation
 
-(let ([mi-c (parameterize ([compile-machine-independent #t])
+(let ([mi-c (parameterize ([current-compile-target-machine #f])
               (compile-expression `(module to-recompile '#%kernel
                                      (define-values (x) 0)
                                      (print x)
