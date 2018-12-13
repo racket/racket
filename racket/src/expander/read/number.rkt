@@ -448,7 +448,7 @@
                                            'read)))
         (cond
           [(or (not n) (string? n))
-           (error 'string->number "host `string->number` failed on ~s" (substring s start end))]
+           (error 'string->number "host `string->number` failed on ~s with radix ~s" (substring s start end) radix)]
           [(eq? exactness 'inexact)
            (cond
              [(extflonum? n)
