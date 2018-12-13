@@ -2213,5 +2213,15 @@
     (test #t andmap immutable? (dynamic-require ''defines-immutable-objects 'objs))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; `splicing-parameterize` + `begin`
+
+(test #t 'splicing-parameterize
+      (let ([param (make-parameter #f)])
+        (splicing-parameterize ([param #t])
+          (begin
+            (define x (param))))
+        x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

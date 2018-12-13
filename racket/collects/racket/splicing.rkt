@@ -489,7 +489,7 @@
          [(begin new-body ...)
           (syntax/loc/props expanded-body
             (begin
-              (splicing-parameterize-body parameterization new-body)
+              (splicing-parameterize-body scopeless-id scoped-id parameterization new-body)
               ...))]
          [(define-values ids rhs)
           (quasisyntax/loc/props expanded-body
