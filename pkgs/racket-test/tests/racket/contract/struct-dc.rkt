@@ -213,7 +213,9 @@
         (struct gds dx ())
         (define gd (contract (struct/c gds (vectorof any/c)) (gds (vector 1)) 'pos 'neg))
         (vector-ref (d-vec gd) 0)))
-   1)
+   1
+   ;; wrapping 11 times is too many for this test case, so skip the multi-wrap test
+   do-not-double-wrap)
   
   (test/spec-passed
    'struct/c-simple-contract-accessor 
@@ -1005,7 +1007,7 @@
    do-not-double-wrap)
   
   (test/spec-passed/result
-   'struct/dc-new42
+   'struct/dc-new42-1
    '(let ()
       (struct s (a [b #:mutable]))
       (define α (new-∀/c 'α))
@@ -1013,10 +1015,11 @@
                       (λ (x) (s 11 x))
                       'pos
                       'neg) 1)))
-   1)
+   1
+   do-not-double-wrap)
   
   (test/spec-passed
-   'struct/dc-new42
+   'struct/dc-new42-2
    '(let ()
       (struct s (a [b #:mutable]))
       (contract (struct/dc s [a (-> integer? integer?)] [b (new-∀/c 'α)])

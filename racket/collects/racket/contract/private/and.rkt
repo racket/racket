@@ -152,8 +152,8 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
-   #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:generate and/c-generate?
+   #:equivalent and-equivalent?))
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -162,8 +162,8 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
-   #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:generate and/c-generate?
+   #:equivalent and-equivalent?))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -172,8 +172,8 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
-   #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:generate and/c-generate?
+   #:equivalent and-equivalent?))
 
 (define-syntax (and/c stx)
   (syntax-case stx (pair? listof)
@@ -359,8 +359,8 @@
    #:name integer-in-name
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
-   #:equivalent integer-in-equivalent
-   #:generate integer-in-generate))
+   #:generate integer-in-generate
+   #:equivalent integer-in-equivalent))
 
 (struct renamed-integer-in integer-in-ctc (name)
   #:property prop:flat-contract

@@ -53,7 +53,7 @@
  contract-stronger?
  contract-equivalent?
  list-contract?
- 
+  
  contract-first-order
  contract-first-order-passes?
  
@@ -74,7 +74,7 @@
  
  contract-continuation-mark-key
  with-contract-continuation-mark
- 
+
  (struct-out wrapped-extra-arg-arrow)
  contract-custom-write-property-proc
  (rename-out [contract-custom-write-property-proc custom-write-property-proc])
@@ -123,6 +123,7 @@
          (λ (#:name [name 'anonymous-chaperone-contract]
                     #:first-order [first-order (λ (x) #t)]
                     #:late-neg-projection [late-neg-projection #f]
+                    #:collapsible-late-neg-projection [collapsible-late-neg-projection #f]
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
@@ -133,6 +134,9 @@
             #:first-order first-order
             #:late-neg-projection
             (maybe-add-wrapper add-late-neg-chaperone-check late-neg-projection)
+            #:collapsible-late-neg-projection
+            (maybe-add-wrapper add-collapsible-late-neg-chaperone-check
+                               collapsible-late-neg-projection)
             #:val-first-projection
             (maybe-add-wrapper add-val-first-chaperone-check val-first-projection)
             #:projection
@@ -149,6 +153,7 @@
              #:first-order [get-first-order (λ (c) (λ (x) #t))]
              #:val-first-projection [val-first-proj #f]
              #:late-neg-projection [late-neg-proj #f]
+             #:collapsible-late-neg-projection [collapsible-late-neg-proj #f]
              #:projection [get-projection #f]
              #:stronger [stronger #f]
              #:equivalent [equivalent #f]
@@ -162,6 +167,8 @@
        (maybe-add-wrapper add-prop-val-first-chaperone-check val-first-proj)
        #:late-neg-projection
        (maybe-add-wrapper add-prop-late-neg-chaperone-check late-neg-proj)
+       #:collapsible-late-neg-projection
+       (maybe-add-wrapper add-prop-collapsible-late-neg-chaperone-check collapsible-late-neg-proj)
        #:projection
        (maybe-add-wrapper add-prop-chaperone-check get-projection)
        #:stronger stronger
@@ -170,6 +177,20 @@
        #:exercise exercise
        #:list-contract? is-list-contract?))
     build-chaperone-contract-property))
+
+(define (add-prop-collapsible-late-neg-chaperone-check get-collapsible-late-neg)
+  (λ (c)
+    (add-collapsible-late-neg-chaperone-check (get-collapsible-late-neg c))))
+
+(define (add-collapsible-late-neg-chaperone-check accepts-blame)
+  (λ (b)
+    (define-values (accepts-val-and-np collapsible-ctc) (accepts-blame b))
+    (values
+     (λ (x neg-party)
+       (check-and-signal x
+                         (accepts-val-and-np x neg-party)
+                         'make-chaperone-contract::collapsible-late-neg-projection))
+     collapsible-ctc)))
 
 (define (add-prop-late-neg-chaperone-check get-late-neg)
   (λ (c)
@@ -221,6 +242,7 @@
          (λ (#:name [name 'anonymous-chaperone-contract]
                     #:first-order [first-order (λ (x) #t)]
                     #:late-neg-projection [late-neg-projection #f]
+                    #:collapsible-late-neg-projection [collapsible-late-neg-projection #f]
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
@@ -230,6 +252,8 @@
             #:name name
             #:first-order first-order
             #:late-neg-projection (force-late-neg-eq late-neg-projection)
+            #:collapsible-late-neg-projection
+            (force-collapsible-late-neg-eq collapsible-late-neg-projection)
             #:val-first-projection (force-val-first-eq val-first-projection)
             #:projection (force-projection-eq projection)
             #:stronger stronger
@@ -242,6 +266,7 @@
          (λ (#:name [name (λ (c) 'anonymous-chaperone-contract)]
                     #:first-order [first-order (λ (c) (λ (x) #t))]
                     #:late-neg-projection [late-neg-projection #f]
+                    #:collapsible-late-neg-projection [collapsible-late-neg-projection #f]
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
@@ -253,6 +278,9 @@
             #:first-order first-order
             #:late-neg-projection
             (and late-neg-projection (λ (c) (force-late-neg-eq (late-neg-projection c))))
+            #:collapsible-late-neg-projection
+            (and collapsible-late-neg-projection
+                 (λ (c) (force-collapsible-late-neg-eq (collapsible-late-neg-projection c))))
             #:val-first-projection
             (and val-first-projection (λ (c) (force-val-first-eq (val-first-projection c))))
             #:projection
@@ -270,6 +298,15 @@
          (λ (x neg-party)
            (accepts-val-and-np x neg-party)
            x))))
+
+(define (force-collapsible-late-neg-eq accepts-blame)
+  (and accepts-blame
+       (λ (b)
+         (define-values (accepts-val-and-np collapsible-ctc) (accepts-blame b))
+         (values
+          (λ (x neg-party)
+            (accepts-val-and-np x neg-party))
+          collapsible-ctc))))
 
 (define (force-val-first-eq vfp)
   (and vfp

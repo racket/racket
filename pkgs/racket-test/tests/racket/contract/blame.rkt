@@ -3,7 +3,8 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract
-                                               'racket/contract/private/blame)])
+                                               'racket/contract/private/blame
+                                               'syntax/srcloc)])
 
   (test/spec-passed/result
    'blame-selector.1
@@ -372,6 +373,16 @@
    #t)
 
   (test/spec-passed/result
+   'complete-prop-blame-vector/c
+   '(let* ([ctc (vector/c (-> integer? integer?))]
+           [v (contract
+               ctc
+               (contract ctc (vector add1) 'inner-pos 'inner-neg)
+               'pos 'neg)])
+      (has-complete-blame? (vector-ref v 0)))
+   #t)
+
+  (test/spec-passed/result
    'blame-selectors
    '(let ()
       (define source "dunno")
@@ -394,10 +405,12 @@
                                  (λ (val np)
                                    val)))
                 'whatevs
-                'pos 'neg)
+                'pos 'neg
+                'there-is-no-name
+                (build-source-location #f))
       (list source pos neg ctc val orig? swapped?))
    (list (srcloc #f #f #f #f #f)
-         'pos #f 'blame-selector-helper #f #t #f))
+         'pos #f 'blame-selector-helper 'there-is-no-name #t #f))
 
   (test/spec-passed/result
    'swapped-blame-selectors
@@ -425,10 +438,12 @@
             any))
       (contract the-ctc
                 (λ (x) 'whatevs)
-                'pos 'neg)
+                'pos 'neg
+                'there-is-no-name
+                (build-source-location #f))
       (list source pos neg ctc val orig? swapped?))
    (list (srcloc #f #f #f #f #f)
-         #f 'pos '(-> blame-selector-helper any) #f #f #t))
+         #f 'pos '(-> blame-selector-helper any) 'there-is-no-name #f #t))
 
   (test/spec-passed/result
    'blame-equality

@@ -1006,7 +1006,7 @@
                blame
                val
                '(expected: "list?" given: "~e") val)]))))
-  
+
 ;; prefix : contract
 ;; suffix : (listof contract)
 (struct *list-ctc (prefix suffix)

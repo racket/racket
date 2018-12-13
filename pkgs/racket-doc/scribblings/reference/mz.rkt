@@ -5,14 +5,18 @@
          scribble/examples
          scribble/decode
          racket/contract
+         racket/contract/collapsible
          "../icons.rkt")
 
 (provide (all-from-out scribble/manual)
          (all-from-out scribble/examples)
-         (all-from-out racket/contract))
+         (all-from-out racket/contract)
+         (all-from-out racket/contract/collapsible))
 
 (require (for-label racket))
 (provide (for-label (all-from-out racket)))
+(require (for-label racket/contract/collapsible))
+(provide (for-label (all-from-out racket/contract/collapsible)))
 
 (provide mz-examples)
 (define mz-eval (make-base-eval))

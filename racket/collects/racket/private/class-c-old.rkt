@@ -10,7 +10,8 @@
          "../contract/combinator.rkt"
          (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal)
          (only-in "../contract/private/case-arrow.rkt" case->-internal)
-         (only-in "../contract/private/arr-d.rkt" ->d-internal))
+         (only-in "../contract/private/arr-d.rkt" ->d-internal)
+         (submod "../contract/private/collapsible-common.rkt" properties))
 
 (provide make-class/c class/c-late-neg-proj
          blame-add-method-context blame-add-field-context blame-add-init-context

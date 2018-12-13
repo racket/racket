@@ -800,7 +800,21 @@
                  'neg))
       x)
    '(body ctc)
-   '(body ctc ctc)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->d-underscore2-double-wrap
+   '(let ([x '()])
+      ((contract (->d () () [_ (begin (set! x (cons 'ctc x)) any/c)])
+                 (contract
+                  (->d () () [_ (begin (set! x (cons 'ctc x)) any/c)])
+                  (λ () (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg))
+      x)
+   '(body ctc ctc)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->d-underscore3
@@ -811,7 +825,21 @@
                  'neg))
       x)
    '(ctc body)
-   '(ctc ctc body)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->d-underscore3-double-wrap
+   '(let ([x '()])
+      ((contract (->d () () [res (begin (set! x (cons 'ctc x)) any/c)])
+                 (contract
+                  (->d () () [res (begin (set! x (cons 'ctc x)) any/c)])
+                  (λ () (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg))
+      x)
+   '(ctc ctc body)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->d-underscore4

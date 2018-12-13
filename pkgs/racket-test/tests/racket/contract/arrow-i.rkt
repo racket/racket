@@ -750,18 +750,48 @@
        b)
       (unbox b))
    '(5 4 3 2 1)
-   '(5 4 5 4 3 2 1 2 1)) ; result if contract is applied twice
+   do-not-double-wrap)
   
   (test/spec-passed/result
-   '->i44
-   '((contract (->i ([x () any/c])
-                    [y any/c]
-                    #:post (x) x)
-               (lambda (x) x)
-               'pos
-               'neg)
-     #t)
-   '#t)
+   '->i43-double-wrap
+   '(let ([b (box '())])
+      ((contract (->i ([i (box/c (listof integer?))])
+                      (values [_ (i)
+                                 (begin
+                                   (set-box! i (cons 1 (unbox i)))
+                                   (λ (x)
+                                     (set-box! i (cons 4 (unbox i)))
+                                     #t))]
+                              [_ (i)
+                                 (begin
+                                   (set-box! i (cons 2 (unbox i)))
+                                   (λ (x)
+                                     (set-box! i (cons 5 (unbox i)))
+                                     #t))]))
+                 (contract
+                  (->i ([i (box/c (listof integer?))])
+                      (values [_ (i)
+                                 (begin
+                                   (set-box! i (cons 1 (unbox i)))
+                                   (λ (x)
+                                     (set-box! i (cons 4 (unbox i)))
+                                     #t))]
+                              [_ (i)
+                                 (begin
+                                   (set-box! i (cons 2 (unbox i)))
+                                   (λ (x)
+                                     (set-box! i (cons 5 (unbox i)))
+                                     #t))]))
+                  (λ (i)
+                   (set-box! i (cons 3 (unbox i)))
+                   (values 2 2))
+                  'pos 'neg)
+                 (quote pos)
+                 (quote neg))
+       b)
+      (unbox b))
+   '(5 4 5 4 3 2 1 2 1)
+   do-not-double-wrap)
   
   (test/pos-blame
    '->i45
@@ -875,7 +905,31 @@
        1)
       x)
    '(res-check res-eval body arg-eval)
-   '(res-check res-eval res-check res-eval body arg-eval arg-eval)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i48-double-wrap
+   '(let ([x '()])
+      ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [res () (begin
+                                (set! x (cons 'res-eval x))
+                                (λ (res)
+                                  (set! x (cons 'res-check x))))])
+                 (contract
+                  (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [res () (begin
+                                (set! x (cons 'res-eval x))
+                                (λ (res)
+                                  (set! x (cons 'res-check x))))])
+                  (λ (arg)
+                   (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       1)
+      x)
+   '(res-check res-eval res-check res-eval body arg-eval arg-eval)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->i49
@@ -892,8 +946,32 @@
        1)
       x)
    '(res-check body res-eval arg-eval)
-   '(res-check res-check body res-eval res-eval arg-eval arg-eval)) ; result if contract is applied twice
-  
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i49-double-wrap
+   '(let ([x '()])
+      ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [_ () (begin
+                              (set! x (cons 'res-eval x))
+                              (λ (res)
+                                (set! x (cons 'res-check x))))])
+                 (contract
+                  (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [_ () (begin
+                              (set! x (cons 'res-eval x))
+                              (λ (res)
+                                (set! x (cons 'res-check x))))])
+                  (λ (arg)
+                   (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       1)
+      x)
+   '(res-check res-check body res-eval res-eval arg-eval arg-eval)
+   do-not-double-wrap)
+
   (test/spec-passed/result
    '->i50
    '(let ([x '()])
@@ -909,7 +987,31 @@
        1)
       x)
    '(res-check body res-eval arg-eval)
-   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i50-double-wrap
+   '(let ([x '()])
+      ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [res (begin
+                             (set! x (cons 'res-eval x))
+                             (λ (res)
+                               (set! x (cons 'res-check x))))])
+                 (contract
+                  (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [res (begin
+                             (set! x (cons 'res-eval x))
+                             (λ (res)
+                               (set! x (cons 'res-check x))))])
+                  (λ (arg)
+                    (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       1)
+      x)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->i51
@@ -926,7 +1028,31 @@
        1)
       x)
    '(res-check body res-eval arg-eval)
-   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i51-double-wrap
+   '(let ([x '()])
+      ((contract (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [_ (begin
+                           (set! x (cons 'res-eval x))
+                           (λ (res)
+                             (set! x (cons 'res-check x))))])
+                 (contract
+                  (->i ([arg (begin (set! x (cons 'arg-eval x)) integer?)])
+                      [_ (begin
+                           (set! x (cons 'res-eval x))
+                           (λ (res)
+                             (set! x (cons 'res-check x))))])
+                  (λ (arg)
+                   (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       1)
+      x)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->i52
@@ -965,9 +1091,25 @@
        1 2)
       b)
    '(3 2 1)
+   do-not-double-wrap)
 
-   ;; this is probably right (but not what we really really want, of course)
-   '(3 2 1 2 1))
+  (test/spec-passed/result
+   '->i55-double-wrap
+   '(let ([b '()])
+      ((contract (->i ([y () (begin (set! b (cons 1 b)) any/c)]
+                       [z (y) (begin (set! b (cons 2 b)) any/c)])
+                      any)
+                 (contract
+                  (->i ([y () (begin (set! b (cons 1 b)) any/c)]
+                       [z (y) (begin (set! b (cons 2 b)) any/c)])
+                      any)
+                  (λ args (set! b (cons 3 b)) 0)
+                  'pos 'neg)
+                 'pos 'neg)
+       1 2)
+      b)
+   '(3 2 1 2 1)
+   do-not-double-wrap)
 
   (test/spec-passed/result
    '->i56
@@ -982,9 +1124,29 @@
        1 2)
       b)
    '(5 4 3 2 1)
+   do-not-double-wrap)
 
-   ;; this is probably right (but not what we really really want, of course)
-   '(5 4 5 4 3 2 1 2 1))
+  (test/spec-passed/result
+   '->i56-double-wrap
+   '(let ([b '()])
+      ((contract (->i ([y () (begin (set! b (cons 1 b)) any/c)]
+                       [z (y) (begin (set! b (cons 2 b)) any/c)])
+                      (values
+                       [a () (begin (set! b (cons 4 b)) any/c)]
+                       [b (a) (begin (set! b (cons 5 b)) any/c)]))
+                 (contract
+                  (->i ([y () (begin (set! b (cons 1 b)) any/c)]
+                       [z (y) (begin (set! b (cons 2 b)) any/c)])
+                      (values
+                       [a () (begin (set! b (cons 4 b)) any/c)]
+                       [b (a) (begin (set! b (cons 5 b)) any/c)]))
+                  (λ args (set! b (cons 3 b)) (values 0 0))
+                  'pos 'neg)
+                 'pos 'neg)
+       1 2)
+      b)
+   '(5 4 5 4 3 2 1 2 1)
+   do-not-double-wrap)
 
   (test/spec-passed/result
    '->i57
@@ -1003,9 +1165,37 @@
        1 2)
       b)
    '(9 8 7 6 5 4 3 2 1)
+   do-not-double-wrap)
 
-   ;; this is probably right (but not what we really really want, of course)
-   '(9 8 7 6 9 8 7 6 5 4 3 2 1 4 3 2 1))
+  (test/spec-passed/result
+   '->i57-double-wrap
+   '(let ([b '()])
+      ((contract (->i ([y () (begin (set! b (cons 1 b))
+                                    (λ (y) (set! b (cons 2 b)) #t))]
+                       [z (y) (begin (set! b (cons 3 b))
+                                     (λ (y) (set! b (cons 4 b)) #t))])
+                      (values
+                       [a () (begin (set! b (cons 6 b))
+                                    (λ (a) (set! b (cons 7 b)) #t))]
+                       [b (a) (begin (set! b (cons 8 b))
+                                     (λ (a) (set! b (cons 9 b)) #t))]))
+                 (contract
+                  (->i ([y () (begin (set! b (cons 1 b))
+                                    (λ (y) (set! b (cons 2 b)) #t))]
+                       [z (y) (begin (set! b (cons 3 b))
+                                     (λ (y) (set! b (cons 4 b)) #t))])
+                      (values
+                       [a () (begin (set! b (cons 6 b))
+                                    (λ (a) (set! b (cons 7 b)) #t))]
+                       [b (a) (begin (set! b (cons 8 b))
+                                     (λ (a) (set! b (cons 9 b)) #t))]))
+                  (λ args (set! b (cons 5 b)) (values 0 0))
+                  'pos 'neg)
+                 'pos 'neg)
+       1 2)
+      b)
+   '(9 8 7 6 9 8 7 6 5 4 3 2 1 4 3 2 1)
+   do-not-double-wrap)
 
   (test/spec-passed/result
    '->i58
@@ -1028,7 +1218,26 @@
                  'pos 'neg))
       b)
    '(3 2 1)
-   '(3 2 1 2 1))
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i59-double-wrap
+   '(let ([b '()])
+      ((contract (->i ()
+                      ([x (begin (set! b (cons 1 b)) integer?)]
+                       [y (x) (begin (set! b (cons 'nope b)) (>=/c x))])
+                      [result (begin (set! b (cons 2 b)) any/c)])
+                 (contract
+                  (->i ()
+                      ([x (begin (set! b (cons 1 b)) integer?)]
+                       [y (x) (begin (set! b (cons 'nope b)) (>=/c x))])
+                      [result (begin (set! b (cons 2 b)) any/c)])
+                  (λ ([x #f] [y #f]) (set! b (cons 3 b)) 0)
+                  'pos 'neg)
+                 'pos 'neg))
+      b)
+   '(3 2 1 2 1)
+   do-not-double-wrap)
   
   (test/pos-blame
    '->i-arity1
@@ -1448,7 +1657,21 @@
                  'neg))
       x)
    '(body ctc)
-   '(body ctc ctc)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i-underscore2-double-wrap
+   '(let ([x '()])
+      ((contract (->i () () [_ (begin (set! x (cons 'ctc x)) any/c)])
+                 (contract
+                  (->i () () [_ (begin (set! x (cons 'ctc x)) any/c)])
+                  (λ () (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg))
+      x)
+   '(body ctc ctc)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->i-underscore3
@@ -1459,7 +1682,21 @@
                  'neg))
       x)
    '(body ctc)
-   '(body ctc ctc)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i-underscore3-double-wrap
+   '(let ([x '()])
+      ((contract (->i () () [res (begin (set! x (cons 'ctc x)) any/c)])
+                 (contract
+                  (->i () () [res (begin (set! x (cons 'ctc x)) any/c)])
+                  (λ () (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg))
+      x)
+   '(body ctc ctc)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    '->i-underscore4
@@ -1487,7 +1724,22 @@
        11)
       x)
    '(body ctc)
-   '(body ctc ctc)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   '->i-underscore6-double-wrap
+   '(let ([x '()])
+      ((contract (->i ([a integer?]) () [_ (a) (begin (set! x (cons 'ctc x)) any/c)])
+                 (contract
+                  (->i ([a integer?]) () [_ (a) (begin (set! x (cons 'ctc x)) any/c)])
+                  (λ (a) (set! x (cons 'body x)))
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       11)
+      x)
+   '(body ctc ctc)
+   do-not-double-wrap)
   
   (test/pos-blame
    '->i-bad-number-of-result-values1

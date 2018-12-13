@@ -246,6 +246,48 @@
       (list-contract? (odd-length-list-of-integers)))
    #t)
 
+  (test/pos-blame
+   'build-chaperone-contract-property-s-e1
+   '(let ()
+      (struct s-e-late-neg-none ()
+        #:property prop:chaperone-contract
+        (build-chaperone-contract-property
+         #:collapsible-late-neg-projection
+         (λ (ctc)
+           (λ (blame)
+             (values
+              (λ (val neg-party)
+                (raise-blame-error blame val "bad"))
+              #f)))
+         #:name (λ (x) 'the-name)
+         #:first-order (λ (c) (λ (x) #t))
+         #:stronger (λ (x y) #f)))
+
+      (((contract-projection (s-e-late-neg-none))
+        (make-blame (srcloc #f #f #f #f #f) 5 (λ () 'the-name) 'pos 'neg #t))
+       5)))
+
+  (test/pos-blame
+   'build-chaperone-contract-property-s-e2
+   '(let ()
+      (struct s-e-late-neg-none ()
+        #:property prop:chaperone-contract
+        (build-chaperone-contract-property
+         #:collapsible-late-neg-projection
+         (λ (ctc)
+           (λ (blame)
+             (values
+              (λ (val neg-party)
+                (raise-blame-error blame val "bad"))
+              #f)))
+         #:name (λ (x) 'the-name)
+         #:first-order (λ (c) (λ (x) #t))
+         #:stronger (λ (x y) #f)))
+
+      (((contract-projection (listof (s-e-late-neg-none)))
+        (make-blame (srcloc #f #f #f #f #f) 5 (λ () 'the-name) 'pos 'neg #t))
+       (list 1 2 3))))
+
   (contract-eval
    '(define prop:late-neg-proj:bad-prime-box-list/c
       (let* ([prime? (λ (n)

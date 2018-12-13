@@ -1664,8 +1664,7 @@
      (and (exn:fail:contract:blame? x)
           ;; ensure there is context information
           (regexp-match? #rx"in: the 1st argument of" (exn-message x))
-          (regexp-match? #rx"blaming: [^\n]*contract7-n" (exn-message x)))))
-  
+          (regexp-match? #rx"blaming: [^\n]*contract7-n" (exn-message x)))))  
   
   (contract-error-test
    're-providing

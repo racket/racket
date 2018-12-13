@@ -477,6 +477,7 @@
    #:stronger promise-ctc-stronger?
    #:equivalent promise-ctc-equivalent?
    #:first-order (λ (ctc) promise?)))
+
 (struct promise-ctc promise-base-ctc ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -524,6 +525,7 @@
                 (with-contract-continuation-mark
                  blame+neg-party
                  (f x neg-party))))
+            ;; TODO this ought to have the `contracted` property, but it's not a chaperone...
             (make-derived-parameter
              val
              (add-profiling in-proj)

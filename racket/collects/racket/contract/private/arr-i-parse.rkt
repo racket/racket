@@ -19,7 +19,7 @@ code does the parsing and validation of the syntax.
 
 |#
 
-;; istx-is-chaperone-contract? : boolean?
+;; is-chaperone-contract? : boolean?
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
 ;; pre  : (listof pre/post?)
@@ -589,7 +589,7 @@ code does the parsing and validation of the syntax.
                          (format "expected a sequence of variables and an expression to follow ~a"
                                  (syntax-e #'kwd))
                          stx #'a))]
-                     [(#:post/name (id ...) str post-cond . leftover)
+                     [(#:post/name (id ...) str post-cond . pre-leftover)
                       (begin
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (syntax-case range (any)
@@ -604,7 +604,7 @@ code does the parsing and validation of the syntax.
                             " declaration to be a string")
                            stx
                            #'str))
-                        (loop #'leftover
+                        (loop #'pre-leftover
                               (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond
                                               (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]

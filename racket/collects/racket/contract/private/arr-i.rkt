@@ -674,7 +674,8 @@ evaluted left-to-right.)
 ;;   (listof identifier) -- indy-arg/res-vars, bound to wrapped values with indy blame, 
 ;;        sorted like the second input
 ;;   (listof identifier) (listof arg/var) (listof identifier) (listof arg/var)
-;;        the last four inputs are used only to call arg/res-to-indy-var. 
+;;        the last four inputs are used only to call arg/res-to-indy-var.
+;;   boolean?
 ;; adds nested lets that bind the wrapper-args and the indy-arg/res-vars to projected values, 
 ;; with 'body' in the body of the let also handles adding code to check to see if unsupplied
 ;; args are present (skipping the contract check, if so) 
@@ -1119,6 +1120,7 @@ evaluted left-to-right.)
                        (coerce-chaperone-contract '->i orig-ctc)
                        (coerce-contract '->i orig-ctc)))
        (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
+  
   (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame?)
     (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame?))
   

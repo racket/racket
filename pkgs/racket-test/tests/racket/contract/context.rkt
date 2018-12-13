@@ -72,6 +72,16 @@
                             'pos
                             'neg)
                   0 1))
+
+  (context-test '("the 1st argument of")
+                '((contract (-> boolean? integer? integer?)
+                            (contract (-> boolean? integer? integer?)
+                                      (λ (x y) x)
+                                      'pos
+                                      'neg)
+                            'pos
+                            'neg)
+                  0 1))
   
   (context-test '("the cdr of" "the 1st argument of")
                 '((contract (-> (cons/c integer? boolean?) integer? integer?)
@@ -344,6 +354,59 @@
                              'neg)
                    2)
                   0))
+
+  (context-test '("an element of" "the 2nd element of")
+                '(vector-ref
+                  (vector-ref
+                   (let ([ctc (vector/c (vectorof real?)
+                                        (vectorof number?)
+                                        (vectorof boolean?))])
+                     (contract
+                      ctc
+                      (contract
+                       ctc
+                       (vector (vector 1) (vector 1) (vector 1))
+                       'pos
+                       'neg)
+                      'pos
+                      'neg))
+                   2)
+                  0))
+
+  (context-test
+   '("the 1st argument of" "an element of" "the range of" "the 2nd element of")
+   '(let* ([ctc (vector/c any/c any/c (-> any/c (vectorof (-> string? any/c))))]
+           [v (vector 'any1
+                      'any2
+                      (λ (_) (vector (λ (s) s))))]
+           [cv (contract ctc (contract ctc v 'pos 'neg) 'pos 'neg)])
+      ((vector-ref ((vector-ref cv 2) 'any3) 0) 'not-a-string)))
+
+  (context-test
+   '("the range of" "an element of" "the range of" "the 2nd element of")
+   '(let* ([ctc (vector/c any/c any/c (-> any/c (vectorof (-> string? string?))))]
+           [v (vector 'any1
+                      'any2
+                      (λ (_) (vector (λ (s) s))))]
+           [cv (contract ctc (contract ctc v 'pos 'neg) 'pos 'neg)])
+      (vector-set! cv 2 (λ (_) (vector (λ (_) 'not-a-string))))
+      ((vector-ref ((vector-ref cv 2) 'any3) 0) "a string")))
+
+  (context-test '("the 1st element of" "an element of")
+                '(vector-ref
+                  (vector-ref
+                   (let ([ctc (vectorof (vector/c integer? boolean?))])
+                     (contract
+                      ctc
+                      (contract
+                       ctc
+                       (vector (vector 1 2) (vector 2 3))
+                       'pos
+                       'neg)
+                      'pos
+                      'neg))
+                   0)
+                  1))
   
   (context-test '("the 0th element of")
                 '(vector-ref (contract (vector/c integer?)
@@ -508,6 +571,50 @@
                 '(contract (and/c integer? positive?)
                            5.9
                            'pos 'neg))
+
+  (context-test
+   '("the x argument of" "an element of")
+   '(let ()
+      (define (contract* n c v pos neg)
+        (for/fold ([cv v])
+                  ([_ (in-range n)])
+          (contract c cv pos neg)))
+      (define c1 (vectorof (->i ([x integer?]) [_ integer?])))
+      (define c2 (vectorof (->i ([y (not/c string?)]) [_ any/c])))
+      (define vec
+        (contract
+         c1
+         (contract
+          c2
+          (contract* 11 c1 (vector (λ (x) x)) 'p 'n)
+          'p
+          'n)
+         'p
+         'n))
+      (define f (vector-ref vec 0))
+      (f "bad")))
+
+  (context-test
+   '("the x argument of" "an element of")
+   '(let ()
+      (define (contract* n c v pos neg)
+        (for/fold ([cv v])
+                  ([_ (in-range n)])
+          (contract c cv pos neg)))
+      (define c1 (vectorof (->i ([x integer?]) [_ integer?])))
+      (define c2 (vectorof (->i ([y (not/c string?)]) [_ any/c])))
+      (define vec
+        (contract
+         c1
+         (contract
+          c2
+          (contract c1 (vector (λ (x) x)) 'p 'n)
+          'p
+          'n)
+         'p
+         'n))
+      (define f (vector-ref vec 0))
+      (f "bad")))
   
   (let* ([blame-pos (contract-eval '(make-blame (srcloc #f #f #f #f #f)
                                                 #f

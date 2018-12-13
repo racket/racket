@@ -396,7 +396,7 @@
    '(contract (vector/c pos-blame? #:flat? #t) #(1) 'pos 'neg))
 
   (test/spec-passed
-   'contract-marks42
+   'contract-marks42b
    '((vector-ref (contract (vector/c (-> pos-blame? neg-blame?)) (vector values)
                            'pos 'neg)
                  0)

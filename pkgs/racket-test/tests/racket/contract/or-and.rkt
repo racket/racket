@@ -103,7 +103,21 @@
                 'neg)
       x)
    '(1 2)
-   '(1 2 1 2)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'or/c-ordering-double-wrap
+   '(let ([x '()])
+      (contract (or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+                (contract
+                 (or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+                 'anything
+                 'pos 'neg)
+                'pos
+                'neg)
+      x)
+   '(1 2 1 2)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    'or/c-ordering2
@@ -114,7 +128,21 @@
                 'neg)
       x)
    '(2)
-   '(2 2)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'or/c-ordering2-double-wrap
+   '(let ([x '()])
+      (contract (or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                (contract
+                 (or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                 'anything
+                 'pos 'neg)
+                'pos
+                'neg)
+      x)
+   '(2 2)
+   do-not-double-wrap)
   
   (test/spec-passed
    'or/c-hmm
@@ -188,7 +216,21 @@
                 'neg)
       x)
    '(1 2)
-   '(1 2 1 2)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'and/c-ordering-double-wrap
+   '(let ([x '()])
+      (contract (and/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                (contract
+                 (and/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                 'anything
+                 'pos 'neg)
+                'pos
+                'neg)
+      x)
+   '(1 2 1 2)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    'ho-and/c-ordering
@@ -203,7 +245,28 @@
        1)
       (reverse x))
    '(3 1 2 4)
-   '(3 1 3 1 2 4 2 4)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'ho-and/c-ordering-double-wrap
+   '(let ([x '()])
+      ((contract (and/c (-> (lambda (y) (set! x (cons 1 x)) #t)
+                            (lambda (y) (set! x (cons 2 x)) #t))
+                        (-> (lambda (y) (set! x (cons 3 x)) #t)
+                            (lambda (y) (set! x (cons 4 x)) #t)))
+                 (contract
+                  (and/c (-> (lambda (y) (set! x (cons 1 x)) #t)
+                             (lambda (y) (set! x (cons 2 x)) #t))
+                         (-> (lambda (y) (set! x (cons 3 x)) #t)
+                             (lambda (y) (set! x (cons 4 x)) #t)))
+                  (λ (x) x)
+                  'pos 'neg)
+                 'pos
+                 'neg)
+       1)
+      (reverse x))
+      '(3 1 3 1 2 4 2 4)
+      do-not-double-wrap)
   
   (test/spec-passed/result
    'and/c-isnt
@@ -344,7 +407,22 @@
                 'neg)
       x)
    '(1 2)
-   '(1 2 1 2)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'first-or/c-ordering-double-wrap
+   '(let ([x '()])
+      (contract (first-or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+                (contract
+                 (first-or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+                 'anything
+                 'pos
+                 'neg)
+                'pos
+                'neg)
+      x)
+   '(1 2 1 2)
+   do-not-double-wrap)
   
   (test/spec-passed/result
    'first-or/c-ordering2
@@ -355,7 +433,21 @@
                 'neg)
       x)
    '(2)
-   '(2 2)) ; result if contract is applied twice
+   do-not-double-wrap)
+
+  (test/spec-passed/result
+   'first-or/c-ordering2-double-wrap
+   '(let ([x '()])
+      (contract (first-or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                (contract
+                 (first-or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                 'anything
+                 'pos 'neg)
+                'pos
+                'neg)
+      x)
+   '(2 2)
+   do-not-double-wrap)
   
   (test/spec-passed
    'first-or/c-hmm
