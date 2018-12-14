@@ -2262,7 +2262,7 @@ The @racket[late-neg-proj] argument defines the behavior of applying
  missing one party. It must return two values. The first value must be
  a function that accepts both the value that is getting the contract and
  the name of the missing blame party, in that order. The second value should
- be a collapsible representation of the contract.
+ be a @tech[#:key "collapsible contract"]{collapsible} representation of the contract.
  
 The projection @racket[proj] and @racket[val-first-proj] are older mechanisms for
  defining the behavior of applying the contract.  The @racket[proj] argument
@@ -2937,8 +2937,8 @@ a contract.  It is specified in terms of seven properties:
    but using a different signature. They are here for backwards compatibility.);}
   @item{@racket[collapsible-late-neg-proj], similar to @racket[late-neg-proj]
    which produces a blame-tracking projection defining the behavior of the
-   contract, this function additionally specifies the collapsible behavior
-   of the contract;}
+   contract, this function additionally specifies the
+   @tech[#:key "collapsible contract"]{collapsible} behavior of the contract;}
   @item{@racket[stronger], a predicate that determines whether this
    contract (passed in the first argument) is stronger than some other
    contract (passed in the second argument) and whose default always
@@ -3517,11 +3517,22 @@ values. The @racket[vectorof], @racket[vector/c], and @racket[->] contract
 combinators support collapsing for vector contracts and function contracts for
 functions returning a single value.
 
+Intuitively, a collapsible contract is a tree structure.
+The tree nodes represent higher-order contracts (e.g., @racket[->])
+ and the tree leaves represent sequences of flat contracts.
+Two trees can collapse into one tree via the @racket[merge] procedure,
+ which removes unnecessary flat contracts from the leaves.
+
+For more information on the motivation and design of collapsible contracts,
+ see @cite["Feltey18"].
+For the theoretical foundations, see @cite["Greenberg15"].
+
 @bold{Warning}: the features described in this section are experimental
 and may not be sufficient to implement new collapsible contracts. Implementing
 new collapsible contracts requires the use of unsafe chaperones and impersonators
 which are only supported for vector and procedure values. This documentation exists
-primarily to allow future maintenance of the @racket[racket/contract/collapsible] library/
+primarily to allow future maintenance of the @racket[racket/contract/collapsible]
+library. @bold{End Warning}
 
 @defproc[(get/build-collapsible-late-neg-projection [c contract?])
          (-> blame? (values (-> any/c any/c any/c) collapsible-contract?))]{
@@ -3587,7 +3598,7 @@ A predicate recognizing structures with the @racket[prop:collapsible-contract] p
            (-> collapsible-contract? any/c any/c any/c)
            (λ (cc v neg)
              (error
-              "internal error: contract does not support `collapsible-guard`" ctc))])
+              "internal error: contract does not support `collapsible-guard`" cc))])
          collapsible-contract-property?]{
  Constructs a @deftech{collapsible contract property} from a merging function and a guard.
  The @racket[try-merge] argument is similar to @racket[merge], but may return @racket[#f] instead
@@ -3602,7 +3613,7 @@ A predicate recognizing structures with the @racket[prop:collapsible-contract] p
              [latest-ctc contract?])]{
  A common parent structure for collapsible contracts for higher-order values.
  The @racket[latest-blame] field holds the blame object for the most recent
- contract attached. Similarly, the @racket[missing-party] filed holds the latest
+ contract attached. Similarly, the @racket[missing-party] field holds the latest
  missing party passed to the contract. The @racket[latest-contract] field stores
  the most recent contract attached to the value.
 }
