@@ -56,7 +56,7 @@ The byte-string encoding produced by @racket[s-exp->fasl] is
 independent of the Racket version, except as future Racket versions
 introduce extensions that are not currently recognized. In particular,
 the result of @racket[s-exp->fasl] will be valid as input to any
-future version of @racket[s-exp->fasl].
+future version of @racket[fasl->s-exp].
 
 @mz-examples[
 #:eval fasl-eval
