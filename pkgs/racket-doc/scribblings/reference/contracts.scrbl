@@ -3518,8 +3518,9 @@ combinators support collapsing for vector contracts and function contracts for
 functions returning a single value.
 
 Intuitively, a collapsible contract is a tree structure.
-The tree nodes represent higher-order contracts (e.g., @racket[->])
- and the tree leaves represent sequences of flat contracts.
+The @racketlink[collapsible-ho/c]{tree nodes} represent higher-order contracts
+ (e.g., @racket[->]) and the @racketlink[collapsible-leaf/c]{tree leaves}
+ represent sequences of flat contracts.
 Two trees can collapse into one tree via the @racket[merge] procedure,
  which removes unnecessary flat contracts from the leaves.
 
