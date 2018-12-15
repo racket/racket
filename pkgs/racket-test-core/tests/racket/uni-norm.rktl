@@ -59,7 +59,8 @@
       strs-or-errmsg]
      [(string? strs-or-errmsg)
       (delete-file test-file)
-      (error strs-or-errmsg)]
+      (log-warning strs-or-errmsg)
+      '()]
      [else
       (raise-argument-error 'test-strings "(or/c pair? string?)" strs-or-errmsg)])))
 
