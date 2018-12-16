@@ -21,7 +21,7 @@ The @racket[contract-out] form allows you to write
 introduces the variable @racket[_name-of-a-new-contract], binding it to a new
 contract that hides information about the values it protects.
 
-As an example, consider this (simple) implementation of a queue datastructure:
+As an example, consider this (simple) implementation of a queue data structure:
 @racketmod[racket
            (define empty '())
            (define (enq top queue) (append queue (list top)))
