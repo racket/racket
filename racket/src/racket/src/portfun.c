@@ -2157,7 +2157,7 @@ static Scheme_Object *sch_pipe(int argc, Scheme_Object **args)
   Scheme_Object *v[2];
   int bufmax;
 
-  if (argc == 1) {
+  if (argc > 0) {
     Scheme_Object *o = args[0];
     if (SCHEME_FALSEP(o)) {
       bufmax = 0;

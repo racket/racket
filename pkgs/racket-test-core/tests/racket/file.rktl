@@ -632,6 +632,9 @@
 (let-values ([(r w) (make-pipe #f 'in 'out)])
   (test 'in object-name r)
   (test 'out object-name w))
+(let-values ([(pin pout) (make-pipe 4 'name)])
+  (write-bytes (make-bytes 4) pout)
+  (test #f sync/timeout 0 pout))
 
 (test #t input-port? (make-input-port void void void void))
 (test #t input-port? (make-input-port void void #f void))
