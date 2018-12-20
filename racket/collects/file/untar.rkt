@@ -55,8 +55,8 @@
                              link-target-from-extended-attributes)
   (define name-bytes (read-bytes* 100 in))
   (define mode (tar-bytes->number (read-bytes* 8 in) in))
-  (define owner (tar-bytes->number (read-bytes* 8 in) in))
-  (define group (tar-bytes->number (read-bytes* 8 in) in))
+  (define owner (tar-bytes->number (read-bytes* 8 in) in #:allow-zeros? #t))
+  (define group (tar-bytes->number (read-bytes* 8 in) in #:allow-zeros? #t))
   (define size (tar-bytes->number (read-bytes* 12 in) in))
   (define mod-time (tar-bytes->number (read-bytes* 12 in) in))
   (define checksum-bytes (read-bytes* 8 in))
@@ -199,13 +199,17 @@
           (write-bytes bstr out 0 size))
         (loop (- amt size))))))
 
-(define (tar-bytes->number bstr in)
+(define (tar-bytes->number bstr in #:allow-zeros? [allow-zeros? #f])
   (define len (bytes-length bstr))
   (cond
    [(bitwise-bit-set? (bytes-ref bstr 0) 7)
     ;; base-256:
     (for/fold ([v 0]) ([i (in-range 1 len)])
       (+ (* v 256) v))]
+   [(and allow-zeros?
+         (for/and ([b (in-bytes bstr)])
+           (zero? b)))
+    #f]
    [else
     ;; traditional:
     (define skip-tail
