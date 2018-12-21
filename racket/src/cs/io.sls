@@ -198,7 +198,8 @@
       (ftype-ref rktio_length_and_addrinfo_t (len) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0))
 
     (define (rktio_recv_address_ref fs)
-      (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0))
+      (make-ptr
+       (ftype-ref rktio_length_and_addrinfo_t (address) (make-ftype-pointer rktio_length_and_addrinfo_t (ptr->address fs)) 0)))
 
     (define (rktio_identity_to_vector p)
       (let ([p (make-ftype-pointer rktio_identity_t (ptr->address p))])
