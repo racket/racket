@@ -24,28 +24,45 @@
       (let ([path (build-path here name)])
         (define (try)
           (with-handlers ([exn:fail? (lambda (x) #f)])
-            (with-output-to-file path
+            (with-output-to-file path #:exists 'replace
               (lambda ()
                 (copy-port (get-pure-port (string->url (string-append base name)))
                            (current-output-port))))))
-        (and (for/or ([_ 5]) (try)) path))))
+        (for/or ([n 5])
+          (unless (zero? n)
+            (sleep 0.1))
+          (try))
+        path)))
 
 (printf "Reading tests...\n")
 (define test-strings
-  (with-input-from-file (get-test-file)
-    (lambda ()
-      (unless (regexp-match #rx"^# NormalizationTest-" (read-line))
-        (error "Bad test-file contents (couldn't retrieve tests?)"))
-      (let loop ([a null])
-	(let ([l (read-line)])
-	  (if (eof-object? l)
-            (if (null? a)
-              (error "No tests found (couldn't retreive tests?)")
-              (reverse a))
-            (let ([m (regexp-match #rx#"^([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+)" l)])
-              (if m
-                (loop (cons (cons l (map parse-string (cdr m))) a))
-                (loop a)))))))))
+  (let* ([test-file (get-test-file)]
+         [strs-or-errmsg
+          (with-input-from-file test-file
+            (lambda ()
+              (define first-line (read-line))
+              (if (or (eof-object? first-line)
+                      (not (regexp-match #rx"^# NormalizationTest-" first-line)))
+                "Bad test-file contents (couldn't retrieve tests?)"
+                (let loop ([a null])
+                  (let ([l (read-line)])
+                    (if (eof-object? l)
+                      (if (null? a)
+                        "No tests found (couldn't retrieve tests?)"
+                        (reverse a))
+                      (let ([m (regexp-match #rx#"^([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+);([0-9A-F ]+)" l)])
+                        (if m
+                          (loop (cons (cons l (map parse-string (cdr m))) a))
+                          (loop a)))))))))])
+    (cond
+     [(pair? strs-or-errmsg)
+      strs-or-errmsg]
+     [(string? strs-or-errmsg)
+      (delete-file test-file)
+      (log-warning strs-or-errmsg)
+      '()]
+     [else
+      (raise-argument-error 'test-strings "(or/c pair? string?)" strs-or-errmsg)])))
 
 
 (for-each (lambda (l)
