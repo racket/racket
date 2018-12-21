@@ -8,6 +8,7 @@ image: ubuntu:18.04
     - export PATH=$PWD/racket/bin:$PATH
 
 .prepare:llvm:
+  before_script:
     - apt-get update && apt-get install -y git lsb-release make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev wget gnupg
     - echo 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
     - echo 'deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
