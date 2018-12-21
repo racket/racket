@@ -22,10 +22,10 @@
          udp-default-family
 
          udp-s
-         set-udp-bound?!
-         set-udp-connected?!)
+         set-udp-is-bound?!
+         set-udp-is-connected?!)
 
-(struct udp (s bound? connected?)
+(struct udp (s is-bound? is-connected?)
   #:mutable
   #:authentic)
 
@@ -61,6 +61,10 @@
 
 ;; ----------------------------------------
 
+(define/who (udp-bound? u)
+  (check who udp? u)
+  (udp-is-bound? u))
+
 (define/who (udp-bind! u hostname port-no [reuse? #f])
   (check who udp? u)
   (check who string? #:or-false hostname)
@@ -74,7 +78,7 @@
     #:passive? #t
     (lambda (addr)
       (check-udp-closed who u)
-      (when (udp-bound? u)
+      (when (udp-is-bound? u)
         (end-atomic)
         (raise-arguments-error who "udp socket is already bound"
                                "socket" u))
@@ -85,7 +89,11 @@
                              (string-append "can't bind" (if reuse? " as reusable" "")
                                             "\n  address: " (or hostname "<unspec>")
                                             "\n  port number: " (number->string port-no))))
-      (set-udp-bound?! u #t)))))
+      (set-udp-is-bound?! u #t)))))
+
+(define/who (udp-connected? u)
+  (check who udp? u)
+  (udp-is-connected? u))
 
 (define/who (udp-connect! u hostname port-no)
   (check who udp? u)
@@ -101,12 +109,12 @@
    (cond
      [(not hostname)
       (check-udp-closed who u)
-      (when (udp-connected? u)
+      (when (udp-is-connected? u)
         (define d (rktio_udp_disconnect rktio (udp-s u)))
         (when (rktio-error? d)
           (end-atomic)
           (raise-network-error who d "can't disconnect"))
-        (set-udp-connected?! u #f))]
+        (set-udp-is-connected?! u #f))]
      [else
       (call-with-resolved-address
        #:who who
@@ -121,7 +129,7 @@
                                 (string-append "can't connect"
                                                "\n  address: " hostname
                                                "\n  port number: " (number->string port-no))))
-         (set-udp-connected?! u #t)))])))
+         (set-udp-is-connected?! u #t)))])))
 
 ;; ----------------------------------------
 

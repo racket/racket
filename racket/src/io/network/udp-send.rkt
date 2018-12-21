@@ -137,7 +137,7 @@
                                             "socket" u)))]
          [else
           ;; if the socket is not bound already, send[to] binds it
-          (set-udp-bound?! u #t)
+          (set-udp-is-bound?! u #t)
           (define r (rktio_udp_sendto_in rktio (udp-s u) addr bstr start end))
           (cond
             [(rktio-error? r)
