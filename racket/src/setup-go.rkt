@@ -107,4 +107,7 @@
             (fprintf o "\n~a:\n" (quote-if-space dep)))))
 
       ;; Now that the lock is released, instantiate:
-      (dynamic-require mod-file #f))))
+      (let ([main `(submod ,mod-file main)])
+        (if (module-declared? main #t)
+            (dynamic-require main #f)
+            (dynamic-require mod-file #f))))))
