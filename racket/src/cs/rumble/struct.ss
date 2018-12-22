@@ -362,16 +362,16 @@
 (define struct-field-mutators (make-ephemeron-eq-hashtable))
 
 (define (register-struct-constructor! p)
-  (with-global-lock* (hashtable-set! struct-constructors p #t)))
+  (add-to-table! struct-constructors p #t))
 
 (define (register-struct-predicate! p)
-  (with-global-lock* (hashtable-set! struct-predicates p #t)))
+  (add-to-table! struct-predicates p #t))
 
 (define (register-struct-field-accessor! p rtd pos)
-  (with-global-lock* (hashtable-set! struct-field-accessors p (cons rtd pos))))
+  (add-to-table! struct-field-accessors p (cons rtd pos)))
 
 (define (register-struct-field-mutator! p rtd pos)
-  (with-global-lock* (hashtable-set! struct-field-mutators p (cons rtd pos))))
+  (add-to-table! struct-field-mutators p (cons rtd pos)))
 
 (define (struct-constructor-procedure? v)
   (and (procedure? v)
@@ -402,6 +402,16 @@
 
 (define (struct-mutator-procedure-rtd+pos v)
   (with-global-lock* (hashtable-ref struct-field-mutators v #f)))
+
+;; This indirection prevents the whole-program optimizer from inlining
+;; the `with-glocal-lock*` expansion --- which, at the time of
+;; writing, inflates the resulting code by 30%!
+(define add-to-table! #f)
+(define add-to-table!/done
+  (set! add-to-table!
+        (lambda (table key val)
+          (with-global-lock*
+           (hashtable-set! table key val)))))
 
 ;; ----------------------------------------
 
