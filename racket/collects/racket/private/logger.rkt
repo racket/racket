@@ -39,6 +39,13 @@
          (d-l X #:parent (current-logger)))]
       [(d-l X #:parent parent)
        (let* ([X #'X]
+              [logger-local-introduced (syntax-local-introduce X)]
+              [logger-name-size (string-length (symbol->string (syntax-e X)))]
+              [mk-binder (lambda (id starting-point)
+                           (vector (syntax-local-introduce id)
+                                   starting-point logger-name-size 0.5 0.5
+                                   logger-local-introduced
+                                   0 logger-name-size 0.5 0.5))]
               [mk (lambda (mode)
                     (datum->syntax X (string->symbol (format "log-~a-~a" (syntax-e X) mode)) X))])
          (unless (identifier? X)
@@ -51,10 +58,16 @@
                        [X-logger 
                         (datum->syntax X (string->symbol (format "~a-logger" (syntax-e X))) X)]
                        [X X])
-           #'(begin
-               (define X-logger (make-logger 'X (check-logger-or-false 'd-l parent)))
-               (define-syntax log-X-fatal (make-define-log 'fatal #'X-logger #''X))
-               (define-syntax log-X-error (make-define-log 'error #'X-logger #''X))
-               (define-syntax log-X-warning (make-define-log 'warning #'X-logger #''X))
-               (define-syntax log-X-info (make-define-log 'info #'X-logger #''X))
-               (define-syntax log-X-debug (make-define-log 'debug #'X-logger #''X)))))])))
+           (syntax-property
+            #'(begin
+                (define X-logger (make-logger 'X (check-logger-or-false 'd-l parent)))
+                (define-syntax log-X-fatal (make-define-log 'fatal #'X-logger #''X))
+                (define-syntax log-X-error (make-define-log 'error #'X-logger #''X))
+                (define-syntax log-X-warning (make-define-log 'warning #'X-logger #''X))
+                (define-syntax log-X-info (make-define-log 'info #'X-logger #''X))
+                (define-syntax log-X-debug (make-define-log 'debug #'X-logger #''X)))
+            'sub-range-binders
+            (map
+             mk-binder
+             (list #'X-logger #'log-X-fatal #'log-X-error #'log-X-warning #'log-X-info #'log-X-debug)
+             (list 0 4 4 4 4 4)))))])))
