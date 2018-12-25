@@ -154,12 +154,12 @@
            [(regexp? q)
             `(,(if (pregexp? q) 'pregexp 'regexp) ,(object-name q))]
            [(srcloc? q)
-            `(#%app srcloc
-                    ,(make-construct (srcloc-source q))
-                    ,(make-construct (srcloc-line q))
-                    ,(make-construct (srcloc-column q))
-                    ,(make-construct (srcloc-position q))
-                    ,(make-construct (srcloc-span q)))]
+            `(unsafe-make-srcloc
+              ,(make-construct (srcloc-source q))
+              ,(make-construct (srcloc-line q))
+              ,(make-construct (srcloc-column q))
+              ,(make-construct (srcloc-position q))
+              ,(make-construct (srcloc-span q)))]
            [(byte-regexp? q)
             `(,(if (byte-pregexp? q) 'byte-pregexp 'byte-regexp) ,(object-name q))]
            [(keyword? q)

@@ -116,6 +116,7 @@
           struct:srcloc srcloc srcloc?
           srcloc-source srcloc-line srcloc-column srcloc-position srcloc-span
           prop:exn:srclocs exn:srclocs? exn:srclocs-accessor
+          unsafe-make-srcloc
 
           struct:date date? date make-date
           date-second date-minute date-hour date-day date-month date-year

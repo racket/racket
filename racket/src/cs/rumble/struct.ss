@@ -1153,6 +1153,7 @@
                         (datum->syntax id
                                        (string->symbol (chez:apply format fmt args))))])
          (with-syntax ([struct:name (make-id #'name "struct:~a" (syntax->datum #'name))]
+                       [unsafe-make-name (make-id #'name "unsafe-make-~a" (syntax->datum #'name))]
                        [authentic-name? (make-id #'name "authentic-~a?" (syntax->datum #'name))]
                        [name? (make-id #'name "~a?" (syntax->datum #'name))]
                        [(name-field ...) (map (lambda (field)
@@ -1172,6 +1173,7 @@
                          [uid (datum->syntax #'name ((current-generate-id) (syntax->datum #'name)))])
              #'(begin
                  (define struct:name (make-record-type-descriptor 'name struct:parent 'uid #f #f '#((immutable field) ...)))
+                 (define unsafe-make-name (record-constructor (make-record-constructor-descriptor struct:name #f #f)))
                  (define name ctr-expr)
                  (define authentic-name? (record-predicate struct:name))
                  (define name? (lambda (v) (or (authentic-name? v)

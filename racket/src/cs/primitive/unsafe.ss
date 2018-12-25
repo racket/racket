@@ -114,6 +114,7 @@
   [unsafe-make-place-local (known-procedure/pure 2)]
   [unsafe-make-os-semaphore (known-procedure 1)]
   [unsafe-make-security-guard-at-root (known-procedure 15)]
+  [unsafe-make-srcloc (known-procedure/pure 32)]
   [unsafe-mcar (known-procedure 2)]
   [unsafe-mcdr (known-procedure 2)]
   [unsafe-mutable-hash-iterate-first (known-procedure 2)]
