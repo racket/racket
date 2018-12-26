@@ -82,6 +82,9 @@
   (include "include.ss")
   (include-generated "expander.scm")
 
+  (define (fasl->s-exp/intern s)
+    (1/fasl->s-exp/intern s))
+
   ;; ----------------------------------------
 
   ;; The environment is used to evaluate linklets, so all primitives
@@ -172,6 +175,9 @@
                [(_ name val) #`(let ([name val]) name)])))
     (eval `(define raise-binding-result-arity-error ',raise-binding-result-arity-error)))
 
+  ;; Special "primitive" for syntax-data deserialization:
+  (eval `(define fasl->s-exp/intern ',fasl->s-exp/intern))
+
   ;; For interpretation of the outer shell of a linklet:
   (install-linklet-primitive-tables! kernel-table
                                      unsafe-table
@@ -185,7 +191,7 @@
                                      linklet-table
                                      internal-table
                                      schemify-table)
-  
+
   ;; ----------------------------------------
 
   ;; `install-reader!` is from the `io` library, where the

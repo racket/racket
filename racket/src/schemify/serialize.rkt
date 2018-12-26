@@ -16,7 +16,7 @@
 ;; reference. This lifting can interefere with optimizations, so only
 ;; lift as a last resort.
 
-(define (convert-for-serialize bodys for-cify?)
+(define (convert-for-serialize bodys for-cify? datum-intern?)
   (define lifted-eq-constants (make-hasheq))
   (define lifted-equal-constants (make-hash))
   (define lift-bindings null)
@@ -30,15 +30,16 @@
   (define new-bodys
     (for/list ([v (in-list bodys)])
       (cond
-        [(convert-any? v for-cify?)
+        [(convert-any? v for-cify? datum-intern?)
          (define (convert v)
            (reannotate
             v
             (match v
               [`(quote ,q)
                (cond
-                 [(lift-quoted? q for-cify?)
-                  (make-construct q add-lifted lifted-eq-constants lifted-equal-constants for-cify?)]
+                 [(lift-quoted? q for-cify? datum-intern?)
+                  (make-construct q add-lifted lifted-eq-constants lifted-equal-constants
+                                  for-cify? datum-intern?)]
                  [else v])]
               [`(lambda ,formals ,body ...)
                `(lambda ,formals ,@(convert-function-body body))]
@@ -76,7 +77,7 @@
                (cond
                  [(and for-cify?
                        (not (symbol? v))
-                       (lift-quoted? v for-cify?))
+                       (lift-quoted? v for-cify? datum-intern?))
                   (convert `(quote ,v))]
                  [else v])])))
          (define (convert-body body)
@@ -97,10 +98,10 @@
           (reverse lift-bindings)))
 
 ;; v is a form or a list of forms
-(define (convert-any? v for-cify?)
+(define (convert-any? v for-cify? datum-intern?)
   (let convert-any? ([v v])
     (match v
-      [`(quote ,q) (lift-quoted? q for-cify?)]
+      [`(quote ,q) (lift-quoted? q for-cify? datum-intern?)]
       [`(lambda ,formals ,body ...)
        (convert-any? body)]
       [`(case-lambda [,formalss ,bodys ...] ...)
@@ -134,10 +135,11 @@
          (convert-any? exp))]
       [`,_ (and for-cify?
                 (not (symbol? v))
-                (lift-quoted? v for-cify?))])))
+                (lift-quoted? v for-cify? datum-intern?))])))
 
 ;; Construct an expression to be lifted
-(define (make-construct q add-lifted lifted-eq-constants lifted-equal-constants for-cify?)
+(define (make-construct q add-lifted lifted-eq-constants lifted-equal-constants
+                        for-cify? datum-intern?)
   (define (quote? e) (and (pair? e) (eq? 'quote (car e))))
   (let make-construct ([q q])
     (define lifted-constants (if (or (string? q) (bytes? q))
@@ -206,7 +208,7 @@
        (cond
          [(and (quote? rhs)
                (or (not for-cify?)
-                   (not (lift-quoted? (cadr rhs) #t))))
+                   (not (lift-quoted? (cadr rhs) #t datum-intern?))))
           rhs]
          [else
           (define id (add-lifted rhs))

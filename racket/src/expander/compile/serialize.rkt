@@ -1,5 +1,6 @@
 #lang racket/base
 (require (for-syntax racket/base)
+         racket/fasl
          "serialize-property.rkt"
          "serialize-state.rkt"
          "../common/set.rkt"
@@ -603,20 +604,47 @@
       (for ([i (in-range (hash-count mutables))])
         (ser-shell-fill! (hash-ref rev-mutables i)))
       (reap-stream!)))
+
+  ;; Final result:
+  (define result
+    (begin
+      (ser-push! v)
+      (reap-stream!)))
   
   ;; Put it all together:
-  `(deserialize
-    ,mpi-vector-id
-    ,(if syntax-support? inspector-id #f)
-    ,(if syntax-support? bulk-binding-registry-id #f)
-    ',(hash-count mutables)
-    ',mutable-shell-bindings
-    ',(hash-count shares)
-    ',shared-bindings
-    ',mutable-fills
-    ',(begin
-        (ser-push! v)
-        (reap-stream!))))
+  (define (finish mutable-shell-bindings-expr shared-bindings-expr  mutable-fills-expr result-expr)
+    `(deserialize
+      ,mpi-vector-id
+      ,(if syntax-support? inspector-id #f)
+      ,(if syntax-support? bulk-binding-registry-id #f)
+      ',(hash-count mutables)
+      ,mutable-shell-bindings-expr
+      ',(hash-count shares)
+      ,shared-bindings-expr
+      ,mutable-fills-expr
+      ,result-expr))
+
+  (cond
+    [(eq? 'chez-scheme (system-type 'vm))
+     ;; It's better to interpret the quoted-data construction in Chez Scheme,
+     ;; instead of compiling the constructionx, because it's more compact
+     ;; and easier to delay. Rely on `fasl->s-exp/intern` as a primitive
+     ;; (from the linklet perspective) that is installed on startup.
+     `(let-values ([(data) (fasl->s-exp/intern
+                            ,(s-exp->fasl
+                              (vector mutable-shell-bindings
+                                      shared-bindings
+                                      mutable-fills
+                                      result)))])
+        ,(finish '(unsafe-vector-ref data 0)
+                 '(unsafe-vector-ref data 1)
+                 '(unsafe-vector-ref data 2)
+                 '(unsafe-vector-ref data 3)))]
+    [else
+     (finish `',mutable-shell-bindings
+             `',shared-bindings
+             `',mutable-fills
+             `',result)]))
 
 (define (sorted-hash-keys ht)
   (define ks (hash-keys ht))

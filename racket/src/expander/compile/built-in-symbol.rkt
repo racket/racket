@@ -62,4 +62,5 @@
                annotation-expression
                #%app
                #%call-with-values
-               make-pthread-parameter))))
+               make-pthread-parameter
+               fasl->s-exp/intern))))

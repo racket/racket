@@ -1,5 +1,6 @@
 #lang racket/base
 (require "common/set.rkt"
+         "common/fasl.rkt"
          "common/module-path.rkt"
          "namespace/namespace.rkt"
          "eval/main.rkt"
@@ -115,6 +116,8 @@
          compile-keep-source-locations! ; to enable if the back end wants them
 
          expander-place-init!
+
+         fasl->s-exp/intern
 
          ;; The remaining functions are provided for basic testing
          ;; (such as "demo.rkt")

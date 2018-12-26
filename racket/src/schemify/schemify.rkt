@@ -61,7 +61,7 @@
 ;; An import ABI is a list of list of booleans, parallel to the
 ;; linklet imports, where #t to means that a value is expected, and #f
 ;; means that a variable (which boxes a value) is expected
-(define (schemify-linklet lk serializable? for-jitify? allow-set!-undefined?
+(define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
                           unsafe-mode? no-prompt?
                           prim-knowns get-import-knowns import-keys)
   (define (im-int-id id) (unwrap (if (pair? id) (cadr id) id)))
@@ -113,7 +113,7 @@
      ;; Lift any quoted constants that can't be serialized
      (define-values (bodys/constants-lifted lifted-constants)
        (if serializable?
-           (convert-for-serialize bodys #f)
+           (convert-for-serialize bodys #f datum-intern?)
            (values bodys null)))
      ;; Schemify the body, collecting information about defined names:
      (define-values (new-body defn-info mutated)
