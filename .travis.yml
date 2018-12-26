@@ -20,14 +20,37 @@ matrix:
       --disable-extflonum"
   - os: linux
     compiler: gcc
-    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan"
-  - os: linux
-    compiler: gcc
     env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
   - os: linux
     compiler: gcc
     env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places
       --disable-futures --disable-extflonum"
+  - os: linux
+    #compiler: gcc
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-8
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+  allow_failures:
+  - os: linux
+    compiler: clang
+    env: PATH=./racket/bin:$PATH TARGET="cs"
+  - os: linux
+    #compiler: gcc
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - g++-8
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+
+before_install:
+- eval "${MATRIX_EVAL}"
+- gcc --version
 before_script:
 - git config --global user.email "travis-test@racket-lang.org"
 - git config --global user.name "Travis Tester"
