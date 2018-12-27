@@ -33,7 +33,7 @@ matrix:
           - ubuntu-toolchain-r-test
         packages:
           - g++-8
-    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb -fuse-ld=gold'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
   allow_failures:
   - os: linux
     compiler: clang
@@ -46,7 +46,7 @@ matrix:
           - ubuntu-toolchain-r-test
         packages:
           - g++-8
-    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--enable-ubsan --disable-strip CFLAGS='-O0 -ggdb -fuse-ld=gold'" MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
 
 before_install:
 - eval "${MATRIX_EVAL}"
