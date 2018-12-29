@@ -6,6 +6,8 @@
 
           begin0
 
+          letrec*/names
+
           dynamic-wind
           call-with-current-continuation
           call-with-composable-continuation
@@ -693,6 +695,7 @@
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
   (include "rumble/begin0.ss")
+  (include "rumble/letrec.ss")
   (include "rumble/syntax-rule.ss")
   (include "rumble/lock.ss")
   (include "rumble/thread-local.ss")
