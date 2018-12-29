@@ -123,7 +123,20 @@ scheme:
 
 scheme-make:
 	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@ CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)"
+	mkdir -p @SCHEME_SRC@/@MACH@/boot/@MACH@
+	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h
+	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot
+	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
 	cd @SCHEME_SRC@ && $(MAKE)
+
+# Replace "equates.h", etc., if they seem to be out of date.
+# Otherwise, `make` on Chez Scheme cna fail.
+@SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h: @SCHEME_SRC@/boot/@MACH@/equates.h
+	cp @SCHEME_SRC@/boot/@MACH@/equates.h @SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h
+@SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot: @SCHEME_SRC@/boot/@MACH@/petite.boot
+	cp @SCHEME_SRC@/boot/@MACH@/petite.boot @SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot
+@SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot: @SCHEME_SRC@/boot/@MACH@/scheme.boot
+	cp @SCHEME_SRC@/boot/@MACH@/scheme.boot @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
 
 racket.boot: racket.so
 	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @COMPRESS_COMP@ racket.so racket.boot
@@ -186,8 +199,9 @@ $(RKTFW): $(BOOT_OBJS) $(BOOT_FILES)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
 	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	cp $(SCHEME_INC)/petite.boot $(SCHEME_INC)/scheme.boot $(FW_BOOT_DEST)
-	cp racket.boot $(FW_BOOT_DEST)
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ $(SCHEME_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ $(SCHEME_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
 	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 # ----------------------------------------

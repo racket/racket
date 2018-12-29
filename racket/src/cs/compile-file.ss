@@ -32,6 +32,7 @@
               (eval '(define (f x)
                        (fxvector-set! x 0 (op 0))))
               (eval '(f (fxvector 0))))))
+(check-defined 'vfasl-convert-file)
 
 ;; ----------------------------------------
 
