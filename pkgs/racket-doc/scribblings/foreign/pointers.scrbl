@@ -223,7 +223,7 @@ specification is required at minimum:
 @itemize[
 
  @item{If a C type @racket[bytes-or-type] is given, its size is used
-       to the block allocation size.}
+       to determine the block allocation size.}
 
  @item{If an integer @racket[bytes-or-type] is given, it specifies the
        required size in bytes.}
