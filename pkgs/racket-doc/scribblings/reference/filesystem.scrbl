@@ -402,15 +402,15 @@ portable, reflecting permissions for the file or directory's owner,
 members of the file or directory's group, or other users:
 
 @itemlist[
- @item{@racketvalfont{#o100} : owner has read permission}
+ @item{@racketvalfont{#o400} : owner has read permission}
  @item{@racketvalfont{#o200} : owner has write permission}
- @item{@racketvalfont{#o400} : owner has execute permission}
- @item{@racketvalfont{#o010} : group has read permission}
+ @item{@racketvalfont{#o100} : owner has execute permission}
+ @item{@racketvalfont{#o040} : group has read permission}
  @item{@racketvalfont{#o020} : group has write permission}
- @item{@racketvalfont{#o040} : group has execute permission}
- @item{@racketvalfont{#o001} : others have read permission}
+ @item{@racketvalfont{#o010} : group has execute permission}
+ @item{@racketvalfont{#o004} : others have read permission}
  @item{@racketvalfont{#o002} : others have write permission}
- @item{@racketvalfont{#o004} : others have execute permission}
+ @item{@racketvalfont{#o001} : others have execute permission}
 ]
 
 See also @racket[user-read-bit], etc. On Windows, permissions from
