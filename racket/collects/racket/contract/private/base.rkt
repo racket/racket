@@ -1,6 +1,7 @@
 #lang racket/base
 
 (provide contract
+         make-apply-contract
          (rename-out [-recursive-contract recursive-contract])
          current-contract-region
          invariant-assertion
@@ -68,6 +69,9 @@
                          #f)))]))
 
 (define (apply-contract c v pos neg name loc context-limit)
+  ((make-apply-contract c pos neg name loc context-limit) v))
+
+(define (make-apply-contract c pos neg name loc context-limit)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (define clnp (contract-late-neg-projection c))
@@ -87,13 +91,16 @@
                   (if clnp #f neg)
                   #t
                   #:context-limit context-limit))
+    (define ccm-value (if clnp (cons blame neg) blame))
+    (define-syntax-rule (with-ccm e)
+      (with-contract-continuation-mark ccm-value e))
     (cond
-      [clnp (with-contract-continuation-mark
-             (cons blame neg)
-             ((clnp blame) v neg))]
-      [else (with-contract-continuation-mark
-             blame
-             (((contract-projection c) blame) v))])))
+      [clnp
+       (define proj (with-ccm (clnp blame)))
+       (lambda (v) (with-ccm (proj v neg)))]
+      [else
+       (define proj (with-ccm ((contract-projection c) blame)))
+       (lambda (v) (with-ccm (proj v)))])))
 
 (define-syntax (invariant-assertion stx)
   (syntax-case stx ()
