@@ -14,4 +14,6 @@
       [else
        (values (car args) (cadr args) (cddr args))])))
 
+(system (format "cp ~a ~a" src dest))
+#;
 (vfasl-convert-file src dest deps)
