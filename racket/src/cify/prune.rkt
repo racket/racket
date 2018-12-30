@@ -82,6 +82,6 @@
 
   (find-candidate-ids! e)
   (for ([ex (in-list exports)])
-    (hash-remove! candidate-ids (cadr ex)))
+    (hash-remove! candidate-ids (car ex)))
   (find! e)
   (prune e))
