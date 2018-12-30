@@ -38,6 +38,9 @@
   ;; the build incompatible with previously generated ".zo" files.
   (define compile-as-independent? #f)
 
+  (define (fasl->s-exp/intern s)
+    (1/fasl->s-exp/intern s))
+
   ;; The expander needs various tables to set up primitive modules, and
   ;; the `primitive-table` function is the bridge between worlds
 
@@ -81,9 +84,6 @@
 
   (include "include.ss")
   (include-generated "expander.scm")
-
-  (define (fasl->s-exp/intern s)
-    (1/fasl->s-exp/intern s))
 
   ;; ----------------------------------------
 
