@@ -763,10 +763,10 @@
 (define (mark-table-add/replace mt k v)
   (mark-table-add (mark-table-remove mt k) k v))
 
-(define (mark-table-ref mt k default)
+(define (mark-table-ref mt k default wrapper)
   (let ([a (#%assq k mt)])
     (if a
-        (cdr a)
+        (wrapper (cdr a))
         default)))
 
 (define (mark-table-merge a b)
@@ -859,10 +859,16 @@
    [else (make-mark-frame (list a) #f #f)]))
 
 (define (extract-mark-from-frame a key default-v)
-  (cond
-   [(pair? a) (if (eq? key (car a)) (cdr a) default-v)]
-   [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v)]
-   [else default-v]))
+  (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'call-with-immediate-continuation-mark key)])
+    (cond
+     [(pair? a) (if (eq? key (car a)) (wrapper (cdr a)) default-v)]
+     [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
+     [(eq? a 'empty) (let ([a (current-mark-splice)])
+                       (cond
+                        [(pair? a) (if (eq? key (car a)) (wrapper (cdr a)) default-v)]
+                        [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
+                        [else default-v]))]
+     [else default-v])))
 
 ;; See copy in "expander.sls"
 (define-syntax with-continuation-mark
