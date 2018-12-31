@@ -40,4 +40,25 @@ expressions. The @racket[expr/c] syntax class does not change how
 pattern variables are bound; it only computes an attribute that
 represents the checked expression.
 
+The previous example shows a macro applying a contract on an argument,
+but a macro can also apply a contract to an expression that it
+produces. In that case, it should use @racket[#:arg? #f] to indicate
+that the macro, not the calling context, is responsible for expression
+produced.
+
+@interaction[#:eval the-eval
+(code:comment "BUG: rationals not closed under inversion")
+(define-syntax (invert stx)
+  (syntax-parse stx
+    [(_ e)
+     #:declare e (expr/c #'rational?)
+     #:with result #'(/ 1 e.c)
+     #:declare result (expr/c #'rational? #:arg? #f)
+     #'result.c]))
+
+(invert 4)
+(invert 'abc)
+(invert 0.0)
+]
+
 @(close-eval the-eval)
