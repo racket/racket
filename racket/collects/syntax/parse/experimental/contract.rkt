@@ -10,8 +10,9 @@
 (define not-given (gensym))
 
 (define-syntax-class (expr/c ctc-stx
-                             #:positive [pos-blame 'use-site]
-                             #:negative [neg-blame 'from-macro]
+                             #:arg? [arg? #t]
+                             #:positive [pos-blame 'from-macro]
+                             #:negative [neg-blame 'use-site]
                              #:macro [macro-name #f]
                              #:name [expr-name not-given]
                              #:context [ctx #f])
@@ -21,6 +22,7 @@
            #:with
            c (wrap-expr/c ctc-stx
                           #'y
+                          #:arg? arg?
                           #:positive pos-blame
                           #:negative neg-blame
                           #:name (if (eq? expr-name not-given)
@@ -31,7 +33,8 @@
 
 (provide-syntax-class/contract
  [expr/c (syntax-class/c (syntax?)
-                         (#:positive (or/c syntax? string? module-path-index?
+                         (#:arg? any/c
+                          #:positive (or/c syntax? string? module-path-index?
                                            'from-macro 'use-site 'unknown)
                           #:negative (or/c syntax? string? module-path-index?
                                            'from-macro 'use-site 'unknown)
