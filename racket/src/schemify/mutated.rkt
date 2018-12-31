@@ -64,8 +64,9 @@
        ;; too early, the variable is now ready, so remove from
        ;; `mutated`:
        (for ([id (in-list ids)])
-         (when (eq? 'not-ready (hash-ref mutated (unwrap id) #f))
-           (hash-remove! mutated id)))]
+         (let ([id (unwrap id)])
+           (when (eq? 'not-ready (hash-ref mutated id #f))
+             (hash-remove! mutated id))))]
       [`,_
        (find-mutated! form #f prim-knowns knowns imports mutated)])
     knowns)
