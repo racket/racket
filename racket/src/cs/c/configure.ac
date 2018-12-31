@@ -163,7 +163,7 @@ case "$host_os" in
     ;;
   linux*)
     MACH_OS=le
-    LIBS="${LIBS} -lrt"
+    LIBS="${LIBS} -lrt -luuid"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
