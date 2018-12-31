@@ -18,10 +18,10 @@
  #:multi
  [("++exe") src dest "Select an alternative executable"
   (set! alt-dests (cons (cons src dest) alt-dests))]
- #:args (src-file dest-file boot-dir racket.boot)
+ #:args (src-file dest-file petite.boot scheme.boot racket.boot)
 
- (define bstr1 (adjust-compress (file->bytes (build-path boot-dir "petite.boot"))))
- (define bstr2 (adjust-compress (file->bytes (build-path boot-dir "scheme.boot"))))
+ (define bstr1 (adjust-compress (file->bytes petite.boot)))
+ (define bstr2 (adjust-compress (file->bytes scheme.boot)))
  (define bstr3 (adjust-compress (file->bytes racket.boot)))
 
  (with-handlers ([exn? (lambda (x)

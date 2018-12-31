@@ -153,11 +153,11 @@ racket.boot: racket.so
 
 EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
-racketcs@NOT_OSX@: raw_racketcs racket.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_racketcs racketcs $(SCHEME_INC) racket.boot
+racketcs@NOT_OSX@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
 
-gracketcs@NOT_OSX@: raw_gracketcs racket.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_gracketcs gracketcs $(SCHEME_INC) racket.boot
+gracketcs@NOT_OSX@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 
 BOOT_OBJS = boot.o $(SCHEME_INC)/kernel.o rktio/librktio.a
 
@@ -166,6 +166,15 @@ raw_racketcs: main.o boot.o $(BOOT_OBJS)
 
 raw_gracketcs: grmain.o boot.o $(BOOT_OBJS)
 	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+
+petite-v.boot: $(SCHEME_INC)/petite.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ $(SCHEME_INC)/petite.boot petite-v.boot
+
+scheme-v.boot: $(SCHEME_INC)/scheme.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ $(SCHEME_INC)/scheme.boot scheme-v.boot petite
+
+racket-v.boot: racket.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ racket.boot racket-v.boot petite scheme
 
 # ----------------------------------------
 # Mac OS

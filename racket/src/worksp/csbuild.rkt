@@ -198,6 +198,27 @@
 	  "../build/racket.so"
 	  "../build/racket.boot")
 
+(system*! scheme
+	  "--script"
+	  "../cs/c/to-vfasl.ss"
+	  (build-path scheme-dir machine "boot" machine "petite.boot")
+	  "../build/petite-v.boot")
+
+(system*! scheme
+	  "--script"
+	  "../cs/c/to-vfasl.ss"
+	  (build-path scheme-dir machine "boot" machine "scheme.boot")
+	  "../build/scheme-v.boot"
+          "petite")
+
+(system*! scheme
+	  "--script"
+	  "../cs/c/to-vfasl.ss"
+	  "../build/racket.boot"
+	  "../build/racket-v.boot"
+          "petite"
+          "scheme")
+
 (system*! (find-exe)
           "-O" "info@compiler/cm"
           "-l-" "setup" boot-mode "../setup-go.rkt" "..//build/compiled"
@@ -206,8 +227,9 @@
 	  "++exe" "../build/raw_racketcs.exe" (format "../../Racket~a.exe" cs-suffix)
 	  "++exe" "../build/raw_gracketcs.exe" (format "../../lib/GRacket~a.exe" cs-suffix)
           "../build/raw_libracketcs.dll" "../../lib/libracketcsxxxxxxx.dll"
-          (build-path scheme-dir machine "boot" machine)
-          "../build/racket.boot")
+          "../build/petite-v.boot"
+          "../build/scheme-v.boot"
+          "../build/racket-v.boot")
 
 (system*! "mt"
 	  "-manifest" "racket/racket.manifest"
