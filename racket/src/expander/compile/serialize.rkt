@@ -627,7 +627,7 @@
   (cond
     [(eq? 'chez-scheme (system-type 'vm))
      ;; It's better to interpret the quoted-data construction in Chez Scheme,
-     ;; instead of compiling the constructionx, because it's more compact
+     ;; instead of compiling the construction, because it's more compact
      ;; and easier to delay. Rely on `fasl->s-exp/intern` as a primitive
      ;; (from the linklet perspective) that is installed on startup.
      `(let-values ([(data) (fasl->s-exp/intern
