@@ -36,7 +36,6 @@
   (cond
     [(boolean? a) (string-copy (if a "#t" "#f"))]
     [(number? a) (number->string a)]
-    [(symbol? a) (symbol->string a)]
     [(keyword? a) (string-append "#:" (keyword->string a))]
     [else #f]))
 
@@ -49,6 +48,7 @@
             (cond
               [(bytes? a) (bytes->string/utf-8 a #\?)]
               [(string? a) (string-copy a)]
+              [(symbol? a) (symbol->string a)]
               [else (general-format fmt (list a))]))]
        [(or (equal? fmt "~s") (equal? fmt "~S"))
         (or (simple-format a)
