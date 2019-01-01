@@ -615,6 +615,20 @@
   (test (cast p _thing-pointer _intptr)
         cast q _stuff-pointer _intptr))
 
+;; test 'interior allocation mode
+(let ()
+  ;; Example by Ron Garcia
+  (define-struct data (a b))
+  (define (cbox s)
+    (define ptr (malloc _racket 'interior))
+    (ptr-set! ptr _racket s)
+    ptr)
+  (define (cunbox cb)
+    (ptr-ref cb _racket 0))
+  (define cb1 (cbox (make-data 1 2)))
+  (collect-garbage)
+  (test 1 data-a (cunbox cb1)))
+
 (let ()
   (struct foo (ptr)
     #:property prop:cpointer 0)

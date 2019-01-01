@@ -2665,7 +2665,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   else if (SAME_OBJ(mode, stubborn_sym))      mf = scheme_malloc_stubborn;
   else if (SAME_OBJ(mode, eternal_sym))       mf = scheme_malloc_eternal;
   else if (SAME_OBJ(mode, uncollectable_sym)) mf = scheme_malloc_uncollectable;
-  else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_atomic_allow_interior;
+  else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_allow_interior;
   else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
   else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
