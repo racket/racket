@@ -616,7 +616,7 @@
         cast q _stuff-pointer _intptr))
 
 ;; test 'interior allocation mode
-(let ()
+(when (eq? 'racket (system-type 'vm))
   ;; Example by Ron Garcia
   (define-struct data (a b))
   (define (cbox s)
@@ -628,6 +628,26 @@
   (define cb1 (cbox (make-data 1 2)))
   (collect-garbage)
   (test 1 data-a (cunbox cb1)))
+
+;; Make sure calling a foreign function retains the function arguments
+;; until the foreign function returns, even if it invokes a callback
+(let ()
+  (define sum_after_callback
+    (get-ffi-obj 'sum_after_callback test-lib (_fun _pointer _int (_fun -> _void) -> _int)))
+  (define N 1000)
+  (test 499500
+        'sum-after-callback
+        (let ([n (malloc 'atomic-interior _int N)])
+          (for ([i (in-range N)])
+            (ptr-set! n _int i i))
+          (sum_after_callback n N (lambda ()
+                                    (collect-garbage)
+                                    (collect-garbage)
+                                    (collect-garbage)
+                                    (for ([i 100])
+                                      (let ([m (malloc _int N)])
+                                        (for ([i (in-range N)])
+                                          (ptr-set! m _int i 0)))))))))
 
 (let ()
   (struct foo (ptr)

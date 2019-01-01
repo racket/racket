@@ -1456,6 +1456,16 @@
 ;; For sanity checking of callbacks during a blocking callout:
 (define-virtual-register currently-blocking? #f)
 
+(define-syntax-rule (retain v ... e)
+  ;; Make sure that the `v ...` stay live until `e` produces a result,
+  ;; so uses of the FFI can rely on passing an argument to a foreign
+  ;; function as retaining the argument until the function returns.
+  (let ([result e])
+    ;; This comparsion will never be true, but the
+    ;; compiler and GC don't know that:
+    (when (eq? v none2) (raise none2)) ...
+    result))
+
 (define (ffi-call/callable call? in-types out-type abi save-errno blocking? atomic? async-apply)
   (let* ([conv (case abi
                  [(stdcall) '__stdcall]
@@ -1570,49 +1580,61 @@
                (case-lambda
                 [()
                  (c->s out-type (with-interrupts-disabled (proc)))]
-                [(a)
-                 (let ([a (unwrap a (car in-types))])
-                   (c->s out-type (with-interrupts-disabled (proc (unpack a (car in-types))))))]
-                [(a b)
-                 (let ([a (unwrap a (car in-types))]
-                       [b (unwrap b (cadr in-types))])
+                [(orig-a)
+                 (let ([a (unwrap orig-a (car in-types))])
+                   (c->s out-type (retain
+                                   orig-a
+                                   (with-interrupts-disabled (proc (unpack a (car in-types)))))))]
+                [(orig-a orig-b)
+                 (let ([a (unwrap orig-a (car in-types))]
+                       [b (unwrap orig-b (cadr in-types))])
+                   (c->s out-type (retain
+                                   orig-a orig-b
+                                   (with-interrupts-disabled
+                                    (proc (unpack a (car in-types)) (unpack b (cadr in-types)))))))]
+                [(orig-a orig-b orig-c)
+                 (let ([a (unwrap orig-a (car in-types))]
+                       [b (unwrap orig-b (cadr in-types))]
+                       [c (unwrap orig-c (caddr in-types))])
                    (c->s out-type (with-interrupts-disabled
-                                   (proc (unpack a (car in-types)) (unpack b (cadr in-types))))))]
-                [(a b c)
-                 (let ([a (unwrap a (car in-types))]
-                       [b (unwrap b (cadr in-types))]
-                       [c (unwrap c (caddr in-types))])
+                                   (retain
+                                    orig-a orig-b orig-c
+                                    (proc (unpack a (car in-types))
+                                          (unpack b (cadr in-types))
+                                          (unpack c (caddr in-types)))))))]
+                [(orig-a orig-b orig-c orig-d)
+                 (let ([a (unwrap orig-a (car in-types))]
+                       [b (unwrap orig-b (cadr in-types))]
+                       [c (unwrap orig-c (caddr in-types))]
+                       [d (unwrap orig-d (cadddr in-types))])
+                   (c->s out-type (retain
+                                   orig-a orig-b orig-c orig-d
+                                   (with-interrupts-disabled
+                                    (proc (unpack a (car in-types))
+                                          (unpack b (cadr in-types))
+                                          (unpack c (caddr in-types))
+                                          (unpack d (cadddr in-types)))))))]
+                [orig-args
+                 (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
                    (c->s out-type (with-interrupts-disabled
-                                   (proc (unpack a (car in-types))
-                                         (unpack b (cadr in-types))
-                                         (unpack c (caddr in-types))))))]
-                [(a b c d)
-                 (let ([a (unwrap a (car in-types))]
-                       [b (unwrap b (cadr in-types))]
-                       [c (unwrap c (caddr in-types))]
-                       [d (unwrap d (cadddr in-types))])
-                   (c->s out-type (with-interrupts-disabled
-                                   (proc (unpack a (car in-types))
-                                         (unpack b (cadr in-types))
-                                         (unpack c (caddr in-types))
-                                         (unpack d (cadddr in-types))))))]
-                [args
-                 (let ([args (map (lambda (a t) (unwrap a t)) args in-types)])
-                   (c->s out-type (with-interrupts-disabled
-                                   (#%apply proc (map (lambda (a t) (unpack a t)) args in-types)))))])]
+                                   (retain
+                                    orig-args
+                                    (#%apply proc (map (lambda (a t) (unpack a t)) args in-types))))))])]
               [else
-               (lambda args
-                 (let ([args (map (lambda (a t) (unwrap a t)) args in-types)])
+               (lambda orig-args
+                 (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
                    (c->s out-type (with-interrupts-disabled
-                                   (#%apply (gen-proc (cpointer-address proc-p))
-                                            (map (lambda (a t) (unpack a t)) args in-types))))))])
+                                   (retain
+                                    orig-args
+                                    (#%apply (gen-proc (cpointer-address proc-p))
+                                             (map (lambda (a t) (unpack a t)) args in-types)))))))])
              (fxsll 1 (length in-types))
              (cpointer->name proc-p))))]
        [else
         (lambda (to-wrap)
           (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)])
             (do-procedure-reduce-arity-mask
-             (lambda args
+             (lambda orig-args
                (let* ([args (map (lambda (orig-arg in-type)
                                    (let ([arg (s->c in-type orig-arg)])
                                      (if (and (cpointer? arg)
@@ -1623,36 +1645,38 @@
                                              (disallow-nonatomic-pointer 'argument orig-arg proc-p))
                                            p)
                                          arg)))
-                                 args in-types)]
+                                 orig-args in-types)]
                       [r (let ([ret-ptr (and ret-id
                                              ;; result is a struct type; need to allocate space for it
                                              (make-bytevector ret-size))])
                            (with-interrupts-disabled
                             (when blocking? (currently-blocking? #t))
-                            (let ([r (#%apply (gen-proc (cpointer-address proc-p))
-                                              (append
-                                               (if ret-ptr
-                                                   (list (ret-maker (memory-address ret-ptr)))
-                                                   '())
-                                               (map (lambda (arg in-type maker)
-                                                      (let ([host-rep (array-rep-to-pointer-rep
-                                                                       (ctype-host-rep in-type))])
-                                                        (case host-rep
-                                                          [(void*) (cpointer-address arg)]
-                                                          [(struct union)
-                                                           (maker (cpointer-address arg))]
-                                                          [else arg])))
-                                                    args in-types arg-makers)))])
-                              (when blocking? (currently-blocking? #f))
-                              (case save-errno
-                                [(posix) (thread-cell-set! errno-cell (get-errno))]
-                                [(windows) (thread-cell-set! errno-cell (get-last-error))])
-                              (cond
-                               [ret-ptr
-                                (make-cpointer ret-ptr #f)]
-                               [(eq? (ctype-our-rep out-type) 'gcpointer)
-                                (addr->gcpointer-memory r)]
-                               [else r]))))])
+                            (retain
+                             orig-args
+                             (let ([r (#%apply (gen-proc (cpointer-address proc-p))
+                                               (append
+                                                (if ret-ptr
+                                                    (list (ret-maker (memory-address ret-ptr)))
+                                                    '())
+                                                (map (lambda (arg in-type maker)
+                                                       (let ([host-rep (array-rep-to-pointer-rep
+                                                                        (ctype-host-rep in-type))])
+                                                         (case host-rep
+                                                           [(void*) (cpointer-address arg)]
+                                                           [(struct union)
+                                                            (maker (cpointer-address arg))]
+                                                           [else arg])))
+                                                     args in-types arg-makers)))])
+                               (when blocking? (currently-blocking? #f))
+                               (case save-errno
+                                 [(posix) (thread-cell-set! errno-cell (get-errno))]
+                                 [(windows) (thread-cell-set! errno-cell (get-last-error))])
+                               (cond
+                                [ret-ptr
+                                 (make-cpointer ret-ptr #f)]
+                                [(eq? (ctype-our-rep out-type) 'gcpointer)
+                                 (addr->gcpointer-memory r)]
+                                [else r])))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
              (cpointer->name proc-p))))])]

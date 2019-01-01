@@ -324,3 +324,14 @@ X int check_multiple_of_ten(int v) {
     return -1;
   }
 }
+
+int sum_after_callback(int *a, int n, void (*cb)()) {
+  int i, s = 0;
+
+  cb();
+
+  for (i = 0; i < n; i++)
+    s += a[i];
+
+  return s;
+}
