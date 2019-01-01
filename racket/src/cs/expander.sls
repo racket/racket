@@ -44,20 +44,26 @@
   ;; The expander needs various tables to set up primitive modules, and
   ;; the `primitive-table` function is the bridge between worlds
 
-  (define (primitive-table key)
-    (case key
-      [(|#%linklet|) linklet-table]
-      [(|#%kernel|) kernel-table]
-      [(|#%read|) (make-hasheq)]
-      [(|#%paramz|) paramz-table]
-      [(|#%unsafe|) unsafe-table]
-      [(|#%foreign|) foreign-table]
-      [(|#%futures|) futures-table]
-      [(|#%place|) place-table]
-      [(|#%flfxnum|) flfxnum-table]
-      [(|#%extfl|) extfl-table]
-      [(|#%network|) network-table]
-      [else #f]))
+  (define user-installed-tables (make-hasheq))
+
+  (define primitive-table
+    (case-lambda
+     [(key)
+      (case key
+        [(|#%linklet|) linklet-table]
+        [(|#%kernel|) kernel-table]
+        [(|#%read|) (make-hasheq)]
+        [(|#%paramz|) paramz-table]
+        [(|#%unsafe|) unsafe-table]
+        [(|#%foreign|) foreign-table]
+        [(|#%futures|) futures-table]
+        [(|#%place|) place-table]
+        [(|#%flfxnum|) flfxnum-table]
+        [(|#%extfl|) extfl-table]
+        [(|#%network|) network-table]
+        [else (hash-ref user-installed-tables key #f)])]
+     [(key table)
+      (hash-set! user-installed-tables key table)]))
 
   (define-syntax define-primitive-table
     (syntax-rules ()
