@@ -243,7 +243,8 @@
          (if (or (vector? v)
                  (pair? v)
                  (symbol? v)
-                 (number? v))
+                 (number? v)
+                 (box? v))
              (vector 'quote v)
              v))]
       [`(set! ,id ,rhs)
