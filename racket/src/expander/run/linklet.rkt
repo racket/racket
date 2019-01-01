@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/unsafe/undefined
+         racket/fasl
          "../common/set.rkt"
          "../syntax/datum-map.rkt"
          "../host/correlate.rkt"
@@ -170,7 +171,10 @@
   (namespace-set-variable-value! 'variable-reference? variable-reference? #t)
   (namespace-set-variable-value! 'variable-reference->instance variable-reference->instance #t)
   (namespace-set-variable-value! 'variable-reference-constant? variable-reference-constant?* #t)
-  (namespace-set-variable-value! 'variable-reference-from-unsafe? variable-reference-from-unsafe?* #t))
+  (namespace-set-variable-value! 'variable-reference-from-unsafe? variable-reference-from-unsafe?* #t)
+  ;; Needed when the host is RacketCS:
+  (namespace-set-variable-value! 'fasl->s-exp/intern (lambda (v)
+                                                       (fasl->s-exp v #:datum-intern? #t))))
 
 ;; ----------------------------------------
 
