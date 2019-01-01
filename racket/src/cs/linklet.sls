@@ -599,8 +599,12 @@
                            constance  ; #f (mutable), 'constant, or 'consistent (always the same shape)
                            inst-box)) ; weak pair with instance in `car`
 
+  ;; Can't use `unsafe-undefined`, because the expander expects to be
+  ;; able to store `unsafe-undefined` in variables
+  (define variable-undefined (gensym 'undefined))
+
   (define (make-internal-variable name)
-    (make-variable unsafe-undefined name #f (cons #!bwp #f)))
+    (make-variable variable-undefined name #f (cons #!bwp #f)))
 
   (define (do-variable-set! var val constance as-define?)
     (cond
@@ -633,13 +637,13 @@
     (do-variable-set! var val constance #f))
 
   (define (variable-set!/check-undefined var val constance)
-    (when (eq? (variable-val var) unsafe-undefined)
+    (when (eq? (variable-val var) variable-undefined)
       (raise-undefined var #t))
     (variable-set! var val constance))
 
   (define (variable-ref var)
     (let ([v (variable-val var)])
-      (if (eq? v unsafe-undefined)
+      (if (eq? v variable-undefined)
           (raise-undefined var #f)
           v)))
 
@@ -654,7 +658,7 @@
         (map (lambda (sym import-abi)
                (let ([var (or (hash-ref ht sym #f)
                               (raise-linking-failure "is not exported" target-inst inst sym))])
-                 (when (eq? (variable-val var) unsafe-undefined)
+                 (when (eq? (variable-val var) variable-undefined)
                    (raise-linking-failure "is uninitialized" target-inst inst sym))
                  (if import-abi
                      (variable-val var)
@@ -704,7 +708,7 @@
           [inst-box (weak-cons inst #f)])
       (map (lambda (sym)
              (or (hash-ref ht sym #f)
-                 (let ([var (make-variable unsafe-undefined sym #f inst-box)])
+                 (let ([var (make-variable variable-undefined sym #f inst-box)])
                    (hash-set! ht sym var)
                    var)))
            syms)))
@@ -730,7 +734,7 @@
            [else a-known-constant]))])))
 
   (define (check-variable-set var sym)
-    (when (eq? (variable-val var) unsafe-undefined)
+    (when (eq? (variable-val var) variable-undefined)
       (raise
        (|#%app|
         exn:fail:contract:variable
@@ -786,11 +790,11 @@
   (define instance-variable-value
     (case-lambda
      [(i sym fail-k)
-      (let* ([var (hash-ref (instance-hash i) sym unsafe-undefined)]
-             [v (if (eq? var unsafe-undefined)
-                    unsafe-undefined
+      (let* ([var (hash-ref (instance-hash i) sym variable-undefined)]
+             [v (if (eq? var variable-undefined)
+                    variable-undefined
                     (variable-val var))])
-        (if (eq? v unsafe-undefined)
+        (if (eq? v variable-undefined)
             (fail-k)
             v))]
      [(i sym)
@@ -812,7 +816,7 @@
         (raise-argument-error 'instance-set-variable-value! "symbol?" i))
       (check-constance 'instance-set-variable-value! mode)
       (let ([var (or (hash-ref (instance-hash i) k #f)
-                     (let ([var (make-variable unsafe-undefined k #f (weak-cons i #f))])
+                     (let ([var (make-variable variable-undefined k #f (weak-cons i #f))])
                        (hash-set! (instance-hash i) k var)
                        var))])
         (variable-set! var v mode))]))
@@ -824,7 +828,7 @@
       (raise-argument-error 'instance-unset-variable! "symbol?" i))
     (let ([var (hash-ref (instance-hash i) k #f)])
       (when var
-        (set-variable-val! var unsafe-undefined))))
+        (set-variable-val! var variable-undefined))))
 
   (define (instance-describe-variable! i k desc)
     (unless (instance? i)
