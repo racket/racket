@@ -60,6 +60,7 @@
   (ptest "#\\x" #\x)
   (ptest "'apple" 'apple)
   (ptest "'|apple banana|" '|apple banana|)
+  (ptest "'||" '||)
   (ptest "'#:apple" '#:apple)
   (ptest "\"apple\"" "apple")
   (ptest "#\"apple\"" #"apple")

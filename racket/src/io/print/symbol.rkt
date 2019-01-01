@@ -56,12 +56,19 @@
      (cond
        [(or for-keyword?
             for-type?
-            (not (string->number? str)))
+            (and (not (string->number? str))
+                 (not (string=? str ""))))
         str]
        ;; Remaining two cases add some form of quoting to
        ;; protect against a symbol looking like a number
        [(and config (not (config-get config read-accept-bar-quote)))
-        (string-append "\\" str)]
+        (cond
+          [(string=? str "")
+           ;; There's no good answer in this case. Traditionally, Racket
+           ;; just prints an empty string, anyway.
+           str]
+          [else
+           (string-append "\\" str)])]
        [else
         (string-append "|" str "|")])]
     [(or (and config (not (config-get config read-accept-bar-quote)))
