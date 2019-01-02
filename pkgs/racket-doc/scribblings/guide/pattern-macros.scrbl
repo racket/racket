@@ -120,9 +120,9 @@ the expansion is
 @racketblock[
 (let ([set!_1 5]
       [other 6])
-  (let ([tmp_1 set!_1])
+  (let ([tmp set!_1])
     (set! set!_1 other)
-    (set! other tmp_1))
+    (set! other tmp))
   (list set!_1 other))
 ]
 
