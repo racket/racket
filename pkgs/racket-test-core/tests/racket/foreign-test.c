@@ -325,7 +325,7 @@ X int check_multiple_of_ten(int v) {
   }
 }
 
-int sum_after_callback(int *a, int n, void (*cb)()) {
+X int sum_after_callback(int *a, int n, void (*cb)()) {
   int i, s = 0;
 
   cb();
