@@ -41,7 +41,6 @@
   [bitwise-not (known-procedure 2)]
   [bitwise-xor (known-procedure -1)]
   [boolean? (known-procedure/pure 2)]
-  [bound-identifier=? (known-procedure 28)]
   [box (known-procedure/pure 2)]
   [box-cas! (known-procedure 8)]
   [box-immutable (known-procedure/pure 2)]
