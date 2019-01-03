@@ -347,9 +347,10 @@ static void init_startup_env(void)
   
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != EXPECTED_PRIM_COUNT) {
-    printf("Primitive count %d doesn't match expected count %d\n"
-	   "Turn off USE_COMPILED_STARTUP in src/schminc.h\n",
-	   builtin_ref_counter, EXPECTED_PRIM_COUNT);
+    fprintf(stderr,
+            "Primitive count %d doesn't match expected count %d\n"
+            "Update the count in src/schminc.h and bump the version in src/schvers.h\n",
+            builtin_ref_counter, EXPECTED_PRIM_COUNT);
     abort();
   }
 #endif
