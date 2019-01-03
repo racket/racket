@@ -16,9 +16,11 @@
 (provide udp-receive!
          udp-receive!*
          udp-receive!/enable-break
-         
+
          udp-receive!-evt
-         udp-receive-ready-evt)
+         udp-receive-ready-evt
+
+         udp-set-receive-buffer-size!)
 
 (define/who (udp-receive! u bstr [start 0] [end (and (bytes? bstr) (bytes-length bstr))])
   (do-udp-receive! who u bstr start end))
@@ -154,3 +156,18 @@
 (struct udp-receiving-ready-evt rktio-evt ()
   #:reflection-name 'udp-receive-ready-evt
   #:authentic)
+
+;; ----------------------------------------
+
+(define/who (udp-set-receive-buffer-size! u size)
+  (check who udp? u)
+  (check who exact-nonnegative-integer? size)
+  (atomically
+   (check-udp-closed who u)
+   (define r (rktio_udp_set_receive_buffer_size rktio (udp-s u) size))
+   (when (rktio-error? r)
+     (raise-option-error who "set" r))))
+
+(define (raise-option-error who mode v)
+  (end-atomic)
+  (raise-network-error who v (string-append mode "sockopt failed")))

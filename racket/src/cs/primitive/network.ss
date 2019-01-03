@@ -40,4 +40,5 @@
   [udp-send-to-evt (known-procedure 112)]
   [udp-send-to/enable-break (known-procedure 112)]
   [udp-send/enable-break (known-procedure 28)]
+  [udp-set-receive-buffer-size! (known-procedure 4)]
   [udp? (known-procedure 2)])

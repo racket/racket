@@ -494,6 +494,22 @@ called, then either a datagram is received or the @racket[exn:break]
 exception is raised, but not both.}
 
 
+@defproc[(udp-set-receive-buffer-size! [udp-socket udp?]
+                                       [size exact-positive-integer?])
+                                       void]{
+
+On Unix systems, set the receive buffer size (@tt{SO_RCVBUF}) for
+@racket[udp-socket].
+
+If @racket[size] is greater than the maximum allowed by the system,
+the @exnraise[exn:fail].
+
+Using a larger buffer can minimize packet loss that can occur during a
+major garbage collection.
+
+@history[#:added "7.1.0.11"]}
+
+
 @defproc[(udp-close [udp-socket udp?]) void?]{
 
 Closes @racket[udp-socket], discarding unreceived datagrams.  If the

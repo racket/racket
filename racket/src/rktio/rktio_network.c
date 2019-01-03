@@ -1888,6 +1888,20 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom_in(rktio_t *rktio, rktio_fd_t *r
   return rktio_udp_recvfrom(rktio, rfd, buffer + start, end - start);
 }
 
+int rktio_udp_set_receive_buffer_size(rktio_t *rktio, rktio_fd_t *rfd, int size)
+{
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
+  int status;
+
+  status = setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void *)&size, sizeof(size));
+
+  if (status) {
+    get_socket_error();
+    return 0;
+  } else
+    return 1;
+}
+
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_socket(rktio, rfd);
