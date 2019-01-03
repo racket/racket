@@ -294,6 +294,7 @@
  (ref rktio_fd_t)
  rktio_std_fd
  (((ref rktio_t) rktio) (int which)))
+(define-function () void rktio_create_console ())
 (define-function/errno
  RKTIO_READ_ERROR
  ()
@@ -583,6 +584,12 @@
   ((*ref char) buffer)
   (intptr_t start)
   (intptr_t end)))
+(define-function/errno
+ #f
+ ()
+ rktio_ok_t
+ rktio_udp_set_receive_buffer_size
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd) (int size)))
 (define-function/errno
  RKTIO_PROP_ERROR
  ()
