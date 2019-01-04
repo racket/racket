@@ -245,7 +245,7 @@ RKTIO_EXTERN rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which);
 #define RKTIO_STDOUT 1
 #define RKTIO_STDERR 2
 
-RKTIO_EXTERN void rktio_create_console();
+RKTIO_EXTERN void rktio_create_console(void);
 /* On Windows, ensures that a console is available for output. If a
    console is created for an application started in GUI mode, The
    console cannot be closed by the user until the process exits, and
