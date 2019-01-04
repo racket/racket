@@ -236,6 +236,8 @@
                   'will-executor? will-executor/notify?
                   'will-register will-register/notify
                   'will-try-execute will-try-execute/notify
+                  'set-reachable-size-increments-callback! (lambda (proc) (void))
+                  'set-custodian-memory-use-proc! (lambda (proc) (void))
                   'exn:break/non-engine exn:break/non-engine
                   'exn:break:hang-up/non-engine exn:break:hang-up/non-engine
                   'exn:break:terminate/non-engine exn:break:terminate/non-engine
@@ -252,8 +254,10 @@
                                   (error "fork-pthread: not ready"))
                   'pthread? (lambda args
                               (error "thread?: not ready"))
-                  'get-thread-id (lambda args
-                                   (error "get-pthread-id: not ready"))
+                  'get-thread-id (lambda () 0)
+                  'current-place-roots (lambda () '())
+                  'get-initial-place (lambda () #f)
+                  'call-with-current-place-continuation call/cc
                   'make-condition (lambda () (make-semaphore))
                   'condition-wait (lambda (c s)
                                     (semaphore-post s)

@@ -1,5 +1,6 @@
 #lang racket/base
 (require "place-local.rkt"
+         "place-object.rkt"
          "atomic.rkt"
          "host.rkt"
          "internal-error.rkt"
@@ -30,7 +31,9 @@
 
 ;; Initializes the thread system:
 (define (call-in-main-thread thunk)
-  (make-initial-thread thunk)
+  (make-initial-thread (lambda ()
+                         (set-place-host-roots! initial-place (host:current-place-roots))
+                         (thunk)))
   (select-thread!))
 
 ;; Initializes the thread system in a new place:
@@ -52,6 +55,7 @@
     (check-external-events 'fast)
     (call-pre-poll-external-callbacks)
     (check-place-activity)
+    (check-queued-custodian-shutdown)
     (when (and (null? callbacks)
                (all-threads-poll-done?)
                (waiting-on-external-or-idle?))
@@ -71,6 +75,7 @@
   (set-thread-engine! t 'running)
   (set-thread-sched-info! t #f)
   (current-thread t)
+  (set-place-current-thread! current-place t)
   (run-callbacks-in-engine
    e callbacks
    (lambda (e)
@@ -87,6 +92,7 @@
           (start-implicit-atomic-mode)
           (accum-cpu-time! t)
           (current-thread #f)
+          (set-place-current-thread! current-place #f)
           (unless (zero? (current-atomic))
             (internal-error "terminated in atomic mode!"))
           (thread-dead! t)
@@ -100,6 +106,7 @@
             [(zero? (current-atomic))
              (accum-cpu-time! t)
              (current-thread #f)
+             (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
              (select-thread!)]

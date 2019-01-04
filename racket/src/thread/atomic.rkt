@@ -10,6 +10,7 @@
          start-atomic
          end-atomic
 
+         atomically/no-interrupts
          start-atomic/no-interrupts
          end-atomic/no-interrupts
 
@@ -31,6 +32,13 @@
     (begin0
      (let () expr ...)
      (end-atomic))))
+
+(define-syntax-rule (atomically/no-interrupts expr ...)
+  (begin
+    (start-atomic/no-interrupts)
+    (begin0
+     (let () expr ...)
+     (end-atomic/no-interrupts))))
 
 (define (start-atomic)
   (current-atomic (add1 (current-atomic))))

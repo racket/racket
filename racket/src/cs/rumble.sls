@@ -460,7 +460,9 @@
           phantom-bytes?
           make-phantom-bytes
           set-phantom-bytes!
-          set-garbage-collect-notify! ; not exported to Racket
+          set-garbage-collect-notify!             ; not exported to Racket
+          set-reachable-size-increments-callback! ; not exported to Racket
+          set-custodian-memory-use-proc!          ; not exported to Racket
           unsafe-add-collect-callbacks
           unsafe-remove-collect-callbacks
 
@@ -587,6 +589,7 @@
           place-local-register-set!  ; not exported to Racket
           place-local-register-init! ; not exported to Racket
           place-exit                 ; not exported to Racket
+          current-place-roots        ; not exported to Racket
 
           _bool _bytes _short_bytes _double _double* _fixint _fixnum _float _fpointer _gcpointer
           _int16 _int32 _int64 _int8 _longdouble _pointer _scheme _stdbool _void
@@ -663,6 +666,7 @@
           fork-pthread
           pthread?
           get-thread-id
+          get-initial-pthread
           make-condition
           condition-wait
           condition-signal

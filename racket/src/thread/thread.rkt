@@ -193,7 +193,7 @@
                     void ; condition-wakeup
                     )) 
   ((atomically
-    (define cref (and c (unsafe-custodian-register c t remove-thread-custodian #f #t)))
+    (define cref (and c (custodian-register-thread c t remove-thread-custodian)))
     (cond
       [(or (not c) cref)
        (set-thread-custodian-references! t (list cref))

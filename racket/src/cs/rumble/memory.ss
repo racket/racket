@@ -19,6 +19,15 @@
                post-allocated post-allocated+overhead post-time post-cpu-time)
     (void)))
 
+;; #f or a procedure that accepts `compute-size-increments` to be
+;; called in any Chez Scheme thread (with all other threads paused)
+;; after each major GC; this procedure must not do anything that might
+;; use "control.ss":
+(define reachable-size-increments-callback #f)
+
+(define (set-reachable-size-increments-callback! proc)
+  (set! reachable-size-increments-callback proc))
+
 ;; Replicate the counting that `(collect)` would do
 ;; so that we can report a generation to the notification
 ;; callback
@@ -61,7 +70,10 @@
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  (current-memory-bytes) (real-time) (cpu-time)))
       (poll-foreign-guardian)
-      (run-collect-callbacks cdr))))
+      (run-collect-callbacks cdr)
+      (when (and reachable-size-increments-callback
+                 (fx= gen (collect-maximum-generation)))
+        (reachable-size-increments-callback compute-size-increments)))))
 
 (define collect-garbage
   (case-lambda
@@ -91,9 +103,11 @@
     (cond
      [(not mode) (bytes-allocated)]
      [(eq? mode 'cumulative) (sstats-bytes (statistics))]
-     [else
-      ;; must be a custodian...
-      (bytes-allocated)])]))
+     ;; must be a custodian; hook is reposnsible for complaining if not
+     [else (custodian-memory-use mode (bytes-allocated))])]))
+
+(define custodian-memory-use (lambda (mode all) all))
+(define (set-custodian-memory-use-proc! proc) (set! custodian-memory-use proc))
 
 (define prev-stats-objects #f)
 

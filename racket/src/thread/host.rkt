@@ -49,6 +49,9 @@
         [will-register host:will-register]
         [will-try-execute host:will-try-execute]
 
+        set-reachable-size-increments-callback!
+        set-custodian-memory-use-proc!
+
         ;; Just `exn:break`, etc., but the host may need
         ;; to distinguish breaks raised by the thread
         ;; implementation:
@@ -75,6 +78,9 @@
         [fork-place host:fork-place]
         [start-place host:start-place]
         [exit host:exit]
+        [current-place-roots host:current-place-roots]
+        [get-initial-place host:get-initial-place]
+        [call-with-current-pthread-continuation host:call-with-current-place-continuation]
 
         fork-pthread
         pthread?

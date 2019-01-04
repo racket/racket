@@ -12,6 +12,8 @@
     (let ([initial-thread-id (get-thread-id)])
       (lambda ()
         (eqv? (get-thread-id) initial-thread-id))))
+  (define (get-initial-pthread)
+    (get-initial-thread))
   ;; make-condition
   ;; condition-wait
   ;; condition-signal
@@ -23,6 +25,7 @@
  [else
   (define make-pthread-parameter #%make-parameter)
   (define (fork-pthread) (void))
+  (define (get-initial-pthread) #f)
   (define (pthread?) #f)
   (define (in-original-host-thread?) #t)
   (define (make-condition) (void))
