@@ -164,6 +164,9 @@
   (check who exact-nonnegative-integer? size)
   (atomically
    (check-udp-closed who u)
+   (unless (fixnum? size)
+     (end-atomic)
+     (raise-non-fixnum who size))
    (define r (rktio_udp_set_receive_buffer_size rktio (udp-s u) size))
    (when (rktio-error? r)
      (raise-option-error who "set" r))))
@@ -171,3 +174,11 @@
 (define (raise-option-error who mode v)
   (end-atomic)
   (raise-network-error who v (string-append mode "sockopt failed")))
+
+(define (raise-non-fixnum who size)
+  (raise (exn:fail:network
+          (format (string-append "~a: given size is too large\n"
+                                 "  given size: ~e")
+                  who
+                  size)
+          (current-continuation-marks))))

@@ -57,12 +57,14 @@
 
 (err/rt-test (udp-set-receive-buffer-size! udp1 -1))
 (err/rt-test (udp-set-receive-buffer-size! udp1 0))
+(err/rt-test (udp-set-receive-buffer-size! udp1 (expt 2 300))
+             exn:fail:network?)
 ;; Something a user program might do to find the max allowed size
 (test-values
  '(ok)
  (λ ()
    (let loop ([n 4096])
-     (with-handlers ([exn:fail?
+     (with-handlers ([exn:fail:network?
                       (λ _
                         (let ([n (/ n 2)])
                           (udp-set-receive-buffer-size! udp1 n)

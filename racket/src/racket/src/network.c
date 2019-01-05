@@ -2704,7 +2704,13 @@ static Scheme_Object *udp_set_receive_buffer_size(int argc, Scheme_Object *argv[
     scheme_wrong_contract("udp-set-receive-buffer-size!", "udp?", 0, argc, argv);
 
   if (!SCHEME_INTP(argv[1]) || (SCHEME_INT_VAL(argv[1]) <= 0)) {
-    scheme_wrong_contract("udp-set-receive-buffer-size!", "exact-positive-integer?", 1, argc, argv);
+    if (SCHEME_BIGNUMP(argv[1]) && SCHEME_BIGPOS(argv[1]))
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                       "udp-set-receive-buffer-size!: given size is too large\n"
+                       "  given size: %V",
+                       argv[1]);
+    else
+      scheme_wrong_contract("udp-set-receive-buffer-size!", "exact-positive-integer?", 1, argc, argv);
     return NULL;
   }
 

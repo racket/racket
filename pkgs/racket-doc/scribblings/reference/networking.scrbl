@@ -498,14 +498,13 @@ exception is raised, but not both.}
                                        [size exact-positive-integer?])
                                        void]{
 
-On Unix systems, set the receive buffer size (@tt{SO_RCVBUF}) for
-@racket[udp-socket].
+Set the receive buffer size (@tt{SO_RCVBUF}) for @racket[udp-socket].
+Using a larger buffer can minimize packet loss that can occur due to
+slow polling of a connection, including during a major garbage
+collection.
 
 If @racket[size] is greater than the maximum allowed by the system,
-the @exnraise[exn:fail].
-
-Using a larger buffer can minimize packet loss that can occur during a
-major garbage collection.
+the @exnraise[exn:fail:network].
 
 @history[#:added "7.1.0.11"]}
 
