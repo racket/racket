@@ -94,6 +94,8 @@ TO DO:
    (c-> ssl-client-context?)]
   [ssl-make-server-context
    (->* () (protocol-symbol/c) ssl-server-context?)]
+  [ssl-server-context-use-server-cipher-preference!
+   (c-> ssl-server-context? void?)]
   [ssl-server-context-enable-dhe!
    (->* (ssl-server-context?) (path-string?) void?)]
   [ssl-server-context-enable-ecdhe!
@@ -461,6 +463,8 @@ TO DO:
 (define SSL_OP_SINGLE_ECDH_USE #x00080000)
 (define SSL_OP_SINGLE_DH_USE #x00100000)
 
+(define SSL_OP_CIPHER_SERVER_PREFERENCE #x00400000)
+
 (define TLSEXT_NAMETYPE_host_name 0)
 
 (define SSL_TLSEXT_ERR_OK 0)
@@ -708,6 +712,12 @@ TO DO:
 
 (define (ssl-seal-context! mzctx)
   (set-ssl-context-sealed?! mzctx #t))
+
+(define (ssl-server-context-use-server-cipher-preference! context)
+  (define ctx
+    (extract-ctx 'ssl-server-context-use-server-cipher-preference! #t context))
+  (SSL_CTX_set_options ctx SSL_OP_CIPHER_SERVER_PREFERENCE)
+  (void))
 
 (define (ssl-server-context-enable-ecdhe! context [name 'secp521r1])
   (define (symbol->nid name)
