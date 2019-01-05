@@ -1,32 +1,9 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301 USA.
-*/
-
 /* This file implements Racket threads.
 
-   Usually, Racket threads are implemented by copying the stack.
-   The scheme_thread_block() function is called occasionally by the
-   evaluator so that the current thread can be swapped out.
-   do_swap_thread() performs the actual swap. Threads can also be
-   implemented by the OS; the bottom part of this file contains
-   OS-specific thread code.
+   Racket threads are implemented by copying the stack. The
+   scheme_thread_block() function is called occasionally by the
+   evaluator so that the current thread can be swapped out, and
+   do_swap_thread() performs the actual swap.
 
    Much of the work in thread management is knowning when to go to
    sleep, to be nice to the OS outside of Racket. The rest of the

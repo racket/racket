@@ -1,35 +1,11 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301 USA.
-
-  libscheme
-  Copyright (c) 1994 Brent Benson
-  All rights reserved.
-*/
-
 #include "schpriv.h"
 #include "schrunst.h"
 #include "schmach.h"
 
-/* Bytecode validation is an abstract interpretation on the stack,
-   where the abstract values are "not available", "value", "boxed
-   value", "syntax object", or "global array". */
+/* Bytecode validation (now off by default!) is an abstract
+   interpretation on the stack, where the abstract values are "not
+   available", "value", "boxed value", "syntax object", or "global
+   array". */
 
 /* FIXME: validation doesn't check LAMBDA_SINGLE_RESULT or
    LAMBDA_PRESERVES_MARKS. (Maybe check them in the JIT pass?) */

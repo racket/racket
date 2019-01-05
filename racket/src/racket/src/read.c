@@ -1,34 +1,9 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301 USA.
-
-  libscheme
-  Copyright (c) 1994 Brent Benson
-  All rights reserved.
-*/
-
-/* This file contains the Racket reader, including the normal reader
-   and the one for .zo files. The normal reader is a recursive-descent
+/* This file contains a restructed Racket reader for reading startup
+   code and for ".zo" files. The normal reader is a recursive-descent
    parser. The really messy part is number parsing, which is in a
-   different file, numstr.c. */
+   different file, "numstr.c".
 
-/* Rule on using scheme_ungetc(): the reader is generally allowed to
+   Rule on using scheme_ungetc(): the reader is generally allowed to
    use scheme_ungetc() only when it will definitely re-read the
    character as it continues. If the character will not be re-read
    (e.g., because an exception will be raised), then the reader must

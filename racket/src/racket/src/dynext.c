@@ -1,27 +1,3 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2002 Matthew Flatt
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301 USA.
-
-  Thanks to Patrick Barta for the WINDOWS_DYNAMIC_LOAD code.
-  Thanks to William Ng for the CODEFRAGMENT_DYNAMIC_LOAD code.
-*/
-
 /* Some copilers don't like re-def of GC_malloc in schemef.h: */
 #ifndef MZ_PRECISE_GC
 # define SCHEME_NO_GC_PROTO

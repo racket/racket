@@ -1,8 +1,6 @@
 /* 
    Racket's garbage collector
-   By Adam Wick, Matthew Flatt, and Kevin Tew
-   Copyright (c) 2004-2018 PLT Design Inc.
-   Copyright (C) 2001, 2002 Matthew Flatt and Adam Wick
+   by Adam Wick, Matthew Flatt, and Kevin Tew
 */
 
 #define MZ_PRECISE_GC /* required for "sch" includes to work right */

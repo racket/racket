@@ -553,6 +553,10 @@ scheme_global_bucket
 scheme_module_bucket
 scheme_builtin_value
 scheme_set_global_bucket
+scheme_primitive_module
+scheme_finish_primitive_module
+scheme_set_primitive_module_phaseless
+scheme_protect_primitive_provide
 scheme_make_modidx
 scheme_dynamic_require
 scheme_dynamic_require_reader

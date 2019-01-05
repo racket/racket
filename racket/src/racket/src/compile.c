@@ -1,28 +1,4 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Library General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Library General Public License for more details.
-
-    You should have received a copy of the GNU Library General Public
-    License along with this library; if not, write to the Free
-    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-    Boston, MA 02110-1301 USA.
-*/
-
-/* This file implements macro expansion and front-end compilation.
-   Instead of always fully expanding code and then compiling it to an
-   intermediate format, the compiler front-end expands as it goes,
-   which enables some shortcuts compared to fully expanding first.
+/* This file implements front-end compilation.
 
    The intermediate format generated from here accumulates references
    to non-local variables in a prefix, and it indicates whether each
@@ -30,7 +6,7 @@
 
    See "eval.c" for an overview of compilation passes.
 
-   The main compile/expand loop is compile_expand_expr(). */
+   The main compile loop is compile_expr(). */
 
 #include "schpriv.h"
 #include "schmach.h"

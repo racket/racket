@@ -1,12 +1,3 @@
-/*
- * File:        mred.c
- * Purpose:     GRacket main file, including a hodge-podge of global stuff
- * Author:      Matthew Flatt
- * Created:     1995
- * Copyright:   (c) 2004-2014 PLT Design Inc.
- * Copyright:   (c) 1995-2000, Matthew Flatt
- */
-
 #ifdef WIN32
 /* Hack: overwrite "y" with "n" in binary to disable checking for another
    instance of the same app. */

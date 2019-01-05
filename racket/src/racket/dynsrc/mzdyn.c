@@ -1,16 +1,3 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995 Matthew Flatt
-  All rights reserved.
-
-  Please see the full copyright in the documentation.
-
-  libscheme
-  Copyright (c) 1994 Brent Benson
-  All rights reserved.
-*/
-
 /* This file should be linked with any Racket extension dynamic
    object. */
 

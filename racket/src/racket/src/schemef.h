@@ -1,17 +1,3 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-  All rights reserved.
-
-  Please see the full copyright in the documentation.
-
-  Originally based on:
-  libscheme
-  Copyright (c) 1994 Brent Benson
-  All rights reserved.
-*/
-
 /* SKIP */
 
 /* After modifying this file, `make exports' (you must have `racket'

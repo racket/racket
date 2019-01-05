@@ -1,17 +1,3 @@
-/*
-  Racket
-  Copyright (c) 2004-2018 PLT Design Inc.
-  Copyright (c) 1995-2001 Matthew Flatt
-  All rights reserved.
-
-  Please see the full copyright in the documentation.
-
-  Originally based on:
-  libscheme
-  Copyright (c) 1994 Brent Benson
-  All rights reserved.
-*/
-
 typedef struct {
 /*========================================================================*/
 /*                       setjmpup (continuations)                         */
@@ -845,6 +831,10 @@ Scheme_Bucket *(*scheme_module_bucket)(Scheme_Object *mod, Scheme_Object *var, i
 Scheme_Object *(*scheme_builtin_value)(const char *name); /* convenience */
 void (*scheme_set_global_bucket)(char *proc, Scheme_Bucket *var, Scheme_Object *val,
                                         int set_undef);
+Scheme_Env *(*scheme_primitive_module)(Scheme_Object *name, Scheme_Env *for_env);
+void (*scheme_finish_primitive_module)(Scheme_Env *env);
+void (*scheme_set_primitive_module_phaseless)(Scheme_Env *env, int phaseless);
+void (*scheme_protect_primitive_provide)(Scheme_Env *env, Scheme_Object *name);
 Scheme_Object *(*scheme_make_modidx)(Scheme_Object *path,
                                             Scheme_Object *base,
                                             Scheme_Object *resolved);
