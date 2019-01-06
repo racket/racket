@@ -151,10 +151,20 @@
 
 (define (check-not-unsafe-undefined v sym)
   (when (eq? v unsafe-undefined)
-    (raise-arguments-error sym "undefined;\n cannot use before initialization"))
+    (raise (|#%app|
+            exn:fail:contract:variable
+            (string-append (symbol->string sym)
+                           ": undefined;\n cannot use before initialization")
+            (current-continuation-marks)
+            sym)))
   v)
 
 (define (check-not-unsafe-undefined/assign v sym)
   (when (eq? v unsafe-undefined)
-    (raise-arguments-error sym "assignment disallowed;\n cannot assign before initialization"))
+    (raise (|#%app|
+            exn:fail:contract:variable
+            (string-append (symbol->string sym)
+                           ": assignment disallowed;\n cannot assign before initialization")
+            (current-continuation-marks)
+            sym)))
   v)
