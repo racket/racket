@@ -83,12 +83,17 @@ both:
 	$(MAKE) 3m
 
 racketcs:
+	if [ ! -f cs/c/Makefile ]; then $(MAKE) cs-explain-configure; fi
 	$(MAKE) @CS_BOOTSTRAP_HELP@
 	cd cs/c; $(MAKE)
 
 .PHONY: cs
 cs:
 	$(MAKE) racketcs
+
+cs-explain-configure:
+	echo configure with --enable-cs or similar to enable
+	exit 1
 
 # Cross-compilation helper:
 
