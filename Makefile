@@ -331,8 +331,8 @@ cs-after-racket-with-racket-and-scheme-src:
 	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
 
 cs-after-racket-with-abs-paths:
-	$(MAKE) racket/src/build/cs/Makefile
-	cd racket/src/build/cs; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
+	$(MAKE) racket/src/build/cs/c/Makefile
+	cd racket/src/build/cs/c; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
 	cd racket/src/build; $(MAKE) install-cs RACKET="$(RACKET)" CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
@@ -340,9 +340,9 @@ cs-after-racket-with-abs-paths:
 nothing-after-base:
 	echo base done
 
-racket/src/build/cs/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
-	mkdir -p cd racket/src/build/cs
-	cd racket/src/build/cs; ../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
+	mkdir -p cd racket/src/build/cs/c
+	cd racket/src/build/cs/c; ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 	$(MAKE) $(CS_CONFIG_TARGET)
 
 run-cfg-cs:

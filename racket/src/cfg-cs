@@ -2186,7 +2186,7 @@ MAKE_GRACKET=no
 LIBFINISH=echo
 
 ICP=cp
-RUN_RACKET_CGC="cs/racketcs"
+RUN_RACKET_CGC="cs/c/racketcs"
 
 
 

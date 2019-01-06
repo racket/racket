@@ -84,7 +84,7 @@ both:
 
 racketcs:
 	$(MAKE) @CS_BOOTSTRAP_HELP@
-	cd cs; $(MAKE)
+	cd cs/c; $(MAKE)
 
 .PHONY: cs
 cs:
@@ -253,9 +253,9 @@ CS_SETUP_INSTALL_TARGET = setup-install
 
 install-cs-common:
 	$(MAKE) install-common-first
-	cd cs; $(MAKE) plain-install
+	cd cs/c; $(MAKE) plain-install
 	$(MAKE) install-common-middle
-	cd cs; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
+	cd cs/c; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
 	$(MAKE) install-common-last
 
 install-racketcs:

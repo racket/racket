@@ -3861,7 +3861,7 @@ case "$MACH_HOST_CPU" in
     ;;
 esac
 
-SCHEME_SRC=../ChezScheme
+SCHEME_SRC=../../ChezScheme
 MAKE_BUILD_SCHEME=y
 
 if test "${enable_scheme}" != "" ; then
