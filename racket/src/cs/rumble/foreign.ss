@@ -128,29 +128,38 @@
 
 ;; ----------------------------------------
 
-;; Hack: use `s_fxmul` as an identity function
-;; to corece a bytevector's start to an address
-(define bytevector->addr ; call with GC disabled
-  (foreign-procedure "(cs)fxmul"
-    (u8* uptr)
-    uptr))
-(define object->addr ; call with GC disabled
-  (foreign-procedure "(cs)fxmul"
-    (scheme-object uptr)
-    uptr))
-(define address->object ; call with GC disabled
-  (foreign-procedure "(cs)fxmul"
-    (uptr uptr)
-    scheme-object))
-
 (define vector-content-offset
-  ;; Hack: we rely on the implementation detail of bytevectors and vectors
-  ;; having the same offset from the address to the content.
-  (let ([s (make-bytevector 1)])
-    ;; Disable interrupts to avoid a GC:
-    (with-interrupts-disabled
-     (- (bytevector->addr s 1)
-        (object->addr s 1)))))
+  (let-syntax ([vector-content-offset
+                (lambda (stx)
+                  ;; Hack: use `s_fxmul` as an identity function
+                  ;; to corece a bytevector's start to an address
+                  (define hack-bytevector->addr ; call with GC disabled
+                    (foreign-procedure "(cs)fxmul"
+                                       (u8* uptr)
+                                       uptr))
+                  (let* ([s (make-bytevector 1)]
+                         [offset
+                          ;; Disable interrupts to avoid a GC:
+                          (with-interrupts-disabled
+                           (- (hack-bytevector->addr s 1)
+                              (#%$object-address s 0)))])
+                    (datum->syntax #'here offset)))])
+    (vector-content-offset)))
+
+(define (object->addr v) ; call with GC disabled
+  (#%$object-address v 0))
+
+(define (address->object n) ; call with GC disabled
+  (#%$address->object n 0))
+
+(define (bytevector->addr bv) ; call with GC disabled
+  (#%$object-address bv vector-content-offset))
+
+;; Convert a raw foreign address to a Scheme value on the
+;; assumption that the address is the payload of a byte
+;; string or vector:
+(define (addr->gcpointer-memory v)  ; call with GC disabled
+  (#%$address->object v (- vector-content-offset)))
 
 ;; Converts a primitive cpointer (normally the result of
 ;; `unwrap-cpointer`) to a raw foreign address. The
@@ -189,17 +198,10 @@
 (define (memory-address memory) ; call with GC disabled
   (cond
    [(integer? memory) memory]
-   [(bytes? memory) (bytevector->addr memory 1)]
+   [(bytes? memory) (bytevector->addr memory)]
    [else
-    (+ (object->addr memory 1)
+    (+ (object->addr memory)
        vector-content-offset)]))
-
-;; Convert a raw foreign address to a Scheme value on the
-;; assumption that the address is the payload of a byte
-;; string or vector:
-(define (addr->gcpointer-memory v)  ; call with GC disabled
-  (address->object (- v vector-content-offset) 1))
-
 ;; ----------------------------------------
 
 (define (cpointer-strip p)
@@ -910,7 +912,7 @@
                                  (cpointer-address p)
                                  offset)])
              (case host-rep
-               [(scheme-object) (address->object v 1)]
+               [(scheme-object) (address->object v)]
                [else
                 (case (ctype-our-rep type)
                   [(gcpointer) (addr->gcpointer-memory v)]
@@ -1022,7 +1024,7 @@
                          (cpointer-address p)
                          offset
                          (case host-rep
-                           [(scheme-object) (object->addr v 1)]
+                           [(scheme-object) (object->addr v)]
                            [(void*) (cpointer-address v)]
                            [else v])))]))])))
 
@@ -1461,9 +1463,7 @@
   ;; so uses of the FFI can rely on passing an argument to a foreign
   ;; function as retaining the argument until the function returns.
   (let ([result e])
-    ;; This comparsion will never be true, but the
-    ;; compiler and GC don't know that:
-    (when (eq? v none2) (raise none2)) ...
+    (#%$keep-live v) ...
     result))
 
 (define (ffi-call/callable call? in-types out-type abi save-errno blocking? atomic? async-apply)

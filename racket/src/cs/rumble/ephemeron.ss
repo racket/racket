@@ -17,8 +17,5 @@
           v))]
    [(e gced-v keep-live)
     (let ([v (ephemeron-value e gced-v)])
-      ;; This comparsion will never be true, but the
-      ;; compiler and GC don't know that:
-      (if (eq? v none2)
-          keep-live
-          v))]))
+      (#%$keep-live keep-live)
+      v)]))
