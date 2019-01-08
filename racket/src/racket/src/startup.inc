@@ -52197,7 +52197,7 @@ static const char *startup_source =
 "(values))))"
 "(let-values((()"
 "(begin"
-"(if(null? args_1)"
+"(if(null?(cdr args_1))"
 "(let-values()"
 "(if key_0"
 "(let-values()"

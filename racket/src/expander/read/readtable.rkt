@@ -51,7 +51,7 @@
         (raise-argument-error 'make-readtable "(or/c char? #f)" key))
       
       ;; Mode determines how the key is mapped
-      (when (null? args)
+      (when (null? (cdr args))
         (cond
          [key (raise-arguments-error 'make-readtable
                                      (string-append "expected 'terminating-macro, 'non-terminating-macro, 'dispatch-macro,"
