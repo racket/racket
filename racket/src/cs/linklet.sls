@@ -563,18 +563,25 @@
            ;; Call the linklet:
            (performance-region
             'instantiate
-            (apply
-             (if (eq? 'callable (linklet-preparation linklet))
-                 (linklet-code linklet)
-                 (eval-from-bytevector (linklet-code linklet) (linklet-format linklet)))
-             (make-variable-reference target-instance #f)
-             (append (apply append
-                            (map (make-extract-variables target-instance)
-                                 import-instances
-                                 (linklet-importss linklet)
-                                 (linklet-importss-abi linklet)))
-                     (create-variables target-instance
-                                       (linklet-exports linklet)))))))]
+            ((if use-prompt?
+                 ;; For per-form prompts with in a module linklet,
+                 ;; rely on 'use-prompt provided at compile time.
+                 ;; But this one is useful for top-level forms.
+                 call-with-module-prompt
+                 (lambda (thunk) (thunk)))
+             (lambda ()
+               (apply
+                (if (eq? 'callable (linklet-preparation linklet))
+                    (linklet-code linklet)
+                    (eval-from-bytevector (linklet-code linklet) (linklet-format linklet)))
+                (make-variable-reference target-instance #f)
+                (append (apply append
+                               (map (make-extract-variables target-instance)
+                                    import-instances
+                                    (linklet-importss linklet)
+                                    (linklet-importss-abi linklet)))
+                        (create-variables target-instance
+                                          (linklet-exports linklet)))))))))]
        [else
         ;; Make a fresh instance, recur, and return the instance
         (let ([i (make-instance (linklet-name linklet))])

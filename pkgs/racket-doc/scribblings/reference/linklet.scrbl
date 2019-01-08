@@ -120,7 +120,7 @@ otherwise.}
                              [name any/c #f]
                              [import-keys #f #f]
                              [get-import #f #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                             [options (listof (or/c 'serializable 'unsafe 'static 'use-prompt))
                                       '(serializable)])
             linklet?]
            [(compile-linklet [form (or/c correlated? any/c)]
@@ -129,7 +129,7 @@ otherwise.}
                              [get-import (or/c #f (any/c . -> . (values (or/c linklet? instance? #f)
                                                                         (or/c vector? #f))))
                                          #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                             [options (listof (or/c 'serializable 'unsafe 'static 'use-prompt))
                                       '(serializable)])
             (values linklet? vector?)])]{
 
@@ -192,9 +192,12 @@ at most once. Compilation with @racket['static] is intended to improve
 the performance of references within the linklet to defined and
 imported variables.
 
-If @racket['no-prompt] is included in @racket[options], then when the
-resulting linklet is instantiated, the @racket[_use-prompt?] argument
-to @racket[instantiate-linklet] may be treated as @racket[#f].
+If @racket['use-prompt] is included in @racket[options], then
+instantiating resulting linklet always wraps a prompt around each
+definition and immediate expression in the linklet. Otherwise,
+supplying @racket[#t] as the @racket[_use-prompt?] argument to
+@racket[instantiate-linklet] may only wrap a prompt around the entire
+instantiation.
 
 The symbols in @racket[options] must be distinct, otherwise
 @exnraise[exn:fail:contract].
@@ -267,9 +270,13 @@ each export. If @racket[target-instance] is provided as
 non-@racket[#f], its existing variables remain intact if they are not
 modified by a linklet definition.
 
-If @racket[use-prompt?] is true, then the evaluation each definition
-and expression in the linklet is wrapped in a @tech{prompt} in the
-same ways as an expression in a module body.}
+If @racket[use-prompt?] is true, then a a @tech{prompt} is wrapped
+around the linklet instantiation in same ways as an expression in a
+module body. If the linklet contains multiple definitions or immediate
+expressions, then a prompt may or may not be wrapped around each
+definition or expression; supply @racket['use-prompt] to
+@racket[compile-linklet] to ensure that a prompt is used around each
+definition and expression.}
 
 
 @defproc[(linklet-import-variables [linklet linklet?])
