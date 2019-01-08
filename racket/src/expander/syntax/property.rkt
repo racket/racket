@@ -28,7 +28,7 @@
      (when preserved?
        (unless (and (symbol? key) (symbol-interned? key))
          (raise-arguments-error who
-                                "key for a perserved property must be an interned symbol"
+                                "key for a preserved property must be an interned symbol"
                                 "given key" key
                                 "given value" val)))
      (define pval (if preserved?

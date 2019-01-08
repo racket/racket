@@ -274,7 +274,7 @@
                  (and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos))))
              (fail convert-mode "misplaced `.` in `~.a`" (substring s start end))]
             [(and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos)))
-             (fail convert-mode "decimal points and fractions annot be mixed `~.a`" (substring s start end))]
+             (fail convert-mode "decimal points and fractions cannot be mixed `~.a`" (substring s start end))]
             [else
              (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
                    sign-pos i #f #f
@@ -282,7 +282,7 @@
          [(char=? c #\/)
           (cond
             [(and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos)))
-             (fail convert-mode "decimal points and fractions annot be mixed `~.a`" (substring s start end))]
+             (fail convert-mode "decimal points and fractions cannot be mixed `~.a`" (substring s start end))]
             [(or (and exp-pos (or (not sign-pos) (exp-pos . fx> . sign-pos)))
                  (and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos))))
              (fail convert-mode "misplaced `/` in `~.a`" (substring s start end))]
