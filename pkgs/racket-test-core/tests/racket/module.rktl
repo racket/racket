@@ -1053,7 +1053,7 @@
   (define temp-dir (find-system-path 'temp-dir))
   (define dir (build-path temp-dir (car (use-compiled-file-paths))))
   (define dir-existed? (directory-exists? dir))
-  (unless dir-existed? (make-directory dir))
+  (unless dir-existed? (make-directory* dir))
 
   (define (go a-s)
     (parameterize ([current-namespace (make-base-namespace)]
