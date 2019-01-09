@@ -116,25 +116,31 @@
         (bytevector-u16-native-set! mem k v)
         (foreign-set! 'uint16 mem k v))))
 
-(define (unsafe-f64vector-ref cptr k)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-f64vector-ref f64 k)
+  (let* ([cptr (unsafe-struct*-ref f64 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 8)])
     (if (bytes? mem)
         (bytevector-ieee-double-native-ref mem k)
         (foreign-ref 'double mem k))))
-(define (unsafe-f64vector-set! cptr k v)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-f64vector-set! f64 k v)
+  (let* ([cptr (unsafe-struct*-ref f64 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 8)])
     (if (bytes? mem)
         (bytevector-ieee-double-native-set! mem k v)
         (foreign-set! 'double mem k v))))
 
 ;; FIXME
-(define (unsafe-f80vector-ref cptr k)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-f80vector-ref f80 k)
+  (let* ([cptr (unsafe-struct*-ref f80 0)]
+         [mem (cpointer-memory cptr)])
     (if (bytes? mem)
         (bytevector-ieee-double-native-ref mem k)
         (foreign-ref 'double mem k))))
-(define (unsafe-f80vector-set! cptr k v)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-f80vector-set! f80 k v)
+  (let* ([cptr (unsafe-struct*-ref f80 0)]
+         [mem (cpointer-memory cptr)])
     (if (bytes? mem)
         (bytevector-ieee-double-native-set! mem k v)
         (foreign-set! 'double mem k v))))
