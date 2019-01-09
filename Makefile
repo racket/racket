@@ -465,9 +465,10 @@ TGZ_MODE =
 # (or archive) only in source form:
 PKG_SOURCE_MODE = 
 
-# Set to a path for an executable to run on an installer (on the
-# client machine) before the installer is uploaded:
-INSTALLER_POST_PROCESS =
+# Set a base64-encoded list of strings for an executable and argument
+# to run on an installer (on the client machine) before the installer
+# is uploaded, or empty for no post-process action:
+INSTALLER_POST_PROCESS_BASE64 =
 
 # Human-readable name (spaces allowed), installation name base, and
 # Unix installation directory name for the generated installers:
@@ -709,7 +710,7 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
             OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" JOB_OPTIONS="$(JOB_OPTIONS)" \
             TGZ_MODE=$(TGZ_MODE) TEST_PKGS="$(TEST_PKGS)" \
-            INSTALLER_POST_PROCESS="$(INSTALLER_POST_PROCESS)"
+            INSTALLER_POST_PROCESS_BASE64="$(INSTALLER_POST_PROCESS_BASE64)"
 
 COPY_ARGS = $(PROP_ARGS) \
             SERVER_CATALOG_PATH=$(SERVER_CATALOG_PATH) SERVER_COLLECTS_PATH=$(SERVER_COLLECTS_PATH)
@@ -770,7 +771,7 @@ bundle-cross-from-server:
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \
-              $(MAC_PKG_MODE) $(TGZ_MODE) --post-process "$(INSTALLER_POST_PROCESS)" \
+              $(MAC_PKG_MODE) $(TGZ_MODE) --post-process "$(INSTALLER_POST_PROCESS_BASE64)" \
               "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR) "$(DIST_SUFFIX)" \
               "$(SIGN_IDENTITY)" "$(OSSLSIGNCODE_ARGS_BASE64)"
 
