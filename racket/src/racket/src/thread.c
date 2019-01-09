@@ -3994,7 +3994,8 @@ Scheme_Object *scheme_rktio_fd_to_semaphore(rktio_fd_t *fd, int mode)
       /* That's a kind of success, not failure. */
       return NULL;
     }
-    log_fd_semaphore_error();
+    if (!scheme_last_error_is_racket(RKTIO_ERROR_UNSUPPORTED))
+      log_fd_semaphore_error();
     return NULL;    
   }
 
