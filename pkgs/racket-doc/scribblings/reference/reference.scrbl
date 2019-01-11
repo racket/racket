@@ -86,7 +86,7 @@ The @racketmodname[racket] library combines
 
   (bib-entry #:key "C99"
              #:author "ISO/IEC"
-             #:title "ISO/IEC 9899:1999 Cor. 3:2007(E))"
+             #:title "ISO/IEC 9899:1999 Cor. 3:2007(E)"
              #:date "2007")
 
   (bib-entry #:key "Culpepper07"
@@ -113,6 +113,12 @@ The @racketmodname[racket] library combines
              #:location "LISP and Functional Programming"
              #:date "1988")
 
+  (bib-entry #:key "Feltey18"
+             #:author "Daniel Feltey, Ben Greenman, Christophe Scholliers, Robert Bruce Findler, and Vincent St-Amour"
+             #:title "Collapsible Contracts: Fixing a Pathology of Gradual Typing"
+             #:location "Object-Oriented Programming, Systems, and Languages (OOPSLA)"
+             #:date "2018")
+
   (bib-entry #:key "Flatt02"
              #:author "Matthew Flatt"
              #:title "Composable and Compilable Macros: You Want it When?"
@@ -131,6 +137,12 @@ The @racketmodname[racket] library combines
              #:author "Martin Gasbichler and Michael Sperber"
              #:date "2002"
              #:location "Workshop on Scheme and Functional Programming")
+
+  (bib-entry #:key "Greenberg15"
+             #:author "Michael Greenberg"
+             #:title "Space-Efficient Manifest Contracts"
+             #:location "Principles of Programming Languages (POPL)"
+             #:date "2015")
 
  (bib-entry #:key "Gunter95"
             #:author "Carl Gunter, Didier Remy, and Jon Rieke"
