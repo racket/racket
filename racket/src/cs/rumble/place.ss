@@ -35,9 +35,6 @@
 (define (place-local-register-set! i v)
   (#%vector-set! (place-registers) i v))
 
-(define (place-local-register-cas! i old-v new-v)
-  (#%vector-cas! (place-registers) i old-v new-v))
-
 (define (place-local-register-init! i v)
   (place-local-register-set! i v)
   (#%vector-set! place-register-inits i v))
@@ -53,10 +50,11 @@
 (define place-specific-table (unsafe-make-place-local #f))
 
 (define (unsafe-get-place-table)
-  (or (unsafe-place-local-ref place-specific-table)
-      (begin
-        (place-local-register-cas! place-specific-table #f (make-hasheq))
-        (unsafe-get-place-table))))
+  (with-interrupts-disabled
+   (or (unsafe-place-local-ref place-specific-table)
+       (let ([ht (make-hasheq)])
+         (unsafe-place-local-set! place-specific-table ht)
+         ht))))
 
 ;; ----------------------------------------
 
