@@ -34,6 +34,7 @@
               (eval '(f (fxvector 0))))))
 (check-defined 'vfasl-convert-file)
 (check-defined 'compute-size-increments)
+(check-defined 'enable-type-recovery)
 
 ;; ----------------------------------------
 

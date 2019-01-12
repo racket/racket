@@ -322,6 +322,9 @@ compiled terms when a linklet is not compliled whole; set
 those compiled parts; and/or set `PLT_LINKLET_SHOW_POST_INTERP` to see
 the "bytecode" form.
 
+Set `PLT_LINKLET_SHOW_CP0` to see the Schmeified form of a linklet
+after expansion and optimization by Chez Scheme's cp0.
+
 Safety and Debugging Mode
 -------------------------
 

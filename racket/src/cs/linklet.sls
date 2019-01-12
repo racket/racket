@@ -146,6 +146,7 @@
   (define post-interp-on? (getenv "PLT_LINKLET_SHOW_POST_INTERP"))
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
+  (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
   (define show-on? (or gensym-on?
                        pre-jit-on?
                        pre-lift-on?
@@ -153,6 +154,7 @@
                        post-interp-on?
                        jit-demand-on?
                        known-on?
+                       cp0-on?
                        (getenv "PLT_LINKLET_SHOW")))
   (define show
     (case-lambda
@@ -483,6 +485,8 @@
                (correlated->annotation impl-lam))))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
+       (when cp0-on?
+         (show "cp0" (#%expand/optimize impl-lam/interpable)))
        (performance-region
         'compile-linklet
         ;; Create the linklet:
