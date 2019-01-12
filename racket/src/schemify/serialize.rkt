@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/extflonum
+         racket/prefab
          "match.rkt"
          "wrap.rkt"
          "quoted.rkt")
@@ -141,6 +142,14 @@
 (define (make-construct q add-lifted lifted-eq-constants lifted-equal-constants
                         for-cify? datum-intern?)
   (define (quote? e) (and (pair? e) (eq? 'quote (car e))))
+  (define seen #hasheq())
+  (define (check-cycle v)
+    (when (hash-ref seen v #f)
+      (raise-arguments-error 'compile "cannot compile cyclic value"
+                             "value" q))
+    (set! seen (hash-set seen v #t)))
+  (define (done-cycle v)
+    (set! seen (hash-remove seen v)))
   (let make-construct ([q q])
     (define lifted-constants (if (or (string? q) (bytes? q))
                                  lifted-equal-constants
@@ -167,14 +176,19 @@
            [(keyword? q)
             `(string->keyword ,(keyword->string q))]
            [(hash? q)
-            `(,(cond
-                 [(hash-eq? q) 'hasheq]
-                 [(hash-eqv? q) 'hasheqv]
-                 [else 'hash])
-              ,@(apply append
-                       (for/list ([(k v) (in-hash q)])
-                         (list (make-construct k)
-                               (make-construct v)))))]
+            (define mut? (not (immutable? q)))
+            (when mut? (check-cycle q))
+            (define new-q
+              `(,(cond
+                   [(hash-eq? q) 'hasheq]
+                   [(hash-eqv? q) 'hasheqv]
+                   [else 'hash])
+                ,@(apply append
+                         (for/list ([(k v) (in-hash q)])
+                           (list (make-construct k)
+                                 (make-construct v))))))
+            (when mut? (done-cycle q))
+            new-q]
            [(string? q) `(datum-intern-literal ,q)]
            [(bytes? q) `(datum-intern-literal ,q)]
            [(pair? q)
@@ -200,8 +214,13 @@
               `(box-immutable ,arg))]
            [(prefab-struct-key q)
             => (lambda (key)
-                 `(make-prefab-struct ',key ,@(map make-construct
-                                                   (cdr (vector->list (struct->vector q))))))]
+                 (define mut? (not (prefab-key-all-fields-immutable? key)))
+                 (when mut? (check-cycle q))
+                 (define new-q
+                   `(make-prefab-struct ',key ,@(map make-construct
+                                                     (cdr (vector->list (struct->vector q))))))
+                 (when mut? (done-cycle q))
+                 new-q)]
            [(extflonum? q)
             `(string->number ,(format "~a" q) 10 'read)]
            [else `(quote ,q)]))

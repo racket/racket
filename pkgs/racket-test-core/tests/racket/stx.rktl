@@ -957,7 +957,8 @@
           ((current-eval) (datum->syntax #f 'eval))))
 
   (test eval 'compile (eval (compile 'eval)))
-  (test eval 'compile (eval (compile eval)))
+  (when (eq? 'racket (system-type 'vm))
+    (test eval 'compile (eval (compile eval))))
   (test eval 'compile (eval (compile #'eval)))
   (test eval 'compile (eval (compile (datum->syntax #f 'eval))))
 
