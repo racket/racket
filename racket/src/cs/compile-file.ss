@@ -59,7 +59,7 @@
 
 (define whole-program? #f)
 (generate-inspector-information #f)
-(generate-procedure-source-information #t)
+(generate-procedure-source-information #f)
 (compile-compressed #f)
 (define build-dir "")
 
@@ -69,6 +69,10 @@
      [(get-opt args "--debug" 0)
       => (lambda (args)
            (generate-inspector-information #t)
+           (loop args))]
+     [(get-opt args "--srcloc" 0)
+      => (lambda (args)
+           (generate-procedure-source-information #f)
            (loop args))]
      [(get-opt args "--unsafe" 0)
       => (lambda (args)

@@ -10,7 +10,9 @@ UNSAFE_COMP = --unsafe
 # Controls whether compiled code is compressed:
 COMPRESS_COMP = # --compress
 
-# Controls whether Racket layers are built with expression-level debugging:
+# Controls whether Racket layers are built with expression-level
+# debugging; use "--debug" for expression-level information or
+# "--srcloc" for procedure-level source locations:
 DEBUG_COMP = # --debug
 
 COMPILE_FILE = $(SCHEME) --script compile-file.ss $(UNSAFE_COMP) $(COMPRESS_COMP) $(DEBUG_COMP) --dest "$(BUILDDIR)"
