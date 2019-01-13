@@ -123,6 +123,8 @@
                                     (not (equal? lib-suffix "dll"))))
 (define version-sep (if (equal? lib-suffix "dll") "-" "."))
 
+(define-logger ffi-lib)
+
 (provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
          ffi-lib? ffi-lib-name)
 (define (get-ffi-lib name [version/s ""]
@@ -143,13 +145,24 @@
     ;; file-not-found error.  This is because the dlopen doesn't provide a
     ;; way to distinguish different errors (only dlerror, but that's
     ;; unreliable).
+    (define (fullpath p) (path->complete-path (cleanse-path p)))
+    (define tried '()) ;; (listof path-string), mutated
+    (define (try-lib name)
+      (let ([lib (ffi-lib name #t global?)])
+        (cond [lib (log-ffi-lib-debug "loaded ~e" name)]
+              [else (set! tried (cons name tried))])
+        lib))
+    (define (skip-lib name)
+      (begin (set! tried (cons name tried)) #f))
+    (define (try-lib-if-exists? name)
+      (cond [(file-exists?/insecure name) (try-lib (fullpath name))]
+            [else (skip-lib (fullpath name))]))
     (let* ([versions (if (list? version/s) version/s (list version/s))]
 	   [versions (map (lambda (v)
 			    (if (or (not v) (zero? (string-length v)))
 				""
                                 (string-append version-sep v)))
 			  versions)]
-	   [fullpath (lambda (p) (path->complete-path (cleanse-path p)))]
 	   [absolute? (absolute-path? name)]
 	   [name0 (path->string (cleanse-path name))]     ; orig name
 	   [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
@@ -158,31 +171,38 @@
 			     (if suffix-before-version?
 				 (string-append name0 "." lib-suffix v)
 				 (string-append name0 v "." lib-suffix))))
-		       versions)]
-	   [ffi-lib*  (lambda (name) (ffi-lib name #t global?))])
+		       versions)])
       (or ;; try to look in our library paths first
        (and (not absolute?)
 	    (ormap (lambda (dir)
 		     ;; try good names first, then original
-		     (or (ormap (lambda (name)
-				  (ffi-lib* (build-path dir name)))
+		     (or (ormap (lambda (name) (try-lib (build-path dir name)))
 				names)
-			 (ffi-lib* (build-path dir name0))))
+			 (try-lib (build-path dir name0))))
 		   (get-lib-dirs)))
        ;; try a system search
-       (ormap ffi-lib* names)    ; try good names first
-       (ffi-lib* name0)          ; try original
-       (ormap (lambda (name)     ; try relative paths
-		(and (file-exists?/insecure name) (ffi-lib* (fullpath name))))
-	      names)
-       (and (file-exists?/insecure name0) ; relative with original
-	    (ffi-lib* (fullpath name0)))
+       (ormap try-lib names)              ; try good names first
+       (try-lib name0)                    ; try original
+       (ormap try-lib-if-exists? names)   ; try relative paths
+       (try-lib-if-exists? name0)         ; relative with original
        ;; give up: by default, call ffi-lib so it will raise an error
-       (if fail
-	   (fail)
-	   (if (pair? names)
-	       (ffi-lib (car names) #f global?)
-	       (ffi-lib name0 #f global?)))))]))
+       (begin
+         (log-ffi-lib-debug
+          "failed for (ffi-lib ~v ~v), tried: ~a"
+          name0 version/s
+          (apply
+           string-append
+           (for/list ([attempt (reverse tried)])
+             (format "\n  ~e~a" attempt
+                     (cond [(absolute-path? attempt)
+                            (cond [(file-exists?/insecure attempt) " (exists)"]
+                                  [else " (no such file)"])]
+                           [else " (using OS library search path)"])))))
+         (if fail
+             (fail)
+             (if (pair? names)
+                 (ffi-lib (car names) #f global?)
+                 (ffi-lib name0 #f global?))))))]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))
