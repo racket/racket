@@ -3,6 +3,7 @@
          racket/fixnum
          "match.rkt"
          "wrap.rkt"
+         "path-for-srcloc.rkt"
          "interp-match.rkt"
          "interp-stack.rkt")
 
@@ -80,8 +81,17 @@
               (loop (cdr bindings)
                     (fx+ elem 1)
                     (hash-set env (car binding) (indirect 0 elem))
-                    (cons (compile-expr (cadr binding) env 1 bindings-stk-i #t)
-                          accum)))]))]))
+                    (let ([rhs (cadr binding)])
+                      (cons (cond
+                              [(or (path? rhs)
+                                   (path-for-srcloc? rhs))
+                               ;; The caller must extract all the paths from the bindings
+                               ;; and pass them back in at interp time; assume '#%path is
+                               ;; not a primitive
+                               '#%path]
+                              [else
+                               (compile-expr rhs env 1 bindings-stk-i #t)])
+                            accum))))]))]))
 
   (define (compile-linklet-body v env stack-depth)
     (match v
@@ -408,6 +418,7 @@
 ;; ----------------------------------------
 
 (define (interpret-linklet b            ; compiled form
+                           paths        ; unmarshaled paths
                            primitives   ; hash of symbol -> value
                            ;; the implementation of variables:
                            variable-ref variable-ref/no-check variable-set!
@@ -419,10 +430,15 @@
     (let ([consts (and consts
                        (let ([vec (make-vector (vector*-length consts))])
                          (define stack (stack-set empty-stack 0 vec))
-                         (for ([b (in-vector consts)]
-                               [i (in-naturals)])
-                           (vector-set! vec i (interpret-expr b stack primitives void void void void))
-                           vec)
+                         (for/fold ([paths paths]) ([b (in-vector consts)]
+                                                    [i (in-naturals)])
+                           (cond
+                             [(eq? b '#%path)
+                              (vector-set! vec i (car paths))
+                              (cdr paths)]
+                             [else
+                              (vector-set! vec i (interpret-expr b stack primitives void void void void))
+                              paths]))
                          vec))])
       (lambda args
         (define start-stack (if consts

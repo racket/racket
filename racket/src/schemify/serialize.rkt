@@ -3,6 +3,7 @@
          racket/prefab
          "match.rkt"
          "wrap.rkt"
+         "path-for-srcloc.rkt"
          "quoted.rkt")
 
 (provide convert-for-serialize)
@@ -160,13 +161,23 @@
       [else
        (define rhs
          (cond
-           [(path? q) `(bytes->path ,(path->bytes q)
-                                    ',(path-convention-type q))]
+           [(path? q)
+            (if for-cify?
+                `(bytes->path ,(path->bytes q)
+                              ',(path-convention-type q))
+                ;; We expect paths to be recognized in lifted bindings
+                ;; and handled specially, so no conversion here:
+                q)]
+           [(path-for-srcloc? q) q]
            [(regexp? q)
             `(,(if (pregexp? q) 'pregexp 'regexp) ,(object-name q))]
            [(srcloc? q)
             `(unsafe-make-srcloc
-              ,(make-construct (srcloc-source q))
+              ,(let ([src (srcloc-source q)])
+                 (if (and (path? src) (not for-cify?))
+                     ;; Like paths, `path-for-srcloc` must be recognized later
+                     (make-construct (path-for-srcloc src))
+                     (make-construct src)))
               ,(make-construct (srcloc-line q))
               ,(make-construct (srcloc-column q))
               ,(make-construct (srcloc-position q))

@@ -3,9 +3,12 @@
           lift-in-schemified-linklet
           jitify-schemified-linklet
           xify
+          extract-paths-from-schemified-linklet
           interpretable-jitified-linklet
           interpret-linklet
           linklet-bigger-than?
+          make-path->compiled-path
+          compiled-path->path
           prim-knowns
           known-procedure
           known-procedure/pure

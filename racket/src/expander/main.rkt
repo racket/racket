@@ -117,7 +117,7 @@
 
          expander-place-init!
 
-         fasl->s-exp/intern
+         fasl->s-exp/intern  ; for Chez Scheme as "primitive" and in linklet layer
 
          ;; The remaining functions are provided for basic testing
          ;; (such as "demo.rkt")

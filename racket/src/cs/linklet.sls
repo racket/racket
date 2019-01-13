@@ -202,18 +202,21 @@
        (hash-for-each table (lambda (k v) (hash-set! primitives k v))))
      tables))
   
-  (define (outer-eval s format)
+  (define (outer-eval s paths format)
     (if (eq? format 'interpret)
-        (interpret-linklet s primitives variable-ref variable-ref/no-check variable-set!
+        (interpret-linklet s paths primitives variable-ref variable-ref/no-check variable-set!
                            make-arity-wrapper-procedure)
-        (compile* s)))
+        (let ([proc (compile* s)])
+          (if (null? paths)
+              proc
+              (#%apply proc paths)))))
 
   (define (compile*-to-bytevector s)
     (let-values ([(o get) (open-bytevector-output-port)])
       (compile-to-port* (list `(lambda () ,s)) o)
       (get)))
 
-  (define (compile-to-bytevector s format)
+  (define (compile-to-bytevector s paths format)
     (let ([bv (cond
                [(eq? format 'interpret)
                 (let-values ([(o get) (open-bytevector-output-port)])
@@ -224,7 +227,7 @@
           (bytevector-compress bv)
           bv)))
 
-  (define (eval-from-bytevector c-bv format)
+  (define (eval-from-bytevector c-bv paths format)
     (let ([bv (if (bytevector-uncompressed-fasl? c-bv)
                   c-bv
                   (begin
@@ -240,11 +243,14 @@
                   (fasl-read (open-bytevector-input-port bv)))])
           (performance-region
            'outer
-           (outer-eval r format)))]
+           (outer-eval r paths format)))]
        [else
-        (performance-region
-         'faslin-code
-         (code-from-bytevector bv))])))
+        (let ([proc (performance-region
+                     'faslin-code
+                     (code-from-bytevector bv))])
+          (if (null? paths)
+              proc
+              (#%apply proc paths)))])))
 
   (define (code-from-bytevector bv)
     (let ([i (open-bytevector-input-port bv)])
@@ -319,13 +325,13 @@
                       [code (lookup-code hash)])
                  (cond
                   [code
-                   (let* ([f (eval-from-bytevector code 'compile)])
+                   (let* ([f (eval-from-bytevector code '() 'compile)])
                      (wrapped-code-content-set! wc f)
                      f)]
                   [else
-                   (let ([code (compile-to-bytevector (vector-ref f 1) 'compile)])
+                   (let ([code (compile-to-bytevector (vector-ref f 1) '() 'compile)])
                      (insert-code hash code)
-                     (let* ([f (eval-from-bytevector code 'compile)])
+                     (let* ([f (eval-from-bytevector code '() 'compile)])
                        (wrapped-code-content-set! wc f)
                        f))]))]
               [else
@@ -384,7 +390,8 @@
   ;; A linklet also has a table of information about its 
 
   (define-record-type linklet
-    (fields (mutable code) ; the procedure
+    (fields (mutable code) ; the procedure or interpretable form
+            paths          ; list of paths; if non-empty, `code` expects them as arguments
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'callable, or 'lazy
             importss-abi   ; ABI for each import, in parallel to `importss`
@@ -392,12 +399,24 @@
             name           ; name of the linklet (for debugging purposes)
             importss       ; list of list of import symbols
             exports)       ; list of export symbols
-    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-0}))
+    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-1}))
 
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
+                  (linklet-paths linklet)
                   (linklet-format linklet)
                   preparation
+                  (linklet-importss-abi linklet)
+                  (linklet-exports-info linklet)
+                  (linklet-name linklet)
+                  (linklet-importss linklet)
+                  (linklet-exports linklet)))
+
+  (define (set-linklet-paths linklet paths)
+    (make-linklet (linklet-code linklet)
+                  paths
+                  (linklet-format linklet)
+                  (linklet-preparation linklet)
                   (linklet-importss-abi linklet)
                   (linklet-exports-info linklet)
                   (linklet-name linklet)
@@ -475,18 +494,22 @@
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask name)
                                                     code))))])))]))
+       (define-values (paths impl-lam/paths)
+         (if serializable?
+             (extract-paths-from-schemified-linklet impl-lam/jitified (not jitify-mode?))
+             (values '() impl-lam/jitified)))
        (define impl-lam/interpable
          (let ([impl-lam (case (and jitify-mode?
                                     linklet-compilation-mode)
-                           [(mach) (show post-lambda-on? "post-lambda" impl-lam/jitified)]
-                           [else (show "schemified" impl-lam/jitified)])])
+                           [(mach) (show post-lambda-on? "post-lambda" impl-lam/paths)]
+                           [else (show "schemified" impl-lam/paths)])])
            (if jitify-mode?
                (interpretable-jitified-linklet impl-lam correlated->datum)
                (correlated->annotation impl-lam))))
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
-       (when cp0-on?
-         (show "cp0" (#%expand/optimize impl-lam/interpable)))
+       (when (and cp0-on? (not jitify-mode?))
+         (show "cp0" (#%expand/optimize impl-lam/paths)))
        (performance-region
         'compile-linklet
         ;; Create the linklet:
@@ -494,7 +517,9 @@
                                  (lambda ()
                                    ((if serializable? compile-to-bytevector outer-eval)
                                     (show (and jitify-mode? post-interp-on?) "post-interp" impl-lam/interpable)
+                                    paths
                                     format)))
+                                paths
                                 format
                                 (if serializable? 'faslable 'callable)
                                 importss-abi
@@ -539,7 +564,9 @@
       [(faslable)
        (set-linklet-code linklet (linklet-code linklet) 'lazy)]
       [(faslable-strict)
-       (set-linklet-code linklet (eval-from-bytevector (linklet-code linklet) (linklet-format linklet)) 'callable)]
+       (set-linklet-code linklet
+                         (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))
+                         'callable)]
       [else
        linklet]))
      
@@ -559,7 +586,7 @@
            (register-linklet-instantiate-continuation! k (instance-name target-instance))
            (when (eq? 'lazy (linklet-preparation linklet))
              ;; Trigger lazy conversion of code from bytevector
-             (let ([code (eval-from-bytevector (linklet-code linklet) (linklet-format linklet))])
+             (let ([code (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))])
                (with-interrupts-disabled
                 (when (eq? 'lazy (linklet-preparation linklet))
                   (linklet-code-set! linklet code)
@@ -577,7 +604,7 @@
                (apply
                 (if (eq? 'callable (linklet-preparation linklet))
                     (linklet-code linklet)
-                    (eval-from-bytevector (linklet-code linklet) (linklet-format linklet)))
+                    (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet)))
                 (make-variable-reference target-instance #f)
                 (append (apply append
                                (map (make-extract-variables target-instance)

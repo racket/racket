@@ -352,7 +352,8 @@
     (define c (compile `,(srcloc v 1 2 3 4)))
     (cond
      [ok?
-      (write c o)
+      (parameterize ([current-write-relative-directory (current-directory)])
+        (write c o))
       (test result-v
             srcloc-source
             (parameterize ([current-load-relative-directory (build-path (current-directory) "sub")])
@@ -377,6 +378,8 @@
   (try (build-path "x" "apple" 'same) ".../apple/.")
   (let ([d (car (filesystem-root-list))])
     (try (build-path d 'up) (path->string (build-path d 'up))))
+  (try (build-path (current-directory) "apple")
+       (build-path (current-directory) "sub" "apple"))
 
   (try 7 #:ok? #f)
   (try (box 7) #:ok? #f))
