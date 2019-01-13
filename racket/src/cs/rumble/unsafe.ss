@@ -94,24 +94,32 @@
 (define unsafe-fxvector-ref (unsafe-primitive fxvector-ref))
 (define unsafe-fxvector-set! (unsafe-primitive fxvector-set!))
 
-(define (unsafe-s16vector-ref cptr k)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-s16vector-ref s16 k)
+  (let* ([cptr (unsafe-struct*-ref s16 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-s16-native-ref mem k)
         (foreign-ref 'int16 mem k))))
-(define (unsafe-s16vector-set! cptr k v)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-s16vector-set! s16 k v)
+  (let* ([cptr (unsafe-struct*-ref s16 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-s16-native-set! mem k v)
         (foreign-set! 'int16 mem k v))))
 
-(define (unsafe-u16vector-ref cptr k)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-u16vector-ref u16 k)
+  (let* ([cptr (unsafe-struct*-ref u16 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-u16-native-ref mem k)
         (foreign-ref 'uint16 mem k))))
-(define (unsafe-u16vector-set! cptr k v)
-  (let ([mem (cpointer-memory cptr)])
+(define (unsafe-u16vector-set! u16 k v)
+  (let* ([cptr (unsafe-struct*-ref u16 0)]
+         [mem (cpointer-memory cptr)]
+         [k (fx* k 2)])
     (if (bytes? mem)
         (bytevector-u16-native-set! mem k v)
         (foreign-set! 'uint16 mem k v))))
