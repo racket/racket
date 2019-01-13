@@ -153,6 +153,7 @@
   [unsafe-string-length (known-procedure/pure 2)]
   [unsafe-string-ref (known-procedure/pure 4)]
   [unsafe-string-set! (known-procedure/pure 8)]
+  [unsafe-struct*-cas! (known-procedure 16)]
   [unsafe-struct*-ref (known-procedure/pure 4)]
   [unsafe-struct*-set! (known-procedure/pure 8)]
   [unsafe-struct-ref (known-procedure/pure 4)]

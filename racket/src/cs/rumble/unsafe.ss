@@ -78,6 +78,9 @@
 (define unsafe-vector*-set! (unsafe-primitive vector-set!))
 (define unsafe-vector*-cas! (unsafe-primitive vector-cas!))
 
+(define (unsafe-struct*-cas! s k old new)
+  (#%vector-cas! s k old new))
+
 (define unsafe-unbox* (unsafe-primitive unbox))
 (define unsafe-set-box*! (unsafe-primitive set-box!))
 (define unsafe-box*-cas! (unsafe-primitive box-cas!))
