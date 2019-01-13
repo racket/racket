@@ -1055,11 +1055,13 @@
            `(read ,l))
        ,@(for/list ([(k v) (in-hash saw-accesses)])
            `(,v ,k))
-       ,@(for*/list ([l (append (get-pkgs-search-dirs)
-                                (list (find-user-pkgs-dir)))]
-                     [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
-           `(read ,(build-path l f)))
-       (read ,(build-path (find-user-pkgs-dir) "pkgs.rktd"))
+       ,@(let ([pkg-dirs (append (get-pkgs-search-dirs)
+                                 (list (find-user-pkgs-dir)))])
+           (append (for/list ([l (in-list pkg-dirs)])
+                     `(exists ,l))
+                   (for*/list ([l (in-list pkg-dirs)]
+                               [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
+                     `(read ,(build-path l f)))))
        ,@(add-compiled-file-roots
           (list `(read-bytecode ,(PLANET-BASE-DIR))))
        (exists ,(find-system-path 'addon-dir))
