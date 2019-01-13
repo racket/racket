@@ -10,7 +10,8 @@
          encoded-srcloc?
          to-srcloc-stx)
 
-(define (syntax-source-accessor who srcloc-accessor)
+;; As a macro so that the procedures have a nice name:
+(define-syntax-rule (syntax-source-accessor who srcloc-accessor)
   (lambda (s)
     (unless (syntax? s)
       (raise-argument-error who "syntax?" s))
