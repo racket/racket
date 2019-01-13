@@ -40,7 +40,15 @@
      [else
       (let ([name (#%$code-name (#%$closure-code v))])
         (and name
-             (string->symbol name)))])]
+             (cond
+              [(special-procedure-name-string? name)
+               ;; "[" is "no name", and any other
+               ;; "["-prefixed name is derived from the path
+               (let ([len (string-length name)])
+                 (and (fx> len 1)
+                      (string->symbol (substring name 1 len))))]
+              [else
+               (string->symbol name)])))])]
    [(impersonator? v)
     (object-name (impersonator-val v))]
    [(procedure? v)
@@ -63,3 +71,10 @@
       (or (hashtable-contains? rtd-props rtd)
           (getprop (record-type-uid rtd) 'prefab-key+count #f)))
      (object-name (record-rtd v)))))
+
+;; name starting with a square bracket is meant to
+;; encode a path or "no name"
+(define (special-procedure-name-string? n)
+  (and (string? n)
+       (fx> (string-length n) 0)
+       (char=? #\[ (string-ref n 0))))

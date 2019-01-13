@@ -17,7 +17,8 @@
          "find-known.rkt"
          "infer-known.rkt"
          "inline.rkt"
-         "letrec.rkt")
+         "letrec.rkt"
+         "infer-name.rkt")
 
 (provide schemify-linklet
          schemify-body)
@@ -366,11 +367,15 @@
          v 
          (match v
            [`(lambda ,formals ,body ...)
-            `(lambda ,formals ,@(schemify-body body))]
+            (infer-procedure-name
+             v
+             `(lambda ,formals ,@(schemify-body body)))]
            [`(case-lambda [,formalss ,bodys ...] ...)
-            `(case-lambda ,@(for/list ([formals (in-list formalss)]
-                                       [body (in-list bodys)])
-                              `[,formals ,@(schemify-body body)]))]
+            (infer-procedure-name
+             v
+             `(case-lambda ,@(for/list ([formals (in-list formalss)]
+                                        [body (in-list bodys)])
+                               `[,formals ,@(schemify-body body)])))]
            [`(define-values (,struct:s ,make-s ,s? ,acc/muts ...)
                (let-values (((,struct: ,make ,?1 ,-ref ,-set!) ,mk))
                  (values ,struct:2

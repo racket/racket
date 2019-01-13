@@ -20,7 +20,11 @@
                   [correlated? rumble:correlated?]
                   [correlated-e rumble:correlated-e]
                   [correlated-property rumble:correlated-property]
-                  [datum->correlated rumble:datum->correlated])
+                  [datum->correlated rumble:datum->correlated]
+                  [correlated-source rumble:correlated-source]
+                  [correlated-line rumble:correlated-line]
+                  [correlated-column rumble:correlated-column]
+                  [correlated-position rumble:correlated-position])
           (regexp)
           (io))
 
@@ -34,7 +38,11 @@
        (hash 'syntax? rumble:correlated?
              'syntax-e rumble:correlated-e
              'syntax-property rumble:correlated-property
-             'datum->syntax rumble:datum->correlated)]
+             'datum->syntax rumble:datum->correlated
+             'syntax-source rumble:correlated-source
+             'syntax-line rumble:correlated-line
+             'syntax-column rumble:correlated-column
+             'syntax-position rumble:correlated-position)]
       [else #f]))
 
   ;; For direct access by schemified schemify:
@@ -42,6 +50,10 @@
   (define syntax-e rumble:correlated-e)
   (define syntax-property rumble:correlated-property)
   (define datum->syntax rumble:datum->correlated)
+  (define syntax-source rumble:correlated-source)
+  (define syntax-line rumble:correlated-line)
+  (define syntax-column rumble:correlated-column)
+  (define syntax-position rumble:correlated-position)
 
   (include "include.ss")
   (include-generated "schemify.scm")

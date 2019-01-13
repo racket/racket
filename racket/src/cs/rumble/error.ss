@@ -493,7 +493,9 @@
                                   (string->symbol (format "body of ~a" n))))
                            (let* ([c (#%$continuation-return-code k)]
                                   [n (#%$code-name c)])
-                             n))]
+                             (if (special-procedure-name-string? n)
+                                 #f
+                                 n)))]
                  [desc
                   (let* ([ci (#%$code-info (#%$continuation-return-code k))]
                          [src (and

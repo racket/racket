@@ -7,6 +7,8 @@
          wrap-eq? wrap-equal?
          in-wrap-list
          wrap-property
+         wrap-property-set
+         wrap-source
          reannotate)
 
 (import-from-primitive-table
@@ -14,7 +16,11 @@
  [syntax? correlated?]
  [syntax-e correlated-e]
  [syntax-property correlated-property]
- [datum->syntax datum->correlated])
+ [datum->syntax datum->correlated]
+ [syntax-source correlated-source]
+ [syntax-line correlated-line]
+ [syntax-column correlated-column]
+ [syntax-position correlated-position])
 
 (define (unwrap v)
   (if (correlated? v)
@@ -70,6 +76,18 @@
 (define (wrap-property a key)
   (and (correlated? a)
        (correlated-property a key)))
+
+(define (wrap-property-set a key val)
+  (correlated-property a key val))
+
+(define (wrap-source a)
+  (cond
+    [(correlated? a)
+     (values (correlated-source a)
+             (correlated-line a)
+             (correlated-column a)
+             (correlated-position a))]
+    [else (values #f #f #f #f)]))
 
 (define (reannotate old-term new-term)
   (if (correlated? old-term)
