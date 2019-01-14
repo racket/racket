@@ -105,7 +105,16 @@
 	(eval (read (open-input-string "(let ([Capital (lambda () 10)]) Capital)"))))
   (test (string->symbol "CP")
 	object-name
-	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)")))))
+	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)"))))
+  (test (string->symbol "CP?")
+	object-name
+	(eval (read (open-input-string "(let () (define-struct CP (a)) CP?)"))))
+  (test (string->symbol "CP-a")
+	object-name
+	(eval (read (open-input-string "(let () (define-struct CP (a)) CP-a)"))))
+  (test (string->symbol "set-CP-a!")
+	object-name
+	(eval (read (open-input-string "(let () (define-struct CP ([a #:mutable])) set-CP-a!)")))))
 
 
 (err/rt-test (let ([unmentionable ((lambda (x #:a a) 1) 1 2)]) 5)

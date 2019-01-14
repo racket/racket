@@ -464,21 +464,22 @@
                                         install-props!)
        (let ([ctr (struct-type-constructor-add-guards
                    (let ([c (record-constructor rtd)])
-                     (if (zero? auto*-count)
-                         c
-                         (procedure-rename
+                     (procedure-rename
+                      (if (zero? auto*-count)
+                          c
                           (procedure-reduce-arity
                            (lambda args
                              (apply c (reverse (auto-field-adder (reverse args)))))
-                           init*-count)
-                          (or constructor-name name))))
+                           init*-count))
+                      (or constructor-name name)))
                    rtd
                    (or constructor-name name))]
-             [pred (escapes-ok
-                     (lambda (v)
-                       (or (record? v rtd)
-                           (and (impersonator? v)
-                                (record? (impersonator-val v) rtd)))))])
+             [pred (procedure-rename
+                    (lambda (v)
+                      (or (record? v rtd)
+                          (and (impersonator? v)
+                               (record? (impersonator-val v) rtd))))
+                    (string->symbol (string-append (symbol->string name) "?")))])
          (register-struct-constructor! ctr)
          (register-struct-constructor! pred)
          (values rtd
@@ -649,11 +650,16 @@
       (let* ([p (record-field-accessor rtd
                                        (+ pos (position-based-accessor-offset pba)))]
              [wrap-p
-              (escapes-ok
+              (procedure-rename
                 (lambda (v)
                   (if (impersonator? v)
                       (impersonate-ref p rtd pos v)
-                      (p v))))])
+                      (p v)))
+                (string->symbol (string-append (symbol->string (record-type-name rtd))
+                                               "-"
+                                               (if name
+                                                   (symbol->string name)
+                                                   (string-append "field" (number->string pos))))))])
         (register-struct-field-accessor! wrap-p rtd pos)
         wrap-p))]
    [(pba pos)
@@ -671,23 +677,27 @@
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
              [p (record-field-mutator rtd abs-pos)]
+             [name (string->symbol
+                    (string-append "set-"
+                                   (symbol->string (record-type-name rtd))
+                                   "-"
+                                   (if name
+                                       (symbol->string name)
+                                       (string-append "field" (number->string pos)))
+                                   "!"))]
              [wrap-p
-              (if (struct-type-field-mutable? rtd pos)
-                  (lambda (v a)
-                    (if (impersonator? v)
-                        (impersonate-set! p rtd pos abs-pos v a)
-                        (p v a)))
-                  (lambda (v a)
-                    (raise-arguments-error (string->symbol
-                                            (string-append (symbol->string (record-type-name rtd))
-                                                           "-"
-                                                           (if name
-                                                               (symbol->string name)
-                                                               (string-append "field" (number->string pos)))
-                                                           "!"))
-                                           "cannot modify value of immutable field in structure"
-                                           "structure" v
-                                           "field index" pos)))])
+              (procedure-rename
+               (if (struct-type-field-mutable? rtd pos)
+                   (lambda (v a)
+                     (if (impersonator? v)
+                         (impersonate-set! p rtd pos abs-pos v a)
+                         (p v a)))
+                   (lambda (v a)
+                     (raise-arguments-error name
+                                            "cannot modify value of immutable field in structure"
+                                            "structure" v
+                                            "field index" pos)))
+               name)])
         (register-struct-field-mutator! wrap-p rtd pos)
         wrap-p))]
    [(pbm pos)
