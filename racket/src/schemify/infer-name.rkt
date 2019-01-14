@@ -4,15 +4,12 @@
 (provide infer-procedure-name)
 
 (define (infer-procedure-name orig-s new-s)
+  (define inferred-name (wrap-property orig-s 'inferred-name))
   (cond
-    [(wrap-property orig-s 'inferred-name)
-     => (lambda (v)
-          (if (void? v)
-              (wrap-property-set (reannotate orig-s new-s)
-                                 'inferred-name
-                                 ;; Hack: "[" means "no name"
-                                 '|[|)
-              new-s))]
+    [(symbol? inferred-name)
+     ;; Let propagation of properties (at the call site of
+     ;; `infer-procedure-name`) take care of it
+     new-s]
     [else
      (define-values (src line col pos) (wrap-source orig-s))
      (define (add-property str)
@@ -34,6 +31,13 @@
          (string-append (source->string src)
                         "::"
                         (number->string pos)))]
+       [(void? inferred-name)
+        ;; We can't provide a source name, but explicity
+        ;; suppress any other inferred name:
+        (wrap-property-set (reannotate orig-s new-s)
+                           'inferred-name
+                           ;; Hack: "[" means "no name"
+                           '|[|)]
        [else new-s])]))
 
 (define (source->string src)
