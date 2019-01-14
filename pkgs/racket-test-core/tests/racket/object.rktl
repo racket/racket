@@ -1939,7 +1939,7 @@
       (define q 1)
       (field [s 1])
       (super-new)))
-  
+
   (err/rt-test (new d%) (make-undefined-exn? 'z))
   (err/rt-test (new d!%) (make-undefined-exn? 'z))
   (err/rt-test (new e%) (make-undefined-exn? 'z))
