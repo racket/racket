@@ -125,8 +125,11 @@
               (read (open-input-bytes (get-output-bytes o)))))
   (test 'subm-example-0 values (module-compiled-name c))
   (test 2 values (length (module-compiled-submodules c #f)))
+  (define (sort-by-name l)
+    (sort l (lambda (a b) (symbol<? (last (module-compiled-name a))
+                                    (last (module-compiled-name b))))))
   (for ([sub (in-list (append (module-compiled-submodules c #t)
-                              (module-compiled-submodules c #f)))]
+                              (sort-by-name (module-compiled-submodules c #f))))]
         [name '(z a b)])
     (test (list 'subm-example-0 name) values (module-compiled-name sub))
     (when (eq? name 'a)
@@ -606,7 +609,7 @@
   (#%printing-module-begin
    (require (for-syntax racket/base))
    (provide x)
-   (define-syntax (m stx) #`(quote #,(syntax-local-submodules)))
+   (define-syntax (m stx) #`(quote #,(sort (syntax-local-submodules) symbol<?)))
    (module m1 racket/base)
    (module m2 racket/base)
    (module* m3 racket/base)
@@ -654,9 +657,9 @@
                         (define name ',n)
                         (provide name)))))
     (define fn (build-path temp-dir "has-submod.rkt"))
-    (define dir (build-path temp-dir "compiled"))
+    (define dir (build-path temp-dir (car (use-compiled-file-paths))))
     (define fn-zo (build-path dir "has-submod_rkt.zo"))
-    (unless (directory-exists? dir) (make-directory dir))
+    (unless (directory-exists? dir) (make-directory* dir))
     (with-output-to-file fn-zo
       #:exists 'truncate
       (lambda () (write (compile e))))
