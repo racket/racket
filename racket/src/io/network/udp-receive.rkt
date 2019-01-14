@@ -6,6 +6,7 @@
          "../sandman/main.rkt"
          "../string/convert.rkt"
          "../string/integer.rkt"
+         "../format/main.rkt"
          "port-number.rkt"
          "check.rkt"
          "address.rkt"
@@ -161,7 +162,7 @@
 
 (define/who (udp-set-receive-buffer-size! u size)
   (check who udp? u)
-  (check who exact-nonnegative-integer? size)
+  (check who exact-positive-integer? size)
   (atomically
    (check-udp-closed who u)
    (unless (fixnum? size)
