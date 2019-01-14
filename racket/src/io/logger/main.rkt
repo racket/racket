@@ -68,8 +68,9 @@
 (define/who (log-max-level logger [topic #f])
   (check who logger? logger)
   (check who #:or-false symbol? topic)
-  (atomically/no-interrupts/no-wind
-   (logger-wanted-level logger topic)))
+  (level->user-representation
+   (atomically/no-interrupts/no-wind
+    (logger-wanted-level logger topic))))
 
 (define/who (log-all-levels logger)
   (check who logger? logger)
@@ -80,11 +81,11 @@
   (define s
     (atomically
      (cond
-       [(logger-level-sema logger)
+       [(unbox (logger-level-sema-box logger))
         => (lambda (s) s)]
        [else
         (define s (make-semaphore))
-        (set-logger-level-sema! logger s)
+        (set-box! (logger-level-sema-box logger) s)
         s])))
   (semaphore-peek-evt s))
 

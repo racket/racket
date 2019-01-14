@@ -7,7 +7,8 @@
          level-min
          parse-filters
          filters-level-for-topic
-         filters-max-level)
+         filters-max-level
+         level->user-representation)
 
 ;; A filter set is represented as an improper list of pairs ending
 ;; with a (non-pair) level symbol. The ending symbol is the level that
@@ -87,3 +88,10 @@
              (level-max best-level (cdar filters)))]
       [else
        (level-max best-level filters)])))
+
+;; ----------------------------------------
+
+(define (level->user-representation lvl)
+  (if (eq? lvl 'none)
+      #f
+      lvl))

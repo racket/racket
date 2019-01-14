@@ -12,7 +12,8 @@
          make-log-receiver
          add-stderr-log-receiver!
          add-stdout-log-receiver!
-         log-receiver-send!)
+         log-receiver-send!
+         receiver-add-topics)
 
 (struct log-receiver (filters))
 
@@ -144,9 +145,10 @@
    (set-box! ts-box (add1 (unbox ts-box)))
    ;; Post a semaphore to report that wanted levels may have
    ;; changed:
-   (when (logger-level-sema logger)
-     (semaphore-post (logger-level-sema logger))
-     (set-logger-level-sema! logger #f))))
+   (define sema-box (logger-level-sema-box logger))
+   (when (unbox sema-box)
+     (semaphore-post (unbox sema-box))
+     (set-box! sema-box #f))))
 
 ;; Called in atomic mode and with interrupts disabled
 (define (log-receiver-send! r msg in-interrupt?)
@@ -157,3 +159,13 @@
       ;; Record any any other message for posting later:
       (unsafe-add-pre-poll-callback! (lambda ()
                                        ((receiver-send-ref r) r msg)))))
+
+;; ----------------------------------------
+
+(define (receiver-add-topics r topics default-level)
+  (let loop ([filters (log-receiver-filters r)] [topics topics])
+    (cond
+      [(pair? filters)
+       (loop (cdr filters) (hash-set topics (caar filters) #t))]
+      [else
+       (values topics (level-max default-level filters))])))

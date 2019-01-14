@@ -16,7 +16,7 @@
                 topic-level-cache ; topic -> level cache
                 [local-level-timestamp #:mutable] ; integer
                 root-level-timestamp-box ; box of integer
-                [level-sema #:mutable])) ; to report when a receiver is added
+                level-sema-box)) ; box for sema to report when a receiver is added
 
 (define/who (logger-name logger)
   (check who logger? logger)
@@ -35,7 +35,9 @@
           (if parent
               (logger-root-level-timestamp-box parent)
               (box 0))
-          #f)) ; level-sema
+          (if parent
+              (logger-level-sema-box parent)
+              (box #f))))
 
 ;; Get log receivers, dropping any boxes made empty due to a weak
 ;; reference:

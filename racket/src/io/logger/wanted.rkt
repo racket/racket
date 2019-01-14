@@ -33,7 +33,7 @@
   (atomically/no-interrupts/no-wind
    (cond
      [((logger-local-level-timestamp logger) . >= . (unbox (logger-root-level-timestamp-box logger)))
-      ;; Ccahed value is up-to-date
+      ;; Cached value is up-to-date
       (logger-max-receiver-level logger)]
      [else
       ;; Traverse to set cache:
@@ -49,7 +49,7 @@
   ;; As we traverse the parent chain, keep track of the "ceiling"
   ;; level as the maximum level that would be propagated; for any
   ;; receiver, clip the wanted levels to that ceiling.
-  (let loop ([parent logger] [ceiling-level 'debug] [old-max-level 'none] [old-topic-max-level 'none])
+  (let loop ([parent logger] [ceiling-level 'debug] [old-max-level 'none] [topic-ceiling-level 'debug] [old-topic-max-level 'none])
     (define-values (max-level topic-max-level)
       (for/fold ([max-level old-max-level] [topic-max-level old-topic-max-level])
                 ([r (in-list (logger-receivers parent))]
@@ -62,14 +62,19 @@
                 (and topic
                      (level-max topic-max-level
                                 (level-min (filters-level-for-topic (log-receiver-filters r) topic)
-                                           ceiling-level))))))
+                                           topic-ceiling-level))))))
     (cond
       [(and (or (ceiling-level . level>=? . max-level)
                 (and topic (ceiling-level . level>=? . topic-max-level)))
             (logger-parent parent))
        => (lambda (next-parent)
-            (let ([ceiling-level (level-min ceiling-level (filters-max-level (logger-propagate-filters parent)))])
-              (loop next-parent ceiling-level max-level topic-max-level)))]
+            (define filters (logger-propagate-filters parent))
+            (let ([ceiling-level (level-min ceiling-level (filters-max-level filters))]
+                  [topic-ceiling-level (if topic
+                                           (level-min topic-ceiling-level
+                                                      (filters-level-for-topic filters topic))
+                                           topic-ceiling-level)])
+              (loop next-parent ceiling-level max-level topic-ceiling-level topic-max-level)))]
       [else
        ;; No more parents, so save the result
        (set-logger-max-receiver-level! logger max-level)
@@ -93,4 +98,26 @@
   
 
 (define (logger-all-levels logger)
-  '(none #f))
+  (define-values (topics default-level)
+    (let loop ([topics #hasheq()] [default-level 'none] [max-default-level 'debug] [logger logger])
+      (define-values (new-topics new-default-level)
+        (for*/fold ([topics topics] [default-level 'none]) ([r (in-list (logger-receivers logger))])
+          (receiver-add-topics r topics default-level)))
+      (define next-default-level (level-max (level-min new-default-level max-default-level)
+                                            default-level))
+      (define parent-logger (logger-parent logger))
+      (if parent-logger
+          (let ([max-default-level (level-min max-default-level
+                                              (filters-level-for-topic
+                                               (logger-propagate-filters logger)
+                                               #f))])
+            (loop new-topics next-default-level max-default-level parent-logger))
+          (values new-topics next-default-level))))
+  (list* (level->user-representation default-level) #f
+         (apply
+          append
+          (for/list ([topic (in-hash-keys topics)])
+            (list (level->user-representation
+                   (atomically/no-interrupts/no-wind
+                    (logger-wanted-level logger topic)))
+                  topic)))))
