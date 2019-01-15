@@ -28,13 +28,20 @@
                  [else (values (cons a d)
                                (cons stripped-a stripped-d))]))]
    [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])
-                      (let ([name (correlated-property v 'inferred-name)])
+                      (let ([name (correlated-property v 'inferred-name)]
+                            [method-arity-error (correlated-property v 'method-arity-error)])
                         (define (add-name e)
                           (if (and name (not (void? name)))
                               `(|#%name| ,name ,e)
                               e))
-                        (values (add-name (transfer-srcloc v e stripped-e))
-                                (add-name stripped-e))))]
+                        (define (add-method-arity-error e)
+                          (if method-arity-error
+                              `(|#%method-arity| ,e)
+                              e))
+                        (values (add-method-arity-error
+                                 (add-name (transfer-srcloc v e stripped-e)))
+                                (add-method-arity-error
+                                 (add-name stripped-e)))))]
    ;; correlated will be nested only in pairs with current expander
    [else (values v v)]))
 

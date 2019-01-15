@@ -35,8 +35,8 @@
         (n v)]))]
    [(#%procedure? v)
     (cond
-     [(arity-wrapper-procedure? v)
-      (extract-jit-procedure-name v)]
+     [(wrapper-procedure? v)
+      (extract-wrapper-procedure-name v)]
      [else
       (let ([name (#%$code-name (#%$closure-code v))])
         (and name

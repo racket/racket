@@ -83,7 +83,7 @@
     [`(values ,body) (lambda? body)]
     [`,_ #f]))
 
-;; Recognize forms that produce plain procedures
+;; Extract procedure from from forms that produce plain procedures
 (define (extract-lambda v)
   (match v
     [`(lambda . ,_) (values v #t)]
