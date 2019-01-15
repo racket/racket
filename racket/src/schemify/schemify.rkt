@@ -758,6 +758,12 @@
                           (known-field-mutator? k)
                           (inline-field-mutate k s-rator im args))
                      => (lambda (e) e)]
+                    [(and unsafe-mode?
+                          (known-procedure/has-unsafe? k))
+                     (left-to-right/app (known-procedure/has-unsafe-alternate k)
+                                        args
+                                        #t for-cify?
+                                        prim-knowns knowns imports mutated)]
                     [else
                      (define plain-app? (or (known-procedure? k)
                                             (lambda? rator)))

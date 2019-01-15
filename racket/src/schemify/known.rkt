@@ -13,6 +13,7 @@
          known-procedure/can-inline/need-imports-needed
          known-procedure/succeeds known-procedure/succeeds?
          known-procedure/pure known-procedure/pure?
+         known-procedure/has-unsafe known-procedure/has-unsafe? known-procedure/has-unsafe-alternate
          known-struct-type known-struct-type? known-struct-type-type
          known-struct-type-field-count known-struct-type-pure-constructor?
          known-constructor known-constructor? known-constructor-type
@@ -56,6 +57,10 @@
 
 ;; procedure that accepts any arguments and is functional so that it can be reordered
 (struct known-procedure/pure () #:prefab #:omit-define-syntaxes #:super struct:known-procedure/succeeds)
+
+;; procedure with an unsafe variant, especially ones that won't get substituted
+;; simply by compiling in unsafe mode
+(struct known-procedure/has-unsafe (alternate) #:prefab #:omit-define-syntaxes #:super struct:known-procedure)
 
 (struct known-struct-type (type field-count pure-constructor?) #:prefab #:omit-define-syntaxes #:super struct:known-consistent)
 
