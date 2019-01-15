@@ -194,7 +194,6 @@ cpus-base:
 
 plain-base:
 	$(MAKE) base-config
-	mkdir -p racket/src/build
 	$(MAKE) racket/src/build/Makefile
 	cd racket/src/build; $(MAKE) reconfigure
 	cd racket/src/build; $(MAKE) racket-variant $(SELF_FLAGS_qq)
@@ -224,6 +223,7 @@ win32-remove-setup-dlls:
 SRC_MAKEFILE_CONFIG = configure
 
 racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
+	mkdir -p racket/src/build
 	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
 
