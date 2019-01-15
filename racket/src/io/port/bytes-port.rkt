@@ -180,7 +180,9 @@
                                      (pipe-discard-all o))))
      #:self o
      #:evt o
-     #:write-out o
+     #:write-out
+     (lambda (o src-bstr src-start src-end nonblock? enable-break? copy?)
+       ((core-output-port-write-out o) (core-port-self o) src-bstr src-start src-end nonblock? enable-break? copy?))
      #:close
      (lambda (o) ((core-port-close o) (core-port-self o)))
      #:get-write-evt

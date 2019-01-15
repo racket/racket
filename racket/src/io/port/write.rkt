@@ -33,6 +33,10 @@
                (if zero-ok?
                    0
                    (try-again out extra-count-outs))]
+              [(exact-positive-integer? v)
+               (port-count-all! out extra-count-outs v bstr start)
+               (end-atomic)
+               v]
               [(evt? v)
                (end-atomic)
                (cond
@@ -43,10 +47,6 @@
                                     (sync v)))
                   (start-atomic)
                   (result-loop new-v)])]
-              [(exact-positive-integer? v)
-               (port-count-all! out extra-count-outs v bstr start)
-               (end-atomic)
-               v]
               [else
                (end-atomic)
                (internal-error (format "write-some-bytes: weird result ~s for ~s ~s ~s at ~s" v bstr start end out))]))]
