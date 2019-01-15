@@ -304,3 +304,5 @@ macos-install-gracket:
 	/usr/bin/install_name_tool -change "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@FRAMEWORK_PREFIX@Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	$(RACKET) -cu "$(srcdir)/../../racket/collects-path.rkt" $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)" ../../../../collects ../../../../etc
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
+	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
+	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
