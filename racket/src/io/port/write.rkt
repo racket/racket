@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/internal-error.rkt"
+(require racket/fixnum
+         "../common/internal-error.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
@@ -17,7 +18,7 @@
     (start-atomic)
     (check-not-closed who out)
     (cond
-      [(= start end)
+      [(fx= start end)
        (end-atomic)
        0]
       [else

@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/fixnum
+         "../common/check.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
@@ -28,10 +29,10 @@
 (define (do-write-bytes who out bstr start end)
   (let loop ([i start])
     (cond
-      [(= i end) (- i start)]
+      [(fx= i end) (fx- i start)]
       [else
        (define n (write-some-bytes who out bstr i end #:buffer-ok? #t))
-       (loop (+ n i))])))
+       (loop (fx+ n i))])))
 
 (define/who (write-bytes bstr [out (current-output-port)] [start-pos 0] [end-pos (and (bytes? bstr)
                                                                                       (bytes-length bstr))])

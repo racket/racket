@@ -1,8 +1,8 @@
 ;; We get a small number of virtual registers for fast,
 ;; pthread-specific bindings.
 
-;; The last virtual register is reserved for use by the thread system
-(meta define num-reserved-virtual-registers 1)
+;; The last two virtual registers are reserved for use by the thread system
+(meta define num-reserved-virtual-registers 2)
 
 (meta define virtual-register-initial-values '())
 

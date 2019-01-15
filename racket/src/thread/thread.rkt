@@ -723,11 +723,7 @@
 (define break-enabled-default-cell (make-thread-cell #t))
 
 ;; For disabling breaks, such as through `unsafe-start-atomic`:
-(define-place-local break-suspend 0)
-(define current-break-suspend
-  (case-lambda
-    [() break-suspend]
-    [(v) (set! break-suspend v)]))
+(define current-break-suspend (make-pthread-parameter 0))
 
 (define (current-break-enabled-cell)
   (continuation-mark-set-first #f
