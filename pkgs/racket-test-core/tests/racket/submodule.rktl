@@ -128,14 +128,15 @@
   (define (sort-by-name l)
     (sort l (lambda (a b) (symbol<? (last (module-compiled-name a))
                                     (last (module-compiled-name b))))))
+  (define post-submods (sort-by-name (module-compiled-submodules c #f)))
   (for ([sub (in-list (append (module-compiled-submodules c #t)
-                              (sort-by-name (module-compiled-submodules c #f))))]
+                              post-submods))]
         [name '(z a b)])
     (test (list 'subm-example-0 name) values (module-compiled-name sub))
     (when (eq? name 'a)
       (test 1 values (length (module-compiled-submodules sub #f)))
       (test '(subm-example-0 a i) values (module-compiled-name (car (module-compiled-submodules sub #f))))))
-  (define a (module-compiled-name (car (module-compiled-submodules c #f))
+  (define a (module-compiled-name (car post-submods)
                                   'reset))
   (test 'reset values (module-compiled-name a))
   (test '(reset i) values (module-compiled-name (car (module-compiled-submodules a #f))))
@@ -144,14 +145,14 @@
   (test '(reset again i) values (module-compiled-name (car (module-compiled-submodules (car (module-compiled-submodules aa #f)) #f))))
 
   (define also-c (module-compiled-submodules c #f (module-compiled-submodules c #f)))
-  (test '(subm-example-0 a) values (module-compiled-name (car (module-compiled-submodules also-c #f))))
+  (test '(subm-example-0 a) values (module-compiled-name (car (sort-by-name (module-compiled-submodules also-c #f)))))
   (define re-c
     (let ([s (open-output-bytes)])
       (write also-c s)
       (parameterize ([read-accept-compiled #t])
         (read (open-input-bytes (get-output-bytes s))))))
   ;; Marshaling preserves the order:
-  (test '(subm-example-0 a) values (module-compiled-name (car (module-compiled-submodules re-c #f)))))
+  (test '(subm-example-0 a) values (module-compiled-name (car (sort-by-name (module-compiled-submodules re-c #f))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
