@@ -28,7 +28,8 @@
     (let-values ([(s r) (exact-integer-sqrt (inexact->exact n))])
       (if (inexact? n)
           (exact->inexact s)
-          s))]))
+          s))]
+   [else n]))
 
 (define/who (integer-sqrt/remainder n)
   (check who integer? n)
@@ -166,6 +167,10 @@
     (check who exact-nonnegative-integer? start)
     (check who exact-nonnegative-integer? end)
     (case (- end start)
+      [(1)
+       (if signed?
+           (bytevector-s8-ref bstr start)
+           (bytevector-u8-ref bstr start))]
       [(2)
        (if signed?
            (bytevector-s16-ref bstr start (if big-endian?
@@ -192,7 +197,7 @@
                                               (endianness little))))]
       [else
        (raise-arguments-error 'integer-bytes->integer
-                              "length is not 2, 4, or 8 bytes"
+                              "length is not 1, 2, 4, or 8 bytes"
                               "length" (- end start))])]
    [(bstr signed?)
     (integer-bytes->integer bstr signed? (system-big-endian?) 0 (and (bytes? bstr) (bytes-length bstr)))]
@@ -287,9 +292,10 @@
 
 (define/who gcd
   (case-lambda
+   [() 0]
    [(n)
     (check who rational? n)
-    n]
+    (abs n)]
    [(n m)
     (check who rational? n)
     (check who rational? m)
@@ -313,9 +319,10 @@
 
 (define/who lcm
   (case-lambda
+   [() 1]
    [(n)
     (check who rational? n)
-    n]
+    (abs n)]
    [(n m)
     (check who rational? n)
     (check who rational? m)

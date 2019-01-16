@@ -5,6 +5,8 @@
 
 (require racket/extflonum racket/random racket/list)
 
+(define has-single-flonum? (not (eq? 'chez-scheme (system-type 'vm))))
+
 (test #f number? 'a)
 (test #f complex? 'a)
 (test #f real? 'a)
@@ -79,8 +81,8 @@
 (test #f single-flonum? 1.2)
 (test #t flonum? 1.2e3)
 (test #f single-flonum? 1.2e3)
-(test #f flonum? 1.2f3)
-(test #t single-flonum? 1.2f3)
+(test (not has-single-flonum?) flonum? 1.2f3)
+(test has-single-flonum? single-flonum? 1.2f3)
 
 (test #t complex? -4.242154731064108e-5-6.865001427422244e-5i)
 (test #f exact? -4.242154731064108e-5-6.865001427422244e-5i)
@@ -119,32 +121,32 @@
 (test #t real? +inf.f)
 (test #f rational? +inf.f)
 (test #f integer? +inf.f)
-(test #f flonum? +inf.f)
-(test #t single-flonum? +inf.f)
+(test (not has-single-flonum?) flonum? +inf.f)
+(test has-single-flonum? single-flonum? +inf.f)
 
 (test #t number? -inf.f)
 (test #t complex? -inf.f)
 (test #t real? -inf.f)
 (test #f rational? -inf.f)
 (test #f integer? -inf.f)
-(test #f flonum? -inf.f)
-(test #t single-flonum? -inf.f)
+(test (not has-single-flonum?) flonum? -inf.f)
+(test has-single-flonum? single-flonum? -inf.f)
 
 (test #t number? +nan.f)
 (test #t complex? +nan.f)
 (test #t real? +nan.f)
 (test #f rational? +nan.f)
 (test #f integer? +nan.f)
-(test #f flonum? +nan.f)
-(test #t single-flonum? +nan.f)
+(test (not has-single-flonum?) flonum? +nan.f)
+(test has-single-flonum? single-flonum? +nan.f)
 
 (test #t number? -nan.f)
 (test #t complex? -nan.f)
 (test #t real? -nan.f)
 (test #f rational? -nan.f)
 (test #f integer? -nan.f)
-(test #f flonum? -nan.f)
-(test #t single-flonum? -nan.f)
+(test (not has-single-flonum?) flonum? -nan.f)
+(test has-single-flonum? single-flonum? -nan.f)
 
 (arity-test inexact? 1 1)
 (arity-test number? 1 1)
@@ -163,16 +165,16 @@
 (test "+nan.0" number->string +nan.0)
 (test "+nan.0" number->string +nan.0)
 
-(test "+inf.f" number->string +inf.f)
-(test "-inf.f" number->string -inf.f)
-(test "+nan.f" number->string +nan.f)
-(test "+nan.f" number->string +nan.f)
-(test "0.0f0" number->string 0.0f0)
-(test "0.0f0" number->string 0.0f1)
-(test "0.0f0" number->string 0.0f17)
-(test "13.25f0" number->string 13.25f0)
-(test "13.25f0" number->string 1.325f1)
-(test "-4.25f0" number->string -4.25f0)
+(test (if has-single-flonum? "+inf.f" "+inf.0") number->string +inf.f)
+(test (if has-single-flonum? "-inf.f" "-inf.0") number->string -inf.f)
+(test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
+(test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
+(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f0)
+(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f1)
+(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f17)
+(test (if has-single-flonum? "13.25f0" "13.25") number->string 13.25f0)
+(test (if has-single-flonum? "13.25f0" "13.25") number->string 1.325f1)
+(test (if has-single-flonum? "-4.25f0" "-4.25") number->string -4.25f0)
 
 (map (lambda (n)
        ;; test that fresh strings are generated:
@@ -723,9 +725,10 @@
 (err/rt-test (inexact->exact -inf.0))
 (err/rt-test (inexact->exact +nan.0))
 
-(err/rt-test (inexact->exact +inf.f) (lambda (exn) (regexp-match? #rx"[+]inf[.]f" (exn-message exn))))
-(err/rt-test (inexact->exact -inf.f) (lambda (exn) (regexp-match? #rx"[-]inf[.]f" (exn-message exn))))
-(err/rt-test (inexact->exact +nan.f) (lambda (exn) (regexp-match? #rx"[+]nan[.]f" (exn-message exn))))
+(when has-single-flonum?
+  (err/rt-test (inexact->exact +inf.f) (lambda (exn) (regexp-match? #rx"[+]inf[.]f" (exn-message exn))))
+  (err/rt-test (inexact->exact -inf.f) (lambda (exn) (regexp-match? #rx"[-]inf[.]f" (exn-message exn))))
+  (err/rt-test (inexact->exact +nan.f) (lambda (exn) (regexp-match? #rx"[+]nan[.]f" (exn-message exn)))))
 
 (test 2.0f0 real->single-flonum 2)
 (test 2.25f0 real->single-flonum 2.25)
@@ -1248,7 +1251,8 @@
 (err/rt-test (arithmetic-shift 1.0 1))
 (err/rt-test (arithmetic-shift 1 1.0))
 (err/rt-test (arithmetic-shift 1 1.0+0.0i))
-(err/rt-test (arithmetic-shift 1 (expt 2 80)) exn:fail:out-of-memory?)
+(unless (eq? 'chez-scheme (system-type 'vm))
+  (err/rt-test (eval '(arithmetic-shift 1 (expt 2 80))) exn:fail:out-of-memory?))
 
 (test #f bitwise-bit-set? 13 1)
 (test #t bitwise-bit-set? 13 2)
@@ -3194,7 +3198,7 @@
 (test 0.5 there-and-back 1/2)
 
 (let ([s (make-bytes 8)]
-      [n (expt (random 100) (- (random 100)))])
+      [n (expt (add1 (random 100)) (- (random 100)))])
   (test s real->floating-point-bytes n 8 #f s)
   (test s real->floating-point-bytes n 8 #f))
 
@@ -3243,49 +3247,50 @@
       (test #f single-flonum-ish? op 2.0f0 0.5)
       (test #t single-flonum-ish? op 2.0f0 1/2)
       (test #t single-flonum-ish? op 4/5 0.5f0))))
-    
 
-(map (check-single-flonum)
-     (list + - * / 
-           add1
-           sub1
-           sqrt
-           expt
-           exp
-           sin
-           cos
-           tan
-           asin
-           acos))
+(unless (eq? 'chez-scheme (system-type 'vm))
 
-(map (check-single-flonum #:arity-one-only? #t)
-     (list log))
+  (map (check-single-flonum)
+       (list + - * / 
+             add1
+             sub1
+             sqrt
+             expt
+             exp
+             sin
+             cos
+             tan
+             asin
+             acos))
 
-(map (check-single-flonum #:two-arg-real-only? #t)
-     (list atan))
+  (map (check-single-flonum #:arity-one-only? #t)
+       (list log))
 
-(map (check-single-flonum #:real-only? #f #:integer-only? #t)
-     (list quotient
-           remainder
-           modulo))
+  (map (check-single-flonum #:two-arg-real-only? #t)
+       (list atan))
 
-(map (check-single-flonum #:real-only? #t)
-     (list
-      abs
-      max
-      min
-      gcd
-      lcm
-      round
-      floor
-      ceiling
-      truncate))
+  (map (check-single-flonum #:real-only? #f #:integer-only? #t)
+       (list quotient
+             remainder
+             modulo))
+
+  (map (check-single-flonum #:real-only? #t)
+       (list
+        abs
+        max
+        min
+        gcd
+        lcm
+        round
+        floor
+        ceiling
+        truncate)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; This test once trigggered a crash due to an incorrect
 ;; hard-wired GC declaration for xform:
 
-(let ()
+(when (eq? 'racket (system-type 'vm))
   (define (root n r)
     (expt n (/ 1 r)))
   
