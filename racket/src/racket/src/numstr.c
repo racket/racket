@@ -357,7 +357,7 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 /* Exponent threshold for obvious infinity. Must be at least
    max(MAX_FAST_FLOATREAD_LEN, MAX_FLOATREAD_PRECISION_DIGITS) more
    than the larget possible FP exponent. */
-#define CHECK_INF_EXP_THRESHOLD(extfl) (extfl ? 6000 : 400)
+#define CHECK_INF_EXP_THRESHOLD(extfl) (extfl ? 32768 : 2048)
 
 /* Don't bother reading more than the following number of digits in a
    floating-point mantissa: */
@@ -1552,11 +1552,11 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	/* 0.0 => -0.0 */
 #ifdef MZ_USE_SINGLE_FLOATS
 	if (SCHEME_FLTP(n)) {
-	  n = scheme_make_float(-SCHEME_FLT_VAL(n));
+          n = scheme_nzerof;
 	}
 #endif
         if (SCHEME_DBLP(n)) {
-	  n = scheme_make_double(-SCHEME_DBL_VAL(n));
+	  n = scheme_nzerod;
         }
       }
     }

@@ -488,7 +488,10 @@
        [(and (eq? convert-mode 'number-or-false) get-extfl?)
         #f]
        [(and (or (eq? exactness 'inexact) (eq? exactness 'decimal-as-inexact))
-             ((abs e-v) . > . (if get-extfl? 6000 400)))
+             (let ([m-v-e (/ (- (integer-length (numerator m-v))
+                                (integer-length (denominator m-v)))
+                             (log radix 2))])
+               ((abs (+ e-v m-v-e)) . > . (if get-extfl? (expt 2 15) (expt 2 11)))))
         ;; Don't calculate a huge exponential to return a float:
         (real->precision-inexact
          (cond
@@ -533,9 +536,8 @@
                                       convert-mode))
      (define (get-inexact? from-pos)
        (or (eq? exactness 'inexact)
-           ;; For historical reasons, `#`s in a fraction trigger an
-           ;; inexact result, even if `exactness` is 'decimal-as-exact
-           (and (not (eq? exactness 'exact))
+           (and (not (or (eq? exactness 'exact)
+                         (eq? exactness 'decimal-as-exact)))
                 (hashes? s from-pos end))))
      (cond
        [(or (not n-v) (not d-v)) #f]
