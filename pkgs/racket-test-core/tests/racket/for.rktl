@@ -615,7 +615,7 @@
              #rx".*expected number of values not received.*")
 (err/rt-test (begin (for/fold ([x 1]) () (values 1 2)) 1)
              exn:fail:contract:arity?
-             #rx".*expected number of values not received.*")
+             #rx"expected number of values not received|returned two values to single value return context")
 (err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1)
              exn:fail:contract:arity?
              #rx".*expected number of values not received.*")
@@ -692,7 +692,7 @@
              #rx"expected: hash\\?")
 (err/rt-test (for ([x (in-hash (hash 1 2))]) x)
              exn:fail:contract:arity?
-             #rx"expected number of values not received")
+             #rx"expected number of values not received|returned two values to single value return context")
 
 (err/rt-test (for ([x (in-hash 1 2 3)]) x)
              exn:fail:contract:arity?)

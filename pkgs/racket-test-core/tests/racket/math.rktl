@@ -56,10 +56,14 @@
          ((abs (- x y)) . < . #e1e-10))))
 
 (define (single=? x y)
-  (and (single-flonum? y)
-       (let ([x  (inexact->exact x)]
-             [y  (inexact->exact y)])
-         ((abs (- x y)) . < . #e1e-6))))
+  (cond
+    [(eq? 'chez-scheme (system-type 'vm))
+     (double=? x y)]
+    [else
+     (and (single-flonum? y)
+          (let ([x  (inexact->exact x)]
+                [y  (inexact->exact y)])
+            ((abs (- x y)) . < . #e1e-6)))]))
 
 ;; =========================================================================
 ;; pi
