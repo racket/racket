@@ -239,7 +239,28 @@
     [(pair? v)
      (print-list p who v mode o max-length graph config #f #f)]
     [(vector? v)
-     (print-list p who (vector->list v) mode o max-length graph config "#(" "(vector")]
+     (cond
+       [(and (not (eq? mode PRINT-MODE/UNQUOTED))
+             (config-get config print-vector-length))
+        (define len (vector-length v))
+        (define same-n
+          (cond
+            [(zero? len) 0]
+            [else
+             (let loop ([i (sub1 len)] [accum 0])
+               (cond
+                 [(zero? i) accum]
+                 [(eq? (vector-ref v (sub1 i)) (vector-ref v i))
+                  (loop (sub1 i) (add1 accum))]
+                 [else accum]))]))
+        (define lst (if (zero? same-n)
+                        (vector->list v)
+                        (for/list ([e (in-vector v 0 (- len same-n))])
+                          e)))
+        (define lbl (string-append "#" (number->string len) "("))
+        (print-list p who lst mode o max-length graph config lbl "(vector")]
+       [else
+        (print-list p who (vector->list v) mode o max-length graph config "#(" "(vector")])]
     [(flvector? v)
      (define l (for/list ([e (in-flvector v)]) e))
      (print-list p who l mode o max-length graph config "#fl(" "(flvector")]
@@ -291,7 +312,8 @@
           (p who v mode o (output-port/max-max-length o/m max-length) graph config)))
        ((custom-write-accessor v) v o/m mode)
        (output-port/max-max-length o/m max-length))]
-    [(struct? v)
+    [(and (struct? v)
+          (config-get config print-struct))
      (cond
        [(eq? mode PRINT-MODE/UNQUOTED)
         (define l (vector->list (struct->vector v)))

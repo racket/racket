@@ -184,7 +184,8 @@
        (checking! v)
        ((custom-write-accessor v) v checking-port mode)
        (done! v unquoted?)]
-      [(struct? v)
+      [(and (struct? v)
+            (config-get config print-struct))
        (checking! v)
        (define unquoted?
          (or (for/fold ([unquoted? #f]) ([e (in-vector (struct->vector v))])
