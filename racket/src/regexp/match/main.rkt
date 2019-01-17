@@ -281,7 +281,10 @@
     ;; Create a lazy string from the port:
     (define lb-in (make-lazy-bytes port-in (if peek? start-offset 0) prefix
                                    peek? immediate-only? progress-evt
-                                   out (rx:regexp-max-lookbehind rx)))
+                                   out (rx:regexp-max-lookbehind rx)
+                                   (and (input-port? in)
+                                        (not (eq? 'eof end-offset))
+                                        (- end-offset start-offset))))
     (define end-pos (if (eq? 'eof end-offset)
                         'eof
                         (+ start-pos
@@ -303,17 +306,22 @@
       (when (not peek?)
         (cond
          [ms-pos
-          (when (or out (input-port? in))
+          (when out
             ;; Flush bytes before match:
-            (lazy-bytes-advance! lb-in ms-pos #t)
+            (lazy-bytes-advance! lb-in ms-pos #t))
+          (when (input-port? in)
             ;; Consume bytes that correspond to match:
             (copy-port-bytes port-in #f (- me-pos prefix-len)))]
          [(eq? end-pos 'eof)
-          ;; copy all remaining bytes from input to output
+          ;; Copy all remaining bytes from input to output
           (copy-port-bytes port-in out #f)]
          [else
-          (when (or out (input-port? in))
-            (lazy-bytes-advance! lb-in end-pos #t))])))
+          (when out
+            ;; Copy all bytes to output
+            (lazy-bytes-advance! lb-in end-pos #t))
+          (when (input-port? in)
+            ;; Consume all bytes
+            (copy-port-bytes port-in #f (- end-pos start-pos)))])))
 
     (begin0
 
@@ -322,11 +330,6 @@
                 (not (lazy-bytes-failed? lb-in))
                 mode)
        [(#f)
-        (when (and (not peek?)
-                   any-bytes-left?
-                   (input-port? in))
-          ;; Consume non-matching bytes
-          (copy-port-bytes port-in out (if (eq? 'eof end-offset) #f end-offset)))
         (add-end-bytes #f end-bytes-count #f #f)]
        [(?) #t]
        [(positions)

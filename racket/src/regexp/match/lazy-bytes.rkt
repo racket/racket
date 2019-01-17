@@ -23,16 +23,19 @@
                     out              ; output hold discarded bytes; implies `(not peek?)`
                     max-lookbehind   ; bytes before current counter to preserve, if `out`
                     [failed? #:mutable] ; set to #t if `progress-evt` fires or read blocks
-                    [discarded-count #:mutable])) ; bytes discarded, if not `peek?`
+                    [discarded-count #:mutable] ; bytes discarded, if not `peek?`
+                    max-peek))       ; maximum number of bytes to peek or #f
 
 (define (make-lazy-bytes in skip-amt prefix
                          peek? immediate-only? progress-evt
-                         out max-lookbehind)
+                         out max-lookbehind
+                         max-peek)
   (define len (bytes-length prefix))
   (lazy-bytes prefix len in skip-amt len
               peek? immediate-only? progress-evt
               out max-lookbehind
-              #f 0))
+              #f 0
+              max-peek))
 
 (define (lazy-bytes-before-end? s pos end)
   (and (or (not (exact-integer? end))
@@ -54,9 +57,9 @@
   ;; then flush unneeded bytes...
   ;; The promise is that we won't ask for bytes before
   ;; `pos` minus the `max-lookbehind`
-  (define pos (min given-pos (lazy-bytes-end s)))
   (when force?
-    (lazy-bytes-before-end? s pos 'eof))
+    (lazy-bytes-before-end? s given-pos 'eof))
+  (define pos (min given-pos (lazy-bytes-end s)))
   (when (and (lazy-bytes? s)
              (not (lazy-bytes-peek? s)))
     (define discarded-count (lazy-bytes-discarded-count s))
@@ -80,7 +83,9 @@
                       [else (min amt (- prefix-len discarded-count))])
                      ;; To amount to discard:
                      amt))
-      (bytes-copy! bstr 0 bstr amt (- (lazy-bytes-end s) discarded-count))
+      (define copy-end (- (lazy-bytes-end s) discarded-count))
+      (unless (= amt copy-end)
+        (bytes-copy! bstr 0 bstr amt copy-end))
       (set-lazy-bytes-discarded-count! s (+ amt discarded-count)))))
 
 ;; ----------------------------------------
@@ -116,9 +121,20 @@
         (set-lazy-bytes-end! s (+ n len discarded-count))
         #t])]
      [else
-      ;; We're going to need a bigger byte string
-      (define bstr2 (make-bytes (max 32 (* 2 (bytes-length bstr)))))
-      (bytes-copy! bstr2 0 bstr 0 len)
-      (set-lazy-bytes-bstr! s bstr2)
-      (get-more-bytes! s)])]
+      (define max-peek (lazy-bytes-max-peek s))
+      (define prefix-len (and max-peek (lazy-bytes-prefix-len s)))
+      (cond
+        [(and max-peek
+              (len . >= . (- (+ max-peek prefix-len) discarded-count)))
+         ;; Not allowed to read any more
+         #f]
+        [else
+         ;; We're going to need a bigger byte string
+         (define bstr2 (make-bytes (let ([sz (max 32 (* 2 (bytes-length bstr)))])
+                                     (if max-peek
+                                         (min sz (- (+ prefix-len max-peek) discarded-count))
+                                         sz))))
+         (bytes-copy! bstr2 0 bstr 0 len)
+         (set-lazy-bytes-bstr! s bstr2)
+         (get-more-bytes! s)])])]
    [else #f]))

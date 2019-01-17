@@ -40,6 +40,17 @@
   (test (rx:regexp-match rx:.n in 0 #f #f #"\n") '(#"b\n"))
   (test (rx:regexp-match rx:.n in 0 #f #f #"\n") '(#"c\n")))
 
+(let ()
+  (define in (open-input-bytes #" a b c "))
+
+  (define discard (open-output-bytes))
+  (rx:regexp-match "[abc]" in 0 3 discard #"")
+  (test (get-output-bytes discard) #" ")
+
+  (define discard2 (open-output-bytes))
+  (rx:regexp-match "[abc]" in 0 1 discard2 #"")
+  (test (get-output-bytes discard2) #" "))
+
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])
