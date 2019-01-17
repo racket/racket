@@ -9,6 +9,7 @@
                   ;; get `chaperone-procedure` that doesn't support keyword arguments:
                   chaperone-procedure)
          "path.rkt"
+         "relativity.rkt"
          "simplify.rkt"
          "directory-path.rkt")
 
@@ -63,4 +64,12 @@
 
 (define/who current-load-relative-directory
   (let ([guard (make-guard-paths who #f)])
-    (make-derived-parameter raw:current-load-relative-directory guard guard)))
+    (define full-guard
+      (case-lambda
+        [() (guard)]
+        [(v) (when v
+               (unless (and (path-string? v)
+                            (complete-path? v))
+                 (raise-argument-error who "(or/c (and/c path-string? complete-path?) #f)" v)))
+             (guard v)]))
+    (make-derived-parameter raw:current-load-relative-directory full-guard full-guard)))
