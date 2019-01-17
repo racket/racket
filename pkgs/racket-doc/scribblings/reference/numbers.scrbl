@@ -549,16 +549,30 @@ Returns @racket[z] raised to the power of @racket[w].
 
 If @racket[w] is
  exact @racket[0], the result is exact @racket[1].
- If @racket[w] is @racket[0.0] or @racket[-0.0]  and @racket[z] is a @tech{real number}, the
+ If @racket[w] is @racket[0.0] or @racket[-0.0]  and @racket[z] is a @tech{real number}
+ other than exact @racket[1] or @racket[0], the
  result is @racket[1.0] (even if @racket[z] is @racket[+nan.0]).
 
 If @racket[z] is exact @racket[1], the result is exact @racket[1].
  If @racket[z] is @racket[1.0] and @racket[w] is a @tech{real number}, the
  result is @racket[1.0] (even if @racket[w] is @racket[+nan.0]).
 
-If @racket[z] is
- exact @racket[0] and @racket[w] is negative, the
- @exnraise[exn:fail:contract:divide-by-zero].
+If @racket[z] is exact @racket[0], the result is as follows:
+@;
+@itemlist[#:style 'compact
+
+ @item{@racket[w] is exact @racket[0] --- result is @racket[1]}
+
+ @item{@racket[w] is @racket[0.0] or @racket[-0.0] --- result is @racket[1.0]}
+
+ @item{real part of @racket[w] is negative --- the @exnraise[exn:fail:contract:divide-by-zero]}
+
+ @item{@racket[w] is nonreal with a nonpositive real part  --- the @exnraise[exn:fail:contract:divide-by-zero]}
+
+ @item{@racket[w] is @racket[+nan.0] --- result is @racket[+nan.0]}
+
+ @item{otherwise --- result is @racket[0]}
+]
 
 Further special cases when @racket[w] is a @tech{real number}:
 @margin-note*{These special cases correspond to @tt{pow} in C99 @cite["C99"],
@@ -569,45 +583,45 @@ integer.}
 
  @item{@racket[(expt 0.0 w)]:
        @itemlist[#:style 'compact
-         @item{@racket[w] is negative --- @racket[+inf.0]}
-         @item{@racket[w] is positive --- @racket[0.0]}]}
+         @item{@racket[w] is negative --- result is @racket[+inf.0]}
+         @item{@racket[w] is positive --- result is @racket[0.0]}]}
 
  @item{@racket[(expt -0.0 w)]:
        @itemlist[#:style 'compact
          @item{@racket[w] is negative:
                @itemlist[#:style 'compact
-                @item{@racket[w] is an odd integer --- @racket[-inf.0]}
-                @item{@racket[w] otherwise rational --- @racket[+inf.0]}]}
+                @item{@racket[w] is an odd integer --- result is @racket[-inf.0]}
+                @item{@racket[w] otherwise rational --- result is @racket[+inf.0]}]}
          @item{@racket[w] is positive:
                @itemlist[#:style 'compact
-                @item{@racket[w] is an odd integer --- @racket[-0.0]}
-                @item{@racket[w] otherwise rational --- @racket[+0.0]}]}]}
+                @item{@racket[w] is an odd integer --- result is @racket[-0.0]}
+                @item{@racket[w] otherwise rational --- result is @racket[+0.0]}]}]}
 
  @item{@racket[(expt z -inf.0)] for positive @racket[z]:
        @itemlist[#:style 'compact
-         @item{@racket[z] is less than @racket[1.0] --- @racket[+inf.0]}
-         @item{@racket[z] is greater than @racket[1.0] --- @racket[+0.0]}]}
+         @item{@racket[z] is less than @racket[1.0] --- result is @racket[+inf.0]}
+         @item{@racket[z] is greater than @racket[1.0] --- result is @racket[+0.0]}]}
 
  @item{@racket[(expt z +inf.0)] for positive @racket[z]:
        @itemlist[#:style 'compact
-         @item{@racket[z] is less than @racket[1.0] --- @racket[+0.0]}
-         @item{@racket[z] is greater than @racket[1.0] --- @racket[+inf.0]}]}
+         @item{@racket[z] is less than @racket[1.0] --- result is @racket[+0.0]}
+         @item{@racket[z] is greater than @racket[1.0] --- result is @racket[+inf.0]}]}
 
  @item{@racket[(expt -inf.0 w)] for integer @racket[w]:
        @itemlist[#:style 'compact
          @item{@racket[w] is negative:
                @itemlist[#:style 'compact
-                @item{@racket[w] is odd --- @racket[-0.0]}
-                @item{@racket[w] is even --- @racket[+0.0]}]}
+                @item{@racket[w] is odd --- result is @racket[-0.0]}
+                @item{@racket[w] is even --- result is @racket[+0.0]}]}
          @item{@racket[w] is positive:
                @itemlist[#:style 'compact
-                @item{@racket[w] is odd --- @racket[-inf.0]}
-                @item{@racket[w] is even --- @racket[+inf.0]}]}]}
+                @item{@racket[w] is odd --- result is @racket[-inf.0]}
+                @item{@racket[w] is even --- result is @racket[+inf.0]}]}]}
 
  @item{@racket[(expt +inf.0 w)]:
        @itemlist[#:style 'compact
-         @item{@racket[w] is negative --- @racket[+0.0]}
-         @item{@racket[w] is positive --- @racket[+inf.0]}]}
+         @item{@racket[w] is negative --- result is @racket[+0.0]}
+         @item{@racket[w] is positive --- result is @racket[+inf.0]}]}
 ]
 
 @mz-examples[(expt 2 3) (expt 4 0.5) (expt +inf.0 0)]}

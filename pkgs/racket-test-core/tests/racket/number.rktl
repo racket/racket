@@ -1912,6 +1912,7 @@
 (err/rt-test (expt 0 0.0+2i) exn:fail:contract:divide-by-zero?)
 (err/rt-test (expt 0 -0.0+2i) exn:fail:contract:divide-by-zero?)
 (err/rt-test (expt 0 0+0.0i) exn:fail:contract:divide-by-zero?)
+(err/rt-test (expt 0 +nan.0+1.0i) exn:fail:contract:divide-by-zero?)
 
 (err/rt-test (expt 'a 0))
 (err/rt-test (expt 'a 1))
