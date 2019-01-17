@@ -356,15 +356,21 @@ transcript.
 (define non-z void)
 
 (define (find-depth go)
-  ; Find depth that triggers a stack overflow (assuming no other
-  ; threads are running and overflowing)
-  (let ([v0 (make-vector 6)]
-	[v1 (make-vector 6)])
-    (let find-loop ([d 100])
-      (vector-set-performance-stats! v0)
-      (go d)
-      (vector-set-performance-stats! v1)
-      (if (> (vector-ref v1 5)
-	     (vector-ref v0 5))
-	  d
-	  (find-loop (* 2 d))))))
+  (cond
+    [(eq? 'racket (system-type 'vm))
+     ; Find depth that triggers a stack overflow (assuming no other
+     ; threads are running and overflowing)
+     (let ([v0 (make-vector 6)]
+           [v1 (make-vector 6)])
+       (let find-loop ([d 100])
+         (vector-set-performance-stats! v0)
+         (go d)
+         (vector-set-performance-stats! v1)
+         (if (> (vector-ref v1 5)
+                (vector-ref v0 5))
+             d
+             (find-loop (* 2 d)))))]
+    [else
+     ;; No way to detect stack overflow, and it's less interesting anyway,
+     ;; but make up a number for testing purposes
+     1000]))

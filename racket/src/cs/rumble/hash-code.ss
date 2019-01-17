@@ -122,7 +122,7 @@
             (cond
              [(fx= i len) (values hc burn)]
              [else
-              (let-values ([(hc0 burn) (equal-hash-loop (vector-ref x i) burn 0)])
+              (let-values ([(hc0 burn) (equal-hash-loop (vector-ref x i) (fx+ burn 2) 0)])
                 (vec-loop (fx+ i 1)
                           burn
                           (+/fx (mix2 hc) hc0)))]))]))]
