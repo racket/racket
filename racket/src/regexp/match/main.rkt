@@ -285,13 +285,12 @@
                                    (and (input-port? in)
                                         (not (eq? 'eof end-offset))
                                         (- end-offset start-offset))))
-    (define end-pos (if (eq? 'eof end-offset)
+    (define end-pos (if (or (eq? 'eof end-offset)
+                            (string? in))
                         'eof
                         (+ start-pos
-                           (cond
-                            [(string? in) (string-utf-8-length in start-offset end-offset)]
-                            [else (- end-offset start-offset)]))))
-    
+                           (- end-offset start-offset))))
+
     ;; Search for a match:
     (define-values (ms-pos me-pos)
       (if any-bytes-left?
@@ -314,7 +313,8 @@
             (copy-port-bytes port-in #f (- me-pos prefix-len)))]
          [(eq? end-pos 'eof)
           ;; Copy all remaining bytes from input to output
-          (copy-port-bytes port-in out #f)]
+          (when (or out (input-port? in))
+            (copy-port-bytes port-in out #f))]
          [else
           (when out
             ;; Copy all bytes to output
