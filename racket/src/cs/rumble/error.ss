@@ -690,8 +690,13 @@
            exn:fail:contract:arity]
           [(and (format-condition? v)
                 (who-condition? v)
-                (eq? '/ (condition-who v))
+                (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log))
                 (string=? "undefined for ~s" (condition-message v)))
+           exn:fail:contract:divide-by-zero]
+          [(and (format-condition? v)
+                (who-condition? v)
+                (#%memq (condition-who v) '(expt atan2))
+                (string=? "undefined for values ~s and ~s" (condition-message v)))
            exn:fail:contract:divide-by-zero]
           [(and (format-condition? v)
                 (or (string=? "attempt to reference undefined variable ~s" (condition-message v))
