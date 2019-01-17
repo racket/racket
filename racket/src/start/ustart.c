@@ -490,7 +490,7 @@ int main(int argc, char **argv)
       dll_path = "";
     }
     dll_path = string_append(dll_path, ":");
-    dll_path = string_append(lib_path, dll_path);
+    dll_path = string_append(dll_path, lib_path);
     dll_path = string_append(LD_LIB_PATH "=", dll_path);
     putenv(dll_path);
   }
