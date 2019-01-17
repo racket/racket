@@ -32,6 +32,14 @@
 (let ([is (open-input-string "barfoo")]) 
   (test (list (rx:regexp-match "foo" is 0 3) (read-char is)) '(#f #\f)))
 
+;; Don't consume bytes that corresponds to a prefix:
+(let ()
+  (define in (open-input-string "a\nb\nc\n"))
+  (define rx:.n (rx:byte-regexp #"(?m:^.\n)"))
+  (test (rx:regexp-match rx:.n in 0 #f #f #"") '(#"a\n"))
+  (test (rx:regexp-match rx:.n in 0 #f #f #"\n") '(#"b\n"))
+  (test (rx:regexp-match rx:.n in 0 #f #f #"\n") '(#"c\n")))
+
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])
