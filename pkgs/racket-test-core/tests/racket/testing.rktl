@@ -18,6 +18,7 @@
 
 ; The format of the next line is important: file.rktl relies on it
 (define cur-section '())(define errs '())
+(define accum-errs '())
 
 #|
 
@@ -321,9 +322,11 @@ transcript.
 (define (test-values l thunk)
   (test l call-with-values thunk list))
 
-(define (report-errs . final?)
-  (let* ([final? (and (pair? final?) (car final?))]
-         [ok?    (null? errs)])
+(define (report-errs [final? #f])
+  (when final?
+    (set! errs (append errs accum-errs))
+    (set! accum-errs null))
+  (let* ([ok?    (null? errs)])
     (parameterize ([current-output-port
                     (cond [(not ok?) (or real-error-port (current-error-port))]
                           [final? (or real-output-port (current-output-port))]
@@ -347,9 +350,10 @@ transcript.
                (when final? (exit 1))))
       (flush-output)
       (when final? (exit (if ok? 0 1)))
-      (printf "(Other messages report successful tests of~a.)\n"
-              " error-handling behavior")
-      (flush-output))))
+      (newline)
+      (flush-output)
+      (set! accum-errs (append errs accum-errs))
+      (set! errs null))))
 
 (define type? exn:application:type?)
 (define arity? exn:application:arity?)

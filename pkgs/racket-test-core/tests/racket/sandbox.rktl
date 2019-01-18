@@ -99,7 +99,7 @@
                "(define (id x) x)"
                "(define (plus1 x) x)"
                "(define (loop) (loop))"
-               "(define (memory x) (make-vector x))"))
+               "(define (memory x) (vector-length (make-vector x)))"))
    (set-eval-limits ev 0.5 5)
    --eval--
    x => 1

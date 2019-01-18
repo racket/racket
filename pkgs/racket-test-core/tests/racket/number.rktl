@@ -1736,7 +1736,10 @@
 (arity-test real-part 1 1)
 (arity-test imag-part 1 1)
 
-(define (z-round c) (make-rectangular (round (real-part c)) (round (imag-part c))))
+(define (z-round c)
+  (define (neg0-to-pos0 n) (if (eqv? n -0.0) 0.0 n))
+  (make-rectangular (neg0-to-pos0 (round (real-part c)))
+                    (neg0-to-pos0 (round (imag-part c)))))
 
 (test -1 * +i +i)
 (test 1 * +i -i)
@@ -1825,7 +1828,7 @@
 (let ([v (expt -3/4+7/8i 2+3i)])
   (test 3826.0 floor (* 10000000 (real-part v)))
   (test -137.0 ceiling (* 100000 (imag-part v))))
-(test 49.0+0.0i expt 7 2+0.0i)
+(test 49.0+0.0i z-round (expt 7 2+0.0i))
 (test 49.0 floor (* 10 (expt 2 2.3)))
 (test 189.0 floor (* 1000 (expt 2.3 -2)))
 (test 1/4 expt 2 -2)
@@ -2081,7 +2084,7 @@
 (test 125.0d0 round (* 1000 (magnitude (asin (sin 0.125+0.0d0i)))))
 (test 125.0 round (* 1000 (asin (sin 1/8))))
 (test 125.0 round (* 1000 (acos (cos 0.125))))
-(test 125.0d0-0.0i z-round (* 1000 (acos (cos 0.125+0.0d0i))))
+(test 125.0d0+0.0i z-round (* 1000 (acos (cos 0.125+0.0d0i))))
 (test 125.0 round (* 1000 (acos (cos 1/8))))
 (test 785.0 round (* 1000 (atan 1 1)))
 (test 785.0 round (* 1000 (atan 1.0 1.0)))
@@ -2091,7 +2094,7 @@
 (test -785.0 round (* 1000 (atan -1 1)))
 (test 785.0 round (* 1000 (atan 1)))
 (test 100.0 round (* 100 (tan (atan 1))))
-(test 100.0-0.0i z-round (* 100 (tan (+ +0.0i (atan 1)))))
+(test 100.0+0.0i z-round (* 100 (tan (+ +0.0i (atan 1)))))
 (test 0.0 atan 0.0 0)
 (test 0 atan 0 1)
 (test 0 atan 0 (expt 2 100))
@@ -2251,7 +2254,8 @@
 (test 0+1175.i z-round (* 1000 (sin 0+i)))
 (test -642.-1069.i z-round (* 1000 (cos 2+i)))
 (test -642.-1069.i z-round (* 1000 (cos -2-i)))
-(test 1543. z-round (* 1000 (cos 0+i)))
+(when has-exact-zero-inexact-complex?
+  (test 1543. z-round (* 1000 (cos 0+i))))
 (test 272-1084.i z-round (* 1000 (tan 1-i)))
 (test -272+1084.i z-round (* 1000 (tan -1+i)))
 
@@ -2262,11 +2266,11 @@
 (test 3142.-3688.i z-round (* 1000 (acos -20)))
 
 (define (cs2 c) (+ (* (cos c) (cos c)) (* (sin c) (sin c))))
-(test 0.0 imag-part (cs2 2+3i))
+(test 0.0 round (* 1000 (imag-part (cs2 2+3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 2+3i))))
-(test 0.0 imag-part (cs2 -2+3i))
+(test 0.0 round (* 1000 (imag-part (cs2 -2+3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 -2+3i))))
-(test 0.0 imag-part (cs2 2-3i))
+(test 0.0 round (* 1000 (imag-part (cs2 2-3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 2-3i))))
 
 (test #t positive? (real-part (sqrt (- 1 (* 2+3i 2+3i)))))
@@ -2967,9 +2971,10 @@
 (test (expt 2 256) inexact->exact 1.157920892373162d+77)
 (test 115792089237316195423570985008687907853269984665640564039457584007913129639936 inexact->exact 1.157920892373162d+77)
 
-(test 521335/89202980794122492566142873090593446023921664 inexact->exact 5.844367f-39)
-(test 5.844367f-39 real->single-flonum (inexact->exact 5.844367f-39))
-(test (real->double-flonum 5.844367f-39) exact->inexact (inexact->exact 5.844367f-39))
+(when has-single-flonum?
+  (test 521335/89202980794122492566142873090593446023921664 inexact->exact 5.844367f-39)
+  (test 5.844367f-39 real->single-flonum (inexact->exact 5.844367f-39))
+  (test (real->double-flonum 5.844367f-39) exact->inexact (inexact->exact 5.844367f-39)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3277,7 +3282,7 @@
       (test #t single-flonum-ish? op 2.0f0 1/2)
       (test #t single-flonum-ish? op 4/5 0.5f0))))
 
-(unless (eq? 'chez-scheme (system-type 'vm))
+(when has-single-flonum?
 
   (map (check-single-flonum)
        (list + - * / 
