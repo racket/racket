@@ -704,7 +704,8 @@ Returns the arccosine in radians of @racket[z].
 
 In the one-argument case, returns the arctangent of the inexact
  approximation of @racket[z], except that the result is an exact
- @racket[0] for an exact @racket[0] argument.
+ @racket[0] for @racket[z] as @racket[0], and the @exnraise[exn:fail:contract:divide-by-zero]
+ for @racket[z] as exact @racket[0+1i] or exact @racket[0-1i].
 
 In the two-argument case, the result is roughly the same as @racket[
  (atan (/ (exact->inexact y)) (exact->inexact x))], but the signs of @racket[y]
@@ -712,11 +713,15 @@ In the two-argument case, the result is roughly the same as @racket[
  suitable angle is returned when @racket[y] divided by @racket[x]
  produces @racket[+nan.0] in the case that neither @racket[y] nor
  @racket[x] is @racket[+nan.0]. Finally, if @racket[y] is exact
- @racket[0] and @racket[x] is an exact positive number, the result is
+ @racket[0] and @racket[x] is a positive number, the result is
  exact @racket[0]. If both @racket[x] and @racket[y] are exact
  @racket[0], the @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i) (atan +inf.0 -inf.0)]}
+@mz-examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i) (atan +inf.0 -inf.0)]
+
+@history[#:changed "7.2.0.2" @elem{Changed to raise @racket[exn:fail:contract:divide-by-zero]
+                                   for @racket[0+1i] and @racket[0-1i] and to produce exact @racket[0]
+                                   for any positive @racket[x] (not just exact values) when @racket[y] is @racket[0].}]}
 
 @; ------------------------------------------------------------------------
 @subsection{Complex Numbers}

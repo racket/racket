@@ -2913,8 +2913,23 @@ static Scheme_Object *complex_atan(Scheme_Object *c)
 {
   Scheme_Object *one_half = NULL;
 
-  if (scheme_complex_eq(c, scheme_plus_i) || scheme_complex_eq(c, scheme_minus_i))
-    return scheme_minus_inf_object;
+  if (SAME_OBJ(_scheme_complex_real_part(c), scheme_make_integer(0))) {
+    Scheme_Object *i = _scheme_complex_imaginary_part(c);
+    if (SAME_OBJ(i, scheme_make_integer(1)) || SAME_OBJ(i, scheme_make_integer(-1))) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO, "atan: undefined for %V", c);
+      return NULL;
+#ifdef MZ_USE_SINGLE_FLOATS
+    } else if (SCHEME_FLTP(i)) {
+      float f = SCHEME_FLT_VAL(i);
+      if ((f == 1.0) || (f == -1.0))
+        return scheme_single_minus_inf_object;
+#endif
+    } else if (SCHEME_DBLP(i)) {
+      double d = SCHEME_DBL_VAL(i);
+      if ((d == 1.0) || (d == -1.0))
+        return scheme_minus_inf_object;
+    }
+  }
 
   /* select single versus complex: */
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -3115,9 +3130,7 @@ atan_prim (int argc, Scheme_Object *argv[])
                          "atan: undefined for 0 and 0");
         ESCAPED_BEFORE_HERE;
       }
-      if ((SCHEME_INTP(n2) && (SCHEME_INT_VAL(n2) > 0))
-          || (SCHEME_BIGNUMP(n2) && (SCHEME_BIGPOS(n2)))
-          || (SCHEME_RATIONALP(n2) && scheme_is_positive(n2)))
+      if (!SCHEME_COMPLEXP(n2) && scheme_is_positive(n2))
         return zeroi;
     }
 
