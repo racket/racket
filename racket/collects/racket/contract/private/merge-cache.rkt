@@ -35,7 +35,7 @@
                (λ (h3)
                  (define cached-result (hash-ref h3 old-neg #f))
                  (cond
-                   [(ephemeron-value cached-result) => values]
+                   [(and cached-result (ephemeron-value cached-result)) => values]
                    [else
                     (define result (body-thunk))
                     (hash-set! h3 old-neg (make-ephemeron old-neg result))

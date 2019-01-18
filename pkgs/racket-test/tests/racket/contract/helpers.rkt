@@ -4,7 +4,8 @@
          
          (for-template racket/contract/private/arrow-val-first)
          racket/contract/private/application-arity-checking
-         racket/contract/private/arr-i-parse)
+         racket/contract/private/arr-i-parse
+         racket/contract/private/merge-cache)
 
 (check-equal? (matches-arity-exactly? (λ () 1) 0 0 '() '()) #t)
 (check-equal? (matches-arity-exactly? (λ () 1) 1 1 '() '()) #f)
@@ -115,3 +116,16 @@
 (check-false (valid-argument-list? #'(f) (valid-app-shapes '(0) '(#:x) '()) #f))
 (check-false (valid-argument-list? #'(f #:y y) (valid-app-shapes '(0) '(#:x) '()) #f))
 (check-false (valid-argument-list? #'(f #:x) (valid-app-shapes '(0) '(#:x) '()) #f))
+
+(define/merge-cache (f x y z w)
+  (list x y z w))
+
+(check-equal? (f 1 2 3 4) (list 1 2 3 4))
+(check-equal? (f 1 2 3 4) (list 1 2 3 4))
+(check-equal? (f 1 2 3 0) (list 1 2 3 0))
+(check-equal? (f 1 2 3 0) (list 1 2 3 0))
+(check-equal? (f 1 2 0 4) (list 1 2 0 4))
+(check-equal? (f 1 0 3 4) (list 1 0 3 4))
+(check-equal? (f 1 0 3 4) (list 1 0 3 4))
+(check-equal? (f 0 2 3 4) (list 0 2 3 4))
+(check-equal? (f 0 2 3 4) (list 0 2 3 4))
