@@ -164,10 +164,20 @@
         (cons `(assoc-pair ,(cadr key) ,(collapse-value value))
               (collapse-assoc-pairs rest)))))
 
+(define (convert-string-value x)
+  (cond [(string? x)
+         x]
+        [(integer? x)
+         (string (integer->char x))]
+        [else
+         (error 'read-plist "Illegal string value: ~e" x)]))
+
 ; collapse-value : xexpr -> value
 (define (collapse-value value)
   (case (car value)
-    [(string) (cadr value)]
+    [(string) (apply string-append
+                     (map convert-string-value
+                          (cdr value)))]
     [(true false) value]
     [(integer real) (list (car value) (string->number (cadr value)))]
     [(dict) (collapse-dict value)]
