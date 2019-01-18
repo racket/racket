@@ -338,8 +338,10 @@ transcript.
               number-of-exn-tests)
       (if ok?
         (printf "~aPassed all tests.\n" Section-prefix)
-        (begin (printf "~aErrors were:\n~a(Section (got expected (call)))\n"
-                       Section-prefix Section-prefix)
+        (begin (printf "~aErrors were [~a]:\n~a(Section (got expected (call)))\n"
+                       Section-prefix
+                       (length errs)
+                       Section-prefix)
                (for-each (lambda (l) (printf "~a~s\n" Section-prefix l))
                          (reverse errs))
                (when final? (exit 1))))

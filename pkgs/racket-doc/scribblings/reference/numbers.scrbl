@@ -761,9 +761,15 @@ Returns the imaginary part of the complex number @racket[z] in
 @defproc[(magnitude [z number?]) (and/c real? (not/c negative?))]{
 
  Returns the magnitude of the complex number @racket[z] in polar
- coordinates.
+ coordinates. A complex number with @racket[+inf.0] or @racket[-inf.0]
+ as a component has magnitude @racket[+inf.0], even if the other
+ component is @racket[+nan.0].
 
-@mz-examples[(magnitude -3) (magnitude 3.0) (magnitude 3+4i)]}
+@mz-examples[(magnitude -3) (magnitude 3.0) (magnitude 3+4i)]
+
+@history[#:changed "7.2.0.2" @elem{Changed to always return @racket[+inf.0]
+                                   for a complex number with a @racket[+inf.0]
+                                   or @racket[-inf.0] component.}]}
 
 
 @defproc[(angle [z number?]) real?]{ Returns the angle of

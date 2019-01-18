@@ -3886,13 +3886,13 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
     if (SCHEME_FLTP(i)) {
       float f;
       f = SCHEME_FLT_VAL(i);
-      if (MZ_IS_POS_INFINITY((double) f)) {
+      if (MZ_IS_INFINITY((double) f))
+        return scheme_single_inf_object;
+      else if (MZ_IS_NAN((double) f)) {
         if (SCHEME_FLTP(r)) { /* `r` is either a single-precision float or exact 0 */
           f = SCHEME_FLT_VAL(r);
-          if (MZ_IS_NAN((double) f)) {
-            return scheme_single_nan_object;
-          }
-          return scheme_single_inf_object;
+          if (MZ_IS_INFINITY((double) f))
+            return scheme_single_inf_object;
         }
       }
     }
@@ -3900,13 +3900,14 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
     if (SCHEME_FLOATP(i)) {
       double d;
       d = SCHEME_FLOAT_VAL(i);
-      if (MZ_IS_POS_INFINITY(d)) {
+      if (MZ_IS_INFINITY(d))
+        return scheme_inf_object;
+      else if (MZ_IS_NAN(d)) {
         if (SCHEME_FLOATP(r)) {
           d = SCHEME_FLOAT_VAL(r);
-          if (MZ_IS_NAN(d))
-            return scheme_nan_object;
+          if (MZ_IS_INFINITY(d))
+            return scheme_inf_object;
         }
-        return scheme_inf_object;
       }
     }
     q = scheme_bin_div(r, i);

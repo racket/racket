@@ -6,6 +6,7 @@
 (require racket/extflonum racket/random racket/list)
 
 (define has-single-flonum? (not (eq? 'chez-scheme (system-type 'vm))))
+(define has-exact-zero-inexact-complex? (not (eq? 'chez-scheme (system-type 'vm))))
 
 (test #f number? 'a)
 (test #f complex? 'a)
@@ -1593,22 +1594,27 @@
 (test -inf.0 imag-part (make-rectangular +inf.0 -inf.0))
 
 (test (make-rectangular +inf.0 -inf.0) * 1. (make-rectangular +inf.0 -inf.0))
-(test (make-rectangular +inf.0 +inf.0) * +1.0i (make-rectangular +inf.0 -inf.0))
+(when has-exact-zero-inexact-complex?
+  (test (make-rectangular +inf.0 +inf.0) * +1.0i (make-rectangular +inf.0 -inf.0)))
 (test (make-rectangular -inf.0 +inf.0) * -3. (make-rectangular +inf.0 -inf.0))
 (test (make-rectangular +inf.0 -inf.0) * (make-rectangular +inf.0 -inf.0) 1.)
-(test (make-rectangular +inf.0 +inf.0) * (make-rectangular +inf.0 -inf.0) +1.0i)
+(when has-exact-zero-inexact-complex?
+  (test (make-rectangular +inf.0 +inf.0) * (make-rectangular +inf.0 -inf.0) +1.0i))
 (test (make-rectangular -inf.0 +inf.0) * (make-rectangular +inf.0 -inf.0) -3.)
 (test (make-rectangular +inf.0 -inf.0) / (make-rectangular +inf.0 -inf.0) 1.)
-(test (make-rectangular -inf.0 -inf.0) / (make-rectangular +inf.0 -inf.0) +1.0i)
+(when has-exact-zero-inexact-complex?
+  (test (make-rectangular -inf.0 -inf.0) / (make-rectangular +inf.0 -inf.0) +1.0i))
 (test (make-rectangular -inf.0 +inf.0) / (make-rectangular +inf.0 -inf.0) -3.)
 
 ;; Test division with exact zeros in demoniator where
 ;;  the exact zero gets polluted to an inexact zero unless
 ;;  it's special-cased
-(test 0-0.0i / 0+1.0i -inf.0)
+(when has-exact-zero-inexact-complex?
+  (test 0-0.0i / 0+1.0i -inf.0))
 (test -0.0-0.0i / 1.0+1.0i -inf.0)
-(test -0.0 / 0+1.0i 0-inf.0i)
-(test -0.0+0.0i / 1.0+1.0i 0-inf.0i)
+(when has-exact-zero-inexact-complex?
+  (test -0.0 / 0+1.0i 0-inf.0i)
+  (test -0.0+0.0i / 1.0+1.0i 0-inf.0i))
 
 (test-i-nan.0 * 1.+0.i (make-rectangular +inf.0 -inf.0))
 (test-i-nan.0 * 0.+1.0i (make-rectangular +inf.0 -inf.0))
@@ -1640,8 +1646,11 @@
 (test +inf.0 magnitude +inf.0+1i)
 (test +inf.0 magnitude +inf.0+0.0i)
 (test +inf.0 magnitude 0.0+inf.0i)
-(test +nan.0 magnitude +nan.0+inf.0i)
-(test +nan.0 magnitude +inf.0+nan.0i)
+(test +inf.0 magnitude +nan.0+inf.0i)
+(test +inf.0 magnitude +inf.0+nan.0i)
+(test +nan.0 magnitude +nan.0+2.0i)
+(test +nan.0 magnitude +2.0+nan.0i)
+(test +nan.0 magnitude 0+nan.0i)
 (test +inf.f magnitude 3.0f0-inf.fi)
 (test +nan.f magnitude 3.0f0+nan.fi)
 (test 3.0f0 magnitude 3.0f0+0.0f0i)
@@ -1802,7 +1811,10 @@
 (test '(0+97184015999i -45402459391) call-with-values (lambda () (integer-sqrt/remainder (expt -2 73))) list)
 
 (test '(2.0 1.0) call-with-values (lambda () (integer-sqrt/remainder 5.0)) list)
-(test '(0+2.0i -1.0) call-with-values (lambda () (integer-sqrt/remainder -5.0)) list)
+(test (if has-exact-zero-inexact-complex?
+          '(0+2.0i -1.0)
+          '(0+2.0i -1.0-0.0i))
+      call-with-values (lambda () (integer-sqrt/remainder -5.0)) list)
 (err/rt-test (integer-sqrt/remainder 5.0+0.0i))
 (err/rt-test (integer-sqrt/remainder -5.0+0.0i))
 
