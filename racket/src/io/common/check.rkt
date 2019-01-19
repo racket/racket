@@ -20,7 +20,7 @@
             (end-pos . > . max-end))
     (raise-range-error who
                        "byte string"
-                       "starting "
+                       "ending "
                        end-pos
                        in-value
                        0

@@ -51,6 +51,30 @@
   (rx:regexp-match "[abc]" in 0 1 discard2 #"")
   (test (get-output-bytes discard2) #" "))
 
+;; Input streams that are large enough for bytes to be discarded along the way
+(test (rx:regexp-match #"(.)x" (open-input-string (string-append (make-string 50000 #\y) "x")))
+      '(#"yx" #"y"))
+(test (rx:regexp-match-positions #"(.)x" (open-input-string (string-append (make-string 50000 #\y) "x")))
+      '((49999 . 50001) (49999 . 50000)))
+(test (rx:regexp-match "(.)x" (string-append (make-string 50000 #\y) "x"))
+      '("yx" "y"))
+(test (rx:regexp-match-positions "(.)x" (string-append (make-string 50000 #\y) "x"))
+      '((49999 . 50001) (49999 . 50000)))
+(test (rx:regexp-match "(.)\u3BC" (string-append (make-string 50000 #\u3BB) "\u3BC"))
+      '("\u3BB\u3BC" "\u3BB"))
+(test (rx:regexp-match-positions "(.)\u3BC" (string-append (make-string 50000 #\y) "\u3BC"))
+      '((49999 . 50001) (49999 . 50000)))
+
+(test (rx:regexp-match-positions #"<([abc])(>)?" "<a + <b = <c" 3)
+      '((5 . 7) (6 . 7) #f))
+(test (rx:regexp-match-positions "[abc]" " a b c " 2)
+      '((3 . 4)))
+(test (rx:regexp-match-positions "(?m:^.\n)" "a\nb\nc\n" 2 6 #f #"\n")
+      '((2 . 4)))
+
+(test (regexp-replace* "-" "zero-or-more?" "_")
+      "zero_or_more?")
+
 ;; ----------------------------------------
 
 (define (check rx in N [M (max 1 (quotient N 10))])

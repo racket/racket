@@ -236,7 +236,7 @@
            (byte-positions->byte-positions ms-pos me-pos state #:delta delta)]
           [else
            (byte-positions->string-positions bstr-in ms-pos me-pos state
-                                              #:start-offset start-offset)]))
+                                             #:result-offset start-offset)]))
        (add-end-bytes positions end-bytes-count bstr-in me-pos)]
       [(strings)
        ;; If pattern is bytes-based, then results will be bytes instead of strings:
@@ -343,9 +343,18 @@
             (define delta (- start-offset start-pos))
             (byte-positions->byte-positions ms-pos me-pos state #:delta delta)]
            [else
+            ;; Some bytes may have been discarded in `lb-in`, and we
+            ;; don't know how many characters those add up to. The
+            ;; starting position `ms-pos` must be on a code-point
+            ;; boundary, and everything from `ms-pos` to `ms-end` must
+            ;; still be in `lb-in`. So, find `ms-pos` in the original
+            ;; string, and take it from there.
+            (define ms-str-pos (byte-index->string-index in (- ms-pos start-pos)))
+            (define delta (lazy-bytes-discarded-count lb-in))
             (byte-positions->string-positions bstr ms-pos me-pos state
-                                              #:start-pos start-pos
-                                              #:start-offset start-offset)]))
+                                              #:start-index (- ms-pos delta)
+                                              #:delta delta
+                                              #:result-offset (+ ms-str-pos start-offset))]))
         (add-end-bytes positions end-bytes-count bstr me-pos)]
        [(strings)
         ;; The byte string may be shifted by discarded bytes, if not
