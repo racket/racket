@@ -579,6 +579,9 @@
                            (array ,count ,(car reps))))))))]
         [size (* count (ctype-sizeof type))]
         [alignment (ctype-alignof type)])
+    (unless (fixnum? size)
+      (raise-arguments-error who "arithmetic overflow for overlarge array type"
+                             "size" size))
     (create-compound-ctype 'array
                            'array
                            (vector type count)
