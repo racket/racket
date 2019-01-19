@@ -90,14 +90,11 @@
 
 (define (thunk-wrapper f thunk)
   (lambda ()
-    (call-with-continuation-prompt
-     (lambda ()
-       (let ([result (thunk)])
-         (with-lock ((future*-lock f) (current-future))
-           (set-future*-result! f result)
-           (set-future*-done?! f #t)
-           (future:condition-broadcast (future*-cond f)))))
-     (future*-prompt f))))
+    (let ([result (thunk)])
+      (with-lock ((future*-lock f) (current-future))
+        (set-future*-result! f result)
+        (set-future*-done?! f #t)
+        (future:condition-broadcast (future*-cond f))))))
 
 (define/who (future thunk)
   (check who (procedure-arity-includes/c 0) thunk)
@@ -106,7 +103,7 @@
      (would-be-future thunk)]
     [else
      (let ([f (create-future #f)])
-       (set-future*-engine! f (make-engine (thunk-wrapper f thunk) #f #t))
+       (set-future*-engine! f (make-engine (thunk-wrapper f thunk) (future*-prompt f) #f #t))
        (schedule-future f)
        f)]))
 

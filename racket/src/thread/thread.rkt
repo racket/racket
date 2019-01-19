@@ -150,8 +150,8 @@
   (define p (if (or at-root? initial?)
                 root-thread-group
                 (current-thread-group)))
-  (define e (make-engine (lambda ()
-                           (call-with-continuation-prompt proc))
+  (define e (make-engine proc
+                         (default-continuation-prompt-tag)
                          (if (or initial? at-root?)
                              break-enabled-default-cell
                              (current-break-enabled-cell))
