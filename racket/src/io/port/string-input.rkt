@@ -21,6 +21,7 @@
          peek-string!
 
          do-read-char
+         do-read-char/core-port
          do-peek-char)
 
 ;; ----------------------------------------
@@ -265,19 +266,21 @@
 
 ;; If `special-ok?`, can return a special-value procedure
 (define (do-read-char who in #:special-ok? [special-ok? #f])
-  (check who input-port? in)
   (let ([in (->core-input-port in)])
-    (define read-byte (core-input-port-read-byte in))
-    (cond
-      [(not read-byte)
-       (define str (make-string 1))
-       (define-values (v used-bytes) (read-some-chars! who in str 0 1 #:special-ok? special-ok?))
-       (if (eq? v 1)
-           (string-ref str 0)
-           v)]
-      [else
-       ;; Byte-level shortcut is available, so try it as a char shortcut
-       (read-char-via-read-byte who in read-byte #:special-ok? special-ok?)])))
+    (do-read-char/core-port who in #:special-ok? special-ok?)))
+
+(define (do-read-char/core-port who in #:special-ok? [special-ok? #f])
+  (define read-byte (core-input-port-read-byte in))
+  (cond
+    [(not read-byte)
+     (define str (make-string 1))
+     (define-values (v used-bytes) (read-some-chars! who in str 0 1 #:special-ok? special-ok?))
+     (if (eq? v 1)
+         (string-ref str 0)
+         v)]
+    [else
+     ;; Byte-level shortcut is available, so try it as a char shortcut
+     (read-char-via-read-byte who in read-byte #:special-ok? special-ok?)]))
 
 (define/who (read-char [in (current-input-port)])
   (check who input-port? in)
