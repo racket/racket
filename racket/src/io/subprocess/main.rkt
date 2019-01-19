@@ -71,6 +71,10 @@
              (raise-arguments-error who "missing command argument after group argument"))
            (define command (car command/args))
            (check who path-string? command)
+           (when (subprocess? group/command)
+             (unless (subprocess-is-group? group/command)
+               (raise-arguments-error who "subprocess does not represent a new group"
+                                      "subprocess" group/command)))
            (values group/command command (cdr command/args))]
           [else
            (raise-argument-error who "(or/c path-string? #f 'new subprocess?)" group/command)]))
@@ -214,8 +218,8 @@
 (define/who (subprocess-kill sp force?)
   (check who subprocess? sp)
   (atomically (if force?
-                  (interrupt-subprocess sp)
-                  (kill-subprocess sp))))
+                  (kill-subprocess sp)
+                  (interrupt-subprocess sp))))
 
 ;; ----------------------------------------
 
