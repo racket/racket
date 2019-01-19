@@ -327,7 +327,19 @@
                 (set! loads
                       (cons
                        (lambda ()
-                         (eval (read (open-input-string expr))))
+                         (call-with-values (lambda ()
+                                             (call-with-continuation-prompt
+                                              (lambda ()
+                                                (eval (read (open-input-string expr))))
+                                              (default-continuation-prompt-tag)
+                                              (lambda (proc)
+                                                ;; continue escape to set error status:
+                                                (abort-current-continuation (default-continuation-prompt-tag) proc))))
+                           (lambda vals
+                             (for-each (lambda (v)
+                                         (|#%app| (|#%app| current-print) v)
+                                         (flush-output))
+                                       vals))))
                        loads))
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-k")
