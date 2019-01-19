@@ -1833,6 +1833,8 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *pa
   }
 
   if (!ident) {
+    if (noerr)
+      return NULL;
     if (!path) {
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
                        "port-file-identity: error obtaining identity\n"

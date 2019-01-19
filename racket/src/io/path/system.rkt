@@ -5,6 +5,8 @@
          "../host/error.rkt"
          "../security/main.rkt"
          "../file/host.rkt"
+         "../envvar/main.rkt"
+         "../file/identity.rkt"
          "path.rkt"
          "parameter.rkt"
          "directory-path.rkt")
@@ -57,8 +59,32 @@
 (define run-file #f)
 (define (set-run-file! p) (set! run-file p))
 
-(define orig-dir (path->directory-path
-                  (host-> (rktio_to_bytes (rktio_get_current_directory rktio)))))
+(define orig-dir
+  (let ()
+    (define os-host-dir (rktio_to_bytes (rktio_get_current_directory rktio)))
+    (define os-dir (path->directory-path (host-> os-host-dir)))
+    (case (system-type 'os)
+      [(windows) os-dir]
+      [else
+       ;; Check `PWD` environment variable, and use it when it
+       ;; refers to the same directory as `os-dir`. That's useful
+       ;; when `PWD` refers to a link, for example.
+       (define pwd (environment-variables-ref (current-environment-variables) #"PWD"))
+       (cond
+         [(not pwd) os-dir]
+         [else
+          (define os-dir-id
+            (begin
+              (start-atomic)
+              (path-or-fd-identity 'original-directory #:host-path os-host-dir #:no-error? #t)))
+          (define pwd-id
+            (begin
+              (start-atomic)
+              (path-or-fd-identity 'original-directory #:host-path pwd #:no-error? #t)))
+          (cond
+            [(and os-dir-id (eqv? os-dir-id pwd-id ))
+             (path->directory-path (host-> pwd))]
+            [else os-dir])])])))
 
 (define collects-dir #f)
 (define (set-collects-dir! p) (set! collects-dir p))
