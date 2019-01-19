@@ -609,7 +609,7 @@
           (rename [ffi-lib* ffi-lib])
           set-ffi-get-lib-and-obj!        ; not exported to Racket
           poll-async-callbacks            ; not exported to Racket
-          set-async-callback-poll-wakeup! ; not exported to Racket
+          set-make-async-callback-poll-wakeup! ; not exported to Racket
           set-foreign-eval!               ; not exported to Racket
 
           unsafe-unbox

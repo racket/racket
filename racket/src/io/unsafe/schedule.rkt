@@ -8,6 +8,7 @@
          unsafe-poll-ctx-eventmask-wakeup
          unsafe-poll-ctx-milliseconds-wakeup
          unsafe-signal-received
+         unsafe-make-signal-received
          unsafe-set-sleep-in-thread!)
 
 (define (unsafe-poller proc)
@@ -53,6 +54,11 @@
   
 (define (unsafe-signal-received)
   (rktio_signal_received rktio))
+
+(define (unsafe-make-signal-received)
+  (let ([rktio rktio]) ; capture current place's `rktio`
+    (lambda()
+      (rktio_signal_received rktio))))
 
 (define (unsafe-set-sleep-in-thread! do-sleep woke-fd)
   (sandman-set-background-sleep! do-sleep woke-fd))

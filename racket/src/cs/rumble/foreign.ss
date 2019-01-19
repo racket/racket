@@ -1755,7 +1755,8 @@
 (define (foreign-place-init!)
   (current-async-callback-queue (make-async-callback-queue (make-mutex)
                                                            (make-condition)
-                                                           '())))
+                                                           '()
+                                                           (make-async-callback-poll-wakeup))))
 
 ;; Can be called in any Scheme thread
 (define (call-as-atomic-callback thunk atomic? async-apply async-callback-queue)
@@ -1800,7 +1801,7 @@
                                               (condition-broadcast (async-callback-queue-condition q))
                                               (mutex-release m))
                                             (async-callback-queue-in q)))
-      (async-callback-poll-wakeup)
+      ((async-callback-queue-wakeup q))
       (let loop ()
         (unless (unbox result-done?)
           (when need-interrupts?
@@ -1819,11 +1820,11 @@
   (set! scheduler-start-atomic start-atomic)
   (set! scheduler-end-atomic end-atomic))
 
-(define async-callback-poll-wakeup void)
-(define (set-async-callback-poll-wakeup! wakeup)
-  (set! async-callback-poll-wakeup wakeup))
+(define make-async-callback-poll-wakeup (lambda () void))
+(define (set-make-async-callback-poll-wakeup! make-wakeup)
+  (set! make-async-callback-poll-wakeup make-wakeup))
 
-(define-record async-callback-queue (lock condition in))
+(define-record async-callback-queue (lock condition in wakeup))
 
 (define-virtual-register current-async-callback-queue #f)
 

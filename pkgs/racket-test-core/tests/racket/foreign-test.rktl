@@ -723,10 +723,12 @@
 (when test-async?
   (define (check async like)
     (define foreign_thread_callback (get-ffi-obj 'foreign_thread_callback test-lib 
-                                                 (_fun (_fun #:async-apply async
+                                                 (_fun #:blocking? #t
+                                                       (_fun #:async-apply async
                                                              _intptr -> _intptr)
                                                        _intptr
-                                                       (_fun -> _void)
+                                                       (_fun #:async-apply (lambda (f) (f))
+                                                             -> _void)
                                                        -> _intptr)))
     (test (like 16) foreign_thread_callback (lambda (v) (add1 v)) 16 sleep))
   (check (lambda (f) (f)) add1)
