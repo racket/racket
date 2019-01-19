@@ -19,4 +19,4 @@
   (check who (lambda (v) (and (output-port? o) (string-port? o)))
          #:contract "(and/c output-port? string-port?)"
          o)
-  (bytes->string/utf-8 (get-output-bytes o) #\?))
+  (bytes->string/utf-8 (get-output-bytes o) #\uFFFD))
