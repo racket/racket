@@ -67,7 +67,9 @@
           [(or (not group/command)
                (eq? group/command 'new)
                (subprocess? group/command))
-           (define command (cadr command/args))
+           (unless (pair? command/args)
+             (raise-arguments-error who "missing command argument after group argument"))
+           (define command (car command/args))
            (check who path-string? command)
            (values group/command command (cdr command/args))]
           [else
@@ -131,7 +133,7 @@
                                  (and stdout (fd-port-fd stdout))
                                  (and stdin (fd-port-fd stdin))
                                  (and stderr (not (eq? stderr 'stdout)) (fd-port-fd stderr))
-                                 (and group (subprocess-process group))
+                                 (and (subprocess? group) (subprocess-process group))
                                  (->host (current-directory) #f null)
                                  envvars flags))
 
