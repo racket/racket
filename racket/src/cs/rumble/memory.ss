@@ -324,16 +324,19 @@
 ;; ----------------------------------------
 
 (define-record-type (phantom-bytes create-phantom-bytes phantom-bytes?)
-  (fields [mutable size]))
+  (fields pbv))
 
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
-  (create-phantom-bytes k))
+  (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
+    (when (>= (bytes-allocated) (* 2 allocated-after-major))
+      (collect-garbage))
+    ph))
 
 (define/who (set-phantom-bytes! phantom-bstr k)
   (check who phantom-bytes? phantom-bstr)
   (check who exact-nonnegative-integer? k)
-  (phantom-bytes-size-set! phantom-bstr k))
+  (set-phantom-bytevector-length! (phantom-bytes-pbv phantom-bstr) k))
 
 ;; ----------------------------------------
 

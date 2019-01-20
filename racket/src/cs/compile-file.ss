@@ -36,6 +36,7 @@
 (check-defined 'compute-size-increments)
 (check-defined 'enable-type-recovery)
 (check-defined 'make-wrapper-procedure)
+(check-defined 'make-phantom-bytevector)
 
 ;; ----------------------------------------
 
