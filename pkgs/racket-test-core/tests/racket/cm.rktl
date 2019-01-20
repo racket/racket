@@ -10,6 +10,8 @@
                         "plt-cm-test"))
 (make-directory* dir)
 
+(define compiled-dir (car (use-compiled-file-paths)))
+
 (define (try files   #; (list (list path content-str compile?) ...)
              recomps #; (list (list (list touch-path ...) 
                                     (list rebuild-path ...)
@@ -34,7 +36,7 @@
           (for/hash ([f (in-list files)])
             (values (car f)
                     (file-or-directory-modify-seconds
-                     (build-path dir "compiled" (path-add-suffix (car f) #".zo"))
+                     (build-path dir compiled-dir (path-add-suffix (car f) #".zo"))
                      #f
                      (lambda () -inf.0)))))])
     (for ([touch-mode '(touch-zo normal)])
@@ -53,14 +55,14 @@
                                 (when (eq? touch-mode 'touch-zo)
                                   ;; Make sure a new typestamp on the bytecode file doesn't
                                   ;; prevent a recompile
-                                  (define d (build-path dir "compiled" (path-add-suffix f #".zo")))
+                                  (define d (build-path dir compiled-dir (path-add-suffix f #".zo")))
                                   (when (file-exists? d)
                                     (printf "touching .zo for ~a\n" f)
                                     (file-or-directory-modify-seconds d (current-seconds))
                                     (hash-set! timestamps f (file-or-directory-modify-seconds d)))))
                               to-touch)
                     (for-each (lambda (f)
-                                (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
+                                (let* ([d (build-path dir compiled-dir (path-add-suffix f #".zo"))]
                                        [ts (file-or-directory-modify-seconds d #f (lambda () #f))])
                                   (when ts
                                     (printf "mangling .zo for ~a\n" f)
@@ -76,7 +78,7 @@
                                 (managed-compile-zo (build-path dir f)))
                               to-make)
                     (for-each (lambda (f)
-                                (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
+                                (let* ([d (build-path dir compiled-dir (path-add-suffix f #".zo"))]
                                        [ts (hash-ref timestamps f)]
                                        [new-ts
                                         (file-or-directory-modify-seconds
@@ -120,7 +122,7 @@
   (printf "breaking ~a\n" rmv)
   (delete-file (build-path dir rmv))
   (for ([sfx '(#".zo" #".dep")])
-    (let ([f (build-path dir "compiled" (path-add-suffix rmv sfx))])
+    (let ([f (build-path dir compiled-dir (path-add-suffix rmv sfx))])
       (when (file-exists? f)
         (delete-file f))))
   (test 'correctly-failed
@@ -164,20 +166,21 @@
                       [(same-path? base dir)
                        (cond
                          [(equal? (path->string name) "cpm-b.rkt")
-                          (build-path "compiled" "subdir")]
+                          (build-path compiled-dir "subdir")]
                          [else
-                          (build-path "compiled")])]
-                      [else (build-path "compiled")]))])
+                          (build-path compiled-dir)])]
+                      [else (build-path compiled-dir)]))])
     (managed-compile-zo (build-path dir "cpm-a.rkt")))
+  (define compiled-dir-strs (map path->string (explode-path compiled-dir)))
   (test (hash '("cpm-a.rkt") #t
               '("cpm-b.rkt") #t
               '("cpm-c.rkt") #t
-              '("compiled" "cpm-a_rkt.zo") #t
-              '("compiled" "cpm-a_rkt.dep") #t
-              '("compiled" "subdir" "cpm-b_rkt.zo") #t
-              '("compiled" "subdir" "cpm-b_rkt.dep") #t
-              '("compiled" "cpm-c_rkt.zo") #t
-              '("compiled" "cpm-c_rkt.dep") #t)
+              `(,@compiled-dir-strs "cpm-a_rkt.zo") #t
+              `(,@compiled-dir-strs "cpm-a_rkt.dep") #t
+              `(,@compiled-dir-strs "subdir" "cpm-b_rkt.zo") #t
+              `(,@compiled-dir-strs "subdir" "cpm-b_rkt.dep") #t
+              `(,@compiled-dir-strs "cpm-c_rkt.zo") #t
+              `(,@compiled-dir-strs "cpm-c_rkt.dep") #t)
         'current-path->mode
         (for/hash ([x (in-directory dir)]
                    #:when (file-exists? x))
@@ -188,13 +191,13 @@
 
 ;; test `file-stamp-in-paths'
 (test (file-or-directory-modify-seconds (build-path (path-only (collection-file-path "zip.rkt" "file"))
-                                                    "compiled"
+                                                    compiled-dir
                                                     "zip_rkt.zo"))
       car
       (file-stamp-in-collection
        (collection-file-path "zip.rkt" "file")))
 ;; check bytecode without a source:
-(let ([f (build-path dir "compiled" "nosrc_rkt.zo")])
+(let ([f (build-path dir compiled-dir "nosrc_rkt.zo")])
   (with-output-to-file f #:exists 'truncate (lambda () (write (compile #'(module nosrc racket/base)))))
   (test (file-or-directory-modify-seconds f)
         car
@@ -284,16 +287,16 @@ and the test makes sure that it does and that the first thread doesn't complete.
           (file-exists?
            (let-values ([(base name dir?) (split-path file-to-compile)])
              (build-path base 
-                         "compiled" 
+                         compiled-dir
                          (bytes->path (regexp-replace #rx"[.]rkt" (path->bytes name) "_rkt.zo"))))))
     
-    (define compiled-dir
+    (define compiled-dir-to-discard
       (let-values ([(base name dir?) (split-path file-to-compile)])
-        (build-path base "compiled")))
+        (build-path base compiled-dir)))
     (delete-file file-to-compile)
     (delete-file control-file)
     (delete-file about-to-get-stuck-file)
-    (delete-directory/files compiled-dir)))
+    (delete-directory/files compiled-dir-to-discard)))
 
 ;; ----------------------------------------
 
