@@ -19,10 +19,12 @@
   (define to (utf-8-converter-to c))
   (define-values (in-consumed out-produced status)
     (if (or (eq? from 'utf-16)
-            (eq? from 'utf-16-ish))
+            (eq? from 'utf-16-ish)
+            (eq? from 'utf-16-assume))
         (utf-16-ish-reencode! src src-start src-end
                               dest dest-start dest-end
-                              #:from-utf-16-ish? (eq? from 'utf-16-ish))
+                              #:from-utf-16-ish? (eq? from 'utf-16-ish)
+                              #:assume-paired-surrogates? (eq? from 'utf-16-assume))
         (utf-8-ish-reencode! src src-start src-end
                              dest dest-start dest-end
                              #:permissive? (or (eq? from 'utf-8-permissive)
@@ -30,7 +32,8 @@
                              #:from-utf-8-ish? (or (eq? from 'utf-8-ish)
                                                    (eq? from 'utf-8-ish-permissive))
                              #:to-utf-16? (or (eq? to 'utf-16)
-                                              (eq? to 'utf-16-ish)))))
+                                              (eq? to 'utf-16-ish)
+                                              (eq? to 'utf-16-assume)))))
   (values in-consumed
           out-produced
           (case status
@@ -246,7 +249,8 @@
 ;; Converts UTF-16 into UTF-8
 (define (utf-16-ish-reencode! in-bstr in-start in-end
                               out-bstr out-start out-end
-                              #:from-utf-16-ish? from-utf-16-ish?)
+                              #:from-utf-16-ish? from-utf-16-ish?
+                              #:assume-paired-surrogates? assume-paired-surrogates?)
   (let loop ([i in-start] [j out-start])
     (define (done status)
       (values (- i in-start)
@@ -274,7 +278,8 @@
          [(and (v . >= . #xD800)
                (v . <= . #xDFFF))
           (cond
-            [(v . <= . #xDBFF)
+            [(or assume-paired-surrogates?
+                 (v . <= . #xDBFF))
              ;; Look for surrogate pair
              (cond
                [((+ i 4) . > . in-end)
@@ -286,8 +291,9 @@
                                (+ (arithmetic-shift a 8) b)
                                (+ (arithmetic-shift b 8) a)))
                 (cond
-                  [(and (v2 . >= . #xDC00)
-                        (v2 . <= . #xDFFF))
+                  [(or assume-paired-surrogates?
+                       (and (v2 . >= . #xDC00)
+                            (v2 . <= . #xDFFF)))
                    (define v3 (+ #x10000
                                  (bitwise-ior (arithmetic-shift (bitwise-and v #x3FF) 10)
                                               (bitwise-and v2 #x3FF))))
@@ -303,5 +309,5 @@
                [from-utf-16-ish?
                 ;; continue anyway
                 (continue v (+ i 2))]
-               [else (done 'aborts)])])]
+               [else (done 'error)])])]
          [else (continue v (+ i 2))])])))

@@ -5071,7 +5071,9 @@ static intptr_t utf8_encode_x(const unsigned int *us, intptr_t start, intptr_t e
 	if ((wc & 0xF800) == 0xD800) {
 	  /* Unparse surrogates. We assume that the surrogates are
 	     well formed, unless this is Windows or if we're at the
-             end and _opos is 0. */
+             end and _opos is 0. The well-formedness assumption was
+             probably not a good idea, but note that it's explicitly
+             documented to behave that way. */
 # ifdef WINDOWS_UNICODE_SUPPORT
 #  define UNPAIRED_MASK 0xFC00
 # else

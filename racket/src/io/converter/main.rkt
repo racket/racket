@@ -22,7 +22,7 @@
 (define windows? (eq? 'windows (system-type)))
 (define platform-utf-8 (if windows? 'utf-8-ish 'utf-8))
 (define platform-utf-8-permissive (if windows? 'utf-8-ish-permissive 'utf-8-permissive))
-(define platform-utf-16 (if windows? 'utf-16-ish 'utf-16))
+(define platform-utf-16 (if windows? 'utf-16-ish 'utf-16-assume))
 
 (define/who (bytes-open-converter from-str to-str)
   (check who string? from-str)
@@ -115,7 +115,8 @@
   (check who bytes? src-bstr)
   (check who exact-nonnegative-integer? src-start-pos)
   (check who exact-nonnegative-integer? src-end-pos)
-  (check who #:or-false bytes? dest-bstr)
+  (check who (lambda (d) (or (not d) (and (bytes? d) (not (immutable? d)))))
+         #:contract "(or/c (and/c bytes? (not/c immutable?)) #f)" dest-bstr)
   (check who exact-nonnegative-integer? dest-start-pos)
   (check who #:or-false exact-nonnegative-integer? dest-end-pos)
   (check-range who src-start-pos src-end-pos (bytes-length src-bstr) src-bstr)
