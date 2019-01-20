@@ -51,6 +51,7 @@
 
         set-reachable-size-increments-callback!
         set-custodian-memory-use-proc!
+        set-immediate-allocation-check-proc!
 
         ;; Just `exn:break`, etc., but the host may need
         ;; to distinguish breaks raised by the thread

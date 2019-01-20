@@ -30,14 +30,22 @@
                     (current-parameterization))])
     (create-engine empty-metacontinuation
                    (lambda (prefix)
-                     (call-with-continuation-prompt
-                      (lambda ()
-                        (with-continuation-mark
-                            parameterization-key paramz
-                          (begin
-                            (prefix)
-                            (call-with-values (lambda () (|#%app| thunk)) engine-return))))
-                      prompt-tag))
+                     ;; Set parameterize for `prefix` to use:
+                     (with-continuation-mark
+                         parameterization-key paramz
+                       (begin
+                         (prefix)
+                         (call-with-values (lambda ()
+                                             (call-with-continuation-prompt
+                                              (lambda ()
+                                                ;; Set parameterization again inside
+                                                ;; the prompt tag, so it goes along with
+                                                ;; a captured continuation:
+                                                (with-continuation-mark
+                                                    parameterization-key paramz
+                                                  (|#%app| thunk)))
+                                              prompt-tag))
+                           engine-return))))
                    (if empty-config?
                        (make-empty-thread-cell-values)
                        (new-engine-thread-cell-values))

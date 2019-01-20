@@ -1,3 +1,15 @@
+(define/who make-string
+  (case-lambda
+   [(n) (make-string n (integer->char 0))]
+   [(n ch)
+    (unless (or (and (fixnum? n)
+                     (fx<? n 1000))
+                (not (char? ch)))
+      (guard-large-allocation who 'string n 4))
+    (#2%make-string n ch)]))
+
+;; ----------------------------------------
+
 (define/who string-copy!
   (case-lambda
    [(dest d-start src)

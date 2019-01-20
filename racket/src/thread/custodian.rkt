@@ -32,7 +32,8 @@
          raise-custodian-is-shut-down
          set-post-shutdown-action!
          check-queued-custodian-shutdown
-         set-place-custodian-procs!)
+         set-place-custodian-procs!
+         custodian-check-immediate-limit)
 
 (module+ scheduling
   (provide do-custodian-shutdown-all
@@ -266,6 +267,10 @@
    (set-custodian-memory-limits! limit-cust
                                  (cons (cons need-amt stop-cust)
                                        (custodian-memory-limits limit-cust)))
+   (when (eq? stop-cust limit-cust)
+     (define old-limit (custodian-immediate-limit limit-cust))
+     (when (or (not old-limit) (old-limit . > . need-amt))
+       (set-custodian-immediate-limit! limit-cust need-amt)))
    (host:mutex-acquire memory-limit-lock)
    (set! compute-memory-sizes (max compute-memory-sizes 1))
    (host:mutex-release memory-limit-lock)))
@@ -411,3 +416,15 @@
                       #f]))
               (collect-garbage))
             (custodian-memory-use c)]))))
+
+(define (custodian-check-immediate-limit mref n)
+  (let loop ([mref mref])
+    (when mref
+      (define c (custodian-reference->custodian mref))
+      (when c
+        (define limit (custodian-immediate-limit c))
+        (when (and limit (n . >= . limit))
+          (raise (exn:fail:out-of-memory
+                  "out of memory"
+                  (current-continuation-marks))))
+        (loop (custodian-parent-reference c))))))

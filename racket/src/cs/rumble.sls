@@ -293,6 +293,7 @@
           bytes-append
           subbytes
 
+          make-string
           string-copy!
           substring
 
@@ -321,6 +322,7 @@
 
           vector?
           mutable-vector?
+          make-vector
           (rename [inline:vector-length vector-length]
                   [inline:vector-ref vector-ref]
                   [inline:vector-set! vector-set!])
@@ -464,6 +466,7 @@
           set-garbage-collect-notify!             ; not exported to Racket
           set-reachable-size-increments-callback! ; not exported to Racket
           set-custodian-memory-use-proc!          ; not exported to Racket
+          set-immediate-allocation-check-proc!    ; not exported to Racket
           unsafe-add-collect-callbacks
           unsafe-remove-collect-callbacks
 

@@ -14,7 +14,8 @@
                    [place #:mutable]      ; place containing the custodian
                    [memory-use #:mutable] ; set after a major GC
                    [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts
-                   [memory-limits #:mutable]) ; list of (cons limit cust)
+                   [memory-limits #:mutable] ; list of (cons limit cust)
+                   [immediate-limit #:mutable]) ; limit on immediate allocation
   #:authentic)
 
 (define (create-custodian)
@@ -26,7 +27,8 @@
              #f     ; place
              0      ; memory use
              #f     ; GC roots
-             null)) ; memory limits
+             null   ; memory limits
+             #f))   ; immediate limit
 
 (define initial-place-root-custodian (create-custodian))
 

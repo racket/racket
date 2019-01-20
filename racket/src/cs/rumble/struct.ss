@@ -1108,7 +1108,7 @@
                                 ;; The start of opaque regions
                                 (loop (add1 vec-len) (+ rec-len len) (record-type-parent rtd) #t)]))]))])
             ;; Walk though the record's types again, this time filling in the vector
-            (let ([vec (make-vector vec-len dots)])
+            (let ([vec (#%make-vector vec-len dots)])
               (vector-set! vec 0 (string->symbol (format "struct:~a" (record-type-name rtd))))
               (let loop ([vec-pos vec-len] [rec-pos rec-len] [rtd rtd] [dots-already? #f])
                 (when rtd

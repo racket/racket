@@ -538,7 +538,7 @@
     (let ([new-ht (make-eq-hashtable)])
       (vector-for-each (lambda (p) (hashtable-set! new-ht (if weak? (cdr p) p) #t)) new-vec)
       (vector-for-each (lambda (p) (hashtable-delete! new-ht (if weak? (cdr p) p))) vec)
-      (let ([merge-vec (make-vector (fx+ (#%vector-length vec) (hashtable-size new-ht)))])
+      (let ([merge-vec (#%make-vector (fx+ (#%vector-length vec) (hashtable-size new-ht)))])
         (let loop ([i (#%vector-length vec)])
           (unless (fx= i 0)
             (let ([i (fx- i 1)])
@@ -912,7 +912,7 @@
        (hashtable-size (weak-equal-hash-fl-vals-ht t))))
 
 (define (weak-equal-hash-cells ht len)
-  (let ([vec (make-vector len #f)]
+  (let ([vec (#%make-vector len #f)]
         [pos (box 0)])
     (call/cc
      (lambda (esc)
@@ -937,7 +937,7 @@
     (cond
      [(< (unbox pos) len)
       (let* ([len (unbox pos)]
-             [compact-vec (make-vector len)])
+             [compact-vec (#%make-vector len)])
         (let loop ([i 0])
           (unless (fx= i len)
             (#%vector-set! compact-vec i (#%vector-ref vec i))

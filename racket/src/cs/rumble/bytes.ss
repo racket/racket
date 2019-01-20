@@ -22,6 +22,9 @@
    [(n b)
     (check who exact-nonnegative-integer? n)
     (check who byte? b)
+    (unless (and (fixnum? n)
+                 (fx<? n 4096))
+      (guard-large-allocation who "byte string" n 1))
     (#2%make-bytevector n b)]))
 
 (define/who make-shared-bytes

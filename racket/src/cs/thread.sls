@@ -33,7 +33,8 @@
                   [unsafe-root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
-                  [set-custodian-memory-use-proc! rumble:set-custodian-memory-use-proc!]))
+                  [set-custodian-memory-use-proc! rumble:set-custodian-memory-use-proc!]
+                  [set-immediate-allocation-check-proc! rumble:set-immediate-allocation-check-proc!]))
 
   (include "place-register.ss")
   (define-place-register-define place:define thread-register-start thread-register-count)
@@ -129,6 +130,7 @@
         'continuation-marks rumble:continuation-marks
         'set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!
         'set-custodian-memory-use-proc! rumble:set-custodian-memory-use-proc!
+        'set-immediate-allocation-check-proc! rumble:set-immediate-allocation-check-proc!
         'exn:break/non-engine exn:break
         'exn:break:hang-up/non-engine exn:break:hang-up
         'exn:break:terminate/non-engine exn:break:terminate

@@ -290,7 +290,7 @@
 ;; vector operations
 (define (vector-insert v i x)
   (let* ([len (#%vector-length v)]
-         [new (make-vector (fx1+ len))])
+         [new (#%make-vector (fx1+ len))])
     (vector*-copy! new 0 v 0 i)
     (#%vector-set! new i x)
     (vector*-copy! new (fx1+ i) v i len)
@@ -298,7 +298,7 @@
 
 (define (vector-remove v i)
   (let* ([len (#%vector-length v)]
-         [new (make-vector (fx1- len))])
+         [new (#%make-vector (fx1- len))])
     (vector*-copy! new 0 v 0 i)
     (vector*-copy! new i v (fx1+ i) len)
     new))
@@ -589,7 +589,7 @@
            [else ; reify values
             (pariah
              (let* ([pop (popcount (bnode-keymap node))]
-                    [v (make-vector (fx1+ pop) #t)])
+                    [v (#%make-vector (fx1+ pop) #t)])
                (#%vector-set! v ki val)
                v))])])
 
@@ -620,7 +620,7 @@
               (#%vector-copy vals)
               (pariah ; reify values
                (let ([pop (popcount (bnode-keymap node))])
-                 (make-vector pop #t))))])
+                 (#%make-vector pop #t))))])
 
     (#%vector-set! new-vals ki val)
 
@@ -637,7 +637,7 @@
   (let* ([keys (hnode-keys node)]
          [vals (hnode-vals node)]
          [len (#%vector-length keys)]
-         [new-keys (make-vector len)]
+         [new-keys (#%make-vector len)]
          [ci (fx- len 1 (bnode-child-index node bit))])
 
     (vector*-copy! new-keys 0 keys 0 ki)
@@ -664,7 +664,7 @@
          [v (val-ref child 0)]
 
          [new-keys
-          (let ([cpy (make-vector len)])
+          (let ([cpy (#%make-vector len)])
             (vector*-copy! cpy 0 keys 0 ki)
             (#%vector-set! cpy ki k)
             (vector*-copy! cpy (fx1+ ki) keys ki ci)
@@ -678,7 +678,7 @@
            [else ; reify values
             (pariah
              (let* ([pop (popcount (bnode-keymap node))]
-                    [cpy (make-vector (fx1+ pop) #t)])
+                    [cpy (#%make-vector (fx1+ pop) #t)])
                (#%vector-set! cpy ki v)
                cpy))])])
 
@@ -896,7 +896,7 @@
              [new-vals
               (if vals
                   (#%vector-copy vals)
-                  (make-vector len #t))])
+                  (#%make-vector len #t))])
         (#%vector-set! new-vals i val)
 
         (make-cnode (hnode-eqtype node)
@@ -914,7 +914,7 @@
            [vals (vector-insert vals len val)]
            [(eq? val #t) #f]
            [else
-            (let ([vec (make-vector (fx1+ len) #t)])
+            (let ([vec (#%make-vector (fx1+ len) #t)])
               (#%vector-set! vec len val)
               vec)])])
 

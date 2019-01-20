@@ -1,3 +1,14 @@
+(define/who make-vector
+  (case-lambda
+   [(n) (make-vector n 0)]
+   [(n v)
+    (unless (and (fixnum? n)
+                 (fx< n 1000))
+      (guard-large-allocation who 'vector n (foreign-sizeof 'void*)))
+    (#2%make-vector n v)]))
+
+;; ----------------------------------------
+
 (define (vector-immutable . args)
   (if (null? args)
       (vector->immutable-vector '#())

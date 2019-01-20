@@ -1187,7 +1187,7 @@
                                      (extract-continuation-mark-key-and-wrapper 'continuation-mark-set->list* k))
                                    keys)])
          (let* ([n (length all-keys)]
-                [tmp (make-vector n)])
+                [tmp (#%make-vector n)])
            (let chain-loop ([mark-chain (or (and marks
                                                  (continuation-mark-set-mark-chain marks))
                                             (current-mark-chain))])

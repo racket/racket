@@ -173,7 +173,7 @@
          [(eqv? #\newline (string-ref s i))
           (string-append
            (loop i s (fx1+ i))
-           (make-string amt #\space)
+           (#%make-string amt #\space)
            (substring s (fx1+ i) end))]
          [else
           (loop i s end)]))])))

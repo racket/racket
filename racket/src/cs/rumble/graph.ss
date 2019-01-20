@@ -66,7 +66,7 @@
            [else p]))]
        [(vector? v)
         (let* ([len (vector-length v)]
-               [p (make-vector len)])
+               [p (#%make-vector len)])
           (hashtable-set! ht v p)
           (let vloop ([i 0] [diff? #f])
             (cond

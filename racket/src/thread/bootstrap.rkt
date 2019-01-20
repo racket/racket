@@ -13,7 +13,7 @@
 (provide register-place-symbol!
          set-io-place-init!)
 
-(define (make-engine thunk init-break-enabled-cell empty-config?)
+(define (make-engine thunk prompt-tag init-break-enabled-cell empty-config?)
   (define ready-s (make-semaphore))
   (define s (make-semaphore))
   (define prefix void)
@@ -50,7 +50,12 @@
                                 (semaphore-wait s)
                                 (run-prefix)
                                 (set! results
-                                      (call-with-values thunk list)))))
+                                      (call-with-continuation-prompt
+                                       (lambda ()
+                                         (call-with-values thunk list))
+                                       prompt-tag
+                                       (lambda (proc)
+                                         (abort-current-continuation prompt-tag proc)))))))
                           the-root-continuation-prompt-tag
                           (lambda (exn)
                             ((error-display-handler) (exn-message exn) exn))))))))
@@ -238,6 +243,7 @@
                   'will-try-execute will-try-execute/notify
                   'set-reachable-size-increments-callback! (lambda (proc) (void))
                   'set-custodian-memory-use-proc! (lambda (proc) (void))
+                  'set-immediate-allocation-check-proc! (lambda (proc) (void))
                   'exn:break/non-engine exn:break/non-engine
                   'exn:break:hang-up/non-engine exn:break:hang-up/non-engine
                   'exn:break:terminate/non-engine exn:break:terminate/non-engine

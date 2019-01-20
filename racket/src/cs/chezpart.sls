@@ -38,7 +38,8 @@
 			   get-thread-id
 			   threaded?
                            map for-each andmap ormap
-                           char-general-category)
+                           char-general-category
+                           make-vector make-string)
                    [make-parameter chez:make-parameter]
                    [date-second chez:date-second]
                    [date-minute chez:date-minute]
