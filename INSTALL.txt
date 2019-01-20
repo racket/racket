@@ -200,6 +200,10 @@ that with `SCHEME_SRC=...` instead of downloading a new copy.
 
   make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme
 
+Use `make both` to build both traditional Racket and Racket-on-Chez,
+where packages are updated documentation is built only once (using
+traditional Racket).
+
 [*] For now, RacketCS requires the variant of Chez Scheme at
        https://github.com/mflatt/ChezScheme
 

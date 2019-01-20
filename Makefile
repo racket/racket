@@ -175,8 +175,7 @@ set-src-catalog:
 CONFIGURE_ARGS_qq =
 MORE_CONFIGURE_ARGS = 
 
-SELF_UP = 
-SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd $(SELF_UP)../../../build/config; pwd`"
+SELF_FLAGS_qq = SELF_RACKET_FLAGS="-G `cd ../../../build/config; pwd`"
 PLT_SETUP_OPTIONS_qq = PLT_SETUP_OPTIONS="$(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)"
 INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) $(PLT_SETUP_OPTIONS_qq) SETUP_MACHINE_FLAGS="$(SETUP_MACHINE_FLAGS)"
 
@@ -328,7 +327,7 @@ cs-after-racket-with-racket:
 
 cs-after-racket-with-racket-and-scheme-src:
 	$(RACKET) -O "info@compiler/cm" $(ABS_BOOT) racket/src/cs/absify.rkt just-to-compile-absify
-	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)" SELF_UP=../
+	$(MAKE) cs-after-racket-with-abs-paths RACKET="$(ABS_RACKET)" SCHEME_SRC="$(ABS_SCHEME_SRC)"
 
 cs-after-racket-with-abs-paths:
 	$(MAKE) racket/src/build/cs/c/Makefile
@@ -406,6 +405,14 @@ win32-just-cs:
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 	$(MAKE) $(WIN32_CS_SETUP_TARGET) WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
+
+# ------------------------------------------------------------
+# Both traditional Racket and RacketCS
+# ... but update packages and builds docs only once
+
+both:
+	$(MAKE) in-place
+	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 # ------------------------------------------------------------
 # Configuration options for building installers
