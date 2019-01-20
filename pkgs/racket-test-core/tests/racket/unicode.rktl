@@ -1586,11 +1586,12 @@
 	    (char-symbolic? c))))
  null)
 
-;; Letter, digit, punct, and symbol are distinct
+;; Letter+numeric, punct, and symbol are mostly distinct
 (check-all-unicode
  (lambda (c)
-   (> (+ (if (char-alphabetic? c) 1 0)
-	 (if (char-numeric? c) 1 0)
+   (> (+ (if (or (char-alphabetic? c)
+                 (char-numeric? c))
+             1 0)
 	 (if (char-punctuation? c) 1 0)
 	 (if (char-symbolic? c) 
              (if (or (char<=? #\u24B6 c #\u24E9)
