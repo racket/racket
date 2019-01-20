@@ -131,6 +131,8 @@
                          (chez:date-dst? d)
                          (date-zone-offset d)
                          (date-nanosecond d)
-                         (or (string->immutable-string (date-zone-name d)) utc-string)))]))
+                         (or (let ([n (date-zone-name d)])
+                               (and n (string->immutable-string n)))
+                             utc-string)))]))
 
 (define utc-string (string->immutable-string "UTC"))
