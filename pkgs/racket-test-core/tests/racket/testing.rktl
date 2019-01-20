@@ -75,6 +75,10 @@ transcript.
 (define number-of-error-tests 0)
 (define number-of-exn-tests 0)
 
+(define accum-number-of-tests 0)
+(define accum-number-of-error-tests 0)
+(define accum-number-of-exn-tests 0)
+
 (define (load-in-sandbox file #:testing [testing "testing.rktl"])
   (define-syntax-rule (S id) (dynamic-require 'racket/sandbox 'id))
   (let ([e ((S call-with-trusted-sandbox-configuration)
@@ -89,14 +93,14 @@ transcript.
     (e `(define real-error-port  (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))
     (e `(load-relative (quote ,file)))
-    (let ([l (e '(list number-of-tests
-                       number-of-error-tests
-                       number-of-exn-tests
-                       errs))])
-      (set! number-of-tests (+ number-of-tests (list-ref l 0)))
-      (set! number-of-error-tests (+ number-of-error-tests (list-ref l 1)))
-      (set! number-of-exn-tests (+ number-of-exn-tests (list-ref l 2)))
-      (set! errs (append (list-ref l 3) errs)))))
+    (let ([l (e '(list accum-number-of-tests
+                       accum-number-of-error-tests
+                       accum-number-of-exn-tests
+                       accum-errs))])
+      (set! accum-number-of-tests (+ accum-number-of-tests (list-ref l 0)))
+      (set! accum-number-of-error-tests (+ accum-number-of-error-tests (list-ref l 1)))
+      (set! accum-number-of-exn-tests (+ accum-number-of-exn-tests (list-ref l 2)))
+      (set! accum-errs (append (list-ref l 3) accum-errs)))))
 
 (define test
   (let ()
@@ -325,13 +329,22 @@ transcript.
 (define (report-errs [final? #f])
   (when final?
     (set! errs (append errs accum-errs))
-    (set! accum-errs null))
-  (let* ([ok?    (null? errs)])
+    (set! number-of-tests (+ number-of-tests accum-number-of-tests))
+    (set! number-of-error-tests (+ number-of-error-tests accum-number-of-error-tests))
+    (set! number-of-exn-tests (+ number-of-error-tests accum-number-of-exn-tests))
+    (set! accum-errs null)
+    (set! accum-number-of-tests 0)
+    (set! accum-number-of-error-tests 0)
+    (set! accum-number-of-exn-tests 0))
+  (let* ([ok? (null? errs)])
     (parameterize ([current-output-port
                     (cond [(not ok?) (or real-error-port (current-error-port))]
                           [final? (or real-output-port (current-output-port))]
                           [else (current-output-port)])])
-      (printf "\n~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
+      (newline)
+      (when final?
+        (printf "SUMMARY ----------------------------\n"))
+      (printf "~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
               Section-prefix
               (+ number-of-tests number-of-error-tests)
               number-of-tests "value expressions"
@@ -353,7 +366,13 @@ transcript.
       (newline)
       (flush-output)
       (set! accum-errs (append errs accum-errs))
-      (set! errs null))))
+      (set! accum-number-of-tests (+ number-of-tests accum-number-of-tests))
+      (set! accum-number-of-error-tests (+ number-of-error-tests accum-number-of-error-tests))
+      (set! accum-number-of-exn-tests (+ number-of-error-tests accum-number-of-exn-tests))
+      (set! errs null)
+      (set! number-of-tests 0)
+      (set! number-of-error-tests 0)
+      (set! number-of-exn-tests 0))))
 
 (define type? exn:application:type?)
 (define arity? exn:application:arity?)
