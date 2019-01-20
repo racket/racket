@@ -82,7 +82,7 @@ transcript.
               (parameterize ([(S sandbox-input) current-input-port]
                              [(S sandbox-output) current-output-port]
                              [(S sandbox-error-output) current-error-port]
-                             [(S sandbox-memory-limit) 100]) ; 100mb per box
+                             [(S sandbox-memory-limit) 250]) ; 250mb per box
                 ((S make-evaluator) '(begin) #:requires (list 'racket)))))])
     (e `(load-relative ,testing))
     (e `(define real-output-port (quote ,real-output-port)))
