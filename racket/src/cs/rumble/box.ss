@@ -23,8 +23,17 @@
   ;; must handle impersonators
   (unbox b))
 
-(define (unbox* b)
-  (#2%unbox b))
+(define/who (unbox* b)
+  (if (#%box? b)
+      (#3%unbox b)
+      (bad-box*-op who #f b)))
+
+(define (bad-box*-op who set? b)
+  (raise-argument-error who
+                        (if set?
+                            "(and/c box? (not immutable?) (not impersonator?))"
+                            "(and/c box? (not impersonator?))")
+                        b))
 
 (define (set-box! b v)
   (if (#%mutable-box? b)
@@ -35,8 +44,10 @@
   ;; must handle impersonators
   (set-box! b v))
 
-(define (set-box*! b v)
-  (#2%set-box! b v))
+(define/who (set-box*! b v)
+  (if (#%mutable-box? b)
+      (#3%set-box! b v)
+      (bad-box*-op who #t b)))
 
 ;; in schemified:
 (define (unbox/check-undefined b name)

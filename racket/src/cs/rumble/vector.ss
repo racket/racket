@@ -148,7 +148,12 @@
   (vector-length vec))
 
 (define (vector*-length vec)
-  (#2%vector-length vec))
+  (if (#%vector? vec)
+      (#3%vector-length vec)
+      (bad-vector*-for-length vec)))
+
+(define (bad-vector*-for-length vec)
+  (raise-argument-error 'vector*-length "(and/c vector? (not impersonator?))" vec))
 
 (define (impersonate-vector-length vec)
   (if (and (impersonator? vec)
@@ -176,7 +181,20 @@
       (pariah (impersonate-vector-ref vec idx))))
 
 (define/who (vector*-ref vec idx)
-  (#2%vector-ref vec idx))
+  (if (#%$vector-ref-check? vec idx)
+      (#3%vector-ref vec idx)
+      (bad-vector*-op who #f vec idx)))
+
+(define (bad-vector*-op who set? vec idx)
+  (cond
+   [set?
+    (unless (#%mutable-vector? vec)
+      (raise-argument-error who "(and/c vector? (not immutable?) (not impersonator?))" vec))]
+   [else
+    (unless (#%vector? vec)
+      (raise-argument-error who "(and/c vector? (not impersonator?))" vec))])
+  (check who exact-nonnegative-integer? idx)
+  (check-range who "vector" vec idx #f (fx- (#%vector-length vec) 1)))
 
 (define (impersonate-vector-ref orig idx)
   (if (and (impersonator? orig)
@@ -222,8 +240,10 @@
       (#3%vector-set! vec idx val)
       (pariah (impersonate-vector-set! vec idx val))))
 
-(define (vector*-set! vec idx val)
-  (#2%vector-set! vec idx val))
+(define/who (vector*-set! vec idx val)
+  (if (#%$vector-set!-check? vec idx)
+      (#3%vector-set! vec idx val)
+      (bad-vector*-op who #t vec idx)))
 
 (define (impersonate-vector-set! orig idx val)
   (cond
