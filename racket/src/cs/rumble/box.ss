@@ -27,7 +27,7 @@
   (#2%unbox b))
 
 (define (set-box! b v)
-  (if (#%box? b)
+  (if (#%mutable-box? b)
       (#3%set-box! b v)
       (pariah (impersonate-set-box! b v))))
 

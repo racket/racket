@@ -18,7 +18,7 @@
   (check who real? x)
   (exact->inexact x))
 
-(define arithmetic-shift bitwise-arithmetic-shift)
+(define arithmetic-shift #2%bitwise-arithmetic-shift)
 
 (define/who (integer-sqrt n)
   (check who integer? n)
@@ -36,12 +36,12 @@
   (let ([m (integer-sqrt n)])
     (values m (- n (* m m)))))
 
-(define fx->fl fixnum->flonum)
-(define fxrshift fxarithmetic-shift-right)
-(define fxlshift fxarithmetic-shift-left)
+(define fx->fl #2%fixnum->flonum)
+(define fxrshift #2%fxarithmetic-shift-right)
+(define fxlshift #2%fxarithmetic-shift-left)
 
-(define fl->fx flonum->fixnum)
-(define ->fl real->flonum)
+(define fl->fx #2%flonum->fixnum)
+(define ->fl #2%real->flonum)
 (define/who (fl->exact-integer fl)
   (check who flonum? fl)
   (inexact->exact (flfloor fl)))
