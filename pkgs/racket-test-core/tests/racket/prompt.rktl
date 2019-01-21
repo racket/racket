@@ -423,7 +423,10 @@
 ;;----------------------------------------
 ;; Check continuation sharing
 
-(let ()
+;; This check is useful for the traditional Racket VM, but it isn't as
+;; interesting on Chez Scheme --- where the sharing is more obvious in
+;; the implementation but not exposed as `eq?` continuations
+(when (eq? 'racket (system-type 'vm))
   (define (f x prev)
     (call/cc
      (lambda (k)
