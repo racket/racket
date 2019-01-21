@@ -390,10 +390,10 @@
 ;; Capturing and applying continuations
 
 (define-record continuation ())
-(define-record full-continuation continuation (k winders mark-stack mark-splice mc))
+(define-record full-continuation continuation (k winders mark-stack mark-splice mc tag))
 (define-record composable-continuation full-continuation ())
 (define-record composable-continuation/no-wind composable-continuation ())
-(define-record non-composable-continuation full-continuation (tag))
+(define-record non-composable-continuation full-continuation ())
 (define-record escape-continuation continuation (tag))
 
 (define/who call-with-current-continuation
@@ -437,7 +437,8 @@
        (current-winders)
        (current-mark-stack)
        (current-mark-splice)
-       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f))))))
+       (extract-metacontinuation 'call-with-composable-continuation (strip-impersonator tag) #f)
+       tag)))))
 
 (define (unsafe-call-with-composable-continuation/no-wind p tag)
   (call-with-composable-continuation* p tag #f))
@@ -481,7 +482,7 @@
 
 (define (apply-non-composable-continuation c args)
   (assert-in-uninterrupted)
-  (let* ([tag (non-composable-continuation-tag c)])
+  (let* ([tag (full-continuation-tag c)])
     (let-values ([(common-mc   ; shared part of the current metacontinuation
                    rmc-append) ; non-shared part of the destination metacontinuation
                   ;; We check every time, just in case control operations
@@ -531,7 +532,7 @@
             ;; callbacks here are run with a continuation barrier, so
             ;; the metacontinuation won't change (except by escaping):
             (activate-and-wrap-cc-guard-for-impersonator!
-             (non-composable-continuation-tag c)))
+             (full-continuation-tag c)))
           ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
         ;; If a winder changed the meta-continuation, try again for a
         ;; non-composable continuation:
@@ -662,9 +663,12 @@
 
 (define (check-prompt-tag-available who tag)
   (unless (continuation-prompt-available? tag)
-    (do-raise-arguments-error who "continuation includes no prompt with the given tag"
-                              exn:fail:contract:continuation
-                              (list "tag" tag))))
+    (raise-no-prompt-tag who tag)))
+
+(define (raise-no-prompt-tag who tag)
+  (do-raise-arguments-error who "continuation includes no prompt with the given tag"
+                            exn:fail:contract:continuation
+                            (list "tag" tag)))
 
 (define (call-with-appended-metacontinuation rmc dest-c dest-args proc)
   ;; Assumes that the current metacontinuation frame is ready to be
@@ -944,13 +948,18 @@
    [else
     (prune-mark-chain-prefix tag (cdr mark-chain))]))
 
-(define (prune-mark-chain-suffix tag mark-chain)
+(define (prune-mark-chain-suffix who tag must-find-tag mark-chain)
   (cond
-   [(null? mark-chain) null]
+   [(null? mark-chain)
+    (when must-find-tag
+      (unless (or (eq? tag the-default-continuation-prompt-tag)
+                  (eq? tag the-root-continuation-prompt-tag))
+        (raise-no-prompt-tag who must-find-tag)))
+    null]
    [(eq? tag (mark-chain-frame-tag (elem+cache-strip (car mark-chain))))
     null]
    [else
-    (let ([rest-mark-chain (prune-mark-chain-suffix tag (cdr mark-chain))])
+    (let ([rest-mark-chain (prune-mark-chain-suffix who tag must-find-tag (cdr mark-chain))])
       (if (eq? rest-mark-chain (cdr mark-chain))
           mark-chain
           (cons (car mark-chain)
@@ -1027,11 +1036,11 @@
                                           (eq? key parameterization-key))
                                       the-root-continuation-prompt-tag
                                       the-default-continuation-prompt-tag))]
-    [(marks key none-v prompt-tag)
+    [(marks key none-v orig-prompt-tag)
      (check who continuation-mark-set? :or-false marks)
-     (check who continuation-prompt-tag? prompt-tag)
-     (maybe-future-barricade prompt-tag)
-     (let ([prompt-tag (strip-impersonator prompt-tag)])
+     (check who continuation-prompt-tag? orig-prompt-tag)
+     (maybe-future-barricade orig-prompt-tag)
+     (let ([prompt-tag (strip-impersonator orig-prompt-tag)])
        (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'continuation-mark-set-first key)])
          (let* ([v0 (if marks
                         none
@@ -1039,7 +1048,8 @@
                         (marks-search (mark-stack-to-marks (current-mark-stack))
                                       key
                                       #f ; at-outer?
-                                      prompt-tag))]
+                                      prompt-tag
+                                      #f))]
                 [v (if (eq? v0 none)
                        (marks-search (or (and marks
                                               (continuation-mark-set-mark-chain marks))
@@ -1047,7 +1057,10 @@
                                          (get-rest-mark-chain (current-mark-splice) (current-metacontinuation)))
                                      key
                                      #t ; at-outer?
-                                     prompt-tag)
+                                     prompt-tag
+                                     (not (or marks
+                                              (or (eq? prompt-tag the-default-continuation-prompt-tag)
+                                                  (eq? prompt-tag the-root-continuation-prompt-tag)))))
                        v0)])
            (cond
             [(eq? v none)
@@ -1059,19 +1072,27 @@
                (current-engine-init-break-enabled-cell none-v)]
               [else
                none-v])]
+            [(eq? v none2)
+             ;; Didn't find prompt tag when searching the current continuation
+             (raise-no-prompt-tag who orig-prompt-tag)]
             [else (wrapper v)]))))]))
 
 ;; To make `continuation-mark-set-first` constant-time, if we traverse
 ;; N elements to get an answer, then cache the answer at N/2 elements.
-(define (marks-search elems key at-outer? prompt-tag)
+;; The result is `none` is not found.
+;; The result is `none2` if `need-tag?` and the prompt tag is never found.
+(define (marks-search elems key at-outer? prompt-tag need-tag?)
   (let loop ([elems elems] [elems/cache-pos elems] [cache-step? #f] [depth 0])
     (cond
      [(or (null? elems)
           (and at-outer?
                (eq? (mark-chain-frame-tag (elem+cache-strip (car elems))) prompt-tag)))
       ;; Not found
-      (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
-      none]
+      (cond
+       [(and need-tag? (null? elems)) none2]
+       [else
+        (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
+        none])]
      [else
       (let t-loop ([t (car elems)])
         (cond
@@ -1107,7 +1128,7 @@
                        (let ([marks (mark-chain-frame-marks t)])
                          (if (null? marks)
                              none
-                             (marks-search marks key #f #f)))
+                             (marks-search marks key #f #f #f)))
                        ;; We're looking at just one frame:
                        (intmap-ref t key none))])
             (cond
@@ -1233,10 +1254,9 @@
     [(tag)
      (check who continuation-prompt-tag? tag)
      (maybe-future-barricade tag)
-     (check-prompt-tag-available who tag)
      (call/cc
       (lambda (k)
-        (make-continuation-mark-set (prune-mark-chain-suffix (strip-impersonator tag) (current-mark-chain))
+        (make-continuation-mark-set (prune-mark-chain-suffix who (strip-impersonator tag) tag (current-mark-chain))
                                     (cons (continuation->trace k)
                                           (get-metacontinuation-traces (current-metacontinuation))))))]))
 
@@ -1247,28 +1267,33 @@
 (define/who continuation-marks
   (case-lambda
     [(k) (continuation-marks k (default-continuation-prompt-tag))]
-    [(k tag)
+    [(k orig-tag)
      ;; If `k` is a procedure, we assume that it's an engine
      (check who (lambda (p) (or (not p)
                                 (continuation? p)
                                 (and (#%procedure? p) (procedure-arity-includes? p 0))))
             :contract "(or/c continuation? engine-procedure? #f)"
             k)
-     (check who continuation-prompt-tag? tag)
-     (maybe-future-barricade tag)
-     (let ([tag (strip-impersonator tag)])
+     (check who continuation-prompt-tag? orig-tag)
+     (maybe-future-barricade orig-tag)
+     (let ([tag (strip-impersonator orig-tag)])
        (cond
         [(#%procedure? k)
          (let ([mc (saved-metacontinuation-mc (k))])
            (make-continuation-mark-set
             (prune-mark-chain-suffix
+             who
              tag
+             orig-tag
              (get-mark-chain '() #f mc))
             (get-metacontinuation-traces mc)))]
         [(full-continuation? k)
          (make-continuation-mark-set
           (prune-mark-chain-suffix
+           who
            tag
+           (and (not (eq? tag (strip-impersonator (full-continuation-tag k))))
+                orig-tag)
            (get-mark-chain (full-continuation-mark-stack k)
                            (full-continuation-mark-splice k)
                            (full-continuation-mc k)))
@@ -1280,7 +1305,9 @@
                                      "escape continuation not in the current continuation"))
          (make-continuation-mark-set
           (prune-mark-chain-suffix
+           who
            tag
+           orig-tag
            (prune-mark-chain-prefix (escape-continuation-tag k) (current-mark-chain)))
           null)]
         [else

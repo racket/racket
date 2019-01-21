@@ -464,6 +464,7 @@
              exn:fail:contract:continuation?)
 (err/rt-test (continuation-mark-set-first #f 'key #f (make-continuation-prompt-tag 'px))
              exn:fail:contract:continuation?)
+(test 'nope continuation-mark-set-first (current-continuation-marks) 'key 'nope (make-continuation-prompt-tag 'px))
 
 ;; Create a deep stack with a deep mark stack
 
