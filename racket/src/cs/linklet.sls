@@ -1032,4 +1032,5 @@
 
   (set-foreign-eval! eval/foreign)
 
+  (enable-arithmetic-left-associative #t)
   (expand-omit-library-invocations #t))

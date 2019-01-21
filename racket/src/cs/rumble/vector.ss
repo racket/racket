@@ -175,7 +175,7 @@
       (#3%vector-ref vec idx)
       (pariah (impersonate-vector-ref vec idx))))
 
-(define (vector*-ref vec idx)
+(define/who (vector*-ref vec idx)
   (#2%vector-ref vec idx))
 
 (define (impersonate-vector-ref orig idx)
@@ -183,7 +183,7 @@
            (#%vector? (impersonator-val orig)))
       (let loop ([o orig])
         (cond
-         [(#%vector? o) (#%vector-ref o idx)]
+         [(#%vector? o) (#2%vector-ref o idx)]
          [(vector-chaperone? o)
           (let* ([o-next (impersonator-next o)]
                  [val (loop o-next)]

@@ -37,6 +37,7 @@
 (check-defined 'enable-type-recovery)
 (check-defined 'make-wrapper-procedure)
 (check-defined 'make-phantom-bytevector)
+(check-defined 'enable-arithmetic-left-associative)
 
 ;; ----------------------------------------
 
@@ -63,6 +64,7 @@
 (generate-inspector-information #f)
 (generate-procedure-source-information #f)
 (compile-compressed #f)
+(enable-arithmetic-left-associative #t)
 (define build-dir "")
 
 (define-values (src deps)
