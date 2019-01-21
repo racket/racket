@@ -49,12 +49,13 @@
   (eq? v 'too-early))
 
 ;; When referecing an exported identifier, we need to consistently go
-;; through a `variable` record when it can be `set!`ed. We don't need
-;; to go through a `variable` record if the identifier might simply be
-;; used too early, because the host Scheme takes care of that issue.
+;; through a `variable` record when it can be `set!`ed or is not yet
+;; ready (as indicated by 'too-early, which is changed to 'too-eary/ready
+;; as the variable becomes ready)
 (define (via-variable-mutated-state? v)
   (or (eq? v 'set!ed)
-      (eq? v 'undefined)))
+      (eq? v 'undefined)
+      (eq? v 'too-early)))
 
 ;; At the end of a linklet, known-value information is reliable unless
 ;; the identifier is mutated

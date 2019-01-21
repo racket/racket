@@ -44,12 +44,20 @@
 ;;     `#%app` whenever a call might go through something other than a
 ;;     plain function;
 ;;
+;;   - convert all `letrec` patterns that might involve `call/cc` to
+;;     ensure that locations are allocated at the right time;
+;;
+;;   - explicily handle all potential too-early variable uses, so that
+;;     the right name and enclosing module are reported;
+;;
 ;;   - convert `make-struct-type` bindings to a pattern that Chez can
 ;;     recognize;
 ;;
 ;;   - optimize away `variable-reference-constant?` uses, which is
 ;;     important to make keyword-argument function calls work directly
 ;;     without keywords;
+;;
+;;  - similarly optimize away `variable-reference-from-unsafe?`;
 ;;
 ;;   - simplify `define-values` and `let-values` to `define` and
 ;;     `let`, when possible, and generally avoid `let-values`.
@@ -58,10 +66,10 @@
 ;; called from the Racket expander, those annotation will be
 ;; "correlated" objects that just support source locations.
 
-;; Returns (values schemified-linklet import-abi export-info)
+;; Returns (values schemified-linklet import-abi export-info).
 ;; An import ABI is a list of list of booleans, parallel to the
 ;; linklet imports, where #t to means that a value is expected, and #f
-;; means that a variable (which boxes a value) is expected
+;; means that a variable (which boxes a value) is expected.
 (define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
                           unsafe-mode? no-prompt?
                           prim-knowns get-import-knowns import-keys)
@@ -229,7 +237,7 @@
         ;; For the case that the right-hand side won't capture a
         ;; continuation or return multiple times, we can generate a
         ;; simple definition:
-        (define (finish-definition ids)
+        (define (finish-definition ids [accum-exprs accum-exprs] [accum-ids accum-ids])
           (append
            (make-expr-defns accum-exprs)
            (cons
@@ -305,8 +313,10 @@
            (match form
              [`(define-values ,ids ,_)
               ;; This is a rearranged `struct` form where any necessary
-              ;; prompt is in place already
-              (finish-definition ids)]
+              ;; prompt is in place already. There may be arbitrary expressions
+              ;; for properties, though, so sync exported variables
+              (define set-vars (make-set-variables))
+              (finish-definition ids (append set-vars accum-exprs) null)]
              [`,_
               (cond
                 [(simple? #:pure? #f schemified prim-knowns knowns imports mutated)

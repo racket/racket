@@ -56,7 +56,9 @@
 (define (rewrite-format str irritants)
   (cond
    [(equal? str "attempt to reference undefined variable ~s")
-    (values "~a: undefined;\n cannot reference an identifier before its definition"
+    (values (string-append
+             "~a: undefined;\n cannot reference an identifier before its definition"
+             "\n  alert: compiler pass failed to add more specific guard!")
             irritants)]
    [else
     (let ([str (string-copy str)]
