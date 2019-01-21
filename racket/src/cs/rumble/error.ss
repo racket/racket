@@ -639,15 +639,16 @@
 (define (exn->string v)
   (format "~a~a"
           (if (who-condition? v)
-              (format "~a: " (condition-who v))
+              (format "~a: " (rewrite-who (condition-who v)))
               "")
           (cond
            [(exn? v)
             (exn-message v)]
            [(format-condition? v)
-            (apply format
-                   (condition-message v)
-                   (condition-irritants v))]
+            (let-values ([(fmt irritants)
+                          (rewrite-format (condition-message v)
+                                          (condition-irritants v))])
+              (apply format fmt irritants))]
            [(syntax-violation? v)
             (let ([show (lambda (s)
                           (cond
@@ -679,46 +680,10 @@
               (make-arity-exn (cadr vs) (car vs))))]
        [else
         (|#%app|
-         (cond
-          [(or (and (format-condition? v)
-                    (or (string-prefix? "incorrect number of arguments" (condition-message v))
-                        (string-suffix? "values to single value return context" (condition-message v))
-                        (string-prefix? "incorrect number of values received in multiple value context" (condition-message v))))
-               (and (message-condition? v)
-                    (or (string-prefix? "incorrect argument count in call" (condition-message v))
-                        (string-prefix? "incorrect number of values from rhs" (condition-message v)))))
-           exn:fail:contract:arity]
-          [(and (format-condition? v)
-                (who-condition? v)
-                (#%memq (condition-who v) '(/ modulo remainder quotient atan angle log))
-                (string=? "undefined for ~s" (condition-message v)))
-           exn:fail:contract:divide-by-zero]
-          [(and (format-condition? v)
-                (who-condition? v)
-                (#%memq (condition-who v) '(expt atan2))
-                (string=? "undefined for values ~s and ~s" (condition-message v)))
-           exn:fail:contract:divide-by-zero]
-          [(and (format-condition? v)
-                (or (string=? "attempt to reference undefined variable ~s" (condition-message v))
-                    (string=? "attempt to assign undefined variable ~s" (condition-message v))))
-           (lambda (msg marks)
-             (|#%app| exn:fail:contract:variable msg marks (car (condition-irritants v))))]
-          [(and (format-condition? v)
-                (string-prefix? "~?.  Some debugging context lost" (condition-message v)))
-           exn:fail]
-          [else
-           exn:fail:contract])
+         (condition->exception-constructor v)
          (exn->string v)
          (current-continuation-marks))])
       v))
-
-(define (string-prefix? p str)
-  (and (>= (string-length str) (string-length p))
-       (string=? (substring str 0 (string-length p)) p)))
-
-(define (string-suffix? p str)
-  (and (>= (string-length str) (string-length p))
-       (string=? (substring str (- (string-length str) (string-length p)) (string-length str)) p)))
 
 (define (make-arity-exn proc n-args)
   (let* ([name (object-name proc)]
