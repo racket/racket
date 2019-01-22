@@ -71,6 +71,8 @@
       '((3 . 4)))
 (test (rx:regexp-match-positions "(?m:^.\n)" "a\nb\nc\n" 2 6 #f #"\n")
       '((2 . 4)))
+(test (rx:regexp-match-positions "(?:(?m:^$))(?<=..)" "ge \n TLambda-tc\n\n ;; (extend Γ o Γx-s\n extend\n\n ;;" 29 #f #f #"\n")
+      '((46 . 46)))
 
 (test (regexp-replace* "-" "zero-or-more?" "_")
       "zero_or_more?")

@@ -59,11 +59,11 @@
                    (bytes->string/utf-8 bstr-in #\? (- (car p) delta) (- (cdr p) delta))))
             null)))
 
-(define (byte-index->string-index str pos)
+(define (byte-index->string-index str start-pos pos)
   ;; We assume that pos is on a code-point boundary in the
   ;; UTF-8 encoding of str. Find out how many code points
   ;; are before the index.
-  (let loop ([lo-pos 0] [lo 0] [hi (min (string-length str)
+  (let loop ([lo-pos 0] [lo 0] [hi (min (- (string-length str) start-pos)
                                         (* pos 6))])
     (cond
       [(= lo hi) lo]
@@ -71,7 +71,7 @@
        (if (= lo-pos pos) lo hi)]
       [else
        (define mid (quotient (+ lo hi) 2))
-       (define len (string-utf-8-length str lo mid))
+       (define len (string-utf-8-length str (+ start-pos lo) (+ start-pos mid)))
        (define mid-pos (+ lo-pos len))
        (cond
          [(= mid-pos pos) mid]

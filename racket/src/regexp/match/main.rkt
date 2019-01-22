@@ -349,7 +349,7 @@
             ;; boundary, and everything from `ms-pos` to `ms-end` must
             ;; still be in `lb-in`. So, find `ms-pos` in the original
             ;; string, and take it from there.
-            (define ms-str-pos (byte-index->string-index in (- ms-pos start-pos)))
+            (define ms-str-pos (byte-index->string-index in start-offset (- ms-pos start-pos)))
             (define delta (lazy-bytes-discarded-count lb-in))
             (byte-positions->string-positions bstr ms-pos me-pos state
                                               #:start-index (- ms-pos delta)
