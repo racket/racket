@@ -5,9 +5,7 @@
 
 (define (datum-intern-literal v)
   (cond
-   [(or (and (number? v)
-             ;; `eq?` doesn't work on flonums
-             (not (flonum? v)))
+   [(or (number? v)
         (string? v)
         (char? v)
         (bytes? v)

@@ -764,14 +764,13 @@
 (define-record weak-equal-hash locked-iterable-hash
   (keys-ht    ; integer[equal hash code] -> weak list of keys
    vals-ht    ; weak, eq?-based hash table: key -> value
-   fl-vals-ht ; eqv?-based hash table: flonum-key -> value
    count      ; number of items in the table (= sum of list lengths)
    prune-at)) ; count at which we should try to prune empty weak boxes
 
 (define (weak-equal-hash-lock t) (locked-iterable-hash-lock t))
 
 (define (make-weak-hash-with-lock lock)
-  (make-weak-equal-hash lock #f #f (hasheqv) (make-weak-eq-hashtable) (make-eqv-hashtable) 0 128))
+  (make-weak-equal-hash lock #f #f (hasheqv) (make-weak-eq-hashtable) 0 128))
 
 (define make-weak-hash
   (case-lambda
@@ -785,16 +784,10 @@
                                       #t
                                       (weak-equal-hash-keys-ht ht)
                                       (hashtable-copy (weak-equal-hash-vals-ht ht) #t)
-                                      (hashtable-copy (weak-equal-hash-fl-vals-ht ht) #t)
                                       (weak-equal-hash-count ht)
                                       (weak-equal-hash-prune-at ht))])
     (lock-release (weak-equal-hash-lock ht))
     new-ht))
-
-(define (weak-equal-hash-*vals-ht t k)
-  (if (flonum? k)
-      (weak-equal-hash-fl-vals-ht t)
-      (weak-equal-hash-vals-ht t)))
 
 (define weak-hash-ref
   (case-lambda
@@ -809,7 +802,7 @@
           ($fail fail)]
          [(key-equal? (car keys) key)
           (let* ([k (car keys)]
-                 [v (hashtable-ref (weak-equal-hash-*vals-ht t k) (car keys) none)])
+                 [v (hashtable-ref (weak-equal-hash-vals-ht t) (car keys) none)])
             (lock-release (weak-equal-hash-lock t))
             (if (eq? v none)
                 ($fail fail)
@@ -847,11 +840,11 @@
                                           (intmap-set ht code
                                                       (weak/fl-cons k
                                                                     (intmap-ref ht code '()))))
-            (hashtable-set! (weak-equal-hash-*vals-ht t k) k v))
+            (hashtable-set! (weak-equal-hash-vals-ht t) k v))
           (lock-release (weak-equal-hash-lock t))]
          [(key-equal? (car keys) k)
           (let ([k (car keys)])
-            (hashtable-set! (weak-equal-hash-*vals-ht t k) k v))
+            (hashtable-set! (weak-equal-hash-vals-ht t) k v))
           (lock-release (weak-equal-hash-lock t))]
          [else (loop (cdr keys))])))]
    [(t k v)
@@ -871,7 +864,7 @@
                   (and (key-equal? a k)
                        a))
                 => (lambda (a)
-                     (let ([ht (weak-equal-hash-*vals-ht t a)])
+                     (let ([ht (weak-equal-hash-vals-ht t)])
                        (cond
                         [(locked-iterable-hash-cells t)
                          ;; Clear cell, because it may be in `(locked-iterable-hash-cells ht)`
@@ -901,15 +894,13 @@
   (lock-acquire (weak-equal-hash-lock t))
   (set-weak-equal-hash-keys-ht! t (hasheqv))
   (hashtable-clear! (weak-equal-hash-vals-ht t))
-  (hashtable-clear! (weak-equal-hash-fl-vals-ht t))
   (set-weak-equal-hash-count! t 0)
   (set-weak-equal-hash-prune-at! t 128)
   (set-locked-iterable-hash-cells! t #f)
   (lock-release (weak-equal-hash-lock t)))
 
 (define (weak-hash-count t)
-  (fx+ (hashtable-size (weak-equal-hash-vals-ht t))
-       (hashtable-size (weak-equal-hash-fl-vals-ht t))))
+  (hashtable-size (weak-equal-hash-vals-ht t)))
 
 (define (weak-equal-hash-cells ht len)
   (let ([vec (#%make-vector len #f)]
@@ -927,7 +918,7 @@
                 (cond
                  [(eq? #!bwp key) (loop (cdr l))]
                  [else
-                  (#%vector-set! vec (unbox pos) (hashtable-cell (weak-equal-hash-*vals-ht ht key) key #f))
+                  (#%vector-set! vec (unbox pos) (hashtable-cell (weak-equal-hash-vals-ht ht) key #f))
                   (set-box! pos (add1 (unbox pos)))
                   (if (= (unbox pos) len)
                       ;; That's enough keys

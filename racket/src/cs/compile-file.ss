@@ -38,6 +38,13 @@
 (check-defined 'make-wrapper-procedure)
 (check-defined 'make-phantom-bytevector)
 (check-defined 'enable-arithmetic-left-associative)
+(check-ok "eq? on flonums"
+          (lambda ()
+            (let* ([n (string->number "3.14")]
+                   [v (vector n n)])
+              (collect 0)
+              (unless (eq? (vector-ref v 0) (vector-ref v 1))
+                (error 'eq-on-flonum "no")))))
 
 ;; ----------------------------------------
 
