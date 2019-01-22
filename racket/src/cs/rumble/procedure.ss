@@ -278,7 +278,9 @@
 
 (define/who (procedure-result-arity p)
   (check who procedure? p)
-  #f)
+  (and (#%procedure? p)
+       (procedure-known-single-valued? p)
+       1))
 
 ;; ----------------------------------------
 
@@ -820,7 +822,8 @@
 
 (define (primitive? v)
   (or (eq? v make-struct-type-property)
-      (eq? v make-struct-type)))
+      (eq? v make-struct-type)
+      (eq? v car)))
 
 (define (primitive-closure? v) #f)
 
@@ -828,6 +831,7 @@
   (cond
    [(eq? prim make-struct-type-property) 3]
    [(eq? prim make-struct-type) 5]
+   [(eq? prim car) 1]
    [else
     (raise-argument-error 'primitive-result-arity "primitive?" prim)]))
 
