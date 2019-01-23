@@ -5,6 +5,7 @@
           null eof void void?
 
           begin0
+          $value
 
           letrec*/names
 
@@ -706,6 +707,7 @@
   (include "rumble/begin0.ss")
   (include "rumble/letrec.ss")
   (include "rumble/syntax-rule.ss")
+  (include "rumble/value.ss")
   (include "rumble/lock.ss")
   (include "rumble/thread-local.ss")
   (include "rumble/version.ss")

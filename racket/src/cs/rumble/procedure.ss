@@ -278,9 +278,26 @@
 
 (define/who (procedure-result-arity p)
   (check who procedure? p)
-  (and (#%procedure? p)
-       (procedure-known-single-valued? p)
-       1))
+  (cond
+   [(#%procedure? p)
+    (and (procedure-known-single-valued? p)
+         1)]
+   [(impersonator? p)
+    (procedure-result-arity (strip-impersonator p))]
+   [(record? p)
+    (let* ([rtd (record-rtd p)]
+           [v (struct-property-ref prop:procedure rtd none)])
+      (cond
+       [(eq? v none) #f]
+       [(fixnum? v)
+        (procedure-result-arity (unsafe-struct-ref p v))]
+       [(eq? v 'unsafe)
+        (procedure-result-arity
+         (if (chaperone? p)
+             (unsafe-procedure-chaperone-replace-proc p)
+             (unsafe-procedure-impersonator-replace-proc p)))]
+       [else (procedure-result-arity v)]))]
+   [else #f]))
 
 ;; ----------------------------------------
 

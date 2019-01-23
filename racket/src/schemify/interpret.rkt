@@ -227,7 +227,7 @@
        (vector 'begin0
                (compile-expr e env stack-depth stk-i #f)
                new-body)]
-      [`(pariah ,e)
+      [`($value ,e)
        (compile-expr e env stack-depth stk-i tail?)]
       [`(if ,tst ,thn ,els)
        (define then-stk-i (stack-info-branch stk-i))

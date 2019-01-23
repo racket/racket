@@ -265,10 +265,10 @@
        (values (reannotate v `(begin0 ,new-v0 . ,new-body))
                new-free
                new-lifts)]
-      [`(pariah ,e)
+      [`($value ,e)
        (define-values (new-e new-free new-lifts)
          (jitify-expr e env mutables free lifts convert-mode name in-name))
-       (values (reannotate v `(pariah ,new-e))
+       (values (reannotate v `($value ,new-e))
                new-free
                new-lifts)]
       [`(if ,tst ,thn ,els)

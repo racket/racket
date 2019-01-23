@@ -445,7 +445,7 @@
                                          `(struct-type-constructor-add-guards ,ctr ,struct:s ',(struct-type-info-name sti)))))
                   (define ,raw-s? (record-predicate ,struct:s))
                   ,@(if can-impersonate?
-                        `((define ,s? (lambda (v) (if (,raw-s? v) #t (pariah (if (impersonator? v) (,raw-s? (impersonator-val v)) #f))))))
+                        `((define ,s? (lambda (v) (if (,raw-s? v) #t ($value (if (impersonator? v) (,raw-s? (impersonator-val v)) #f))))))
                         null)
                   ,@(for/list ([acc/mut (in-list acc/muts)]
                                [make-acc/mut (in-list make-acc/muts)])
@@ -459,7 +459,7 @@
                                 (define ,acc/mut
                                   (lambda (s) (if (,raw-s? s)
                                                   (,raw-acc/mut s)
-                                                  (pariah (impersonate-ref ,raw-acc/mut ,struct:s ,pos s))))))
+                                                  ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s))))))
                              raw-def)]
                         [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ,_)
                          (define raw-def `(define ,raw-acc/mut (record-mutator ,struct:s ,pos)))
@@ -471,7 +471,7 @@
                                 (define ,acc/mut
                                   (lambda (s v) (if (,raw-s? s)
                                                     (,raw-acc/mut s v)
-                                                    (pariah (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v))))))
+                                                    ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v))))))
                              raw-def)]
                         [`,_ (error "oops")]))
                   (define ,(gensym)

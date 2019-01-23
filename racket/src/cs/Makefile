@@ -246,6 +246,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/thread-cell.ss \
               rumble/parameter.ss \
               rumble/begin0.ss \
+              rumble/value.ss \
               rumble/pthread.ss \
               rumble/control.ss \
               rumble/interrupt.ss \

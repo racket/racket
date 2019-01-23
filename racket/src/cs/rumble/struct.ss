@@ -652,9 +652,10 @@
              [wrap-p
               (procedure-rename
                 (lambda (v)
-                  (if (impersonator? v)
-                      (impersonate-ref p rtd pos v)
-                      (p v)))
+                  ($value
+                   (if (impersonator? v)
+                       (impersonate-ref p rtd pos v)
+                       (p v))))
                 (string->symbol (string-append (symbol->string (record-type-name rtd))
                                                "-"
                                                (if name
