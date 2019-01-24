@@ -6,8 +6,11 @@
 
 @author["Matthew Flatt"]
 
-This manual describes the C interface of Racket's run-time system. The
-C interface is relevant primarily when interacting with foreign
+This manual describes the C interface of Racket's runtime system for
+the 3m and CGC variants of Racket (but not the CS variant; see
+@secref[#:doc '(lib "scribblings/guide/guide.scrbl")
+"virtual-machines"]). The C
+interface is relevant primarily when interacting with foreign
 libraries as described in @other-manual['(lib
 "scribblings/foreign/foreign.scrbl")]; even though interactions with
 foreign code are constructed in pure Racket using the

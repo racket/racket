@@ -9,7 +9,7 @@
 (require (for-label racket/base))
 (provide (for-label (all-from-out racket/base)))
 
-(provide Quick Racket HtDP
+(provide Quick Racket HtDP inside-doc
          tool
          moreguide
          guideother
@@ -66,6 +66,7 @@
 
 (define Racket (other-manual '(lib "scribblings/reference/reference.scrbl")))
 
+(define inside-doc '(lib "scribblings/inside/inside.scrbl"))
+
 (define r6rs @elem{R@superscript{6}RS})
 (define r5rs @elem{R@superscript{5}RS})
-

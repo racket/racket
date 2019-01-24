@@ -375,7 +375,7 @@ as the GC compacts allocated objects to avoid fragmentation. C
 functions, meanwhile, expect to receive pointers to objects that will
 stay put.
 
-Fortunately, unless a C function calls back into the Racket run-time
+Fortunately, unless a C function calls back into the Racket runtime
 system (perhaps through a function that is provided as an argument),
 no garbage collection will happen between the time that a C function
 is called and the time that the function returns.

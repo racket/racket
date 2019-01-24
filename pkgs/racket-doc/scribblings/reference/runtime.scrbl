@@ -26,6 +26,9 @@ In @indexed-racket['word] mode, the result is either @racket[32] or
 @racket[64] to indicate whether Racket is running as a 32-bit program
 or 64-bit program.
 
+@margin-note{See @guidesecref["virtual-machines"] for more information
+ about the @racket['vm] and @racket['gc] mode results.}
+
 In @indexed-racket['vm] mode,
 the possible symbol results are:
 

@@ -671,7 +671,7 @@ or @cppi{MZ_REGISTER_STATIC} too early.
            [size_t n])]{
 
 Allocates @var{n} bytes of collectable memory, initially filled with
-zeros. In 3m, the allocated object is treated as an array of
+zeros. The allocated object is treated as an array of
 pointers.}
 
 @function[(void* scheme_malloc_atomic
@@ -747,7 +747,7 @@ Copies the null-terminated string @var{str}; the copy will never be freed.}
            [size_t size])]{
 
 Attempts to allocate @var{size} bytes using @var{mallocf}. If the
-allocation fails, the @racket[exn:misc:out-of-memory] exception is
+allocation fails, the @racket[exn:fail:out-of-memory] exception is
 raised.}
 
 @function[(void** scheme_malloc_immobile_box

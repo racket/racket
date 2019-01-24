@@ -19,6 +19,7 @@
          reference.scrbl
          ->>
          tech-place
+         3m CGC CS
          (all-from-out scribble/manual)
          (for-label (all-from-out racket/base
                                   racket/contract
@@ -44,3 +45,7 @@
 
 (define (tech-place)
   (tech "place" #:doc '(lib "scribblings/reference/reference.scrbl")))
+
+(define (CGC) (tech #:doc guide.scrbl "CGC"))
+(define (3m) (tech #:doc guide.scrbl "3m"))
+(define (CS) (tech #:doc guide.scrbl "CS"))

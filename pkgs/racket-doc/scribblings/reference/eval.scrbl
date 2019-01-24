@@ -626,11 +626,12 @@ reports the running Racket's native target machine.
 A @tech{parameter} that determines whether the native-code just-in-time
 compiler (@deftech{JIT}) is enabled for code (compiled or not) that is passed to
 the default evaluation handler. A true parameter value is effective
-only on platforms for which the JIT is supported, and changing the value
-from its initial setting affects only forms that are outside of @racket[module].
+only on platforms for which the JIT is supported and for Racket virtual machines
+that rely on a JIT.
 
 The default is @racket[#t], unless the JIT is not supported by the
-current platform, unless it is disabled through the
+current platform but is supported on the same virtual machine for other
+platforms, unless it is disabled through the
 @Flag{j}/@DFlag{no-jit} command-line flag to stand-alone Racket (or
 GRacket), and unless it is disabled through the
 @as-index{@envvar{PLTNOMZJIT}} environment variable (set to any

@@ -214,7 +214,7 @@ see @|InsideRacket|.
          cpointer?]{
 
 Allocates a memory block of a specified size using a specified
-allocation. The result is a @racket[cpointer] to the allocated
+allocation. The result is a C pointer to the allocated
 memory, or @racket[#f] if the requested size is zero.  Although 
 not reflected above, the four arguments can appear in
 any order, since they are all different types of Racket objects; a size
@@ -236,21 +236,99 @@ specification is required at minimum:
        the new block.}
 
   @item{A symbol @racket[mode] argument can be given, which specifies
-  what allocation function to use.  It should be one of
-  @indexed-racket['nonatomic] (uses @cpp{scheme_malloc} from
-  Racket's C API), @indexed-racket['atomic]
-  (@cpp{scheme_malloc_atomic}), @indexed-racket['tagged]
-  (@cpp{scheme_malloc_tagged}), @indexed-racket['stubborn]
-  (@cpp{scheme_malloc_stubborn}), @indexed-racket['uncollectable]
-  (@cpp{scheme_malloc_uncollectable}), @indexed-racket['eternal]
-  (@cpp{scheme_malloc_eternal}), @indexed-racket['interior]
-  (@cpp{scheme_malloc_allow_interior}),
-  @indexed-racket['atomic-interior]
-  (@cpp{scheme_malloc_atomic_allow_interior}), or
-  @indexed-racket['raw] (uses the operating system's @cpp{malloc},
-  creating a GC-invisible block).}  @item{If an additional
-  @indexed-racket['failok] flag is given, then
-  @cpp{scheme_malloc_fail_ok} is used to wrap the call.}
+  what allocation function to use.  It should be one of the following:
+
+   @itemlist[
+
+     @item{@indexed-racket['raw] --- Allocates memory that is outside
+       the garbage collector's space and is not traced by the garbage
+       collector (i.e., is treated as holding no pointers to
+       collectable memory). This memory must be freed with
+       @racket[free].}
+
+     @item{@indexed-racket['atomic] --- Allocates memory that can be
+       reclaimed by the garbage collector, is not traced by the
+       garbage collector, and is initially filled with zeros.
+
+       For the @3m[] and @CGC[] Racket variants, this allocation mode corresponds
+       to @cpp{scheme_malloc_atomic} in the C API.}
+
+     @item{@indexed-racket['nonatomic] --- Allocates memory that can
+       be reclaimed by the garbage collector, is treated by the
+       garbage collector as holding only pointers, and is initially
+       filled with zeros.
+
+       For the @3m[] and @CGC[] Racket variants, this allocation mode corresponds
+       to @cpp{scheme_malloc} in the C API.
+
+       For the @CS[] Racket variant, this mode is of limited use,
+       because a pointer allocated this way cannot be passed to
+       foreign functions that expect a pointer to pointers. The result
+       can only be used with functions like @racket[ptr-set!] and
+       @racket[ptr-ref].}
+
+     @item{@indexed-racket['atomic-interior] --- Like
+       @racket['atomic], but the allocated object will not be moved by
+       the garbage collector as long as the allocated object is
+       sufficiently retained as described below.
+
+       For the @3m[] and @CGC[] Racket variants, ``sufficiently retained''
+       means that the garbage collector does not collect the allocated
+       object because some pointer (that is visible to the collector)
+       refers to the object. Furthermore, that reference can point to
+       the interior of the object, insteda of its starting address.
+       This allocation mode corresponds to
+       @cpp{scheme_malloc_atomic_allow_interior} in the C API.
+
+       For the @CS[] Racket variant, ``sufficiently retained'' means that the
+       specific C pointer object returned by @racket[malloc] remains
+       accessible. Note that casting the pointer via @racket[cast], for example,
+       generates a new pointer object which would not by itself
+       prevent the result of @racket[malloc] from moving, even though
+       a reference to the same memory could prevent the object from
+       being reclaimed.}
+
+     @item{@indexed-racket['nonatomic-interior] --- Like
+       @racket['nonatomic], but the allocated object will not be moved
+       by the garbage collector as long as the allocated object is
+       retained.
+
+       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       it corresponds to @cpp{scheme_malloc_allow_interior} in the C
+       API.}
+
+     @item{@indexed-racket['tagged] --- Allocates memory that must
+       start with a @tt{short} value that is registered as a tag with
+       the garbage collector.
+
+       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       it corresponds to @cpp{scheme_malloc_tagged} in the C API.}
+
+     @item{@indexed-racket['stubborn] --- Like @racket['nonatomic],
+       but supports a hint to the GC via @racket[end-stubborn-change]
+       after all changes to the object have been made.
+
+       This mode is supported only for the @3m[] and @CGC[] Racket variants, and
+       it corresponds to @cpp{scheme_malloc_stubborn} in the C API.}
+
+     @item{@indexed-racket['eternal] --- Like @racket['raw], except the
+       allocated memory cannot be freed.
+
+       This mode is supported only for the @CGC[] Racket variant, and
+       it corresponds to @cpp{scheme_malloc_uncollectable} in the C API.}
+
+     @item{@indexed-racket['uncollectable] --- Allocates memory that is
+       never collected, cannot be freed, and potentially contains
+       pointers to collectable memory.
+
+       This mode is supported only for the @CGC[] Racket variant, and
+       it corresponds to @cpp{scheme_malloc_uncollectable} in the C API.}
+
+   ]}
+
+  @item{If an additional @indexed-racket['failok] flag is given, then
+        some effort may be made to detect an allocation failure and
+        raise @racket[exn:fail:out-of-memory] instead of crashing.}
 
 ]
 

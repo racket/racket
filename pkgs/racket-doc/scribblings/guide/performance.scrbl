@@ -20,7 +20,7 @@ machine level, the gap between the Racket language model and the
 underlying computing machinery can be quite large.
 
 In this chapter, we narrow the gap by explaining details of the
-Racket compiler and run-time system and how they affect the run-time
+Racket compiler and runtime system and how they affect the runtime
 and memory performance of Racket code.
 
 @; ----------------------------------------------------------------------
@@ -50,17 +50,63 @@ Non-interactive mode should be used instead of the
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "virtual-machines"]{Racket Virtual Machine Implementations}
+
+Racket is available in three implementation variants: @deftech{3m},
+@deftech{CGC}, and @deftech{CS}:
+
+@itemlist[
+
+ @item{@tech{3m} is the current default implementation, so it's
+       probably the one that you're using.
+
+       For this variant, @racket[(system-type 'vm)] reports
+       @racket['racket] and @racket[(system-type 'gc)] reports
+       @racket['3m].}
+
+ @item{@tech{CGC} is an older variant. It's the same basic
+       implementation as @tech{3m} (i.e., the same virtual machine),
+       but compiled to rely on a ``conservative'' garbage collector,
+       which affects the way that Racket interacts with C code. (See
+       @secref["CGC versus 3m" #:doc inside-doc] in
+       @other-manual[inside-doc] for more information.)
+
+       For this variant, @racket[(system-type 'vm)] reports
+       @racket['racket] and @racket[(system-type 'gc)] reports
+       @racket['cgc].}
+
+ @item{@tech{CS} is a newer implementation that builds on
+       @hyperlink["https://www.scheme.com/"]{Chez Scheme} as its core
+       virtual machine. This implementation performs better for some
+       programs, and it is likely to improve and eventually replace
+       the @tech{3m} implementation as the default.
+
+       For this variant, @racket[(system-type 'vm)] reports
+       @racket['chez-scheme] and @racket[(system-type 'gc)] reports
+       @racket['cs].}
+
+]
+
+In general, Racket programs should run the same in all variants.
+Furthermore, the performance characteristics of Racket program should
+be similar in the @tech{3m} and @tech{CS} variants. The cases where a
+program may depends on the variant will typically involve interactions
+with foreign libraries; in particular, the Racket C API described in
+@other-doc[inside-doc] is available only for the virtual machine of
+the @tech{3m} and @tech{CGC} variants.
+
+@; ----------------------------------------------------------------------
+
 @section[#:tag "JIT"]{The Bytecode and Just-in-Time (JIT) Compilers}
 
 Every definition or expression to be evaluated by Racket is compiled
-to an internal bytecode format. In interactive mode, this compilation
-occurs automatically and on-the-fly. Tools like @exec{raco make} and
+to an internal bytecode format, although ``bytecode'' may actually be
+native machine code. In interactive mode, this compilation occurs
+automatically and on-the-fly. Tools like @exec{raco make} and
 @exec{raco setup} marshal compiled bytecode to a file, so that you do
-not have to compile from source every time that you run a
-program. (Most of the time required to compile a file is actually in
-macro expansion; generating bytecode from fully expanded code is
-relatively fast.) See @secref["compile"] for more information on
-generating bytecode files.
+not have to compile from source every time that you run a program.
+See @secref["compile"] for more information on generating
+bytecode files.
 
 The bytecode compiler applies all standard optimizations, such as
 constant propagation, constant folding, inlining, and dead-code
@@ -68,14 +114,25 @@ elimination. For example, in an environment where @racket[+] has its
 usual binding, the expression @racket[(let ([x 1] [y (lambda () 4)]) (+
 1 (y)))] is compiled the same as the constant @racket[5].
 
-On some platforms, bytecode is further compiled to native code via a
-@deftech{just-in-time} or @deftech{JIT} compiler. The @tech{JIT}
-compiler substantially speeds programs that execute tight loops,
-arithmetic on small integers, and arithmetic on inexact real
-numbers. Currently, @tech{JIT} compilation is supported for x86,
-x86_64 (a.k.a. AMD64), ARM, and 32-bit PowerPC processors. The @tech{JIT}
-compiler can be disabled via the @racket[eval-jit-enabled] parameter
-or the @DFlag{no-jit}/@Flag{j} command-line flag for @exec{racket}.
+For the @tech{CS} variant of Racket, the main bytecode format is
+non-portable machine code. For the @tech{3m} and @tech{CGC} variants
+of Racket, bytecode is portable in the sense that it is
+machine-independent. Setting @racket[current-compile-target-machine]
+to @racket[#f] selects a separate machine-independent and
+variant-independent format on all Racket variants, but running code in
+that format requires an additional internal conversion step to the
+variant's main bytecode format.
+
+Machine-independent bytecode for @tech{3m} or @tech{CGC} is further
+compiled to native code via a @deftech{just-in-time} or @deftech{JIT}
+compiler. The @tech{JIT} compiler substantially speeds programs that
+execute tight loops, arithmetic on small integers, and arithmetic on
+inexact real numbers. Currently, @tech{JIT} compilation is supported
+for x86, x86_64 (a.k.a. AMD64), ARM, and 32-bit PowerPC processors.
+The @tech{JIT} compiler can be disabled via the
+@racket[eval-jit-enabled] parameter or the @DFlag{no-jit}/@Flag{j}
+command-line flag for @exec{racket}. Setting @racket[eval-jit-enabled]
+to @racket[#f] has not effect on the @tech{CS} variant of Racket.
 
 The @tech{JIT} compiler works incrementally as functions are applied,
 but the @tech{JIT} compiler makes only limited use of run-time
@@ -93,8 +150,7 @@ difficult to detect.
 The module system aids optimization by helping to ensure that
 identifiers have the usual bindings. That is, the @racket[+] provided
 by @racketmodname[racket/base] can be recognized by the compiler and
-inlined, which is especially important for @tech{JIT}-compiled code.
-In contrast, in a traditional interactive Scheme system, the top-level
+inlined. In contrast, in a traditional interactive Scheme system, the top-level
 @racket[+] binding might be redefined, so the compiler cannot assume a
 fixed @racket[+] binding (unless special flags or declarations
 are used to compensate for the lack of a module system).
@@ -111,7 +167,7 @@ time. Such optimizations are unavailable in the top-level
 environment. Although this optimization within modules is important
 for performance, it hinders some forms of interactive development and
 exploration. The @racket[compile-enforce-module-constants] parameter
-disables the @tech{JIT} compiler's assumptions about module
+disables the compiler's assumptions about module
 definitions when interactive exploration is more important. See
 @secref["module-set"] for more information.
 
@@ -179,7 +235,7 @@ inlining, but a programmer can wrap a function definition with
 of the function.
 
 Primitive operations like @racket[pair?], @racket[car], and
-@racket[cdr] are inlined at the machine-code level by the @tech{JIT}
+@racket[cdr] are inlined at the machine-code level by the bytecode or @tech{JIT}
 compiler. See also the later section @secref["fixnums+flonums"] for
 information about inlined arithmetic operations.
 
@@ -298,7 +354,7 @@ A @deftech{flonum} is used to represent any inexact real number. They
 correspond to 64-bit IEEE floating-point numbers on all platforms.
 
 Inlined fixnum and flonum arithmetic operations are among the most
-important advantages of the @tech{JIT} compiler. For example, when
+important advantages of the compiler. For example, when
 @racket[+] is applied to two arguments, the generated machine code
 tests whether the two arguments are fixnums, and if so, it uses the
 machine's instruction to add the numbers (and check for overflow). If
@@ -321,7 +377,8 @@ typically cheap to use.
 
 The @racketmodname[racket/flonum] library provides flonum-specific
 operations, and combinations of flonum operations allow the @tech{JIT}
-compiler to generate code that avoids boxing and unboxing intermediate
+compiler for the @tech{3m} and @tech{CGC} variants of Racket
+to generate code that avoids boxing and unboxing intermediate
 results. Besides results within immediate combinations,
 flonum-specific results that are bound with @racket[let] and consumed
 by a later flonum-specific operation are unboxed within temporary
@@ -366,7 +423,7 @@ crashes or memory corruption.
 @section[#:tag "ffi-pointer-access"]{Foreign Pointers}
 
 The @racketmodname[ffi/unsafe] library provides functions for unsafely
-reading and writing arbitrary pointer values. The JIT recognizes uses
+reading and writing arbitrary pointer values. The compiler recognizes uses
 of @racket[ptr-ref] and @racket[ptr-set!] where the second argument is
 a direct reference to one of the following built-in C types:
 @racket[_int8], @racket[_int16], @racket[_int32], @racket[_int64],
@@ -378,10 +435,9 @@ inline in the generated code.
 The bytecode compiler will optimize references to integer
 abbreviations like @racket[_int] to C types like
 @racket[_int32]---where the representation sizes are constant across
-platforms---so the JIT can specialize access with those C types. C
+platforms---so the compiler can specialize access with those C types. C
 types such as @racket[_long] or @racket[_intptr] are not constant
-across platforms, so their uses are currently not specialized by the
-JIT.
+across platforms, so their uses are not as consistently specialized.
 
 Pointer reads and writes using @racket[_float] or @racket[_double] are
 not currently subject to unboxing optimizations.
@@ -421,16 +477,16 @@ string or byte string, write a constant @tech{regexp} using an
 
 @section[#:tag "gc-perf"]{Memory Management}
 
-The Racket implementation is available in three variants: @deftech{3m},
-@deftech{CGC}, and @deftech{CS}. The @tech{3m} and @tech{CS} variants use a modern,
+The @tech{3m} (default) and @tech{CS} Racket
+@seclink["virtual-machines"]{virtual machines} each use a modern,
 @deftech{generational garbage collector} that makes allocation
 relatively cheap for short-lived objects. The @tech{CGC} variant uses
 a @deftech{conservative garbage collector} which facilitates
 interaction with C code at the expense of both precision and speed for
-Racket memory management. The @tech{3m} variant is currently the standard one.
+Racket memory management.
 
 Although memory allocation is reasonably cheap, avoiding allocation
-altogether is normally faster. One particular place where allocation
+altogether is often faster. One particular place where allocation
 can be avoided sometimes is in @deftech{closures}, which are the
 run-time representation of functions that contain free variables.
 For example,
