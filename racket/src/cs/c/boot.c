@@ -96,7 +96,8 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
                  char *coldir, char *configdir, /* wchar_t * */void *dlldir,
                  int pos1, int pos2, int pos3,
                  int cs_compiled_subdir, int is_gui,
-		 int wm_is_gracket, char *gracket_guid,
+		 int wm_is_gracket_or_x11_arg_count,
+                 char *gracket_guid_or_x11_args,
 		 void *dll_open, void *dll_find_object)
 /* exe argument already stripped from argv */
 {
@@ -155,8 +156,8 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
     for (i = argc; i--; ) {
       l = Scons(Sbytevector(argv[i]), l);
     }
-    l = Scons(Sbytevector(gracket_guid), l);
-    sprintf(wm_is_gracket_s, "%d", wm_is_gracket);
+    l = Scons(Sbytevector(gracket_guid_or_x11_args), l);
+    sprintf(wm_is_gracket_s, "%d", wm_is_gracket_or_x11_arg_count);
     l = Scons(Sbytevector(wm_is_gracket_s), l);
     l = Scons(Sbytevector(is_gui ? "true" : "false"), l);
     l = Scons(Sbytevector(cs_compiled_subdir ? "true" : "false"), l);

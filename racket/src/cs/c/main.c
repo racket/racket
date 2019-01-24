@@ -303,8 +303,8 @@ static void *extract_dlldir()
 #endif
 
 static int bytes_main(int argc, char **argv,
-		      /* for Windows GUI mode */
-		      int wm_is_gracket, char *gracket_guid)
+		      /* for Windows and X11 GUI modes */
+		      int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args)
 {
   char *boot_exe, *exec_file = argv[0], *run_file = NULL;
   int pos1, pos2, pos3;
@@ -370,7 +370,7 @@ static int bytes_main(int argc, char **argv,
               extract_coldir(), extract_configdir(), extract_dlldir(),
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
-	      wm_is_gracket, gracket_guid,
+	      wm_is_gracket_or_x11_arg_count, gracket_guid_or_x11_args,
 	      embedded_dll_open, scheme_dll_find_object);
   
   return 0;
@@ -407,7 +407,10 @@ int wmain(int argc, wchar_t **wargv)
   return bytes_main(argc, argv, 0, "");
 }
 #else
+static int x11_arg_count = 0;
+static char *x11_args = "0";
+
 int main(int argc, char **argv) {
-  return bytes_main(argc, argv, 0, "");
+  return bytes_main(argc, argv, x11_arg_count, x11_args);
 }
 #endif

@@ -66,7 +66,7 @@
       (error 'racket (string-append
 		      "expected `exec-file`, `run-file`, `collects`, and `etc` paths"
 		      " plus `segment-offset`, `cs-compiled-subdir?`, `is-gui?`,"
-		      " `wm-is-gracket`, and `gracket-guid`"
+		      " `wm-is-gracket-or-x11-arg-count`, and `gracket-guid-or-x11-args`"
 		      " to start")))
     (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 0)))
     (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1))))
@@ -80,18 +80,28 @@
    (define segment-offset (#%string->number (list-ref the-command-line-arguments 4)))
    (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 5)))
    (define gracket? (string=? "true" (list-ref the-command-line-arguments 6)))
-   (define wm-is-gracket (string->number (list-ref the-command-line-arguments 7)))
-   (define gracket-guid (list-ref the-command-line-arguments 8))
+   (define wm-is-gracket-or-x11-arg-count (string->number (list-ref the-command-line-arguments 7)))
+   (define gracket-guid-or-x11-args (list-ref the-command-line-arguments 8))
 
    (seq
     (when (foreign-entry? "racket_exit")
       (#%exit-handler (foreign-procedure "racket_exit" (int) void)))
 
-    ;; For Windows:
-    (unsafe-register-process-global (string->bytes/utf-8 "PLT_WM_IS_GRACKET")
-				    (ptr-add #f wm-is-gracket))
-    (unsafe-register-process-global (string->bytes/utf-8 "PLT_GRACKET_GUID")
-				    (bytes-append (string->bytes/utf-8 gracket-guid) #vu8(0))))
+    (when (eq? 'windows (system-type))
+      (unsafe-register-process-global (string->bytes/utf-8 "PLT_WM_IS_GRACKET")
+				      (ptr-add #f wm-is-gracket-or-x11-arg-count))
+      (unsafe-register-process-global (string->bytes/utf-8 "PLT_GRACKET_GUID")
+				      (bytes-append (string->bytes/utf-8 gracket-guid-or-x11-args) #vu8(0))))
+    (when (eq? 'macosx (system-type))
+      (when gracket?
+        (unsafe-register-process-global (string->bytes/utf-8 "PLT_IS_FOREGROUND_APP")
+				        (ptr-add #f 1))))
+    (when (eq? 'unix (system-type))
+      (when gracket?
+        (unsafe-register-process-global (string->bytes/utf-8 "PLT_X11_ARGUMENT_COUNT")
+				        (ptr-add #f wm-is-gracket-or-x11-arg-count))
+        (unsafe-register-process-global (string->bytes/utf-8 "PLT_X11_ARGUMENTS")
+				        (ptr-add #f (#%string->number gracket-guid-or-x11-args 16))))))
 
    (define compiled-file-paths
      (list (string->path (cond

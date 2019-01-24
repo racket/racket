@@ -24,7 +24,9 @@ char *check_for_another = "yes, please check for another";
 
 #include "main.c"
 
-#ifdef OS_X
+#if defined(WIN32)
+static void pre_filter_cmdline_arguments(int *argc, char ***argv) { }
+#elif defined(OS_X)
 # define wx_mac
 #else
 # define wx_xt
@@ -32,6 +34,17 @@ char *check_for_another = "yes, please check for another";
 
 static void scheme_register_process_global(const char *key, void *v)
 {
+#ifdef OS_X
+  /* "PLT_IS_FOREGROUND_APP" is set in "main.sps" */
+#endif
+#ifdef wx_xt
+  if (!strcmp(key, "PLT_X11_ARGUMENT_COUNT"))
+    x11_arg_count = (int)(intptr)v;
+  else if (!strcmp(key, "PLT_X11_ARGUMENTS")) {
+    x11_args = malloc(32);
+    sprintf(x11_args, "%p", v);
+  }
+#endif
 }
 
 #include "../../start/gui_filter.inc"
