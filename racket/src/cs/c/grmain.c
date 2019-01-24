@@ -39,7 +39,7 @@ static void scheme_register_process_global(const char *key, void *v)
 #endif
 #ifdef wx_xt
   if (!strcmp(key, "PLT_X11_ARGUMENT_COUNT"))
-    x11_arg_count = (int)(intptr)v;
+    x11_arg_count = (int)(intptr_t)v;
   else if (!strcmp(key, "PLT_X11_ARGUMENTS")) {
     x11_args = malloc(32);
     sprintf(x11_args, "%p", v);
