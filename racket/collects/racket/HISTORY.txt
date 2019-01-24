@@ -1,3 +1,6 @@
+Version 7.2, January 2019
+Bug repairs and other changes noted in the documentation
+
 Version 7.1, October 2018
 Bug repairs and other changes noted in the documentation
 
