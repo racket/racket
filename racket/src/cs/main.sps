@@ -340,7 +340,7 @@
                          (call-with-values (lambda ()
                                              (call-with-continuation-prompt
                                               (lambda ()
-                                                (eval (read (open-input-string expr))))
+                                                (eval `(|#%top-interaction| . ,(read (open-input-string expr)))))
                                               (default-continuation-prompt-tag)
                                               (lambda (proc)
                                                 ;; continue escape to set error status:
