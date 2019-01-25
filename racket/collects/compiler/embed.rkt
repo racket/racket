@@ -405,7 +405,10 @@
                   (extract-last (unix-style-split s)))])
     (let ([p (build-path collects-dest
                          (apply build-path dir)
-                         "compiled"
+                         (let ([l (use-compiled-file-paths)])
+                           (if (pair? l)
+                               (car l)
+                               "compiled"))
                          (path-add-extension file #".zo"))])
       (let-values ([(base name dir?) (split-path p)])
         (make-directory* base)

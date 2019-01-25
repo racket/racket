@@ -750,8 +750,9 @@
 
 (try-basic)
 (try-mzc)
-(unless (eq? 'windows (system-type))
-  (try-extension))
+(when (eq? 'racket (system-type 'vm))
+  (unless (eq? 'windows (system-type))
+    (try-extension)))
 (try-gracket)
 (try-reader)
 (try-lang)
