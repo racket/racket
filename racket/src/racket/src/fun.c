@@ -2813,7 +2813,7 @@ void scheme_init_reduced_proc_struct(Scheme_Startup_Env *env)
     while (insp->superior->superior) {
       insp = insp->superior;
     }
-    scheme_reduced_procedure_struct = scheme_make_struct_type2(NULL,
+    scheme_reduced_procedure_struct = scheme_make_struct_type2(scheme_intern_symbol("procedure"),
                                                                NULL,
                                                                (Scheme_Object *)insp,
                                                                4, 0,

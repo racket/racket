@@ -752,6 +752,23 @@
   (test 100 a-x (make-c 100 200 300 400)))
 
 ;; ------------------------------------------------------------
+;; struct->vector on non `struct?`
+
+(test #f struct? void)
+(test #f struct? (procedure-rename void 'still-void))
+(test #f struct? (procedure-reduce-arity void 1))
+(test #f struct? (cons 1 2))
+(test #f struct? (box 1))
+(test #f struct? (vector 1 2 3))
+
+(test '#(struct:procedure ...) struct->vector void)
+(test '#(struct:procedure ...) struct->vector (procedure-rename void 'still-void))
+(test '#(struct:procedure ...) struct->vector (procedure-reduce-arity void 1))
+(test '#(struct:pair ...) struct->vector (cons 1 2))
+(test '#(struct:box ...) struct->vector (box 1))
+(test '#(struct:vector ...) struct->vector (vector 1 2 3))
+
+;; ------------------------------------------------------------
 ;; Prefab
 
 (let ([v1 #s(v one)]

@@ -4739,14 +4739,14 @@ Scheme_Struct_Type *scheme_make_prefab_struct_type_raw(Scheme_Object *base,
   return struct_type;
 }
 
-static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
+static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *name,
                                                           Scheme_Object *parent,
                                                           int num_fields,
                                                           int num_uninit_fields,
                                                           Scheme_Object *uninit_val,
                                                           char *immutable_array)
 {
-  return scheme_make_prefab_struct_type_raw(base,
+  return scheme_make_prefab_struct_type_raw(name,
                                             parent,
                                             num_fields,
                                             num_uninit_fields,
@@ -4754,7 +4754,7 @@ static Scheme_Struct_Type *scheme_make_prefab_struct_type(Scheme_Object *base,
                                             immutable_array);
 }
 
-static Scheme_Object *_make_struct_type(Scheme_Object *base,
+static Scheme_Object *_make_struct_type(Scheme_Object *name,
 					Scheme_Object *parent,
 					Scheme_Object *inspector,
 					int num_fields,
@@ -4790,7 +4790,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
     struct_type->parent_types[j] = parent_type->parent_types[j];
   }
 
-  struct_type->name = base;
+  struct_type->name = name;
   struct_type->nonfail_constructor = (parent_type ? parent_type->nonfail_constructor : 1);
 
   struct_type->num_slots = num_fields + num_uninit_fields + (parent_type ? parent_type->num_slots : 0);
@@ -5075,7 +5075,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *base,
   return (Scheme_Object *)struct_type;
 }
 
-Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
+Scheme_Object *scheme_make_struct_type(Scheme_Object *name,
 				       Scheme_Object *parent,
 				       Scheme_Object *inspector,
 				       int num_fields, int num_uninit,
@@ -5083,7 +5083,7 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 				       Scheme_Object *properties,
 				       Scheme_Object *guard)
 {
-  return _make_struct_type(base,
+  return _make_struct_type(name,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, properties, 
@@ -5091,7 +5091,7 @@ Scheme_Object *scheme_make_struct_type(Scheme_Object *base,
 			   guard);
 }
 
-Scheme_Object *scheme_make_struct_type2(Scheme_Object *base,
+Scheme_Object *scheme_make_struct_type2(Scheme_Object *name,
                                         Scheme_Object *parent,
                                         Scheme_Object *inspector,
                                         int num_fields, int num_uninit,
@@ -5101,7 +5101,7 @@ Scheme_Object *scheme_make_struct_type2(Scheme_Object *base,
                                         char *immutable_array,
                                         Scheme_Object *guard)
 {
-  return _make_struct_type(base,
+  return _make_struct_type(name,
 			   parent, inspector, 
 			   num_fields, num_uninit,
 			   uninit_val, properties, 
@@ -5109,14 +5109,14 @@ Scheme_Object *scheme_make_struct_type2(Scheme_Object *base,
 			   guard);
 }
 
-Scheme_Object *scheme_make_struct_type_from_string(const char *base,
+Scheme_Object *scheme_make_struct_type_from_string(const char *name,
 						   Scheme_Object *parent,
 						   int num_fields,
 						   Scheme_Object *props,
 						   Scheme_Object *guard,
 						   int immutable)
 {
-  Scheme_Object *basesym, *r;
+  Scheme_Object *namesym, *r;
   char *immutable_array = NULL;
 
   if (immutable) {
@@ -5124,9 +5124,9 @@ Scheme_Object *scheme_make_struct_type_from_string(const char *base,
     memset(immutable_array, 1, num_fields);
   }
 
-  basesym = scheme_intern_exact_symbol(base, strlen(base));
+  namesym = scheme_intern_exact_symbol(name, strlen(name));
 
-  r = _make_struct_type(basesym,
+  r = _make_struct_type(namesym,
                         parent, scheme_false, 
                         num_fields, 0, 
                         NULL, props,

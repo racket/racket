@@ -112,8 +112,8 @@ scheme_init_type ()
 
   set_name(scheme_eval_waiting_type, "<eval-waiting>");
   set_name(scheme_void_type, "<void>");
-  set_name(scheme_prim_type, "<primitive>");
-  set_name(scheme_closed_prim_type, "<primitive-closure>");
+  set_name(scheme_prim_type, "<procedure>");
+  set_name(scheme_closed_prim_type, "<procedure>");
   set_name(scheme_closure_type, "<procedure>");
   set_name(scheme_native_closure_type, "<procedure>");
   set_name(scheme_cont_type, "<continuation>");
