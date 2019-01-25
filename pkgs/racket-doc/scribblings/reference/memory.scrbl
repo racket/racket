@@ -353,6 +353,9 @@ garbage-collection mode, depending on @racket[request]:
        The intent of incremental mode is to significantly reduce pause
        times due to major collections, but incremental mode typically
        implies longer minor-collection times and higher memory use.
+       Currently, incremental mode is only really supported when
+       @racket[(system-type 'gc)] returns @racket['3m]; it has no
+       effect in other Racket variants.
 
        If the @envvar{PLT_INCREMENTAL_GC} environment variable's value
        starts with @litchar{0}, @litchar{n}, or @litchar{N} on
