@@ -334,6 +334,11 @@
 (define tempfilename (make-temporary-file))
 (when (file-exists? tempfilename)
   (delete-file tempfilename))
+
+(err/rt-test (open-output-file tempfilename #:exists 'update) exn:fail:filesystem?)
+(test #t output-port? (open-output-file tempfilename #:exists 'can-update))
+(delete-file tempfilename)
+
 (let ([p (open-output-file tempfilename)])
   (err/rt-test (write-special 'foo p) exn:application:mismatch?)
   (test #t integer? (port-file-identity p))

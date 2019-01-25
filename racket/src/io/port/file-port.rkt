@@ -63,8 +63,8 @@
                                       RKTIO_OPEN_CAN_EXIST)]
       [(must-truncate) (+ RKTIO_OPEN_TRUNCATE
                           RKTIO_OPEN_MUST_EXIST)]
-      [(update) RKTIO_OPEN_CAN_EXIST]
-      [(must-update) RKTIO_OPEN_MUST_EXIST]
+      [(can-update) RKTIO_OPEN_CAN_EXIST]
+      [(update) RKTIO_OPEN_MUST_EXIST]
       [(append) RKTIO_OPEN_APPEND]
       [else 0]))
   (define (mode? v)
