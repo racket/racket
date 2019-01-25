@@ -62,6 +62,7 @@
   (ptest "'|apple banana|" '|apple banana|)
   (ptest "'||" '||)
   (ptest "'#:apple" '#:apple)
+  (ptest "'#%apple" '#%apple)
   (ptest "\"apple\"" "apple")
   (ptest "#\"apple\"" #"apple")
   (ptest "#rx\"apple\"" #rx"apple")

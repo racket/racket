@@ -208,7 +208,7 @@
   ;; the printer needs to check whether a string parses as a number
   ;; for deciding wheter to quote the string
   (set-string->number?! (lambda (str)
-                          (not (not (1/string->number str 10 'read)))))
+                          (number? (1/string->number str 10 'read))))
 
   ;; `set-maybe-raise-missing-module!` is also from the `io` library
   (set-maybe-raise-missing-module! maybe-raise-missing-module))
