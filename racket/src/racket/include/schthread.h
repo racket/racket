@@ -314,6 +314,7 @@ typedef struct Thread_Local_Variables {
   intptr_t scheme_code_total_;
   intptr_t scheme_code_count_;
   intptr_t max_gc_pre_used_bytes_;
+  intptr_t max_code_page_total_;
   int num_major_garbage_collections_;
   int num_minor_garbage_collections_;
   int locale_on_;
@@ -696,6 +697,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_code_total XOA (scheme_get_thread_local_variables()->scheme_code_total_)
 #define scheme_code_count XOA (scheme_get_thread_local_variables()->scheme_code_count_)
 #define max_gc_pre_used_bytes XOA (scheme_get_thread_local_variables()->max_gc_pre_used_bytes_)
+#define max_code_page_total XOA (scheme_get_thread_local_variables()->max_code_page_total_)
 #define num_major_garbage_collections XOA (scheme_get_thread_local_variables()->num_major_garbage_collections_)
 #define num_minor_garbage_collections XOA (scheme_get_thread_local_variables()->num_minor_garbage_collections_)
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)

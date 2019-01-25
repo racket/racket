@@ -105,6 +105,7 @@ THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
+THREAD_LOCAL_DECL(static intptr_t max_code_page_used_bytes);
 #ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(static int num_major_garbage_collections);
 THREAD_LOCAL_DECL(static int num_minor_garbage_collections);
@@ -9331,10 +9332,13 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
 {
   Scheme_Logger *logger;
 
-  if (!master_gc 
-      && (pre_used > max_gc_pre_used_bytes)
-      && (max_gc_pre_used_bytes >= 0))
-    max_gc_pre_used_bytes = pre_used;
+  if (!master_gc) {
+    if ((pre_used > max_gc_pre_used_bytes)
+        && (max_gc_pre_used_bytes >= 0))
+      max_gc_pre_used_bytes = pre_used;
+    if (scheme_code_page_total > max_code_page_total)
+      max_code_page_total = scheme_code_page_total;
+  }
 
   if (major_gc)
     num_major_garbage_collections++;
@@ -9416,7 +9420,7 @@ static void log_peak_memory_use()
   if (max_gc_pre_used_bytes > 0) {
     logger = scheme_get_gc_logger();
     if (logger && scheme_log_level_p(logger, SCHEME_LOG_INFO)) {
-      char buf[256], nums[128], *num, *numt, *num2;
+      char buf[256], nums[128], *num, *numc, *numt, *num2;
       intptr_t buflen, allocated_bytes;
 #ifdef MZ_PRECISE_GC
       allocated_bytes = GC_get_memory_ever_allocated();
@@ -9425,14 +9429,16 @@ static void log_peak_memory_use()
 #endif
       memset(nums, 0, sizeof(nums));
       num = gc_num(nums, max_gc_pre_used_bytes);     
+      numc = gc_num(nums, max_code_page_total);
       numt = gc_num(nums, allocated_bytes);
       num2 = gc_unscaled_num(nums, scheme_total_gc_time);
       sprintf(buf,
-              "" PLACE_ID_FORMAT "atexit peak %sK; alloc %sK; major %d; minor %d; %sms",
+              "" PLACE_ID_FORMAT "atexit peak %sK[+%sK]; alloc %sK; major %d; minor %d; %sms",
 #ifdef MZ_USE_PLACES
               scheme_current_place_id,
 #endif
               num,
+              numc,
               numt,
               num_major_garbage_collections,
               num_minor_garbage_collections,
