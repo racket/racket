@@ -20,6 +20,9 @@
          (string=? "undefined for values ~s and ~s" (condition-message v)))
     exn:fail:contract:divide-by-zero]
    [(and (format-condition? v)
+         (string-prefix? "fixnum overflow" (condition-message v)))
+    exn:fail:contract:non-fixnum-result]
+   [(and (format-condition? v)
          (or (string=? "attempt to reference undefined variable ~s" (condition-message v))
              (string=? "attempt to assign undefined variable ~s" (condition-message v))))
     (lambda (msg marks)
