@@ -205,6 +205,11 @@
 ;; Avoid use of ".zo" files:
 (use-compiled-file-paths null)
 
+;; In case the host is in machine-independent mode, claim
+;; machine-specific so the expander doesn't skip our extracting
+;; linklet compiler:
+(current-compile-target-machine (system-type 'target-machine))
+
 ;; Redirect module search to another installation:
 (when checkout-directory
   (let ([l (list (build-path checkout-directory "collects"))])
