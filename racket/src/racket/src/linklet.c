@@ -502,6 +502,18 @@ static Scheme_Object *eval_linklet(int argc, Scheme_Object **argv)
     }
   }
 
+#ifdef MZ_USE_JIT
+  if (linklet->native_lambdas) {
+    Scheme_Object *l;
+    l = linklet->native_lambdas;
+    linklet->native_lambdas = NULL;
+    while (SCHEME_PAIRP(l)) {
+      scheme_force_jit_generate((Scheme_Native_Lambda *)SCHEME_CAR(l));
+      l = SCHEME_CDR(l);
+    }
+  }
+#endif
+
   return (Scheme_Object *)linklet;
 }
 

@@ -7,6 +7,7 @@
 
 #include "schpriv.h"
 #include "schrunst.h"
+#include "schmach.h"
 
 THREAD_LOCAL_DECL(static Scheme_Object *current_linklet_native_lambdas);
 static int force_jit;
@@ -420,13 +421,25 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
       ((Scheme_Lambda *)val)->name = name;
       if (((Scheme_Lambda *)val)->closure_size)
 	all_closed = 0;
-      if (current_linklet_native_lambdas)
-        current_linklet_native_lambdas = scheme_make_pair(val, current_linklet_native_lambdas);
     }
 
     /* Generating the code may cause empty closures to be formed: */
     ndata = scheme_generate_case_lambda(seqout);
     seqout->native_code = ndata;
+
+    if (current_linklet_native_lambdas) {
+      for (i = 0; i < cnt; i++) {
+        val = seqout->array[i];
+        {
+          /* Force jitprep on body, too, to discover all lambdas */
+          Scheme_Object *body;
+          body = jit_expr(((Scheme_Lambda *)val)->body);
+          ((Scheme_Lambda *)val)->body = body;
+        }
+        val = (Scheme_Object *)((Scheme_Lambda *)val)->u.native_code;
+        current_linklet_native_lambdas = scheme_make_pair(val, current_linklet_native_lambdas);
+      }
+    }
 
     if (all_closed) {
       /* Native closures do not refer back to the original bytecode,
@@ -555,6 +568,13 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 
     if (!context)
       data->u.jit_clone = data2;
+
+    if (current_linklet_native_lambdas) {
+      /* Force jitprep on body, too, to discover all lambdas */
+      Scheme_Object *body;
+      body = jit_expr(data2->body);
+      data2->body = body;
+    }
   }
 
   /* If it's zero-sized, then create closure now */
@@ -571,9 +591,32 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 /*                            expressions                                 */
 /*========================================================================*/
 
+static Scheme_Object *jit_expr_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+
+  p->ku.k.p1 = NULL;
+
+  return jit_expr(expr);
+}
+
 static Scheme_Object *jit_expr(Scheme_Object *expr)
 {
   Scheme_Type type = SCHEME_TYPE(expr);
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+
+      p->ku.k.p1 = (void *)expr;
+
+      return scheme_handle_stack_overflow(jit_expr_k);
+    }
+  }
+#endif
 
   switch (type) {
   case scheme_application_type:
@@ -641,6 +684,9 @@ Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
   Scheme_Linklet *new_linklet;
   Scheme_Object *bodies, *v;
   int i;
+
+  if (force_jit)
+    step = 2;
 
   if (!linklet->jit_ready) {
     new_linklet = MALLOC_ONE_TAGGED(Scheme_Linklet);
