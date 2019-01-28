@@ -105,10 +105,10 @@ THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
-THREAD_LOCAL_DECL(static intptr_t max_code_page_used_bytes);
 #ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(static int num_major_garbage_collections);
 THREAD_LOCAL_DECL(static int num_minor_garbage_collections);
+THREAD_LOCAL_DECL(static intptr_t max_code_page_total);
 #endif
 
 #ifdef RUNSTACK_IS_GLOBAL
