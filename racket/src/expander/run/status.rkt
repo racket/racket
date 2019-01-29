@@ -3,10 +3,10 @@
 (provide log-status
          lines)
 
-(define stderr (current-error-port))
+(define stdout (current-output-port))
 
 (define (log-status fmt . args)
-  (apply fprintf stderr (string-append fmt "\n") args))
+  (apply fprintf stdout (string-append fmt "\n") args))
 
 (define (lines prefix vals)
   (apply

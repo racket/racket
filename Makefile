@@ -258,7 +258,7 @@ DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 MAKE_BUILD_SCHEME = y
 
 CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
-GIT_CLONE_ARGS_qq = --depth 1
+GIT_CLONE_ARGS_qq = -q --depth 1
 
 # Altenative source for Chez Scheme repo, normally set by
 # the distro-build client driver
@@ -361,7 +361,7 @@ racket/src/build/ChezScheme:
           else $(MAKE) clone-ChezScheme-as-extra GIT_CLONE_ARGS_qq="" ; fi
 
 update-ChezScheme:
-	cd racket/src/build/ChezScheme && git pull && git submodule update
+	cd racket/src/build/ChezScheme && git pull -q && git submodule -q update
 
 clone-ChezScheme-as-extra:
 	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
