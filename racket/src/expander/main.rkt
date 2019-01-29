@@ -109,6 +109,8 @@
          resolved-module-path?
          module-path?
 
+         path-list-string->path-list ; for startup
+
          declare-primitive-module! ; to support "extensions"
 
          embedded-load ; for -k

@@ -12,6 +12,7 @@
                current-library-collection-paths
                find-library-collection-paths
                use-collection-link-paths
+               current-compiled-file-roots
                find-main-config
                executable-yield-handler
                load-on-demand-enabled
@@ -22,6 +23,7 @@
                dynamic-require
                namespace-require
                embedded-load
+               module-path?
                module-declared?
                module->language-info
                module-path-index-join
@@ -32,7 +34,8 @@
                version
                exit
                compile-keep-source-locations!
-               expander-place-init!)
+               expander-place-init!
+               path-list-string->path-list)
          (regexp)
          (io)
          (thread)
@@ -55,10 +58,23 @@
                           (bytes->string/locale s #\?)
                           s))
           the-command-line-arguments/maybe-bytes))
+   (define (find-original-bytes s)
+     ;; In case `the-command-line-arguments/maybe-bytes` has bytes,
+     ;; try to get the original byte string for `s`
+     (let loop ([args the-command-line-arguments]
+                [args/maybe-bytes the-command-line-arguments/maybe-bytes])
+       (cond
+        [(null? args) s]
+        [(eq? (car args) s) (car args/maybe-bytes)]
+        [else (loop (cdr args) (cdr args/maybe-bytes))])))
    (define (->path s)
      (cond
+      [(path? s) s]
       [(bytes? s) (bytes->path s)]
       [else (string->path s)]))
+
+   (define (getenv-bytes str)
+     (environment-variables-ref (|#%app| current-environment-variables) (string->utf8 str)))
 
    (define builtin-argc 9)
    (seq
@@ -70,12 +86,17 @@
 		      " to start")))
     (set-exec-file! (->path (list-ref the-command-line-arguments/maybe-bytes 0)))
     (set-run-file! (->path (list-ref the-command-line-arguments/maybe-bytes 1))))
-   (define init-collects-dir (let ([s (list-ref the-command-line-arguments/maybe-bytes 2)])
-                               (if (or (equal? s "")
-                                       (equal? s '#vu8()))
-                                   'disable
-                                   (->path s))))
-   (define init-config-dir (->path (or (getenv "PLTCONFIGDIR")
+   (define-values (init-collects-dir collects-pre-extra)
+     (let ([s (list-ref the-command-line-arguments/maybe-bytes 2)])
+       (cond
+        [(or (equal? s "")
+             (equal? s '#vu8()))
+         (values 'disable '())]
+        [(or (string? s) (bytevector? s)) (values (->path s) '())]
+        [else (let ([s (reverse s)])
+                (values (->path (car s))
+                        (map ->path (cdr s))))])))
+   (define init-config-dir (->path (or (getenv-bytes "PLTCONFIGDIR")
                                        (list-ref the-command-line-arguments/maybe-bytes 3))))
    (define segment-offset (#%string->number (list-ref the-command-line-arguments 4)))
    (define cs-compiled-subdir? (string=? "true" (list-ref the-command-line-arguments 5)))
@@ -104,22 +125,23 @@
 				        (ptr-add #f (#%string->number gracket-guid-or-x11-args 16))))))
 
    (define compiled-file-paths
-     (list (string->path (cond
-                          [cs-compiled-subdir?
-                           (string-append "compiled/"
-                                          (cond
-                                           [(getenv "PLT_ZO_PATH")
-                                            => (lambda (s)
-                                                 (unless (and (not (equal? s ""))
-                                                              (relative-path? s))
-                                                   (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
-                                                 s)]
-                                           [platform-independent-zo-mode? "cs"]
-                                           [else (symbol->string (machine-type))]))]
-                          [else "compiled"]))))
+     (list (->path (cond
+                    [cs-compiled-subdir?
+                     (build-path "compiled"
+                                 (cond
+                                  [(getenv-bytes "PLT_ZO_PATH")
+                                   => (lambda (s)
+                                        (unless (and (not (equal? s #vu8()))
+                                                     (relative-path? (->path s)))
+                                          (error 'racket "PLT_ZO_PATH environment variable is not a valid path"))
+                                        (->path s))]
+                                  [platform-independent-zo-mode? "cs"]
+                                  [else (symbol->string (machine-type))]))]
+                    [else "compiled"]))))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
    (define compile-machine-independent? (getenv "PLT_COMPILE_ANY"))
+   (define compiled-roots-path-list-string (getenv "PLTCOMPILEDROOTS"))
    (define embedded-load-in-places #f)
 
    (define (see saw . args)
@@ -215,13 +237,17 @@
    (define repl? #f)
    (define repl-init? #t)
    (define version? #f)
+   (define text-repl? (not gracket?))
+   (define yield? #t)
    (define stderr-logging-arg #f)
    (define stdout-logging-arg #f)
+   (define syslog-logging-arg #f)
    (define runtime-for-init? #t)
    (define exit-value 0)
    (define host-collects-dir init-collects-dir)
    (define host-config-dir init-config-dir)
    (define addon-dir #f)
+   (define rev-collects-post-extra '())
 
    (define (no-init! saw)
      (unless (saw? saw 'top)
@@ -247,6 +273,21 @@
                        (if within-arg
                            (format " within: ~a" within-arg)
                            "")))
+
+   (define (no-front!)
+     (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-no-front") #vu8(1)))
+
+   (define (add-namespace-require-load! mod-path arg)
+     (unless (module-path? mod-path)
+       (raise-user-error 'require
+                         "bad module path: ~V derived from command-line argument: ~a"
+                         mod-path
+                         arg))
+     (set! loads
+           (cons (lambda () (namespace-require+ mod-path))
+                 loads)))
+
+   (include "main/help.ss")
 
    (define-syntax string-case
      ;; Assumes that `arg` is a variable
@@ -277,7 +318,7 @@
                                                   (list->vector args)))
           (when (and (null? args) (not (saw? saw 'non-config)))
             (set! repl? #t)
-            (unless gracket?
+            (when text-repl?
               (set! version? #t)))]))
       ;; Dispatch on first argument:
       (if (null? args)
@@ -289,47 +330,34 @@
              arg
              [("-l" "--lib")
               (let-values ([(lib-name rest-args) (next-arg "library name" arg within-arg args)])
-                (set! loads
-                      (cons
-                       (lambda ()
-                         (namespace-require+ `(lib ,lib-name)))
-                       loads))
+                (add-namespace-require-load! `(lib ,lib-name) lib-name)
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config 'lib)))]
              [("-t" "--require")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
-                (set! loads
-                      (cons
-                       (lambda ()
-                         (namespace-require+ `(file ,file-name)))
-                       loads))
+                (add-namespace-require-load! `(file ,file-name) file-name)
+                (no-init! saw)
+                (flags-loop rest-args (see saw 'non-config 'lib)))]
+             [("-p")
+              (let-values ([(package rest-args) (next-arg "package" arg within-arg args)])
+                (add-namespace-require-load! `(planet ,package) package)
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config 'lib)))]
              [("-u" "--require-script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
-                (set! loads
-                      (cons
-                       (lambda ()
-                         (namespace-require+ `(file ,file-name)))
-                       loads))
+                (add-namespace-require-load! `(file ,file-name) file-name)
                 (no-init! saw)
                 (set-run-file! (string->path file-name))
                 (flags-loop (cons "--" rest-args) (see saw 'non-config 'lib)))]
              [("-f" "--load")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
-                (set! loads
-                      (cons
-                       (lambda ()
-                         (load file-name))
-                       loads))
+                (set! loads (cons (lambda () (load file-name))
+                                  loads))
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-r" "--script")
               (let-values ([(file-name rest-args) (next-arg "file name" arg within-arg args)])
-                (set! loads
-                      (cons
-                       (lambda ()
-                         (load file-name))
-                       loads))
+                (set! loads (cons (lambda () (load file-name))
+                                  loads))
                 (set-run-file! (string->path file-name))
                 (flags-loop (cons "--" rest-args) (see saw 'non-config)))]
              [("-e" "--eval")
@@ -375,10 +403,8 @@
                 (no-init! saw)
                 (flags-loop rest-args (see saw 'non-config)))]
              [("-m" "--main")
-              (set! loads
-                    (cons
-                     (lambda () (call-main))
-                     loads))
+              (set! loads (cons (lambda () (call-main))
+                                loads))
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-i" "--repl") 
               (set! repl? #t)
@@ -386,6 +412,10 @@
               (flags-loop (cdr args) (see saw 'non-config 'top))]
              [("-n" "--no-lib")
               (set! init-library #f)
+              (flags-loop (cdr args) (see saw 'non-config))]
+             [("-V" "--no-yield")
+              (set! yield? #f)
+              (set! version? #t)
               (flags-loop (cdr args) (see saw 'non-config))]
              [("-v" "--version") 
               (set! version? #t)
@@ -401,7 +431,7 @@
                 (loop rest-args))]
              [("-A" "--addon")
               (let-values ([(addon-path rest-args) (next-arg "addon directory" arg within-arg args)])
-                (set! addon-dir addon-path)
+                (set! addon-dir (find-original-bytes addon-path))
                 (loop rest-args))]
              [("-X" "--collects")
               (let-values ([(collects-path rest-args) (next-arg "collects path" arg within-arg args)])
@@ -410,12 +440,17 @@
                   (set! init-collects-dir 'disable)]
                  [else 
                   (check-path-arg "collects path" arg within-arg)
-                  (set! init-collects-dir (path->complete-path (string->path collects-path)))])
+                  (set! init-collects-dir (path->complete-path (->path (find-original-bytes collects-path))))])
+                (loop rest-args))]
+             [("-S" "--search")
+              (let-values ([(collects-path rest-args) (next-arg "path" arg within-arg args)])
+                (check-path-arg "collects path" collects-path within-arg)
+                (set! rev-collects-post-extra (cons (->path (find-original-bytes collects-path)) rev-collects-post-extra))
                 (loop rest-args))]
              [("-G" "--config")
               (let-values ([(config-path rest-args) (next-arg "config path" arg within-arg args)])
-                (check-path-arg "config path" arg within-arg)
-                (set! init-config-dir (path->complete-path (string->path config-path)))
+                (check-path-arg "config path" config-path within-arg)
+                (set! init-config-dir (path->complete-path (->path (find-original-bytes config-path))))
                 (loop rest-args))]
              [("-C" "--cross")
               (set! host-config-dir init-config-dir)
@@ -425,8 +460,14 @@
              [("-U" "--no-user-path")
               (set! user-specific-search-paths? #f)
               (loop (cdr args))]
-             [("-d")
+             [("-R" "--compiled")
+              (let-values ([(paths rest-args) (next-arg "path list" arg within-arg args)])
+                (set! compiled-roots-path-list-string paths)
+                (loop rest-args))]
+             [("-d" "--no-delay")
               (set! load-on-demand? #t)
+              (loop (cdr args))]
+             [("-b" "--binary")
               (loop (cdr args))]
              [("-q" "--no-init-file")
               (set! repl-init? #f)
@@ -438,6 +479,10 @@
              [("-O" "--stdout")
               (let-values ([(spec rest-args) (next-arg "stdout level" arg within-arg args)])
                 (set! stdout-logging-arg (parse-logging-spec "stdout" spec (format "after ~a switch" (or within-arg arg)) #t))
+                (loop rest-args))]
+             [("-L" "--syslog")
+              (let-values ([(spec rest-args) (next-arg "syslog level" arg within-arg args)])
+                (set! syslog-logging-arg (parse-logging-spec "syslog" spec (format "after ~a switch" (or within-arg arg)) #t))
                 (loop rest-args))]
              [("-N" "--name")
               (let-values ([(name rest-args) (next-arg "name" arg within-arg args)])
@@ -452,16 +497,29 @@
                   (loop rest-args))]
                [else
                 (raise-bad-switch arg within-arg)])]
-             [("-K")
+             [("-K" "--back")
               (cond
                [gracket?
-                (unsafe-register-process-global (string->bytes/utf-8 "Racket-GUI-no-front") #vu8(1))
+                (no-front!)
+                (loop (cdr args))]
+               [else
+                (raise-bad-switch arg within-arg)])]
+             [("-z" "--text-repl")
+              (cond
+               [gracket?
+                (no-front!)
+                (set! text-repl? #t)
                 (loop (cdr args))]
                [else
                 (raise-bad-switch arg within-arg)])]
              [("-M" "--compile-any")
               (set! compile-machine-independent? #t)
               (loop (cdr args))]
+             [("-j" "--no-jit")
+              (loop (cdr args))]
+             [("-h" "--help")
+              (show-help)
+              (exit)]
              [("--")
               (cond
                [(or (null? (cdr args)) (not (pair? (cadr args))))
@@ -598,6 +656,13 @@
                (parse-logging-spec "stdout" spec "in PLTSTDOUT environment variable" #f)
                '()))))
 
+   (define syslog-logging
+     (or syslog-logging-arg
+         (let ([spec (getenv "PLTSYSLOG")])
+           (if spec
+               (parse-logging-spec "syslog" spec "in PLTSYSLOG environment variable" #f)
+               '()))))
+
    (define (initialize-place!)
      (|#%app| current-command-line-arguments remaining-command-line-arguments)
      (|#%app| use-compiled-file-paths compiled-file-paths)
@@ -612,6 +677,9 @@
      (when (and stdout-logging
                 (not (null? stdout-logging)))
        (apply add-stdout-log-receiver! (|#%app| current-logger) stdout-logging))
+     (when (and syslog-logging
+                (not (null? syslog-logging)))
+       (apply add-syslog-log-receiver! (|#%app| current-logger) syslog-logging))
      (cond
       [(eq? init-collects-dir 'disable)
        (|#%app| use-collection-link-paths #f)
@@ -623,7 +691,13 @@
        (|#%app| current-library-collection-links
         (find-library-collection-links))
        (|#%app| current-library-collection-paths
-        (find-library-collection-paths))))
+        (find-library-collection-paths collects-pre-extra (reverse rev-collects-post-extra))))
+     (when compiled-roots-path-list-string
+       (|#%app| current-compiled-file-roots
+        (let ([s (regexp-replace* "@[(]version[)]"
+                                  compiled-roots-path-list-string
+                                  (version))])
+          (path-list-string->path-list s (list (build-path 'same)))))))
 
    (set-make-place-ports+fds! make-place-ports+fds)
 
@@ -641,9 +715,9 @@
           (f pch)))))
 
    (let ([a (or addon-dir
-                (getenv "PLTADDONDIR"))])
+                (getenv-bytes "PLTADDONDIR"))])
      (when a
-       (set-addon-dir! (path->complete-path a))))
+       (set-addon-dir! (path->complete-path (->path a)))))
 
    (when (getenv "PLT_STATS_ON_BREAK")
      (keyboard-interrupt-handler
@@ -683,13 +757,14 @@
                (lambda () (dynamic-require m 0))
                (default-continuation-prompt-tag)
                (lambda args (set! exit-value 1))))))
-        (|#%app| (if gracket?
-                     (dynamic-require 'racket/gui/init 'graphical-read-eval-print-loop)
-                     (dynamic-require 'racket/base 'read-eval-print-loop)))
-        (unless gracket?
+        (|#%app| (if text-repl?
+                     (dynamic-require 'racket/base 'read-eval-print-loop)
+                     (dynamic-require 'racket/gui/init 'graphical-read-eval-print-loop)))
+        (when text-repl?
           (newline)))
 
-      (|#%app| (|#%app| executable-yield-handler) exit-value)
+      (when yield?
+        (|#%app| (|#%app| executable-yield-handler) exit-value))
 
       (exit exit-value))))
 

@@ -74,6 +74,30 @@ static ptr Sbytevector(char *s)
   return bv;
 }
 
+static ptr parse_coldirs(char *s)
+{
+  iptr len = strlen(s);
+
+  if (!len || !s[len+1]) {
+    /* empty string or only one string */
+    return Sbytevector(s);
+  }
+
+  /* multiple collects paths; put into a reversed list */
+  {
+    ptr rev = Snil;
+    iptr delta = 0;
+
+    while (s[delta]) {
+      len = strlen(s + delta);
+      rev = Scons(Sbytevector(s+delta), rev);
+      delta += len + 1;
+    }
+
+    return rev;
+  }
+}
+
 static void racket_exit(int v)
 {
   exit(v);
@@ -164,7 +188,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
     sprintf(segment_offset_s, "%ld", segment_offset);
     l = Scons(Sbytevector(segment_offset_s), l);
     l = Scons(Sbytevector(configdir), l);
-    l = Scons(Sbytevector(coldir), l);
+    l = Scons(parse_coldirs(coldir), l);
     l = Scons(Sbytevector(run_file), l);
     l = Scons(Sbytevector(exec_file), l);
 

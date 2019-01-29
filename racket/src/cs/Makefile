@@ -73,7 +73,7 @@ run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 $(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) --whole-program $(BUILDDIR)racket.so $(BUILDDIR)main.wpo
 
-$(BUILDDIR)main.so: $(MAIN_DEPS) main.sps $(COMPILE_FILE_DEPS)
+$(BUILDDIR)main.so: $(MAIN_DEPS) main.sps main/help.ss $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) main.sps $(MAIN_DEPS)
 
 strip:

@@ -1425,8 +1425,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -j, --no-jit : No effect, since the just-in-time compiler is unavailable\n"
 # endif
 	 "  -M, --compile-any : Compile to machine-independent form\n"
-         "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
-	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
+         "  -d, --no-delay : Disable on-demand loading of syntax and code\n"
+	 "  -b, --binary : No effect, since stdin and stdout/stderr are always binary\n"
 	 "  -W <levels>, --warn <levels> : Set stderr logging to <levels>\n"
 	 "  -O <levels>, --stdout <levels> : Set stdout logging to <levels>\n"
 	 "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"

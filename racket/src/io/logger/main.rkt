@@ -22,6 +22,7 @@
          make-log-receiver
          add-stderr-log-receiver!
          add-stdout-log-receiver!
+         add-syslog-log-receiver!
          logger-init!)
 
 (define (make-root-logger)
