@@ -13,29 +13,29 @@
     (define vers-len (min 63 (read-byte in)))
     (define vers (read-bytes vers-len in))
     (unless (equal? vers version-bytes)
-      (raise-arguments-error 'read-compiled-linklet
-                             "version mismatch"
-                             "expected" (version)
-                             "found" (bytes->string/utf-8 vers #\?)
-                             "in" (let ([n (object-name in)])
-                                    (if (path? n)
-                                        (unquoted-printing-string
-                                         (path->string n))
-                                        in))))
+      (raise-read-error 'read-compiled-linklet
+                        "version mismatch"
+                        "expected" (version)
+                        "found" (bytes->string/utf-8 vers #\?)
+                        "in" (let ([n (object-name in)])
+                               (if (path? n)
+                                   (unquoted-printing-string
+                                    (path->string n))
+                                   in))))
     (define vm-len (min 63 (read-byte in)))
     (define vm (read-bytes vm-len in))
     (define as-correlated-linklet? (equal? vm correlated-linklet-vm-bytes))
     (unless (or as-correlated-linklet?
                 (equal? vm vm-bytes))
-      (raise-arguments-error 'read-compiled-linklet
-                             "virtual-machine mismatch"
-                             "expected" (bytes->string/utf-8 vm-bytes)
-                             "found" (bytes->string/utf-8 vm #\?)
-                             "in" (let ([n (object-name in)])
-                                    (if (path? n)
-                                        (unquoted-printing-string
-                                         (path->string n))
-                                        in))))
+      (raise-read-error 'read-compiled-linklet
+                        "virtual-machine mismatch"
+                        "expected" (bytes->string/utf-8 vm-bytes)
+                        "found" (bytes->string/utf-8 vm #\?)
+                        "in" (let ([n (object-name in)])
+                               (if (path? n)
+                                   (unquoted-printing-string
+                                    (path->string n))
+                                   in))))
     (define tag (read-byte in))
     (cond
       [(eqv? tag (char->integer #\B))
@@ -44,14 +44,14 @@
                         (read-correlated-linklet-bundle-hash in)
                         (read-linklet-bundle-hash in)))
        (unless (hash? b-ht)
-         (raise-arguments-error 'read-linklet-bundle-hash
-                                "bad read result"
-                                "expected" "hash/c"
-                                "found" (format "~s" b-ht)
-                                "in" (let ([n (object-name in)])
-                                       (if (path? n)
-                                           (path->string n)
-                                           in))))
+         (raise-read-error 'read-linklet-bundle-hash
+                           "bad read result"
+                           "expected" "hash/c"
+                           "found" (format "~s" b-ht)
+                           "in" (let ([n (object-name in)])
+                                  (if (path? n)
+                                      (path->string n)
+                                      in))))
 
        (hash->linklet-bundle
         (add-hash-code (if initial?
@@ -60,12 +60,12 @@
                        sha-1))]
       [(eqv? tag (char->integer #\D))
        (unless initial?
-         (raise-arguments-error 'read-compiled-linklet
-                                "expected a linklet bundle"))
+         (raise-read-error 'read-compiled-linklet
+                           "expected a linklet bundle"))
        (read-bundle-directory start-pos)]
       [else
-       (raise-arguments-error 'read-compiled-linklet
-                              "expected a `B` or `D`")]))
+       (raise-read-error 'read-compiled-linklet
+                         "expected a `B` or `D`")]))
   
   (define (read-bundle-directory pos)
     (define count (read-int in))
@@ -89,8 +89,8 @@
         [else
          (define name (hash-ref position-to-name (- (file-position in) pos) #f))
          (unless name
-           (raise-arguments-error 'read-compiled-linklet
-                                  "bundle not at an expected file position"))
+           (raise-read-error 'read-compiled-linklet
+                             "bundle not at an expected file position"))
          (define bstr (read-bytes 2 in))
          (define bundle
            (cond
@@ -99,8 +99,8 @@
              [(equal? #"#f" bstr)
               #f]
              [else
-              (raise-arguments-error 'read-compiled-linklet
-                                     "expected a `#~` or `#f` for a bundle")]))
+              (raise-read-error 'read-compiled-linklet
+                                "expected a `#~` or `#f` for a bundle")]))
          (loop (sub1 count)
                (cons (cons (decode-name name 0) bundle) accum))])))
 
@@ -113,8 +113,8 @@
 (define (decode-name bstr pos)
   (define blen (bytes-length bstr))
   (define (bad-bundle)
-    (raise-arguments-error 'read-compiled-linklet
-                           "malformed bundle"))
+    (raise-read-error 'read-compiled-linklet
+                      "malformed bundle"))
   (cond
     [(= pos blen)
      '()]
@@ -138,15 +138,15 @@
   ;; bottom-up
   (let loop ([l l] [prev-len 0] [stack '()] [accum (hasheq)])
     (when (null? l)
-      (raise-arguments-error 'read-compiled-linklet
-                             "invalid bundle sequence"))
+      (raise-read-error 'read-compiled-linklet
+                        "invalid bundle sequence"))
     (let* ([p (car l)]
            [path (car p)]
            [v (cdr p)]
            [len (length path)])
       (when (< len prev-len)
-        (raise-arguments-error 'read-compiled-linklet
-                               "invalid bundle sequence"))
+        (raise-read-error 'read-compiled-linklet
+                          "invalid bundle sequence"))
       (let sloop ([prev-len prev-len] [stack stack] [accum accum])
         (cond
           [(> len (add1 prev-len))
@@ -190,3 +190,19 @@
   (if (bytes=? sha-1 #"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0")
       b-ht
       (hash-set b-ht 'hash-code sha-1)))
+
+(define (raise-read-error who msg . details)
+  (raise
+   (exn:fail:read
+    (apply
+     string-append
+     (format "~a: ~a" who msg)
+     (let loop ([details details])
+       (cond
+         [(null? details) null]
+         [else
+          (list*
+           "  " (car details) ": " (format "~v" (cadr details))
+           (loop (cddr details)))])))
+    (current-continuation-marks)
+    null)))
