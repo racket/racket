@@ -223,19 +223,28 @@ An @tech{extension-load handler} takes the same arguments as a
 (Mac OS).  The file is loaded using internal, OS-specific
 primitives. See @other-manual['(lib
 "scribblings/inside/inside.scrbl")] for more information on
-@tech{dynamic extensions}.}
+@tech{dynamic extensions}.
+
+Extensions are supported only when @racket[(system-type 'vm)] returns
+@racket['racket].}
 
 
 @defproc[(load-extension [file path-string?]) any]{
 
 Sets @racket[current-load-relative-directory] like @racket[load], and
-calls the @tech{extension-load handler} in tail position.}
+calls the @tech{extension-load handler} in tail position.
+
+Extensions are supported only when @racket[(system-type 'vm)] returns
+@racket['racket].}
 
 
 @defproc[(load-relative-extension [file path-string?]) any]{
 
 Like @racket[load-extension], but resolves @racket[file] using
-@racket[current-load-relative-directory] like @racket[load-relative].}
+@racket[current-load-relative-directory] like @racket[load-relative].
+
+Extensions are supported only when @racket[(system-type 'vm)] returns
+@racket['racket].}
 
 
 @defparam[current-load/use-compiled proc (path? (or/c #f
@@ -261,8 +270,8 @@ The protocol for a @tech{compiled-load handler} is the same as for the
    the default @tech{compiled-load handler} checks for a @filepath{.ss} file.}
 
  @item{The default @tech{compiled-load handler} checks for the opportunity
-   to load from @filepath{.zo} (bytecode) files and
-   @filepath{.so} (native Unix), @filepath{.dll} (native Windows),
+   to load from @filepath{.zo} (bytecode) files and, when @racket[(system-type 'vm)]
+   returns @racket['racket], for @filepath{.so} (native Unix), @filepath{.dll} (native Windows),
    or @filepath{.dylib} (native Mac OS) files.}
 
  @item{When the default @tech{compiled-load handler} needs to load from
@@ -290,7 +299,8 @@ order, and the subdirectories are checked in order within each root. A
 @filepath{.zo} version of the file (whose name is formed by passing
 @racket[_file] and @racket[#".zo"] to @racket[path-add-extension]) is
 loaded if it exists directly in one of the indicated subdirectories,
-or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
+or when @racket[(system-type 'vm)] returns
+@racket['racket], then a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
 file is loaded if it exists within a @filepath{native} subdirectory of
 a @racket[use-compiled-file-paths] directory, in an even deeper
 subdirectory as named by @racket[system-library-subpath]. A compiled
@@ -299,7 +309,8 @@ file is loaded only if it checks out according to
 of @racket['modify-seconds], a compiled file is used only if its
 modification date is not older than the
 date for @racket[_file]. If both @filepath{.zo} and
-@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available,
+@filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available
+when @racket[(system-type 'vm)] returns @racket['racket],
 the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.  If
 @racket[_file] ends with @filepath{.rkt}, no such file exists, the
 handler's second argument is a symbol, and a @filepath{.ss} file

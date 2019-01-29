@@ -840,9 +840,10 @@
 
 (define (get-compiled-time path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
-  (or (try-file-time (build-path dir "native" (system-library-subpath)
-                                 (path-add-extension name (system-type
-                                                           'so-suffix))))
+  (or (and (eq? 'racket (system-type 'vm))
+           (try-file-time (build-path dir "native" (system-library-subpath)
+                                      (path-add-extension name (system-type
+                                                                'so-suffix)))))
       (try-file-time (build-path dir (path-add-extension name #".zo")))))
 
 ;; Gets a multi-sha1 string that represents the compiled code
@@ -895,11 +896,12 @@
                                                                          (cadr roots)
                                                                          (car roots))))
   (let ([dep-path (build-path dir (path-add-extension name #".dep"))])
-    (or (try-file-sha1 (build-path dir "native" (system-library-subpath)
-                                   (path-add-extension name (system-type
-                                                             'so-suffix)))
-                       dep-path
-                       roots)
+    (or (and (eq? 'racket (system-type 'vm))
+             (try-file-sha1 (build-path dir "native" (system-library-subpath)
+                                        (path-add-extension name (system-type
+                                                                  'so-suffix)))
+                            dep-path
+                            roots))
         (try-file-sha1 (build-path dir (path-add-extension name #".zo"))
                        dep-path
                        roots)
