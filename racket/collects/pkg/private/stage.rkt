@@ -705,7 +705,7 @@
                                 #:given-checksum (pkg-desc-checksum desc)
                                 #:use-cache? use-cache?
                                 #t
-                                (if quiet? void printf)
+                                (if quiet? void printf/flush)
                                 metadata-ns
                                 #:in-place? in-place?
                                 #:strip strip-mode
