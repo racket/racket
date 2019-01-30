@@ -749,7 +749,7 @@
   (define-values (vm mode) (read-prefix port #f))
 
   (case mode
-    [(#\B) (linkl-bundle (zo-parse-top port vm))]
+    [(#\B) (linkl-bundle (hash-set (zo-parse-top port vm) 'vm vm))]
     [(#\D)
      (struct sub-info (name start len))
      (define sub-infos
@@ -796,10 +796,10 @@
              [else
               (unless (eq? tag #\B)
                 (error 'zo-parse "expected a bundle"))
-              (define sub (and tag (zo-parse-top port vm #f)))
+              (define sub (zo-parse-top port vm #f))
               (unless (hash? sub)
                 (error 'zo-parse "expected a bundle hash"))
-              (linkl-bundle sub)]))
+              (linkl-bundle (hash-set sub 'vm vm))]))
          (values (sub-info-name sub-info) sub))))]
     [else
      (error 'zo-parse "bad file format specifier")]))
@@ -857,6 +857,10 @@
      (set-cport-pos! cp shared-size)
      
      (make-reader-graph (read-compact cp))]
+    [(equal? vm #"chez-scheme")
+     (hash
+      'opaque
+      (read-bytes (read-simple-number port) port))]
     [else
      (error 'zo-parse "cannot parse for virtual machine: ~s" vm)]))
 

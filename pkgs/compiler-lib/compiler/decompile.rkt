@@ -191,7 +191,10 @@
              null))))
 
 (define (decompile-single-top b)
-  (define forms (decompile-linklet (hash-ref (linkl-bundle-table b) 0) #:just-body? #t))
+  (define forms (let ([l (hash-ref (linkl-bundle-table b) 0 #f)])
+                  (if l
+                      (decompile-linklet l #:just-body? #t)
+                      '(<opaque-compiled-linklet>))))
   (if (= (length forms) 1)
       (car forms)
       `(begin ,@forms)))

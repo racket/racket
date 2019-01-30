@@ -12,7 +12,8 @@
          racket/path
          racket/set
          racket/extflonum
-         racket/private/truncate-path)
+         racket/private/truncate-path
+         racket/fasl)
 
 (provide/contract
  [zo-marshal ((or/c linkl-directory? linkl-bundle?) . -> . bytes?)]
@@ -45,7 +46,9 @@
   (define version-bs (string->bytes/latin-1 (version)))
   (write-bytes (bytes (bytes-length version-bs)) outp)
   (write-bytes version-bs outp)
-  (define vm-bs #"racket")
+  (define vm-bs (or (for/or ([(name bundle) (in-hash top)])
+                      (hash-ref (linkl-bundle-table bundle) 'vm #f))
+                    #"racket"))
   (write-bytes (bytes (bytes-length vm-bs)) outp)
   (write-bytes vm-bs outp)
   (write-byte (char->integer #\D) outp)
@@ -73,15 +76,15 @@
                     name
                     name-bstr
                     0)))
-  ;; Write order must correspond to a post-order traversal
-  ;; of the tree, so write
+  ;; Write order must correspond to a pre-order traversal
+  ;; of the tree, so sort
   (define pre-bundle-bytess
     (sort unsorted-pre-bundle-bytess
           (lambda (a b)
             (let loop ([a (bundle-bytes-name-list a)] [b (bundle-bytes-name-list b)])
               (cond
-               [(null? a) #f]
-               [(null? b) #t]
+               [(null? a) #t]
+               [(null? b) #f]
                [(eq? (car a) (car b)) (loop (cdr a) (cdr b))]
                [(symbol<? (car a) (car b)) #t]
                [else #f])))))
@@ -91,7 +94,7 @@
   (define header-size
     (+ 9
        (string-length (version))
-       (string-length "racket")))
+       (bytes-length vm-bs)))
   (define btree-size
     (+ header-size
        (apply + (for/list ([mb (in-list pre-bundle-bytess)])
@@ -145,7 +148,24 @@
   (for ([mb (in-list bundle-bytess)])
     (write-bytes (bundle-bytes-code-bstr mb) outp)))
 
-(define (zo-marshal-bundle-to top outp) 
+(define (zo-marshal-bundle-to top outp)
+  (case (hash-ref top 'vm #f)
+    [(#"racket" #f)
+     (zo-marshal-racket-bundle-to (hash-remove top 'vm) outp)]
+    [(#"linklet")
+     (write-bundle-header #"linklet" outp)
+     (s-exp->fasl (hash-remove top 'vm) outp)]
+    [(#"chez-scheme")
+     (write-bundle-header #"chez-scheme" outp)
+     (define bstr (hash-ref top 'opaque
+                            (lambda ()
+                              (error 'zo-marshal "missing 'opaque for chez-scheme virtual-machine format"))))
+     (write-bytes (integer->integer-bytes (bytes-length bstr) 4 #f #f) outp)
+     (write-bytes bstr outp)]
+    [else
+     (error 'zo-marshal "unknown virtual machine: ~a" (hash-ref top 'vm #f))]))
+
+(define (zo-marshal-racket-bundle-to top outp) 
   ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
@@ -229,21 +249,7 @@
   (define all-forms-length (out-compilation-top shared-obj-pos shared-obj-pos #f counting-port))
   
   ; Write the compiled form header
-  (write-bytes #"#~" outp)
-  
-  ; Write the version (notice that it isn't the same as out-string)
-  (define version-bs (string->bytes/latin-1 (version)))
-  (write-bytes (bytes (bytes-length version-bs)) outp)
-  (write-bytes version-bs outp)
-  (define vm-bs #"racket")
-  (write-bytes (bytes (bytes-length vm-bs)) outp)
-  (write-bytes vm-bs outp)
-
-  ;; "B" is for linklet "bundle" (as opposed to a linklet directory)
-  (write-byte (char->integer #\B) outp)
-
-  ; Write empty hash code
-  (write-bytes (make-bytes 20 0) outp)
+  (write-bundle-header #"racket" outp)
   
   ; Write the symbol table information (size, offsets)
   (define symtabsize (add1 (vector-length symbol-table)))
@@ -260,6 +266,23 @@
   (out-symbol-table symbol-table outp)
   (out-compilation-top shared-obj-pos shared-obj-pos #f outp)
   (void))
+
+
+(define (write-bundle-header vm-bs outp)
+  (write-bytes #"#~" outp)
+  
+  ; Write the version (notice that it isn't the same as out-string)
+  (define version-bs (string->bytes/latin-1 (version)))
+  (write-bytes (bytes (bytes-length version-bs)) outp)
+  (write-bytes version-bs outp)
+  (write-bytes (bytes (bytes-length vm-bs)) outp)
+  (write-bytes vm-bs outp)
+  
+  ;; "B" is for linklet "bundle" (as opposed to a linklet directory)
+  (write-byte (char->integer #\B) outp)
+  
+  ; Write empty hash code
+  (write-bytes (make-bytes 20 0) outp))
 
 ;; ----------------------------------------
 
