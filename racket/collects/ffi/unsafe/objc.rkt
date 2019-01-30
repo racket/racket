@@ -904,12 +904,10 @@
                                  [(eq? (syntax-e #'id) 'dealloc)
                                   ;; so that objects can be destroyed in foreign threads:
                                   #'apply-directly]
-                                 [(eq? (system-type 'vm) 'chez-scheme)
+                                 [else
                                   ;; to cooperate with blocking callouts, we need a non-#f
-                                  ;; `async-apply`
-                                  #'complain-apply-foreign-thread]
-                                 [else                                  
-                                  #'#f])])
+                                  ;; `async-apply` for CS
+                                  #'maybe-complain-apply-foreign-thread])])
                   (syntax/loc m 
                     (kind #:async-apply async result-type (id arg ...) body0 body ...))))]
          [else (raise-syntax-error #f
@@ -919,12 +917,14 @@
 
 (define (apply-directly f) (f))
 
-(define (complain-apply-foreign-thread f)
-  ;; We'd like to complain, but we' not in a context where there's a
-  ;; valid way to complain. Try logging an error, and just maybe that
-  ;; will get some information out.
-  (log-error "callback in unexpected thread")
-  (void))
+(define maybe-complain-apply-foreign-thread
+  (and (eq? (system-type 'vm) 'chez-scheme)
+       (lambda (f)
+         ;; We'd like to complain, but we' not in a context where there's a
+         ;; valid way to complain. Try logging an error, and just maybe that
+         ;; will get some information out.
+         (log-error "callback in unexpected thread")
+         (void))))
 
 (define methods (make-hasheq))
 (define (save-method! m)
