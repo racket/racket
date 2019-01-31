@@ -174,7 +174,10 @@
            [(srcloc? q)
             `(unsafe-make-srcloc
               ,(let ([src (srcloc-source q)])
-                 (if (and (path? src) (not for-cify?))
+                 (if (and (not for-cify?)
+                          ;; Need to handle paths, need to reject (later) anything other
+                          ;; than a few type slike strings and byte strings
+                          (not (or (string? src) (bytes? src) (symbol? src) (not src))))
                      ;; Like paths, `path-for-srcloc` must be recognized later
                      (make-construct (path-for-srcloc src))
                      (make-construct src)))

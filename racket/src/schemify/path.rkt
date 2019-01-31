@@ -51,13 +51,22 @@
     (define p (if (path-for-srcloc? orig-p)
                   (path-for-srcloc-path orig-p)
                   orig-p))
-    (or (path->relative-path-elements p)
-        (cond
-          [(path-for-srcloc? orig-p)
-           ;; Can't make relative, so create a string that keeps up
-           ;; to two path elements
-           (truncate-path p)]
-          [else (path->bytes p)]))))
+    (cond
+      [(path? p)
+       (or (path->relative-path-elements p)
+           (cond
+             [(path-for-srcloc? orig-p)
+              ;; Can't make relative, so create a string that keeps up
+              ;; to two path elements
+              (truncate-path p)]
+             [else (path->bytes p)]))]
+      [(or (string? p) (bytes? p) (symbol? p) (not p))
+       ;; Allowed in compiled form
+       p]
+      [else
+       (error 'write
+              "cannot marshal value that is embedded in compiled code: ~V"
+              p)])))
 
 (define (compiled-path->path e)
   (cond
