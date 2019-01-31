@@ -284,6 +284,7 @@ macos-install:
 	$(MAKE) common-install
 	rm -f $(DESTDIR)$(RKTFWDEST)/Racket
 	rm -rf $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then $(RACKET) -cu "$(srcdir)/../../mac/clean-fw.rkt" $(DESTDIR)$(RKTFWDEST) ; fi
 	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS"
 	cp $(RKTFW) $(DESTDIR)$(RKTFWDEST)/Versions/$(FWVERSION)_CS/
 	mkdir -p $(DESTDIR)"$(RKTFWDEST)/Versions/$(FWVERSION)_CS/boot"

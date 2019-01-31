@@ -412,6 +412,9 @@ win32-just-cs:
 
 both:
 	$(MAKE) in-place
+	$(MAKE) also-cs
+
+also-cs:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"
 
 # ------------------------------------------------------------

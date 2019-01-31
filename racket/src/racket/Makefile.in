@@ -513,7 +513,7 @@ osx-install:
 	rm -f $(DESTDIR)$(MZFWDIR)/Racket
 	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)
 	rm -rf $(DESTDIR)$(MZFWDIR)/Versions/$(FWVERSION)_3m
-	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then rm -rf $(DESTDIR)$(MZFWDIR) ; fi
+	if [ @FRAMEWORK_REL_INSTALL@ = yes ] ; then @RUN_RACKET_CGC@ -cu "$(srcdir)/../mac/clean-fw.rkt" $(DESTDIR)$(MZFWDIR) ; fi
 	mkdir -p $(DESTDIR)@FRAMEWORK_INSTALL_DIR@
 
 osx-install-cgc:
