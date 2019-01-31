@@ -208,7 +208,11 @@
   ;; the printer needs to check whether a string parses as a number
   ;; for deciding wheter to quote the string
   (set-string->number?! (lambda (str)
-                          (number? (1/string->number str 10 'read))))
+                          (and (1/string->number str 10 'read)
+                               ;; Special case: `#%` is never read as a number or error:
+                               (not (and (>= (string-length str) 2)
+                                         (eqv? (string-ref str 0) #\#)
+                                         (eqv? (string-ref str 1) #\%))))))
 
   ;; `set-maybe-raise-missing-module!` is also from the `io` library
   (set-maybe-raise-missing-module! maybe-raise-missing-module))
