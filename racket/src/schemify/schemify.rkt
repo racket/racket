@@ -6,6 +6,7 @@
          "export.rkt"
          "struct-type-info.rkt"
          "simple.rkt"
+         "source-sym.rkt"
          "find-definition.rkt"
          "mutated.rkt"
          "mutated-state.rkt"
@@ -124,6 +125,9 @@
        (if serializable?
            (convert-for-serialize bodys #f datum-intern?)
            (values bodys null)))
+     ;; Collect source names for define identifiers, to the degree that the source
+     ;; name differs from the
+     (define src-syms (get-definition-source-syms bodys))
      ;; Schemify the body, collecting information about defined names:
      (define-values (new-body defn-info mutated)
        (schemify-body* bodys/constants-lifted prim-knowns imports exports
@@ -144,9 +148,12 @@
       (for/list ([grp (in-list all-grps)])
         (for/list ([im (in-list (import-group-imports grp))])
           (import-ext-id im)))
-      ;; Exports (external names):
+      ;; Exports (external names, but paired with source name if it's different):
       (for/list ([ex-id (in-list ex-ids)])
-        (ex-ext-id ex-id))
+        (define sym (ex-ext-id ex-id))
+        (define int-sym (ex-int-id ex-id))
+        (define src-sym (hash-ref src-syms int-sym sym)) ; external name unless 'source-name
+        (if (eq? sym src-sym) sym (cons sym src-sym)))
       ;; Import keys --- revised if we added any import groups
       (if (null? new-grps)
           import-keys
@@ -158,7 +165,7 @@
         (for/list ([im (in-list (import-group-imports grp))])
           (and im-ready?
                (known-constant? (import-group-lookup grp (import-ext-id im))))))
-      ;; Convert internal to external identifiers
+      ;; Convert internal to external identifiers for known-value info
       (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
         (define id (ex-int-id ex-id))
         (define v (known-inline->export-known (hash-ref defn-info id #f)

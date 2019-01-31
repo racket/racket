@@ -398,7 +398,7 @@
             exports-info   ; hash(sym -> known) for info about each export; see "known.rkt"
             name           ; name of the linklet (for debugging purposes)
             importss       ; list of list of import symbols
-            exports)       ; list of export symbols
+            exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
     (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-1}))
 
   (define (set-linklet-code linklet code preparation)
@@ -623,7 +623,7 @@
     (linklet-importss linklet))
 
   (define (linklet-export-variables linklet)
-    (linklet-exports linklet))
+    (map (lambda (e) (if (pair? e) (car e) e)) (linklet-exports linklet)))
 
   ;; ----------------------------------------
 
@@ -634,6 +634,7 @@
     
   (define-record variable (val
                            name
+                           source-name
                            constance  ; #f (mutable), 'constant, or 'consistent (always the same shape)
                            inst-box)) ; weak pair with instance in `car`
 
@@ -642,7 +643,7 @@
   (define variable-undefined (gensym 'undefined))
 
   (define (make-internal-variable name)
-    (make-variable variable-undefined name #f (cons #!bwp #f)))
+    (make-variable variable-undefined name name #f (cons #!bwp #f)))
 
   (define (do-variable-set! var val constance as-define?)
     (cond
@@ -654,7 +655,7 @@
           exn:fail:contract:variable
           (string-append "define-values: assignment disallowed;\n"
                          " cannot re-define a constant\n"
-                         "  constant: " (symbol->string (variable-name var)) "\n"
+                         "  constant: " (symbol->string (variable-source-name var)) "\n"
                          "  in module:" (variable-module-name var))
           (current-continuation-marks)
           (variable-name var)))]
@@ -662,7 +663,7 @@
         (raise
          (|#%app|
           exn:fail:contract:variable
-          (string-append (symbol->string (variable-name var))
+          (string-append (symbol->string (variable-source-name var))
                          ": cannot modify constant")
           (current-continuation-marks)
           (variable-name var)))])]
@@ -731,25 +732,29 @@
        [set?
         (string-append "set!: assignment disallowed;\n"
                        " cannot set variable before its definition\n"
-                       "  variable: " (symbol->string (variable-name var))
+                       "  variable: " (symbol->string (variable-source-name var))
                        (identify-module var))]
        [else
-        (string-append (symbol->string (variable-name var))
+        (string-append (symbol->string (variable-source-name var))
                        ": undefined;\n cannot reference undefined identifier"
                        (identify-module var))])
       (current-continuation-marks)
       (variable-name var))))
 
   ;; Create the variables needed for a linklet's exports
-  (define (create-variables inst syms)
+  (define (create-variables inst syms-or-pairs)
     (let ([ht (instance-hash inst)]
           [inst-box (weak-cons inst #f)])
-      (map (lambda (sym)
-             (or (hash-ref ht sym #f)
-                 (let ([var (make-variable variable-undefined sym #f inst-box)])
-                   (hash-set! ht sym var)
-                   var)))
-           syms)))
+      (map (lambda (sym-or-pair)
+             (let-values ([(sym src-sym)
+                           (if (pair? sym-or-pair)
+                               (values (car sym-or-pair) (cdr sym-or-pair))
+                               (values sym-or-pair sym-or-pair))])
+               (or (hash-ref ht sym #f)
+                   (let ([var (make-variable variable-undefined sym src-sym #f inst-box)])
+                     (hash-set! ht sym var)
+                     var))))
+           syms-or-pairs)))
 
   (define (variable->known var)
     (let ([desc (cdr (variable-inst-box var))])
@@ -818,7 +823,8 @@
           (cond
            [(null? content) (void)]
            [else
-            (hash-set! ht (car content) (make-variable (cadr content) (car content) constance inst-box))
+            (let ([name (car content)])
+              (hash-set! ht (car content) (make-variable (cadr content) name name constance inst-box)))
             (loop (cddr content))]))
         inst)]))
 
@@ -854,7 +860,7 @@
         (raise-argument-error 'instance-set-variable-value! "symbol?" i))
       (check-constance 'instance-set-variable-value! mode)
       (let ([var (or (hash-ref (instance-hash i) k #f)
-                     (let ([var (make-variable variable-undefined k #f (weak-cons i #f))])
+                     (let ([var (make-variable variable-undefined k k #f (weak-cons i #f))])
                        (hash-set! (instance-hash i) k var)
                        var))])
         (variable-set! var v mode))]))
