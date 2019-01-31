@@ -282,7 +282,7 @@ transcript.
 		(set! number-of-error-tests (add1 number-of-error-tests))
 		(printf "(apply ~s '~s)  =e=> " f args)
 		(let/ec done
-		  (let ([v (with-handlers ([void
+		  (let ([v (with-handlers ([(λ (e) (not (exn:break? e)))
 					    (lambda (exn)
 					      (if (check? exn)
 						  (printf " ~a\n" (if (exn? exn)
