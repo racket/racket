@@ -855,6 +855,7 @@
                      #:strict-doc-conflicts? [strict-doc-conflicts? #f]
                      #:use-cache? [use-cache? #t]
                      #:skip-installed? [skip-installed? #f]
+                     #:skip-auto-installed? [skip-auto-installed? #f]
                      #:pre-succeed [pre-succeed void]
                      #:dep-behavior [dep-behavior #f]
                      #:update-deps? [update-deps? #f]
@@ -897,7 +898,7 @@
          (filter (lambda (d)
                    (define pkg-name (desc->name d))
                    (define i (hash-ref all-scope-dbs pkg-name #f))
-                   (or (not i) (pkg-info-auto? i)))
+                   (or (not i) (and (not skip-auto-installed?) (pkg-info-auto? i))))
                  descs))
      pkg-desc=?))
 

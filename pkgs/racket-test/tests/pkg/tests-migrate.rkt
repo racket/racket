@@ -32,4 +32,11 @@
    $ "raco pkg migrate --dry-run -u other"
    $ "raco pkg show -l -u -a" =stdout> " [none]\n"
    $ "raco pkg migrate -u other"
-   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9.]+    \\(catalog \"pkg-a\"\\)\npkg-b +[a-f0-9.]+ +\\(catalog \"pkg-b\"\\)\n")))
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9.]+    \\(catalog \"pkg-a\"\\)\npkg-b +[a-f0-9.]+ +\\(catalog \"pkg-b\"\\)\n"
+
+   ;; Don't promote auto-installed. Our real interest is not having to promote auto-installed
+   ;; in a wider scope, but we can partly test that by checking non-promote in user-scope.
+   $ "raco pkg remove -u --demote pkg-b"
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9.]+    \\(catalog \"pkg-a\"\\)\npkg-b\\* +[a-f0-9.]+ +\\(catalog \"pkg-b\"\\)\n"
+   $ "raco pkg migrate -u other"
+   $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9.]+    \\(catalog \"pkg-a\"\\)\npkg-b\\* +[a-f0-9.]+ +\\(catalog \"pkg-b\"\\)\n")))

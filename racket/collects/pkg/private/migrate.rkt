@@ -79,6 +79,7 @@
                     #:strict-doc-conflicts? strict-doc-conflicts?
                     #:use-cache? use-cache?
                     #:skip-installed? #t
+                    #:skip-auto-installed? #t
                     #:dep-behavior (or dep-behavior 'search-auto)
                     #:quiet? quiet? 
                     #:from-command-line? from-command-line?
