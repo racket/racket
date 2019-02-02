@@ -46,4 +46,6 @@
                                            #f))
                                    #f)
                                #f)))])
-        (clean-files (directory-list versions-dir))))))
+        (if (directory-exists? versions-dir)
+            (clean-files (directory-list versions-dir))
+            (void))))))
