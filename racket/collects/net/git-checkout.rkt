@@ -51,7 +51,7 @@
                       #:strict-links? [strict-links? #f]
                       #:username [username (current-git-username)]
                       #:password [password (current-git-password)])
-  (let retry-loop ([given-depth given-depth])
+  (let retry-loop ([given-depth given-depth] [try-limit-depth (and given-depth 8)] [try-only-master? #t])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
     (define port (or given-port (case transport
@@ -91,7 +91,7 @@
           ;; Find the commits needed for `ref`:
           (define-values (ref-commit    ; #f or an ID string
                           want-commits) ; list of ID string
-            (select-commits ref refs status))
+            (select-commits ref refs status try-only-master?))
 
           (unless dest-dir
             (write-pkt o) ; clean termination
@@ -101,13 +101,15 @@
                     (or ref-commit ref)))))
 
           (define depth (and given-depth
-                             ref-commit
+                             (or ref-commit try-limit-depth)
                              (cond
-                              [(member "shallow" server-capabilities)
-                               given-depth]
-                              [else
-                               (status "Server does not support `shallow`")
-                               #f])))
+                               [(member "shallow" server-capabilities)
+                                (if ref-commit
+                                    given-depth
+                                    try-limit-depth)]
+                               [else
+                                (status "Server does not support `shallow`")
+                                #f])))
 
           (unless dumb-protocol?
             ;; Tell the server which commits we need
@@ -171,8 +173,7 @@
                                        (lambda ()
                                          (esc (lambda ()
                                                 (status "Unexpected EOF; retrying without depth")
-                                                (retry-loop #f)))))))
-
+                                                (retry-loop #f #f #f)))))))
                  (maybe-save-objects objs "objs")
 
                  ;; Convert deltas into full objects withing `tmp`:
@@ -182,8 +183,21 @@
              
              (define commit
                (or ref-commit
-                   (find-commit-as-reference ref obj-ids)))
-             
+                   (find-commit-as-reference ref obj-ids
+                                             (and (or try-only-master?
+                                                      (and try-limit-depth
+                                                           (eqv? depth try-limit-depth)))
+                                                  (lambda ()
+                                                    (esc (lambda ()
+                                                           (cond
+                                                             [(and depth (eqv? depth try-limit-depth)
+                                                                   (try-limit-depth . < . 32))
+                                                              (status "no matching commit found; trying deeper search")
+                                                              (retry-loop given-depth (* try-limit-depth 2) try-only-master?)]
+                                                             [else
+                                                              (status "no matching commit found; trying broader search")
+                                                              (retry-loop given-depth #f #f)]))))))))
+
              ;; Extract the tree from the packfile objects:
              (status "Extracting tree to ~a" dest-dir)
              (extract-commit-tree (hex-string->bytes commit)
@@ -341,7 +355,7 @@
 ;;  initial response. If we can, the list of requested IDs will be
 ;;  just that one. Otherwise, we'll have to return a list of all
 ;;  IDs, and then we'll look for the reference later.
-(define (select-commits ref refs status)
+(define (select-commits ref refs status try-only-master?)
   (define ref-looks-like-id? (regexp-match? #rx"^[0-9a-f]+$" ref))
 
   (define ref-rx (byte-regexp (bytes-append
@@ -366,9 +380,16 @@
     (cond
      [ref-commit (list ref-commit)]
      [ref-looks-like-id?
-      (status "Requested reference looks like commit id; getting all commits")
-      (for/list ([ref (in-list refs)])
-        (cadr ref))]
+      (cond
+        [try-only-master?
+         (status "Requested reference looks like commit id; try within master")
+         (define-values (master-ref-commit want-commits)
+           (select-commits "master" refs status #f))
+         want-commits]
+        [else
+         (status "Requested reference looks like commit id; getting all commits")
+         (for/list ([ref (in-list refs)])
+           (cadr ref))])]
      [else
       (raise-git-error 'git "could not find requested reference\n  reference: ~a" ref)]))
   
@@ -601,7 +622,7 @@
 ;; ----------------------------------------
 ;; Finding a commit id
 
-(define (find-commit-as-reference ref obj-ids)
+(define (find-commit-as-reference ref obj-ids fail-not-found)
   (define rx (id-ref->regexp ref))
   (define matches
     (for/list ([(id obj) (in-hash obj-ids)]
@@ -611,7 +632,9 @@
   (cond
    [(= 1 (length matches)) (car matches)]
    [(null? matches)
-    (raise-git-error 'git-checkout "no commit found matching id: ~a" ref)]
+    (if fail-not-found
+        (fail-not-found)
+        (raise-git-error 'git-checkout "no commit found matching id: ~a" ref))]
    [else
     (raise-git-error 'git-checkout "found multiple commits matching id: ~a" ref)]))
 
