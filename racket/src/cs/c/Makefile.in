@@ -122,6 +122,7 @@ scheme:
          then $(MAKE) scheme-make ; fi
 
 scheme-make:
+	cd @SCHEME_SRC@ && git submodule -q init && git submodule -q update
 	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@ CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)"
 	mkdir -p @SCHEME_SRC@/@MACH@/boot/@MACH@
 	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h
