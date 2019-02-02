@@ -12,7 +12,18 @@
   (system "touch compiled/test_rkt.zo")
   (system (format "racket ~a -t test.rkt" (if delayed? "" "-d"))))
 
-(define (roundtrip ct)
+(define (roundtrip ct-in)
+  (define ct (if (linkl-directory? ct-in)
+                 (linkl-directory
+                  (for/hash ([(k v) (linkl-directory-table ct-in)])
+                    (if (linkl-bundle? v)
+                        (values k
+                                (linkl-bundle
+                                 (hash-set (linkl-bundle-table v)
+                                           'vm
+                                           (string->bytes/utf-8 (symbol->string (system-type 'vm))))))
+                        (values k v))))
+                 ct-in))
   (define bs (zo-marshal ct))
   (test #:failure-prefix (format "~S" ct)
         (test bs
