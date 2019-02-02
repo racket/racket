@@ -101,7 +101,8 @@
                     (or ref-commit ref)))))
 
           (define depth (and given-depth
-                             (or ref-commit try-limit-depth)
+                             (or ref-commit (and try-limit-depth
+                                                 (eq? given-depth 1)))
                              (cond
                                [(member "shallow" server-capabilities)
                                 (if ref-commit

@@ -29,8 +29,8 @@ for information on command-line arguments and flags.
                                                                                          (apply printf args)
                                                                                          (flush-output))]
                        [#:initial-error initial-error (or #f (-> any)) #f]
-                       [#:tmp-dir given-tmp-dir (or/c #f path-string?) #f]
-                       [#:clean-tmp-dir? clean-tmp-dir? any/c (not given-tmp-dir)]
+                       [#:tmp-dir tmp-dir (or/c #f path-string?) #f]
+                       [#:clean-tmp-dir? clean-tmp-dir? any/c (not tmp-dir)]
                        [#:verify-server? verify-server? any/c #t]
                        [#:port port (or/c #f (integer-in 1 65535)) (case transport
                                                                      [(git) 9418]
@@ -75,7 +75,7 @@ tag. Furthermore, the default @racket[depth] argument allows
 @racket[git-checkout] to obtain only the latest commit and its
 objects, instead of the entire history of the branch or commit.  If
 @racket[ref] is any other commit ID or tree ID, then the entire
-repository is downloaded, including all branches.
+repository may have to be downloaded, including all branches.
 
 Status information is reported via @racket[status-printf]. The same
 information is always logged with the name @racket['git-checkout] at
