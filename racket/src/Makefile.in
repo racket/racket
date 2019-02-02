@@ -303,4 +303,4 @@ reconfigure:
 	$(MAKE) Makefile
 
 Makefile: $(srcdir)/configure $(SRC_MAKEFILES)
-	$(srcdir)/configure $(CONFIGURE_ARGS_qq)
+	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
