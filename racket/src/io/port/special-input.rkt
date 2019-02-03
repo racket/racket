@@ -52,11 +52,11 @@
 (define/who (read-char-or-special [in (current-input-port)]
                                   [special-wrap #f]
                                   [source-name #f])
-  (check who input-port? in)
-  (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
-  (extract-special-value (do-read-char who in #:special-ok? #t)
-                         in source-name -1
-                         special-wrap))
+  (let ([in (->core-input-port in who)])
+    (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
+    (extract-special-value (do-read-char/core-port who in #:special-ok? #t)
+                           in source-name -1
+                           special-wrap)))
 
 (define/who (peek-char-or-special [in (current-input-port)]
                                   [skip-k 0]

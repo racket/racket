@@ -138,26 +138,26 @@
             (encoding-failure)]
            [else
             (define next (fxand b #b00111111))
-            (define next-accum (bitwise-ior (arithmetic-shift accum 6) next))
+            (define next-accum (fxior (fxlshift accum 6) next))
             (cond
-              [(= 1 remaining)
+              [(fx= 1 remaining)
                (cond
-                 [(and (next-accum . > . 127)
-                       (next-accum . <= . #x10FFFF)
-                       (not (and (next-accum . >= . #xD800)
-                                 (next-accum . <= . #xDFFF))))
+                 [(and (next-accum . fx> . 127)
+                       (next-accum . fx<= . #x10FFFF)
+                       (not (and (next-accum . fx>= . #xD800)
+                                 (next-accum . fx<= . #xDFFF))))
                   (when out-str (string-set! out-str j (integer->char next-accum)))
                   (continue)]
                  [else
                   ;; Not a valid character
                   (encoding-failure)])]
               [(and (fx= 2 remaining)
-                    (next-accum . <= . #b11111))
+                    (next-accum . fx<= . #b11111))
                ;; A shorter byte sequence would work, so this is an
                ;; encoding mistae.
                (encoding-failure)]
               [(and (fx= 3 remaining)
-                    (next-accum . <= . #b1111))
+                    (next-accum . fx<= . #b1111))
                ;; A shorter byte sequence would work
                (encoding-failure)]
               [else

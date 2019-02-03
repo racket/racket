@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/fixnum
+         "../common/check.rkt"
          "../host/thread.rkt"
          "parameter.rkt"
          "read-and-peek.rkt"
@@ -20,7 +21,6 @@
          peek-string
          peek-string!
 
-         do-read-char
          do-read-char/core-port
          do-peek-char)
 
@@ -219,7 +219,7 @@
     [(eof-object? b) b]
     [else
      (cond
-       [(b . < . 128) (integer->char b)]
+       [(b . fx< . 128) (integer->char b)]
        [else
         ;; UTF-8 decoding... May need to peek bytes to discover
         ;; whether the decoding will work (in which case this wasn't
@@ -251,24 +251,23 @@
                                  #:error-char #\uFFFD
                                  #:abort-mode 'state))
                 (cond
-                  [(= got-chars 1)
-                   (define actually-used-bytes (+ skip-k used-bytes))
-                   (unless (zero? actually-used-bytes)
-                     (define finish-bstr (if (actually-used-bytes . <= . (bytes-length bstr))
-                                             bstr
-                                             (make-bytes actually-used-bytes)))
-                     (do-read-bytes! who in finish-bstr 0 actually-used-bytes))
+                  [(fx= got-chars 1)
+                   (define actually-used-bytes (fx+ skip-k used-bytes))
+                   (cond
+                     [(fx= actually-used-bytes 0) (void)]
+                     [(fx= actually-used-bytes 1) (do-read-byte who read-byte in)]
+                     [else
+                      (define finish-bstr (if (actually-used-bytes . fx<= . (bytes-length bstr))
+                                              bstr
+                                              (make-bytes actually-used-bytes)))
+                      (do-read-bytes! who in finish-bstr 0 actually-used-bytes)])
                    (string-ref str 0)]
                   [else
-                   (loop (add1 skip-k) new-state)])]))])])]))
+                   (loop (fx+ skip-k 1) new-state)])]))])])]))
 
 ;; ----------------------------------------
 
 ;; If `special-ok?`, can return a special-value procedure
-(define (do-read-char who in #:special-ok? [special-ok? #f])
-  (let ([in (->core-input-port in)])
-    (do-read-char/core-port who in #:special-ok? special-ok?)))
-
 (define (do-read-char/core-port who in #:special-ok? [special-ok? #f])
   (define read-byte (core-input-port-read-byte in))
   (cond
@@ -283,8 +282,8 @@
      (read-char-via-read-byte who in read-byte #:special-ok? special-ok?)]))
 
 (define/who (read-char [in (current-input-port)])
-  (check who input-port? in)
-  (do-read-char who in))
+  (let ([in (->core-input-port in who)])
+    (do-read-char/core-port who in)))
   
 (define/who (read-string amt [in (current-input-port)])
   (check who exact-nonnegative-integer? amt)

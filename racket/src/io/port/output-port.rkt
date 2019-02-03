@@ -34,22 +34,18 @@
 
 ;; This function should not be called in atomic mode,
 ;; since it can invoke an arbitrary function
-(define (->core-output-port v)
+(define (->core-output-port v [who #f])
   (cond
-    [(core-output-port? v) (if (impersonator? v)
-                               ;; If there's an impersonator, it's only
-                               ;; an evt impersonator
-                               (unsafe-strip-impersonator v)
-                               v)]
-    [(output-port? v)
-     (let ([p (output-port-ref v)])
-       (cond
-         [(struct-accessor-procedure? p)
-          (->core-output-port (p v))]
-         [else
-          (->core-output-port p)]))]
-    [else
-     empty-output-port]))
+    [(core-output-port? v) v]
+    [(output-port-ref v #f)
+     => (lambda (p)
+          (cond
+            [(struct-accessor-procedure? p)
+             (->core-output-port (p v))]
+            [else
+             (->core-output-port p)]))]
+    [who (raise-argument-error who "output-port?" v)]
+    [else empty-output-port]))
 
 (struct core-output-port core-port
   (

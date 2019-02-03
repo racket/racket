@@ -49,8 +49,7 @@
 ;; ----------------------------------------
 
 (define/who (read-byte [orig-in (current-input-port)])
-  (check who input-port? orig-in)
-  (let ([in (->core-input-port orig-in)])
+  (let ([in (->core-input-port orig-in who)])
     (do-read-byte/core-port who in)))
 
 (define (do-read-byte/core-port who in)
