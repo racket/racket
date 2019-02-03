@@ -1083,7 +1083,11 @@ void scheme_init_extfl_number(Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("make-shared-extflvector", make_shared_extflvector, 1, 2, env);
 
   p = scheme_make_immed_prim(extflvector_length, "extflvector-length", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+  if (MZ_LONG_DOUBLE_AVAIL_AND(1))
+    flags = SCHEME_PRIM_IS_BINARY_INLINED;
+  else
+    flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_addto_prim_instance("extflvector-length", p, env);
 
