@@ -114,7 +114,7 @@
              ;; Swap out when the atomic region ends and at a point
              ;; where host-system interrupts are not disabled (i.e.,
              ;; don't use `engine-block` instead of `engine-timeout`):
-             (set-end-atomic-callback! engine-timeout)
+             (add-end-atomic-callback! engine-timeout)
              (loop e)])))))))
 
 (define (maybe-done callbacks)
@@ -185,10 +185,8 @@
 ;; Run foreign "async-apply" callbacks, now that we're in some thread
 (define (run-callbacks callbacks)
   (start-atomic)
-  (current-break-suspend (add1 (current-break-suspend)))
   (for ([callback (in-list callbacks)])
     (callback))
-  (current-break-suspend (sub1 (current-break-suspend)))
   (end-atomic))
 
 ;; ----------------------------------------

@@ -132,6 +132,29 @@
    (check tdelay (sync tdelay))
    (printf "[That break was from a thread, and it's expected]\n")
    (check #t (>= (current-inexact-milliseconds) (+ now3 0.1)))
+
+   (define got-here? #f)
+   (define break-self (thread (lambda ()
+                                (unsafe-start-atomic)
+                                (break-thread (current-thread))
+                                (unsafe-end-atomic)
+                                (set! got-here? #t))))
+   (check break-self (sync break-self))
+   (printf "[That break was from a thread, and it's expected]\n")
+   (check #f got-here?)
+   
+   (define break-self-immediate (thread (lambda ()
+                                          (dynamic-wind
+                                              void
+                                              (lambda ()
+                                                (unsafe-start-breakable-atomic)
+                                                (break-thread (current-thread))
+                                                (set! got-here? #t))
+                                              (lambda ()
+                                                (unsafe-end-atomic))))))
+   (check break-self-immediate (sync break-self-immediate))
+   (printf "[That break was from a thread, and it's expected]\n")
+   (check #f got-here?)
    
    ;; Make sure breaks are disabled in a `dynamic-wind` post thunk
    (define dw-s (make-semaphore))

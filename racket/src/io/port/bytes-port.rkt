@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../common/check.rkt"
+(require racket/fixnum
+         "../common/check.rkt"
          "../common/fixnum.rkt"
          "../common/object.rkt"
          "../host/thread.rkt"
@@ -74,9 +75,9 @@
    (method
     (lambda ()
       (let ([pos i])
-        (if (pos . < . len)
+        (if (pos . fx< . len)
             (begin
-              (set! i (add1 pos))
+              (set! i (fx+ pos 1))
               (progress!)
               (bytes-ref bstr pos))
             eof))))

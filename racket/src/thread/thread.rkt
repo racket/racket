@@ -40,7 +40,7 @@
          break-enabled
          check-for-break
          break-enabled-key
-         current-break-suspend
+         current-breakable-atomic
          
          thread-push-kill-callback!
          thread-pop-kill-callback!
@@ -80,7 +80,6 @@
 
            current-break-enabled-cell
            check-for-break
-           current-break-suspend
 
            set-force-atomic-timeout-callback!
 
@@ -722,8 +721,10 @@
 ;; A continuation-mark key (not made visible to regular Racket code):
 (define break-enabled-default-cell (make-thread-cell #t))
 
-;; For disabling breaks, such as through `unsafe-start-atomic`:
-(define current-break-suspend (make-pthread-parameter 0))
+;; For enable breaks despite atomic mode, such as through
+;; `unsafe-start-breakable-atomic`; breaks are enabled as long as
+;; `current-atomic` does not exceed `current-breakable-atomic`:
+(define current-breakable-atomic (make-pthread-parameter 0))
 
 (define (current-break-enabled-cell)
   (continuation-mark-set-first #f
@@ -754,7 +755,7 @@
         [(and (thread-pending-break t)
               (break-enabled)
               (not (thread-ignore-break-cell? t (current-break-enabled-cell)))
-              (zero? (current-break-suspend)))
+              (>= (add1 (current-breakable-atomic)) (current-atomic)))
          (define exn:break* (case (thread-pending-break t)
                               [(hang-up) exn:break:hang-up/non-engine]
                               [(terminate) exn:break:terminate/non-engine]
@@ -804,7 +805,9 @@
              (thread-reschedule! t))))
        void])))
   (when (eq? t check-t)
-    (check-for-break)))
+    (check-for-break)
+    (when (in-atomic-mode?)
+      (add-end-atomic-callback! check-for-break))))
 
 (define (break>? k1 k2)
   (cond

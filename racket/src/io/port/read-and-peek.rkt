@@ -192,14 +192,14 @@
          [(eof-object? b)
           (end-atomic)
           b]
-         [(evt? b)
-          (end-atomic)
-          (sync b)
-          (loop)]
-         [else
+         [(fixnum? b)
           (port-count-byte! in b)
           (end-atomic)
-          b])])))
+          b]
+         [else ; must be an evt
+          (end-atomic)
+          (sync b)
+          (loop)])])))
 
 ;; Use the general path; may return a procedure for a special
 (define (read-byte-via-bytes in #:special-ok? [special-ok? #t])

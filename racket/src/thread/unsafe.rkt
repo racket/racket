@@ -1,5 +1,6 @@
 #lang racket/base
-(require "atomic.rkt"
+(require racket/fixnum
+         "atomic.rkt"
          "thread.rkt"
          "schedule.rkt"
          "evt.rkt")
@@ -12,21 +13,18 @@
          unsafe-set-on-atomic-timeout!)
 
 (define (unsafe-start-breakable-atomic)
-  (start-atomic))
+  (start-atomic)
+  (current-breakable-atomic (fx+ (current-breakable-atomic) 1)))
 
 (define (unsafe-end-breakable-atomic)
+  (current-breakable-atomic (fx- (current-breakable-atomic) 1))
   (end-atomic))
 
 (define (unsafe-start-atomic)
-  (start-atomic)
-  (current-break-suspend (add1 (current-break-suspend))))
+  (start-atomic))
 
 (define (unsafe-end-atomic)
-  (define bs (sub1 (current-break-suspend)))
-  (current-break-suspend bs)
-  (end-atomic)
-  (when (zero? bs)
-    (check-for-break)))
+  (end-atomic))
 
 (define (unsafe-in-atomic?)
   (positive? (current-atomic)))
