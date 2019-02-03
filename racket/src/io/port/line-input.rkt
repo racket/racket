@@ -11,36 +11,37 @@
          read-line)
 
 (define (ok-mode? v)
-  (memq v '(linefeed return return-linefeed any any-one)))
+  (case v [(linefeed return return-linefeed any any-one) #t] [else #f]))
 (define ok-mode-str "(or/c 'linefeed 'return 'return-linefeed 'any 'any-one)")
 
 (define-syntax-rule (define-read-line read-line
-                      make-string string-length string-set! 
+                      make-string string-set! 
                       string-copy! substring
                       do-read-char peek-char
                       as-char)
   (define/who (read-line [orig-in (current-input-port)] [mode 'linefeed])
-    (check who input-port? orig-in)
+    (define in (->core-input-port orig-in who))
     (check who ok-mode? #:contract ok-mode-str mode)
-    (define in (->core-input-port orig-in))
-    (maybe-flush-stdout in)
-    (define cr? (memq mode '(return any any-one)))
-    (define lf? (memq mode '(linefeed any any-one)))
-    (define crlf? (memq mode '(return-linefeed any)))
-    (let loop ([str (make-string 32)] [pos 0])
+    (maybe-flush-stdout orig-in)
+    (define cr? (case mode [(return any any-one) #t] [else #f]))
+    (define lf? (case mode [(linefeed any any-one) #t] [else #f]))
+    (define crlf? (case mode [(return-linefeed any) #t] [else #f]))
+    (define init-len 32)
+    (let loop ([str (make-string init-len)] [len init-len] [pos 0])
       (define ch (do-read-char 'read-line in))
       (define (keep-char)
-        (if (pos . fx< . (string-length str))
+        (if (pos . fx< . len)
             (begin
               (string-set! str pos ch)
-              (loop str (add1 pos)))
-            (let ([new-str (make-string (fx* (string-length str) 2))])
+              (loop str len (fx+ pos 1)))
+            (let* ([new-len (fx* len 2)]
+                   [new-str (make-string new-len)])
               (string-copy! new-str 0 str 0)
               (string-set! new-str pos ch)
-              (loop new-str (add1 pos)))))
+              (loop new-str new-len (fx+ pos 1)))))
       (cond
        [(eof-object? ch)
-        (if (zero? pos)
+        (if (fx= pos 0)
             eof
             (substring str 0 pos))]
        [(and (or cr? crlf?)
@@ -59,13 +60,13 @@
        [else (keep-char)]))))
 
 (define-read-line read-line
-  make-string string-length string-set! 
+  make-string string-set! 
   string-copy! substring
   do-read-char/core-port peek-char
   values)
 
  (define-read-line read-bytes-line
-   make-bytes bytes-length bytes-set! 
+   make-bytes bytes-set! 
    bytes-copy! subbytes
    do-read-byte/core-port peek-byte
    char->integer)
