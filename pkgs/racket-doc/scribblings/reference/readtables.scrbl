@@ -79,7 +79,8 @@ otherwise.
            readtable?]{
 
 Creates a new readtable that is like @racket[readtable] (which can be
-@racket[#f]), except that the reader's behavior is modified for each
+@racket[#f] to indicate the default readtable),
+except that the reader's behavior is modified for each
 @racket[key] according to the given @racket[mode] and
 @racket[action]. The @racket[...+] for @racket[make-readtable] applies
 to all three of @racket[key], @racket[mode], and @racket[action]; in
