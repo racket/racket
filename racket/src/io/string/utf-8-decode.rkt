@@ -3,7 +3,9 @@
 
 (provide utf-8-decode!
          utf-8-max-aborts-amt
-         
+
+         utf-8-decode-byte
+
          utf-8-state?
          utf-8-state-pending-amt)
 
@@ -57,6 +59,21 @@
   ;; Iterate through the given byte string
   (let loop ([i in-start] [j out-start] [base-i base-i] [accum accum] [remaining remaining])
 
+    ;; Shared handling for success:
+    (define (complete accum)
+      (when out-str (string-set! out-str j (integer->char accum)))
+      (define next-j (fx+ j 1))
+      (define next-i (fx+ i 1))
+      (cond
+        [(and out-end (fx= next-j out-end))
+         (values (fx- next-i in-start)
+                 (fx- next-j out-start)
+                 (if (fx= next-i in-end)
+                     'complete
+                     'continues))]
+        [else
+         (loop next-i next-j next-i 0 0)]))
+
     ;; Shared handling for encoding failures:
     (define (encoding-failure)
       (cond
@@ -75,20 +92,6 @@
         (values (fx- base-i in-start)
                 (fx- j out-start)
                 'error)]))
-    
-    ;; Shared handling for decoding success:
-    (define (continue)
-      (define next-j (fx+ j 1))
-      (define next-i (fx+ i 1))
-      (cond
-       [(and out-end (fx= next-j out-end))
-        (values (fx- next-i in-start)
-                (fx- next-j out-start)
-                (if (fx= next-i in-end)
-                    'complete
-                    'continues))]
-       [else
-        (loop next-i next-j next-i 0 0)]))
     
     ;; Dispatch on byte:
     (cond
@@ -116,74 +119,101 @@
       (encoding-failure)]
      [else
       (define b (bytes-ref in-bstr i))
-      (cond
-       [(b . fx< . 128)
-        (cond
-         [(fx= remaining 0)
-          ;; Found ASCII
-          (when out-str (string-set! out-str j (integer->char b)))
-          (continue)]
-         [else
-          ;; We were accumulating bytes for an encoding, and
-          ;; the encoding didn't complete
-          (encoding-failure)])]
+      (utf-8-decode-byte/inline b accum remaining
+                                complete
+                                (lambda (accum remaining)
+                                  (loop (fx+ i 1) j i accum remaining))
+                                (lambda (accum remaining)
+                                  (loop (fx+ i 1) j base-i accum remaining))
+                                encoding-failure)])))
+
+(define-syntax-rule (utf-8-decode-byte/inline b accum remaining
+                                              complete-k
+                                              init-continue-k
+                                              next-continue-k
+                                              error-k)
+  (cond
+    [(b . fx< . 128)
+     (cond
+       [(fx= remaining 0)
+        ;; Found ASCII
+        (complete-k b)]
        [else
-        ;; Encoding...
+        ;; We were accumulating bytes for an encoding, and
+        ;; the encoding didn't complete
+        (error-k)])]
+    [else
+     ;; Encoding...
+     (cond
+       [(fx= #b10000000 (fxand b #b11000000))
+        ;; A continuation byte
         (cond
-          [(fx= #b10000000 (fxand b #b11000000))
-           ;; A continuation byte
-          (cond
-           [(fx= remaining 0)
-            ;; We weren't continuing
-            (encoding-failure)]
-           [else
-            (define next (fxand b #b00111111))
-            (define next-accum (fxior (fxlshift accum 6) next))
-            (cond
-              [(fx= 1 remaining)
-               (cond
-                 [(and (next-accum . fx> . 127)
-                       (next-accum . fx<= . #x10FFFF)
-                       (not (and (next-accum . fx>= . #xD800)
-                                 (next-accum . fx<= . #xDFFF))))
-                  (when out-str (string-set! out-str j (integer->char next-accum)))
-                  (continue)]
-                 [else
-                  ;; Not a valid character
-                  (encoding-failure)])]
-              [(and (fx= 2 remaining)
-                    (next-accum . fx<= . #b11111))
-               ;; A shorter byte sequence would work, so this is an
-               ;; encoding mistae.
-               (encoding-failure)]
-              [(and (fx= 3 remaining)
-                    (next-accum . fx<= . #b1111))
-               ;; A shorter byte sequence would work
-               (encoding-failure)]
-              [else
-               ;; Continue an encoding.
-               (loop (fx+ i 1) j base-i next-accum (fx- remaining 1))])])]
-          [(not (fx= remaining 0))
-           ;; Trying to start a new encoding while one is in
-           ;; progress
-           (encoding-failure)]
-          [(fx= #b11000000 (fxand b #b11100000))
-           ;; Start a two-byte encoding
-           (define accum (fxand b #b11111))
-           ;; If `accum` is zero, that's an encoding mistake,
-           ;; because a shorted byte sequence would work.
+          [(fx= remaining 0)
+           ;; We weren't continuing
+           (error-k)]
+          [else
+           (define next (fxand b #b00111111))
+           (define next-accum (fxior (fxlshift accum 6) next))
            (cond
-             [(fx= accum 0) (encoding-failure)]
-             [else (loop (fx+ i 1) j i accum 1)])]
-         [(fx= #b11100000 (fxand b #b11110000))
-          ;; Start a three-byte encoding
-          (define accum (fxand b #b1111))
-          (loop (fx+ i 1) j i accum 2)]
-         [(fx= #b11110000 (fxand b #b11111000))
-          ;; Start a four-byte encoding
-          (define accum (fxand b #b111))
-          (loop (fx+ i 1) j i  accum 3)]
-         [else
-          ;; Five- or six-byte encodings don't produce valid
-          ;; characters
-          (encoding-failure)])])])))
+             [(fx= 1 remaining)
+              (cond
+                [(and (next-accum . fx> . 127)
+                      (next-accum . fx<= . #x10FFFF)
+                      (not (and (next-accum . fx>= . #xD800)
+                                (next-accum . fx<= . #xDFFF))))
+                 (complete-k next-accum)]
+                [else
+                 ;; Not a valid character
+                 (error-k)])]
+             [(and (fx= 2 remaining)
+                   (next-accum . fx<= . #b11111))
+              ;; A shorter byte sequence would work, so this is an
+              ;; encoding mistae.
+              (error-k)]
+             [(and (fx= 3 remaining)
+                   (next-accum . fx<= . #b1111))
+              ;; A shorter byte sequence would work
+              (error-k)]
+             [else
+              ;; Continue an encoding
+              (next-continue-k next-accum (fx- remaining 1))])])]
+       [(not (fx= remaining 0))
+        ;; Trying to start a new encoding while one is in
+        ;; progress
+        (error-k)]
+       [(fx= #b11000000 (fxand b #b11100000))
+        ;; Start a two-byte encoding
+        (define accum (fxand b #b11111))
+        ;; If `accum` is zero, that's an encoding mistake,
+        ;; because a shorter byte sequence would work.
+        (cond
+          [(fx= accum 0) (error-k)]
+          [else (init-continue-k accum 1)])]
+       [(fx= #b11100000 (fxand b #b11110000))
+        ;; Start a three-byte encoding
+        (define accum (fxand b #b1111))
+        (init-continue-k accum 2)]
+       [(fx= #b11110000 (fxand b #b11111000))
+        ;; Start a four-byte encoding
+        (define accum (fxand b #b111))
+        (init-continue-k accum 3)]
+       [else
+        ;; Five- or six-byte encodings don't produce valid
+        ;; characters
+        (error-k)])]))
+
+;; Takes a byte and a decoding state and returns
+;; one of
+;;   - (values code-point 0 'complete)
+;;   - (values #f 0 'error)
+;;   - (values new-accum new-remaining 'continues)
+(define (utf-8-decode-byte b accum remaining)
+  (utf-8-decode-byte/inline b accum remaining
+                            (lambda (accum)
+                              (values accum 0 'complete))
+                            (lambda (accum remaining)
+                              (values accum remaining 'continues))
+                            (lambda (accum remaining)
+                              (values accum remaining 'continues))
+                            (lambda ()
+                              (values #f 0 'error))))

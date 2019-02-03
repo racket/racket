@@ -197,24 +197,7 @@
 ;; A shortcut to implement `read-char` in terms of a port-specific
 ;; `read-byte`:
 (define (read-char-via-read-byte who in read-byte #:special-ok? [special-ok? #t])
-  (define b
-    (let loop ()
-      (start-atomic)
-      (prepare-change in)
-      (check-not-closed who in)
-      (define b (read-byte (core-port-self in)))
-      (cond
-        [(fixnum? b)
-         (port-count-byte! in b)
-         (end-atomic)
-         b]
-        [(eof-object? b)
-         (end-atomic)
-         eof]
-        [else
-         (end-atomic)
-         (sync b)
-         (loop)])))
+  (define b (do-read-byte who read-byte in))
   (cond
     [(eof-object? b) b]
     [else
@@ -222,48 +205,38 @@
        [(b . fx< . 128) (integer->char b)]
        [else
         ;; UTF-8 decoding... May need to peek bytes to discover
-        ;; whether the decoding will work (in which case this wasn't
-        ;; much of a shortcut)
-        (define bstr (bytes b))
-        (define str (make-string 1))
-        (define-values (used-bytes got-chars state)
-          (utf-8-decode! bstr 0 1
-                         #f 0 #f
-                         #:abort-mode 'state))
+        ;; whether the decoding will work
+        (define-values (accum remaining state)
+          (utf-8-decode-byte b 0 0))
         (cond
           [(eq? state 'error)
            ;; This happens if the byte is a UTF-8 continuation byte
            #\uFFFD]
           [else
-           ;; Need to peek ahead
-           (let loop ([skip-k 0] [state state])
-             (define v (peek-some-bytes! who in bstr 0 1 skip-k #:copy-bstr? #f #:special-ok? special-ok?))
+           ;; Need to peek ahead; don't consume any more bytes until
+           ;; complete, and consume only the already-consumed byte
+           ;; if there's a decoding error
+           (let loop ([skip-k 0] [accum accum] [remaining remaining])
+             (define b (peek-byte/core-port in skip-k))
              (cond
-               [(or (eof-object? v)
-                    (procedure? v))
-                ;; Already-consumed byte is an error byte
+               [(eof-object? b)
+                ;; Already-consumed byte is consume as an error byte
                 #\uFFFD]
                [else
-                (define-values (used-bytes got-chars new-state)
-                  (utf-8-decode! bstr 0 1
-                                 str 0 1
-                                 #:state state
-                                 #:error-char #\uFFFD
-                                 #:abort-mode 'state))
+                (define-values (next-accum next-remaining state)
+                  (utf-8-decode-byte b accum remaining))
                 (cond
-                  [(fx= got-chars 1)
-                   (define actually-used-bytes (fx+ skip-k used-bytes))
-                   (cond
-                     [(fx= actually-used-bytes 0) (void)]
-                     [(fx= actually-used-bytes 1) (do-read-byte who read-byte in)]
-                     [else
-                      (define finish-bstr (if (actually-used-bytes . fx<= . (bytes-length bstr))
-                                              bstr
-                                              (make-bytes actually-used-bytes)))
-                      (do-read-bytes! who in finish-bstr 0 actually-used-bytes)])
-                   (string-ref str 0)]
+                  [(eq? state 'complete)
+                   ;; Consume used bytes
+                   (let loop ([skip-k skip-k])
+                     (do-read-byte who read-byte in)
+                     (unless (fx= 0 skip-k)
+                       (loop (fx- skip-k 1))))
+                   (integer->char next-accum)]
+                  [(eq? state 'error)
+                   #\uFFFD]
                   [else
-                   (loop (fx+ skip-k 1) new-state)])]))])])]))
+                   (loop (fx+ 1 skip-k) next-accum next-remaining)])]))])])]))
 
 ;; ----------------------------------------
 

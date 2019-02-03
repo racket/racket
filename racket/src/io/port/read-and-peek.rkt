@@ -213,7 +213,7 @@
       v))
 
 ;; Use a `peek-byte` shortcut
-(define (do-peek-byte who peek-byte in orig-in)
+(define (do-peek-byte who peek-byte in)
   (let loop ()
     (start-atomic)
     (prepare-change in)

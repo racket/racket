@@ -41,7 +41,7 @@
   (let ([in (->core-input-port orig-in)])
     (define peek-byte (core-input-port-peek-byte in))
     (cond
-      [peek-byte (do-peek-byte who peek-byte in orig-in)]
+      [peek-byte (do-peek-byte who peek-byte in)]
       [else
        (extract-special-value (peek-byte-via-bytes in skip-k #:progress-evt progress-evt)
                               in source-name skip-k

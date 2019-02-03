@@ -23,7 +23,8 @@
          do-read-byte/core-port)
 
 (module+ internal
-  (provide do-read-bytes!))
+  (provide do-read-bytes!
+           peek-byte/core-port))
 
 ;; ----------------------------------------
 
@@ -132,11 +133,14 @@
   (check who input-port? orig-in)
   (check who exact-nonnegative-integer? skip-k)
   (let ([in (->core-input-port orig-in)])
-    (define peek-byte (and (zero? skip-k)
-                           (core-input-port-peek-byte in)))
-    (cond
-      [peek-byte (do-peek-byte who peek-byte in orig-in)]
-      [else (peek-byte-via-bytes in skip-k #:special-ok? #f)])))
+    (peek-byte/core-port in skip-k)))
+
+(define/who (peek-byte/core-port in skip-k)
+  (define peek-byte (and (zero? skip-k)
+                         (core-input-port-peek-byte in)))
+  (cond
+    [peek-byte (do-peek-byte who peek-byte in)]
+    [else (peek-byte-via-bytes in skip-k #:special-ok? #f)]))
 
 (define/who (peek-bytes amt skip-k [in (current-input-port)])
   (check who exact-nonnegative-integer? amt)
