@@ -30,7 +30,6 @@
                   [get-initial-pthread rumble:get-initial-pthread]
                   [current-place-roots rumble:current-place-roots]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
-                  [unsafe-root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
                   [set-custodian-memory-use-proc! rumble:set-custodian-memory-use-proc!]
@@ -104,6 +103,8 @@
        ;; "primitives/internal.ss".
        (hasheq
         'make-pthread-parameter make-pthread-parameter
+        'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
+        'break-enabled-key break-enabled-key
         ;; These are actually redirected by "place-register.ss", but
         ;; we list them here for compatibility with the bootstrapping
         ;; variant of `#%pthread`
@@ -118,14 +119,12 @@
         'engine-return rumble:engine-return
         'current-engine-state (lambda (v) (rumble:current-engine-state v))
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
-        'root-continuation-prompt-tag rumble:unsafe-root-continuation-prompt-tag
         'poll-will-executors poll-will-executors
         'make-will-executor rumble:make-will-executor
         'make-stubborn-will-executor rumble:make-stubborn-will-executor
         'will-executor? rumble:will-executor?
         'will-register rumble:will-register
         'will-try-execute rumble:will-try-execute
-        'break-enabled-key break-enabled-key
         'set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!
         'continuation-marks rumble:continuation-marks
         'set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!

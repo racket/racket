@@ -63,4 +63,5 @@
                #%app
                #%call-with-values
                make-pthread-parameter
+               break-enabled-key
                fasl->s-exp/intern))))

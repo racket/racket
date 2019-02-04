@@ -100,7 +100,7 @@
   (set! ctl-c-handler proc))
 
 (define the-root-continuation-prompt-tag (make-continuation-prompt-tag 'root))
-(define (root-continuation-prompt-tag) the-root-continuation-prompt-tag)
+(define (unsafe-root-continuation-prompt-tag) the-root-continuation-prompt-tag)
 (define break-enabled-key (gensym 'break-enabled))
 
 (struct will-executor/notify (we queue notify))
@@ -221,7 +221,9 @@
                   'unsafe-make-place-local unsafe-make-place-local
                   'unsafe-place-local-ref unsafe-place-local-ref
                   'unsafe-place-local-set! unsafe-place-local-set!
-                  'unsafe-add-global-finalizer (lambda (v proc) (void))))
+                  'unsafe-add-global-finalizer (lambda (v proc) (void))
+                  'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
+                  'break-enabled-key break-enabled-key))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
@@ -231,8 +233,6 @@
                                    (error "engine-return: not ready"))
                   'current-process-milliseconds current-process-milliseconds
                   'set-ctl-c-handler! set-ctl-c-handler!
-                  'root-continuation-prompt-tag root-continuation-prompt-tag
-                  'break-enabled-key break-enabled-key
                   'set-break-enabled-transition-hook! void
                   'continuation-marks continuation-marks ; doesn't work on engines
                   'poll-will-executors poll-will-executors

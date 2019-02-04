@@ -34,5 +34,6 @@
   [fork-place (known-procedure 1)]
   [start-place (known-procedure 32)]
   [make-pthread-parameter (known-procedure 2)]
+  [break-enabled-key (known-constant)]
 
   [fasl->s-exp/intern (known-procedure 2)])

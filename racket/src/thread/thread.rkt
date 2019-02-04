@@ -730,7 +730,7 @@
   (continuation-mark-set-first #f
                                break-enabled-key
                                break-enabled-default-cell
-                               (root-continuation-prompt-tag)))
+                               (unsafe-root-continuation-prompt-tag)))
 
 (define break-enabled
   (case-lambda
