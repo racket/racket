@@ -112,7 +112,7 @@
 	  (sync (channel-put-evt c 32))))
   (test 45 'old-v v)
   (channel-put c 89)
-  (sleep)
+  (sync (system-idle-evt))
   (test 89 'new-v v)
   ;; get in main thread:
   (let ([t (current-thread)])

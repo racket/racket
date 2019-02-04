@@ -185,7 +185,10 @@
        [else
         (do-sync 'sync #f (list evt))])]
     [args
-     (do-sync 'sync #f args)]))
+     (let ([simpler-args (simplify-evts args)])
+       (if (and (pair? simpler-args) (null? (cdr simpler-args)))
+           (sync (car simpler-args))
+           (do-sync 'sync #f simpler-args)))]))
 
 (define sync/timeout
   (case-lambda
@@ -193,15 +196,46 @@
      (cond
        [(evt-impersonator? evt)
         (do-sync 'sync/timeout timeout (list evt))]
-       [(and (semaphore? evt)
-             (eqv? timeout 0))
+       [(and (eqv? timeout 0)
+             (semaphore? evt))
         (if (semaphore-try-wait? evt)
             evt
             #f)]
+       [(not timeout)
+        (cond
+          [(semaphore? evt)
+           (semaphore-wait evt)
+           evt]
+          [(channel? evt)
+           (channel-get evt)]
+          [(channel-put-evt? evt)
+           (channel-put-do evt)
+           evt]
+          [else
+           (do-sync 'sync/timeout #f (list evt))])]
        [else
         (do-sync 'sync/timeout timeout (list evt))])]
     [(timeout . args)
-     (do-sync 'sync/timeout timeout args)]))
+     (let ([simpler-args (simplify-evts args)])
+       (if (and (pair? simpler-args) (null? (cdr simpler-args)))
+           (sync/timeout timeout (car simpler-args))
+           (do-sync 'sync/timeout timeout simpler-args)))]))
+
+;; Filter `never-evt` and flatten small `choice-evt` in an
+;; effort to expose simple cases, like just a semaphore
+(define (simplify-evts args)
+  (cond
+    [(null? args) args]
+    [else
+     (let ([arg (car args)])
+       (cond
+         [(eq? never-evt arg)
+          (simplify-evts (cdr args))]
+         [(and (choice-evt? arg)
+               ((length (choice-evt-evts arg)) . < . 3))
+          (simplify-evts (append (choice-evt-evts arg) (cdr args)))]
+         [else
+          (cons arg (simplify-evts (cdr args)))]))]))
 
 (define (sync/enable-break . args)
   (do-sync 'sync/enable-break #f args #:enable-break? #t))
