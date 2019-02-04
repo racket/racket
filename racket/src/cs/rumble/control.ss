@@ -718,13 +718,12 @@
                                r
                                (cons (make-mark-chain-frame
                                       (strip-impersonator (metacontinuation-frame-tag mf))
-                                      (mark-stack-to-marks (list mark-splice)))
+                                      (list mark-splice))
                                      r)))]
                       [l (cons (make-mark-chain-frame
                                 (strip-impersonator (metacontinuation-frame-tag mf))
-                                (mark-stack-to-marks
-                                 (continuation-next-attachments
-                                  (metacontinuation-frame-resume-k mf))))
+                                (continuation-next-attachments
+                                 (metacontinuation-frame-resume-k mf)))
                                m)])
                  (set-metacontinuation-frame-mark-chain! mf l)
                  l)))]))
@@ -770,7 +769,9 @@
 (define (mark-table-ref mt k default wrapper)
   (let ([a (#%assq k mt)])
     (if a
-        (wrapper (cdr a))
+        (if wrapper
+            (wrapper (cdr a))
+            (cdr a))
         default)))
 
 (define (mark-table-merge a b)
@@ -785,14 +786,6 @@
                (loop (mark-table-add/replace b (car p) (cdr p))
                      (cdr a)))]))]))
 
-(define (mark-table->hash mt)
-  (let loop ([ht empty-hasheq] [mt mt])
-    (cond
-     [(null? mt) ht]
-     [else (let ([p (car mt)])
-             (loop (intmap-set ht (car p) (cdr p))
-                   (cdr mt)))])))
-
 ;; ----------------------------------------
 ;; Continuation marks
 
@@ -801,22 +794,20 @@
 ;;   - #f = empty-mark-frame = (make-mark-frame empty-mark-table #f #f)
 ;;   - (cons key val) = (make-mark-frame (pair->mark-table (cons key val)) #f #f)
 ;;   - a mark frame
+;;   - a elem+cache containing one of the others
 ;;
 ;; The shorthand forms are promoted to `make-mark-frame` as needed to
 ;; hold mappings for multiple key. The shorthand forms are also promoted
 ;; on capture by `current-continuation-marks`; in that case, the mark-stack
 ;; list is mutated to substitute the promoted form.
 ;;
-;; On capture by `current-continuation-marks`, the `flat` field of a
-;; mark frame is filled in with a list of mark tables converted to
-;; hash tables. That list can be mutated to substitute an `elem+cache`
-;; in place of plain hash table; that substitution happens when searching
-;; for a mark in the list.
+;; The list can also be mutated to substitute an `elem+cache` in place
+;; of other elements; that substitution happens when searching for a
+;; mark in the list.
 
 (define-record continuation-mark-set (mark-chain traces))
-(define-record mark-frame (table  ; intmap mapping keys to values
-                           end-uninterupted? ; whether an "in interrupted?" check has been added
-                           flat)) ; #f or cached list that contains only tables and elem+caches
+(define-record mark-frame (table  ; maps keys to values; use `mark-hash-ref`
+                           end-uninterupted?)) ; whether an "in interrupted?" check has been added
 
 (define empty-mark-frame #f)
 
@@ -838,13 +829,12 @@
 (define (mark-frame-update a key val)
   (cond
    [(not a) (if (impersonator? key)
-                (mark-frame-update (make-mark-frame '() #f #f) key val)
+                (mark-frame-update (make-mark-frame '() #f) key val)
                 (cons key val))]
    [(pair? a)
     (if (eq? key (car a))
         (cons key val)
         (make-mark-frame (mark-table-add/replace* (pair->mark-table a) key val)
-                         #f
                          #f))]
    [(eq? a 'empty)
     ;; The current frame is the mark-splice frame, so update
@@ -853,26 +843,36 @@
     'empty]
    [(mark-frame? a)
     (make-mark-frame (mark-table-add/replace* (mark-frame-table a) key val)
-                     (mark-frame-end-uninterupted? a)
-                     #f)]))
+                     (mark-frame-end-uninterupted? a))]
+   [else
+    ;; assert: (elem+cache? a)
+    (mark-frame-update (elem+cache-elem a) key val)]))
 
 (define (coerce-to-mark-frame a)
   (cond
    [(mark-frame? a) a]
-   [(not a) (make-mark-frame '() #f #f)]
-   [else (make-mark-frame (list a) #f #f)]))
+   [(not a) (make-mark-frame '() #f)]
+   [else (make-mark-frame (list a) #f)]))
 
 (define (extract-mark-from-frame a key default-v)
   (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'call-with-immediate-continuation-mark key)])
     (cond
-     [(pair? a) (if (eq? key (car a)) (wrapper (cdr a)) default-v)]
-     [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
-     [(eq? a 'empty) (let ([a (current-mark-splice)])
-                       (cond
-                        [(pair? a) (if (eq? key (car a)) (wrapper (cdr a)) default-v)]
-                        [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
-                        [else default-v]))]
-     [else default-v])))
+     [(eq? a 'empty)
+      (let ([a (current-mark-splice)])
+        ;; `a` is never 'empty or an `elem+cache`
+        (cond
+         [(pair? a) (if (eq? key (car a)) (if wrapper (wrapper (cdr a)) (cdr a)) default-v)]
+         [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
+         [else default-v]))]
+     [else
+      (extract-mark-from-frame* a key default-v wrapper)])))
+
+(define (extract-mark-from-frame* a key default-v wrapper)
+  (cond
+   [(pair? a) (if (eq? key (car a)) (if wrapper (wrapper (cdr a)) (cdr a)) default-v)]
+   [(mark-frame? a) (mark-table-ref (mark-frame-table a) key default-v wrapper)]
+   [(elem+cache? a) (extract-mark-from-frame* (elem+cache-elem a) key default-v wrapper)]
+   [else default-v]))
 
 ;; See copy in "expander.sls"
 (define-syntax with-continuation-mark
@@ -904,32 +904,13 @@
 (define (current-mark-chain)
   (get-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
 
-(define (mark-stack-to-marks mark-stack)
-  (let loop ([mark-stack mark-stack])
-    (cond
-     [(null? mark-stack) null]
-     [else
-      (let ([a (car mark-stack)])
-        (cond
-         [(eq? a 'empty) (loop (cdr mark-stack))]
-         [(not (mark-frame? a))
-          ;; Promote to general frame form
-          (set-car! mark-stack (coerce-to-mark-frame a))
-          (loop mark-stack)]
-         [(mark-frame-flat a) => (lambda (l) l)]
-         [else
-          (let ([l (cons (mark-table->hash (mark-frame-table a))
-                         (loop (cdr mark-stack)))])
-            (set-mark-frame-flat! a l)
-            l)]))])))
-
 (define-record mark-chain-frame (tag marks))
 
 (define (get-rest-mark-chain mark-splice mc)
   (let ([mid (and (not (empty-mark-frame? mark-splice))
                   (make-mark-chain-frame
                    #f ; no tag
-                   (mark-stack-to-marks (list mark-splice))))]
+                   (list mark-splice)))]
         [tl (metacontinuation-marks mc)])
     (if mid
         (cons mid tl)
@@ -938,7 +919,7 @@
 (define (get-mark-chain mark-stack mark-splice mc)
   (cons (make-mark-chain-frame
          #f ; no tag
-         (mark-stack-to-marks mark-stack))
+         mark-stack)
         (get-rest-mark-chain mark-splice mc)))
 
 (define (prune-mark-chain-prefix tag mark-chain)
@@ -976,7 +957,6 @@
    [else
     (make-mark-frame (mark-table-merge (mark-frame-table (coerce-to-mark-frame mark-stack))
                                        (mark-frame-table (coerce-to-mark-frame mark-splice)))
-                     #f
                      #f)]))
 
 (define (keep-immediate-attachment mark-stack next-mark-stack)
@@ -989,11 +969,11 @@
 ;; ----------------------------------------
 ;; Continuation-mark caching
 
-;; A `elem+cache` can replace a plain table in a "flat" variant of the
-;; mark stack within a metacontinuation frame, or in a mark-stack
-;; chain for a metacontinuation. The cache is a table that records
-;; results found later in the list, which allows
-;; `continuation-mark-set-first` to take amortized constant time.
+;; A `elem+cache` can replace a plain table in a mark stack within a
+;; metacontinuation frame or in a mark-stack chain for a
+;; metacontinuation. The cache is a table that records results found
+;; later in the list, which allows `continuation-mark-set-first` to
+;; take amortized constant time.
 (define-record elem+cache (elem cache))
 (define (elem+cache-strip t) (if (elem+cache? t) (elem+cache-elem t) t))
 
@@ -1045,7 +1025,7 @@
          (let* ([v0 (if marks
                         none
                         ;; Avoid allocating a frame for the immediate marks:
-                        (marks-search (mark-stack-to-marks (current-mark-stack))
+                        (marks-search (current-mark-stack)
                                       key
                                       #f ; at-outer?
                                       prompt-tag
@@ -1075,7 +1055,8 @@
             [(eq? v none2)
              ;; Didn't find prompt tag when searching the current continuation
              (raise-no-prompt-tag who orig-prompt-tag)]
-            [else (wrapper v)]))))]))
+            [wrapper (wrapper v)]
+            [else v]))))]))
 
 ;; To make `continuation-mark-set-first` constant-time, if we traverse
 ;; N elements to get an answer, then cache the answer at N/2 elements.
@@ -1130,7 +1111,7 @@
                              none
                              (marks-search marks key #f #f #f)))
                        ;; We're looking at just one frame:
-                       (intmap-ref t key none))])
+                       (extract-mark-from-frame* t key none #f))])
             (cond
              [(eq? v none)
               ;; Not found at this point; keep looking
@@ -1188,10 +1169,10 @@
                     [(null? marks)
                      (chain-loop (cdr mark-chain))]
                     [else
-                     (let* ([v (intmap-ref (elem+cache-strip (car marks)) key none)])
+                     (let* ([v (extract-mark-from-frame* (elem+cache-strip (car marks)) key none wrapper)])
                        (if (eq? v none)
                            (loop (cdr marks))
-                           (cons (wrapper v) (loop (cdr marks)))))]))]))]))))]))
+                           (cons v (loop (cdr marks)))))]))]))]))))]))
 
 (define/who continuation-mark-set->list*
   (case-lambda
@@ -1235,13 +1216,13 @@
                                    (cons vec (loop (cdr marks))))
                                  (loop (cdr marks)))]
                             [else
-                             (let ([v (intmap-ref t (car keys) none)])
+                             (let ([v (extract-mark-from-frame* t (car keys) none (car wrappers))])
                                (cond
                                 [(eq? v none)
                                  (vector-set! tmp i none-v)
                                  (key-loop (cdr keys) (cdr wrappers) (add1 i) found?)]
                                 [else
-                                 (vector-set! tmp i ((car wrappers) v))
+                                 (vector-set! tmp i v)
                                  (key-loop (cdr keys) (cdr wrappers) (add1 i) #t)]))])))]))]))])))))]))
 
 (define/who (continuation-mark-set->context marks)
@@ -1369,7 +1350,7 @@
    [else (mark-table-add/replace ht k v)]))
 
 ;; Extracts the key and converts the wrapper functions into
-;; a single function:
+;; a single function or #f:
 (define (extract-continuation-mark-key-and-wrapper who k)
   (cond
    [(and (impersonator? k)
@@ -1396,7 +1377,7 @@
         [else
          (lambda (v) v)])))]
    [else
-    (values k (lambda (v) v))]))
+    (values k #f)]))
 
 (define (map/2-values f l)
   (cond
