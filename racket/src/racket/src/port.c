@@ -3291,8 +3291,6 @@ scheme_file_stream_port_p (int argc, Scheme_Object *argv[])
       return scheme_true;
     else if (SAME_OBJ(op->sub_type, fd_output_port_type))
       return scheme_true;
-  } else {
-    scheme_wrong_contract("file-stream-port?", "port?", 0, argc, argv);
   }
 
   return scheme_false;

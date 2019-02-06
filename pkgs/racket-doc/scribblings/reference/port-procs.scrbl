@@ -47,16 +47,24 @@ determines an output port that is typically used for errors and
 logging. For example, the default error display handler writes to this
 port.}
 
-@defproc[(file-stream-port? [port port?]) boolean?]{
-Returns @racket[#t] if the given port is a @tech{file-stream port} (see
-@secref["file-ports"]), @racket[#f] otherwise.}
+@defproc[(file-stream-port? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] is a @tech{file-stream port} (see
+@secref["file-ports"]), @racket[#f] otherwise.
 
-@defproc[(terminal-port? [port port?]) boolean?]{
-Returns @racket[#t] if the given port is attached to an interactive
-terminal, @racket[#f] otherwise.}
+@history[#:changed "7.2.0.5" @elem{Extended @racket[file-stream-port?]
+                                   to any value, instead of resticting
+                                   the domain to ports}]}
+
+@defproc[(terminal-port? [v any/c]) boolean?]{
+Returns @racket[#t] if @racket[v] is a port that is attached to an
+interactive terminal, @racket[#f] otherwise.
+
+@history[#:changed "7.2.0.5" @elem{Extended @racket[terminal-port?]
+                                   to any value, instead of resticting
+                                   the domain to ports}]}
 
 @defthing[eof eof-object?]{A value (distinct from all other values)
 that represents an end-of-file.}
 
-@defproc[(eof-object? [a any/c]) boolean?]{Returns @racket[#t] if
+@defproc[(eof-object? [v any/c]) boolean?]{Returns @racket[#t] if
 @racket[v] is @racket[eof], @racket[#f] otherwise.}
