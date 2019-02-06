@@ -2,14 +2,14 @@ image: ubuntu:18.04
 
 .prepare:
   before_script:
-    - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev
+    - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev uuid-dev
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - export PATH=$PWD/racket/bin:$PATH
 
 .prepare:llvm:
   before_script:
-    - apt-get update && apt-get install -y git lsb-release make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev wget gnupg
+    - apt-get update && apt-get install -y git lsb-release make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev wget gnupg uuid-dev
     - echo 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
     - echo 'deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
     - wget -O /tmp/llvm.key https://apt.llvm.org/llvm-snapshot.gpg.key
