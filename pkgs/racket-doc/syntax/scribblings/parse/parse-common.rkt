@@ -54,7 +54,8 @@
                                                   syntax/parse/experimental/reflect
                                                   syntax/parse/experimental/specialize
                                                   syntax/parse/experimental/template
-                                                  syntax/parse/experimental/eh)])
+                                                  syntax/parse/experimental/eh
+                                                  syntax/transformer)])
                                       `((for-syntax racket/base ,@mods)
                                         ,@mods)))))))
   (when short? (the-eval '(error-print-source-location #f)))
@@ -120,6 +121,7 @@
                     syntax/parse/experimental/specialize
                     syntax/parse/experimental/template
                     syntax/parse/experimental/eh
+                    syntax/transformer
                     "parse-dummy-bindings.rkt"))
 (provide (for-label (all-from-out racket/base)
                     (all-from-out racket/contract)
@@ -132,4 +134,5 @@
                     (all-from-out syntax/parse/experimental/specialize)
                     (all-from-out syntax/parse/experimental/template)
                     (all-from-out syntax/parse/experimental/eh)
+                    (all-from-out syntax/transformer)
                     (all-from-out "parse-dummy-bindings.rkt")))

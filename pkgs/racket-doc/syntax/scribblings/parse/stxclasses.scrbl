@@ -188,6 +188,42 @@ including nested attributes produced by syntax classes associated with
 the pattern variables.
 }
 
+@defthing[prop:syntax-class (struct-type-property/c (or/c identifier?
+                                                          (-> any/c identifier?)))]{
+
+A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{structure type property} to identify
+structure types that act as an alias for a @tech{syntax class} or @tech{splicing syntax class}. The
+property value must be an identifier or a procedure of one argument.
+
+When a @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{transformer} is bound to an
+instance of a struct with this property, then it may be used as a @tech{syntax class} or
+@tech{splicing syntax class} in the same way as the bindings created by @racket[define-syntax-class]
+or @racket[define-splicing-syntax-class]. If the value of the property is an identifier, then it
+should be bound to a @tech{syntax class} or @tech{splicing syntax class}, and the binding will be
+treated as an alias for the referenced syntax class. If the value of the property is a procedure, then
+it will be applied to the value with the @racket[prop:syntax-class] property to obtain an identifier,
+which will then be used as in the former case.
+
+@examples[#:eval the-eval
+(begin-for-syntax
+  (struct expr-and-stxclass (expr-id stxclass-id)
+    #:property prop:procedure
+    (lambda (this stx) ((set!-transformer-procedure
+                         (make-variable-like-transformer
+                          (expr-and-stxclass-expr-id this)))
+                        stx))
+    #:property prop:syntax-class
+    (lambda (this) (expr-and-stxclass-stxclass-id this))))
+(define-syntax is-id? (expr-and-stxclass #'identifier? #'id))
+(is-id? #'x)
+(syntax-parse #'x
+  [x:is-id? #t]
+  [_ #f])
+]
+
+@history[#:added "7.2.0.4"]
+}
+
 @;{--------}
 
 @section{Pattern Directives}

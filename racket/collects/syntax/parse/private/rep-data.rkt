@@ -225,10 +225,17 @@ expressions are duplicated, and may be evaluated in different scopes.
 ;; Stxclasses are primarily bound by env / syntax-local-value, but a few
 ;; are attached to existing bindings via alt-stxclass-mapping.
 (define (get-stxclass id [allow-undef? #f])
-  (cond [(syntax-local-value/record id stxclass?) => values]
-        [(assoc id (unbox alt-stxclass-mapping) free-identifier=?) => cdr]
-        [allow-undef? #f]
-        [else (wrong-syntax id "not defined as syntax class")]))
+  (let loop ([id id]
+             [prev-ids '()])
+    (cond [(syntax-local-value/record id stxclass?) => values]
+          [(syntax-local-value/record id has-stxclass-prop?)
+           => (lambda (val)
+                (define prop-val (stxclass-prop-ref val))
+                (define prop-id (if (identifier? prop-val) prop-val (prop-val val)))
+                (loop prop-id (cons id prev-ids)))]
+          [(assoc id (unbox alt-stxclass-mapping) free-identifier=?) => cdr]
+          [allow-undef? #f]
+          [else (wrong-syntax id #:extra prev-ids "not defined as syntax class")])))
 
 ;; check-stxclass-arity : stxclass Syntax Nat (Listof Keyword) -> Void
 (define (check-stxclass-arity sc stx pos-count keywords)
