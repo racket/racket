@@ -15,6 +15,8 @@
            syntax/parse/private/residual-ct)
   (provide pattern-expander?
            (contract-out
+            [prop:syntax-class
+             (struct-type-property/c (or/c identifier? (-> any/c identifier?)))]
             [pattern-expander
              (-> (-> syntax? syntax?) pattern-expander?)]
             [prop:pattern-expander

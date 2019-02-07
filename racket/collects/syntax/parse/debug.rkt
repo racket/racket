@@ -9,7 +9,9 @@
          racket/pretty
          "../parse.rkt"
          (except-in syntax/parse/private/residual
-                    prop:pattern-expander syntax-local-syntax-parse-pattern-introduce)
+                    prop:syntax-class
+                    prop:pattern-expander
+                    syntax-local-syntax-parse-pattern-introduce)
          "private/runtime.rkt"
          "private/runtime-progress.rkt"
          "private/runtime-report.rkt"

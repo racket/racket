@@ -780,17 +780,15 @@
 ;; ----
 
 (define (parse-stxclass-use stx allow-head? varname scname argu pfx role [parser* #f])
-  (cond [(and (memq (stxclass-lookup-config) '(yes try)) (get-stxclass scname #t))
+  (define config (stxclass-lookup-config))
+  (cond [(and (memq config '(yes try)) (get-stxclass scname (eq? config 'try)))
          => (lambda (sc)
               (unless parser*
                 (check-stxclass-arity sc stx (length (arguments-pargs argu)) (arguments-kws argu)))
               (parse-stxclass-use* stx allow-head? varname sc argu pfx role parser*))]
-        [(memq (stxclass-lookup-config) '(try no))
+        [else
          (define bind (name->bind varname))
-         (pat:fixup stx bind varname scname argu pfx role parser*)]
-        [else (wrong-syntax scname "not defined as syntax class (config=~s)"
-                            ;; XXX FIXME
-                            (stxclass-lookup-config))]))
+         (pat:fixup stx bind varname scname argu pfx role parser*)]))
 
 ;; ----
 
@@ -1658,7 +1656,7 @@
      (syntax->list #'(e ...))]
     [_
      (raise-syntax-error #f "expected list of expressions and definitions" ctx stx)]))
-     
+
 ;; Arguments and Arities
 
 ;; parse-argu : (listof stx) -> Arguments
