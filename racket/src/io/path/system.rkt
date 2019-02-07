@@ -21,27 +21,28 @@
          init-current-directory!)
 
 (define/who (find-system-path key)
+  (define (as-dir p) (path->directory-path p))
   (begin0
     (case key
       [(exec-file) (or exec-file
                        (string->path "/usr/local/bin/racket"))]
       [(run-file) (or run-file
                       (find-system-path 'exec-file))]
-      [(config-dir host-config-dir) (or config-dir
-                                        (string->path "../etc"))]
-      [(collects-dir host-collects-dir) (or collects-dir
-                                            (string->path "../collects"))]
-      [(orig-dir) orig-dir]
-      [(temp-dir) (rktio-system-path who RKTIO_PATH_TEMP_DIR)]
-      [(sys-dir) (rktio-system-path who RKTIO_PATH_SYS_DIR)]
-      [(pref-dir) (rktio-system-path who RKTIO_PATH_PREF_DIR)]
-      [(pref-file) (rktio-system-path who RKTIO_PATH_PREF_FILE)]
-      [(addon-dir) (or addon-dir
-                       (rktio-system-path who RKTIO_PATH_ADDON_DIR))]
-      [(home-dir) (rktio-system-path who RKTIO_PATH_HOME_DIR)]
-      [(desk-dir) (rktio-system-path who RKTIO_PATH_DESK_DIR)]
-      [(doc-dir) (rktio-system-path who RKTIO_PATH_DOC_DIR)]
-      [(init-dir) (rktio-system-path who RKTIO_PATH_INIT_DIR)]
+      [(config-dir host-config-dir) (as-dir (or config-dir
+                                                (string->path "../etc")))]
+      [(collects-dir host-collects-dir) (as-dir (or collects-dir
+                                                    (string->path "../collects")))]
+      [(orig-dir) (as-dir orig-dir)]
+      [(temp-dir) (as-dir (rktio-system-path who RKTIO_PATH_TEMP_DIR))]
+      [(sys-dir) (as-dir (rktio-system-path who RKTIO_PATH_SYS_DIR))]
+      [(pref-dir) (as-dir (rktio-system-path who RKTIO_PATH_PREF_DIR))]
+      [(pref-file) (as-dir (rktio-system-path who RKTIO_PATH_PREF_FILE))]
+      [(addon-dir) (as-dir (or addon-dir
+                               (rktio-system-path who RKTIO_PATH_ADDON_DIR)))]
+      [(home-dir) (as-dir (rktio-system-path who RKTIO_PATH_HOME_DIR))]
+      [(desk-dir) (as-dir (rktio-system-path who RKTIO_PATH_DESK_DIR))]
+      [(doc-dir) (as-dir (rktio-system-path who RKTIO_PATH_DOC_DIR))]
+      [(init-dir) (as-dir (rktio-system-path who RKTIO_PATH_INIT_DIR))]
       [(init-file) (rktio-system-path who RKTIO_PATH_INIT_FILE)]
       [else (raise-argument-error who
                                   (string-append
