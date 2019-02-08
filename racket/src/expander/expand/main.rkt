@@ -259,7 +259,11 @@
     (dispatch-variable t s id ctx binding primitive? protected?)]
    [else
     ;; Some other compile-time value:
-    (raise-syntax-error #f "illegal use of syntax" s)]))
+    (raise-syntax-error #f "illegal use of syntax" s
+                        #f null
+                        (format "\n  value at phase ~s: ~e"
+                                (add1 (expand-context-phase ctx))
+                                t))]))
 
 ;; Call a core-form expander (e.g., `lambda`)
 (define (dispatch-core-form t s ctx)
