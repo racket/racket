@@ -3,7 +3,7 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace 'racket/contract/region)])
   (test/spec-passed
    'struct-type-prop.1
    '(let ()
@@ -73,5 +73,34 @@
       (struct s (f) #:property prop (λ (x) (s-f x)))
       (define s3 (s list?))
       ((prop-ref s3) 'apple)))
+
+  (test/spec-failed
+   'struct-guard/c.1
+   '(let ()
+      (with-contract pos
+        #:result any/c
+        (let ()
+          (struct s (x y) #:guard (struct-guard/c integer? boolean?))
+          (s 1 1))))
+   "(region pos)")
+
+  (test/spec-failed
+   'struct-guard/c.2
+   '(let ()
+      (with-contract pos
+        #:result any/c
+        (let ()
+          (struct s (x y) #:guard (struct-guard/c integer? boolean?))
+          (s #t #f))))
+   "(region pos)")
+
+  (test/spec-passed/result
+   'struct-guard/c.3
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^the-name-of-the-struct, field 2:"
+                                                     (exn-message x)))])
+      (struct the-name-of-the-struct (x y) #:guard (struct-guard/c integer? boolean?))
+      (the-name-of-the-struct 1 1))
+   #t)
+   
   
   )

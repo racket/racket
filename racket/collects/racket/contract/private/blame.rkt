@@ -446,6 +446,10 @@
 (define (blame/important-original? blme)
   (define i (blame-important blme))
   (cond
+    [(equal? (blame-positive blme) (blame-negative blme))
+     ;; if the positive and negative parties are the same,
+     ;; we never want to say "broke its own contract"
+     #f]
     [i (equal? (important-sense-swapped? i) (blame-original? blme))]
     [else (blame-original? blme)]))
 

@@ -143,6 +143,7 @@
  get/build-val-first-projection
 
  suggest/c
+ struct-guard/c
 
  ;; not documented.... (ie unintentional export)
  n->th)

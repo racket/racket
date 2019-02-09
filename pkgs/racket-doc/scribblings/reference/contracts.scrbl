@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt")
 @(require (for-label syntax/modcollapse
-                     racket/stxparam))
+                     racket/stxparam
+                     racket/serialize))
 
 @(define contract-eval
    (lambda ()
@@ -1785,6 +1786,11 @@ the original structure-type name does not act as a constructor.
 If the @racket[#:omit-constructor] option is present, the constructor
 is not provided.
 
+Note that if the struct is created with @racket[serializable-struct]
+or @racket[define-serializable-struct], @racket[contract-out] does not
+protect struct instances that are created via
+@racket[deserialize]. Consider using @racket[struct-guard/c] instead.
+
 The @racket[#:∃], @racket[#:exists], @racket[#:∀], and @racket[#:forall]
 clauses define new abstract contracts. The variables are bound in the
 remainder of the @racket[contract-out] form to new contracts that hide
@@ -1841,6 +1847,19 @@ A legacy shorthand for @racket[(provide (contract-out p/c-item ...))],
 except that a @racket[_contract-expr] within @racket[provide/contract]
 is evaluated at the position of the @racket[provide/contract] form
 instead of at the end of the enclosing module.}
+
+@defform[(struct-guard/c contract-expr ...)]{
+  Returns a procedure suitable to be passed as the @racket[#:guard]
+ argument to @racket[struct], @racket[serializable-struct] (and related forms).
+ The guard procedure ensures that each contract protects the
+ corresponding field values, as long as the struct is not mutated.
+ Mutations are not protected.
+
+ @examples[#:eval (contract-eval) #:once
+           (struct snake (weight hungry?)
+             #:guard (struct-guard/c real? boolean?))
+           (eval:error (snake 1.5 "yep"))]
+}
 
 @subsection{Nested Contract Boundaries}
 @defmodule*/no-declare[(racket/contract/region)]
