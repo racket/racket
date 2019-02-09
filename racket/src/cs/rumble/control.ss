@@ -713,6 +713,7 @@
    [else (let ([mf (car mc)])
            (or (metacontinuation-frame-mark-chain mf)
                (let* ([r (metacontinuation-marks (cdr mc))]
+                      ;; Add splice if non-empty
                       [m (let ([mark-splice (metacontinuation-frame-mark-splice mf)])
                            (if (empty-mark-frame? mark-splice)
                                r
@@ -720,11 +721,23 @@
                                       (strip-impersonator (metacontinuation-frame-tag mf))
                                       (list mark-splice))
                                      r)))]
-                      [l (cons (make-mark-chain-frame
-                                (strip-impersonator (metacontinuation-frame-tag mf))
-                                (continuation-next-attachments
-                                 (metacontinuation-frame-resume-k mf)))
-                               m)])
+                      ;; Get marks shallower than the splice
+                      [marks (let ([marks (continuation-next-attachments
+                                           (metacontinuation-frame-resume-k mf))])
+                               (if (and (pair? marks)
+                                        (let ([mark (car marks)])
+                                          (or (eq? mark 'empty)
+                                              (empty-mark-frame? mark))))
+                                   (cdr marks)
+                                   marks))]
+                      ;; If marks is empty and splice is non-empty, we don't need
+                      ;; to keep the empty list; the splice frame represents the tag
+                      [l (if (and (null? marks) (not (eq? m r)))
+                             m
+                             (cons (make-mark-chain-frame
+                                    (strip-impersonator (metacontinuation-frame-tag mf))
+                                    marks)
+                                   m))])
                  (set-metacontinuation-frame-mark-chain! mf l)
                  l)))]))
 
