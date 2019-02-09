@@ -36,7 +36,7 @@
       [(temp-dir) (as-dir (rktio-system-path who RKTIO_PATH_TEMP_DIR))]
       [(sys-dir) (as-dir (rktio-system-path who RKTIO_PATH_SYS_DIR))]
       [(pref-dir) (as-dir (rktio-system-path who RKTIO_PATH_PREF_DIR))]
-      [(pref-file) (as-dir (rktio-system-path who RKTIO_PATH_PREF_FILE))]
+      [(pref-file) (rktio-system-path who RKTIO_PATH_PREF_FILE)]
       [(addon-dir) (as-dir (or addon-dir
                                (rktio-system-path who RKTIO_PATH_ADDON_DIR)))]
       [(home-dir) (as-dir (rktio-system-path who RKTIO_PATH_HOME_DIR))]
