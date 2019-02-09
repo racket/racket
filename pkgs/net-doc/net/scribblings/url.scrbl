@@ -361,7 +361,6 @@ port} contains both the returned headers and the body. The
                         [post bytes?]
                         [header (listof string?) null])
          input-port?]
-)]
 @defproc[(patch-pure-port [URL url?]
                           [post bytes?]
                           [header (listof string?) null])
@@ -386,7 +385,6 @@ strings can be used to send header lines to the server.
                           [post bytes?]
                           [header (listof string?) null])
          input-port?]
-)]
 @defproc[(patch-impure-port [URL url?]
                             [post bytes?]
                             [header (listof string?) null])
