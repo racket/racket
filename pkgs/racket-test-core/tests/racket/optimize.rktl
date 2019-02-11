@@ -5216,6 +5216,10 @@
            (test #t equal? output
                  (bytes->string/utf-8 (get-output-bytes O #t)))))
   ;;
+  (define-inline (f0) (+ 1 0))
+  (test/output (f0)
+               1 "")
+  ;;
   (define-inline (f x) (+ x x))
   (test/output (f (show 'arg1 1))
                2 "arg1")

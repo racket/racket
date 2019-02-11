@@ -25,7 +25,7 @@
        (lambda (x s-exp?)
          (syntax-case x ()
            ((_ () e1 e2 ...)
-            (syntax/loc x (begin e1 e2 ...)))
+            (syntax/loc x (let () e1 e2 ...)))
            ((_ ((out in) ...) e1 e2 ...)
             (let ([ins (syntax->list (syntax (in ...)))])
               ;; Check for duplicates or other syntax errors:

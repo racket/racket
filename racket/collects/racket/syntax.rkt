@@ -205,6 +205,8 @@
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()
-    [(_ (cl) body ...) #'(with-syntax (cl) body ...)]
+    [(_ () body ...) (syntax/loc stx (let () body ...))]
+    [(_ (cl) body ...) (syntax/loc stx (with-syntax (cl) body ...))]
     [(_ (cl cls ...) body ...)
-     #'(with-syntax (cl) (with-syntax* (cls ...) body ...))]))
+     (with-syntax ([with-syntax/rest (syntax/loc stx (with-syntax* (cls ...) body ...))])
+       (syntax/loc stx (with-syntax (cl) with-syntax/rest)))]))
