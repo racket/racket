@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -162,8 +163,7 @@
           (set! input-pipe #f)
           (read-in self dest-bstr dest-start dest-end copy?)]
          [else
-          (define read-in (core-input-port-read-in input-pipe))
-          (read-in (core-port-self input-pipe) dest-bstr dest-start dest-end copy?)])]
+          (send core-input-port input-pipe read-in dest-bstr dest-start dest-end copy?)])]
       [else
        (define r
          (parameterize-break #f
@@ -189,8 +189,7 @@
           (set! input-pipe #f)
           (peek-in self dest-bstr dest-start dest-end skip-k progress-evt copy?)]
          [else
-          (define peek-in (core-input-port-peek-in input-pipe))
-          (peek-in (core-port-self input-pipe) dest-bstr dest-start dest-end skip-k progress-evt copy?)])]
+          (send core-input-port input-pipe peek-in dest-bstr dest-start dest-end skip-k progress-evt copy?)])]
       [else
        (define r
          (parameterize-break #f

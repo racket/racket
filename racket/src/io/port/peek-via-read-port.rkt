@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../host/thread.rkt"
+(require "../common/class.rkt"
+         "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
@@ -25,7 +26,7 @@
 
   ;; in atomic mode
   (define (prepare-change self)
-    ((core-input-port-prepare-change peek-pipe-i) (core-port-self peek-pipe-i)))
+    (send core-input-port peek-pipe-i prepare-change))
 
   ;; in atomic mode
   (define (pull-some-bytes [amt (if (eq? 'block buffer-mode) (bytes-length buf) 1)] #:keep-eof? [keep-eof? #t])
@@ -39,8 +40,7 @@
       [(eqv? v 0) 0]
       [else
        (let loop ([wrote 0])
-         (define write-out (core-output-port-write-out peek-pipe-o))
-         (define just-wrote (write-out (core-port-self peek-pipe-o) buf wrote v #t #f #f))
+         (define just-wrote (send core-output-port peek-pipe-o write-out buf wrote v #t #f #f))
          (define next-wrote (+ wrote just-wrote))
          (unless (= v next-wrote)
            (loop next-wrote)))
@@ -54,8 +54,7 @@
     (let try-again ()
       (cond
         [(positive? (pipe-content-length peek-pipe-i))
-         (define read-in (core-input-port-read-in peek-pipe-i))
-         (read-in (core-port-self peek-pipe-i) dest-bstr start end copy?)]
+         (send core-input-port peek-pipe-i read-in dest-bstr start end copy?)]
         [peeked-eof?
          (set! peeked-eof? #f)
          ;; an EOF doesn't count as progress
@@ -75,24 +74,6 @@
             v])])))
 
   ;; in atomic mode
-  (define (read-byte self)
-    (define b ((core-input-port-read-byte peek-pipe-i) (core-port-self peek-pipe-i)))
-    (cond
-      [(or (fixnum? b) (eof-object? b))
-       b]
-      [peeked-eof?
-       (set! peeked-eof? #f)
-       ;; an EOF doesn't count as progress
-       eof]
-      [else
-       (define v (pull-some-bytes #:keep-eof? #f))
-       (cond
-         [(retry-pull? v) (read-byte self)]
-         [else
-          (progress!)
-          v])]))
-
-  ;; in atomic mode
   (define (do-peek-in self dest-bstr start end skip progress-evt copy?)
     (let try-again ()
       (define peeked-amt (if peek-pipe-i
@@ -104,8 +85,7 @@
          #f]
         [(and peek-pipe-i
               (peeked-amt . > . skip))
-         (define peek-in (core-input-port-peek-in peek-pipe-i))
-         (peek-in (core-port-self peek-pipe-i) dest-bstr start end skip progress-evt copy?)]
+         (send core-input-port peek-pipe-i peek-in dest-bstr start end skip progress-evt copy?)]
         [peeked-eof?
          eof]
         [else
@@ -113,19 +93,6 @@
          (if (retry-pull? v)
              (try-again)
              v)])))
-
-  ;; in atomic mode
-  (define (peek-byte self)
-    (cond
-      [(positive? (pipe-content-length peek-pipe-i))
-       ((core-input-port-peek-byte peek-pipe-i) (core-port-self peek-pipe-i))]
-      [peeked-eof?
-       eof]
-      [else
-       (define v (pull-some-bytes))
-       (if (retry-pull? v)
-           (peek-byte self)
-           v)]))
 
   ;; in atomic mode
   (define (do-byte-ready self work-done!)
@@ -151,15 +118,15 @@
 
   ;; in atomic mode
   (define (get-progress-evt self)
-    ((core-input-port-get-progress-evt peek-pipe-i) (core-port-self peek-pipe-i)))
+    (send core-input-port peek-pipe-i get-progress-evt))
 
   ;; in atomic mode
   (define (progress!)
     ;; Relies on support for `0 #f #f` arguments in pipe implementation:
-    ((core-input-port-commit peek-pipe-i) (core-port-self peek-pipe-i) 0 #f #f void))
+    (send core-input-port peek-pipe-i commit 0 #f #f void))
 
   (define (commit self amt evt ext-evt finish)
-    ((core-input-port-commit peek-pipe-i) (core-port-self peek-pipe-i) amt evt ext-evt finish))
+    (send core-input-port peek-pipe-i commit amt evt ext-evt finish))
 
   (define do-buffer-mode
     (case-lambda
@@ -173,9 +140,7 @@
 
            #:prepare-change prepare-change
            
-           #:read-byte read-byte
            #:read-in do-read-in
-           #:peek-byte peek-byte
            #:peek-in do-peek-in
            #:byte-ready do-byte-ready
 

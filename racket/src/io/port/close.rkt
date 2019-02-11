@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -19,21 +20,20 @@
              [(output-port? p) (->core-output-port p)]
              [else
               (raise-argument-error 'close-input-port "port?" p)])])
-    (closed-state-closed? (core-port-closed p))))
+    (core-port-closed? p)))
 
 ;; maybe in atomic mode via custodian shutdown:
 (define (close-port p)
-  (define closed (core-port-closed p))
-  (unless (closed-state-closed? closed)
+  (unless (core-port-closed? p)
     (atomically
-     ((core-port-close p) (core-port-self p))
-     (set-closed-state! closed))))
+     (send core-port p close)
+     (set-closed-state! p))))
 
 ;; in atomic mode
-(define (set-closed-state! closed)
-  (unless (closed-state-closed? closed)
-    (set-closed-state-closed?! closed #t)
-    (let ([s (closed-state-closed-sema closed)])
+(define (set-closed-state! p)
+  (unless (core-port-closed? p)
+    (set-core-port-closed?! p #t)
+    (let ([s (core-port-closed-sema p)])
       (when s (semaphore-post s)))))
 
 (define/who (close-input-port p)
@@ -50,13 +50,12 @@
              [(output-port? p) (->core-output-port p)]
              [else
               (raise-argument-error 'port-closed-evt "port?" p)])])
-    (define closed (core-port-closed p))
     (define sema
       (atomically
-       (or (closed-state-closed-sema closed)
+       (or (core-port-closed-sema p)
            (let ([s (make-semaphore)])
-             (set-closed-state-closed-sema! closed s)
-             (when (closed-state-closed? closed)
+             (set-core-port-closed-sema! p s)
+             (when (core-port-closed? p)
                (semaphore-post s))
              s))))
     (define self (wrap-evt (semaphore-peek-evt sema)

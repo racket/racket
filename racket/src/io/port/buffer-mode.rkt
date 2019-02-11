@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -16,11 +17,11 @@
                 [(output-port? p) (->core-output-port p)]
                 [else
                  (raise-argument-error 'file-stream-buffer-mode "port?" p)])])
-       (define buffer-mode (core-port-buffer-mode p))
+       (define buffer-mode (method core-port p buffer-mode))
        (atomically
         (check-not-closed who p)
         (and buffer-mode
-             (buffer-mode (core-port-self p)))))]
+             (buffer-mode p))))]
     [(p mode)
      (unless (or (input-port? p) (output-port? p))
        (raise-argument-error who "port?" p))
@@ -33,10 +34,10 @@
      (define (set-buffer-mode p)
        (atomically
         (check-not-closed who p)
-        (define buffer-mode (core-port-buffer-mode p))
+        (define buffer-mode (method core-port p buffer-mode))
         (cond
           [buffer-mode
-           (buffer-mode (core-port-self p) mode)
+           (buffer-mode p mode)
            #t]
           [else #f])))
      (cond

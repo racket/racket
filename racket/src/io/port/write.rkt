@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/fixnum
+         "../common/class.rkt"
          "../common/internal-error.rkt"
          "../host/thread.rkt"
          "port.rkt"
@@ -22,10 +23,10 @@
        (end-atomic)
        0]
       [else
-       (define write-out (core-output-port-write-out out))
+       (define write-out (method core-output-port out write-out))
        (cond
          [(procedure? write-out)
-          (define v (write-out (core-port-self out) bstr start end (not buffer-ok?) enable-break? copy-bstr?))
+          (define v (write-out out bstr start end (not buffer-ok?) enable-break? copy-bstr?))
           (let result-loop ([v v])
             (cond
               [(not v)

@@ -12,7 +12,7 @@
 ;; that is prefixed when a port-closed check normally needs
 ;; to happen atomically with respect to the check.
 (define (check-not-closed who cp)
-  (when (closed-state-closed? (core-port-closed cp))
+  (when (core-port-closed? cp)
     (end-atomic)
     (define input? (core-input-port? cp))
     (raise-arguments-error who

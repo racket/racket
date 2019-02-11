@@ -2,7 +2,7 @@
 (require racket/fixnum
          "../common/check.rkt"
          "../common/fixnum.rkt"
-         "../common/object.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -17,8 +17,6 @@
          get-output-bytes
          string-port?)
 
-(struct input-bytes-data ())
-
 (define/who (open-input-bytes bstr [name 'string])
   (check who bytes? bstr)
   (define p (make-input-bytes (bytes->immutable-bytes bstr) name))
@@ -26,144 +24,174 @@
     (port-count-lines! p))
   p)
 
-(define-constructor (make-input-bytes bstr name)
-  (define-fixnum i 0)
-  (define alt-pos #f)
-  (define len (bytes-length bstr))
+(class bytes-input-port #:extends core-input-port
+  (field
+   [progress-sema #f]
+   [commit-manager #f]
+   [bstr #f] ; normally installed as buffer
+   [pos 0]   ; used when bstr is not installed as buffer
+   [alt-pos #f])
 
-  (define progress-sema #f)
-  (define (progress!)
-    (when progress-sema
-      (semaphore-post progress-sema)
-      (set! progress-sema #f)))
+  (private
+    ;; in atomic mode
+    [progress!
+     (lambda ()
+       (when progress-sema
+         (semaphore-post progress-sema)
+         (set! progress-sema #f)))]
 
-  (define commit-manager #f)
+    ;; in atomic mode [can leave atomic mode temporarily]
+    ;; After this function returns, complete any commit-changing work
+    ;; before leaving atomic mode again.
+    [pause-waiting-commit
+     (lambda ()
+       (when commit-manager
+         (commit-manager-pause commit-manager)))]
 
-  ;; in atomic mode [can leave atomic mode temporarily]
-  ;; After this function returns, complete any commit-changing work
-  ;; before leaving atomic mode again.
-  (define (pause-waiting-commit)
-    (when commit-manager
-      (commit-manager-pause commit-manager)))
-  ;; in atomic mode [can leave atomic mode temporarily]
-  (define (wait-commit progress-evt ext-evt finish)
-    (cond
-      [(and (not commit-manager)
-            ;; Try shortcut:
-            (not (sync/timeout 0 progress-evt))
-            (sync/timeout 0 ext-evt))
-       (finish)
-       #t]
-      [else
-       ;; General case to support blocking and potentially multiple
-       ;; commiting threads:
-       (unless commit-manager
-         (set! commit-manager (make-commit-manager)))
-       (commit-manager-wait commit-manager progress-evt ext-evt finish)]))
+    ;; in atomic mode [can leave atomic mode temporarily]
+    [wait-commit
+     (lambda (progress-evt ext-evt finish)
+       (cond
+         [(and (not commit-manager)
+               ;; Try shortcut:
+               (not (sync/timeout 0 progress-evt))
+               (sync/timeout 0 ext-evt))
+          (finish)
+          #t]
+         [else
+          ;; General case to support blocking and potentially multiple
+          ;; commiting threads:
+          (unless commit-manager
+            (set! commit-manager (make-commit-manager)))
+          (commit-manager-wait commit-manager progress-evt ext-evt finish)]))]
 
-  (make-core-input-port
-   #:name name
-   #:data (input-bytes-data)
-   #:self self
+    ;; in atomic mode
+    [in-buffer-pos
+     (lambda ()
+       (if buffer
+           buffer-pos
+           pos))])
 
-   #:prepare-change
-   (method
-    (lambda ()
-      (pause-waiting-commit)))
+  (override
+    [close
+     (lambda ()
+       (set! commit-manager #f) ; to indicate closed
+       (progress!)
+       (set! bstr #f)
+       (when buffer
+         (set! offset buffer-pos)
+         (set! buffer #f)))]
+    [file-position
+     (case-lambda
+       [() (or alt-pos (in-buffer-pos))]
+       [(given-pos)
+        (define len buffer-end)
+        (define new-pos (if (eof-object? given-pos)
+                            len
+                            (min len given-pos)))
+        (if buffer
+            (set! buffer-pos new-pos)
+            (set! pos new-pos))
+        (set! alt-pos (and (not (eof-object? given-pos))
+                           (given-pos . > . new-pos)
+                           given-pos))])]
 
-   #:read-byte
-   (method
-    (lambda ()
-      (let ([pos i])
-        (if (pos . fx< . len)
-            (begin
-              (set! i (fx+ pos 1))
-              (progress!)
-              (bytes-ref bstr pos))
-            eof))))
+    [prepare-change
+     (lambda ()
+       (pause-waiting-commit))]
 
-   #:read-in
-   (method
-    (lambda (dest-bstr start end copy?)
-      (define pos i)
-      (cond
-        [(pos . < . len)
-         (define amt (min (- end start) (- len pos)))
-         (set! i (+ pos amt))
-         (bytes-copy! dest-bstr start bstr pos (+ pos amt))
-         (progress!)
-         amt]
-        [else eof])))
+    [read-in
+     (lambda (dest-bstr start end copy?)
+       (define len buffer-end)
+       (define i (in-buffer-pos))
+       (cond
+         [(i . < . len)
+          (define amt (min (- end start) (fx- len i)))
+          (define new-pos (fx+ i amt))
+          (cond
+            [(not count)
+             ;; Keep/resume fast mode
+             (set! buffer-pos new-pos)
+             (set! offset 0)
+             (set! buffer bstr)]
+            [else
+             (set! pos new-pos)])
+          (bytes-copy! dest-bstr start bstr i new-pos)
+          (progress!)
+          amt]
+         [else eof]))]
 
-   #:peek-byte
-   (method
-    (lambda ()
-      (let ([pos i])
-        (if (pos . < . len)
-            (bytes-ref bstr pos)
-            eof))))
+    [peek-in
+     (lambda (dest-bstr start end skip progress-evt copy?)
+       (define i (in-buffer-pos))
+       (define len buffer-end)
+       (define at-pos (+ i skip))
+       (cond
+         [(and progress-evt (sync/timeout 0 progress-evt))
+          #f]
+         [(at-pos . < . len)
+          (define amt (min (- end start) (fx- len at-pos)))
+          (bytes-copy! dest-bstr start bstr at-pos (fx+ at-pos amt))
+          amt]
+         [else eof]))]
 
-   #:peek-in
-   (method
-    (lambda (dest-bstr start end skip progress-evt copy?)
-      (define pos (+ i skip))
-      (cond
-        [(and progress-evt (sync/timeout 0 progress-evt))
-         #f]
-        [(pos . < . len)
-         (define amt (min (- end start) (- len pos)))
-         (bytes-copy! dest-bstr start bstr pos (+ pos amt))
-         amt]
-        [else eof])))
+    [byte-ready
+     (lambda (work-done!)
+       ((in-buffer-pos) . < . buffer-end))]
+   
+    [get-progress-evt
+     (lambda ()
+       (define new-sema
+         (or progress-sema
+             (let ([sema (make-semaphore)])
+               (set! progress-sema sema)
+               ;; set port to slow mode:
+               (when buffer
+                 (define i buffer-pos)
+                 (set! pos i)
+                 (set! offset i)
+                 (set! buffer #f)
+                 (set! buffer-pos buffer-end))
+               sema)))
+       (semaphore-peek-evt new-sema))]
 
-   #:byte-ready
-   (method
-    (lambda (work-done!)
-      (i . < . len)))
+    [commit
+     (lambda (amt progress-evt ext-evt finish)
+       (wait-commit
+        progress-evt ext-evt
+        ;; in atomic mode, maybe in a different thread:
+        (lambda ()
+          (define len buffer-end)
+          (define i (in-buffer-pos))
+          (let ([amt (min amt (- len i))])
+            (define dest-bstr (make-bytes amt))
+            (bytes-copy! dest-bstr 0 bstr i (+ i amt))
+            (cond
+              [(not count)
+               ;; Keep/resume fast mode
+               (set! buffer-pos (fx+ i amt))
+               (set! buffer bstr)
+               (set! offset 0)]
+              [else
+               (set! pos (fx+ i amt))])
+            (progress!)
+            (finish dest-bstr)))))]
 
-   #:close
-   (method
-    (lambda ()
-      (set! commit-manager #f) ; to indicate closed
-      (progress!)))
+    [count-lines!
+     (lambda ()
+       (when buffer
+         (define i buffer-pos)
+         (set! offset i)
+         (set! pos i)
+         (set! buffer #f)
+         (set! buffer-pos buffer-end)))]))
 
-   #:get-progress-evt
-   (method
-    (lambda ()
-      (unless progress-sema
-        (set! progress-sema (make-semaphore)))
-      (semaphore-peek-evt progress-sema)))
-
-   #:commit
-   (method
-    (lambda (amt progress-evt ext-evt finish)
-      (unless commit-manager
-        (set! commit-manager (make-commit-manager)))
-      (commit-manager-wait
-       commit-manager
-       progress-evt ext-evt
-       ;; in atomic mode, maybe in a different thread:
-       (lambda ()
-         (let ([amt (min amt (- len i))])
-           (define dest-bstr (make-bytes amt))
-           (bytes-copy! dest-bstr 0 bstr i (+ i amt))
-           (set! i (+ i amt))
-           (progress!)
-           (finish dest-bstr))))))
-
-   #:file-position
-   (method
-    (case-lambda
-      [() (or alt-pos i)]
-      [(new-pos)
-       (set! i (if (eof-object? new-pos)
-                   len
-                   (min len new-pos)))
-       (set! alt-pos
-             (and new-pos
-                  (not (eof-object? new-pos))
-                  (new-pos . > . i)
-                  new-pos))]))))
+(define (make-input-bytes bstr name)
+  (new bytes-input-port
+       [name name]
+       [buffer bstr]
+       [buffer-end (bytes-length bstr)]
+       [bstr bstr]))
 
 ;; ----------------------------------------
 
@@ -183,20 +211,20 @@
      #:evt o
      #:write-out
      (lambda (o src-bstr src-start src-end nonblock? enable-break? copy?)
-       ((core-output-port-write-out o) (core-port-self o) src-bstr src-start src-end nonblock? enable-break? copy?))
+       (send core-output-port o write-out src-bstr src-start src-end nonblock? enable-break? copy?))
      #:close
-     (lambda (o) ((core-port-close o) (core-port-self o)))
+     (lambda (o) (send core-port o close))
      #:get-write-evt
-     (and (core-output-port-get-write-evt o)
+     (and (method core-output-port o get-write-evt)
           (lambda (o orig-o bstr start-k end-k)
-            ((core-output-port-get-write-evt o) (core-port-self o) o bstr start-k end-k)))
+            (send core-output-port o get-write-evt bstr start-k end-k)))
      #:get-location
-     (and (core-port-get-location o)
-          (lambda (o) ((core-port-get-location o) (core-port-self o))))
+     (and (method core-port o get-location)
+          (lambda (o) (send core-port o get-location)))
      #:count-lines!
-     (and (core-port-count-lines! o)
+     (and (method core-port o count-lines!)
           (lambda (o)
-            ((core-port-count-lines! o) (core-port-self o))))
+            (send core-port o count-lines!)))
      #:file-position
      (case-lambda
        [(o) (pipe-write-position o)]
@@ -215,7 +243,7 @@
                                     "position" new-pos))
            (pipe-write-position o len)
            (define amt (- new-pos len))
-           ((core-output-port-write-out o) (core-port-self o) (make-bytes amt 0) 0 amt #f #f #f)
+           (send core-output-port o write-out (make-bytes amt 0) 0 amt #f #f #f)
            (void)]
           [else
            (pipe-write-position o new-pos)])])))
@@ -253,7 +281,7 @@
   (cond
     [(input-port? p)
      (let ([p (->core-input-port p)])
-       (input-bytes-data? (core-port-data p)))]
+       (bytes-input-port? p))]
     [(output-port? p)
      (let ([p (->core-output-port p)])
        (output-bytes-data? (core-port-data p)))]

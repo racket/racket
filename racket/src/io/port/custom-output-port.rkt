@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
@@ -112,8 +113,7 @@
           (set! output-pipe #f)
           (write-out self bstr start end non-block/buffer? enable-break? copy?)]
          [else
-          (define write-out (core-output-port-write-out output-pipe))
-          (write-out (core-port-self output-pipe) bstr start end non-block/buffer? enable-break? copy?)])]
+          (send core-output-port output-pipe write-out bstr start end non-block/buffer? enable-break? copy?)])]
       [else
        (define r
          ;; Always tell user port to re-enable breaks if it blocks, since

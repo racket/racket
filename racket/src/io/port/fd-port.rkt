@@ -81,7 +81,7 @@
               (raise-network-error #f n "error reading from stream port")
               (raise-filesystem-error #f n "error reading from stream port"))]
          [(eqv? n RKTIO_READ_EOF) eof]
-         [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ (core-port-closed port))
+         [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ port)
                                (lambda (v) 0))]
          [else n]))
      #:read-is-atomic? #t
@@ -253,7 +253,7 @@
   (define custodian-reference
     (register-fd-close cust fd fd-refcount flush-handle port))
 
-  (set-fd-evt-closed! evt (core-port-closed port))
+  (set-fd-evt-closed! evt port)
 
   port)
 
@@ -319,7 +319,7 @@
    ;; whether the file descriptor has data available:
    (lambda (fde ctx)
      (cond
-       [(closed-state-closed? (fd-evt-closed fde))
+       [(core-port-closed? (fd-evt-closed fde))
         (values (list fde) #f)]
        [else
         (define mode (fd-evt-mode fde))
@@ -353,7 +353,6 @@
 ;; ----------------------------------------
 
 (define (register-fd-close custodian fd fd-refcount flush-handle port)
-  (define closed (core-port-closed port))
   (unsafe-custodian-register custodian
                              fd
                              ;; in atomic mode
@@ -361,7 +360,7 @@
                                (when flush-handle
                                  (plumber-flush-handle-remove! flush-handle))
                                (fd-close fd fd-refcount)
-                               (set-closed-state! closed))
+                               (set-closed-state! port))
                              #f
                              #f))
 

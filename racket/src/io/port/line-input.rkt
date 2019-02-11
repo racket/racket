@@ -2,6 +2,7 @@
 (require racket/fixnum
          "../common/check.rkt"
          "input-port.rkt"
+         "read-and-peek.rkt"
          "bytes-input.rkt"
          "string-input.rkt"
          "parameter.rkt"
@@ -17,7 +18,7 @@
 (define-syntax-rule (define-read-line read-line
                       make-string string-set! 
                       string-copy! substring
-                      do-read-char peek-char
+                      read-a-char peek-a-char
                       as-char)
   (define/who (read-line [orig-in (current-input-port)] [mode 'linefeed])
     (define in (->core-input-port orig-in who))
@@ -28,7 +29,7 @@
     (define crlf? (case mode [(return-linefeed any) #t] [else #f]))
     (define init-len 32)
     (let loop ([str (make-string init-len)] [len init-len] [pos 0])
-      (define ch (do-read-char 'read-line in))
+      (define ch (read-a-char 'read-line in))
       (define (keep-char)
         (if (pos . fx< . len)
             (begin
@@ -48,8 +49,8 @@
              (eqv? ch (as-char #\return)))
         (cond
          [(and crlf?
-               (eqv? (peek-char in) (as-char #\linefeed)))
-          (do-read-char 'read-line in)
+               (eqv? (peek-a-char 'read-line in 0) (as-char #\linefeed)))
+          (read-a-char 'read-line in)
           (substring str 0 pos)]
          [cr?
           (substring str 0 pos)]
@@ -62,11 +63,11 @@
 (define-read-line read-line
   make-string string-set! 
   string-copy! substring
-  do-read-char/core-port peek-char
+  read-a-char peek-a-char
   values)
 
  (define-read-line read-bytes-line
    make-bytes bytes-set! 
    bytes-copy! subbytes
-   do-read-byte/core-port peek-byte
+   read-a-byte peek-a-byte
    char->integer)

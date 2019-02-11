@@ -21,8 +21,8 @@
          peek-string
          peek-string!
 
-         do-read-char/core-port
-         do-peek-char)
+         read-a-char
+         peek-a-char)
 
 ;; ----------------------------------------
 
@@ -196,10 +196,11 @@
 
 ;; A shortcut to implement `read-char` in terms of a port-specific
 ;; `read-byte`:
-(define (read-char-via-read-byte who in read-byte #:special-ok? [special-ok? #t])
-  (define b (do-read-byte who read-byte in))
+(define (read-char-via-read-byte who in #:special-ok? [special-ok? #t])
+  (define b (read-a-byte who in #:special-ok? special-ok?))
   (cond
     [(eof-object? b) b]
+    [(and special-ok? (procedure? b)) b]
     [else
      (cond
        [(b . fx< . 128) (integer->char b)]
@@ -217,7 +218,7 @@
            ;; complete, and consume only the already-consumed byte
            ;; if there's a decoding error
            (let loop ([skip-k 0] [accum accum] [remaining remaining])
-             (define b (peek-byte/core-port in skip-k))
+             (define b (peek-a-byte who in skip-k))
              (cond
                [(eof-object? b)
                 ;; Already-consumed byte is consume as an error byte
@@ -229,7 +230,7 @@
                   [(eq? state 'complete)
                    ;; Consume used bytes
                    (let loop ([skip-k skip-k])
-                     (do-read-byte who read-byte in)
+                     (read-a-byte who in)
                      (unless (fx= 0 skip-k)
                        (loop (fx- skip-k 1))))
                    (integer->char next-accum)]
@@ -241,22 +242,12 @@
 ;; ----------------------------------------
 
 ;; If `special-ok?`, can return a special-value procedure
-(define (do-read-char/core-port who in #:special-ok? [special-ok? #f])
-  (define read-byte (core-input-port-read-byte in))
-  (cond
-    [(not read-byte)
-     (define str (make-string 1))
-     (define-values (v used-bytes) (read-some-chars! who in str 0 1 #:special-ok? special-ok?))
-     (if (eq? v 1)
-         (string-ref str 0)
-         v)]
-    [else
-     ;; Byte-level shortcut is available, so try it as a char shortcut
-     (read-char-via-read-byte who in read-byte #:special-ok? special-ok?)]))
+(define (read-a-char who in #:special-ok? [special-ok? #f])
+  (read-char-via-read-byte who in #:special-ok? special-ok?))
 
 (define/who (read-char [in (current-input-port)])
   (let ([in (->core-input-port in who)])
-    (do-read-char/core-port who in)))
+    (read-a-char who in)))
   
 (define/who (read-string amt [in (current-input-port)])
   (check who exact-nonnegative-integer? amt)
@@ -287,18 +278,17 @@
 (define (do-peek-string! who in str start end skip #:special-ok? [special-ok? #f])
   (do-read-string! who in str start end #:skip skip #:just-peek? #t #:special-ok? special-ok?))
 
-(define (do-peek-char who in skip-k #:special-ok? [special-ok? #f])
+(define (peek-a-char who in skip-k #:special-ok? [special-ok? #f])
   (let ([in (->core-input-port in)])
-    (define peek-byte (and (zero? skip-k)
-                           (core-input-port-peek-byte in)))
-    (define b (and peek-byte (atomically (peek-byte (core-port-self in)))))
+    (define b (peek-a-byte who in skip-k #:special-ok? special-ok?))
     (cond
       [(and b
             (or (eof-object? b)
 	    	(and (byte? b)
-                     (b . < . 128))))
-       ;; Shortcut worked
-       (if (eof-object? b) b (integer->char b))]
+                     (b . < . 128))
+                (procedure? b)))
+       ;; Shortcut workedx
+       (if (fixnum? b) (integer->char b) b)]
       [else
        ;; General mode
        (define bstr (make-string 1))
@@ -310,7 +300,7 @@
 (define/who (peek-char [in (current-input-port)] [skip-k 0])
   (check who input-port? in)
   (check who exact-nonnegative-integer? skip-k)
-  (do-peek-char who in skip-k #:special-ok? #f))
+  (peek-a-char who in skip-k #:special-ok? #f))
   
 (define/who (peek-string amt skip-k [in (current-input-port)])
   (check who exact-nonnegative-integer? amt)

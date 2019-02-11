@@ -18,13 +18,12 @@
   (check who input-port? orig-in)
   (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
   (let ([in (->core-input-port orig-in)])
-    (define read-byte (core-input-port-read-byte in))
-    (cond
-      [read-byte (do-read-byte who read-byte in)]
-      [else
-       (extract-special-value (read-byte-via-bytes in)
-                              in source-name -1
-                              special-wrap)])))
+    (define v (read-a-byte who in #:special-ok? #t))
+    (if (fixnum? v)
+        v
+        (extract-special-value v
+                               in source-name -1
+                               special-wrap))))
 
 
 (define/who (peek-byte-or-special [orig-in (current-input-port)]
@@ -39,9 +38,14 @@
   (when progress-evt
     (check-progress-evt who progress-evt orig-in))
   (let ([in (->core-input-port orig-in)])
-    (define peek-byte (core-input-port-peek-byte in))
     (cond
-      [peek-byte (do-peek-byte who peek-byte in)]
+      [(not progress-evt)
+       (define v (peek-a-byte who in skip-k #:special-ok? #t))
+       (if (fixnum? v)
+           v
+           (extract-special-value v
+                                  in source-name skip-k
+                                  special-wrap))]
       [else
        (extract-special-value (peek-byte-via-bytes in skip-k #:progress-evt progress-evt)
                               in source-name skip-k
@@ -54,7 +58,7 @@
                                   [source-name #f])
   (let ([in (->core-input-port in who)])
     (check who #:or-false (procedure-arity-includes/c 1) special-wrap)
-    (extract-special-value (do-read-char/core-port who in #:special-ok? #t)
+    (extract-special-value (read-a-char who in #:special-ok? #t)
                            in source-name -1
                            special-wrap)))
 
@@ -65,7 +69,7 @@
   (check who input-port? in)
   (check who exact-nonnegative-integer? skip-k)
   (check who special-wrap-for-peek? #:contract special-wrap-for-peek/c-str special-wrap)
-  (extract-special-value (do-peek-char who in skip-k #:special-ok? #t)
+  (extract-special-value (peek-a-char who in skip-k #:special-ok? #t)
                          in source-name skip-k
                          special-wrap))
 

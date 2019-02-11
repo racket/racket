@@ -35,28 +35,30 @@
        (pipe-data? (core-port-data (->core-output-port p)))))
 
 (define (pipe-content-length p)
-  ((pipe-data-get-content-length
-    (core-port-data 
-     (cond
-       [(pipe-input-port? p) (->core-input-port p)]
-       [(pipe-output-port? p) (->core-output-port p)]
-       [else
-        (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)])))
-   (core-port-self p)))
+  (define cp
+    (cond
+      [(pipe-input-port? p) (->core-input-port p)]
+      [(pipe-output-port? p) (->core-output-port p)]
+      [else
+       (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)]))
+  ((pipe-data-get-content-length (core-port-data cp))
+   (if (core-input-port? cp)
+       (compat-input-port-self cp)
+       (compat-output-port-self cp))))
 
 ;; in atomic mode:
 (define pipe-write-position
   (case-lambda
-    [(p) ((pipe-data-write-position (core-port-data p)) (core-port-self p))]
-    [(p pos) ((pipe-data-write-position (core-port-data p)) (core-port-self p) pos)]))
+    [(p) ((pipe-data-write-position (core-port-data p)) (compat-output-port-self p))]
+    [(p pos) ((pipe-data-write-position (core-port-data p)) (compat-output-port-self p) pos)]))
 
 ;; in atomic mode:
 (define (pipe-discard-all p)
-  ((pipe-data-discard-all (core-port-data p)) (core-port-self p)))
+  ((pipe-data-discard-all (core-port-data p)) (compat-output-port-self p)))
 
-;; in atomic mode:
+;; in atomic mode:x
 (define (pipe-get-content p bstr start-pos)
-  ((pipe-data-get-content (core-port-data p)) (core-port-self p) bstr start-pos))
+  ((pipe-data-get-content (core-port-data p)) (compat-output-port-self p) bstr start-pos))
 
 (define-constructor (make-pipe-ends [limit #f] [input-name 'pipe] [output-name 'pipe]
                                     #:need-input? [need-input? #t])

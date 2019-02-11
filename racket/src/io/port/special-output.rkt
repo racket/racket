@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "output-port.rkt"
@@ -14,13 +15,13 @@
 (define/who (port-writes-special? o)
   (check who output-port? o)
   (let ([o (->core-output-port o)])
-    (and (core-output-port-write-out-special o) #t)))
+    (and (method core-output-port o write-out-special) #t)))
 
 (define (do-write-special who v orig-o #:retry? retry?)
   (check who output-port? orig-o)
   (let port-loop ([o orig-o] [extra-count-os null])
     (let ([o (->core-output-port o)])
-      (define write-out-special (core-output-port-write-out-special o))
+      (define write-out-special (method core-output-port o write-out-special))
       (unless write-out-special
         (raise-arguments-error who
                                "port does not support special values"
@@ -31,7 +32,7 @@
         [else
          (let loop ()
            (start-atomic)
-           (define r (write-out-special (core-port-self o) v (not retry?) #f))
+           (define r (write-out-special o v (not retry?) #f))
            (let result-loop ([r r])
              (cond
                [(not r)
@@ -57,9 +58,9 @@
 (define/who (write-special-evt v [o (current-output-port)])
   (check who output-port? o)
   (let ([o (->core-output-port o)])
-    (define get-write-special-evt (core-output-port-get-write-special-evt o))
+    (define get-write-special-evt (method core-output-port o get-write-special-evt))
     (unless get-write-special-evt
       (raise-arguments-error who
                              "port does not support special-value events"
                              "port" o))
-    (get-write-special-evt (core-port-self o) v)))
+    (get-write-special-evt o v)))

@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -31,22 +32,20 @@
              [else (check who #:test #f #:contract "port?" p)])])
     (atomically
      (check-not-closed who p)
-     (unless (core-port-count? p)
-       (set-core-port-count?! p #t)
-       (set-core-port-line! p 1)
-       (set-core-port-column! p 0)
-       (set-core-port-position! p (add1 (or (core-port-offset p) 0)))
-       (define count-lines! (core-port-count-lines! p))
+     (unless (core-port-count p)
+       (set-core-port-count! p (location #f #f 1 0 (add1 (or (core-port-offset p) 0))))
+       (define count-lines! (method core-port p count-lines!))
        (when count-lines!
-         (count-lines! (core-port-self p)))))))
+         (count-lines! p))))))
 
 (define/who (port-counts-lines? p)
-  (core-port-count?
-   (cond
-     [(input-port? p) (->core-input-port p)]
-     [(output-port? p) (->core-output-port p)]
-     [else
-      (check who #:test #f #:contract "port?" p)])))
+  (and (core-port-count
+        (cond
+          [(input-port? p) (->core-input-port p)]
+          [(output-port? p) (->core-output-port p)]
+          [else
+           (check who #:test #f #:contract "port?" p)]))
+       #t))
 
 (define/who (port-next-location p)
   (let ([p (cond
@@ -54,23 +53,24 @@
              [(output-port? p) (->core-output-port p)]
              [else
               (check who #:test #f #:contract "port?" p)])])
+    (define loc (core-port-count p))
     (cond
-      [(core-port-count? p)
+      [loc
        (atomically
         (check-not-closed who p)
-        (define get-location (core-port-get-location p))
+        (define get-location (method core-port p get-location))
         (cond
           [get-location
-           (get-location (core-port-self p))]
+           (get-location p)]
           [else
-           (values (core-port-line p)
-                   (core-port-column p)
-                   (core-port-position p))]))]
-      [(core-port-file-position p)
+           (values (location-line loc)
+                   (location-column loc)
+                   (location-position loc))]))]
+      [(method core-port p file-position)
        (define offset (do-simple-file-position who p (lambda () #f)))
        (values #f #f (and offset (add1 offset)))]
       [else
-       (define offset (core-port-offset p))
+       (define offset (get-core-port-offset p))
        (values #f #f (and offset (add1 offset)))])))
 
 (define/who (set-port-next-location! p line col pos)
@@ -84,11 +84,11 @@
              [(input-port? p) (->core-input-port p)]
              [else (->core-output-port p)])])
     (atomically
-     (when (and (core-port-count? p)
-                (not (core-port-count-lines! p)))
-       (set-core-port-line! p line)
-       (set-core-port-column! p col)
-       (set-core-port-position! p pos)))))
+     (define loc (core-port-count p))
+     (when (and loc (not (method core-port p get-location)))
+       (set-location-line! loc line)
+       (set-location-column! loc col)
+       (set-location-position! loc pos)))))
 
 ;; in atomic mode
 ;; When line counting is enabled, increment line, column, etc. counts
@@ -98,15 +98,16 @@
 ;; can go backwards when the decoding completes.
 (define (port-count! in amt bstr start)
   (increment-offset! in amt)
-  (when (core-port-count? in)
+  (define loc (core-port-count in))
+  (when loc
     (define end (+ start amt))
     (let loop ([i start]
                [span 0] ; number of previous bytes still to send to UTF-8 decoding
-               [line (core-port-line in)]
-               [column (core-port-column in)]
-               [position (core-port-position in)]
-               [state (core-port-state in)]
-               [cr-state (core-port-cr-state in)]) ; #t => previous char was #\return
+               [line (location-line loc)]
+               [column (location-column loc)]
+               [position (location-position loc)]
+               [state (location-state loc)]
+               [cr-state (location-cr-state loc)]) ; #t => previous char was #\return
       (define (finish-utf-8 i abort-mode)
         (define-values (used-bytes got-chars new-state)
           (utf-8-decode! bstr (- i span) i
@@ -133,11 +134,11 @@
        [(= i end)
         (cond
          [(zero? span)
-          (set-core-port-line! in line)
-          (set-core-port-column! in column)
-          (set-core-port-position! in position)
-          (set-core-port-state! in state)
-          (set-core-port-cr-state! in cr-state)]
+          (set-location-line! loc line)
+          (set-location-column! loc column)
+          (set-location-position! loc position)
+          (set-location-state! loc state)
+          (set-location-cr-state! loc cr-state)]
          [else          
           ;; span doesn't include CR, LF, or tab
           (finish-utf-8 end 'state)])]
@@ -182,20 +183,21 @@
 ;; a non-whitespace byte.
 (define (port-count-byte! in b)
   (increment-offset! in 1)
-  (when (core-port-count? in)
+  (define loc (core-port-count in))
+  (when loc
     (cond
-     [(or (core-port-state in)
-          (core-port-cr-state in)
+     [(or (location-state loc)
+          (location-cr-state loc)
           (and (fixnum? b) (b . > . 127))
           (eq? b (char->integer #\return))
           (eq? b (char->integer #\newline))
           (eq? b (char->integer #\tab)))
       (port-count! in 1 (bytes b) 0)]
      [else
-      (let ([column (core-port-column in)]
-            [position (core-port-position in)])
-        (when position (set-core-port-position! in (add1 position)))
-        (when column (set-core-port-column! in (add1 column))))])))
+      (let ([column (location-column loc)]
+            [position (location-position loc)])
+        (when position (set-location-position! loc (add1 position)))
+        (when column (set-location-column! loc (add1 column))))])))
 
 ;; in atomic mode
 (define (port-count-byte-all! in extra-ins b)
@@ -205,6 +207,7 @@
 
 ;; in atomic mode
 (define (increment-offset! in amt)
-  (define old-offset (core-port-offset in))
-  (when old-offset
-    (set-core-port-offset! in (+ amt old-offset))))
+  (unless (core-port-buffer in)
+    (define old-offset (core-port-offset in))
+    (when old-offset
+      (set-core-port-offset! in (+ amt old-offset)))))

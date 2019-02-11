@@ -1,5 +1,7 @@
 #lang racket/base
-(require "../common/internal-error.rkt"
+(require racket/fixnum
+         "../common/internal-error.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -10,9 +12,9 @@
 (provide read-some-bytes!
          peek-some-bytes!
 
-         do-read-byte
+         read-a-byte
          read-byte-via-bytes
-         do-peek-byte
+         peek-a-byte
          peek-byte-via-bytes)
 
 ;; Read up to `(- end start)` bytes, producing at least a
@@ -47,7 +49,7 @@
       [(= start end) ; intentionally before the port-closed check
        (end-atomic)
        0]
-      [(closed-state-closed? (core-port-closed in))
+      [(core-port-closed? in)
        (check-not-closed who in)]
       ;; previously detected EOF?
       [(core-input-port-pending-eof? in)
@@ -56,58 +58,70 @@
        (end-atomic)
        eof]
       [else
-       ;; normal mode...
-       (define read-in (core-input-port-read-in in))
+       (define buf-pos (core-port-buffer-pos in))
+       (define buf-end (core-port-buffer-end in))
        (cond
-         [(procedure? read-in)
-          (define v (read-in (core-port-self in) bstr start end copy-bstr?))
-          (let result-loop ([v v])
-            (cond
-              [(and (integer? v) (not (eq? v 0)))
-               (port-count-all! in extra-count-ins v bstr start)]
-              [(procedure? v)
-               (port-count-byte-all! in extra-count-ins #f)])
-            (end-atomic)
-            (cond
-              [(exact-nonnegative-integer? v)
-               (cond
-                 [(zero? v)
-                  (if zero-ok?
-                      0
-                      (loop in extra-count-ins))]
-                 [(v . <= . (- end start)) v]
-                 [else
-                  (raise-arguments-error who
-                                         "result integer is larger than the supplied byte string"
-                                         "result" v
-                                         "byte-string length" (- end start))])]
-              [(eof-object? v) eof]
-              [(evt? v)
-               ;; If `zero-ok?`, we should at least poll the event
-               (define timeout (if zero-ok? (lambda () 0) #f))
-               (define next-v (if enable-break?
-                                  (sync/timeout/enable-break timeout v)
-                                  (sync/timeout timeout v)))
-               (cond
-                 [(and zero-ok? (evt? next-v))
-                  ;; Avoid looping on events
-                  0]
-                 [else
-                  (start-atomic)
-                  (result-loop next-v)])]
-              [(procedure? v)
-               (if special-ok?
-                   (if limit-special-arity?
-                       (lambda (a b c d) (v a b c d))
-                       v)
-                   (raise-arguments-error who
-                                          "non-character in an unsupported context"
-                                          "port" orig-in))]
-              [else
-               (internal-error (format "weird read-bytes result ~s" v))]))]
-         [else
+         [(buf-pos . < . buf-end)
+          ;; Read bytes from buffer
+          (define v (min (- buf-end buf-pos) (- end start)))
+          (define new-pos (fx+ buf-pos v))
+          (bytes-copy! bstr start (core-port-buffer in) buf-pos new-pos)
+          (set-core-port-buffer-pos! in new-pos)
           (end-atomic)
-          (loop (->core-input-port read-in) (cons in extra-count-ins))])])))
+          v]
+         [else
+          ;; Call port's `read-in` method
+          (define read-in (method core-input-port in read-in))
+          (cond
+            [(procedure? read-in)
+             (define v (read-in in bstr start end copy-bstr?))
+             (let result-loop ([v v])
+               (cond
+                 [(and (integer? v) (not (eq? v 0)))
+                  (port-count-all! in extra-count-ins v bstr start)]
+                 [(procedure? v)
+                  (port-count-byte-all! in extra-count-ins #f)])
+               (end-atomic)
+               (cond
+                 [(exact-nonnegative-integer? v)
+                  (cond
+                    [(zero? v)
+                     (if zero-ok?
+                         0
+                         (loop in extra-count-ins))]
+                    [(v . <= . (- end start)) v]
+                    [else
+                     (raise-arguments-error who
+                                            "result integer is larger than the supplied byte string"
+                                            "result" v
+                                            "byte-string length" (- end start))])]
+                 [(eof-object? v) eof]
+                 [(evt? v)
+                  ;; If `zero-ok?`, we should at least poll the event
+                  (define timeout (if zero-ok? (lambda () 0) #f))
+                  (define next-v (if enable-break?
+                                     (sync/timeout/enable-break timeout v)
+                                     (sync/timeout timeout v)))
+                  (cond
+                    [(and zero-ok? (evt? next-v))
+                     ;; Avoid looping on events
+                     0]
+                    [else
+                     (start-atomic)
+                     (result-loop next-v)])]
+                 [(procedure? v)
+                  (if special-ok?
+                      (if limit-special-arity?
+                          (lambda (a b c d) (v a b c d))
+                          v)
+                      (raise-arguments-error who
+                                             "non-character in an unsupported context"
+                                             "port" orig-in))]
+                 [else
+                  (internal-error (format "weird read-bytes result ~s" v))]))]
+            [else
+             (end-atomic)
+             (loop (->core-input-port read-in) (cons in extra-count-ins))])])])))
 
 ;; Like `read-some-bytes!`, but merely peeks
 (define (peek-some-bytes! who orig-in bstr start end skip
@@ -129,77 +143,76 @@
             (sync/timeout 0 progress-evt))
        (end-atomic)
        0]
-      [(closed-state-closed? (core-port-closed in))
+      [(core-port-closed? in)
        (check-not-closed who in)]
       ;; previously detected EOF? (never skip past it)
       [(core-input-port-pending-eof? in)
        (end-atomic)
-       
        eof]
       [else
-       (define peek-in (core-input-port-peek-in in))
+       (define buf-pos (+ (core-port-buffer-pos in) skip))
+       (define buf-end (core-port-buffer-end in))
        (cond
-         [(procedure? peek-in)
-          (define v (peek-in (core-port-self in) bstr start end skip progress-evt copy-bstr?))
+         [(buf-pos . < . buf-end)
+          ;; Copy bytes from buffer
+          (define v (min (- buf-end buf-pos) (- end start)))
+          (bytes-copy! bstr start (core-port-buffer in) buf-pos (fx+ buf-pos v))
           (end-atomic)
-          (let result-loop ([v v])
-            (cond
-              [(exact-nonnegative-integer? v)
-               (cond
-                 [(zero? v)
-                  (if zero-ok?
-                      0
-                      (loop in))]
-                 [(v . <= . (- end start)) v]
-                 [else
-                  (raise-arguments-error who
-                                         "result integer is larger than the supplied byte string"
-                                         "result" v
-                                         "byte-string length" (- end start))])]
-              [(eof-object? v) eof]
-              [(evt? v)
-               (cond
-                 [zero-ok? 0]
-                 [else (result-loop (if enable-break?
-                                        (sync/enable-break v)
-                                        (sync v)))])]
-              [(procedure? v)
-               (if special-ok?
-                   (if limit-special-arity?
-                       (lambda (a b c d) (v a b c d))
-                       v)
-                   (raise-arguments-error who
-                                          "non-character in an unsupported context"
-                                          "port" orig-in))]
-              [else
-               (internal-error (format "weird peek-bytes result ~s" v))]))]
+          v]
          [else
-          (end-atomic)
-          (loop (->core-input-port peek-in))])])))
+          (define peek-in (method core-input-port in peek-in))
+          (cond
+            [(procedure? peek-in)
+             (define v (peek-in in bstr start end skip progress-evt copy-bstr?))
+             (end-atomic)
+             (let result-loop ([v v])
+               (cond
+                 [(exact-nonnegative-integer? v)
+                  (cond
+                    [(zero? v)
+                     (if zero-ok?
+                         0
+                         (loop in))]
+                    [(v . <= . (- end start)) v]
+                    [else
+                     (raise-arguments-error who
+                                            "result integer is larger than the supplied byte string"
+                                            "result" v
+                                            "byte-string length" (- end start))])]
+                 [(eof-object? v) eof]
+                 [(evt? v)
+                  (cond
+                    [zero-ok? 0]
+                    [else (result-loop (if enable-break?
+                                           (sync/enable-break v)
+                                           (sync v)))])]
+                 [(procedure? v)
+                  (if special-ok?
+                      (if limit-special-arity?
+                          (lambda (a b c d) (v a b c d))
+                          v)
+                      (raise-arguments-error who
+                                             "non-character in an unsupported context"
+                                             "port" orig-in))]
+                 [else
+                  (internal-error (format "weird peek-bytes result ~s" v))]))]
+            [else
+             (end-atomic)
+             (loop (->core-input-port peek-in))])])])))
 
-
-;; Use a `read-byte` shortcut
-(define (do-read-byte who read-byte in)
-  (let loop ()
-    (start-atomic)
-    (prepare-change in)
-    (cond
-      [(closed-state-closed? (core-port-closed in))
-       (check-not-closed who in)]
-      [else
-       (define b (read-byte (core-port-self in)))
-       (cond
-         [(eof-object? b)
-          (end-atomic)
-          b]
-         [(fixnum? b)
-          (port-count-byte! in b)
-          (end-atomic)
-          b]
-         [else ; must be an evt
-          (end-atomic)
-          (sync b)
-          (loop)])])))
+;; Try the buffer shortcut first
+(define (read-a-byte who in #:special-ok? [special-ok? #f])
+  (start-atomic)
+  (define pos (core-port-buffer-pos in))
+  (cond
+    [(pos . fx< . (core-port-buffer-end in))
+     (define b (bytes-ref (core-port-buffer in) pos))
+     (set-core-port-buffer-pos! in (fx+ pos 1))
+     (end-atomic)
+     b]
+    [else
+     (end-atomic)
+     (read-byte-via-bytes in #:special-ok? special-ok?)]))
 
 ;; Use the general path; may return a procedure for a special
 (define (read-byte-via-bytes in #:special-ok? [special-ok? #t])
@@ -212,19 +225,18 @@
       (bytes-ref bstr 0)
       v))
 
-;; Use a `peek-byte` shortcut
-(define (do-peek-byte who peek-byte in)
-  (let loop ()
-    (start-atomic)
-    (prepare-change in)
-    (check-not-closed who in)
-    (define b (peek-byte (core-port-self in)))
-    (end-atomic)
-    (cond
-      [(evt? b)
-       (sync b)
-       (loop)]
-      [else b])))
+;; Try the buffer shortcut first
+(define (peek-a-byte who in skip-k #:special-ok? [special-ok? #f])
+  (start-atomic)
+  (define pos (+ (core-port-buffer-pos in) skip-k))
+  (cond
+    [(pos . < . (core-port-buffer-end in))
+     (define b (bytes-ref (core-port-buffer in) pos))
+     (end-atomic)
+     b]
+    [else
+     (end-atomic)
+     (peek-byte-via-bytes in skip-k #:special-ok? special-ok?)]))
 
 ;; Use the general path; may return a procedure for a special
 (define (peek-byte-via-bytes in skip-k

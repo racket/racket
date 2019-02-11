@@ -1,5 +1,6 @@
 #lang racket/base
 (require "../common/check.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "parameter.rkt"
          "port.rkt"
@@ -34,14 +35,14 @@
 (define/who (port-provides-progress-evts? in)
   (check who input-port? in)
   (let ([in (->core-input-port in)])
-    (and (core-input-port-get-progress-evt in) #t)))
+    (and (method core-input-port in get-progress-evt) #t)))
 
 (define/who (port-progress-evt orig-in)
   (check who input-port? orig-in)
   (let ([in (->core-input-port orig-in)])
-    (define get-progress-evt (core-input-port-get-progress-evt in))
+    (define get-progress-evt (method core-input-port in get-progress-evt))
     (if get-progress-evt
-        (progress-evt orig-in (get-progress-evt (core-port-self in)))
+        (progress-evt orig-in (get-progress-evt in))
         (raise-arguments-error 'port-progress-evt
                                "port does not provide progress evts"
                                "port" orig-in))))
@@ -55,14 +56,14 @@
   (check who input-port? in)
   (check-progress-evt who progress-evt in)
   (let ([in (->core-input-port in)])
-    (define commit (core-input-port-commit in))
     (atomically
      ;; We specially skip a check on whether the port is closed,
      ;; since that's handled as the progress evt becoming ready
-     (commit (core-port-self in) amt (progress-evt-evt progress-evt) evt
-             ;; in atomic mode (but maybe leaves atomic mode in between)
-             (lambda (bstr)
-               (port-count! in (bytes-length bstr) bstr 0))))))
+     (send core-input-port in commit
+           amt (progress-evt-evt progress-evt) evt
+           ;; in atomic mode (but maybe leaves atomic mode in between)
+           (lambda (bstr)
+             (port-count! in (bytes-length bstr) bstr 0))))))
 
 (define (check-progress-evt who progress-evt in)
   (unless (progress-evt?* progress-evt in)
