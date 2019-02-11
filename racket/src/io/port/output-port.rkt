@@ -10,6 +10,7 @@
          output-port?
          ->core-output-port
          (struct-out core-output-port)
+         get-write-evt-via-write-out
          make-core-output-port
          compat-output-port-self)
 

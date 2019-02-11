@@ -7,7 +7,6 @@
          "port.rkt"
          "input-port.rkt"
          "output-port.rkt"
-         "pipe.rkt"
          "bytes-input.rkt"
          "count.rkt"
          "commit-manager.rkt")
@@ -195,60 +194,74 @@
 
 ;; ----------------------------------------
 
-(struct output-bytes-data (o get))
+(class bytes-output-port #:extends core-output-port
+  (field
+   [bstr #""]
+   [pos 0]
+   [max-pos 0])
 
-(define (open-output-bytes [name 'string])
-  (define-values (i/none o) (make-pipe-ends #f name name #:need-input? #f))
-  (define p
-    (make-core-output-port
-     #:name name
-     #:data (output-bytes-data o (lambda (o bstr start-pos discard?)
-                                   ;; in atomic mode
-                                   (pipe-get-content o bstr start-pos)
-                                   (when discard?
-                                     (pipe-discard-all o))))
-     #:self o
-     #:evt o
-     #:write-out
-     (lambda (o src-bstr src-start src-end nonblock? enable-break? copy?)
-       (send core-output-port o write-out src-bstr src-start src-end nonblock? enable-break? copy?))
-     #:close
-     (lambda (o) (send core-port o close))
-     #:get-write-evt
-     (and (method core-output-port o get-write-evt)
-          (lambda (o orig-o bstr start-k end-k)
-            (send core-output-port o get-write-evt bstr start-k end-k)))
-     #:get-location
-     (and (method core-port o get-location)
-          (lambda (o) (send core-port o get-location)))
-     #:count-lines!
-     (and (method core-port o count-lines!)
-          (lambda (o)
-            (send core-port o count-lines!)))
-     #:file-position
+  (public
+    [get-length (lambda () max-pos)]
+    [get-bytes (lambda (dest-bstr start-pos discard?)
+                 (start-atomic)
+                 (bytes-copy! dest-bstr 0 bstr start-pos (fx+ start-pos (bytes-length dest-bstr)))
+                 (when discard?
+                   (set! bstr #"")
+                   (set! pos 0)
+                   (set! max-pos 0))
+                 (end-atomic))])
+
+  (private
+    [enlarge!
+     (lambda (len)
+       (define new-bstr (make-bytes (fx* 2 len)))
+       (bytes-copy! new-bstr 0 bstr 0 pos)
+       (set! bstr new-bstr))])
+
+  (override
+    [write-out
+     (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+       (define i pos)
+       (define amt (min (fx- src-end src-start) 4096))
+       (define end-i (fx+ i amt))
+       (when ((bytes-length bstr) . < . end-i)
+         (enlarge! end-i))
+       (bytes-copy! bstr i src-bstr src-start (fx+ src-start amt))
+       (set! pos end-i)
+       (set! max-pos (fxmax pos max-pos))
+       amt)]
+    [get-write-evt
+     (get-write-evt-via-write-out (lambda (out v bstr start)
+                                    (port-count! out v bstr start)))]
+    [file-position
      (case-lambda
-       [(o) (pipe-write-position o)]
-       [(o new-pos)
-        (define len (pipe-content-length o))
+       [() pos]
+       [(new-pos)
+        (define len (bytes-length bstr))
         (cond
           [(eof-object? new-pos)
-           (pipe-write-position o len)]
+           (set! pos max-pos)]
           [(new-pos . > . len)
            (when (new-pos . >= . (expt 2 48))
              ;; implausibly large
              (end-atomic)
              (raise-arguments-error 'file-position
                                     "new position is too large"
-                                    "port" o
+                                    "port" this
                                     "position" new-pos))
-           (pipe-write-position o len)
-           (define amt (- new-pos len))
-           (send core-output-port o write-out (make-bytes amt 0) 0 amt #f #f #f)
-           (void)]
+           (enlarge! len)
+           (set! pos new-pos)
+           (set! max-pos new-pos)]
           [else
-           (pipe-write-position o new-pos)])])))
+           (set! pos new-pos)
+           (set! max-pos (fxmax max-pos new-pos))])])]))
+
+(define (open-output-bytes [name 'string])
+  (define p (new bytes-output-port
+                 [bstr (make-bytes 16)]
+                 [name name]
+                 [evt always-evt]))
   (when (port-count-lines-enabled)
-    (port-count-lines! o)
     (port-count-lines! p))
   p)
 
@@ -258,10 +271,9 @@
          o)
   (check who exact-nonnegative-integer? start-pos)
   (check who exact-nonnegative-integer? #:or-false end-pos)
-  (let ([bstr-o (->core-output-port o)])
-    (define o (output-bytes-data-o (core-port-data bstr-o)))
+  (let ([o (->core-output-port o)])
     (start-atomic)
-    (define len (pipe-content-length o))
+    (define len (send bytes-output-port o get-length))
     (when (start-pos . > . len)
       (end-atomic)
       (raise-range-error who "port content" "starting " start-pos o 0 len #f))
@@ -271,7 +283,7 @@
         (raise-range-error who "port content" "ending " end-pos o 0 len start-pos)))
     (define amt (- (min len (or end-pos len)) start-pos))
     (define bstr (make-bytes amt))
-    ((output-bytes-data-get (core-port-data bstr-o)) o bstr start-pos reset?)
+    (send bytes-output-port o get-bytes bstr start-pos reset?)
     (end-atomic)
     bstr))
 
@@ -284,6 +296,6 @@
        (bytes-input-port? p))]
     [(output-port? p)
      (let ([p (->core-output-port p)])
-       (output-bytes-data? (core-port-data p)))]
+       (bytes-output-port? p))]
     [else
      (raise-argument-error 'string-port? "port?" p)]))

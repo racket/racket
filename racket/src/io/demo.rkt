@@ -19,7 +19,7 @@
   (let ([e expect]
         [v rhs])
     (unless (equal? e v)
-      (error 'failed "~s: ~e" 'rhs v))))
+      (error 'failed "~s: ~e not ~e" 'rhs v e))))
 
 (test #f (bytes-utf-8-ref #"\364\220\200\200" 0))
 
