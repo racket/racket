@@ -10,9 +10,7 @@
          output-port?
          ->core-output-port
          (struct-out core-output-port)
-         get-write-evt-via-write-out
-         make-core-output-port
-         compat-output-port-self)
+         get-write-evt-via-write-out)
 
 (define-values (prop:output-port output-port-via-property? output-port-ref)
   (make-struct-type-property 'output-port
@@ -120,71 +118,3 @@
 (define empty-output-port
   (new core-output-port
        [name 'empty]))
-
-;; ----------------------------------------
-
-(class compat-output-port #:extends core-output-port
-  (field
-   [self #f]))
-
-(define (make-core-output-port #:name name
-                               #:data [data #f]
-                               #:self self
-                               #:evt evt
-                               #:write-out write-out
-                               #:close close
-                               #:write-out-special [write-out-special #f]
-                               #:get-write-evt [get-write-evt #f]
-                               #:count-write-evt-via-write-out [count-write-evt-via-write-out #f]
-                               #:get-write-special-evt [get-write-special-evt #f]
-                               #:get-location [get-location #f]
-                               #:count-lines! [count-lines! #f]
-                               #:file-position [file-position #f]
-                               #:init-offset [init-offset 0]
-                               #:buffer-mode [buffer-mode #f])
-  (new compat-output-port
-       #:override
-       ([close (and #t (lambda (out) (close self)))]
-        [count-lines! (and count-lines! (lambda (out) (count-lines! self)))]
-        [get-location (and get-location (lambda (out) (get-location self)))]
-        [file-position (and file-position
-                            (if (output-port? file-position)
-                                file-position
-                                (if (procedure-arity-includes? file-position 2)
-                                    (case-lambda
-                                      [(out) (file-position self)]
-                                      [(out pos) (file-position self pos)])
-                                    (lambda (out) (file-position self)))))]
-        [buffer-mode (and buffer-mode (case-lambda
-                                        [(out) (buffer-mode self)]
-                                        [(out mode) (buffer-mode self mode)]))]
-        [write-out
-         (if (output-port? write-out)
-             write-out
-             (lambda (out bstr start-k end-k no-block/buffer? enable-break? copy?)
-               (write-out self bstr start-k end-k no-block/buffer? enable-break? copy?)))]
-        [write-out-special
-         (and write-out-special
-              (if (output-port? write-out-special)
-                  write-out-special
-                  (lambda (out any no-block/buffer? enable-break?)
-                    (write-out-special self any no-block/buffer? enable-break?))))]
-        [get-write-evt
-         (cond
-           [get-write-evt (lambda (out src-bstr src-start src-endv)
-                            (get-write-evt self out src-bstr src-start src-endv))]
-           [count-write-evt-via-write-out
-            (get-write-evt-via-write-out
-             (lambda (out v src-bstr src-start)
-               (count-write-evt-via-write-out self out v src-bstr src-start)))]
-           [else #f])]
-        [get-write-special-evt
-         (and get-write-special-evt
-              (lambda (out v)
-                (get-write-special-evt self v)))])
-       ;; fields
-       [name name]
-       [offset init-offset]
-       [evt evt]
-       [data data]
-       [self self]))

@@ -9,9 +9,7 @@
 (provide prop:input-port
          input-port?
          ->core-input-port
-         (struct-out core-input-port)
-         make-core-input-port
-         compat-input-port-self)
+         (struct-out core-input-port))
 
 (define-values (prop:input-port input-port-via-property? input-port-ref)
   (make-struct-type-property 'input-port
@@ -147,67 +145,3 @@
 (define empty-input-port
   (new core-input-port
        [name 'empty]))
-
-;; ----------------------------------------
-
-(class compat-input-port #:extends core-input-port
-  (field
-   [self #f]))
-
-(define (make-core-input-port #:name name
-                              #:data [data #f]
-                              #:self self
-                              #:prepare-change [prepare-change #f]
-                              #:read-byte [read-byte #f]
-                              #:read-in read-in
-                              #:peek-byte [peek-byte #f]
-                              #:peek-in peek-in
-                              #:byte-ready byte-ready
-                              #:close close
-                              #:get-progress-evt [get-progress-evt #f]
-                              #:commit [commit #f]
-                              #:get-location [get-location #f]
-                              #:count-lines! [count-lines! #f]
-                              #:init-offset [init-offset 0]
-                              #:file-position [file-position #f]
-                              #:buffer-mode [buffer-mode #f])
-  (new compat-input-port
-       #:override
-       ([close (and #t (lambda (in) (close self)))]
-        [count-lines! (and count-lines! (lambda (in) (count-lines! self)))]
-        [get-location (and get-location (lambda (in) (get-location self)))]
-        [file-position (and file-position
-                            (if (input-port? file-position)
-                                file-position
-                                (if (procedure-arity-includes? file-position 2)
-                                    (case-lambda
-                                      [(in) (file-position self)]
-                                      [(in pos) (file-position self pos)])
-                                    (lambda (out) (file-position self)))))]
-        [buffer-mode
-         (and buffer-mode (case-lambda
-                            [(in) (buffer-mode self)]
-                            [(in mode) (buffer-mode self mode)]))]
-        [prepare-change (and prepare-change (lambda (in) (prepare-change self)))]
-        [read-in
-         (if (input-port? read-in)
-             read-in
-             (lambda (in bstr start end copy?)
-               (read-in self bstr start end copy?)))]
-        [peek-in
-         (if (input-port? peek-in)
-             peek-in
-             (lambda (in bstr start end skip progress-evt copy?)
-               (peek-in self bstr start end skip progress-evt copy?)))]
-        [byte-ready
-         (if (input-port? byte-ready)
-             byte-ready
-             (lambda (in work-done!) (byte-ready self work-done!)))]
-        [get-progress-evt (and get-progress-evt (lambda (in) (get-progress-evt self)))]
-        [commit (and #t (lambda (in amt-k progress-evt? evt? finish)
-                          (commit self amt-k progress-evt? evt? finish)))])
-       ;; fields
-       [name name]
-       [offset init-offset]
-       [data data]
-       [self self]))

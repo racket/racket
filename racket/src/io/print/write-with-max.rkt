@@ -2,7 +2,7 @@
 (require "../port/string-output.rkt"
          "../port/bytes-output.rkt"
          "../port/port.rkt"
-         "../port/output-port.rkt")
+         "../port/max-output-port.rkt")
 
 (provide write-string/max
          write-bytes/max
@@ -44,27 +44,8 @@
       'full])]))
 
 (define (make-output-port/max o max-length)
-  (make-core-output-port
-   #:name (object-name o)
-   #:data (lambda () max-length)
-   #:self o
-   #:evt o
-   #:write-out
-   (lambda (o src-bstr src-start src-end nonblock? enable-break? copy?)
-     (cond
-       [max-length
-        (define len (- src-end src-start))
-        (unless (eq? max-length 'full)
-          (define write-len (min len max-length))
-          (define wrote-len (write-bytes src-bstr o src-start (+ src-start write-len)))
-          (if (= max-length wrote-len)
-              (set! max-length 'full)
-              (set! max-length (- max-length wrote-len))))
-        len]
-       [else
-        (write-bytes src-bstr o src-start src-end)]))
-   #:close void))
+  (make-max-output-port o max-length))
 
 (define (output-port/max-max-length o max-length)
   (and max-length
-       ((core-port-data o))))
+       (max-output-port-max-length o)))
