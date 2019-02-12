@@ -7,7 +7,7 @@
          "input-port.rkt"
          "output-port.rkt"
          "count.rkt"
-         "commit-manager.rkt")
+         "commit-port.rkt")
 
 (provide make-pipe
          make-pipe-ends
@@ -121,44 +121,11 @@
 
 ;; ----------------------------------------
 
-(class pipe-input-port #:extends core-input-port
+(class pipe-input-port #:extends commit-input-port
   (field
-   [d #f] ; pipe-data
-   [progress-sema #f]
-   [commit-manager #f])
+   [d #f]) ; pipe-data
 
   (private
-    [progress!
-     (lambda ()
-       (when progress-sema
-         (semaphore-post progress-sema)
-         (set! progress-sema #f)))]
-    
-    ;; [can leave atomic mode temporarily]
-    ;; After this function returns, complete any commit-changing work
-    ;; before leaving atomic mode again.
-    [pause-waiting-commit
-     (lambda ()
-       (when commit-manager
-         (commit-manager-pause commit-manager)))]
-
-    ;; [can leave atomic mode temporarily]
-    [wait-commit
-     (lambda (progress-evt ext-evt finish)
-       (cond
-         [(and (not commit-manager)
-               ;; Try shortcut:
-               (not (sync/timeout 0 progress-evt))
-               (sync/timeout 0 ext-evt))
-          (finish)
-          #t]
-         [else
-          ;; General case to support blocking and potentially multiple
-          ;; commiting threads:
-          (unless commit-manager
-            (set! commit-manager (make-commit-manager)))
-          (commit-manager-wait commit-manager progress-evt ext-evt finish)]))]
-
     [fast-mode!
      (lambda (amt)
        (unless (or count buffer)
@@ -306,9 +273,7 @@
             [(not input) always-evt]
             [else
              (slow-mode!)
-             (unless progress-sema
-               (set! progress-sema (make-semaphore)))
-             (semaphore-peek-evt progress-sema)]))))]
+             (make-progress-evt)]))))]
 
     [commit
      ;; Allows `amt` to be zero and #f for other arguments,

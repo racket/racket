@@ -9,7 +9,7 @@
          "output-port.rkt"
          "bytes-input.rkt"
          "count.rkt"
-         "commit-manager.rkt")
+         "commit-port.rkt")
 
 (provide open-input-bytes
          open-output-bytes
@@ -23,47 +23,13 @@
     (port-count-lines! p))
   p)
 
-(class bytes-input-port #:extends core-input-port
+(class bytes-input-port #:extends commit-input-port
   (field
-   [progress-sema #f]
-   [commit-manager #f]
    [bstr #f] ; normally installed as buffer
    [pos 0]   ; used when bstr is not installed as buffer
    [alt-pos #f])
 
   (private
-    ;; in atomic mode
-    [progress!
-     (lambda ()
-       (when progress-sema
-         (semaphore-post progress-sema)
-         (set! progress-sema #f)))]
-
-    ;; in atomic mode [can leave atomic mode temporarily]
-    ;; After this function returns, complete any commit-changing work
-    ;; before leaving atomic mode again.
-    [pause-waiting-commit
-     (lambda ()
-       (when commit-manager
-         (commit-manager-pause commit-manager)))]
-
-    ;; in atomic mode [can leave atomic mode temporarily]
-    [wait-commit
-     (lambda (progress-evt ext-evt finish)
-       (cond
-         [(and (not commit-manager)
-               ;; Try shortcut:
-               (not (sync/timeout 0 progress-evt))
-               (sync/timeout 0 ext-evt))
-          (finish)
-          #t]
-         [else
-          ;; General case to support blocking and potentially multiple
-          ;; commiting threads:
-          (unless commit-manager
-            (set! commit-manager (make-commit-manager)))
-          (commit-manager-wait commit-manager progress-evt ext-evt finish)]))]
-
     ;; in atomic mode
     [in-buffer-pos
      (lambda ()
@@ -140,19 +106,16 @@
    
     [get-progress-evt
      (lambda ()
-       (define new-sema
-         (or progress-sema
-             (let ([sema (make-semaphore)])
-               (set! progress-sema sema)
-               ;; set port to slow mode:
-               (when buffer
-                 (define i buffer-pos)
-                 (set! pos i)
-                 (set! offset i)
-                 (set! buffer #f)
-                 (set! buffer-pos buffer-end))
-               sema)))
-       (semaphore-peek-evt new-sema))]
+       (atomically
+        (unless progress-sema
+          ;; set port to slow mode:
+          (when buffer
+            (define i buffer-pos)
+            (set! pos i)
+            (set! offset i)
+            (set! buffer #f)
+            (set! buffer-pos buffer-end)))
+        (make-progress-evt)))]
 
     [commit
      (lambda (amt progress-evt ext-evt finish)

@@ -6,7 +6,10 @@
 ;; A class system that is somewhat similar to `racket/class`, but
 ;; completely first order, with its structure nature exposed, and
 ;; where the notion of "method" is flexible to allow non-procedures in
-;; the vtable.
+;; the vtable. The run-time componention of a full expansion is
+;; efficient, but beware that there are various quadratic factors in
+;; intermediate expansions and compile-time data. There should be more
+;; checks to make sure that method declarations are distinct, etc.
 ;;
 ;;  <class-defn> = (class <class-id> <clause> ...)
 ;;               | (class <class-id> #:extends <class-id> <clause> ...)
@@ -17,15 +20,24 @@
 ;;           | (static [<method-id> <method>] ...) ; not in vtable
 ;;           | (property [<property-expr> <val-expr>] ...)
 ;;  <method> = #f
-;;           | (lambda (<id> ...) <expr> ...+)
-;;           | (case-lambda [(<id> ...) <expr> ...+] ...)
+;;           | (lambda <formals> <expr> ...+)
+;;           | (case-lambda [<formals> <expr> ...+] ...)
 ;;           | <expr> ; must have explicit `self`, etc.
 ;;
-;; A <class-id> and its <field>s behave as if they are in
-;; a `struct` declaration where `create-<class-id>` is the
-;; constructor, but an extra `vtable` field is added to
-;; the start of a class's structure if it has no superclass.
-;; The `#:authentic` option is added implicitly.
+;; A <class-id> and its <field>s behave as if they are in a `struct`
+;; declaration where `create-<class-id>` is the constructor, but an
+;; extra `vtable` field is added to the start of a class's structure
+;; if it has no superclass. The `#:authentic` option is added
+;; implicitly. The `property` clause supplies additional structure
+;; type properties.
+;;
+;; A `public` method is one that can be overridden with `override` or
+;; called via `send`. A `private` or `static` method cannot be
+;; overridden, and a `private` method cannot be called via `send`. Bot
+;; `private` and `static` methods can be called directly like
+;; functions within another method (but `public` methods cannot be
+;; called that way, and that restriction is intended to discourange
+;; unnecessary indirections through methods that can be overridden).
 ;;
 ;; Normally, use
 ;;   (new <class-id> [<field-id> <expr] ...)
@@ -138,9 +150,13 @@
                 [((local-id local-expr) ...) locals]
                 [((static-id static-expr) ...) statics]
                 [(local-tmp-id ...) (generate-temporaries locals)]
-                [(static-tmp-id ...) (generate-temporaries statics)])
+                [(static-tmp-id ...) (generate-temporaries statics)]
+                [((parent-static-id parent-static-tmp-id) ...) (if super-ci
+                                                                   (class-info-statics super-ci)
+                                                                   null)])
     (with-syntax ([local-bindings #'[([field-id field-accessor-id field-mutator-maybe-id] ...)
-                                     ([local-id local-tmp-id] ... [static-id static-tmp-id] ...)]])
+                                     ([local-id local-tmp-id] ... [static-id static-tmp-id] ...
+                                                              [parent-static-id parent-static-tmp-id] ...)]])
       (define wrapped-new-methods
         (for/list ([new-method (in-list new-methods)])
           (syntax-case new-method ()
@@ -234,6 +250,8 @@
                                       (quote-syntax method-accessor-id))
                                 ...)
                           (list (list (quote-syntax static-id) (quote-syntax static-tmp-id))
+                                ...
+                                (list (quote-syntax parent-static-id) (quote-syntax parent-static-tmp-id))
                                 ...))))))))
 
 (define-syntax (bind-locals-in-body stx)
@@ -243,23 +261,34 @@
      (with-syntax ([(_ _ orig) stx])
        #'(bind-locals-in-body locals form orig))]
     [(_ locals expr) #'expr]
-    [(_ locals ctx (lambda (arg ...) body0 body ...))
-     #'(bind-locals-in-body locals ctx (case-lambda [(arg ...) body0 body ...]))]
+    [(_ locals ctx (lambda args body0 body ...))
+     #'(bind-locals-in-body locals ctx (case-lambda [args body0 body ...]))]
     [(_ locals ctx (case-lambda clause ...))
-     (with-syntax ([(new-clause ...)
-                    (for/list ([clause (in-list (syntax->list #'(clause ...)))])
-                      (syntax-case clause ()
-                        [[(arg ...) body0 body ...]
-                         (with-syntax ([(arg-tmp ...) (generate-temporaries #'(arg ...))])
-                           #'[(this-id arg-tmp ...)
-                              (syntax-parameterize ([this (make-rename-transformer #'this-id)])
-                                (bind-locals
-                                 locals
-                                 this-id ctx
-                                 (let-syntax ([arg (make-rename-transformer #'arg-tmp)] ...)
-                                   body0 body ...)))])]))])
-       (syntax/loc (syntax-case stx () [(_ _ _ rhs) #'rhs])
-         (case-lambda new-clause ...)))]
+     (let ([new-clauses
+            (for/list ([clause (in-list (syntax->list #'(clause ...)))])
+              (syntax-case clause ()
+                [[args body0 body ...]
+                 (with-syntax ([(arg-id ...) (extract-arg-ids #'args)])
+                   (with-syntax ([(arg-tmp ...) (generate-temporaries #'(arg-id ...))])
+                     (with-syntax ([tmp-args (substitute-arg-ids #'args (syntax->list #'(arg-tmp ...))
+                                                                 #'this-id #'locals #'ctx)])
+                       #'[(this-id . tmp-args)
+                          (syntax-parameterize ([this (make-rename-transformer #'this-id)])
+                            (bind-locals
+                             locals
+                             this-id ctx
+                             (let-syntax ([arg-id (make-rename-transformer #'arg-tmp)] ...)
+                               body0 body ...)))])))]))])
+       (define rhs (syntax-case stx () [(_ _ _ rhs) #'rhs]))
+       (cond
+         [(= 1 (length new-clauses))
+          (with-syntax ([new-clause (car new-clauses)])
+            (syntax/loc rhs
+              (lambda . new-clause)))]
+         [else
+          (with-syntax ([(new-clause ...) new-clauses])
+            (syntax/loc rhs
+              (case-lambda new-clause ...)))]))]
     [(_ locals _ expr)
      #'expr]))
 
@@ -410,6 +439,55 @@
       [(_ #f) #f]
       [(_ e) (quote-syntax e)])))
 
+(define-for-syntax (extract-arg-ids args)
+  (let loop ([args args])
+    (syntax-case args ()
+      [() null]
+      [id
+       (identifier? #'id)
+       (list #'id)]
+      [(id . rest)
+       (identifier? #'id)
+       (cons #'id (loop #'rest))]
+      [(kw . rest)
+       (keyword? (syntax-e #'kw))
+       (loop #'rest)]
+      [([id val-expr] . rest)
+       (cons #'id (loop #'rest))])))
+
+(define-for-syntax (substitute-arg-ids args tmp-ids this-id locals ctx)
+  (let loop ([args args] [tmp-ids tmp-ids] [done-ids '()] [done-tmp-ids '()])
+    (syntax-case args ()
+      [() null]
+      [id
+       (identifier? #'id)
+       (car tmp-ids)]
+      [(id . rest)
+       (identifier? #'id)
+       (cons (car tmp-ids) (loop #'rest (cdr tmp-ids)
+                                 (cons #'id done-ids)
+                                 (cons (car tmp-ids) done-tmp-ids)))]
+      [(kw . rest)
+       (keyword? (syntax-e #'kw))
+       (cons #'kw (loop #'rest tmp-ids done-ids done-tmp-ids))]
+      [([id val-expr] . rest)
+       (let ([val-expr
+              (with-syntax ([this-id this-id]
+                            [locals locals]
+                            [ctx ctx]
+                            [(done-id ...) done-ids]
+                            [(done-tmp-id ...) done-tmp-ids])
+                #'(syntax-parameterize ([this (make-rename-transformer #'this-id)])
+                    (bind-locals
+                     locals
+                     this-id ctx
+                     (let-syntax ([done-id (make-rename-transformer #'done-tmp-id)] ...)
+                               val-expr))))])
+         (cons (list (car tmp-ids) val-expr)
+               (loop #'rest (cdr tmp-ids)
+                     (cons #'id done-ids)
+                     (cons (car tmp-ids) done-tmp-ids))))])))
+
 ;; ----------------------------------------
 
 (module+ test
@@ -420,10 +498,11 @@
     (private
       [other (lambda (q) (list q this))])
     (static
-     [enbox (lambda (v) (box (vector a v)))])
+     [enbox (lambda (v #:opt [opt (vector v a)])
+              (box (vector a v opt)))])
     (public
      [q #f]
-     [m (lambda (z) (list a (other b)))]
+     [m (lambda (z #:maybe [maybe 9]) (list a (other b) maybe))]
      [n (lambda (x y z) (vector a b (enbox x) y z))]))
 
   (class sub #:extends example
@@ -439,12 +518,13 @@
 
   (define ex (new example [b 5]))
 
-  (send example ex m 'ok)
+  (send example ex m 'ok #:maybe 'yep)
   (method example ex m)
   (new sub [d 5])
   (send example (new sub) m 'more)
   (set-example-b! ex 6)
   (send example ex enbox 88)
+  (send example ex enbox 88 #:opt 'given)
 
   (define ex2 (new example
                    #:override
