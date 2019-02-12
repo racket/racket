@@ -2,8 +2,7 @@
 (require "../common/class.rkt"
          "../host/thread.rkt"
          "../host/pthread.rkt"
-         "evt.rkt"
-         "place-message.rkt")
+         "evt.rkt")
 
 (provide (struct-out core-port)
          (struct-out location)

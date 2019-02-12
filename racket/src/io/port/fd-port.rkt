@@ -26,22 +26,7 @@
          fd-port-fd
          maybe-fd-data-extra)
 
-(struct fd-data (fd extra input? file-stream?)
-  #:property prop:file-stream (lambda (fdd) (and (fd-data-file-stream? fdd)
-                                                 (fd-data-fd fdd)))
-  #:property prop:data-place-message (lambda (port)
-                                       (lambda ()
-                                         (fd-port->place-message port))))
-
-(struct fd-output-data fd-data (flush)
-  #:property prop:file-truncate (case-lambda
-                                  [(fdd pos)
-                                   ((fd-output-data-flush fdd))
-                                   (check-rktio-error*
-                                    (rktio_set_file_size rktio
-                                                         (fd-data-fd fdd)
-                                                         pos)
-                                    "error setting file size")]))
+(struct fd-data (extra))
 
 (define (maybe-fd-data-extra data)
   (and (fd-data? data)
@@ -64,6 +49,7 @@
    [fd-refcount #f]
    [custodian-reference #f]
    [on-close void]
+   [file-stream? #t]
    [network-error? #f])
   
   (override
@@ -95,7 +81,16 @@
         (and pos (buffer-adjust-pos pos))]
        [(pos)
         (purge-buffer)
-        (set-file-position fd pos)])]))
+        (set-file-position fd pos)])])
+
+  (property
+   [prop:file-stream (lambda (p [check? #f])
+                       (if check?
+                           (fd-input-port-file-stream? p)
+                           (fd-input-port-fd p)))]
+   [prop:data-place-message (lambda (port)
+                              (lambda ()
+                                (fd-port->place-message port)))]))
 
 ;; ----------------------------------------
 
@@ -110,10 +105,11 @@
 		       #:network-error? [network-error? #f])
   (define p (new fd-input-port
                  [name name]
-                 [data (fd-data fd extra-data #t file-stream?)]
+                 [data (fd-data extra-data)]
                  [fd fd]
                  [fd-refcount fd-refcount]
                  [on-close on-close]
+                 [file-stream? file-stream?]
                  [network-error? network-error?]))
   (set-fd-input-port-custodian-reference! p (register-fd-close cust fd fd-refcount #f p))
   p)
@@ -131,6 +127,7 @@
    [buffer-mode 'block]
    [custodian-reference #f]
    [on-close void]
+   [file-stream? #t]
    [network-error? network-error?])
 
   (private
@@ -254,7 +251,28 @@
     [buffer-mode
      (case-lambda
        [(self) buffer-mode]
-       [(self mode) (set! buffer-mode mode)])]))
+       [(self mode) (set! buffer-mode mode)])])
+
+  (property
+   [prop:file-stream (lambda (p [check? #f])
+                       (if check?
+                           (fd-output-port-file-stream? p)
+                           (fd-output-port-fd p)))]
+   [prop:file-truncate (lambda (p pos)
+                         ;; in atomic mode
+                         (send fd-output-port p flush-buffer/external)
+                         (define result
+                           (rktio_set_file_size rktio
+                                                (fd-output-port-fd p)
+                                                pos))
+                         (cond
+                           [(rktio-error? result)
+                            (end-atomic)
+                            (raise-rktio-error 'file-truncate result  "error setting file size")]
+                           [else result]))]
+   [prop:data-place-message (lambda (port)
+                              (lambda ()
+                                (fd-port->place-message port)))]))
 
 ;; ----------------------------------------
 
@@ -275,20 +293,17 @@
                  [evt evt]
                  [fd fd]
                  [fd-refcount fd-refcount]
+                 [file-stream? file-stream?]
                  [flush-handle #f]
                  [buffer-mode
                   (if (eq? buffer-mode 'infer)
                       (if (rktio_fd_is_terminal rktio fd)
-                          (set! buffer-mode 'line)
-                          (set! buffer-mode 'block))
+                          'line
+                          'block)
                       buffer-mode)]
                  [on-close on-close]
                  [network-error? network-error?]
-                 [data (fd-output-data fd extra-data #f file-stream?
-                                       ;; Flush function needed for `file-truncate`:
-                                       (lambda ()
-                                         (atomically
-                                          (send fd-output-port p flush-buffer/external))))]))
+                 [data (fd-data extra-data)]))
   (define flush-handle (plumber-add-flush! plumber
                                            (lambda (h)
                                              (atomically
@@ -302,24 +317,20 @@
 ;; ----------------------------------------
 
 (define (terminal-port? p)
-  (define data
-    (core-port-data
-     (cond
-       [(input-port? p) (->core-input-port p)]
-       [(output-port? p) (->core-output-port p)]
-       [else
-        (raise-argument-error 'terminal-port? "port?" p)])))
-  (and (fd-data? data)
-       (rktio_fd_is_terminal rktio (fd-data-fd data))))
+  (define fd (fd-port-fd p))
+  (and fd
+       (rktio_fd_is_terminal rktio fd)))
 
 (define (fd-port-fd p)
-  (define data
-    (core-port-data
-     (cond
-       [(input-port? p) (->core-input-port p)]
-       [else (->core-output-port p)])))
-  (and (fd-data? data)
-       (fd-data-fd data)))
+  (cond
+    [(input-port? p)
+     (define cp (->core-input-port p))
+     (and (fd-input-port? cp)
+          (fd-input-port-fd cp))]
+    [else
+     (define cp (->core-output-port p))
+     (and (fd-output-port? cp)
+          (fd-output-port-fd cp))]))
 
 ;; ----------------------------------------
 
@@ -428,7 +439,7 @@
 
   ;; in atomic mode
 (define (dup-port-fd port)
-  (define fd (fd-data-fd (core-port-data port)))
+  (define fd (fd-port-fd port))
   (define new-fd (rktio_dup rktio fd))
   (when (rktio-error? new-fd)
     (end-atomic)
