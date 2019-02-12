@@ -14,6 +14,7 @@
 ;;           | (public [<method-id> <method>] ...)
 ;;           | (private [<method-id> <method>] ...)
 ;;           | (override [<method-id> <method>] ...)
+;;           | (static [<method-id> <method>] ...) ; not in vtable
 ;;           | (property [<property-expr> <val-expr>] ...)
 ;;  <method> = #f
 ;;           | (lambda (<id> ...) <expr> ...+)
@@ -39,24 +40,31 @@
 ;; Use
 ;;    (send <class-id> <obj-expr> <method-id> <arg-expr> ...)
 ;; to call a method, or
-;;    (mewthod <class-id> <obj-expr> <method-id>)
+;;    (method <class-id> <obj-expr> <method-id>)
 ;; to get a method that expects the object as its first argument.
 ;;
-;; In a method, fields can be accessed directly by name, and `this` is
-;; bound to the current object.
+;; In a method, `field`s, `private`s, and `static`s can be accessed
+;; directly by name, and `this` is bound to the current object. A
+;; method overridden in `new` can only access `field`s.
+;;
+;; Use
+;;   (with-object <class-id> <object-expr)
+;;      <body> ...+)
+;; to directly reference `field`s and `static`s in the <body>s.
 
 (provide class
          this
          new
          send
-         method)
+         method
+         with-object)
 
 (define-syntax-parameter this
   (lambda (stx)
     (raise-syntax-error #f "illegal use outside of a method" stx)))
 
 (begin-for-syntax
-  (struct class-info (struct-info methods-id vtable-id vtable-accessor-id fields methods)
+  (struct class-info (struct-info methods-id vtable-id vtable-accessor-id fields methods statics)
     #:property prop:struct-info (lambda (ci)
                                   (class-info-struct-info ci))))
 
@@ -85,19 +93,21 @@
         [(id expr)
          (list #'id #'expr (combine-ids base-id base-id "-" #'id) (combine-ids #'id "set-" base-id "-" #'id "!"))]
         [_ (raise-syntax-error #f (format "bad ~a clause" what) stx e)])))
-  (define-values (new-fields new-methods override-methods locals properties)
+  (define-values (new-fields new-methods override-methods locals statics properties)
     (let ([l-stx (syntax-case stx ()
                    [(_ _ #:extends _ . rest) #'rest]
                    [(_ _ . rest) #'rest])])
-      (let loop ([l-stx l-stx] [new-fields null] [new-methods null] [override-methods null] [locals null] [properties null])
-        (syntax-case l-stx (field public override private property)
-          [() (values new-fields new-methods override-methods locals properties)]
+      (let loop ([l-stx l-stx] [new-fields null] [new-methods null] [override-methods null]
+                               [locals null] [statics null] [properties null])
+        (syntax-case l-stx (field public override private static property)
+          [() (values new-fields new-methods override-methods locals statics properties)]
           [((field fld ...) . rest)
            (loop #'rest
                  (add-procs id (syntax->list #'(fld ...)) "field" #:can-immutable? #t)
                  new-methods
                  override-methods
                  locals
+                 statics
                  properties)]
           [((public method ...) . rest)
            (loop #'rest
@@ -105,13 +115,16 @@
                  (add-procs methods-id (syntax->list #'(method ...)) "public")
                  override-methods
                  locals
+                 statics
                  properties)]
           [((override method ...) . rest)
-           (loop #'rest new-fields new-methods (syntax->list #'(method ...)) locals properties)]
+           (loop #'rest new-fields new-methods (syntax->list #'(method ...)) locals statics properties)]
           [((private method ...) . rest)
-           (loop #'rest new-fields new-methods override-methods (syntax->list #'(method ...)) properties)]
+           (loop #'rest new-fields new-methods override-methods (syntax->list #'(method ...)) statics properties)]
+          [((static method ...) . rest)
+           (loop #'rest new-fields new-methods override-methods locals (syntax->list #'(method ...)) properties)]
           [((property prop ...) . rest)
-           (loop #'rest new-fields new-methods override-methods locals (syntax->list #'((#:property . prop) ...)))]
+           (loop #'rest new-fields new-methods override-methods locals statics (syntax->list #'((#:property . prop) ...)))]
           [(other . _)
            (raise-syntax-error #f "unrecognized" stx #'other)]))))
   (define all-fields (if super-ci
@@ -121,118 +134,118 @@
     (syntax-case override ()
       [(method-id _) (check-member stx #'method-id (if super-ci (class-info-methods super-ci) null) "method")]
       [_ (raise-syntax-error #f "bad override clause" stx override)]))
-  (with-syntax ([((field-id field-init-expr field-accessor-id field-mutator-maybe-id) ...) all-fields])
-    (define wrapped-new-methods
-      (for/list ([new-method (in-list new-methods)])
-        (syntax-case new-method ()
-          [(method-id method-init-expr . rest)
-           #'(method-id (let ([method-id
-                               (bind-fields-in-body
-                                ([field-id field-accessor-id field-mutator-maybe-id] ...)
-                                method-init-expr)])
-                          method-id)
-                        . rest)])))
-    (define all-methods/vtable (if super-ci
-                                   (append (for/list ([method (in-list (class-info-methods super-ci))])
-                                             (syntax-case method ()
-                                               [(method-id method-init-expr . rest)
-                                                (or (for/or ([override (in-list override-methods)])
-                                                      (syntax-case override ()
-                                                        [(override-id override-init-expr . _)
-                                                         (and (eq? (syntax-e #'method-id) (syntax-e #'override-id))
-                                                              (list* #'method-id
-                                                                     #'(let ([method-id
-                                                                              (bind-fields-in-body
-                                                                               ([field-id field-accessor-id field-mutator-maybe-id] ...)
-                                                                               override-init-expr)])
-                                                                         method-id)
-                                                                     #'rest))]))
-                                                    method)]))
-                                           wrapped-new-methods)
-                                   wrapped-new-methods))
-    (define vtable-id (combine-ids #'here id "-vtable"))
-    (define all-methods/next (for/list ([method (in-list all-methods/vtable)])
-                               (syntax-case method ()
-                                 [(method-id method-init-expr method-accessor-id . _)
-                                  (with-syntax ([vtable-id vtable-id])
-                                    (list #'method-id
-                                          #'(method-accessor-id vtable-id)
-                                          #'method-accessor-id))])))
-    (with-syntax ([id id]
-                  [(super-ids ...) (if super-id
-                                       (list super-id)
-                                       null)]
-                  [quoted-super-id (and super-id #`(quote-syntax #,super-id))]
-                  [(vtable-ids ...) (if super-id
-                                        null
-                                        (list (datum->syntax id 'vtable)))]
-                  [vtable-accessor-id (if super-ci
-                                          (class-info-vtable-accessor-id super-ci)
-                                          (combine-ids id id "-vtable"))]
-                  [vtable-id vtable-id]
-                  [struct:id (combine-ids id "struct:" id)]
-                  [make-id (combine-ids id "create-" id)]
-                  [id? (combine-ids id id "?")]
-                  [methods-id methods-id]
-                  [(super-methods-ids ...) (if super-ci
-                                               (list (class-info-methods-id super-ci))
-                                               null)]
-                  [(new-field-id/annotated ...) (for/list ([new-field (in-list new-fields)])
-                                                  (syntax-case new-field ()
-                                                    [(id _ _ #f) #'id]
-                                                    [(id . _) #'[id #:mutable]]))]
-                  [((new-method-id . _) ...) new-methods]
-                  [((_ _ rev-field-accessor-id . _) ...) (reverse all-fields)]
-                  [((_ _ _ rev-field-mutator-maybe-id) ...) (reverse all-fields)]
-                  [((method-id method-init-expr/vtable . _) ...) all-methods/vtable]
-                  [((_ method-init-expr/next  method-accessor-id) ...) all-methods/next]
-                  [((local-id local-expr) ...) locals]
-                  [(local-tmp-id ...) (generate-temporaries locals)]
-                  [((propss ...) ...) properties])
-      #`(begin
-          (struct id super-ids ... (vtable-ids ... new-field-id/annotated ...)
-            #:omit-define-syntaxes
-            #:constructor-name make-id
-            #:authentic
-            propss ... ...)
-          (struct methods-id super-methods-ids ... (new-method-id ...))
-          (define vtable-id (methods-id method-init-expr/vtable ...))
-          (begin
-            (define local-tmp-id (let ([local-id
-                                        (bind-fields-in-body ([field-id field-accessor-id field-mutator-maybe-id] ...)
-                                                             local-expr)])
+  (with-syntax ([((field-id field-init-expr field-accessor-id field-mutator-maybe-id) ...) all-fields]
+                [((local-id local-expr) ...) locals]
+                [((static-id static-expr) ...) statics]
+                [(local-tmp-id ...) (generate-temporaries locals)]
+                [(static-tmp-id ...) (generate-temporaries statics)])
+    (with-syntax ([local-bindings #'[([field-id field-accessor-id field-mutator-maybe-id] ...)
+                                     ([local-id local-tmp-id] ... [static-id static-tmp-id] ...)]])
+      (define wrapped-new-methods
+        (for/list ([new-method (in-list new-methods)])
+          (syntax-case new-method ()
+            [(method-id method-init-expr . rest)
+             #'(method-id (let ([method-id (bind-locals-in-body local-bindings method-init-expr)])
+                            method-id)
+                          . rest)])))
+      (define all-methods/vtable (if super-ci
+                                     (append (for/list ([method (in-list (class-info-methods super-ci))])
+                                               (syntax-case method ()
+                                                 [(method-id method-init-expr . rest)
+                                                  (or (for/or ([override (in-list override-methods)])
+                                                        (syntax-case override ()
+                                                          [(override-id override-init-expr . _)
+                                                           (and (eq? (syntax-e #'method-id) (syntax-e #'override-id))
+                                                                (list* #'method-id
+                                                                       #'(let ([method-id
+                                                                                (bind-locals-in-body
+                                                                                 local-bindings
+                                                                                 override-init-expr)])
+                                                                           method-id)
+                                                                       #'rest))]))
+                                                      method)]))
+                                             wrapped-new-methods)
+                                     wrapped-new-methods))
+      (define vtable-id (combine-ids #'here id "-vtable"))
+      (define all-methods/next (for/list ([method (in-list all-methods/vtable)])
+                                 (syntax-case method ()
+                                   [(method-id method-init-expr method-accessor-id . _)
+                                    (with-syntax ([vtable-id vtable-id])
+                                      (list #'method-id
+                                            #'(method-accessor-id vtable-id)
+                                            #'method-accessor-id))])))
+      (with-syntax ([id id]
+                    [(super-ids ...) (if super-id
+                                         (list super-id)
+                                         null)]
+                    [quoted-super-id (and super-id #`(quote-syntax #,super-id))]
+                    [(vtable-ids ...) (if super-id
+                                          null
+                                          (list (datum->syntax id 'vtable)))]
+                    [vtable-accessor-id (if super-ci
+                                            (class-info-vtable-accessor-id super-ci)
+                                            (combine-ids id id "-vtable"))]
+                    [vtable-id vtable-id]
+                    [struct:id (combine-ids id "struct:" id)]
+                    [make-id (combine-ids id "create-" id)]
+                    [id? (combine-ids id id "?")]
+                    [methods-id methods-id]
+                    [(super-methods-ids ...) (if super-ci
+                                                 (list (class-info-methods-id super-ci))
+                                                 null)]
+                    [(new-field-id/annotated ...) (for/list ([new-field (in-list new-fields)])
+                                                    (syntax-case new-field ()
+                                                      [(id _ _ #f) #'id]
+                                                      [(id . _) #'[id #:mutable]]))]
+                    [((new-method-id . _) ...) new-methods]
+                    [((_ _ rev-field-accessor-id . _) ...) (reverse all-fields)]
+                    [((_ _ _ rev-field-mutator-maybe-id) ...) (reverse all-fields)]
+                    [((method-id method-init-expr/vtable . _) ...) all-methods/vtable]
+                    [((_ method-init-expr/next  method-accessor-id) ...) all-methods/next]
+                    [((propss ...) ...) properties])
+        #`(begin
+            (struct id super-ids ... (vtable-ids ... new-field-id/annotated ...)
+              #:omit-define-syntaxes
+              #:constructor-name make-id
+              #:authentic
+              propss ... ...)
+            (struct methods-id super-methods-ids ... (new-method-id ...))
+            (define vtable-id (methods-id method-init-expr/vtable ...))
+            (define static-tmp-id (let ([static-id (bind-locals-in-body local-bindings static-expr)])
+                                    static-id))
+            ...
+            (define local-tmp-id (let ([local-id (bind-locals-in-body local-bindings local-expr)])
                                    local-id))
-            (define-syntax (local-id stx)
-              (syntax-case stx ()
-                [(_ arg (... ...))
-                 (with-syntax ([this-id (datum->syntax #'here 'this stx)])
-                   (syntax/loc stx (local-tmp-id this-id arg (... ...))))])))
-          ...
-          (define-syntax id
-            (class-info (list (quote-syntax struct:id)
-                              (quote-syntax make-id)
-                              (quote-syntax id?)
-                              (list (quote-syntax rev-field-accessor-id) ... (quote-syntax vtable-accessor-id))
-                              (list (maybe-quote-syntax rev-field-mutator-maybe-id) ... #f)
-                              quoted-super-id)
-                        (quote-syntax methods-id)
-                        (quote-syntax vtable-id)
-                        (quote-syntax vtable-accessor-id)
-                        (list (list (quote-syntax field-id) (quote-syntax field-init-expr)
-                                    (quote-syntax field-accessor-id) (maybe-quote-syntax field-mutator-maybe-id))
-                              ...)
-                        (list (list (quote-syntax method-id) (quote-syntax method-init-expr/next)
-                                    (quote-syntax method-accessor-id))
-                              ...)))))))
+            ...
+            (define-syntax id
+              (class-info (list (quote-syntax struct:id)
+                                (quote-syntax make-id)
+                                (quote-syntax id?)
+                                (list (quote-syntax rev-field-accessor-id) ... (quote-syntax vtable-accessor-id))
+                                (list (maybe-quote-syntax rev-field-mutator-maybe-id) ... #f)
+                                quoted-super-id)
+                          (quote-syntax methods-id)
+                          (quote-syntax vtable-id)
+                          (quote-syntax vtable-accessor-id)
+                          (list (list (quote-syntax field-id) (quote-syntax field-init-expr)
+                                      (quote-syntax field-accessor-id) (maybe-quote-syntax field-mutator-maybe-id))
+                                ...)
+                          (list (list (quote-syntax method-id) (quote-syntax method-init-expr/next)
+                                      (quote-syntax method-accessor-id))
+                                ...)
+                          (list (list (quote-syntax static-id) (quote-syntax static-tmp-id))
+                                ...))))))))
 
-(define-syntax (bind-fields-in-body stx)
+(define-syntax (bind-locals-in-body stx)
   (syntax-case stx (lambda case-lambda)
-    [(_ fields #f) #'#f]
-    [(_ fields (form . rest))
-     #'(bind-fields-in-body fields form (form . rest))]
-    [(_ fields ctx (lambda (arg ...) body0 body ...))
-     #'(bind-fields-in-body fields ctx (case-lambda [(arg ...) body0 body ...]))]
-    [(_ fields ctx (case-lambda clause ...))
+    [(_ locals #f) #'#f]
+    [(_ locals (form . rest))
+     (with-syntax ([(_ _ orig) stx])
+       #'(bind-locals-in-body locals form orig))]
+    [(_ locals expr) #'expr]
+    [(_ locals ctx (lambda (arg ...) body0 body ...))
+     #'(bind-locals-in-body locals ctx (case-lambda [(arg ...) body0 body ...]))]
+    [(_ locals ctx (case-lambda clause ...))
      (with-syntax ([(new-clause ...)
                     (for/list ([clause (in-list (syntax->list #'(clause ...)))])
                       (syntax-case clause ()
@@ -240,21 +253,25 @@
                          (with-syntax ([(arg-tmp ...) (generate-temporaries #'(arg ...))])
                            #'[(this-id arg-tmp ...)
                               (syntax-parameterize ([this (make-rename-transformer #'this-id)])
-                                (bind-fields
-                                 fields
+                                (bind-locals
+                                 locals
                                  this-id ctx
                                  (let-syntax ([arg (make-rename-transformer #'arg-tmp)] ...)
                                    body0 body ...)))])]))])
        (syntax/loc (syntax-case stx () [(_ _ _ rhs) #'rhs])
          (case-lambda new-clause ...)))]
-    [(_ fields _ expr)
+    [(_ locals _ expr)
      #'expr]))
 
-(define-syntax (bind-fields stx)
+(define-syntax (bind-locals stx)
   (syntax-case stx ()
-    [(_ ([field-id field-accessor-id field-mutator-maybe-id] ...) this-id ctx body)
+    [(_ [([field-id field-accessor-id field-mutator-maybe-id] ...)
+         ([static-id static-tmp-id] ...)]
+        this-id ctx body)
      (with-syntax ([(field-id ...) (for/list ([field-id (in-list (syntax->list #'(field-id ...)))])
-                                     (datum->syntax #'ctx (syntax-e field-id)))])
+                                     (datum->syntax #'ctx (syntax-e field-id)))]
+                   [(static-id ...) (for/list ([static-id (in-list (syntax->list #'(static-id ...)))])
+                                      (datum->syntax #'ctx (syntax-e static-id)))])
        #'(let-syntax ([field-id (make-set!-transformer
                                  (lambda (stx)
                                    (syntax-case stx (set!)
@@ -263,6 +280,11 @@
                                                        (raise-syntax-error #f "field is immutable" stx))]
                                      [(_ arg (... ...)) (syntax/loc stx ((field-accessor-id this-id) arg (... ...)))]
                                      [else (syntax/loc stx (field-accessor-id this-id))])))]
+                      ...
+                      [static-id (lambda (stx)
+                                   (syntax-case stx ()
+                                     [(_ arg (... ...))
+                                      (syntax/loc stx (static-tmp-id this-id arg (... ...)))]))]
                       ...)
            body))]))
 
@@ -309,8 +331,9 @@
                                          (and (eq? (syntax-e #'override-id) (syntax-e #'id))
                                               (with-syntax ([((field-id _ field-accessor-id field-mutator-maybe-id) ...)
                                                              (class-info-fields ci)])
-                                                #'(bind-fields-in-body
-                                                   ([field-id field-accessor-id field-mutator-maybe-id] ...)
+                                                #'(bind-locals-in-body
+                                                   [([field-id field-accessor-id field-mutator-maybe-id] ...)
+                                                    ()]
                                                    expr)))]))
                                     #'(selector-id vtable-id))]))])
               (syntax/loc stx (make-id (methods-id method-expr ...)
@@ -325,19 +348,28 @@
                     (syntax-local-value #'class-id (lambda () #f)))])
        (unless (class-info? ci)
          (raise-syntax-error #f "not a class identifier" stx #'class-id))
-       (define method-accessor-id
+       (define make-access
          (or (for/or ([method (in-list (class-info-methods ci))])
                (syntax-case method ()
                  [(id _ accessor-id)
                   (and (eq? (syntax-e #'id) (syntax-e #'method-id))
-                       #'accessor-id)]))
+                       (lambda (o)
+                         (with-syntax ([vtable-accessor-id (class-info-vtable-accessor-id ci)]
+                                       [o o])
+                           #'(accessor-id (vtable-accessor-id o)))))]))
+             (and call?
+                  (for/or ([static (in-list (class-info-statics ci))])
+                    (syntax-case static ()
+                      [(id tmp-id)
+                       (and (eq? (syntax-e #'id) (syntax-e #'method-id))
+                            (lambda (o)
+                              #'tmp-id))])))
              (raise-syntax-error #f "cannot find method" stx #'method-id)))
-       (with-syntax ([vtable-accessor-id (class-info-vtable-accessor-id ci)]
-                     [method-accessor-id method-accessor-id])
-         (if call?
+       (if call?
+           (with-syntax ([proc (make-access #'o)])
              #'(let ([o obj])
-                 ((method-accessor-id (vtable-accessor-id o)) o arg ...))
-             #'(method-accessor-id (vtable-accessor-id obj)))))]))
+                 (proc o arg ...)))
+           (make-access #'obj)))]))
 
 (define-syntax (send stx)
   (send-or-method stx #t))
@@ -349,6 +381,21 @@
   (syntax-case stx ()
     [(_ class-id obj method-id)
      (send-or-method stx #f)]))
+
+(define-syntax (with-object stx)
+  (syntax-case stx ()
+    [(_ class-id obj-expr body0 body ...)
+     (let ([ci (and (identifier? #'class-id)
+                    (syntax-local-value #'class-id (lambda () #f)))])
+       (unless (class-info? ci)
+         (raise-syntax-error #f "not a class identifier" stx #'class-id))
+       (with-syntax ([((field-id _ field-accessor-id field-mutator-maybe-id) ...)
+                      (class-info-fields ci)]
+                     [((static-id static-tmp-id) ...) (class-info-statics ci)])
+         (with-syntax ([local-bindings #'[([field-id field-accessor-id field-mutator-maybe-id] ...)
+                                          ([static-id static-tmp-id] ...)]])
+           #'(let ([o obj-expr])
+               (bind-locals local-bindings o obj-expr (let () body0 body ...))))))]))
 
 (define-for-syntax (check-member stx id l what)
   (or (for/or ([e (in-list l)])
@@ -372,10 +419,12 @@
      [b 2])
     (private
       [other (lambda (q) (list q this))])
+    (static
+     [enbox (lambda (v) (box (vector a v)))])
     (public
      [q #f]
      [m (lambda (z) (list a (other b)))]
-     [n (lambda (x y z) (vector a b x y z))]))
+     [n (lambda (x y z) (vector a b (enbox x) y z))]))
 
   (class sub #:extends example
     (field
@@ -395,6 +444,7 @@
   (new sub [d 5])
   (send example (new sub) m 'more)
   (set-example-b! ex 6)
+  (send example ex enbox 88)
 
   (define ex2 (new example
                    #:override
@@ -402,4 +452,7 @@
                          (box (vector x y z a b)))])
                    [b 'b]
                    [a 'a]))
-  (send example ex2 n 1 2 3))
+  (send example ex2 n 1 2 3)
+
+  (with-object example ex
+    (list a b (enbox 'c))))

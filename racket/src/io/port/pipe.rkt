@@ -1,8 +1,7 @@
 #lang racket/base
 (require racket/fixnum
          "../common/check.rkt"
-         "../common/fixnum.rkt"
-         "../common/object.rkt"
+         "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -12,468 +11,482 @@
 
 (provide make-pipe
          make-pipe-ends
-         pipe-input-port?
-         pipe-output-port?
-         pipe-content-length
-         pipe-write-position
-         pipe-get-content
-         pipe-discard-all)
+         (rename-out [pipe-input-port?* pipe-input-port?]
+                     [pipe-output-port?* pipe-output-port?])
+         pipe-content-length)
 
 (define (min+1 a b) (if a (min (add1 a) b) b))
 
-(struct pipe-data (get-content-length
-                   write-position
-                   get-content
-                   discard-all))
+(define pipe-input-port?*
+  (let ([pipe-input-port?
+         (lambda (p)
+           (define cp (->core-input-port p))
+           (pipe-input-port? p))])
+    pipe-input-port?))
 
-(define (pipe-input-port? p)
-  (and (input-port? p)
-       (pipe-data? (core-port-data (->core-input-port p)))))
-
-(define (pipe-output-port? p)
-  (and (output-port? p)
-       (pipe-data? (core-port-data (->core-output-port p)))))
+(define pipe-output-port?*
+  (let ([pipe-output-port?
+         (lambda (p)
+           (define cp (->core-output-port p))
+           (pipe-output-port? p))])
+    pipe-output-port?))
 
 (define (pipe-content-length p)
-  (define cp
+  (define d
     (cond
-      [(pipe-input-port? p) (->core-input-port p)]
-      [(pipe-output-port? p) (->core-output-port p)]
+      [(let ([p (->core-input-port p)])
+         (and p
+              (pipe-input-port? p)
+              p))
+       => (lambda (p) (pipe-input-port-d p))]
+      [(let ([p (->core-output-port p)])
+         (and p
+              (pipe-output-port? p)
+              p))
+       => (lambda (p) (pipe-output-port-d p))]
       [else
        (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)]))
-  ((pipe-data-get-content-length (core-port-data cp))
-   (if (core-input-port? cp)
-       (compat-input-port-self cp)
-       (compat-output-port-self cp))))
+  (atomically
+   (send pipe-input-port (pipe-data-input d) sync-data)
+   (send pipe-data d content-length)))
 
-;; in atomic mode:
-(define pipe-write-position
-  (case-lambda
-    [(p) ((pipe-data-write-position (core-port-data p)) (compat-output-port-self p))]
-    [(p pos) ((pipe-data-write-position (core-port-data p)) (compat-output-port-self p) pos)]))
+;; ----------------------------------------
 
-;; in atomic mode:
-(define (pipe-discard-all p)
-  ((pipe-data-discard-all (core-port-data p)) (compat-output-port-self p)))
+(class pipe-data
+  (field
+   [bstr #""]
+   [len 0]
+   [limit 0]
+   [peeked-amt 0] ; peeked but not yet read, effectively extends `limit`
+   [start 0]
+   [end 0]
+   [input #f] ; #f => closed
+   [output-closed? #f]
+   [read-ready-sema #f]
+   [write-ready-sema #f]
+   [more-read-ready-sema #f] ; for lookahead peeks
+   [read-ready-evt #f]
+   [write-ready-evt #f])
 
-;; in atomic mode:x
-(define (pipe-get-content p bstr start-pos)
-  ((pipe-data-get-content (core-port-data p)) (compat-output-port-self p) bstr start-pos))
+  ;; All methods in atomic mode.
+  ;; Beware that the input port must be synced to sure that `start`
+  ;; represents the current position before using these methods.
+  (static
+   [content-length
+    (lambda ()
+      (define s start)
+      (define e end)
+      (if (s . fx<= . e)
+          (fx- e s)
+          (fx+ e (fx- len s))))]
 
-(define-constructor (make-pipe-ends [limit #f] [input-name 'pipe] [output-name 'pipe]
-                                    #:need-input? [need-input? #t])
-  (define bstr (make-bytes (min+1 limit 16)))
-  (define len (bytes-length bstr))
-  (define-fixnum peeked-amt 0) ; peeked but not yet read effectively extends `limit`
-  (define-fixnum start 0)
-  (define-fixnum end 0)
-  (define write-pos #f) ; to adjust the write position via `file-position` on a string port
-  (define input-closed? #f)
-  (define output-closed? #f)
+   [input-empty?
+    (lambda ()
+      (fx= start end))]
 
-  (define (content-length)
-    (if (start . fx<= . end)
-        (fx- end start)
-        (fx+ end (fx- len start))))
-  (define (input-empty?) (fx= start end))
-  (define (output-full?)
-    (and limit
-         ((content-length) . >= . (+ limit peeked-amt))))
+   [output-full?
+    (lambda ()
+      (define l limit)
+      (and l
+           ((content-length) . >= . (+ l peeked-amt))))]
 
-  (define data
-    (pipe-data
-     ;; get-content-length
-     (method
-      (lambda ()
-        (atomically (content-length))))
-     ;; write-position
-     (method
-      (case-lambda
-        ;; in atomic mode
-        [() (or write-pos end)]
-        [(pos)
-         ;; `pos` must be between `start` and `end`
-         (if (fx= pos end)
-             (set! write-pos #f)
-             (set! write-pos pos))]))
-     ;; get-content
-     (method
-      (lambda (to-bstr start-pos)
-        ;; in atomic mode
-        (define pos (let ([p (fx+ start start-pos)])
-                      (if (p . fx>= . len)
-                          (fx- p len)
-                          p)))
-        (define end-pos (fx+ pos (bytes-length to-bstr)))
-        (cond
-          [(end-pos . fx<= . len)
-           (bytes-copy! to-bstr 0 bstr pos end-pos)]
-          [else
-           (bytes-copy! to-bstr 0 bstr pos len)
-           (bytes-copy! to-bstr (fx- len pos) bstr 0 (fx- end-pos len))])))
-     ;; discard-all
-     (method
-      (lambda ()
-        ;; in atomic mode
-        (set! peeked-amt 0)
-        (set! start 0)
-        (set! end 0)
-        (set! write-pos #f)))))
+   ;; Used before/after read:
+   [check-output-unblocking
+    (lambda ()
+      (when (output-full?) (semaphore-post write-ready-sema)))]
+   [check-input-blocking
+    (lambda ()
+      (when (input-empty?) (semaphore-wait read-ready-sema)))]
 
-  (define read-ready-sema (make-semaphore))
-  (define write-ready-sema (and limit (make-semaphore 1)))
-  (define more-read-ready-sema #f) ; for lookahead peeks
-  (define read-ready-evt (wrap-evt (semaphore-peek-evt read-ready-sema)
-                                   (lambda (v) 0)))
-  (define write-ready-evt (if limit
-                              (semaphore-peek-evt write-ready-sema)
-                              always-evt))
-  (define progress-sema #f)
+   ;; Used before/after write:
+   [check-input-unblocking
+    (lambda ()
+      (when (and (input-empty?) (not output-closed?)) (semaphore-post read-ready-sema))
+      (when more-read-ready-sema
+        (semaphore-post more-read-ready-sema)
+        (set! more-read-ready-sema #f)))]
+   [check-output-blocking
+    (lambda ()
+      (when (output-full?)
+        (semaphore-wait write-ready-sema)
+        (when input
+          (send pipe-input-port input on-output-full))))]
 
-  ;; Used before/after read:
-  (define (check-output-unblocking)
-    (when (output-full?) (semaphore-post write-ready-sema)))
-  (define (check-input-blocking)
-    (when (input-empty?) (semaphore-wait read-ready-sema)))
+   ;; Used after peeking:
+   [peeked!
+    (lambda (amt)
+      (when (amt . > . peeked-amt)
+        (check-output-unblocking)
+        (set! peeked-amt amt)))]))
 
-  ;; Used before/after write:
-  (define (check-input-unblocking)
-    (when (and (input-empty?) (not output-closed?)) (semaphore-post read-ready-sema))
-    (when more-read-ready-sema
-      (semaphore-post more-read-ready-sema)
-      (set! more-read-ready-sema #f)))
-  (define (check-output-blocking)
-    (when (output-full?) (semaphore-wait write-ready-sema)))
+;; ----------------------------------------
 
-  ;; Used after peeking:
-  (define (peeked! amt)
-    (when (amt . > . peeked-amt)
-      (check-output-unblocking)
-      (set! peeked-amt amt)))
+(class pipe-input-port #:extends core-input-port
+  (field
+   [d #f] ; pipe-data
+   [progress-sema #f]
+   [commit-manager #f])
 
-  (define (progress!)
-    (when progress-sema
-      (semaphore-post progress-sema)
-      (set! progress-sema #f)))
+  (private
+    [progress!
+     (lambda ()
+       (when progress-sema
+         (semaphore-post progress-sema)
+         (set! progress-sema #f)))]
+    
+    ;; [can leave atomic mode temporarily]
+    ;; After this function returns, complete any commit-changing work
+    ;; before leaving atomic mode again.
+    [pause-waiting-commit
+     (lambda ()
+       (when commit-manager
+         (commit-manager-pause commit-manager)))]
 
-  (define commit-manager #f)
+    ;; [can leave atomic mode temporarily]
+    [wait-commit
+     (lambda (progress-evt ext-evt finish)
+       (cond
+         [(and (not commit-manager)
+               ;; Try shortcut:
+               (not (sync/timeout 0 progress-evt))
+               (sync/timeout 0 ext-evt))
+          (finish)
+          #t]
+         [else
+          ;; General case to support blocking and potentially multiple
+          ;; commiting threads:
+          (unless commit-manager
+            (set! commit-manager (make-commit-manager)))
+          (commit-manager-wait commit-manager progress-evt ext-evt finish)]))]
 
-  ;; in atomic mode [can leave atomic mode temporarily]
-  ;; After this function returns, complete any commit-changing work
-  ;; before leaving atomic mode again.
-  (define (pause-waiting-commit)
-    (when commit-manager
-      (commit-manager-pause commit-manager)))
+    [fast-mode!
+     (lambda (amt)
+       (unless (or count buffer)
+         (with-object pipe-data d
+           (define s start)
+           (define e end)
+           (unless (fx= s e)
+             (set! buffer bstr)
+             (set! buffer-pos s)
+             (set! buffer-end (if (s . fx< . e) e len))
+             (define o offset)
+             (when o
+               (set! offset (- (+ o amt) s)))))))]
 
-  ;; in atomic mode [can leave atomic mode temporarily]
-  (define (wait-commit progress-evt ext-evt finish)
-    (cond
-      [(and (not commit-manager)
-            ;; Try shortcut:
-            (not (sync/timeout 0 progress-evt))
-            (sync/timeout 0 ext-evt))
-       (finish)
-       #t]
-      [else
-       ;; General case to support blocking and potentially multiple
-       ;; commiting threads:
-       (unless commit-manager
-         (set! commit-manager (make-commit-manager)))
-       (commit-manager-wait commit-manager progress-evt ext-evt finish)]))
+    [slow-mode!
+     (lambda ()
+       (when buffer
+         (with-object pipe-data d
+           (define pos buffer-pos)
+           (define o offset)
+           (when o
+             (set! offset (+ o pos)))
+           (set! start (if (fx= pos len)
+                           0
+                           pos))
+           (set! buffer #f)
+           (set! buffer-pos buffer-end))))])
 
-  (values
-   ;; input ----------------------------------------
-   (and
-    need-input?
-    (make-core-input-port
-     #:name input-name
-     #:data data
-     #:self self
+  (static
+   [sync-data
+    (lambda ()
+      (when buffer
+        (with-object pipe-data d
+          (define pos buffer-pos)
+          (set! start (if (fx= pos len)
+                          0
+                          pos)))))]
+   [on-resize
+    (lambda ()
+      (slow-mode!))]
+   [on-output-full
+    (lambda ()
+      (slow-mode!))])
 
-     #:prepare-change
-     (method
-      (lambda ()
-        (pause-waiting-commit)))
+  (override
+    [prepare-change
+     (lambda ()
+       (with-object pipe-data d
+         (pause-waiting-commit)))]
 
-     #:read-byte
-     (method
-      (lambda ()
-        (assert-atomic)
-        (cond
-          [(input-empty?)
-           (if output-closed?
-               eof
-               ;; event's synchronization value is ignored:
-               read-ready-evt)]
-          [else
-           (define pos start)
-           (check-output-unblocking)
-           (unless (fx= 0 peeked-amt)
-             (set! peeked-amt (fxmax 0 (fx- peeked-amt 1))))
-           (define new-pos (fx+ pos 1))
-           (if (fx= new-pos len)
-               (set! start 0)
-               (set! start new-pos))
-           (check-input-blocking)
-           (progress!)
-           (bytes-ref bstr pos)])))
-
-     #:read-in
-     (method
-      (lambda (dest-bstr dest-start dest-end copy?)
-        (assert-atomic)
-        (cond
-          [(input-empty?)
-           (if output-closed?
-               eof
-               read-ready-evt)]
-          [else
-           (check-output-unblocking)
-           (begin0
-             (cond
-               [(start . fx< . end)
+    [read-in
+     (lambda (dest-bstr dest-start dest-end copy?)
+       (assert-atomic)
+       (slow-mode!)
+       (with-object pipe-data d
+         (cond
+           [(input-empty?)
+            (if output-closed?
+                eof
+                read-ready-evt)]
+           [else
+            (check-output-unblocking)
+            (define s start)
+            (define e end)
+            (define amt
+              (cond
+                [(s . fx< . e)
                 (define amt (fxmin (fx- dest-end dest-start)
-                                   (fx- end start)))
-                (bytes-copy! dest-bstr dest-start bstr start (fx+ start amt))
-                (set! start (fx+ start amt))
+                                   (fx- e s)))
+                (bytes-copy! dest-bstr dest-start bstr s (fx+ s amt))
+                (set! start (fx+ s amt))
                 (set! peeked-amt (fxmax 0 (fx- peeked-amt amt)))
                 amt]
                [else
                 (define amt (fxmin (fx- dest-end dest-start)
-                                   (fx- len start)))
-                (bytes-copy! dest-bstr dest-start bstr start (fx+ start amt))
-                (set! start (modulo (fx+ start amt) len))
+                                   (fx- len s)))
+                (bytes-copy! dest-bstr dest-start bstr s (fx+ s amt))
+                (set! start (modulo (fx+ s amt) len))
                 (set! peeked-amt (fxmax 0 (fx- peeked-amt amt)))
-                amt])
-             (check-input-blocking)
-             (progress!))])))
+                amt]))
+            (check-input-blocking)
+            (progress!)
+            (fast-mode! amt)
+            amt])))]
 
-     #:peek-byte
-     (method
-      (lambda ()
-        (assert-atomic)
-        (cond
-          [(input-empty?)
-           (if output-closed?
-               eof
-               read-ready-evt)]
-          [else
-           (peeked! 1)
-           (bytes-ref bstr start)])))
-
-     #:peek-in
-     (method
-      (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
-        (assert-atomic)
-        (define content-amt (content-length))
-        (cond
-          [(and progress-evt
-                (sync/timeout 0 progress-evt))
-           #f]
-          [(content-amt . <= . skip)
-           (cond
-             [output-closed? eof]
-             [else
-              (unless (or (zero? skip) more-read-ready-sema)
-                (set! more-read-ready-sema (make-semaphore)))
-              (define evt (if (zero? skip)
-                              read-ready-evt
-                              (wrap-evt (semaphore-peek-evt more-read-ready-sema)
-                                        (lambda (v) 0))))
-              evt])]
-          [else
-           (define peek-start (fxmodulo (fx+ start skip) len))
-           (cond
-             [(peek-start . fx< . end)
-              (define amt (fxmin (fx- dest-end dest-start)
-                                 (fx- end peek-start)))
-              (bytes-copy! dest-bstr dest-start bstr peek-start (fx+ peek-start amt))
-              (peeked! (+ skip amt))
-              amt]
-             [else
-              (define amt (fxmin (fx- dest-end dest-start)
-                                 (fx- len peek-start)))
-              (bytes-copy! dest-bstr dest-start bstr peek-start (fx+ peek-start amt))
-              (peeked! (+ skip amt))
-              amt])])))
-
-     #:byte-ready
-     (method
-      (lambda (work-done!)
-        (assert-atomic)
-        (or output-closed?
-            (not (fx= 0 (content-length))))))
-
-     #:close
-     (method
-      (lambda ()
-        (unless input-closed?
-          (set! input-closed? #t)
-          (progress!))))
-
-     #:get-progress-evt
-     (method
-      (lambda ()
-        (atomically
+    [peek-in
+     (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
+       (with-object pipe-data d
+         (assert-atomic)
+         (sync-data)
+         (define content-amt (content-length))
          (cond
-           [input-closed? always-evt]
+           [(and progress-evt
+                 (sync/timeout 0 progress-evt))
+            #f]
+           [(content-amt . <= . skip)
+            (cond
+              [output-closed? eof]
+              [else
+               (unless (or (zero? skip) more-read-ready-sema)
+                 (set! more-read-ready-sema (make-semaphore)))
+               (define evt (if (zero? skip)
+                               read-ready-evt
+                               (wrap-evt (semaphore-peek-evt more-read-ready-sema)
+                                         (lambda (v) 0))))
+               evt])]
            [else
-            (unless progress-sema
-              (set! progress-sema (make-semaphore)))
-            (semaphore-peek-evt progress-sema)]))))
+            (define peek-start (fxmodulo (fx+ start skip) len))
+            (cond
+              [(peek-start . fx< . end)
+               (define amt (fxmin (fx- dest-end dest-start)
+                                  (fx- end peek-start)))
+               (bytes-copy! dest-bstr dest-start bstr peek-start (fx+ peek-start amt))
+               (peeked! (+ skip amt))
+               amt]
+              [else
+               (define amt (fxmin (fx- dest-end dest-start)
+                                  (fx- len peek-start)))
+               (bytes-copy! dest-bstr dest-start bstr peek-start (fx+ peek-start amt))
+               (peeked! (+ skip amt))
+               amt])])))]
 
-     #:commit
+    [byte-ready
+     (lambda (work-done!)
+       (assert-atomic)
+       (with-object pipe-data d
+         (or output-closed?
+             (begin
+               (sync-data)
+               (not (fx= 0 (content-length)))))))]
+
+    [close
+     (lambda ()
+       (with-object pipe-data d
+         (when input
+           (slow-mode!)
+           (set! input #f)
+           (progress!))))]
+
+    [get-progress-evt
+     (lambda ()
+       (atomically
+        (with-object pipe-data d
+          (cond
+            [(not input) always-evt]
+            [else
+             (slow-mode!)
+             (unless progress-sema
+               (set! progress-sema (make-semaphore)))
+             (semaphore-peek-evt progress-sema)]))))]
+
+    [commit
      ;; Allows `amt` to be zero and #f for other arguments,
      ;; which is helpful for `open-input-peek-via-read`.
-     (method
-      (lambda (amt progress-evt ext-evt finish)
-        (assert-atomic)
-        ;; `progress-evt` is a `semepahore-peek-evt`, and `ext-evt`
-        ;; is constrained; we can send them over to different threads
-        (cond
-          [(zero? amt)
-           (progress!)]
-          [else
-           (wait-commit
-            progress-evt ext-evt
-            ;; in atomic mode, maybe in a different thread:
-            (lambda ()
-              (let ([amt (min amt (content-length))])
-                (cond
-                  [(fx= 0 amt)
-                   ;; There was nothing to commit; claim success for 0 bytes
-                   (finish #"")]
-                  [else
-                   (define dest-bstr (make-bytes amt))
-                   (cond
-                     [(start . fx< . end)
-                      (bytes-copy! dest-bstr 0 bstr start (fx+ start amt))]
-                     [else
-                      (define amt1 (fxmin (fx- len start) amt))
-                      (bytes-copy! dest-bstr 0 bstr start (fx+ start amt1))
-                      (when (amt1 . fx< . amt)
-                        (bytes-copy! dest-bstr amt1 bstr 0 (fx- amt amt1)))])
-                   (set! start (fxmodulo (fx+ start amt) len))
-                   (progress!)
-                   (check-input-blocking)
-                   (finish dest-bstr)]))))])))))
-  
-  ;; output ----------------------------------------
-  (make-core-output-port
-   #:name output-name
-   #:data data
-   #:self self
+     (lambda (amt progress-evt ext-evt finish)
+       (assert-atomic)
+       ;; `progress-evt` is a `semepahore-peek-evt`, and `ext-evt`
+       ;; is constrained; we can send them over to different threads
+       (cond
+         [(zero? amt)
+          (progress!)]
+         [else
+          (wait-commit
+           progress-evt ext-evt
+           ;; in atomic mode, maybe in a different thread:
+           (lambda ()
+             (with-object pipe-data d
+               (slow-mode!)
+               (let ([amt (min amt (content-length))])
+                 (cond
+                   [(fx= 0 amt)
+                    ;; There was nothing to commit; claim success for 0 bytes
+                    (finish #"")]
+                   [else
+                    (define dest-bstr (make-bytes amt))
+                    (define s start)
+                    (define e end)
+                    (cond
+                      [(s . fx< . e)
+                       (bytes-copy! dest-bstr 0 bstr s (fx+ s amt))]
+                      [else
+                       (define amt1 (fxmin (fx- len s) amt))
+                       (bytes-copy! dest-bstr 0 bstr s (fx+ s amt1))
+                       (when (amt1 . fx< . amt)
+                         (bytes-copy! dest-bstr amt1 bstr 0 (fx- amt amt1)))])
+                    (set! start (fxmodulo (fx+ s amt) len))
+                    (progress!)
+                    (fast-mode! amt)
+                    (check-input-blocking)
+                    (finish dest-bstr)])))))]))]
 
-   #:evt write-ready-evt
-   
-   #:write-out
-   ;; in atomic mode
-   (method
-    (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
-      (assert-atomic)
-      (let try-again ()
-        (define top-pos (if (fx= start 0)
-                            (fx- len 1)
-                            len))
-        (define (maybe-grow)
-          (cond
-            [(or (not limit)
-                 ((+ limit peeked-amt) . > . (fx- len 1)))
-             ;; grow pipe size
-             (define new-bstr (make-bytes (min+1 (and limit (+ limit peeked-amt)) (* len 2))))
+    [count-lines!
+     (lambda ()
+       (slow-mode!))]))
+
+;; ----------------------------------------
+
+(class pipe-output-port #:extends core-output-port
+  (field
+   [d d]) ; pipe-data
+
+  (override
+    [write-out
+     ;; in atomic mode
+     (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+       (assert-atomic)
+       (with-object pipe-data d
+         (send pipe-input-port input sync-data)
+         (let try-again ()
+           (define top-pos (if (fx= start 0)
+                               (fx- len 1)
+                               len))
+           (define (maybe-grow)
              (cond
-               [(fx= 0 start)
-                (bytes-copy! new-bstr 0 bstr 0 (fx- len 1))]
-               [else
-                (bytes-copy! new-bstr 0 bstr start len)
-                (bytes-copy! new-bstr (fx- len start) bstr 0 end)
-                (set! start 0)
-                (set! end (fx- len 1))])
-             (set! bstr new-bstr)
-             (set! len (bytes-length new-bstr))
-             (try-again)]
-            [else (pipe-is-full)]))
-        (define (pipe-is-full)
-          (wrap-evt write-ready-evt (lambda (v) #f)))
-        (define (apply-limit amt)
-          (if limit
-              (min amt (- (+ limit peeked-amt) (content-length)))
-              amt))
-        (cond
-          [(fx= src-start src-end) ;; => flush
-           0]
-          [write-pos ; set by `file-position` on a bytes port
-           (define amt (apply-limit (fxmin (fx- end write-pos)
-                                           (fx- src-end src-start))))
+               [(or (not limit)
+                    ((+ limit peeked-amt) . > . (fx- len 1)))
+                ;; grow pipe size
+                (send pipe-input-port input on-resize)
+                (define new-bstr (make-bytes (min+1 (and limit (+ limit peeked-amt)) (* len 2))))
+                (cond
+                  [(fx= 0 start)
+                   (bytes-copy! new-bstr 0 bstr 0 (fx- len 1))]
+                  [else
+                   (bytes-copy! new-bstr 0 bstr start len)
+                   (bytes-copy! new-bstr (fx- len start) bstr 0 end)
+                   (set! start 0)
+                   (set! end (fx- len 1))])
+                (set! bstr new-bstr)
+                (set! len (bytes-length new-bstr))
+                (try-again)]
+               [else (pipe-is-full)]))
+           (define (pipe-is-full)
+             (wrap-evt write-ready-evt (lambda (v) #f)))
+           (define (apply-limit amt)
+             (if limit
+                 (min amt (- (+ limit peeked-amt) (content-length)))
+                 amt))
            (cond
-             [(fx= amt 0) (pipe-is-full)]
-             [else
-              (check-input-unblocking)
-              (bytes-copy! bstr write-pos src-bstr src-start (fx+ src-start amt))
-              (let ([new-write-pos (fx+ write-pos amt)])
-                (if (fx= new-write-pos end)
-                    (set! write-pos #f) ; back to normal mode
-                    (set! write-pos new-write-pos)))
-              (check-output-blocking)
-              amt])]
-          [(and (end . fx>= . start)
-                (end . fx< . top-pos))
-           (define amt (apply-limit (fxmin (fx- top-pos end)
-                                           (fx- src-end src-start))))
-           (cond
-             [(fx= amt 0) (pipe-is-full)]
-             [else
-              (check-input-unblocking)
-              (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
-              (let ([new-end (fx+ end amt)])
-                (set! end (if (fx= new-end len) 0 new-end)))
-              (check-output-blocking)
-              amt])]
-          [(fx= end top-pos)
-           (cond
-             [(fx= start 0)
-              (maybe-grow)]
-             [else
-              (define amt (fxmin (fx- start 1)
-                                 (fx- src-end src-start)))
+             [(fx= src-start src-end) ;; => flush
+              0]
+             [(and (end . fx>= . start)
+                   (end . fx< . top-pos))
+              (define amt (apply-limit (fxmin (fx- top-pos end)
+                                              (fx- src-end src-start))))
               (cond
                 [(fx= amt 0) (pipe-is-full)]
                 [else
                  (check-input-unblocking)
-                 (bytes-copy! bstr 0 src-bstr src-start (fx+ src-start amt))
-                 (set! end amt)
+                 (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
+                 (let ([new-end (fx+ end amt)])
+                   (set! end (if (fx= new-end len) 0 new-end)))
                  (check-output-blocking)
-                 amt])])]
-          [(end . fx< . (fx- start 1))
-           (define amt (apply-limit (fxmin (fx- (fx- start 1) end)
-                                           (fx- src-end src-start))))
-           (cond
-             [(fx= amt 0) (pipe-is-full)]
+                 amt])]
+             [(fx= end top-pos)
+              (cond
+                [(fx= start 0)
+                 (maybe-grow)]
+                [else
+                 (define amt (fxmin (fx- start 1)
+                                    (fx- src-end src-start)))
+                 (cond
+                   [(fx= amt 0) (pipe-is-full)]
+                   [else
+                    (check-input-unblocking)
+                    (bytes-copy! bstr 0 src-bstr src-start (fx+ src-start amt))
+                    (set! end amt)
+                    (check-output-blocking)
+                    amt])])]
+             [(end . fx< . (fx- start 1))
+              (define amt (apply-limit (fxmin (fx- (fx- start 1) end)
+                                              (fx- src-end src-start))))
+              (cond
+                [(fx= amt 0) (pipe-is-full)]
+                [else
+                 (check-input-unblocking)
+                 (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
+                 (set! end (fx+ end amt))
+                 (check-output-blocking)
+                 amt])]
              [else
-              (check-input-unblocking)
-              (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
-              (set! end (fx+ end amt))
-              (check-output-blocking)
-              amt])]
-          [else
-           (maybe-grow)]))))
+              (maybe-grow)]))))]
 
-   #:count-write-evt-via-write-out
-   (method
-    (lambda (op v bstr start)
-      (port-count! op v bstr start)))
+    [get-write-evt
+     (get-write-evt-via-write-out (lambda (out v bstr start)
+                                    (port-count! out v bstr start)))]
 
-   #:close
-   ;; in atomic mode
-   (method
-    (lambda ()
-      (unless output-closed?
-        (set! output-closed? #t)
-        (when write-ready-sema
-          (semaphore-post write-ready-sema))
-        (when more-read-ready-sema
-          (semaphore-post more-read-ready-sema))
-        (semaphore-post read-ready-sema)))))))
+    [close
+     ;; in atomic mode
+     (lambda ()
+       (with-object pipe-data d
+         (unless output-closed?
+           (set! output-closed? #t)
+           (when write-ready-sema
+             (semaphore-post write-ready-sema))
+           (when more-read-ready-sema
+             (semaphore-post more-read-ready-sema))
+           (semaphore-post read-ready-sema))))]))
+
+;; ----------------------------------------
+    
+(define (make-pipe-ends [limit #f] [input-name 'pipe] [output-name 'pipe])
+  (define len (min+1 limit 16))
+  (define read-ready-sema (make-semaphore))
+  (define write-ready-sema (and limit (make-semaphore 1)))
+  (define write-ready-evt (if limit
+                              (semaphore-peek-evt write-ready-sema)
+                              always-evt))
+  (define d (new pipe-data
+                 [bstr (make-bytes len)]
+                 [len len]
+                 [limit limit]
+                 [read-ready-sema read-ready-sema]
+                 [write-ready-sema write-ready-sema]
+                 [read-ready-evt (wrap-evt (semaphore-peek-evt read-ready-sema)
+                                           (lambda (v) 0))]
+                 [write-ready-evt write-ready-evt]))
+
+  (define input (new pipe-input-port
+                     [name input-name]
+                     [d d]))
+  (define output (new pipe-output-port
+                      [name output-name]
+                      [evt write-ready-evt]
+                      [d d]))
+
+  (set-pipe-data-input! d input)
+
+  (values input output))
 
 (define/who (make-pipe [limit #f] [input-name 'pipe] [output-name 'pipe])
   (check who #:or-false exact-positive-integer? limit)

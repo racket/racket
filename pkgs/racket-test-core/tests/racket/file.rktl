@@ -583,16 +583,16 @@
 (let ([th1 (thread (lambda ()
 		     (display "a" out)))]
       [th2 (thread (lambda ()
-		      (display "a" out)))]
+                     (display "a" out)))]
       [th3 (thread (lambda ()
-		      (display "a" out)))])
+                     (display "a" out)))])
   (test #t thread-running? th1)
   (test #t thread-running? th2)
   (test #t thread-running? th3)
 
   (test 49 read-byte in)
   
-  (sleep 0.1)
+  (sync (system-idle-evt))
 
   (test 2 + 
 	(if (thread-running? th1) 1 0)
@@ -601,7 +601,7 @@
 
   (test 50 read-byte in)
 
-  (sleep 0.1)
+  (sync (system-idle-evt))
 
   (test 1 + 
 	(if (thread-running? th1) 1 0)
@@ -610,7 +610,7 @@
   
   (test 51 read-byte in)
   
-  (sleep 0.1)
+  (sync (system-idle-evt))
 
   (test #f thread-running? th1)
   (test #f thread-running? th2)
