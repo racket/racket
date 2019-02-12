@@ -12,14 +12,10 @@
   (make-struct-type-property 'file-stream))
 
 (define (file-stream-port? p)
-  (define accessor (file-stream-ref
-                    (cond
-                      [(input-port? p) (->core-input-port p)]
-                      [(output-port? p) (->core-output-port p)]
-                      [else
-                       (raise-argument-error 'file-stream-port?
-                                             "port?"
-                                             p)])
-                    #f))
-  (and accessor
-       (accessor p #t)))
+  (file-stream-ref
+   (or (->core-input-port p #:default #f)
+       (->core-output-port p #:default #f)
+       (raise-argument-error 'file-stream-port?
+                             "port?"
+                             p))
+   #f))

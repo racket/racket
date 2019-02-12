@@ -35,7 +35,8 @@
 
 ;; This function should not be called in atomic mode,
 ;; since it can invoke an arbitrary function
-(define (->core-output-port v [who #f])
+(define (->core-output-port v [who #f]
+                            #:default [default empty-output-port])
   (cond
     [(core-output-port? v) v]
     [(output-port-ref v #f)
@@ -46,7 +47,7 @@
             [else
              (->core-output-port p)]))]
     [who (raise-argument-error who "output-port?" v)]
-    [else empty-output-port]))
+    [else default]))
 
 (class core-output-port #:extends core-port
   (field

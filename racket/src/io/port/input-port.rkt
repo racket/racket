@@ -34,7 +34,8 @@
 
 ;; This function should not be called in atomic mode,
 ;; since it can invoke an artitrary function
-(define (->core-input-port v [who #f])
+(define (->core-input-port v [who #f]
+                           #:default [default empty-input-port])
   (cond
     [(core-input-port? v) v]
     [(input-port-ref v #f)
@@ -45,7 +46,7 @@
             [else
              (->core-input-port p)]))]
     [who (raise-argument-error who "input-port?" v)]
-    [else empty-input-port]))
+    [else default]))
 
 (class core-input-port #:extends core-port
   (field
