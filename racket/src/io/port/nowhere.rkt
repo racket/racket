@@ -1,14 +1,15 @@
 #lang racket/base
-(require "output-port.rkt")
+(require "../common/class.rkt"
+         "output-port.rkt")
 
 (provide open-output-nowhere)
 
+(class nowhere-output-port #:extends core-output-port
+  (override
+    [write-out-special
+     (lambda (any no-block/buffer? enable-break?)
+       #t)]))
+
 (define (open-output-nowhere)
-  (make-core-output-port #:name 'nowhere
-                         #:self #f
-                          #:evt always-evt
-                          #:write-out (lambda (self bstr start-k end-k no-block/buffer? enable-break? copy?)
-                                        (- end-k start-k))
-                          #:close void
-                          #:write-out-special (lambda (self any no-block/buffer? enable-break?)
-                                                #t)))
+  (new nowhere-output-port
+       [name 'nowhere]))

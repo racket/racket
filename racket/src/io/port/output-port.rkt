@@ -67,7 +67,7 @@
    ;; The return values are the same as documented for
    ;; `make-output-port`.
    [write-out (lambda (bstr start-k end-k no-block/buffer? enable-break? copy?)
-                (- start-k end-k))]
+                (- end-k start-k))]
 
    ;; #f or (any no-block/buffer? enable-break? -*> boolean?)
    ;; Called in atomic mode.

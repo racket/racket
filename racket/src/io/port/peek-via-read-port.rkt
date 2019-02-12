@@ -41,7 +41,13 @@
 
    [buffer-adjust-pos
     (lambda (i)
-      (- i (fx- end-pos (if buffer buffer-pos pos))))])
+      (- i (fx- end-pos (if buffer buffer-pos pos))))]
+
+   ;; in atomic mode
+   [default-buffer-mode
+    (case-lambda
+      [() buffer-mode]
+      [(mode) (set! buffer-mode mode)])])
 
   (private
     ;; in atomic mode
@@ -218,8 +224,8 @@
     ;; in atomic mode
     [buffer-mode
      (case-lambda
-       [(self) buffer-mode]
-       [(self mode) (set! buffer-mode mode)])]
+       [() (default-buffer-mode)]
+       [(mode) (default-buffer-mode mode)])]
 
     ;; in atomic mode
     [close
