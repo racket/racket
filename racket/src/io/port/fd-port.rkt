@@ -1,5 +1,6 @@
 #lang racket/base
-(require "../host/rktio.rkt"
+(require "../common/class.rkt"
+         "../host/rktio.rkt"
          "../host/error.rkt"
          "../host/thread.rkt"
          "../host/pthread.rkt"
@@ -56,6 +57,43 @@
 
 ;; ----------------------------------------
 
+(class fd-input-port #:extends peek-via-read-input-port
+  (field
+   [fd #f]
+   [fd-refcount #f]
+   [custodian-reference #f]
+   [on-close on-close]
+   [network-error? #f])
+  
+  (override
+    [read-in/inner
+     (lambda (dest-bstr start end copy?)
+       (define n (rktio_read_in rktio fd dest-bstr start end))
+       (cond
+         [(rktio-error? n)
+          (end-atomic)
+	  (if network-error?
+              (raise-network-error #f n "error reading from stream port")
+              (raise-filesystem-error #f n "error reading from stream port"))]
+         [(eqv? n RKTIO_READ_EOF) eof]
+         [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ this)
+                               (lambda (v) 0))]
+         [else n]))]
+
+    [close
+     (lambda ()
+       (on-close)
+       (fd-close fd fd-refcount)
+       (unsafe-custodian-unregister fd custodian-reference)
+       (close-peek-buffer))]
+
+    [file-position
+     (case-lambda
+       [() (do-file-position fd (lambda (pos) (buffer-adjust-pos pos)))]
+       [(pos) (do-file-position fd (lambda () (purge-buffer)) pos)])]))
+
+;; ----------------------------------------
+
 ;; in atomic mode
 ;; Current custodian must not be shut down.
 (define (open-input-fd fd name
@@ -65,40 +103,15 @@
                        #:custodian [cust (current-custodian)]
                        #:file-stream? [file-stream? #t]
 		       #:network-error? [network-error? #f])
-  (define-values (port buffer-control)
-    (open-input-peek-via-read
-     #:name name
-     #:data (fd-data fd extra-data #t file-stream?)
-     #:self #f
-     #:read-in
-     ;; in atomic mode
-     (lambda (self dest-bstr start end copy?)
-       (define n (rktio_read_in rktio fd dest-bstr start end))
-       (cond
-         [(rktio-error? n)
-          (end-atomic)
-	  (if network-error?
-              (raise-network-error #f n "error reading from stream port")
-              (raise-filesystem-error #f n "error reading from stream port"))]
-         [(eqv? n RKTIO_READ_EOF) eof]
-         [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ port)
-                               (lambda (v) 0))]
-         [else n]))
-     #:read-is-atomic? #t
-     #:close
-     ;; in atomic mode
-     (lambda (self)
-       (on-close)
-       (fd-close fd fd-refcount)
-       (unsafe-custodian-unregister fd custodian-reference))
-     #:file-position (make-file-position
-                      fd
-                      (case-lambda
-                        [() (buffer-control)]
-                        [(pos) (buffer-control pos)]))))
-  (define custodian-reference
-    (register-fd-close cust fd fd-refcount #f port))
-  port)
+  (define p (new fd-input-port
+                 [name name]
+                 [data (fd-data fd extra-data #t file-stream?)]
+                 [fd fd]
+                 [fd-refcount fd-refcount]
+                 [on-close on-close]
+                 [network-error? network-error?]))
+  (set-fd-input-port-custodian-reference! p (register-fd-close cust fd fd-refcount #f p))
+  p)
 
 ;; ----------------------------------------
 
@@ -281,10 +294,10 @@
 
 ;; ----------------------------------------
 
-(define (make-file-position fd buffer-control)
-  ;; in atomic mode
+;; in atomic mode
+(define do-file-position
   (case-lambda
-    [(self)
+    [(fd buffer-control)
      (define ppos (rktio_get_file_position rktio fd))
      (cond
        [(rktio-error? ppos)
@@ -294,7 +307,7 @@
         (define pos (rktio_filesize_ref ppos))
         (rktio_free ppos)
         (buffer-control pos)])]
-    [(self pos)
+    [(fd buffer-control pos)
      (buffer-control)
      (define r
        (rktio_set_file_position rktio
@@ -308,6 +321,11 @@
      (when (rktio-error? r)
        (end-atomic)
        (raise-rktio-error 'file-position r "error setting stream position"))]))
+
+(define (make-file-position fd buffer-control)
+  (case-lambda
+    [(self) (do-file-position fd buffer-control)]
+    [(self pos) (do-file-position fd buffer-control pos)]))
 
 ;; ----------------------------------------
 

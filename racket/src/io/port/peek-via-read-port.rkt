@@ -13,17 +13,11 @@
 
 (class peek-via-read-input-port #:extends commit-input-port
   (field
-   [bstr #""]
+   [bstr (make-bytes 4096)]
    [pos 0]
    [end-pos 0]
    [peeked-eof? #f]
    [buffer-mode 'block])
-
-  (override
-    [prepare-change
-     (lambda ()
-       (when commit-manager
-         (commit-manager-pause commit-manager)))])
 
   (public
     ;; in atomic mode; must override
@@ -35,9 +29,19 @@
    ;; in atomic mode
    [purge-buffer
     (lambda ()
+      (slow-mode!)
       (set! pos 0)
       (set! end-pos 0)
-      (set! peeked-eof? #f))])
+      (set! peeked-eof? #f))]
+
+   [close-peek-buffer
+    (lambda ()
+      (purge-buffer)
+      (set! bstr #""))]
+
+   [buffer-adjust-pos
+    (lambda (i)
+      (- i (fx- end-pos (if buffer buffer-pos pos))))])
 
   (private
     ;; in atomic mode
@@ -74,117 +78,154 @@
           (bytes-copy! bstr 0 bstr pos end-pos)
           (set! end-pos (fx- end-pos pos))
           (set! pos 0)
-          (pull-more-bytes)]))]
+          (pull-more-bytes amt)]))]
 
     ;; in atomic mode
     [retry-pull?
      (lambda (v)
-       (and (integer? v) (not (eqv? v 0))))])
+       (and (integer? v) (not (eqv? v 0))))]
+
+    ;; in atomic mode
+    [fast-mode!
+     (lambda (amt) ; amt = not yet added to `count`
+       (unless count
+         (set! buffer bstr)
+         (define s pos)
+         (set! buffer-pos s)
+         (set! buffer-end end-pos)
+         (define o offset)
+         (when o
+           (set! offset (- (+ o amt) s)))))]
+
+    ;; in atomic mode
+    [slow-mode!
+     (lambda ()
+       (when buffer
+         (define s buffer-pos)
+         (define o offset)
+         (when o
+           (set! offset (+ o s)))
+         (set! pos s)
+         (set! buffer #f)
+         (set! buffer-pos buffer-end)))])
 
   (override
-   ;; in atomic mode
-   [read-in
-    (lambda (dest-bstr start end copy?)
-      (let try-again ()
-        (cond
-          [(pos . fx< . end-pos)
-           (define amt (min (fx- end-pos pos) (fx- end start)))
-           (bytes-copy! dest-bstr start bstr pos (fx+ pos amt))
-           amt]
-          [peeked-eof?
-           (set! peeked-eof? #f)
-           ;; an EOF doesn't count as progress
-           eof]
-          [else
-           (cond
-             [(and (fx< (fx- end start) (bytes-length bstr))
-                   (eq? 'block buffer-mode))
-              (define v (pull-some-bytes))
-              (cond
-                [(or (eqv? v 0) (evt? v)) v]
-                [else (try-again)])]
-             [else
-              (define v (send peek-via-read-input-port this read-in/inner dest-bstr start end copy?))
-              (unless (eqv? v 0)
-                (progress!))
-              v])])))]
+    ;; in atomic mode
+    [prepare-change
+     (lambda ()
+       (pause-waiting-commit))]
+    
+    ;; in atomic mode
+    [read-in
+     (lambda (dest-bstr start end copy?)
+       (slow-mode!)
+       (let try-again ()
+         (cond
+           [(pos . fx< . end-pos)
+            (define amt (min (fx- end-pos pos) (fx- end start)))
+            (bytes-copy! dest-bstr start bstr pos (fx+ pos amt))
+            (set! pos (fx+ pos amt))
+            (progress!)
+            (fast-mode! amt)
+            amt]
+           [peeked-eof?
+            (set! peeked-eof? #f)
+            ;; an EOF doesn't count as progress
+            eof]
+           [else
+            (cond
+              [(and (eq? 'block buffer-mode)
+                    (fx< (fx- end start) (fxrshift (bytes-length bstr) 1)))
+               (define v (pull-some-bytes))
+               (cond
+                 [(or (eqv? v 0) (evt? v)) v]
+                 [else (try-again)])]
+              [else
+               (define v (send peek-via-read-input-port this read-in/inner dest-bstr start end copy?))
+               (unless (eqv? v 0)
+                 (progress!))
+               v])])))]
 
-   ;; in atomic mode
-   [peek-in
-    (lambda (dest-bstr start end skip progress-evt copy?)
-      (let try-again ()
-        (cond
-          [(and progress-evt
-                (sync/timeout 0 progress-evt))
-           #f]
-          [else
-           (define peeked-amt (fx- end-pos pos))
-           (cond
-             [(peeked-amt . > . skip)
-              (define amt (min (fx- peeked-amt skip) (fx- end start)))
-              (define s-pos (fx+ pos skip))
-              (bytes-copy! dest-bstr start bstr s-pos (fx+ s-pos amt))
-              amt]
-             [peeked-eof?
-              eof]
-             [else
-              (define v (pull-more-bytes (- skip peeked-amt)))
-              (if (retry-pull? v)
-                  (try-again)
-                  v)])])))]
+    ;; in atomic mode
+    [peek-in
+     (lambda (dest-bstr start end skip progress-evt copy?)
+       (let try-again ()
+         (cond
+           [(and progress-evt
+                 (sync/timeout 0 progress-evt))
+            #f]
+           [else
+            (define s (if buffer buffer-pos pos))
+            (define peeked-amt (fx- end-pos s))
+            (cond
+              [(peeked-amt . > . skip)
+               (define amt (min (fx- peeked-amt skip) (fx- end start)))
+               (define s-pos (fx+ s skip))
+               (bytes-copy! dest-bstr start bstr s-pos (fx+ s-pos amt))
+               amt]
+              [peeked-eof?
+               eof]
+              [else
+               (slow-mode!)
+               (define v (pull-more-bytes (+ (- skip peeked-amt) (fx- end start))))
+               (if (retry-pull? v)
+                   (try-again)
+                   v)])])))]
 
-   ;; in atomic mode
-   [byte-ready
-    (lambda (work-done!)
-      (let loop ()
-        (define peeked-amt (fx- end-pos pos))
-        (cond
-          [(peeked-amt . fx> . 0) #t]
-          [peeked-eof? #t]
-          [else
-           (define v (pull-some-bytes))
-           (work-done!)
-           (cond
-             [(retry-pull? v)
-              (loop)]
-             [(evt? v) v]
-             [else
-              (not (eqv? v 0))])])))]
+    ;; in atomic mode
+    [byte-ready
+     (lambda (work-done!)
+       (let loop ()
+         (define peeked-amt (fx- end-pos (if buffer buffer-pos pos)))
+         (cond
+           [(peeked-amt . fx> . 0) #t]
+           [peeked-eof? #t]
+           [else
+            (slow-mode!)
+            (define v (pull-some-bytes))
+            (work-done!)
+            (cond
+              [(retry-pull? v)
+               (loop)]
+              [(evt? v) v]
+              [else
+               (not (eqv? v 0))])])))]
 
-   [get-progress-evt
-    (lambda ()
-      (atomically
-       (make-progress-evt)))]
+    [get-progress-evt
+     (lambda ()
+       (atomically
+        (slow-mode!)
+        (make-progress-evt)))]
 
-   ;; in atomic mode
-   [commit
-    (lambda (amt progress-evt ext-evt finish)
-      (wait-commit
-       progress-evt ext-evt
-       ;; in atomic mode, maybe in a different thread:
-       (lambda ()
-         (let ([amt (fxmin amt (fx- end-pos pos))])
-           (cond
-             [(fx= 0 amt)
-              (finish #"")]
-             [else
-              (define dest-bstr (make-bytes amt))
-              (bytes-copy! dest-bstr 0 bstr pos (fx+ pos amt))
-              (set! pos (fx+ pos amt))
-              (progress!)
-              (finish dest-bstr)])))))]
+    ;; in atomic mode
+    [commit
+     (lambda (amt progress-evt ext-evt finish)
+       (slow-mode!)
+       (wait-commit
+        progress-evt ext-evt
+        ;; in atomic mode, maybe in a different thread:
+        (lambda ()
+          (let ([amt (fxmin amt (fx- end-pos pos))])
+            (cond
+              [(fx= 0 amt)
+               (finish #"")]
+              [else
+               (define dest-bstr (make-bytes amt))
+               (bytes-copy! dest-bstr 0 bstr pos (fx+ pos amt))
+               (set! pos (fx+ pos amt))
+               (progress!)
+               (finish dest-bstr)])))))]
 
-   ;; in atomic mode
-   [buffer-mode
-    (case-lambda
-      [(self) buffer-mode]
-      [(self mode) (set! buffer-mode mode)])]
+    ;; in atomic mode
+    [buffer-mode
+     (case-lambda
+       [(self) buffer-mode]
+       [(self mode) (set! buffer-mode mode)])]
 
-   ;; in atomic mode
-   [close
-    (lambda ()
-      (purge-buffer)
-      (set! bstr #""))]))
+    ;; in atomic mode
+    [close
+     (lambda ()
+       (close-peek-buffer))]))
 
 ;; ----------------------------------------
 

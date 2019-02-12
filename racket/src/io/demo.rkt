@@ -764,6 +764,7 @@
 
 ;; ----------------------------------------
 
+'read-string
 (time
  (let loop ([j 10])
    (unless (zero? j)

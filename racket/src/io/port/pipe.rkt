@@ -127,7 +127,7 @@
 
   (private
     [fast-mode!
-     (lambda (amt)
+     (lambda (amt) ; amt = not yet added to `count`
        (unless (or count buffer)
          (with-object pipe-data d
            (define s start)
