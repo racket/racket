@@ -132,7 +132,7 @@
           (wrap-check-write-evt-result '|user port write| r start end non-block/buffer?)]
          [else r])]))
 
-  (define (get-write-evt self orig-out bstr start end)
+  (define (get-write-evt self bstr start end)
     (end-atomic)
     (define r (user-get-write-evt bstr start end))
     (unless (evt? r)
@@ -167,25 +167,24 @@
     (user-close)
     (start-atomic))
 
-  (make-core-output-port
-   #:name name
-   #:self #f
-   #:evt evt
-   #:write-out
-   (if (output-port? user-write-out)
-       user-write-out
-       write-out)
-   #:close close
-   #:write-out-special
-   (if (output-port? user-write-out-special)
-       user-write-out-special
-       (and user-write-out-special write-out-special))
-   #:get-write-evt (and user-get-write-evt get-write-evt)
-   #:get-write-special-evt (and user-get-write-special-evt
-                                (lambda (self v)
-                                  (user-get-write-special-evt v)))
-   #:get-location get-location
-   #:count-lines! count-lines!
-   #:init-offset init-offset
-   #:file-position file-position
-   #:buffer-mode buffer-mode))
+  (new core-output-port
+       #:override
+       ([write-out (if (output-port? user-write-out)
+                       user-write-out
+                       write-out)]
+        [close close]
+        [write-out-special
+         (if (output-port? user-write-out-special)
+             user-write-out-special
+             (and user-write-out-special write-out-special))]
+        [get-write-evt (and user-get-write-evt get-write-evt)]
+        [get-write-special-evt (and user-get-write-special-evt
+                                    (lambda (self v)
+                                      (user-get-write-special-evt v)))]
+        [get-location get-location]
+        [count-lines! count-lines!]
+        [file-position file-position]
+        [buffer-mode buffer-mode])
+       [name name]
+       [evt evt]
+       [offset init-offset]))
