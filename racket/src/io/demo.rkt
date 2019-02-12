@@ -779,6 +779,7 @@
        (loop (sub1 j))))))
 
 (define read-byte-buffer-mode 'block)
+(define count-lines? #t)
 
 'read-byte/host
 (time
@@ -787,7 +788,7 @@
      (let ()
        (define p (host:open-input-file "compiled/io.rktl"))
        (host:file-stream-buffer-mode p read-byte-buffer-mode)
-       (host:port-count-lines! p)
+       (when count-lines? (host:port-count-lines! p))
        (let loop ()
          (unless (eof-object? (host:read-byte p))
            (loop)))
@@ -801,7 +802,7 @@
      (let ()
        (define p (open-input-file "compiled/io.rktl"))
        (file-stream-buffer-mode p read-byte-buffer-mode)
-       (port-count-lines! p)
+       (when count-lines? (port-count-lines! p))
        (let loop ()
          (unless (eof-object? (read-byte p))
            (loop)))

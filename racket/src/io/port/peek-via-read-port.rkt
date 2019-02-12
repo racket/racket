@@ -87,15 +87,14 @@
 
     ;; in atomic mode
     [fast-mode!
-     (lambda (amt) ; amt = not yet added to `count`
-       (unless count
-         (set! buffer bstr)
-         (define s pos)
-         (set! buffer-pos s)
-         (set! buffer-end end-pos)
-         (define o offset)
-         (when o
-           (set! offset (- (+ o amt) s)))))]
+     (lambda (amt) ; amt = not yet added to `offset`
+       (set! buffer bstr)
+       (define s pos)
+       (set! buffer-pos s)
+       (set! buffer-end end-pos)
+       (define o offset)
+       (when o
+         (set! offset (- (+ o amt) s))))]
 
     ;; in atomic mode
     [slow-mode!

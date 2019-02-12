@@ -29,9 +29,6 @@
    ;;
    ;; A non-#f `buffer` further implies that `buffer-pos` should be
    ;; added to `offset` to get the true offset.
-   ;;
-   ;; Shortcut mode must be disabled when line counting is enabled,
-   ;; since shortcut mode skips explicit count.
    [buffer #f]
    [buffer-pos 0]   ; if < `buffer-end`, allows direct read/write on `buffer`
    [buffer-end 0]

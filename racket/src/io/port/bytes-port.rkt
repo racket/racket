@@ -73,14 +73,10 @@
          [(i . < . len)
           (define amt (min (- end start) (fx- len i)))
           (define new-pos (fx+ i amt))
-          (cond
-            [(not count)
-             ;; Keep/resume fast mode
-             (set! buffer-pos new-pos)
-             (set! offset 0)
-             (set! buffer bstr)]
-            [else
-             (set! pos new-pos)])
+          ;; Keep/resume fast mode
+          (set! buffer-pos new-pos)
+          (set! offset 0)
+          (set! buffer bstr)
           (bytes-copy! dest-bstr start bstr i new-pos)
           (progress!)
           amt]
@@ -128,14 +124,10 @@
           (let ([amt (min amt (- len i))])
             (define dest-bstr (make-bytes amt))
             (bytes-copy! dest-bstr 0 bstr i (+ i amt))
-            (cond
-              [(not count)
-               ;; Keep/resume fast mode
-               (set! buffer-pos (fx+ i amt))
-               (set! buffer bstr)
-               (set! offset 0)]
-              [else
-               (set! pos (fx+ i amt))])
+            ;; Keep/resume fast mode
+            (set! buffer-pos (fx+ i amt))
+            (set! buffer bstr)
+            (set! offset 0)
             (progress!)
             (finish dest-bstr)))))]
 

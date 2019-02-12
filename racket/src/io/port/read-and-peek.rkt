@@ -67,6 +67,8 @@
           (define new-pos (fx+ buf-pos v))
           (bytes-copy! bstr start (core-port-buffer in) buf-pos new-pos)
           (set-core-port-buffer-pos! in new-pos)
+          (when (core-port-count in)
+            (port-count! in v bstr start))
           (end-atomic)
           v]
          [else
@@ -208,6 +210,8 @@
     [(pos . fx< . (core-port-buffer-end in))
      (define b (bytes-ref (core-port-buffer in) pos))
      (set-core-port-buffer-pos! in (fx+ pos 1))
+     (when (core-port-count in)
+       (port-count-byte! in b))
      (end-atomic)
      b]
     [else
