@@ -863,7 +863,7 @@
                 (thread-resume mgr-th (current-thread))
                 (channel-put mgr-ch (list* what ch nack req-sfx))
                 (wrap-evt ch (lambda (x)
-                               (if (eq? x 'close)
+                               (if (eq? x 'closed)
                                  (raise-mismatch-error 'write-evt "port is closed: " out)
                                  x)))))))))
       (define (resume-mgr)
