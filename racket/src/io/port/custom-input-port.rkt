@@ -260,48 +260,45 @@
     (and user-buffer-mode
          (make-buffer-mode user-buffer-mode)))
 
-  (define port
-    (cond
-      [user-peek-in
-       (new core-input-port
-            #:override
-            ([read-in (if (input-port? user-read-in)
-                          user-read-in
-                          read-in)]
-             [peek-in (if (input-port? user-peek-in)
-                          user-peek-in
-                          peek-in)]
-             [byte-ready (if (input-port? user-peek-in)
-                             user-peek-in
-                             byte-ready)]
-             [close close]
-             [get-progress-evt (and user-get-progress-evt get-progress-evt)]
-             [commit (and user-commit commit)]
-             [get-location get-location]
-             [count-lines! count-lines!]
-             [file-position file-position]
-             [buffer-mode buffer-mode])
-            [name name]
-            [offset init-offset])]
-      [else
-       (new peek-via-read-input-port
-            #:override
-            ([read-in/inner read-in]
-             [close (values
-                     (lambda (self)
-                       (close self)
-                       (send peek-via-read-input-port self close-peek-buffer)))]
-             [get-location  get-location]
-             [count-lines! count-lines!]
-             [file-position file-position]
-             [buffer-mode (or buffer-mode
-                              (case-lambda
-                                [(self) (send peek-via-read-input-port self default-buffer-mode)]
-                                [(self mode) (send peek-via-read-input-port self default-buffer-mode mode)]))])
-            [name name]
-            [offset init-offset])]))
-
-  (when (port-count-lines-enabled)
-    (port-count-lines! port))
-
-  port)
+  (finish-port/count
+   (cond
+     [user-peek-in
+      (new core-input-port
+           #:field
+           [name name]
+           [offset init-offset]
+           #:override
+           [read-in (if (input-port? user-read-in)
+                        user-read-in
+                        read-in)]
+           [peek-in (if (input-port? user-peek-in)
+                        user-peek-in
+                        peek-in)]
+           [byte-ready (if (input-port? user-peek-in)
+                           user-peek-in
+                           byte-ready)]
+           [close close]
+           [get-progress-evt (and user-get-progress-evt get-progress-evt)]
+           [commit (and user-commit commit)]
+           [get-location get-location]
+           [count-lines! count-lines!]
+           [file-position file-position]
+           [buffer-mode buffer-mode])]
+     [else
+      (new peek-via-read-input-port
+           #:field
+           [name name]
+           [offset init-offset]
+           #:override
+           [read-in/inner read-in]
+           [close (values
+                   (lambda (self)
+                     (close self)
+                     (send peek-via-read-input-port self close-peek-buffer)))]
+           [get-location  get-location]
+           [count-lines! count-lines!]
+           [file-position file-position]
+           [buffer-mode (or buffer-mode
+                            (case-lambda
+                              [(self) (send peek-via-read-input-port self default-buffer-mode)]
+                              [(self mode) (send peek-via-read-input-port self default-buffer-mode mode)]))])])))

@@ -49,100 +49,101 @@
     [else default]))
 
 (class core-input-port #:extends core-port
-  (field
-   [pending-eof? #f]
-   [read-handler #f])
+  #:field
+  [pending-eof? #f]
+  [read-handler #f]
 
-  (public
+  #:public
+  
+  ;; #f or (-*> void)
+  ;; Called in atomic mode
+  ;; May leave atomic mode temporarily, but on return, ensures that
+  ;; other atomic operations are ok to change the port. The main use
+  ;; of `prepare-change` is to pause and `port-commit-peeked`
+  ;; attempts to not succeed while a potential change is in progress,
+  ;; where the commit attempts can resume after atomic mode is left.
+  ;; The `close` operation is *not* guarded by a call to
+  ;; `prepare-change`.
+  [prepare-change #f]
 
-   ;; #f or (-*> void)
-   ;; Called in atomic mode
-   ;; May leave atomic mode temporarily, but on return, ensures that
-   ;; other atomic operations are ok to change the port. The main use
-   ;; of `prepare-change` is to pause and `port-commit-peeked`
-   ;; attempts to not succeed while a potential change is in progress,
-   ;; where the commit attempts can resume after atomic mode is left.
-   ;; The `close` operation is *not* guarded by a call to
-   ;; `prepare-change`.
-   [prepare-change #f]
+  ;; port or (bytes start-k end-k copy? -*> (or/c integer? ...))
+  ;; Called in atomic mode.
+  ;; A port value redirects to the port. Otherwise, the function
+  ;; never blocks, and can assume `(- end-k start-k)` is non-zero.
+  ;; The `copy?` flag indicates that the given byte string should not
+  ;; be exposed to untrusted code, and instead of should be copied if
+  ;; necessary. The return values are the same as documented for
+  ;; `make-input-port`, except that a pipe result is not allowed (or,
+  ;; more precisely, it's treated as an event).
+  [read-in (lambda (bstr start end copy?) eof)]
 
-   ;; port or (bytes start-k end-k copy? -*> (or/c integer? ...))
-   ;; Called in atomic mode.
-   ;; A port value redirects to the port. Otherwise, the function
-   ;; never blocks, and can assume `(- end-k start-k)` is non-zero.
-   ;; The `copy?` flag indicates that the given byte string should not
-   ;; be exposed to untrusted code, and instead of should be copied if
-   ;; necessary. The return values are the same as documented for
-   ;; `make-input-port`, except that a pipe result is not allowed (or,
-   ;; more precisely, it's treated as an event).
-   [read-in (lambda (bstr start end copy?) eof)]
+  ;; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))
+  ;; Called in atomic mode.
+  ;; A port value redirects to the port. Otherwise, the function
+  ;; never blocks, and it can assume that `(- end-k start-k)` is
+  ;; non-zero. The `copy?` flag is the same as for `read-in`. The
+  ;; return values are the same as documented for `make-input-port`.
+  [peek-in (lambda (bstr start end progress-evt copy?) eof)]
 
-   ;; port or (bytes start-k end-k skip-k progress-evt copy? -*> (or/c integer? ...))
-   ;; Called in atomic mode.
-   ;; A port value redirects to the port. Otherwise, the function
-   ;; never blocks, and it can assume that `(- end-k start-k)` is
-   ;; non-zero. The `copy?` flag is the same as for `read-in`. The
-   ;; return values are the same as documented for `make-input-port`.
-   [peek-in (lambda (bstr start end progress-evt copy?) eof)]
+  ;; port or ((->) -*> (or/c boolean? evt))
+  ;; Called in atomic mode.
+  ;; A port value makes sense when `peek-in` has a port value.
+  ;; Otherwise, check whether a peek on one byte would succeed
+  ;; without blocking and return a boolean, or return an event that
+  ;; effectively does the same. The event's value doesn't matter,
+  ;; because it will be wrapped to return some original port. When
+  ;; `byte-ready` is a function, it should call the given function
+  ;; (for its side effect) when work has been done that might unblock
+  ;; this port or some other port.
+  [byte-ready (lambda (work-done!) #t)]
 
-   ;; port or ((->) -*> (or/c boolean? evt))
-   ;; Called in atomic mode.
-   ;; A port value makes sense when `peek-in` has a port value.
-   ;; Otherwise, check whether a peek on one byte would succeed
-   ;; without blocking and return a boolean, or return an event that
-   ;; effectively does the same. The event's value doesn't matter,
-   ;; because it will be wrapped to return some original port. When
-   ;; `byte-ready` is a function, it should call the given function
-   ;; (for its side effect) when work has been done that might unblock
-   ;; this port or some other port.
-   [byte-ready (lambda (work-done!) #t)]
+  ;; #f or (-*> evt?)
+  ;; *Not* called in atomic mode.
+  ;; Optional support for progress events, and may be called on a
+  ;; closed port.
+  [get-progress-evt #f]
 
-   ;; #f or (-*> evt?)
-   ;; *Not* called in atomic mode.
-   ;; Optional support for progress events, and may be called on a
-   ;; closed port.
-   [get-progress-evt #f]
+  ;; (amt-k progress-evt? evt? (bytes? -> any) -*> boolean)
+  ;; Called in atomic mode.
+  ;; Goes with `get-progress-evt`. The final `evt?` argument is
+  ;; constrained to a few kinds of events; see docs for
+  ;; `port-commit-peeked` for more information. On success, a
+  ;; completion function is called in atomic mode, but possibly in a
+  ;; different thread, with the committed bytes. The result is a
+  ;; boolean indicating success or failure.
+  [commit (lambda (amt progress-evt ext-evt finish) #f)]
 
-   ;; (amt-k progress-evt? evt? (bytes? -> any) -*> boolean)
-   ;; Called in atomic mode.
-   ;; Goes with `get-progress-evt`. The final `evt?` argument is
-   ;; constrained to a few kinds of events; see docs for
-   ;; `port-commit-peeked` for more information. On success, a
-   ;; completion function is called in atomic mode, but possibly in a
-   ;; different thread, with the committed bytes. The result is a
-   ;; boolean indicating success or failure.
-   [commit (lambda (amt progress-evt ext-evt finish) #f)])
-
-  (property
-   [prop:input-port-evt (lambda (i)
-                          ;; not atomic mode
-                          (let ([i (->core-input-port i)])
-                            (cond
-                              [(core-port-closed? i)
-                               always-evt]
-                              [else
-                               (define byte-ready (method core-input-port i byte-ready))
-                               (cond
-                                 [(input-port? byte-ready)
-                                  byte-ready]
-                                 [else
-                                  (poller-evt
-                                   (poller
-                                    (lambda (self poll-ctx)
-                                      ;; atomic mode
-                                      (define v (byte-ready i
-                                                            (lambda ()
-                                                              (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
-                                      (cond
-                                        [(evt? v)
-                                         (values #f v)]
-                                        [(eq? v #t)
-                                         (values (list #t) #f)]
-                                        [else
-                                         (values #f self)]))))])])))]))
+  #:property
+  [prop:input-port-evt (lambda (i)
+                         ;; not atomic mode
+                         (let ([i (->core-input-port i)])
+                           (cond
+                             [(core-port-closed? i)
+                              always-evt]
+                             [else
+                              (define byte-ready (method core-input-port i byte-ready))
+                              (cond
+                                [(input-port? byte-ready)
+                                 byte-ready]
+                                [else
+                                 (poller-evt
+                                  (poller
+                                   (lambda (self poll-ctx)
+                                     ;; atomic mode
+                                     (define v (byte-ready i
+                                                           (lambda ()
+                                                             (schedule-info-did-work! (poll-ctx-sched-info poll-ctx)))))
+                                     (cond
+                                       [(evt? v)
+                                        (values #f v)]
+                                       [(eq? v #t)
+                                        (values (list #t) #f)]
+                                       [else
+                                        (values #f self)]))))])])))])
 
 ;; ----------------------------------------
 
 (define empty-input-port
   (new core-input-port
+       #:field
        [name 'empty]))

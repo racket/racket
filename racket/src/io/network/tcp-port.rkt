@@ -15,49 +15,51 @@
          tcp-abandon-port)
 
 (class tcp-input-port #:extends fd-input-port
-  (field
-   [abandon? #f])
-  (override
-    [on-close
-     (lambda ()
-       (unless abandon?
-         (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))]
-    [raise-read-error
-     (lambda (n)
-       (raise-network-error #f n "error reading from stream port"))])
-  (property
-   [prop:file-stream #f]
-   [prop:fd-place-message-opener (lambda (fd name)
-                                   (make-tcp-input-port fd name))]))
+  #:field
+  [abandon? #f]
+  #:override
+  [on-close
+   (lambda ()
+     (unless abandon?
+       (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_READ)))]
+  [raise-read-error
+   (lambda (n)
+     (raise-network-error #f n "error reading from stream port"))]
+  #:property
+  [prop:file-stream #f]
+  [prop:fd-place-message-opener (lambda (fd name)
+                                  (make-tcp-input-port fd name))])
 
 (define (make-tcp-input-port fd name
                              #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-input-port
    (new tcp-input-port
+        #:field
         [name name]
         [fd fd]
         [fd-refcount fd-refcount])))
 
 (class tcp-output-port #:extends fd-output-port
-  (field
-   [abandon? #f])
-  (override
-    [on-close
-     (lambda ()
-       (unless abandon?
-         (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))]
-    [raise-write-error
-     (lambda (n)
-       (raise-network-error #f n "error writing to stream port"))])
-  (property
-   [prop:file-stream #f]
-   [prop:fd-place-message-opener (lambda (fd name)
-                                   (make-tcp-output-port fd name))]))
+  #:field
+  [abandon? #f]
+  #:override
+  [on-close
+   (lambda ()
+     (unless abandon?
+       (rktio_socket_shutdown rktio fd RKTIO_SHUTDOWN_WRITE)))]
+  [raise-write-error
+   (lambda (n)
+     (raise-network-error #f n "error writing to stream port"))]
+  #:property
+  [prop:file-stream #f]
+  [prop:fd-place-message-opener (lambda (fd name)
+                                  (make-tcp-output-port fd name))])
 
 (define (make-tcp-output-port fd name
                               #:fd-refcount [fd-refcount (box 1)])
   (finish-fd-output-port
    (new tcp-output-port
+        #:field
         [name name]
         [fd fd]
         [fd-refcount fd-refcount]

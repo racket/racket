@@ -13,12 +13,12 @@
 ;;
 ;;  <class-defn> = (class <class-id> <clause> ...)
 ;;               | (class <class-id> #:extends <class-id> <clause> ...)
-;;  <clause> = (field [<field-id> <duplicatable-init-expr>] ...)
-;;           | (public [<method-id> <method>] ...)
-;;           | (private [<method-id> <method>] ...)
-;;           | (override [<method-id> <method>] ...)
-;;           | (static [<method-id> <method>] ...) ; not in vtable
-;;           | (property [<property-expr> <val-expr>] ...)
+;;  <clause> = #:field [<field-id> <duplicatable-init-expr>] ...
+;;           | #:public [<method-id> <method>] ...
+;;           | #:private [<method-id> <method>] ...   ; cannot `send`
+;;           | #:override [<method-id> <method>] ...
+;;           | #:static [<method-id> <method>] ...    ; cannot override
+;;           | #:property [<property-expr> <val-expr>] ...
 ;;  <method> = #f
 ;;           | (lambda <formals> <expr> ...+)
 ;;           | (case-lambda [<formals> <expr> ...+] ...)
@@ -40,12 +40,13 @@
 ;; unnecessary indirections through methods that can be overridden).
 ;;
 ;; Normally, use
-;;   (new <class-id> [<field-id> <expr] ...)
+;;   (new <class-id> #:field [<field-id> <expr] ...)
 ;; to create an instance of the class, where each unmentioned
 ;; <field-id> gets its default value. To override methods for just
 ;; this object, use
-;;   (new <class-id> #:override ([<method-id> <method>] ...)
-;;        [<field-id> <expr] ...)
+;;   (new <class-id>
+;;        #:field [<field-id> <expr] ...
+;;        #:override [<method-id> <method>] ...)
 ;; but beware that it involves allocating a new vtable each
 ;; time the `new` expression is evaluated.
 ;;
@@ -105,42 +106,20 @@
         [(id expr)
          (list #'id #'expr (combine-ids base-id base-id "-" #'id) (combine-ids #'id "set-" base-id "-" #'id "!"))]
         [_ (raise-syntax-error #f (format "bad ~a clause" what) stx e)])))
-  (define-values (new-fields new-methods override-methods locals statics properties)
-    (let ([l-stx (syntax-case stx ()
-                   [(_ _ #:extends _ . rest) #'rest]
-                   [(_ _ . rest) #'rest])])
-      (let loop ([l-stx l-stx] [new-fields null] [new-methods null] [override-methods null]
-                               [locals null] [statics null] [properties null])
-        (syntax-case l-stx (field public override private static property)
-          [() (values new-fields new-methods override-methods locals statics properties)]
-          [((field fld ...) . rest)
-           (loop #'rest
-                 (append new-fields
-                         (add-procs id (syntax->list #'(fld ...)) "field" #:can-immutable? #t))
-                 new-methods override-methods locals statics properties)]
-          [((public method ...) . rest)
-           (loop #'rest new-fields
-                 (append new-methods
-                         (add-procs methods-id (syntax->list #'(method ...)) "public"))
-                 override-methods locals statics properties)]
-          [((override method ...) . rest)
-           (loop #'rest new-fields new-methods
-                 (append override-methods (syntax->list #'(method ...)))
-                 locals statics properties)]
-          [((private method ...) . rest)
-           (loop #'rest new-fields
-                 new-methods override-methods
-                 (append locals (syntax->list #'(method ...)))
-                 statics properties)]
-          [((static method ...) . rest)
-           (loop #'rest new-fields new-methods override-methods locals
-                 (append statics (syntax->list #'(method ...)))
-                 properties)]
-          [((property prop ...) . rest)
-           (loop #'rest new-fields new-methods override-methods locals statics
-                 (append properties (syntax->list #'((#:property . prop) ...))))]
-          [(other . _)
-           (raise-syntax-error #f "unrecognized" stx #'other)]))))
+  (define groups (extract-groups
+                  stx
+                  (syntax-case stx ()
+                    [(_ _ #:extends _ . rest) #'rest]
+                    [(_ _ . rest) #'rest])
+                  '(#:field #:public #:override #:private #:static #:property)))
+  (define (extract-group tag) (reverse (hash-ref groups tag '())))
+  (define new-fields (add-procs id (extract-group '#:field) "field" #:can-immutable? #t))
+  (define new-methods (add-procs methods-id (extract-group '#:public) "public"))
+  (define override-methods (extract-group '#:override))
+  (define locals (extract-group '#:private))
+  (define statics (extract-group '#:static))
+  (define properties (for/list ([prop (in-list (extract-group '#:property))])
+                       (cons '#:property prop)))
   (define all-fields (if super-ci
                          (append (class-info-fields super-ci) new-fields)
                          new-fields))
@@ -321,29 +300,31 @@
 
 (define-syntax (new stx)
   (syntax-case stx ()
-    [(_ class-id #:override (override ...) init ...)
+    [(_ class-id clause ...)
      (let ([ci (and (identifier? #'class-id)
                     (syntax-local-value #'class-id (lambda () #f)))])
        (unless (class-info? ci)
          (raise-syntax-error #f "not a class identifier" stx #'class-id))
-       (for ([init (in-list (syntax->list #'(init ...)))])
+       (define groups (extract-groups stx #'(clause ...) '(#:field #:override)))
+       (define inits (reverse (hash-ref groups '#:field '())))
+       (define overrides (reverse (hash-ref groups '#:override '())))
+       (for ([init (in-list inits)])
          (syntax-case init ()
            [(field-id _) (check-member stx #'field-id (class-info-fields ci) "field")]
            [_ (raise-syntax-error #f "bad field-inialization clause" stx init)]))
-       (for ([override (in-list (syntax->list #'(override ...)))])
+       (for ([override (in-list overrides)])
          (syntax-case override ()
            [(method-id _) (check-member stx #'method-id (class-info-methods ci) "method")]
            [_ (raise-syntax-error #f "bad method-override clause" stx override)]))
        (define field-exprs (for/list ([field (in-list (class-info-fields ci))])
                              (syntax-case field ()
                                [(field-id field-expr . _)
-                                (or (for/or ([init (in-list (syntax->list #'(init ...)))])
+                                (or (for/or ([init (in-list inits)])
                                       (syntax-case init ()
                                         [(id expr)
                                          (and (eq? (syntax-e #'id) (syntax-e #'field-id))
                                               #'expr)]))
                                     #'field-expr)])))
-       (define overrides (syntax->list #'(override ...)))
        (with-syntax ([make-id (cadr (class-info-struct-info ci))]
                      [vtable-id (class-info-vtable-id ci)]
                      [(field-expr ...) field-exprs])
@@ -428,6 +409,25 @@
            #'(let ([o obj-expr])
                (bind-locals local-bindings o obj-expr (let () body0 body ...))))))]))
 
+;; ----------------------------------------
+
+(define-for-syntax (extract-groups stx l-stx ok-groups)
+  (let loop ([l-stx l-stx] [current-group #f] [groups #hasheq()])
+    (syntax-case l-stx ()
+      [() groups]
+      [(kw . rest)
+       (memq (syntax-e #'kw) ok-groups)
+       (loop #'rest (syntax-e #'kw) groups)]
+      [(kw . rest)
+       (keyword? (syntax-e #'kw))
+       (raise-syntax-error #f "unrecognized section keyword" stx #'kw)]
+      [(other . rest)
+       (if current-group
+           (loop #'rest
+                 current-group
+                 (hash-update groups current-group (lambda (l) (cons #'other l)) null))
+           (raise-syntax-error #f "need an initial section keyword, such as `#:field`" stx #'other))])))
+
 (define-for-syntax (check-member stx id l what)
   (or (for/or ([e (in-list l)])
         (syntax-case e ()
@@ -492,37 +492,40 @@
 
 ;; ----------------------------------------
 
-(module+ test
+(module+ main
   (class example
-    (field
-     [a 1 #:immutable]
-     [b 2])
-    (private
-      [other (lambda (q) (list q this))])
-    (static
-     [enbox (lambda (v #:opt [opt (vector v a)])
-              (box (vector a v opt)))])
-    (public
-     [q #f]
-     [m (lambda (z #:maybe [maybe 9]) (list a (other b) maybe))]
-     [n (lambda (x y z) (vector a b (enbox x) y z))]))
+    #:field
+    [a 1 #:immutable]
+    [b 2]
+    #:private
+    [other (lambda (q) (list q this))]
+    #:static
+    [enbox (lambda (v #:opt [opt (vector v a)])
+             (box (vector a v opt)))]
+    #:public
+    [q #f]
+    [m (lambda (z #:maybe [maybe 9]) (list a (other b) maybe))]
+    [n (lambda (x y z) (vector a b (enbox x) y z))])
 
   (class sub #:extends example
-    (field
-     [c 3]
-     [d 4])
-    (override
-      [m (lambda (z) 'other)])
-    (property
-     [prop:custom-write (lambda (s o m)
-                          (write 'sub: o)
-                          (write (sub-d s) o))]))
+    #:override
+    [m (lambda (z) 'other)]
+    #:field
+    [c 3]
+    #:property
+    [prop:custom-write (lambda (s o m)
+                         (write 'sub: o)
+                         (write (sub-d s) o))]
+    #:field
+    [d 4])
 
-  (define ex (new example [b 5]))
+  (define ex (new example
+                  #:field
+                  [b 5]))
 
   (send example ex m 'ok #:maybe 'yep)
   (method example ex m)
-  (new sub [d 5])
+  (new sub #:field [d 5])
   (send example (new sub) m 'more)
   (set-example-b! ex 6)
   (send example ex enbox 88)
@@ -530,8 +533,9 @@
 
   (define ex2 (new example
                    #:override
-                   ([q (lambda (x y z)
-                         (box (vector x y z a b)))])
+                   [q (lambda (x y z)
+                        (box (vector x y z a b)))]
+                   #:field
                    [b 'b]
                    [a 'a]))
   (send example ex2 n 1 2 3)

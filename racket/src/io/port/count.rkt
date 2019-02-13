@@ -10,6 +10,7 @@
          "../string/utf-8-decode.rkt")
 
 (provide port-count-lines-enabled
+         finish-port/count
 
          port-count-lines!
          port-counts-lines?
@@ -24,6 +25,11 @@
 
 (define port-count-lines-enabled
   (make-parameter #f (lambda (v) (and v #t))))
+
+(define (finish-port/count p)
+  (when (port-count-lines-enabled)
+    (port-count-lines! p))
+  p)
 
 (define/who (port-count-lines! p)
   (let ([p (cond

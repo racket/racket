@@ -50,52 +50,52 @@
     [else default]))
 
 (class core-output-port #:extends core-port
-  (field
-   [evt always-evt] ; An evt that is ready when writing a byte won't block
-   [write-handler #f]
-   [print-handler #f]
-   [display-handler #f])
+  #:field
+  [evt always-evt] ; An evt that is ready when writing a byte won't block
+  [write-handler #f]
+  [print-handler #f]
+  [display-handler #f]
 
-  (public
-   ;; port or (bstr start-k end-k no-block/buffer? enable-break? copy? -*> ...)
-   ;; Called in atomic mode.
-   ;; Doesn't block if `no-block/buffer?` is true. Does enable breaks
-   ;; while blocking if `enable-break?` is true. The `copy?` flag
-   ;; indicates that the given byte string should not be exposed to
-   ;; untrusted code, and instead of should be copied if necessary.
-   ;; The return values are the same as documented for
-   ;; `make-output-port`.
-   [write-out (lambda (bstr start-k end-k no-block/buffer? enable-break? copy?)
-                (- end-k start-k))]
+  #:public
+  ;; port or (bstr start-k end-k no-block/buffer? enable-break? copy? -*> ...)
+  ;; Called in atomic mode.
+  ;; Doesn't block if `no-block/buffer?` is true. Does enable breaks
+  ;; while blocking if `enable-break?` is true. The `copy?` flag
+  ;; indicates that the given byte string should not be exposed to
+  ;; untrusted code, and instead of should be copied if necessary.
+  ;; The return values are the same as documented for
+  ;; `make-output-port`.
+  [write-out (lambda (bstr start-k end-k no-block/buffer? enable-break? copy?)
+               (- end-k start-k))]
 
-   ;; #f or (any no-block/buffer? enable-break? -*> boolean?)
-   ;; Called in atomic mode.
-   [write-out-special #f]
-   
-   ;; #f or (bstr start-k end-k -*> evt?)
-   ;; Called in atomic mode.
-   ;; The given bstr should not be exposed to untrusted code.
-   [get-write-evt (lambda (bstr start-k end-k) always-evt)]
+  ;; #f or (any no-block/buffer? enable-break? -*> boolean?)
+  ;; Called in atomic mode.
+  [write-out-special #f]
+  
+  ;; #f or (bstr start-k end-k -*> evt?)
+  ;; Called in atomic mode.
+  ;; The given bstr should not be exposed to untrusted code.
+  [get-write-evt (lambda (bstr start-k end-k) always-evt)]
 
-   ;; #f or (any -*> evt?)
-   ;; *Not* called in atomic mode.
-   [get-write-special-evt #f])
+  ;; #f or (any -*> evt?)
+  ;; *Not* called in atomic mode.
+  [get-write-special-evt #f]
 
-  (property
-   [prop:output-port-evt (lambda (o)
-                           ;; not atomic mode
-                           (let ([o (->core-output-port o)])
-                             (choice-evt
-                              (list
-                               (poller-evt
-                                (poller
-                                 (lambda (self sched-info)
-                                   ;; atomic mode
-                                   (cond
-                                     [(core-port-closed? o)
-                                      (values '(#t) #f)]
-                                     [else (values #f self)]))))
-                               (core-output-port-evt o)))))]))
+  #:property
+  [prop:output-port-evt (lambda (o)
+                          ;; not atomic mode
+                          (let ([o (->core-output-port o)])
+                            (choice-evt
+                             (list
+                              (poller-evt
+                               (poller
+                                (lambda (self sched-info)
+                                  ;; atomic mode
+                                  (cond
+                                    [(core-port-closed? o)
+                                     (values '(#t) #f)]
+                                    [else (values #f self)]))))
+                              (core-output-port-evt o)))))])
 
 ;; If `write-out` is always atomic (in no-block, no-buffer mode),
 ;; then an event can poll `write-out`
@@ -118,4 +118,5 @@
 
 (define empty-output-port
   (new core-output-port
+       #:field
        [name 'empty]))
