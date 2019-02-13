@@ -40,25 +40,10 @@
   (check who exact-nonnegative-integer? start)
   (check who exact-nonnegative-integer? end)
   (check-range who start end (bytes-length bstr) bstr)
-  ;; Measure result string:
-  (define-values (used-bytes got-chars state)
-    (utf-8-decode! bstr start end
-                   #f 0 #f 
-                   #:error-char err-char
-                   #:abort-mode 'error))
-  (cond
-    [(eq? state 'error) (if just-length?
-                            #f
-                            (raise-encoding-error who bstr start end))]
-    [just-length? got-chars]
-    [else
-     ;; Create result string:
-     (define str (make-string got-chars))
-     (utf-8-decode! bstr start end
-                    str 0 #f
-                    #:error-char err-char
-                    #:abort-mode 'error)
-     str]))
+  (or (a-bytes->string/utf-8 bstr start end err-char #:just-length? just-length?)
+      (if just-length?
+          #f
+          (raise-encoding-error who bstr start end))))
 
 (define/who (bytes->string/utf-8 bstr [err-char #f] [start 0] [end (and (bytes? bstr)
                                                                         (bytes-length bstr))])
@@ -86,7 +71,7 @@
   (check-range who start end (bytes-length bstr) bstr)
   ;; First, decode `skip` items:
   (define-values (initial-used-bytes initial-got-chars state)
-    (if (zero? skip)
+    (if (eqv? skip 0)
         (values 0 0 (if (= start end) 'complete 'continues))
         (utf-8-decode! bstr start end
                        #f 0 skip 

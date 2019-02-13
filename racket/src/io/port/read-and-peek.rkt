@@ -3,6 +3,7 @@
          "../common/internal-error.rkt"
          "../common/class.rkt"
          "../host/thread.rkt"
+         "../string/utf-8-decode.rkt"
          "port.rkt"
          "input-port.rkt"
          "count.rkt"
@@ -15,7 +16,9 @@
          read-a-byte
          read-byte-via-bytes
          peek-a-byte
-         peek-byte-via-bytes)
+         peek-byte-via-bytes
+
+         maybe-read-a-line)
 
 ;; Read up to `(- end start)` bytes, producing at least a
 ;; single by unless `zero-ok?` is true. The result is
@@ -259,3 +262,45 @@
   (if (eq? v 1)
       (bytes-ref bstr 0)
       v))
+
+;; ----------------------------------------
+
+;; Tries to read a line from the fast-path buffer
+(define (maybe-read-a-line in cr? lf? crlf? as-string?)
+  (start-atomic)
+  (define buffer (core-port-buffer in))
+  (define bstr (direct-bstr buffer))
+  (define pos (direct-pos buffer))
+  (define end (fxmin (direct-end buffer)
+                     ;; limit atomicity
+                     (fx+ pos 4096)))
+  (define (finish end read-end)
+    (set-direct-pos! buffer read-end)
+    (when (core-port-count in)
+      (port-count! in (fx- read-end pos) bstr pos))
+    (define result
+      (if as-string?
+          (a-bytes->string/utf-8 bstr pos end)
+          (subbytes bstr pos end)))
+    (end-atomic)
+    result)
+  (let loop ([i pos])
+    (cond
+      [(fx= i end)
+       (end-atomic)
+       #f]
+      [else
+       (define b (bytes-ref bstr i))
+       (cond
+         [(and lf? (eqv? b (char->integer #\linefeed)))
+          (finish i (fx+ i 1))]
+         [(and (or cr? crlf?) (eqv? b (char->integer #\return)))
+          (cond
+            [(and crlf?
+                  ((fx+ i 1) . fx< . end)
+                  (eqv? (bytes-ref bstr (fx+ i 1)) (char->integer #\linefeed)))
+             (finish i (fx+ i 2))]
+            [cr?
+             (finish i (fx+ i 1))]
+            [else (loop (fx+ i 1))])]
+         [else (loop (fx+ i 1))])])))

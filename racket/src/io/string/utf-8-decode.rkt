@@ -7,7 +7,9 @@
          utf-8-decode-byte
 
          utf-8-state?
-         utf-8-state-pending-amt)
+         utf-8-state-pending-amt
+
+         a-bytes->string/utf-8)
 
 ;; The maximum number of characters that might not be consumed
 ;; by a conversion at the tail of a byte string, assuming that
@@ -23,7 +25,7 @@
 ;; and further decoding reveals that earlier bytes were in error.
 ;;
 ;; The `abort-mode` argument determines what to do when reaching the end of the input
-;; and an encoding needs more ytes:
+;; and an encoding needs more bytes:
 ;;   * 'error : treat the bytes as encoding errors
 ;;   * 'aborts : report 'aborts
 ;;   * 'state : return a value that encapsulates the state, so another call can continue
@@ -217,3 +219,36 @@
                               (values accum remaining 'continues))
                             (lambda ()
                               (values #f 0 'error))))
+
+;; ----------------------------------------
+
+(define (a-bytes->string/utf-8 bstr start end [err-char #\uFFFD] #:just-length? [just-length? #f])
+  ;; Shortcut for all-ASCII:
+  (cond
+    [(for/and ([i (in-range start end)])
+       ((bytes-ref bstr i) . fx< . 128))
+     (cond
+       [just-length? (fx- end start)]
+       [else
+        (define str (make-string (fx- end start)))
+        (for ([i (in-range start end)])
+          (string-set! str (fx- i start) (integer->char (bytes-ref bstr i))))
+        str])]
+    [else
+     ;; Measure result string:
+     (define-values (used-bytes got-chars state)
+       (utf-8-decode! bstr start end
+                      #f 0 #f 
+                      #:error-char err-char
+                      #:abort-mode 'error))
+     (cond
+       [(eq? state 'error) #f]
+       [just-length? got-chars]
+       [else
+        ;; Create result string:
+        (define str (make-string got-chars))
+        (utf-8-decode! bstr start end
+                       str 0 #f
+                       #:error-char err-char
+                       #:abort-mode 'error)
+        str])]))
