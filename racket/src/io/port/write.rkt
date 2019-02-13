@@ -17,9 +17,9 @@
                           #:enable-break? [enable-break? #f])
   (let try-again ([out out] [extra-count-outs null])
     (start-atomic)
-    (check-not-closed who out)
     (cond
       [(fx= start end)
+       (check-not-closed who out)
        (end-atomic)
        0]
       [else
@@ -37,6 +37,7 @@
           (end-atomic)
           v]
          [else
+          (check-not-closed who out)
           (define write-out (method core-output-port out write-out))
           (cond
             [(procedure? write-out)

@@ -16,7 +16,9 @@
          write-bytes-avail*
          write-bytes-avail/enable-break
          write-bytes-avail-evt
-         port-writes-atomic?)
+         port-writes-atomic?
+
+         unsafe-write-bytes)
 
 (module+ internal
   (provide do-write-bytes))
@@ -48,15 +50,29 @@
        (define n (write-some-bytes who out bstr i end #:buffer-ok? #t))
        (loop (fx+ n i))])))
 
-(define/who (write-bytes bstr [out (current-output-port)] [start-pos 0] [end-pos (and (bytes? bstr)
-                                                                                      (bytes-length bstr))])
-  (check who bytes? bstr)
-  (check who output-port? out)
-  (check who exact-nonnegative-integer? start-pos)
-  (check who exact-nonnegative-integer? end-pos)
-  (check-range who start-pos end-pos (bytes-length bstr) bstr)
-  (let ([out (->core-output-port out)])
-    (do-write-bytes who out bstr start-pos end-pos)))
+(define/who write-bytes
+  (case-lambda
+    [(bstr)
+     (check who bytes? bstr)
+     (let ([out (->core-output-port (current-output-port))])
+       (do-write-bytes who out bstr 0 (bytes-length bstr)))]
+    [(bstr out)
+     (check who bytes? bstr)
+     (let ([out (->core-output-port out who)])
+       (do-write-bytes who out bstr 0 (bytes-length bstr)))]
+    [(bstr out start-pos)
+     (write-bytes bstr out start-pos (and (bytes? bstr) (bytes-length bstr)))]
+    [(bstr out start-pos end-pos)
+     (check who bytes? bstr)
+     (let ([out (->core-output-port out who)])
+       (check who exact-nonnegative-integer? start-pos)
+       (check who exact-nonnegative-integer? end-pos)
+       (check-range who start-pos end-pos (bytes-length bstr) bstr)
+       (do-write-bytes who out bstr start-pos end-pos))]))
+
+;; `o` must be a core output port
+(define (unsafe-write-bytes who bstr o)
+  (do-write-bytes who o bstr 0 (bytes-length bstr)))
 
 (define (do-write-bytes-avail who bstr out start-pos end-pos
                               #:zero-ok? [zero-ok? #f]

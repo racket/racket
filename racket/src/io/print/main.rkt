@@ -52,8 +52,7 @@
            install-do-global-print!))
 
 (define/who (display v [o (current-output-port)])
-  (check who output-port? o)
-  (let ([co (->core-output-port o)])
+  (let ([co (->core-output-port o who)])
     (define display-handler (core-output-port-display-handler co))
     (if display-handler
         (display-handler v o)
@@ -63,7 +62,7 @@
 (define (do-display who v o [max-length #f])
   (cond
     [(and (bytes? v) (not max-length))
-     (write-bytes v o)
+     (unsafe-write-bytes who v o)
      (void)]
     [(and (string? v) (not max-length))
      (write-string v o)
@@ -74,8 +73,7 @@
      (void)]))
 
 (define/who (write v [o (current-output-port)])
-  (check who output-port? o)
-  (let ([co (->core-output-port o)])
+  (let ([co (->core-output-port o who)])
     (define write-handler (core-output-port-write-handler co))
     (if write-handler
         (write-handler v o)
@@ -88,9 +86,8 @@
   (void))
 
 (define/who (print v [o (current-output-port)] [quote-depth PRINT-MODE/UNQUOTED])
-  (check who output-port? o)
-  (check who print-mode? #:contract "(or/c 0 1)" quote-depth)
-  (let ([co (->core-output-port o)])
+  (let ([co (->core-output-port o who)])
+    (check who print-mode? #:contract "(or/c 0 1)" quote-depth)
     (define print-handler (core-output-port-print-handler co))
     (if print-handler
         (print-handler v o quote-depth)
@@ -122,15 +119,15 @@
              (global-print v o2 quote-depth)
              (define bstr (get-output-bytes o2))
              (if ((bytes-length bstr) . <= . max-length)
-                 (write-bytes bstr o)
+                 (unsafe-write-bytes who bstr o)
                  (begin
-                   (write-bytes (subbytes bstr 0 (sub3 max-length)) o)
-                   (write-bytes #"..." o)))])
+                   (unsafe-write-bytes who (subbytes bstr 0 (sub3 max-length)) o)
+                   (unsafe-write-bytes who #"..." o)))])
           (void))))
 
 (define/who (newline [o (current-output-port)])
   (check who output-port? o)
-  (write-bytes #"\n" o)
+  (unsafe-write-bytes 'newline #"\n" o)
   (void))
 
 ;; ----------------------------------------
