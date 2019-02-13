@@ -40,7 +40,8 @@
 
    [buffer-adjust-pos
     (lambda (i)
-      (- i (fx- end-pos (if buffer buffer-pos pos))))]
+      (define b buffer)
+      (- i (fx- end-pos (if (direct-bstr b) (direct-pos b) pos))))]
 
    ;; in atomic mode
    [default-buffer-mode
@@ -93,10 +94,11 @@
     ;; in atomic mode
     [fast-mode!
      (lambda (amt) ; amt = not yet added to `offset`
-       (set! buffer bstr)
+       (define b buffer)
+       (set-direct-bstr! b bstr)
        (define s pos)
-       (set! buffer-pos s)
-       (set! buffer-end end-pos)
+       (set-direct-pos! b s)
+       (set-direct-end! b end-pos)
        (define o offset)
        (when o
          (set! offset (- (+ o amt) s))))]
@@ -104,14 +106,15 @@
     ;; in atomic mode
     [slow-mode!
      (lambda ()
-       (when buffer
-         (define s buffer-pos)
+       (define b buffer)
+       (when (direct-bstr b)
+         (define s (direct-pos b))
          (define o offset)
          (when o
            (set! offset (+ o s)))
          (set! pos s)
-         (set! buffer #f)
-         (set! buffer-pos buffer-end)))])
+         (set-direct-bstr! b #f)
+         (set-direct-pos! b (direct-end b))))])
 
   (override
     ;; in atomic mode
@@ -159,7 +162,8 @@
                  (sync/timeout 0 progress-evt))
             #f]
            [else
-            (define s (if buffer buffer-pos pos))
+            (define b buffer)
+            (define s (if (direct-bstr b) (direct-pos b) pos))
             (define peeked-amt (fx- end-pos s))
             (cond
               [(peeked-amt . > . skip)
@@ -180,7 +184,8 @@
     [byte-ready
      (lambda (work-done!)
        (let loop ()
-         (define peeked-amt (fx- end-pos (if buffer buffer-pos pos)))
+         (define b buffer)
+         (define peeked-amt (fx- end-pos (if (direct-bstr b) (direct-pos b) pos)))
          (cond
            [(peeked-amt . fx> . 0) #t]
            [peeked-eof? #t]

@@ -5,6 +5,7 @@
          "evt.rkt")
 
 (provide (struct-out core-port)
+         (struct-out direct)
          (struct-out location)
          get-core-port-offset)
 
@@ -14,23 +15,23 @@
 
    [data #f] ; FIXME: remove after all uses are converted
 
-   ;; When `buffer` is #f, it enables a shortcut for reading and
-   ;; writing, where `buffer-pos` must also be less than `buffer-end`
-   ;; for the shortcut to apply. The shortcut is not necessarily
-   ;; always taken, just if it is used, the `buffer-pos` position can
-   ;; be adjusted and the port's methods must adapt accordingly. The
-   ;; `buffer` and `buffer-end` fields are modified only by the port's
-   ;; methods, however.
+   ;; When `(direct-bstr buffer)` is not #f, it enables a shortcut for
+   ;; reading and writing, where `(direct-pos buffer)` must also be
+   ;; less than `(direct-end buffer)` for the shortcut to apply. The
+   ;; shortcut is not necessarily always taken, just if it is used,
+   ;; the `(direct-pos buffer)` position can be adjusted and the
+   ;; port's methods must adapt accordingly. The `(direct-bstr
+   ;; buffer)` and `(direct-end buffer)` fields are modified only by
+   ;; the port's methods, however.
    ;;
    ;; For an input port, shortcut mode implies that `prepare-change`
    ;; does not need to be called, and no checking is needed for whether
    ;; the port is closed.
    ;;
-   ;; A non-#f `buffer` further implies that `buffer-pos` should be
-   ;; added to `offset` to get the true offset.
-   [buffer #f]
-   [buffer-pos 0]   ; if < `buffer-end`, allows direct read/write on `buffer`
-   [buffer-end 0]
+   ;; A non-#f `(direct-bstr buffer)` further implies that
+   ;; `(direct-pos buffer)` should be added to `offset` to get the
+   ;; true offset.
+   [buffer (direct #f 0 0)]
    
    [closed? #f]
    [closed-sema #f]
@@ -81,15 +82,22 @@
    [prop:object-name (struct-field-index name)]
    [prop:secondary-evt port->evt]))
 
+(struct direct ([bstr #:mutable]
+                [pos #:mutable]
+                [end #:mutable])
+  #:authentic)
+
 (struct location ([state #:mutable]      ; state of UTF-8 decoding
                   [cr-state #:mutable]   ; state of CRLF counting as a single LF
                   [line #:mutable]       ; count newlines
                   [column #:mutable]     ; count UTF-8 characters in line
-                  [position #:mutable])) ; count UTF-8 characters
+                  [position #:mutable])  ; count UTF-8 characters
+  #:authentic)
 
 (define (get-core-port-offset p)
   (define offset (core-port-offset p))
+  (define buffer (core-port-buffer p))
   (and offset
-       (if (core-port-buffer p)
-           (+ offset (core-port-buffer-pos p))
+       (if (direct-bstr buffer)
+           (+ offset (direct-pos buffer))
            offset)))

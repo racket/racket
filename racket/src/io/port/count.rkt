@@ -207,7 +207,7 @@
 
 ;; in atomic mode
 (define (increment-offset! in amt)
-  (unless (core-port-buffer in)
+  (unless (direct-bstr (core-port-buffer in))
     (define old-offset (core-port-offset in))
     (when old-offset
       (set-core-port-offset! in (+ amt old-offset)))))

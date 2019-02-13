@@ -33,8 +33,9 @@
     ;; in atomic mode
     [in-buffer-pos
      (lambda ()
-       (if buffer
-           buffer-pos
+       (define b buffer)
+       (if (direct-bstr b)
+           (direct-pos b)
            pos))])
 
   (override
@@ -43,19 +44,21 @@
        (set! commit-manager #f) ; to indicate closed
        (progress!)
        (set! bstr #f)
-       (when buffer
-         (set! offset buffer-pos)
-         (set! buffer #f)))]
+       (define b buffer)
+       (when (direct-bstr b)
+         (set! offset (direct-pos b))
+         (set-direct-bstr! b #f)))]
     [file-position
      (case-lambda
        [() (or alt-pos (in-buffer-pos))]
        [(given-pos)
-        (define len buffer-end)
+        (define b buffer)
+        (define len (direct-end b))
         (define new-pos (if (eof-object? given-pos)
                             len
                             (min len given-pos)))
-        (if buffer
-            (set! buffer-pos new-pos)
+        (if (direct-bstr b)
+            (set-direct-pos! b new-pos)
             (set! pos new-pos))
         (set! alt-pos (and (not (eof-object? given-pos))
                            (given-pos . > . new-pos)
@@ -67,16 +70,17 @@
 
     [read-in
      (lambda (dest-bstr start end copy?)
-       (define len buffer-end)
+       (define b buffer)
+       (define len (direct-end b))
        (define i (in-buffer-pos))
        (cond
          [(i . < . len)
           (define amt (min (- end start) (fx- len i)))
           (define new-pos (fx+ i amt))
           ;; Keep/resume fast mode
-          (set! buffer-pos new-pos)
+          (set-direct-pos! b new-pos)
           (set! offset 0)
-          (set! buffer bstr)
+          (set-direct-bstr! b bstr)
           (bytes-copy! dest-bstr start bstr i new-pos)
           (progress!)
           amt]
@@ -84,8 +88,9 @@
 
     [peek-in
      (lambda (dest-bstr start end skip progress-evt copy?)
+       (define b buffer)
+       (define len (direct-end b))
        (define i (in-buffer-pos))
-       (define len buffer-end)
        (define at-pos (+ i skip))
        (cond
          [(and progress-evt (sync/timeout 0 progress-evt))
@@ -98,19 +103,20 @@
 
     [byte-ready
      (lambda (work-done!)
-       ((in-buffer-pos) . < . buffer-end))]
+       ((in-buffer-pos) . < . (direct-end buffer)))]
    
     [get-progress-evt
      (lambda ()
        (atomically
         (unless progress-sema
           ;; set port to slow mode:
-          (when buffer
-            (define i buffer-pos)
+          (define b buffer)
+          (when (direct-bstr b)
+            (define i (direct-pos b))
             (set! pos i)
             (set! offset i)
-            (set! buffer #f)
-            (set! buffer-pos buffer-end)))
+            (set-direct-bstr! b #f)
+            (set-direct-pos! b (direct-end b))))
         (make-progress-evt)))]
 
     [commit
@@ -119,32 +125,23 @@
         progress-evt ext-evt
         ;; in atomic mode, maybe in a different thread:
         (lambda ()
-          (define len buffer-end)
+          (define b buffer)
+          (define len (direct-end b))
           (define i (in-buffer-pos))
           (let ([amt (min amt (- len i))])
             (define dest-bstr (make-bytes amt))
             (bytes-copy! dest-bstr 0 bstr i (+ i amt))
             ;; Keep/resume fast mode
-            (set! buffer-pos (fx+ i amt))
-            (set! buffer bstr)
+            (set-direct-pos! b (fx+ i amt))
+            (set-direct-bstr! b bstr)
             (set! offset 0)
             (progress!)
-            (finish dest-bstr)))))]
-
-    [count-lines!
-     (lambda ()
-       (when buffer
-         (define i buffer-pos)
-         (set! offset i)
-         (set! pos i)
-         (set! buffer #f)
-         (set! buffer-pos buffer-end)))]))
+            (finish dest-bstr)))))]))
 
 (define (make-input-bytes bstr name)
   (new bytes-input-port
        [name name]
-       [buffer bstr]
-       [buffer-end (bytes-length bstr)]
+       [buffer (direct bstr 0 (bytes-length bstr))]
        [bstr bstr]))
 
 ;; ----------------------------------------
@@ -180,19 +177,21 @@
 
     [slow-mode!
      (lambda ()
-       (when buffer
-         (define s buffer-pos)
+       (define b buffer)
+       (when (direct-bstr b)
+         (define s (direct-pos b))
          (set! pos s)
-         (set! buffer-pos buffer-end)
-         (set! buffer #f)
+         (set-direct-pos! b (direct-end b))
+         (set-direct-bstr! b #f)
          (set! offset s)
          (set! max-pos (fxmax s max-pos))))]
 
     [fast-mode!
      (lambda ()
-       (set! buffer bstr)
-       (set! buffer-pos pos)
-       (set! buffer-end (bytes-length bstr))
+       (define b buffer)
+       (set-direct-bstr! b bstr)
+       (set-direct-pos! b pos)
+       (set-direct-end! b (bytes-length bstr))
        (set! offset 0))])
 
   (override
@@ -214,7 +213,9 @@
                                     (port-count! out v bstr start)))]
     [file-position
      (case-lambda
-       [() (if buffer buffer-pos pos)]
+       [()
+        (define b buffer)
+        (if (direct-bstr b) (direct-pos b) pos)]
        [(new-pos)
         (slow-mode!)
         (define len (bytes-length bstr))

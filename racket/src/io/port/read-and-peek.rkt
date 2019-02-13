@@ -58,15 +58,16 @@
        (end-atomic)
        eof]
       [else
-       (define buf-pos (core-port-buffer-pos in))
-       (define buf-end (core-port-buffer-end in))
+       (define buffer (core-port-buffer in))
+       (define buf-pos (direct-pos buffer))
+       (define buf-end (direct-end buffer))
        (cond
          [(buf-pos . fx< . buf-end)
           ;; Read bytes directly from buffer
           (define v (fxmin (fx- buf-end buf-pos) (fx- end start)))
           (define new-pos (fx+ buf-pos v))
-          (bytes-copy! bstr start (core-port-buffer in) buf-pos new-pos)
-          (set-core-port-buffer-pos! in new-pos)
+          (bytes-copy! bstr start (direct-bstr buffer) buf-pos new-pos)
+          (set-direct-pos! buffer new-pos)
           (when (or (pair? extra-count-ins) (core-port-count in))
             (port-count-all! in extra-count-ins v bstr start))
           (end-atomic)
@@ -152,13 +153,14 @@
        (end-atomic)
        eof]
       [else
-       (define buf-pos (+ (core-port-buffer-pos in) skip))
-       (define buf-end (core-port-buffer-end in))
+       (define buffer (core-port-buffer in))
+       (define buf-pos (+ (direct-pos buffer) skip))
+       (define buf-end (direct-end buffer))
        (cond
          [(buf-pos . < . buf-end)
           ;; Copy bytes from buffer
           (define v (min (- buf-end buf-pos) (- end start)))
-          (bytes-copy! bstr start (core-port-buffer in) buf-pos (fx+ buf-pos v))
+          (bytes-copy! bstr start (direct-bstr buffer) buf-pos (fx+ buf-pos v))
           (end-atomic)
           v]
          [else
@@ -205,11 +207,12 @@
 ;; Try the buffer shortcut first
 (define (read-a-byte who in #:special-ok? [special-ok? #f])
   (start-atomic)
-  (define pos (core-port-buffer-pos in))
+  (define buffer (core-port-buffer in))
+  (define pos (direct-pos buffer))
   (cond
-    [(pos . fx< . (core-port-buffer-end in))
-     (define b (bytes-ref (core-port-buffer in) pos))
-     (set-core-port-buffer-pos! in (fx+ pos 1))
+    [(pos . fx< . (direct-end buffer))
+     (define b (bytes-ref (direct-bstr buffer) pos))
+     (set-direct-pos! buffer (fx+ pos 1))
      (when (core-port-count in)
        (port-count-byte! in b))
      (end-atomic)
@@ -232,10 +235,11 @@
 ;; Try the buffer shortcut first
 (define (peek-a-byte who in skip-k #:special-ok? [special-ok? #f])
   (start-atomic)
-  (define pos (+ (core-port-buffer-pos in) skip-k))
+  (define buffer (core-port-buffer in))
+  (define pos (+ (direct-pos buffer) skip-k))
   (cond
-    [(pos . < . (core-port-buffer-end in))
-     (define b (bytes-ref (core-port-buffer in) pos))
+    [(pos . < . (direct-end buffer))
+     (define b (bytes-ref (direct-bstr buffer) pos))
      (end-atomic)
      b]
     [else

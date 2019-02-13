@@ -26,11 +26,12 @@
   (check who output-port? out)
   (let ([out (->core-output-port out)])
     (start-atomic)
-    (define pos (core-port-buffer-pos out))
+    (define buffer (core-port-buffer out))
+    (define pos (direct-pos buffer))
     (cond
-      [(pos . fx< . (core-port-buffer-end out))
-       (bytes-set! (core-port-buffer out) pos b)
-       (set-core-port-buffer-pos! out (fx+ pos 1))
+      [(pos . fx< . (direct-end buffer))
+       (bytes-set! (direct-bstr buffer) pos b)
+       (set-direct-pos! buffer (fx+ pos 1))
        (when (core-port-count out)
          (port-count-byte! out b))
        (end-atomic)]

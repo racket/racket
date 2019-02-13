@@ -126,24 +126,26 @@
    [fast-mode!
     (lambda (amt) ; amt = not yet added to `offset`
       (when (eq? buffer-mode 'block)
+        (define b buffer)
         (define e end-pos)
-        (set! buffer bstr)
-        (set! buffer-pos e)
-        (set! buffer-end (bytes-length bstr))
+        (set-direct-bstr! b bstr)
+        (set-direct-pos! b e)
+        (set-direct-end! b (bytes-length bstr))
         (define o offset)
         (when o
           (set! offset (- (+ o amt) e)))))]
 
    [slow-mode!
     (lambda ()
-      (when buffer
-        (set! buffer #f)
-        (define pos buffer-pos)
+      (define b buffer)
+      (when (direct-bstr b)
+        (set-direct-bstr! b #f)
+        (define pos (direct-pos b))
         (set! end-pos pos)
         (define o offset)
         (when o
           (set! offset (+ o pos)))
-        (set! buffer-pos buffer-end)))])
+        (set-direct-pos! b (direct-end b))))])
 
   (public
     [on-close (lambda () (void))]
@@ -257,7 +259,8 @@
      (case-lambda
        [()
         (define pos (get-file-position fd))
-        (and pos (+ pos (fx- (if buffer buffer-pos end-pos) start-pos)))]
+        (define b buffer)
+        (and pos (+ pos (fx- (if (direct-bstr b) (direct-pos b) end-pos) start-pos)))]
        [(pos)
         (flush-buffer-fully #f)
         ;; flushing can leave atomic mode, so make sure the

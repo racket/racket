@@ -23,14 +23,15 @@
        (end-atomic)
        0]
       [else
-       (define buf-pos (core-port-buffer-pos out))
-       (define buf-end (core-port-buffer-end out))
+       (define buffer (core-port-buffer out))
+       (define buf-pos (direct-pos buffer))
+       (define buf-end (direct-end buffer))
        (cond
          [(buf-pos . fx< . buf-end)
           ;; Copy bytes directly to buffer
           (define v (fxmin (fx- buf-end buf-pos) (fx- end start)))
-          (bytes-copy! (core-port-buffer out) buf-pos bstr start (fx+ start v))
-          (set-core-port-buffer-pos! out (fx+ buf-pos v))
+          (bytes-copy! (direct-bstr buffer) buf-pos bstr start (fx+ start v))
+          (set-direct-pos! buffer (fx+ buf-pos v))
           (when (or (pair? extra-count-outs) (core-port-count out))
             (port-count-all! out extra-count-outs v bstr start))
           (end-atomic)

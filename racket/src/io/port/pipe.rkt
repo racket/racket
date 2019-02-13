@@ -47,11 +47,9 @@
       [else
        (raise-argument-error 'pipe-contact-length "(or/c pipe-input-port? pipe-output-port?)" p)]))
   (atomically
-   (let ([input (pipe-data-input d)])
-     (when input (send pipe-input-port input sync-data)))
-   (let ([output (pipe-data-output d)])
-     (when output (send pipe-output-port output sync-data)))
-   (send pipe-data d content-length)))
+   (with-object pipe-data d
+     (sync-both)
+     (content-length))))
 
 ;; ----------------------------------------
 
@@ -63,18 +61,46 @@
    [peeked-amt 0] ; peeked but not yet read, effectively extends `limit`
    [start 0]
    [end 0]
-   [input #f]  ; #f => closed
-   [output #f] ; #f => closed
+   [input-ref #f]     ; #f => closed
+   [output-ref #f]    ; #f => closed
+   [input-buffer #f]
+   [output-buffer #f]
    [read-ready-sema #f]
    [write-ready-sema #f]
    [more-read-ready-sema #f] ; for lookahead peeks
    [read-ready-evt #f]
    [write-ready-evt #f])
 
-  ;; All methods in atomic mode.
-  ;; Beware that the input port must be synced to sure that `start`
-  ;; represents the current position before using these methods.
+  (private)
+
+  ;; All static methods in atomic mode.
   (static
+   ;; sync local fields with input buffer without implying slow mode
+   [sync-input
+    (lambda ()
+      (define b input-buffer)
+      (when (direct-bstr b)
+        (define pos (direct-pos b))
+        (set! start (if (fx= pos len)
+                        0
+                        pos))))]
+   ;; sync local fields with output buffer without implying slow mode
+   [sync-output
+    (lambda ()
+      (define b output-buffer)
+      (when (direct-bstr b)
+        (define pos (direct-pos b))
+        (set! end (if (fx= pos len)
+                      0
+                      pos))))]
+
+
+   [sync-both
+    (lambda ()
+      (sync-input)
+      (sync-output))]
+
+   ;; assumes sync'ed
    [content-length
     (lambda ()
       (define s start)
@@ -83,40 +109,34 @@
           (fx- e s)
           (fx+ e (fx- len s))))]
 
+   ;; assumes sync'ed
    [input-empty?
     (lambda ()
       (fx= start end))]
 
+   ;; assumes sync'ed
    [output-full?
     (lambda ()
       (define l limit)
       (and l
            ((content-length) . >= . (+ l peeked-amt))))]
 
-   ;; Used before/after read:
+   ;; Used before read:
    [check-output-unblocking
     (lambda ()
-      (when (output-full?) (semaphore-post write-ready-sema)))]
-   [check-input-blocking
-    (lambda ()
-      (when (input-empty?)
-        (semaphore-wait read-ready-sema)
-        (when output
-          (send pipe-output-port output on-input-empty))))]
+      (when write-ready-sema
+        (semaphore-post write-ready-sema)
+        (set! write-ready-sema #f)))]
 
-   ;; Used before/after write:
+   ;; Used before write:
    [check-input-unblocking
     (lambda ()
-      (when (and (input-empty?) output) (semaphore-post read-ready-sema))
+      (when read-ready-sema
+        (semaphore-post read-ready-sema)
+        (set! read-ready-sema #f))
       (when more-read-ready-sema
         (semaphore-post more-read-ready-sema)
         (set! more-read-ready-sema #f)))]
-   [check-output-blocking
-    (lambda ()
-      (when (output-full?)
-        (semaphore-wait write-ready-sema)
-        (when input
-          (send pipe-input-port input on-output-full))))]
 
    ;; Used after peeking:
    [peeked!
@@ -124,6 +144,9 @@
       (when (amt . > . peeked-amt)
         (check-output-unblocking)
         (set! peeked-amt amt)))]))
+
+(define (make-ref v) (make-weak-box v))
+(define (ref-value r) (weak-box-value r))
 
 ;; ----------------------------------------
 
@@ -138,12 +161,10 @@
          (define s start)
          (define e end)
          (unless (fx= s e)
-           (set! buffer bstr)
-           (set! buffer-pos s)
-           ;; don't read last byte, because the output
-           ;; end needs to know about a transition to
-           ;; the empty state
-           (set! buffer-end (fx- (if (s . fx< . e) e len) 1))
+           (define b buffer)
+           (set-direct-bstr! b bstr)
+           (set-direct-pos! b s)
+           (set-direct-end! b (if (s . fx< . e) e len))
            (define o offset)
            (when o
              (set! offset (- (+ o amt) s))))))]
@@ -151,34 +172,18 @@
     [slow-mode!
      (lambda ()
        (with-object pipe-data d
-         (when buffer
-           (define pos buffer-pos)
+         (define b buffer)
+         (when (direct-bstr b)
+           (define pos (direct-pos b))
            (define o offset)
            (when o
              (set! offset (+ o pos)))
            (set! start (if (fx= pos len) 0 pos))
-           (set! buffer #f)
-           (set! buffer-pos buffer-end))
-         (define out output)
-         (when out
-           (send pipe-output-port out sync-data))))])
+           (set-direct-bstr! b #f)
+           (set-direct-pos! b (direct-end b)))
+         (sync-output)))])
 
   (static
-   [sync-data
-    (lambda ()
-      (when buffer
-        (with-object pipe-data d
-          (define pos buffer-pos)
-          (set! start (if (fx= pos len)
-                          0
-                          pos)))))]
-   [sync-data-both
-    (lambda ()
-      (sync-data)
-      (with-object pipe-data d
-        (define out output)
-        (when out
-          (send pipe-output-port out sync-data))))]
    [on-resize
     (lambda ()
       (slow-mode!))]
@@ -199,7 +204,7 @@
        (with-object pipe-data d
          (cond
            [(input-empty?)
-            (if output
+            (if output-ref
                 read-ready-evt
                 eof)]
            [else
@@ -222,7 +227,6 @@
                 (set! start (modulo (fx+ s amt) len))
                 (set! peeked-amt (fxmax 0 (fx- peeked-amt amt)))
                 amt]))
-            (check-input-blocking)
             (progress!)
             (fast-mode! amt)
             amt])))]
@@ -231,7 +235,7 @@
      (lambda (dest-bstr dest-start dest-end skip progress-evt copy?)
        (with-object pipe-data d
          (assert-atomic)
-         (sync-data-both)
+         (sync-both)
          (define content-amt (content-length))
          (cond
            [(and progress-evt
@@ -239,12 +243,13 @@
             #f]
            [(content-amt . <= . skip)
             (cond
-              [(not output) eof]
+              [(not output-ref) eof]
               [else
                (unless (or (zero? skip) more-read-ready-sema)
                  (set! more-read-ready-sema (make-semaphore))
-                 (when output
-                   (send pipe-output-port output on-need-more-ready)))
+                 (define out (ref-value output-ref))
+                 (when out
+                   (send pipe-output-port out on-need-more-ready)))
                (define evt (if (zero? skip)
                                read-ready-evt
                                (wrap-evt (semaphore-peek-evt more-read-ready-sema)
@@ -270,17 +275,17 @@
      (lambda (work-done!)
        (assert-atomic)
        (with-object pipe-data d
-         (or (not output)
+         (or (not output-ref)
              (begin
-               (sync-data-both)
+               (sync-both)
                (not (fx= 0 (content-length)))))))]
 
     [close
      (lambda ()
        (with-object pipe-data d
-         (when input
+         (when input-ref
            (slow-mode!)
-           (set! input #f)
+           (set! input-ref #f)
            (progress!))))]
 
     [get-progress-evt
@@ -288,7 +293,7 @@
        (atomically
         (with-object pipe-data d
           (cond
-            [(not input) always-evt]
+            [(not input-ref) always-evt]
             [else
              (slow-mode!)
              (make-progress-evt)]))))]
@@ -330,7 +335,6 @@
                     (set! start (fxmodulo (fx+ s amt) len))
                     (progress!)
                     (fast-mode! amt)
-                    (check-input-blocking)
                     (finish dest-bstr)])))))]))]
 
     [count-lines!
@@ -348,25 +352,22 @@
      (lambda (amt) ; amt = not yet added to `offset`
        (with-object pipe-data d
          (define lim limit)
-         (define avail (and lim (- lim (content-length)
-                                   ;; don't fill last byte, because the input
-                                   ;; end needs to know about a trasition to the
-                                   ;; full state
-                                   1)))
+         (define avail (and lim (- lim (content-length))))
          (when (or (not avail) (avail . <= . 0))
            (define s start)
-           (define e end)             
-           (set! buffer bstr)
-           (set! buffer-pos e)
-           (set! buffer-end (let ([end (if (s . fx<= . e)
-                                           (if (fx= s 0)
-                                               (fx- len 1)
-                                               len)
-                                           (fx- s 1))])
-                              (if (and avail
-                                       ((fx- end e) . > . avail))
-                                  (fx+ e avail)
-                                  end)))
+           (define e end)
+           (define b buffer)
+           (set-direct-bstr! b bstr)
+           (set-direct-pos! b e)
+           (set-direct-end! b (let ([end (if (s . fx<= . e)
+                                             (if (fx= s 0)
+                                                 (fx- len 1)
+                                                 len)
+                                             (fx- s 1))])
+                                (if (and avail
+                                         ((fx- end e) . > . avail))
+                                    (fx+ e avail)
+                                    end)))
            (define o offset)
            (when o
              (set! offset (- (+ o amt) e))))))]
@@ -374,34 +375,18 @@
     [slow-mode!
      (lambda ()
        (with-object pipe-data d
-         (when buffer
-           (define pos buffer-pos)
+         (define b buffer)
+         (when (direct-bstr b)
+           (define pos (direct-pos b))
            (define o offset)
            (when o
              (set! offset (+ o pos)))
            (set! end (if (fx= pos len) 0 pos))
-           (set! buffer #f)
-           (set! buffer-pos buffer-end))
-         (define in input)
-         (when in
-           (send pipe-input-port in sync-data))))])
+           (set-direct-bstr! b #f)
+           (set-direct-pos! b (direct-end b)))
+         (sync-input)))])
 
   (static
-   [sync-data
-    (lambda ()
-      (when buffer
-        (with-object pipe-data d
-          (define pos buffer-pos)
-          (set! end (if (fx= pos len)
-                        0
-                        pos)))))]
-   [sync-data-both
-    (lambda ()
-      (sync-data)
-      (with-object pipe-data d
-        (define in input)
-        (when in
-          (send pipe-output-port in sync-data #f))))]
    [on-input-empty
     (lambda ()
       (slow-mode!))]
@@ -416,7 +401,6 @@
        (assert-atomic)
        (slow-mode!)
        (with-object pipe-data d
-         (send pipe-input-port input sync-data)
          (let try-again ()
            (define top-pos (if (fx= start 0)
                                (fx- len 1)
@@ -426,7 +410,9 @@
                [(or (not limit)
                     ((+ limit peeked-amt) . > . (fx- len 1)))
                 ;; grow pipe size
-                (send pipe-input-port input on-resize)
+                (define in (ref-value input-ref))
+                (when in
+                  (send pipe-input-port in on-resize))
                 (define new-bstr (make-bytes (min+1 (and limit (+ limit peeked-amt)) (* len 2))))
                 (cond
                   [(fx= 0 start)
@@ -460,7 +446,6 @@
                  (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
                  (let ([new-end (fx+ end amt)])
                    (set! end (if (fx= new-end len) 0 new-end)))
-                 (check-output-blocking)
                  (fast-mode! amt)
                  amt])]
              [(fx= end top-pos)
@@ -476,7 +461,6 @@
                     (check-input-unblocking)
                     (bytes-copy! bstr 0 src-bstr src-start (fx+ src-start amt))
                     (set! end amt)
-                    (check-output-blocking)
                     (fast-mode! amt)
                     amt])])]
              [(end . fx< . (fx- start 1))
@@ -488,7 +472,6 @@
                  (check-input-unblocking)
                  (bytes-copy! bstr end src-bstr src-start (fx+ src-start amt))
                  (set! end (fx+ end amt))
-                 (check-output-blocking)
                  (fast-mode! amt)
                  amt])]
              [else
@@ -502,33 +485,25 @@
      ;; in atomic mode
      (lambda ()
        (with-object pipe-data d
-         (when output
+         (when output-ref
            (slow-mode!)
-           (set! output #f)
-           (when write-ready-sema
-             (semaphore-post write-ready-sema))
-           (when more-read-ready-sema
-             (semaphore-post more-read-ready-sema))
-           (semaphore-post read-ready-sema))))]))
+           (set! output-ref #f)
+           (check-input-unblocking))))]))
 
 ;; ----------------------------------------
     
 (define (make-pipe-ends [limit #f] [input-name 'pipe] [output-name 'pipe])
   (define len (min+1 limit 16))
-  (define read-ready-sema (make-semaphore))
-  (define write-ready-sema (and limit (make-semaphore 1)))
-  (define write-ready-evt (if limit
-                              (semaphore-peek-evt write-ready-sema)
-                              always-evt))
+
   (define d (new pipe-data
                  [bstr (make-bytes len)]
                  [len len]
-                 [limit limit]
-                 [read-ready-sema read-ready-sema]
-                 [write-ready-sema write-ready-sema]
-                 [read-ready-evt (wrap-evt (semaphore-peek-evt read-ready-sema)
-                                           (lambda (v) 0))]
-                 [write-ready-evt write-ready-evt]))
+                 [limit limit]))
+
+  (define write-ready-evt (if limit
+                              (pipe-write-poller d)
+                              always-evt))
+  (define read-ready-evt (pipe-read-poller d))
 
   (define input (new pipe-input-port
                      [name input-name]
@@ -538,8 +513,12 @@
                       [evt write-ready-evt]
                       [d d]))
 
-  (set-pipe-data-input! d input)
-  (set-pipe-data-output! d output)
+  (set-pipe-data-input-buffer! d (core-port-buffer input))
+  (set-pipe-data-output-buffer! d (core-port-buffer output))
+  (set-pipe-data-input-ref! d (make-ref input))
+  (set-pipe-data-output-ref! d (make-ref output))
+  (set-pipe-data-write-ready-evt! d write-ready-evt)
+  (set-pipe-data-read-ready-evt! d read-ready-evt)
 
   (values input output))
 
@@ -550,3 +529,45 @@
     (port-count-lines! ip)
     (port-count-lines! op))
   (values ip op))
+
+;; ----------------------------------------
+
+;; Note: a thread blocked on writing to a limited pipe cannot be GCed
+;; due to the use of `replace-evt`.
+(struct pipe-write-poller (d)
+  #:property
+  prop:evt
+  (poller
+   (lambda (pwp ctx)
+     (with-object pipe-data (pipe-write-poller-d pwp)
+       (sync-both)
+       (cond
+         [(not (output-full?))
+          (values (list pwp) #f)]
+         [else
+          (unless write-ready-sema
+            (set! write-ready-sema (make-semaphore)))
+          (define in (ref-value input-ref))
+          (when in
+            (send pipe-input-port in on-output-full))
+          (values #f (replace-evt (semaphore-peek-evt write-ready-sema)
+                                  (lambda (v) pwp)))])))))
+
+(struct pipe-read-poller (d)
+  #:property
+  prop:evt
+  (poller
+   (lambda (prp ctx)
+     (with-object pipe-data (pipe-read-poller-d prp)
+       (sync-both)
+       (cond
+         [(not (input-empty?))
+          (values (list 0) #f)]
+         [else
+          (unless read-ready-sema
+            (set! read-ready-sema (make-semaphore)))
+          (define out (ref-value output-ref))
+          (when out
+            (send pipe-output-port out on-input-empty))
+          (values #f (wrap-evt (semaphore-peek-evt read-ready-sema)
+                               (lambda (v) 0)))])))))

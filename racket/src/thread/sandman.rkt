@@ -133,7 +133,7 @@
   (sandman
    ;; sleep
    (lambda (timeout-at)
-     (host:sleep (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0)))
+     (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0))))
 
    ;; poll
    (lambda (mode wakeup)
