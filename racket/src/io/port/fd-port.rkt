@@ -271,8 +271,8 @@
   ;; in atomic mode
   [buffer-mode
    (case-lambda
-     [(self) buffer-mode]
-     [(self mode) (set! buffer-mode mode)])]
+     [() buffer-mode]
+     [(mode) (set! buffer-mode mode)])]
 
   #:property
   [prop:file-stream (lambda (p) (fd-output-port-fd p))]

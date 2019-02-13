@@ -887,6 +887,9 @@
 
   (define ofile (open-output-file path #:mode 'text #:exists 'replace))
   (fprintf ofile "abc\ndef\nghi\n")
+  (test 'block file-stream-buffer-mode ofile)
+  (test (void) file-stream-buffer-mode ofile 'line)
+  (test 'line file-stream-buffer-mode ofile)
   (close-output-port ofile)
 
   (let ()
