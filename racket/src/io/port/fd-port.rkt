@@ -16,8 +16,7 @@
          "buffer-mode.rkt"
          "close.rkt"
          "count.rkt"
-         "check.rkt"
-         "place-message.rkt")
+         "check.rkt")
 
 (provide (struct-out fd-input-port)
          open-input-fd
@@ -82,9 +81,9 @@
 
   #:property
   [prop:file-stream (lambda (p) (fd-input-port-fd p))]
-  [prop:data-place-message (lambda (port)
-                             (lambda ()
-                               (fd-port->place-message port)))])
+  [prop:place-message (lambda (port)
+                        (lambda ()
+                          (fd-port->place-message port)))])
 
 ;; ----------------------------------------
 
@@ -288,9 +287,9 @@
                            (end-atomic)
                            (raise-rktio-error 'file-truncate result  "error setting file size")]
                           [else result]))]
-  [prop:data-place-message (lambda (port)
-                             (lambda ()
-                               (fd-port->place-message port)))])
+  [prop:place-message (lambda (port)
+                        (lambda ()
+                          (fd-port->place-message port)))])
 
 ;; ----------------------------------------
 
