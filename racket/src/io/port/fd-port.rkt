@@ -105,6 +105,8 @@
   (define fd (fd-input-port-fd p))
   (define fd-refcount (fd-input-port-fd-refcount p))
   (set-fd-input-port-custodian-reference! p (register-fd-close cust fd fd-refcount #f p))
+  (when (port-count-lines-enabled)
+    (port-count-lines! p))
   p)
 
 ;; ----------------------------------------
@@ -255,7 +257,7 @@
      (case-lambda
        [()
         (define pos (get-file-position fd))
-        (and pos (+ pos (fx- end-pos start-pos)))]
+        (and pos (+ pos (fx- (if buffer buffer-pos end-pos) start-pos)))]
        [(pos)
         (flush-buffer-fully #f)
         ;; flushing can leave atomic mode, so make sure the
@@ -325,6 +327,8 @@
   (set-core-output-port-evt! p evt)
   (set-fd-output-port-flush-handle! p flush-handle)
   (set-fd-output-port-custodian-reference! p custodian-reference)
+  (when (port-count-lines-enabled)
+    (port-count-lines! p))
   p)
 
 ;; ----------------------------------------

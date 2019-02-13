@@ -62,13 +62,13 @@
        (define buf-end (core-port-buffer-end in))
        (cond
          [(buf-pos . fx< . buf-end)
-          ;; Read bytes from buffer
+          ;; Read bytes directly from buffer
           (define v (fxmin (fx- buf-end buf-pos) (fx- end start)))
           (define new-pos (fx+ buf-pos v))
           (bytes-copy! bstr start (core-port-buffer in) buf-pos new-pos)
           (set-core-port-buffer-pos! in new-pos)
-          (when (core-port-count in)
-            (port-count! in v bstr start))
+          (when (or (pair? extra-count-ins) (core-port-count in))
+            (port-count-all! in extra-count-ins v bstr start))
           (end-atomic)
           v]
          [else

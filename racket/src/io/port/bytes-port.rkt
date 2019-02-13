@@ -214,7 +214,7 @@
                                     (port-count! out v bstr start)))]
     [file-position
      (case-lambda
-       [() pos]
+       [() (if buffer buffer-pos pos)]
        [(new-pos)
         (slow-mode!)
         (define len (bytes-length bstr))

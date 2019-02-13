@@ -27,12 +27,12 @@
        (define buf-end (core-port-buffer-end out))
        (cond
          [(buf-pos . fx< . buf-end)
-          ;; Copy bytes from buffer
+          ;; Copy bytes directly to buffer
           (define v (fxmin (fx- buf-end buf-pos) (fx- end start)))
           (bytes-copy! (core-port-buffer out) buf-pos bstr start (fx+ start v))
           (set-core-port-buffer-pos! out (fx+ buf-pos v))
-          (when (core-port-count out)
-            (port-count! out v bstr start))
+          (when (or (pair? extra-count-outs) (core-port-count out))
+            (port-count-all! out extra-count-outs v bstr start))
           (end-atomic)
           v]
          [else
