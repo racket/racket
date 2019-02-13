@@ -889,6 +889,7 @@ char *rktio_readlink(rktio_t *rktio, const char *fullfilename)
           set_racket_error(RKTIO_ERROR_NOT_A_LINK);
         else
           get_posix_error();
+        free(buffer);
         return NULL;
       }
     } else if (len == buf_len) {
