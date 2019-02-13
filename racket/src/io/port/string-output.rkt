@@ -11,7 +11,8 @@
 (define/who (write-char ch [out (current-output-port)])
   (check who char? ch)
   (check who output-port? out)
-  (write-string (string ch) out 0 1))
+  (write-string (string ch) out 0 1)
+  (void))
 
 (define/who (write-string str [out (current-output-port)] [start 0] [end (and (string? str)
                                                                               (string-length str))])

@@ -4,6 +4,7 @@
          "../common/class.rkt"
          "../host/thread.rkt"
          "port.rkt"
+         "count.rkt"
          "output-port.rkt"
          "parameter.rkt"
          "write.rkt"
@@ -24,7 +25,18 @@
   (check who byte? b)
   (check who output-port? out)
   (let ([out (->core-output-port out)])
-    (write-some-bytes 'write-byte out (bytes b) 0 1 #:buffer-ok? #t #:copy-bstr? #f))
+    (start-atomic)
+    (define pos (core-port-buffer-pos out))
+    (cond
+      [(pos . fx< . (core-port-buffer-end out))
+       (bytes-set! (core-port-buffer out) pos b)
+       (set-core-port-buffer-pos! out (fx+ pos 1))
+       (when (core-port-count out)
+         (port-count-byte! out b))
+       (end-atomic)]
+      [else
+       (end-atomic)
+       (write-some-bytes 'write-byte out (bytes b) 0 1 #:buffer-ok? #t #:copy-bstr? #f)]))
   (void))
 
 (define (do-write-bytes who out bstr start end)

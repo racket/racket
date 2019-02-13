@@ -156,9 +156,14 @@
    [max-pos 0])
 
   (public
-    [get-length (lambda () max-pos)]
+    [get-length (lambda ()
+                  (start-atomic)
+                  (slow-mode!)
+                  (end-atomic)
+                  max-pos)]
     [get-bytes (lambda (dest-bstr start-pos discard?)
                  (start-atomic)
+                 (slow-mode!)
                  (bytes-copy! dest-bstr 0 bstr start-pos (fx+ start-pos (bytes-length dest-bstr)))
                  (when discard?
                    (set! bstr #"")
@@ -171,11 +176,29 @@
      (lambda (len)
        (define new-bstr (make-bytes (fx* 2 len)))
        (bytes-copy! new-bstr 0 bstr 0 pos)
-       (set! bstr new-bstr))])
+       (set! bstr new-bstr))]
+
+    [slow-mode!
+     (lambda ()
+       (when buffer
+         (define s buffer-pos)
+         (set! pos s)
+         (set! buffer-pos buffer-end)
+         (set! buffer #f)
+         (set! offset s)
+         (set! max-pos (fxmax s max-pos))))]
+
+    [fast-mode!
+     (lambda ()
+       (set! buffer bstr)
+       (set! buffer-pos pos)
+       (set! buffer-end (bytes-length bstr))
+       (set! offset 0))])
 
   (override
     [write-out
      (lambda (src-bstr src-start src-end nonblock? enable-break? copy?)
+       (slow-mode!)
        (define i pos)
        (define amt (min (fx- src-end src-start) 4096))
        (define end-i (fx+ i amt))
@@ -184,6 +207,7 @@
        (bytes-copy! bstr i src-bstr src-start (fx+ src-start amt))
        (set! pos end-i)
        (set! max-pos (fxmax pos max-pos))
+       (fast-mode!)
        amt)]
     [get-write-evt
      (get-write-evt-via-write-out (lambda (out v bstr start)
@@ -192,6 +216,7 @@
      (case-lambda
        [() pos]
        [(new-pos)
+        (slow-mode!)
         (define len (bytes-length bstr))
         (cond
           [(eof-object? new-pos)

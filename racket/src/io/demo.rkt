@@ -319,7 +319,7 @@
 (let ()
   (define-values (i o) (make-pipe))
   (for ([n 3])
-    (write-bytes (make-bytes 4096 (char->integer #\a)) o)
+    (test 4096 (write-bytes (make-bytes 4096 (char->integer #\a)) o))
     (for ([j (in-range 4096)])
       (read-byte i))
     (unless (zero? (pipe-content-length i))
@@ -346,7 +346,6 @@
                       (car content))
         (error))
       (loop (add1 x) (cdr content) (list* bstr bstr accum))])))
-
 
 (let ()
   (define path (build-path "compiled" "demo-out"))
@@ -401,6 +400,7 @@
   (test (void) (file-position out 10))
   (test #"hola!!\0\0\0\0" (get-output-bytes out)))
 
+(log-error "start")
 (let ()
   (define-values (i o) (make-pipe))
   (port-count-lines! i)
@@ -428,6 +428,7 @@
   (write-bytes #"!" o)
   (test '(3 1 8) (next-location o))
 
+(log-error "here")
   (test #"x\r" (read-bytes 2 i))
   (test '(3 0 7) (next-location i))
   (test #"\n!" (read-bytes 2 i))

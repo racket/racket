@@ -46,7 +46,7 @@
     (start-atomic)
     (prepare-change in)
     (cond
-      [(= start end) ; intentionally before the port-closed check
+      [(fx= start end) ; intentionally before the port-closed check
        (end-atomic)
        0]
       [(core-port-closed? in)
@@ -61,9 +61,9 @@
        (define buf-pos (core-port-buffer-pos in))
        (define buf-end (core-port-buffer-end in))
        (cond
-         [(buf-pos . < . buf-end)
+         [(buf-pos . fx< . buf-end)
           ;; Read bytes from buffer
-          (define v (min (- buf-end buf-pos) (- end start)))
+          (define v (fxmin (fx- buf-end buf-pos) (fx- end start)))
           (define new-pos (fx+ buf-pos v))
           (bytes-copy! bstr start (core-port-buffer in) buf-pos new-pos)
           (set-core-port-buffer-pos! in new-pos)
