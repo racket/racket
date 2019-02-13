@@ -915,7 +915,8 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
   /* Make sure path doesn't have trailing separator: */
   len = strlen(filename);
   while (len && IS_A_SEP(filename[len - 1])) {
-    copied = MSC_IZE(strdup)(filename);
+    if (!copied)
+      copied = MSC_IZE(strdup)(filename);
     copied[--len] = 0;
     filename = copied;
   }
