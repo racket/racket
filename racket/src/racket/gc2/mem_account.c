@@ -551,7 +551,7 @@ static void BTC_do_accounting(NewGC *gc, int no_full)
   
   if(gc->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(gc, NULL)]->originator, *last, *parent;
-    Scheme_Custodian_Reference *box = cur->global_next;
+    Scheme_Custodian_Reference *box = NULL;
     int i;
 
     GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cur), scheme_custodian_type));
