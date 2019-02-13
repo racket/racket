@@ -629,8 +629,10 @@ char *rktio_get_current_directory(rktio_t *rktio)
    } else
      break;
  }
- if (!r)
+ if (!r) {
+   free(s);
    get_posix_error();
+ }
  return r;
 #endif
 }
