@@ -2452,8 +2452,6 @@ static void *do_malloc(SET_NO_BACKINFO
 
     ALLOC_STATISTIC(num_chunk_allocs_stat++);
 
-    cpos = 0;
-
     a = malloc_sector(size + size_align(sizeof(MemoryChunk)), sector_kind_chunk, 1, 
                       flags & do_malloc_EXECUTABLE);
     if (!a) {
