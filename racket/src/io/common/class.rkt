@@ -115,28 +115,30 @@
           [() (values new-fields new-methods override-methods locals statics properties)]
           [((field fld ...) . rest)
            (loop #'rest
-                 (add-procs id (syntax->list #'(fld ...)) "field" #:can-immutable? #t)
-                 new-methods
-                 override-methods
-                 locals
-                 statics
-                 properties)]
+                 (append new-fields
+                         (add-procs id (syntax->list #'(fld ...)) "field" #:can-immutable? #t))
+                 new-methods override-methods locals statics properties)]
           [((public method ...) . rest)
-           (loop #'rest
-                 new-fields
-                 (add-procs methods-id (syntax->list #'(method ...)) "public")
-                 override-methods
-                 locals
-                 statics
-                 properties)]
+           (loop #'rest new-fields
+                 (append new-methods
+                         (add-procs methods-id (syntax->list #'(method ...)) "public"))
+                 override-methods locals statics properties)]
           [((override method ...) . rest)
-           (loop #'rest new-fields new-methods (syntax->list #'(method ...)) locals statics properties)]
+           (loop #'rest new-fields new-methods
+                 (append override-methods (syntax->list #'(method ...)))
+                 locals statics properties)]
           [((private method ...) . rest)
-           (loop #'rest new-fields new-methods override-methods (syntax->list #'(method ...)) statics properties)]
+           (loop #'rest new-fields
+                 new-methods override-methods
+                 (append locals (syntax->list #'(method ...)))
+                 statics properties)]
           [((static method ...) . rest)
-           (loop #'rest new-fields new-methods override-methods locals (syntax->list #'(method ...)) properties)]
+           (loop #'rest new-fields new-methods override-methods locals
+                 (append statics (syntax->list #'(method ...)))
+                 properties)]
           [((property prop ...) . rest)
-           (loop #'rest new-fields new-methods override-methods locals statics (syntax->list #'((#:property . prop) ...)))]
+           (loop #'rest new-fields new-methods override-methods locals statics
+                 (append properties (syntax->list #'((#:property . prop) ...))))]
           [(other . _)
            (raise-syntax-error #f "unrecognized" stx #'other)]))))
   (define all-fields (if super-ci

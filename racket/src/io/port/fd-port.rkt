@@ -120,6 +120,29 @@
    [buffer-mode 'block]
    [custodian-reference #f])
 
+  (static
+   [fast-mode!
+    (lambda (amt) ; amt = not yet added to `offset`
+      (when (eq? buffer-mode 'block)
+        (define e end-pos)
+        (set! buffer bstr)
+        (set! buffer-pos e)
+        (set! buffer-end (bytes-length bstr))
+        (define o offset)
+        (when o
+          (set! offset (- (+ o amt) e)))))]
+
+   [slow-mode!
+    (lambda ()
+      (when buffer
+        (set! buffer #f)
+        (define pos buffer-pos)
+        (set! end-pos pos)
+        (define o offset)
+        (when o
+          (set! offset (+ o pos)))
+        (set! buffer-pos buffer-end)))])
+
   (public
     [on-close (lambda () (void))]
     [raise-write-error
@@ -131,6 +154,7 @@
    ;; Returns `#t` if the buffer is already or successfully flushed
    [flush-buffer
     (lambda ()
+      (slow-mode!)
       (cond
         [(not (fx= start-pos end-pos))
          (define n (rktio_write_in rktio fd bstr start-pos end-pos))
@@ -184,6 +208,7 @@
     ;; in atomic mode
     [write-out
      (lambda (src-bstr src-start src-end nonbuffer/nonblock? enable-break? copy?)
+       (slow-mode!)
        (cond
          [(fx= src-start src-end)
           ;; Flush request
@@ -194,10 +219,10 @@
           (define amt (fxmin (fx- src-end src-start) (fx- (bytes-length bstr) end-pos)))
           (bytes-copy! bstr end-pos src-bstr src-start (fx+ src-start amt))
           (set! end-pos (fx+ end-pos amt))
-          (unless nonbuffer/nonblock?
-            (when (eq? buffer-mode 'line)
-              ;; can temporarily leave atomic mode:
-              (flush-buffer-fully-if-newline src-bstr src-start src-end enable-break?)))
+          (when (eq? buffer-mode 'line)
+            ;; can temporarily leave atomic mode:
+            (flush-buffer-fully-if-newline src-bstr src-start src-end enable-break?))
+          (fast-mode! amt)
           amt]
          [(not (flush-buffer)) ; <- can temporarily leave atomic mode
           #f]
