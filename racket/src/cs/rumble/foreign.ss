@@ -1387,6 +1387,9 @@
 (define (flvector->cpointer flvec)
   (make-cpointer (flvector-bstr flvec) #f))
 
+(define (fxvector->cpointer flvec)
+  (make-cpointer (fxvector-bstr flvec) #f))
+
 ;; ----------------------------------------
 
 (define the-foreign-guardian (make-guardian))
