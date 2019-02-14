@@ -141,6 +141,12 @@
 ;; Merge a Pango patch that fixes a decoding problem
 (define-runtime-path pango-emojiiter-patch "patches/pango-emojiiter.patch")
 
+;; Allow more flexible font matching
+(define-runtime-path pango-match-patch "patches/pango-match.patch")
+
+;; Detect oblique before italic on Mac OS
+(define-runtime-path pango-preferoblique-patch "patches/pango-preferoblique.patch")
+
 ;; Needed when building with old GCC, such as 4.0:
 (define-runtime-path gmp-weak-patch "patches/gmp-weak.patch")
 
@@ -533,7 +539,11 @@
                                         coretext-fontreg-patch
                                         coretext-nullarray
                                         win32text-patch
-                                        pango-emojiiter-patch)
+                                        pango-emojiiter-patch
+                                        pango-match-patch)
+                                  (if mac?
+                                      (list pango-preferoblique-patch)
+                                      null)
                                   (if (and mac? m32?)
                                       (list pango-surrogate-patch)
                                       null)

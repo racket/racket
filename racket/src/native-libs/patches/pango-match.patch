@@ -1,0 +1,57 @@
+diff -u -r old/pango-1.42.0/pango/fonts.c new/pango-1.42.0/pango/fonts.c
+--- old/pango-1.42.0/pango/fonts.c	2018-01-03 10:48:10.000000000 -0700
++++ new/pango-1.42.0/pango/fonts.c	2019-02-14 06:44:15.000000000 -0700
+@@ -718,19 +718,30 @@
+ compute_distance (const PangoFontDescription *a,
+ 		  const PangoFontDescription *b)
+ {
+-  if (a->style == b->style)
+-    {
+-      return abs((int)(a->weight) - (int)(b->weight));
+-    }
+-  else if (a->style != PANGO_STYLE_NORMAL &&
+-	   b->style != PANGO_STYLE_NORMAL)
+-    {
+-      /* Equate oblique and italic, but with a big penalty
+-       */
+-      return 1000000 + abs ((int)(a->weight) - (int)(b->weight));
+-    }
+-  else
+-    return G_MAXINT;
++  gint dist;
++
++  dist = abs((int)(a->weight) - (int)(b->weight));
++    
++  if (a->variant != b->variant)
++    dist += 10000;
++
++  if (a->stretch != b->stretch)
++    dist += 1000 * abs((int)a->stretch - (int)b->stretch);
++  
++  if (a->style != b->style) {
++    if (a->style != PANGO_STYLE_NORMAL &&
++        b->style != PANGO_STYLE_NORMAL)
++      /* Equate oblique and italic, but with a modest penalty */
++      dist += 10000;
++    else
++      /* Normal and oblique/italic has a larger penalty */
++      dist += 20000;
++  }
++
++  if (a->gravity != b->gravity)
++    dist += 100000;
++
++  return dist;
+ }
+ 
+ /**
+@@ -761,9 +772,6 @@
+   g_return_val_if_fail (desc != NULL, G_MAXINT);
+   g_return_val_if_fail (new_match != NULL, G_MAXINT);
+ 
+-  if (new_match->variant == desc->variant &&
+-      new_match->stretch == desc->stretch &&
+-      new_match->gravity == desc->gravity)
+     {
+       int old_distance = old_match ? compute_distance (desc, old_match) : G_MAXINT;
+       int new_distance = compute_distance (desc, new_match);

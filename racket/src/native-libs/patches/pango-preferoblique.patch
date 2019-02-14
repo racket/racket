@@ -1,0 +1,18 @@
+diff -r -u old/pango-1.42.0/pango/pangocoretext-fontmap.c new/pango-1.42.0/pango/pangocoretext-fontmap.c
+--- old/pango-1.42.0/pango/pangocoretext-fontmap.c	2017-08-15 15:53:10.000000000 -0600
++++ new/pango-1.42.0/pango/pangocoretext-fontmap.c	2019-02-14 08:33:52.000000000 -0700
+@@ -415,10 +415,10 @@
+   font_traits = ct_font_descriptor_get_traits (desc);
+   style_name = ct_font_descriptor_get_style_name (desc);
+ 
+-  if ((font_traits & kCTFontItalicTrait) == kCTFontItalicTrait)
+-    pango_font_description_set_style (font_desc, PANGO_STYLE_ITALIC);
+-  else if (pango_core_text_style_name_is_oblique (style_name))
++  if (pango_core_text_style_name_is_oblique (style_name))
+     pango_font_description_set_style (font_desc, PANGO_STYLE_OBLIQUE);
++  else if ((font_traits & kCTFontItalicTrait) == kCTFontItalicTrait)
++    pango_font_description_set_style (font_desc, PANGO_STYLE_ITALIC);
+   else
+     pango_font_description_set_style (font_desc, PANGO_STYLE_NORMAL);
+ 
+Only in new/pango-1.42.0/pango: pangocoretext-fontmap.c~
