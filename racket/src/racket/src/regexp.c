@@ -1485,7 +1485,7 @@ regatom(int *flagp, int parse_flags, int at_start)
   return ret;
 }
 
-static int regcharclass(int c, char *map)
+static int regcharclass(int c, char *map, int *_non_ascii)
 {
   switch(c) {
   case 'd':
@@ -1497,9 +1497,11 @@ static int regcharclass(int c, char *map)
     for (c = 0; c < '0'; c++) {
       map[c] = 1;
     }
-    for (c = '9' + 1; c < 256; c++) {
+    for (c = '9' + 1; c < (_non_ascii ? 128 : 256); c++) {
       map[c] = 1;
     }
+    if (_non_ascii)
+      *_non_ascii = 1;
     break;
   case 'w':
     for (c = 0; c < 26; c++) {
@@ -1521,9 +1523,11 @@ static int regcharclass(int c, char *map)
     for (c = 'Z' + 1; c < '_'; c++) {
       map[c] = 1;
     }
-    for (c = 'z' + 1; c < 256; c++) {
+    for (c = 'z' + 1; c < (_non_ascii ? 128 : 256); c++) {
       map[c] = 1;
     }
+    if (_non_ascii)
+      *_non_ascii = 1;
     break;
   case 's':
     map['\t'] = 1;
@@ -1533,7 +1537,7 @@ static int regcharclass(int c, char *map)
     map[' '] = 1;
     break;
   case 'S':
-    for (c = 0; c < 256; c++) {
+    for (c = 0; c < (_non_ascii ? 128 : 256); c++) {
       switch (c) {
       case '\t':
       case '\n':
@@ -1546,6 +1550,8 @@ static int regcharclass(int c, char *map)
 	break;
       }
     }
+    if (_non_ascii)
+      *_non_ascii = 1;
     break;
   default:
     if (((c >= 'a') && (c <= 'z'))
@@ -1566,7 +1572,7 @@ static int is_posix_char_class(char *str, int pos, int len, char *map)
   if (pos + 8 <= len) {
     if (!scheme_strncmp(":alnum:]", str XFORM_OK_PLUS pos, 8)) {
       if (map) {
-        regcharclass('d', map);
+        regcharclass('d', map, NULL);
         for (c = 'a'; c <= 'z'; c++) {
           map[c] = 1;
           map[c - ('a' - 'A')] = 1;
@@ -1603,7 +1609,7 @@ static int is_posix_char_class(char *str, int pos, int len, char *map)
       return 1;
     } else if (!scheme_strncmp(":digit:]", str XFORM_OK_PLUS pos, 8)) {
       if (map) {
-        regcharclass('d', map);
+        regcharclass('d', map, NULL);
       }
       return 1;
     } else if (!scheme_strncmp(":graph:]", str XFORM_OK_PLUS pos, 8)) {
@@ -1633,7 +1639,7 @@ static int is_posix_char_class(char *str, int pos, int len, char *map)
       return 1;
     } else if (!scheme_strncmp(":space:]", str XFORM_OK_PLUS pos, 8)) {
       if (map) {
-        regcharclass('s', map);
+        regcharclass('s', map, NULL);
       }
       return 1;
     } else if (!scheme_strncmp(":upper:]", str XFORM_OK_PLUS pos, 8)) {
@@ -1649,7 +1655,7 @@ static int is_posix_char_class(char *str, int pos, int len, char *map)
   if ((pos + 7 <= len) 
       && !scheme_strncmp(":word:]", str XFORM_OK_PLUS pos, 7)) {
     if (map) {
-      regcharclass('w', map);
+      regcharclass('w', map, NULL);
     }
     return 1;
   } 
@@ -1657,7 +1663,7 @@ static int is_posix_char_class(char *str, int pos, int len, char *map)
   if ((pos + 9 <= len)
       && !scheme_strncmp(":xdigit:]", str XFORM_OK_PLUS pos, 9)) {
     if (map) {
-      regcharclass('d', map);
+      regcharclass('d', map, NULL);
       for (c = 'a'; c <= 'f'; c++) {
         map[c] = 1;
         map[c - ('a' - 'A')] = 1;
@@ -1753,7 +1759,7 @@ static char *regrange(int parse_flags, char *map)
       c = UCHAR(regparsestr[regparse + 1]);
       if (((c >= 'a') && (c <= 'z'))
 	  || ((c >= 'A') && (c <= 'Z'))) {
-	regcharclass(c, map);
+	regcharclass(c, map, NULL);
 	can_range = 0;
       } else {
 	map[c] = 1;
@@ -1832,7 +1838,7 @@ regranges(int parse_flags, int at_start)
             /* unicode char class; give up */
             break;
           }
-	  regcharclass(regparsestr[regparse], new_map);
+	  regcharclass(regparsestr[regparse], new_map, NULL);
           
 	} else
 	  new_map[c] = 1;
@@ -4537,7 +4543,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 
   rs.orig_len = len;
   rs.size = len;
-  
+
   r = (unsigned char *)scheme_malloc_atomic(rs.size + 1);
 
   /* We need to translate if the pattern contains any use of ".", if
@@ -4563,9 +4569,11 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
       while ((k < len) && (s[k] != ']')) {
 	if (s[k] > 127)
 	  saw_big = 1;
-	else if (pcre && (s[k] == '\\') && (k + 1 < len))
+	else if (pcre && (s[k] == '\\') && (k + 1 < len)) {
+          if ((s[k+1] == 'D') || (s[k+1] == 'W') || (s[k+1] == 'S'))
+            saw_big = 1;
 	  k++;
-        else if (pcre 
+        } else if (pcre 
                  && (s[k] == '[') 
                  && (k + 1 < len)
                  && (s[k+1] == ':')
@@ -4584,6 +4592,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
       } else {
 	/* Need to translate. */
 	char *simple_on;
+        int non_ascii = 0;
 	Scheme_Object *ranges;
 	unsigned int *us, *range_array;
 	int ulen, on_count, range_len, rp, p;
@@ -4593,7 +4602,8 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	scheme_utf8_decode(s, rs.i + 1, k, us, 0, -1, NULL, 0, 0);
 
 	/* The simple_on array lists ASCII chars to (not) find
-	   for the match */
+	   for the match, and `non_ascii` virtually extends
+           to the rest of Unicode */
 	simple_on = (char *)scheme_malloc_atomic(128);
 	memset(simple_on, 0, 128);
 	/* The ranges list is pairs of larger ranges */
@@ -4689,7 +4699,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	      int c = us[p + 1];
 	      if (((c >= 'a') && (c <= 'z'))
 		  || ((c >= 'A') && (c <= 'Z'))) {
-		regcharclass(c, simple_on);
+		regcharclass(c, simple_on, &non_ascii);
 		p += 2;
 	      } else if (c < 128) {
 		simple_on[c] = 1;
@@ -4750,6 +4760,13 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	    p++;
 	  }
 	}
+
+        if (non_ascii) {
+          /* Replace the ranges array to cover all non-ASCII characters */
+          ranges = scheme_make_pair(scheme_make_pair(scheme_make_integer(128),
+                                                     scheme_make_integer(0x10FFFF)),
+                                    scheme_null);
+        }
 
 	/* Turn the ranges list into an array */
 	range_len = scheme_list_length(ranges);
@@ -4893,16 +4910,61 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
       }
       rs.i = k + 1;
     } else if (s[rs.i] == '\\') {
-      /* Skip over next char, possibly big: */
-      r[j++] = s[rs.i++];
-      if ((rs.i < len)
-	  && (s[rs.i] > 127)) {
-	r[j++] = s[rs.i++];
-	while ((rs.i < len) && ((s[rs.i] & 0xC0) == 0x80)) {
-	  r[j++] = s[rs.i++];
-	}
-      } else
-	r[j++] = s[rs.i++];
+      if (pcre
+          && (rs.i+1 < len)
+          && ((s[rs.i+1] == 'D')
+              || (s[rs.i+1] == 'W')
+              || (s[rs.i+1] == 'S'))) {
+        /* matches non-ASCII characters, so convert */
+        char *simple_on;
+        int non_ascii;
+        int n;
+
+        simple_on = (char *)scheme_malloc_atomic(128);
+	memset(simple_on, 0, 128);
+
+        rs.i++;
+        regcharclass(s[rs.i++], simple_on, &non_ascii);
+
+        r = make_room(r, j, 4, &rs);
+        r[j++] = '(';
+        r[j++] = '?';
+        r[j++] = ':';
+        r[j++] = '[';
+
+        for (n = 0; n < 128; ) {
+          if (simple_on[n]) {
+            int m;
+            for (m = n + 1; (m < 128) && simple_on[m]; m++) {
+            }
+            r = make_room(r, j, 3, &rs);
+            r[j++] = n;
+            r[j++] = '-';
+            r[j++] = m-1;
+            n = m;
+          } else
+            n++;
+        }
+        r = make_room(r, j, 1, &rs);
+        r[j++] = ']';
+        
+        if (non_ascii) { /* we expect this to be true! */
+          r = add_range(r, &j, &rs, 128, 0x10FFFF, 0);
+          r = make_room(r, j, 1, &rs);
+        }
+        r[j++] = ')';
+      } else {
+        /* Skip over next char, possibly big: */
+        r[j++] = s[rs.i++];
+        if ((rs.i < len)
+            && (s[rs.i] > 127)) {
+          r[j++] = s[rs.i++];
+          while ((rs.i < len) && ((s[rs.i] & 0xC0) == 0x80)) {
+            r[j++] = s[rs.i++];
+          }
+        } else
+          r[j++] = s[rs.i++];
+      }
     } else if ((s[rs.i] == '.')
 	       && (!pcre
 		   || (rs.i < 3)

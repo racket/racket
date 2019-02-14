@@ -1117,6 +1117,19 @@
 (test '("\u1F39") regexp-match #rx"[^\u1F79-\u3F79]" "\u1F39")
 (test '("\u1F78") regexp-match #rx"[^\u1F79-\u3F79]" "\u1F78")
 
+(test '("\u3BB") regexp-match #px"\\D" "\u3BB")
+(test '("\u3BB") regexp-match #px"[\\D]" "\u3BB")
+(test '("a") regexp-match #px"[\\D]" "a")
+(test #f regexp-match #px"\\D" "0")
+(test #f regexp-match #px"\\D" "9")
+(test '("\u3BB") regexp-match #px"\\S" "\u3BB")
+(test '("\u3BB") regexp-match #px"[\\S]" "\u3BB")
+(test '("a") regexp-match #px"\\S" "a")
+(test #f regexp-match #px"\\S" " ")
+(test '("\u3BB") regexp-match #px"\\W" "\u3BB")
+(test '("\u3BB") regexp-match #px"[\\W]" "\u3BB")
+(test '("+") regexp-match #px"\\W" "+")
+(test #f regexp-match #px"\\W" "a")
 
 ;; Regexps that shouldn't parse:
 (err/rt-test (regexp "[a--b\u1F78]") exn:fail?)

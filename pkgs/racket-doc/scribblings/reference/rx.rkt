@@ -85,11 +85,11 @@
             |  Modem              Like Mode, but in multi mode                    #mode
             |  Mode-m             Like Mode, but not in multi mode                #mode
   Class    ::= \d                 Contains _0_-_9_                                #cat 23
-            |  \D                 Contains ASCII other than those in _\d_         #cat
+            |  \D                 Contains characters not in _\d_                 #cat
             |  \w                 Contains _a_-_z_, _A_-_Z_, _0_-_9_, ___         #cat 24
-            |  \W                 Contains ASCII other than those in _\w_         #cat
+            |  \W                 Contains characters not in _\w_                 #cat
             |  \s                 Contains space, tab, newline, formfeed, return  #cat 25
-            |  \S                 Contains ASCII other than those in _\s_         #cat
+            |  \S                 Contains characters not in _\s_                 #cat
   Posix    ::= [:alpha:]          Contains _a_-_z_, _A_-_Z_                       #cat
             |  [:upper:]          Contains _A_-_Z_                                #cat
             |  [:lower:]          Contains _a_-_z_                                #cat 26
