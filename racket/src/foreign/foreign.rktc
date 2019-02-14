@@ -2196,6 +2196,12 @@ static Scheme_Object *do_memop(const char *who, int mode,
   return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FLVEC_ELS((Scheme_Object *)0x0), NULL);
 }
 
+@cdefine[fxvector->cpointer 1 #:kind immed]{
+  if (!SCHEME_FXVECTORP(argv[0]))
+    scheme_wrong_contract(MYNAME, "fxvector?", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FXVEC_ELS((Scheme_Object *)0x0), NULL);
+}
+
 @cdefine[extflvector->cpointer 1 #:kind immed]{
 @@@IFDEF{MZ_LONG_DOUBLE}{
   if (!SCHEME_EXTFLVECTORP(argv[0]))
