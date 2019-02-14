@@ -198,7 +198,7 @@ MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_A
 /*========================================================================*/
 
 MZ_EXTERN void scheme_signal_error(const char *msg, ...);
-MZ_EXTERN void scheme_raise_exn(int exnid, ...) __attribute__ ((noreturn));
+MZ_EXTERN void scheme_raise_exn(int exnid, ...) NORETURN;
 MZ_EXTERN void scheme_warning(char *msg, ...);
 
 MZ_EXTERN void scheme_raise(Scheme_Object *exn);

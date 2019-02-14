@@ -139,7 +139,7 @@ Scheme_On_Atomic_Timeout_Proc (*scheme_set_on_atomic_timeout)(Scheme_On_Atomic_T
 /*                              error handling                            */
 /*========================================================================*/
 void (*scheme_signal_error)(const char *msg, ...);
-void (*scheme_raise_exn)(int exnid, ...) __attribute__ ((noreturn));
+void (*scheme_raise_exn)(int exnid, ...) NORETURN;
 void (*scheme_warning)(char *msg, ...);
 void (*scheme_raise)(Scheme_Object *exn);
 int (*scheme_log_level_p)(Scheme_Logger *logger, int level);

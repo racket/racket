@@ -252,6 +252,15 @@ extern "C"
 {
 #endif
 
+/* The reason we need two preprocessor variables is that, in gcc/clang the 
+   function attribute comes after the function declaration. However,
+   in MSVC the function attribute comes before the function declaration. */
+#ifdef __GNUC__
+#define NORETURN __attribute__((__noreturn__))
+#else
+#define NORETURN
+#endif
+
 /* Allowed by all configurations, currently: */
 #define MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
 
