@@ -450,11 +450,17 @@ static int do_inotify_add(rktio_t *rktio, const char *filename)
     int new_size = (s->size ? (2 * s->size) : 32);
     rin_wd_t *new_wds;
     int i;
+
     new_wds = (rin_wd_t *)malloc(sizeof(rin_wd_t) * new_size);
-    memcpy(new_wds, s->wds, s->size * sizeof(rin_wd_t));
-    if (s->wds) free(s->wds);
+
+    if (s->wds) {
+      memcpy(new_wds, s->wds, s->size * sizeof(rin_wd_t));
+      free(s->wds);
+    }
+
     s->wds = new_wds;
     s->size = new_size;
+
     for (i = s->count; i < s->size; i++)
     {
       s->wds[i].wd = -1;
