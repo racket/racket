@@ -696,7 +696,7 @@
                (define entry (declenv-lookup decls suffix))
                (cond [(or (den:lit? entry) (den:datum-lit? entry))
                       (pat:and (list (pat:svar name) (parse-pat:id/entry id allow-head? entry)))]
-                     [else (parse-stxclass-use id allow-head? name suffix no-arguments #f)])])]
+                     [else (parse-stxclass-use id allow-head? name suffix no-arguments "." #f)])])]
         [(declenv-apply-conventions decls id)
          => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
         [else (pat:svar id)]))
@@ -733,13 +733,13 @@
     [(den:datum-lit internal sym)
      (pat:datum sym)]
     [(den:magic-class name scname argu role)
-     (parse-stxclass-use scname allow-head? id scname argu role)]
+     (parse-stxclass-use scname allow-head? id scname argu "." role)]
     [(den:class _n _c _a)
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
     [(den:delayed parser scname)
-     (parse-stxclass-use id allow-head? id scname no-arguments #f parser)]))
+     (parse-stxclass-use id allow-head? id scname no-arguments "." #f parser)]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -773,21 +773,21 @@
         [(and (wildcard? name0) (not scname))
          (pat:any)]
         [scname
-         (parse-stxclass-use stx allow-head? name0 scname argu role)]
+         (parse-stxclass-use stx allow-head? name0 scname argu pfx role)]
         [else ;; Just proper name
          (pat:svar name0)]))
 
 ;; ----
 
-(define (parse-stxclass-use stx allow-head? varname scname argu role [parser* #f])
+(define (parse-stxclass-use stx allow-head? varname scname argu pfx role [parser* #f])
   (cond [(and (memq (stxclass-lookup-config) '(yes try)) (get-stxclass scname #t))
          => (lambda (sc)
               (unless parser*
                 (check-stxclass-arity sc stx (length (arguments-pargs argu)) (arguments-kws argu)))
-              (parse-stxclass-use* stx allow-head? varname sc argu "." role parser*))]
+              (parse-stxclass-use* stx allow-head? varname sc argu pfx role parser*))]
         [(memq (stxclass-lookup-config) '(try no))
          (define bind (name->bind varname))
-         (pat:fixup stx bind varname scname argu role parser*)]
+         (pat:fixup stx bind varname scname argu pfx role parser*)]
         [else (wrong-syntax scname "not defined as syntax class (config=~s)"
                             ;; XXX FIXME
                             (stxclass-lookup-config))]))
@@ -1255,8 +1255,8 @@
   (define (fixup p allow-head?)
     (define (I p) (fixup p allow-head?))
     (match p
-      [(pat:fixup stx bind varname scname argu role parser*)
-       (parse-stxclass-use stx allow-head? varname scname argu role parser*)]
+      [(pat:fixup stx bind varname scname argu pfx role parser*)
+       (parse-stxclass-use stx allow-head? varname scname argu pfx role parser*)]
       ;; ----
       ;; [(pat:any)
       ;;  (pat:any)]

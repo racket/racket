@@ -986,3 +986,12 @@
         #'(define (f.x) ths)]))
    (object 1)
    (void)))
+
+;; from William Hatch (2/2019) re honu macros
+(let ()
+  (define-syntax-class thing (pattern x #:with a #'okay))
+  (check-equal?
+   (syntax->datum
+    (syntax-parse #'bad
+      [(~var y thing #:attr-name-separator "_") #'y_a]))
+   'okay))
