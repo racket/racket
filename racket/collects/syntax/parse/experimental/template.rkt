@@ -1,14 +1,18 @@
 #lang racket/base
 (require (for-syntax racket/base)
          (only-in racket/private/template
-                  template-metafunction))
+                  template-metafunction
+                  prop:template-metafunction
+                  template-metafunction?))
 (provide (rename-out [syntax template]
                      [syntax/loc template/loc]
                      [quasisyntax quasitemplate]
                      [quasisyntax/loc quasitemplate/loc]
                      [~? ??]
                      [~@ ?@])
-         define-template-metafunction)
+         define-template-metafunction
+         (for-syntax prop:template-metafunction
+                     template-metafunction?))
 
 ;; ============================================================
 ;; Metafunctions
