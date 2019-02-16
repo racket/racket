@@ -15,7 +15,6 @@
            ~@! signal-absent-pvar
            (for-syntax prop:metafunction
                        metafunction
-                       metafunction-accessor
                        metafunction?)
            (protect
             (for-syntax attribute-mapping

@@ -349,10 +349,9 @@ invalid binding list.
 
 @deftogether[
  ((defthing prop:template-metafunction struct-type-property?)
-  (defthing template-metafunction? (-> any/c boolean?))
-  (defthing template-metafunction-accessor (-> template-metafunction? identifier?)))]{
+  (defthing template-metafunction? (-> any/c boolean?)))]{
 
- A structure type property, and the associated predicate and accessor. The
+ A structure type property, and the associated predicate. The
  property value is either an identifier, or the index of a field containing an
  identifier. The identifier should be bound to the run-time metafunction. The
  run-time metafunction should accept a syntax object representing its use, and
