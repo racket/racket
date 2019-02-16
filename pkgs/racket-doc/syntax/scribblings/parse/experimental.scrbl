@@ -378,6 +378,6 @@ invalid binding list.
            (with-syntax ([(x ...) #'(1 2 3)])
              (template ((mf x) ...)))]
  
- @history[#:added 6.9]}
+ @history[#:added "7.2.0.5"]}
 
 @(close-eval the-eval)
