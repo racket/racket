@@ -129,3 +129,16 @@
   
   (check-equal? (syntax->datum (template (x (mf5 3) z)))
                 '(x 6 z)))
+
+(begin-for-syntax
+  (struct my-template-metafunction6 (proc-id)
+    #:property prop:template-metafunction
+    (lambda (self) (my-template-metafunction6-proc-id self))))
+(test-case "use custom prop:template-metafunction with a function"
+  (define (myproc6 stx)
+    (syntax-case stx ()
+      [(_ n) #`#,(* 2 (syntax-e #'n))]))
+  (define-syntax mf6 (my-template-metafunction6 (quote-syntax myproc6)))
+  
+  (check-equal? (syntax->datum (template (x (mf6 3) z)))
+                '(x 6 z)))

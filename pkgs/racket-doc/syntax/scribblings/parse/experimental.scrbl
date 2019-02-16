@@ -351,11 +351,17 @@ invalid binding list.
  ((defthing prop:template-metafunction struct-type-property?)
   (defthing template-metafunction? (-> any/c boolean?)))]{
 
- A structure type property, and the associated predicate. The
- property value is either an identifier, or the index of a field containing an
- identifier. The identifier should be bound to the run-time metafunction. The
- run-time metafunction should accept a syntax object representing its use, and
- produce a new syntax object as a result.
+ A structure type property, and the associated predicate. The property value is
+ one of:
+
+ @itemlist[
+   @item{an identifier bound to a run-time metafunction}
+   @item{the index of a field containing such an an identifier}
+   @item{a procedure that takes an instance of the structure and produces
+         such an identifier}]
+
+ The identifier's run-time metafunction should accept a syntax object
+ representing its use, and produce a new syntax object as a result.
 
  When an identifier is bound as syntax to a structure instance with this
  property, it is treated as a template metafunction as if the identifier had
