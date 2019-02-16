@@ -1,7 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base)
          (only-in racket/private/template
-                  metafunction))
+                  template-metafunction))
 (provide (rename-out [syntax template]
                      [syntax/loc template/loc]
                      [quasisyntax quasitemplate]
@@ -21,7 +21,8 @@
      (identifier? #'id)
      (with-syntax ([(internal-id) (generate-temporaries #'(id))])
        #'(begin (define internal-id (make-hygienic-metafunction expr))
-                (define-syntax id (metafunction (quote-syntax internal-id)))))]))
+                (define-syntax id
+                  (template-metafunction (quote-syntax internal-id)))))]))
 
 (define current-template-metafunction-introducer
   (make-parameter (lambda (stx) (if (syntax-transforming?) (syntax-local-introduce stx) stx))))

@@ -13,9 +13,9 @@
            datum
            ~? ~@
            ~@! signal-absent-pvar
-           (for-syntax prop:metafunction
-                       metafunction
-                       metafunction?)
+           (for-syntax prop:template-metafunction
+                       template-metafunction
+                       template-metafunction?)
            (protect
             (for-syntax attribute-mapping
                         attribute-mapping?
@@ -30,7 +30,8 @@
 ;; A Template (T) is one of:
 ;;   - pattern-variable
 ;;   - constant (including () and non-pvar identifiers)
-;;   - (metafunction . T)
+;;   - (template-metafunction . T)
+;;     ; or any other structure that implements prop:template-metafunction
 ;;   - (H . T)
 ;;   - (H ... . T), (H ... ... . T), etc
 ;;   - (... T)          -- escapes inner ..., ~?, ~@
@@ -273,7 +274,7 @@
                   (unless stx? (wrong-syntax (stx-car t) "metafunctions are not supported"))
                   (disappeared! (stx-car t))
                   (define guide (parse-t (stx-cdr t) depth esc?))
-                  `(t-metafun ,(metafunction-accessor mf) ,guide
+                  `(t-metafun ,(template-metafunction-accessor mf) ,guide
                               (quote-syntax
                                ,(let ([tstx (and (syntax? t) t)])
                                   (datum->syntax tstx (cons (stx-car t) #f) tstx tstx)))))]
@@ -495,7 +496,7 @@
   ;; lookup-metafun : Identifier -> Metafunction/#f
   (define (lookup-metafun id)
     (define v (syntax-local-value id (lambda () #f)))
-    (and (metafunction? v) v))
+    (and (template-metafunction? v) v))
 
   (define (dotted-prefixes id)
     (let* ([id-string (symbol->string (syntax-e id))]
