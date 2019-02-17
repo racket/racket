@@ -1158,7 +1158,12 @@ rktio_connect_t *rktio_start_connect(rktio_t *rktio, rktio_addrinfo_t *dest, rkt
   conn->src = src;
   conn->addr = dest;
 
-  return try_connect(rktio, conn);
+  if (!try_connect(rktio, conn)) {
+    free(conn);
+    return NULL;
+  }
+  
+  return conn;
 }
 
 static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
