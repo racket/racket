@@ -22,7 +22,13 @@
                  [vals (values vals #f)]
                  [(eq? evt self)
                   ;; Register wakeups:
-                  (proc self poll-ctx)
+                  (define-values (vals evt) (proc self poll-ctx))
+                  (when vals
+                    ;; The rule here is that we cancel any sleep so
+                    ;; that the event will be polled again; we do not
+                    ;; select the event now. That rule accomodates
+                    ;; the old Racket scheduler.
+                    (sandman-poll-ctx-merge-timeout poll-ctx (current-inexact-milliseconds)))
                   (values #f self)]
                  [else
                   (values #f evt)])]))))
