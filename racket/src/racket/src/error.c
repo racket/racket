@@ -4412,6 +4412,8 @@ scheme_raise_exn(int id, ...)
 #else
   call_error(buffer, alen, scheme_false);
 #endif
+
+  exit(0); /* should not get here, but makes NORETURN clearly true */
 }
 
 #ifndef NO_SCHEME_EXNS
