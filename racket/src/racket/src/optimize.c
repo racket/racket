@@ -5165,7 +5165,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       check_known(info, app_o, rator, rand2, "ormap", scheme_list_p_proc, NULL, info->unsafe_mode);
     }
 
-    rator = app->rator; /* in case it was updated */
   }
 
   /* Using a struct mutator? */
