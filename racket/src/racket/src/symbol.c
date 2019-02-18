@@ -673,18 +673,14 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
 	&& digit_start
 	&& !(flags & SCHEME_SNF_FOR_TS)
 	&& (SCHEME_TRUEP(scheme_read_number(cs, clen, 0, 0, 1, 10, 0, NULL, &dz, 1))
-	    || dz)) {
-      /* Need quoting: */
-      if (pipe_quote)
-	has_space = 1; /* Use normal */
-      else {
-	/* Just need a leading backslash: */
-	result = (char *)scheme_malloc_atomic(len + 2);
-	total_length = len + 1;
-	memcpy(result + 1, s, len);
-	result[0] = '\\';
-	result[len + 1] = 0;
-      }
+	    || dz)
+        && !pipe_quote) {
+      /* Just need a leading backslash: */
+      result = (char *)scheme_malloc_atomic(len + 2);
+      total_length = len + 1;
+      memcpy(result + 1, s, len);
+      result[0] = '\\';
+      result[len + 1] = 0;
     } else {
       total_length = len;
       result = s;
