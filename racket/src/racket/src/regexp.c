@@ -4436,10 +4436,9 @@ static unsigned char *add_byte_range(const unsigned char *lo, const unsigned cha
       const int any_len = 5;
 
       r = make_room(r, j, 6 + ((count - same_chars - 1) * any_len), rs);
-      if (!did_alt) {
+      if (!did_alt)
 	r[j++] = '|';
-	did_alt = 1;
-      }
+      
       if (p == q) {
 	r[j++] = p;
       } else {
