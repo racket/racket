@@ -25,12 +25,12 @@
   (#3%vector-length v))
 
 (define-inline (vector-ref v i)
-  (#%vector? v)
-  (#2%vector-ref v i))
+  (#%$vector-ref-check? v i)
+  (#3%vector-ref v i))
 
 (define-inline (vector-set! v i n)
-  (#%vector? v)
-  (#2%vector-set! v i n))
+  (#%$vector-set!-check? v i)
+  (#3%vector-set! v i n))
 
 (define-inline (unbox b)
   (#%box? b)

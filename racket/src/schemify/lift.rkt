@@ -551,7 +551,7 @@
            [(indirected? info)
             (reannotate v (if (indirected-check? info)
                               `(unbox/check-undefined ,v ',v)
-                              `(unbox ,v)))]
+                              `(unsafe-unbox* ,v)))]
            [else v])])))
   
   (define (convert-lifted-calls-in-seq vs lifts frees empties)
