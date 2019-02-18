@@ -1,23 +1,98 @@
-image: ubuntu:18.04
+stages:
+  - prepare
+  - test
 
+# Using debian:stable-slim to perform an llvm build with Z3 support
+# The reason this is necessary is that we need Z3 support in scan-build
+# to be able to crosscheck errors with z3 which decreases the false positives
+# rate by around 5%.
+#
+# Also, this should only be performed once. Once in cache llvm won't be build anymore
+# until we force it.
+prepare-cache:
+  image: debian:stable-slim
+  stage: prepare
+  tags:
+    - linux
+    - x86_64
+  variables:
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  script:
+    - if [ -d $INSTALL_DIR ]; then exit 0; fi
+    - apt-get update && apt-get install -y gcc git cmake wget unzip g++ python libxml2-dev
+    - wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.4/z3-4.8.4.d6df51951f4c-x64-debian-8.11.zip
+    - unzip z3-4.8.4.d6df51951f4c-x64-debian-8.11.zip
+    - mkdir $INSTALL_DIR
+    - mv z3-4.8.4.d6df51951f4c-x64-debian-8.11/bin z3-4.8.4.d6df51951f4c-x64-debian-8.11/include $INSTALL_DIR
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - git clone https://github.com/llvm/llvm-project.git
+    - cd llvm-project
+    - mkdir build
+    - cd build
+    - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ ../llvm/
+    - make -j5
+    - make -j5 install
+  cache:
+    paths:
+      - $INSTALL_DIR
+      
+# Build racket with scan-build
+scan-build:racket:
+  stage: test
+  tags:
+    - linux
+    - x86_64
+  variables:
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  before_script:
+    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+  script:
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
+    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' 
+  artifacts:
+    paths:
+      - scan-report_cc/
+  cache:
+    policy: pull
+    paths:
+      - $INSTALL_DIR
+
+# Build racketcs with scan-build
+scan-build:racketcs:
+  stage: test
+  tags:
+    - linux
+    - x86_64
+  variables:
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  before_script:
+    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
+  script:
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
+    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
+  artifacts:
+    paths:
+      - scan-report-cs_cc/
+  cache:
+    policy: pull
+    paths:
+      - $INSTALL_DIR
+
+##
+## The following jobs build/test racket and racketcs with ubsan enabled
+## 
 .prepare:
+  stage: test
+  image: ubuntu:18.04
   before_script:
     - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev uuid-dev
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - export PATH=$PWD/racket/bin:$PATH
 
-.prepare:llvm:
-  before_script:
-    - apt-get update && apt-get install -y git lsb-release make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev wget gnupg uuid-dev
-    - echo 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
-    - echo 'deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main' >> /etc/apt/sources.list
-    - wget -O /tmp/llvm.key https://apt.llvm.org/llvm-snapshot.gpg.key
-    - apt-key add /tmp/llvm.key
-    - apt-get update
-    - apt-get install -y clang-9 clang-tools-9 clang-9-doc libclang-common-9-dev libclang-9-dev libclang1-9 clang-format-9 python-clang-9 libz3-dev
-    - export PATH=$PWD/racket/bin:$PATH
-    
+# This is just used to provide some environment information for debugging purposes    
 envinfo:
   extends: .prepare
   script:
@@ -26,44 +101,11 @@ envinfo:
     - gcc -v
     - export
 
-scan-build:racket:
-  extends: .prepare:llvm
-  script:
-    - scan-build-9 -o scan-report make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' in-place
-  artifacts:
-    paths:
-      - scan-report/
-
-scan-build:racket:crosscheck:
-  extends: .prepare:llvm
-  script:
-    - scan-build-9 -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' in-place
-  artifacts:
-    paths:
-      - scan-report_cc/
-
-scan-build:racketcs:
-  extends: .prepare:llvm
-  script:
-    - scan-build-9 -o scan-report-cs make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
-  artifacts:
-    paths:
-      - scan-report-cs/
-
-scan-build:racketcs:crosscheck:
-  extends: .prepare:llvm
-  script:
-    - scan-build-9 -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
-  artifacts:
-    paths:
-      - scan-report-cs_cc/
-
 test:ubsan:
   extends: .prepare
-  allow_failure: true
   script:
     - mkdir logs
-    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" in-place 2>&1 | tee logs/build.log
+    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
     - raco test -l tests/racket/test 2>&1 | tee logs/test.log
     - racket -l tests/racket/contract/all 2>&1 | tee logs/contract-test.log
     - raco test -l tests/json/json 2>&1 | tee logs/json-test.log
@@ -87,12 +129,14 @@ test:ubsan:
       - logs/
       - runtime-errors.log
     
+# Currently there are still some failures in racketcs so we allow failure 
+# at the moment but should be removed later on.
 test:ubsan:cs:
   extends: .prepare
   allow_failure: true
   script:
     - mkdir cs-logs
-    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" cs 2>&1 | tee cs-logs/build.log
+    - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' cs 2>&1 | tee cs-logs/build.log
     - racocs test -l tests/racket/test 2>&1 | tee cs-logs/test.log
     - racketcs -l tests/racket/contract/all 2>&1 | tee cs-logs/contract-test.log
     - racocs test -l tests/json/json 2>&1 | tee cs-logs/json-test.log
