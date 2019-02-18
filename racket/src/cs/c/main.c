@@ -353,12 +353,12 @@ static int bytes_main(int argc, char **argv,
   memcpy(&pos2, boot_file_data + boot_file_offset + 4, sizeof(pos2));
   memcpy(&pos3, boot_file_data + boot_file_offset + 8, sizeof(pos2));
 
-  boot_offset = 0;
 #ifdef ELF_FIND_BOOT_SECTION
   boot_offset = find_boot_section(boot_exe);
-#endif
-#ifdef WIN32
+#elif WIN32
   boot_offset = find_resource_offset(dll_path, 259, boot_rsrc_offset);
+#else
+  boot_offset = 0;
 #endif
 
   pos1 += boot_offset;
