@@ -63,6 +63,9 @@ The optional @racket[get-arg] procedure determines which of
 @racket[dealloc]'s arguments correspond to the released object;
 @racket[get-arg] receives a list of arguments passed to
 @racket[dealloc], so the default @racket[car] selects the first one.
+Note that @racket[get-arg] can only choose one of the by-position
+arguments to @racket[dealloc], though the @tech{deallocator} will
+require and accept the same keyword arguments as @racket[dealloc], if any.
 
 The @racket[releaser] procedure is a synonym for
 @racket[deallocator].}
@@ -94,6 +97,9 @@ The optional @racket[get-arg] procedure determines which of the
 arguments) correspond to the retained object @racket[_v];
 @racket[get-arg] receives a list of arguments passed to
 @racket[retain], so the default @racket[car] selects the first one.
+Note that @racket[get-arg] can only choose one of the by-position
+arguments to @racket[retain], though the @tech{retainer} will
+require and accept the same keyword arguments as @racket[retain], if any.
 
 @history[#:changed "7.0.0.4" @elem{Added atomic mode for @racket[release]
                                    and changed non-main place exits to call

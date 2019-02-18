@@ -55,61 +55,111 @@
        ;; replaced existing allocations/retains.
        (remove-node! expected-ds)])))
 
+(define (check-arity-includes-1 who proc [expected "(-> any/c any)"])
+  (unless (procedure-arity-includes? proc 1)
+    (raise-argument-error who expected proc)))
+
 (define ((allocator d) proc)
+  (check-arity-includes-1 'allocator d)
   (rename
-    (lambda args
-      (call-as-atomic
-        (lambda ()
-          (let ([v (apply proc args)])
-            (when v
-              (define ds (node (make-late-weak-box v) d #f #f #f))
-              (add-node! ds)
-              (hash-set! allocated v ds)
-              (register-finalizer v deallocate))
-            v))))
-    proc))
+   (let-values ([(_ allowed-kws) (procedure-keywords proc)])
+     (define (register v)
+       (when v
+         (define ds (node (make-late-weak-box v) d #f #f #f))
+         (add-node! ds)
+         (hash-set! allocated v ds)
+         (register-finalizer v deallocate))
+       v)
+     (cond
+       [(null? allowed-kws)
+        (lambda args
+          (call-as-atomic
+           (lambda ()
+             (register (apply proc args)))))]
+       [else
+        (make-keyword-procedure
+         (λ (kws kw-args . rest)
+           (call-as-atomic
+            (lambda ()
+              (register (keyword-apply proc kws kw-args rest))))))]))
+   proc))
 
 (define ((deallocator [get-arg car]) proc)
+  (check-arity-includes-1 'deallocator get-arg "(-> list/c any/c)")
   (rename
-    (lambda args
-      (call-as-atomic
-        (lambda ()
-         (apply proc args)
-         (let ([v (get-arg args)])
-           (let ([ds (hash-ref allocated v #f)])
-             (when ds
-               (remove-node! ds)
-               (define rest-ds (node-rest ds))
-               (if rest-ds
-                   (hash-set! allocated v rest-ds)
-                   (hash-remove! allocated v))))))))
-    proc))
+   (let-values ([(_ allowed-kws) (procedure-keywords proc)])
+     (define (handle v)
+       (let ([ds (hash-ref allocated v #f)])
+         (when ds
+           (remove-node! ds)
+           (define rest-ds (node-rest ds))
+           (if rest-ds
+               (hash-set! allocated v rest-ds)
+               (hash-remove! allocated v)))))
+     (cond
+       [(null? allowed-kws)
+        (lambda args
+          (call-as-atomic
+           (lambda ()
+             (begin0 (apply proc args)
+                     (handle (get-arg args))))))]
+       [else
+        (make-keyword-procedure
+         (λ (kws kw-args . rest)
+           (call-as-atomic
+            (lambda ()
+              (begin0
+                (keyword-apply proc kws kw-args rest)
+                (handle (get-arg rest)))))))]))
+   proc))
 
 (define ((retainer d [get-arg car]) proc)
+  (check-arity-includes-1 'retainer d)
+  (check-arity-includes-1 'retainer get-arg "(-> list/c any/c)")
   (rename
-   (lambda args
-     (call-as-atomic
-       (lambda ()
-         (begin0
-           (apply proc args)
-           (let ([v (get-arg args)])
-             (define next-ds (hash-ref allocated v #f))
-             (define ds (node (make-late-weak-box v) d #f #f next-ds))
-             (add-node! ds)
-             (hash-set! allocated v ds)
-             (unless next-ds
-               (register-finalizer v deallocate)))))))
+   (let-values ([(_ allowed-kws) (procedure-keywords proc)])
+     (define (handle v)
+       (define next-ds (hash-ref allocated v #f))
+       (define ds (node (make-late-weak-box v) d #f #f next-ds))
+       (add-node! ds)
+       (hash-set! allocated v ds)
+       (unless next-ds
+         (register-finalizer v deallocate)))
+     (cond
+       [(null? allowed-kws)
+        (lambda args
+          (call-as-atomic
+           (lambda ()
+             (begin0 (apply proc args)
+                     (handle (get-arg args))))))]
+       [else
+        (make-keyword-procedure
+         (λ (kws kw-args . rest)
+           (call-as-atomic
+            (lambda ()
+              (begin0
+                (keyword-apply proc kws kw-args rest)
+                (handle (get-arg rest)))))))]))
    proc))
+
 
 (define (rename new orig)
   (and orig
-       (let ([n (object-name orig)]
-             [new (procedure-reduce-arity
-                   new
-                   (procedure-arity orig))])
-         (if n
-             (procedure-rename new n)
-             new))))
+       (let-values ([(required-kws allowed-kws) (procedure-keywords orig)]
+                    [(arity-mask) (procedure-arity-mask orig)]
+                    [(name) (object-name orig)])
+         (cond
+           [(null? allowed-kws)
+            (procedure-reduce-arity-mask
+             new
+             arity-mask
+             name)]
+           [else
+            (procedure-reduce-keyword-arity-mask
+             (if name (procedure-rename new name) new)
+             arity-mask
+             required-kws
+             allowed-kws)]))))
 
 ;; ----------------------------------------
 
