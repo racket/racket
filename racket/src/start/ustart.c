@@ -430,7 +430,6 @@ int main(int argc, char **argv)
       buf[len] = 0;
       buf = absolutize(buf, me);
       me = buf;
-      buf = (char *)malloc(bufsize + 1);
     }
   }
 
