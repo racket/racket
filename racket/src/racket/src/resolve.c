@@ -1638,7 +1638,6 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
   }
 
   /* Check possibility of unboxing arguments: */
-  closure_size = lam->closure_size;
   if (cl->arg_types) {
     int at_least_one = 0;
     for (i = lam->num_params; i--; ) {
