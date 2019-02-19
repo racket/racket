@@ -372,6 +372,7 @@ int main(int argc, char **argv)
     long buflen = 4096;
     buf = (char *)malloc(buflen);
     me = path_append(getcwd(buf, buflen), me);
+    free(buf);
   } else {
     /* We have to find the executable by searching PATH: */
     char *path = copy_string(getenv("PATH")), *p, *m;
