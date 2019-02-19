@@ -1711,7 +1711,7 @@ enumeration maps between a symbol in the given @racket[symbols] list and
 corresponding integers, counting from @racket[0].
 
 To call a foreign function that takes an enum as a parameter simply provide
-the symbol of the desiered enum as an argument.
+the symbol of the desired enum as an argument.
 
 @racketblock[
  (code:comment "example sdl call")
