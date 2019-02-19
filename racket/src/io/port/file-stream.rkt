@@ -12,7 +12,8 @@
   (make-struct-type-property 'file-stream))
 
 (define (file-stream-port? p)
-  (define core-port (or (->core-input-port p #:default #f)
-                        (->core-output-port p #:default #f))
+  (define core-port 
+    (or (->core-input-port p #:default #f)
+        (->core-output-port p #:default #f)))
   (and (file-stream-ref core-port #f) #t))
 
