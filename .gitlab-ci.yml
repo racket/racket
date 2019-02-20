@@ -59,7 +59,8 @@ scan-build:racketcs:crosscheck:
       - scan-report-cs_cc/
 
 test:ubsan:
-  extends: .prepare    
+  extends: .prepare
+  allow_failure: true
   script:
     - mkdir logs
     - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" in-place 2>&1 | tee logs/build.log
@@ -87,7 +88,8 @@ test:ubsan:
       - runtime-errors.log
     
 test:ubsan:cs:
-  extends: .prepare    
+  extends: .prepare
+  allow_failure: true
   script:
     - mkdir cs-logs
     - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="--enable-ubsan CFLAGS="-fno-var-tracking-assignments"" cs 2>&1 | tee cs-logs/build.log
