@@ -3073,9 +3073,6 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
       for (i = 1, j = 2; i < l; i++, j += 2) {
 	void *v = ps[j];
 	uintptr_t diff = (uintptr_t)ps[j + 1];
-	struct GC_Set *home;
-
-	home = GC_set(v);
 	print_tagged_value("\n  ->", v, diff, max_w, "");
       }
       scheme_console_printf("\n");
