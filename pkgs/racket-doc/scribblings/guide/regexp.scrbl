@@ -51,7 +51,7 @@ character that would need escaping inside a Racket string is
 @litchar{"}.}
 
 If we needed to match the character @litchar{.} itself, we can escape
-it by precede it with a @litchar{\}.  The character sequence
+it by preceding it with a @litchar{\}.  The character sequence
 @litchar{\.} is thus a @tech{metasequence}, since it doesn't match
 itself but rather just @litchar{.}.  So, to match @litchar{a},
 @litchar{.}, and @litchar{c} in succession, we use the regexp pattern
