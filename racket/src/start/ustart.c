@@ -423,7 +423,6 @@ int main(int argc, char **argv)
       if (errno == ENAMETOOLONG) {
 	/* Increase buffer size and try again: */
 	bufsize *= 2;
-	buf = (char *)malloc(bufsize + 1);
       } else
 	break;
     } else {
