@@ -46,6 +46,17 @@ value, @racket[poll] can call @racket[unsafe-poll-ctx-fd-wakeup],
 register wakeup triggers.}
 
 
+@defproc[(unsafe-poll-fd [fd exact-integer?]
+                         [mode '(read write)]
+                         [socket? any/c #t])
+         boolean?]{
+
+Checks whether the given file descriptor or socket is currently ready
+for reading or writing, as selected by @racket[mode].
+
+@history[#:added "7.2.0.6"]}
+
+
 @defproc[(unsafe-poll-ctx-fd-wakeup [wakeups any/c]
                                     [fd fixnum?]
                                     [mode '(read write error)])

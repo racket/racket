@@ -390,6 +390,7 @@ static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **ar
 static Scheme_Object *unsafe_end_breakable_atomic(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv);
 
+static Scheme_Object *unsafe_poll_fd(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_fd_wakeup(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_eventmask_wakeup(int argc, Scheme_Object **argv);
 static Scheme_Object *unsafe_poll_ctx_time_wakeup(int argc, Scheme_Object **argv);
@@ -658,6 +659,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-add-global-finalizer", unsafe_add_global_finalizer, 2, 2, env);
 
   scheme_addto_prim_instance("unsafe-poller", scheme_unsafe_poller_proc, env);
+  ADD_PRIM_W_ARITY("unsafe-poll-fd", unsafe_poll_fd, 2, 3, env);
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-fd-wakeup", unsafe_poll_ctx_fd_wakeup, 3, 3, env);
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-eventmask-wakeup", unsafe_poll_ctx_eventmask_wakeup, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-poll-ctx-milliseconds-wakeup", unsafe_poll_ctx_time_wakeup, 2, 2, env);
@@ -5421,6 +5423,39 @@ sch_sleep(int argc, Scheme_Object *args[])
   scheme_current_thread->ran_some = 1;
 
   return scheme_void;
+}
+
+Scheme_Object *unsafe_poll_fd(int argc, Scheme_Object **argv)
+{
+  intptr_t sfd = 0;
+  rktio_fd_t *rfd = NULL;
+  int mode = 0;
+  int ready = 0;
+  int is_socket = 1;
+
+  if (!scheme_get_int_val(argv[0], &sfd))
+    scheme_wrong_contract("unsafe-poll-fd", "handle-integer?", 0, argc, argv);
+
+  if (SAME_OBJ(argv[1], read_symbol))
+    mode = RKTIO_POLL_READ;
+  else if (SAME_OBJ(argv[1], write_symbol))
+    mode = RKTIO_POLL_WRITE;
+  else
+    scheme_wrong_contract("unsafe-poll-fd", "(or/c 'read 'write)", 1, argc, argv);
+
+  if (argc > 2) {
+    is_socket = SCHEME_TRUEP(argv[2]);
+  }
+
+  rfd = rktio_system_fd(scheme_rktio, sfd, (is_socket ? RKTIO_OPEN_SOCKET : 0));
+
+  if (mode == RKTIO_POLL_READ)
+    ready = rktio_poll_read_ready(scheme_rktio, rfd);
+  else if (mode == RKTIO_POLL_WRITE)
+    ready = rktio_poll_write_ready(scheme_rktio, rfd);
+
+  rktio_forget(scheme_rktio, rfd);
+  return (ready == RKTIO_POLL_READY) ? scheme_true : scheme_false;
 }
 
 Scheme_Object *unsafe_poll_ctx_fd_wakeup(int argc, Scheme_Object **argv)

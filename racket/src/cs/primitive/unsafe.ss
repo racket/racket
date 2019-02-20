@@ -131,6 +131,7 @@
   [unsafe-poll-ctx-eventmask-wakeup (known-procedure 4)]
   [unsafe-poll-ctx-fd-wakeup (known-procedure 8)]
   [unsafe-poll-ctx-milliseconds-wakeup (known-procedure 4)]
+  [unsafe-poll-fd (known-procedure 12)]
   [unsafe-poller (known-constant)]
   [unsafe-port->file-descriptor (known-procedure 2)]
   [unsafe-port->socket (known-procedure 2)]
