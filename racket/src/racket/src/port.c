@@ -5990,7 +5990,7 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
   if (!ok) {
     if (can_error)
       scheme_raise_exn(MZEXN_FAIL, 
-                       "Subprocess-kill: operation failed\n"
+                       "subprocess-kill: operation failed\n"
                        "  system error: %R");
   }
 
