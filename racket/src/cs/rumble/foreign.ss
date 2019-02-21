@@ -137,7 +137,7 @@
                     (foreign-procedure "(cs)fxmul"
                                        (u8* uptr)
                                        uptr))
-                  (let* ([s (make-bytevector 1)]
+                  (let* ([s (make-bytevector 1 0)]
                          [offset
                           ;; Disable interrupts to avoid a GC:
                           (with-interrupts-disabled
@@ -1336,7 +1336,7 @@
    [(eq? mode 'raw)
     (make-cpointer (foreign-alloc size) #f)]
    [(eq? mode 'atomic)
-    (make-cpointer (make-bytevector size) #f)]
+    (make-cpointer (make-bytevector size 0) #f)]
    [(eq? mode 'nonatomic)
     (make-cpointer (#%make-vector (quotient size 8) 0) #f)]
    [(eq? mode 'atomic-interior)
@@ -1344,7 +1344,7 @@
     ;; a finalizer is associated with the cpointer (as opposed to
     ;; the address that is wrapped by the cpointer). Also, interior
     ;; pointers are not allowed as GCable pointers.
-    (let* ([bstr (make-bytevector size)]
+    (let* ([bstr (make-bytevector size 0)]
            [p (make-cpointer bstr #f)])
       (lock-object bstr)
       (with-global-lock (the-foreign-guardian p (lambda () (unlock-object bstr))))
