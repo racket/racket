@@ -164,7 +164,11 @@
     (define-values [l c p] (port-next-location i))
     (raise-read-error (format "~a: ~a" who (apply format fmt args))
                       (object-name i) l c p #f))
-  (define (skip-whitespace) (regexp-match? #px#"^\\s*" i))
+  (define (skip-whitespace)
+    (define ch (peek-char i))
+    (when (and (char? ch) (char-whitespace? ch))
+      (read-char i)
+      (skip-whitespace)))
   ;;
   ;; Reading a string *could* have been nearly trivial using the racket
   ;; reader, except that it won't handle a "\/"...
@@ -212,42 +216,55 @@
            (loop))]
         [else (err "bad string escape: \"~a\"" esc)])))
   ;;
-  (define (read-list what end-rx read-one)
+  (define (read-list what end read-one)
     (skip-whitespace)
-    (if (regexp-try-match end-rx i)
-        '()
-        (let loop ([l (list (read-one))])
-          (skip-whitespace)
-          (cond [(regexp-try-match end-rx i) (reverse l)]
-                [(regexp-try-match #rx#"^," i) (loop (cons (read-one) l))]
-                [else (err "error while parsing a json ~a" what)]))))
+    (define ch (peek-char i))
+    (cond
+      [(eqv? end ch) (read-char i)
+                     '()]
+      [else
+       (let loop ([l (list (read-one))])
+         (skip-whitespace)
+         (define ch (peek-char i))
+         (cond
+           [(eqv? ch end) (read-char i)
+                            (reverse l)]
+           [(eqv? ch #\,) (read-char i)
+                          (loop (cons (read-one) l))]
+           [else (err "error while parsing a json ~a" what)]))]))
   ;;
   (define (read-hash)
     (define (read-pair)
       (define k (read-json))
       (unless (string? k) (err "non-string value used for json object key"))
       (skip-whitespace)
-      (unless (regexp-try-match #rx#"^:" i)
+      (unless (char=? #\: (read-char i))
         (err "error while parsing a json object pair"))
       (list (string->symbol k) (read-json)))
-    (apply hasheq (apply append (read-list 'object #rx#"^}" read-pair))))
+    (apply hasheq (apply append (read-list 'object #\} read-pair))))
   ;;
   (define (read-json [top? #f])
     (skip-whitespace)
+    (define ch (peek-char i))
     (cond
-      [(and top? (eof-object? (peek-char i))) eof]
-      [(regexp-try-match #px#"^true\\b"  i) #t]
-      [(regexp-try-match #px#"^false\\b" i) #f]
-      [(regexp-try-match #px#"^null\\b"  i) jsnull]
-      [(regexp-try-match
-        #rx#"^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?" i)
+      [(eof-object? ch)
+       (if top?
+           eof
+           (err "unexpected end-of-file"))]
+      [(and (char=? ch #\t) (regexp-try-match #px#"^true\\b" i)) #t]
+      [(and (char=? ch #\f) (regexp-try-match #px#"^false\\b" i)) #f]
+      [(and (char=? ch #\n) (regexp-try-match #px#"^null\\b" i)) jsnull]
+      [(and (or (and (char-numeric? ch) ((char->integer ch) . < . 128))
+                (char=? ch #\-))
+            (regexp-try-match
+             #rx#"^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?" i))
        => (λ (bs) (string->number (bytes->string/utf-8 (car bs))))]
-      [(regexp-try-match #rx#"^[\"[{]" i)
-       => (λ (m)
-            (let ([m (car m)])
-              (cond [(equal? m #"\"") (read-string)]
-                    [(equal? m #"[")  (read-list 'array #rx#"^\\]" read-json)]
-                    [(equal? m #"{")  (read-hash)])))]
+      [(char=? ch #\") (read-char i)
+                       (read-string)]
+      [(char=? ch #\[) (read-char i)
+                       (read-list 'array #\] read-json)]
+      [(char=? ch #\{) (read-char i)
+                       (read-hash)]
       [else (err (format "bad input~n ~e" (peek-bytes (sub1 (error-print-width)) 0 i)))]))
   ;;
   (read-json #t))
