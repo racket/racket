@@ -29,7 +29,7 @@ envinfo:
 scan-build:racket:
   extends: .prepare:llvm
   script:
-    - scan-build-9 -o scan-report make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' in-place
+    - scan-build-9 -o scan-report make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' in-place
   artifacts:
     paths:
       - scan-report/
@@ -37,7 +37,7 @@ scan-build:racket:
 scan-build:racket:crosscheck:
   extends: .prepare:llvm
   script:
-    - scan-build-9 -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' in-place
+    - scan-build-9 -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' in-place
   artifacts:
     paths:
       - scan-report_cc/
@@ -45,7 +45,7 @@ scan-build:racket:crosscheck:
 scan-build:racketcs:
   extends: .prepare:llvm
   script:
-    - scan-build-9 -o scan-report-cs make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' cs
+    - scan-build-9 -o scan-report-cs make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
   artifacts:
     paths:
       - scan-report-cs/
@@ -53,7 +53,7 @@ scan-build:racketcs:
 scan-build:racketcs:crosscheck:
   extends: .prepare:llvm
   script:
-    - scan-build-9 -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' cs
+    - scan-build-9 -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=2 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
   artifacts:
     paths:
       - scan-report-cs_cc/
