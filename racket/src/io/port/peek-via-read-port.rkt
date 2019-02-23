@@ -72,7 +72,10 @@
      (cond
        [(end-pos . fx< . (bytes-length bstr))
         ;; add to end of buffer
-        (pull-some-bytes amt end-pos pos)]
+        (define pull-amt (if (eq? 'block buffer-mode)
+                             (fx- (bytes-length bstr) end-pos)
+                             amt))
+        (pull-some-bytes pull-amt end-pos pos)]
        [(fx= pos 0)
         ;; extend buffer
         (define new-bstr (make-bytes (fx* 2 (bytes-length bstr))))
@@ -170,6 +173,8 @@
              (define amt (min (fx- peeked-amt skip) (fx- end start)))
              (define s-pos (fx+ s skip))
              (bytes-copy! dest-bstr start bstr s-pos (fx+ s-pos amt))
+             (unless progress-sema
+               (fast-mode! 0))
              amt]
             [peeked-eof?
              eof]

@@ -121,9 +121,8 @@
       v))
 
 (define/who (peek-byte [orig-in (current-input-port)] [skip-k 0])
-  (check who input-port? orig-in)
-  (check who exact-nonnegative-integer? skip-k)
-  (let ([in (->core-input-port orig-in)])
+  (let ([in (->core-input-port orig-in who)])
+    (check who exact-nonnegative-integer? skip-k)
     (peek-a-byte who in skip-k)))
 
 (define/who (peek-bytes amt skip-k [in (current-input-port)])
