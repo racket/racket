@@ -383,6 +383,6 @@ invalid binding list.
            (with-syntax ([(x ...) #'(1 2 3)])
              (template ((mf x) ...)))]
  
- @history[#:added "7.2.0.5"]}
+ @history[#:added "8.2"]}
 
 @(close-eval the-eval)
