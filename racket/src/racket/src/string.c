@@ -677,7 +677,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   scheme_addto_prim_instance("bytes-utf-8-ref",
 			     scheme_make_immed_prim(byte_string_utf8_ref,
 						    "bytes-utf-8-ref",
-						    2, 4),
+						    2, 5),
 			     env);
 
   scheme_addto_prim_instance("bytes->string/utf-8",

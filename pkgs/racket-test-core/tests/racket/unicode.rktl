@@ -641,6 +641,12 @@
 			  (begin
 			    (test (integer->char (vector-ref code-points 0))
 				  bytes-utf-8-ref s 0)
+			    (test (integer->char (vector-ref code-points 0))
+				  bytes-utf-8-ref s 0 #f)
+			    (test (integer->char (vector-ref code-points 0))
+				  bytes-utf-8-ref s 0 #f 0)
+			    (test (integer->char (vector-ref code-points 0))
+				  bytes-utf-8-ref s 0 #f 0 (bytes-length s))
 			    (test (integer->char (vector-ref code-points
 							     (sub1 (vector-length code-points))))
 				  bytes-utf-8-ref s (sub1 (vector-length code-points)))
