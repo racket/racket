@@ -616,7 +616,7 @@
 		    (string-append "\\" (cadar l)) 
 		    (cadar l))
     (loop (cdr l))]
-   [else 
+   [else
     (test-write-sym (cadar l) (cadar l) (cadar l))
     (loop (cdr l))]))
 
@@ -1441,6 +1441,5 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(report-errs)
-
+;; readtable has `report-errs`:
 (load-relative "readtable.rktl")

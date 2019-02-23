@@ -2,23 +2,21 @@
 (require racket/private/check
          racket/fixnum
          racket/extflonum
-         ;; Call the host `string->number` function only
-         ;; on valid fixnum, bignum, {single-,double-,ext}flonum
-         ;; representations that contain digits, possibly a
-         ;; leading sign, possibly a `.`, and possibly an
-         ;; exponent marker
-         (prefix-in host: "../host/string-to-number.rkt")
-         "parameter.rkt")
+         "parse-case.rkt"
+         "parameter.rkt"
+         ;; Used only to coerce strings to extflonums
+         ;; when extflonums are not fully suported:
+         (prefix-in host: "../host/string-to-number.rkt"))
 
 (provide string->number
          unchecked-string->number)
 
 ;; The `string->number` parser is responsible for handling Racket's
 ;; elaborate number syntax (mostly inherited from Scheme). It relies
-;; on a host-system `string->number` that can handle well-formed
-;; fixnum, bignum, and {double-,single-,extfl}flonum strings for a
-;; given radix in the range [2,16]. Otherwise, the parser here
-;; performs all checking that reader needs.
+;; on a host-system `string->number` only for generating
+;; psuedo-extflonums when flonums aren't really supported. Otherwise,
+;; the parser here performs all checking and arithmetic that the
+;; reader needs.
 
 (define/who (string->number s
                             [radix 10]
@@ -47,14 +45,342 @@
                      decimal-mode
                      convert-mode))
 
+;; ----------------------------------------
+
+(struct parse-state (exactness        ; see below
+                     convert-mode     ; 'number-or-false, 'read, or 'must-read
+                     fst              ; rect-prefix, polar-prefix, '+/- if started with sign, or #f
+                     other-exactness) ; exactness to use for the imag part or saved real part
+  #:authentic)
+
+;; `sgn/z` records a sign in case `n` is zero
+(struct rect-prefix (sgn/z n) #:authentic)
+(struct polar-prefix (sgn/z n) #:authentic)
+
+;; Exactness state is one of
+;;   - 'exact      ; found "#e"
+;;   - 'inexact    ; found "#i"
+;;   - 'decimal-as-exact
+;;   - 'decimal-as-inexact
+;;   - 'approx     ; => was 'decimal-as-inexact and found "." or "#"
+;;   - 'single     ; => was 'decimal-as-inexact and found "f"/"s"
+;;   - 'double     ; => was 'decimal-as-inexact and found "e"/"d"/"x"
+;;   - 'extflonum  ; => was 'decimal-as-inexact and found "t"
+;;   - 'extflonum->inexact  ; => was 'inexact and found "t"
+;;   - 'extflonum->exact    ; => was 'exact and found "t"
+
+(define (init-state exactness convert-mode fst)
+  (parse-state exactness convert-mode fst exactness))
+
+(define (state-has-first-half? state)
+  (define fst (parse-state-fst state))
+  (and fst (not (eq? fst '+/-))))
+
+(define (state-set-first-half state fst)
+  (struct-copy parse-state state
+               [fst fst]
+               [exactness (parse-state-other-exactness state)]
+               [other-exactness (parse-state-exactness state)]))
+
+(define (state-first-half state)
+  (init-state (parse-state-other-exactness state)
+              (parse-state-convert-mode state)
+              #f))
+
+(define (state-second-half state)
+  (init-state (parse-state-exactness state)
+              (parse-state-convert-mode state)
+              #f))
+
+;; ----------------------------------------
+
 ;; When parsing fails, either return an error string or #f. An error
 ;; string is reported only in 'read mode and when if we're somehow
-;; onligated to parse as a number, such as after `#i`.
-(define-syntax-rule (fail mode msg arg ...)
+;; onligated to parse as a number, such as after `#i`. As a
+;; convenience, `state` can be just a convert-mode symbol.
+(define-syntax-rule (fail state msg arg ...)
   (cond
-    [(eq? mode 'must-read)
+    [(eq? (state->convert-mode state) 'must-read)
      (format msg arg ...)]
     [else #f]))
+
+(define (state->convert-mode state)
+  (if (parse-state? state) (parse-state-convert-mode state) state))
+
+(define (state->dbz-convert-mode state)
+  (define convert-mode (parse-state-convert-mode state))
+  (if (eq? convert-mode 'read)
+      'must-read
+      convert-mode))
+
+(define (bad-digit c s state)
+  (cond
+    [(char=? c #\nul)
+     (fail state "nul character in `~.a`" s)]
+    [else
+     (fail state "bad digit `~a`" c)]))
+
+(define (bad-mixed-decimal-fraction s state)
+  (fail state "decimal points and fractions cannot be mixed in `~.a`" s))
+
+(define (bad-misplaced what s state)
+  (fail state "misplaced `~a` in `~.a`" what s))
+
+(define (bad-no-digits after s state)
+  (fail state "missing digits after `~a` in `~.a`" after s))
+
+(define (bad-extflonum-for-complex i s state)
+  (fail state "cannot combine extflonum `~a` into a complex number" i))
+
+;; For chaining a potentially failing parse/conversion with more:
+(define-syntax-rule (maybe e k)
+  (let ([v e])
+    (if (or (not v) (string? v))
+        v
+        (k v))))
+
+;; ----------------------------------------
+
+;; Lazy exponentiation and devision lets us avoid
+;; extremely large bignums when we're trying to
+;; compute an inexact number that will just be
+;; infinity
+(struct lazy-expt (n radix exp)
+  #:authentic)
+(struct lazy-rational (n d)
+  #:authentic)
+
+(define (lazy-number n radix exp)
+  (cond
+    [(eq? n 'dbz) n]
+    [(eq? n 'dbz!) n]
+    [else
+     (if (and (exp . < . 30)
+              (exp . > . -30))
+         (* n (expt radix exp))
+         (lazy-expt n radix exp))]))
+
+(define (lazy-divide n d d-exactness)
+  (cond
+    [(eqv? d 0) (if (eq? d-exactness 'exact)
+                    'dbz!
+                    'dbz)]
+    [(or (lazy-expt? n)
+         (lazy-expt? d))
+     (lazy-rational n d)]
+    [else (/ n d)]))
+
+(define (simplify-lazy-divide n0)
+  (cond
+    [(lazy-rational? n0)
+     (define n (lazy-rational-n n0))
+     (define d (lazy-rational-d n0))
+     (define n-n (if (lazy-expt? n) (lazy-expt-n n) n))
+     (define n-exp (if (lazy-expt? n) (lazy-expt-exp n) 0))
+     (define d-n (if (lazy-expt? d) (lazy-expt-n d) d))
+     (define d-exp (if (lazy-expt? d) (lazy-expt-exp d) 0))
+     (define radix (if (lazy-expt? n) (lazy-expt-radix n) (lazy-expt-radix d)))
+     (lazy-number (/ n-n d-n) radix (- n-exp d-exp))]
+    [else n0]))
+
+(define (force-lazy-exact n0 state s)
+  (define n (simplify-lazy-divide n0))
+  (cond
+    [(or (eq? n 'dbz) (eq? n 'dbz!))
+     (fail (state->dbz-convert-mode state) "division by zero in `~.a`" s)]
+    [(lazy-expt? n)
+     (* (lazy-expt-n n) (expt (lazy-expt-radix n) (lazy-expt-exp n)))]
+    [else n]))
+
+(define (force-lazy-inexact sgn/z n0 state s [precision 2048])
+  (define n1 (simplify-lazy-divide n0))
+  (cond
+    [(eq? n0 'dbz) (if (fx= sgn/z -1) -inf.0 +inf.0)]
+    [(eq? n0 'dbz!)
+     (fail (state->dbz-convert-mode state) "division by zero in `~.a`" s)]
+    [(lazy-expt? n1)
+     (define n (lazy-expt-n n1))
+     (define exp (lazy-expt-exp n1))
+     (define radix (lazy-expt-radix n1))
+     (define approx-expt (+ (/ (if (integer? n)
+                                   (integer-length n)
+                                   (- (integer-length (numerator n))
+                                      (integer-length (denominator n))))
+                               (log radix 2))
+                            exp))
+     (cond
+       [(eqv? n 0) (if (fx= sgn/z -1) (- 0.0) 0.0)]
+       [(approx-expt . > . precision) +inf.0]
+       [(approx-expt . < . (- precision)) (if (fx= sgn/z -1) (- 0.0) 0.0)]
+       [else
+        (* n (expt radix exp))])]
+    [(eqv? n1 0) (if (fx= sgn/z -1) (- 0.0) 0.0)]
+    [else n1]))
+
+(define (fast-inexact state sgn n radix exp sgn2 exp2)
+  (case (parse-state-exactness state)
+    [(double approx)
+     (cond
+       [(state-has-first-half? state) #f]
+       [(eqv? n 0) (if (fx= sgn 1) 0.0 (- 0.0))]
+       [(and (fixnum? n)
+             ((integer-length n) . < . 50))
+        ;; No loss of precision in mantissa from early flonum conversion
+        (let ([exp (+ exp (* sgn2 exp2))]
+              [m (fx->fl (if (fx= sgn -1)
+                             (fx- 0 n)
+                             n))]
+              [radix (if (fx= radix 10)
+                         10.0
+                         (fx->fl radix))])
+          (cond
+            [(eqv? exp 0) m]
+            [(exp . < . 0) (/ m (expt radix (- exp)))]
+            [else (* m (expt radix exp))]))]
+       [else #f])]
+    [else #f]))
+
+;; The `sgn/z` argument lets us produce -0.0 instead of 0.0 as needed
+;; when converting an exact zero to inexact. That is, the sign is `-1`
+;; when the input has a literal "-", but it's only used when `n` is 0.
+(define (finish sgn/z n s state)
+  (define fst (parse-state-fst state))
+  (cond
+    [(or (not fst) (eq? fst '+/-))
+     (case (parse-state-exactness state)
+       [(single)
+        (maybe (force-lazy-inexact sgn/z n state s)
+               (lambda (r)
+                 (real->single-flonum r)))]
+       [(exact)
+        (case n
+          [(+inf.0 -inf.0 +nan.0)
+           (fail state "no exact representation for ~a" n)]
+          [else
+           (maybe (force-lazy-exact n state s)
+                  (lambda (r) (inexact->exact r)))])]
+       [(extended)
+        (cond
+          [(eq? (parse-state-convert-mode state) 'number-or-false)
+           #f]
+          [(extflonum-available?)
+           (maybe (force-lazy-inexact sgn/z n state s 32768)
+                  (lambda (r)
+                    (real->extfl r)))]
+          [else
+           (host:string->number s 10 'read)])]
+       [(double inexact approx)
+        (maybe (force-lazy-inexact sgn/z n state s)
+               (lambda (r0)
+                 (exact->inexact r0)))]
+       [(extflonum->inexact)
+        (fail state "cannot convert extflonum to inexact in `~a`" s)]
+       [(extflonum->exact)
+        (fail state "cannot convert extflonum to exact in `~a`" s)]
+       [else (force-lazy-exact n state s)])]
+    [(polar-prefix? fst)
+     (define m (finish (polar-prefix-sgn/z fst) (polar-prefix-n fst) s (state-first-half state)))
+     (define a (finish sgn/z n s (state-second-half state)))
+     ;; extflonum errors take precedence over errors like divide-by-zero
+     (cond
+       [(extflonum? m)
+        (bad-extflonum-for-complex m s state)]
+       [(extflonum? a)
+        (bad-extflonum-for-complex a s state)]
+       [else
+        (maybe m
+               (lambda (m)
+                 (maybe a
+                        (lambda (a)
+                          (define cn (make-polar m a))
+                          (case (parse-state-exactness state)
+                            [(exact) (inexact->exact cn)]
+                            [else cn])))))])]
+    [fst (fail state "missing `i` for complex number in `~.a`" s)]))
+
+;; Called when we find an "i" that might be at the end of the input
+(define (finish-imaginary sgn/z n s start end state)
+  (define fst (parse-state-fst state))
+  (cond
+    [(and (eq? fst '+/-)
+          (fx= start end))
+     ;; Just an imaginary part, ok since the input started "+" or "-"
+     (maybe (finish sgn/z n s state)
+            (lambda (i)
+              (cond
+                [(extflonum? i)
+                 (bad-extflonum-for-complex i s state)]
+                [else
+                 (define zero
+                   (case (parse-state-other-exactness state)
+                     [(inexact) 0.0]
+                     [else 0]))
+                 (make-rectangular zero i)])))]
+    [(and (rect-prefix? fst)
+          (fx= start end))
+     (define r (finish (rect-prefix-sgn/z fst) (rect-prefix-n fst) s (state-first-half state)))
+     (define i (finish sgn/z n s (state-second-half state)))
+     ;; extflonum errors take precedence over other errors (such as divide-by-zero)
+     (cond
+       [(extflonum? r)
+        (bad-extflonum-for-complex r s state)]
+       [(extflonum? i)
+        (bad-extflonum-for-complex r i state)]
+       [else
+        (maybe r
+               (lambda (r)
+                 (maybe i
+                        (lambda (i)
+                          (make-rectangular r i)))))])]
+    [else
+     (bad-misplaced "i" s state)]))
+
+;; Given a current exactness and an inferred exactness, combine the
+;; two specifications
+(define (set-exactness state new-exactness #:override? [override? #f])
+  (define exactness (parse-state-exactness state))
+  (define result-exactness
+    (case new-exactness
+      [(single double)
+       (case exactness
+         [(exact) 'exact]
+         [(decimal-as-exact) (if override?
+                                 new-exactness
+                                 'decimal-as-exact)]
+         [else new-exactness])]
+      [(approx)
+       (case exactness
+         [(exact inexact decimal-as-exact) exactness]
+         [else new-exactness])]
+      [(extended)
+       ;; extended mode always overrides
+       (case exactness
+         [(inexact) 'extflonum->inexact]
+         [(exact) 'extflonum->exact]
+         [else 'extended])]
+      [else new-exactness]))
+  (if (eq? exactness result-exactness)
+      state
+      (struct-copy parse-state state
+                   [exactness result-exactness])))
+
+(define (set-exactness-by-char state c #:override? [override? #f])
+  (set-exactness
+   state
+   (case c
+     [(#\e #\E #\d #\D #\l #\L #\0) 'double]
+     [(#\f #\F #\s #\S) 'single]
+     [(#\t #\T) 'extended])
+   #:override? override?))
+
+;; ----------------------------------------
+
+;; The parser is implemented as a kind of state machine that is driven
+;; by the next input character. The current function mostly represents
+;; the state. Some state is in other arguments -- especially the
+;; `state` argument, obviously --- to avoid duplicating all functions
+;; for similar states, such as parsing a number in the real or
+;; imaginary position of a complex number.
 
 ;; The `convert-mode` argument here can be 'number-or-false, 'read, or
 ;; 'must-read, where 'must-read reports an error on parsing failure
@@ -64,703 +390,396 @@
 (define (do-string->number s start end
                            radix #:radix-set? radix-set?
                            exactness ; 'inexact, 'exact, 'decimal-as-inexact, or 'decimal-as-exact
-                           #:in-complex [in-complex #f] ; #f, 'i, or '@
                            convert-mode)
-  (cond
-    [(fx= start end)
-     (fail convert-mode "no digits")]
-    [else
-     (define c (string-ref s start))
-     (cond
-       ;; `#e`, `#x`, etc.
-       [(char=? #\# c)
-        (define next (fx+ 1 start))
-        (cond
-          [(fx= next end)
-           (fail convert-mode "no character after `#` indicator in `~.a`" s)]
-          [else
-           (define i (string-ref s next))
+  (parse-case
+   s start end radix => c
+   [(eof)
+    (fail convert-mode "no digits")]
+   [(digit)
+    (read-integer 1 c s (fx+ 1 start) end radix (init-state exactness convert-mode #f))]
+   [(#\#)
+    (define next (fx+ 1 start))
+    (parse-case
+     s next end radix => i
+     [(eof)
+      (fail convert-mode "no character after `#` indicator in `~.a`" s)]
+     [(#\e #\E #\i #\I)
+      (cond
+        [(or (eq? exactness 'exact) (eq? exactness 'inexact))
+         (fail convert-mode "misplaced exactness specification at `~.a`" (substring s start end))]
+        [else
+         (do-string->number s (fx+ 1 next) end
+                            radix #:radix-set? radix-set?
+                            (if (or (char=? i #\e) (char=? i #\E)) 'exact 'inexact)
+                            (if (eq? convert-mode 'read) 'must-read convert-mode))])]
+     [(#\b #\B #\o #\O #\d #\D #\x #\X)
+      (cond
+        [radix-set?
+         (fail convert-mode "misplaced radix specification at `~.a`" (substring s start end))]
+        [else
+         (define radix
            (case i
-             [(#\e #\E #\i #\I)
-              (cond
-                [(or (exactness-set? exactness) in-complex)
-                 (fail convert-mode "misplaced exactness specification at `~.a`" (substring s start end))]
-                [else
-                 (do-string->number s (fx+ 1 next) end
-                                    radix #:radix-set? radix-set?
-                                    (if (or (char=? i #\e) (char=? i #\E)) 'exact 'inexact)
-                                    (if (eq? convert-mode 'read) 'must-read convert-mode))])]
-             [(#\b #\B #\o #\O #\d #\D #\x #\X)
-              (cond
-                [(or radix-set? in-complex)
-                 (fail convert-mode "misplaced radix specification at `~.a`" (substring s start end))]
-                [else
-                 (define radix
-                   (case i
-                     [(#\b #\B) 2]
-                     [(#\o #\O) 8]
-                     [(#\d #\D) 10]
-                     [else 16]))
-                 (do-string->number s (fx+ 1 next) end
-                                    radix #:radix-set? #t
-                                    exactness
-                                    (if (eq? convert-mode 'read) 'must-read convert-mode))])]
-             [else
-              ;; The reader always complains about a bad leading `#`
-              (fail (read-complains convert-mode) "bad `#` indicator `~a` at `~.a`" i (substring s start end))])])]
-       ;; +inf.0, etc.
-       [(and (char-sign? c)
-             (read-special-number s start end convert-mode))
-        =>
-        (lambda (v)
-          (cond
-            [(eq? exactness 'exact)
-             (fail convert-mode "no exact representation for `~a`" v)]
-            [else v]))]
-       ;; +inf.0+...i, etc.
-       [(and (char-sign? c)
-             (not in-complex)
-             ((fx- end start) . fx> . 7)
-             (char=? #\i (string-ref s (fx- end 1)))
-             (char-sign? (string-ref s 6))
-             (read-special-number s start (fx+ start 6) convert-mode))
-        =>
-        (lambda (v)
-          (read-for-special-compound s (fx+ start 6) (fx- end 1)
-                                     radix
-                                     exactness
-                                     convert-mode
-                                     #:in-complex 'i
-                                     v (lambda (v v2)
-                                         (make-rectangular v v2))))]
-       ;; ...+inf.0i, etc.
-       [(and (not in-complex)
-             ((fx- end start) . fx>= . 7) ; allow `+inf.0i`
-             (char=? #\i (string-ref s (fx- end 1)))
-             (char-sign? (string-ref s (fx- end 7)))
-             (read-special-number s (fx- end 7) (fx- end 1) convert-mode))
-        =>
-        (lambda (v2)
-          (cond
-            [(and (fx= start (fx- end 7))
-                  (not (extflonum? v2)))
-             (make-rectangular 0 v2)]
-            [else
-             (read-for-special-compound s start (fx- end 7)
-                                        radix
-                                        exactness
-                                        convert-mode
-                                        #:in-complex 'i
-                                        #:reading-first? #t
-                                        v2 (lambda (v2 v)
-                                             (make-rectangular v v2)))]))]
-       ;; +inf.0@..., etc.
-       [(and (char-sign? c)
-             (not in-complex)
-             ((fx- end start) . fx> . 7)
-             (char=? #\@ (string-ref s (fx+ start 6)))
-             (read-special-number s start (fx+ start 6) convert-mode))
-        =>
-        (lambda (v)
-          (read-for-special-compound s (fx+ start 7) end
-                                     radix
-                                     exactness
-                                     convert-mode
-                                     #:in-complex '@
-                                     v (lambda (v v2)
-                                         (make-polar v v2))))]
-       ;; ...@+inf.0, etc.
-       [(and (not in-complex)
-             ((fx- end start) . fx> . 7)
-             (char=? #\@ (string-ref s (fx- end 7)))
-             (read-special-number s (fx- end 6) end convert-mode))
-        =>
-        (lambda (v2)
-          (read-for-special-compound s start (fx- end 7)
-                                     radix
-                                     exactness
-                                     convert-mode
-                                     #:in-complex '@
-                                     #:reading-first? #t
-                                     v2 (lambda (v2 v)
-                                          (make-polar v v2))))]
-       [else
-        (do-string->non-special-number s start end
-                                       radix #:radix-set? radix-set?
-                                       exactness
-                                       #:in-complex in-complex
-                                       convert-mode)])]))
+             [(#\b #\B) 2]
+             [(#\o #\O) 8]
+             [(#\d #\D) 10]
+             [else 16]))
+         (do-string->number s (fx+ 1 next) end
+                            radix #:radix-set? #t
+                            exactness
+                            (if (eq? convert-mode 'read) 'must-read convert-mode))])]
+     [else
+      ;; The reader always complains about a bad leading `#`
+      (fail (if (eq? convert-mode 'read) 'must-read convert-mode)
+            "bad `#` indicator `~a` at `~.a`" i (substring s start end))])]
+   [(#\+)
+    (read-signed 1 s (fx+ 1 start) end radix (init-state exactness convert-mode '+/-))]
+   [(#\-)
+    (read-signed -1 s (fx+ 1 start) end radix (init-state exactness convert-mode '+/-))]
+   [(#\.)
+    (read-decimal 1 #f 0 s (fx+ 1 start) end radix (set-exactness (init-state exactness convert-mode #f) 'approx))]
+   [else
+    (bad-digit c s convert-mode)]))
 
-(define (do-string->non-special-number s start end
-                                       radix #:radix-set? radix-set?
-                                       exactness
-                                       #:in-complex [in-complex #f]
-                                       convert-mode)
-  ;; Look for `@`, `i`, `+`/`-`, and exponent markers like `e`.
-  ;; Some of those can be used together, but we detect impossible
-  ;; combinations here and complain. For example `+` that's not
-  ;; after an exponential marker cannot appear twice, unless the
-  ;; the two are separated by `@` or the second eventually supports
-  ;; an ending `i`. Sometimes we can complain right away, and other
-  ;; times we collect positions to complain at the end, which as
-  ;; when an extra sign appears after a `.` or `/`.
-  (let loop ([i start] [any-digits? #f] [any-hashes? #f] [i-pos #f] [@-pos #f]
-             [sign-pos #f] [dot-pos #f] [slash-pos #f] [exp-pos #f]
-             [must-i? #f])
+;; consumed a "+" or "-"
+(define (read-signed sgn s start end radix state)
+  (parse-case
+   s start end radix => c
+   [(eof) (fail state "no digits in `~.a`" s)]
+   [(digit)
+    (read-integer sgn c s (fx+ 1 start) end radix state)]
+   [(#\.)
+    (read-decimal sgn #f 0 s (fx+ 1 start) end radix (set-exactness state 'approx))]
+   [(#\i #\I)
+    ;; maybe "[+-]inf.0"
+    (parse-case
+     s (fx+ 1 start) end radix => c2
+     [(eof)
+      (finish-imaginary sgn sgn s (fx+ 1 start) end state)]
+     [(#\n #\N)
+      (read-infinity sgn c s (fx+ 2 start) end radix state)]
+     [else (bad-digit c s state)])]
+   [(#\n #\N)
+    ;; maybe "[+-]nan.0"
+    (read-nan c s (fx+ 1 start) end radix state)]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed some digits
+(define (read-integer sgn n s start end radix state)
+  (define (get-n) (* sgn n))
+  (parse-case
+   s start end radix => c
+   [(eof) (finish sgn (get-n) s state)]
+   [(digit)
+    (read-integer sgn (+ (* n radix) c) s (fx+ 1 start) end radix state)]
+   [(#\.)
+    (read-decimal sgn n 0 s (fx+ 1 start) end radix (set-exactness state 'approx))]
+   [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (read-exponent sgn (get-n) 0 s (fx+ 1 start) end radix (set-exactness-by-char state c))]
+   [(#\/)
+    (read-rational sgn (get-n) #f s (fx+ 1 start) end radix state)]
+   [(#\#)
+    (read-approx sgn n 1 #f s (fx+ 1 start) end radix (set-exactness state 'approx))]
+   [(#\+ #\-)
+    (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
+   [(#\@)
+    (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
+   [(#\i)
+    (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed digits and "."
+(define (read-decimal sgn n exp s start end radix state)
+  (define (get-n) (if n
+                      (lazy-number (* sgn n) radix (- exp))
+                      (bad-no-digits "." s state)))
+  (parse-case
+   s start end radix => c
+   [(eof) (or (and n (fast-inexact state sgn n radix 0 -1 exp))
+              (maybe (get-n)
+                     (lambda (n)
+                       (finish sgn n s state))))]
+   [(digit)
+    (define next (fx+ 1 start))
     (cond
-      [(fx= i end)
-       ;; We've finished looking, so dispatch on the kind of number parsing
-       ;;  based on found `@`, etc.
-       ;; If we saw `@`, then we discarded other positions at that point.
-       ;; If we saw `i` at the end, then we discarded other positions except `sign-pos`.
-       ;; If we saw `.`, then we discarded earlier `slash-pos` and `exp-pos` or complained.
-       ;; If we saw `/`, then we discarded earlier `dot-pos` and `exp-pos` or complained.
-       ;; If we saw `+` or `-`, then we discarded earlier `exp-pos`.
-       (cond
-         [(and (not any-digits?)
-               ;; A number like `+i` can work with no digits
-               (not i-pos))
-          (fail convert-mode "no digits in `~.a`" (substring s start end))]
-         [(and must-i? (not i-pos))
-          (fail convert-mode "too many signs in `~.a`" (substring s start end))]
-         [(and sign-pos
-               (or (and dot-pos (dot-pos . fx< . sign-pos))
-                   (and slash-pos (slash-pos . fx< . sign-pos))))
-          (fail convert-mode "misplaced sign in `~.a`" (substring s start end))]
-         [i-pos
-          (string->complex-number s start sign-pos sign-pos (fx- end 1)
-                                  i-pos sign-pos
-                                  radix #:radix-set? radix-set?
-                                  exactness
-                                  #:in-complex 'i
-                                  convert-mode)]
-         [@-pos
-          (string->complex-number s start @-pos (fx+ 1 @-pos) end
-                                  i-pos sign-pos
-                                  radix #:radix-set? radix-set?
-                                  exactness
-                                  #:in-complex '@
-                                  convert-mode)]
-         [else
-          (string->real-number s start end
-                               dot-pos slash-pos exp-pos
-                               any-hashes?
-                               radix
-                               exactness
-                               convert-mode)])]
+      [(and (eqv? c #\0)
+            (fx= next end))
+       ;; avoid extra work when ".0" is used to get an inexact zero
+       (read-decimal sgn (or n 0) exp s next end radix state)]
       [else
-       (define c (string-ref s i))
-       (cond
-         [(digit? c radix)
-          (loop (fx+ 1 i) #t any-hashes? i-pos @-pos
-                sign-pos dot-pos slash-pos exp-pos
-                must-i?)]
-         [(char=? c #\#) ; treat like a digit
-          (loop (fx+ 1 i) #t #t i-pos @-pos
-                sign-pos dot-pos slash-pos exp-pos
-                must-i?)]
-         [(char-sign? c)
-          (cond
-            [(and sign-pos must-i?)
-             (fail convert-mode "too many signs in `~.a`" (substring s start end))]
-            [else
-             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
-                   i dot-pos slash-pos #f
-                   ;; must be complex if sign isn't at start
-                   (and (fx> i start) (or (not @-pos) (fx> i (fx+ 1 @-pos)))))])]
-         [(char=? c #\.)
-          (cond
-            [(or (and exp-pos (or (not sign-pos) (exp-pos . fx> . sign-pos)))
-                 (and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos))))
-             (fail convert-mode "misplaced `.` in `~.a`" (substring s start end))]
-            [(and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos)))
-             (fail convert-mode "decimal points and fractions cannot be mixed `~.a`" (substring s start end))]
-            [else
-             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
-                   sign-pos i #f #f
-                   must-i?)])]
-         [(char=? c #\/)
-          (cond
-            [(and dot-pos (or (not sign-pos) (dot-pos . fx> . sign-pos)))
-             (fail convert-mode "decimal points and fractions cannot be mixed `~.a`" (substring s start end))]
-            [(or (and exp-pos (or (not sign-pos) (exp-pos . fx> . sign-pos)))
-                 (and slash-pos (or (not sign-pos) (slash-pos . fx> . sign-pos))))
-             (fail convert-mode "misplaced `/` in `~.a`" (substring s start end))]
-            [else
-             (loop (fx+ 1 i) any-digits? any-hashes? i-pos @-pos
-                   sign-pos #f i #f
-                   must-i?)])]
-         [(or (char=? c #\e) (char=? c #\E)
-              (char=? c #\f) (char=? c #\F)
-              (char=? c #\d) (char=? c #\D)
-              (char=? c #\s) (char=? c #\S)
-              (char=? c #\l) (char=? c #\L)
-              (char=? c #\t) (char=? c #\T))
-          (cond
-            [exp-pos
-             (fail convert-mode "misplaced `~a` in `~.a`" c (substring s start end))]
-            ;; Don't count a sign in something like 1e+2 as `sign-pos`
-            [(and ((fx+ 1 i) . fx< . end)
-                  (char-sign? (string-ref s (fx+ 1 i))))
-             (loop (fx+ i 2) any-digits? any-hashes? i-pos @-pos
-                   sign-pos dot-pos slash-pos (or exp-pos i)
-                   must-i?)]
-            [else
-             (loop (fx+ i 1) any-digits? any-hashes? i-pos @-pos
-                   sign-pos dot-pos slash-pos (or exp-pos i)
-                   must-i?)])]
-         [(char=? c #\@)
-          (cond
-            [(eq? in-complex 'i)
-             (fail convert-mode "cannot mix `@` and `i` in `~.a`" (substring s start end))]
-            [(or @-pos (eq? in-complex '@))
-             (fail convert-mode "too many `@`s in `~.a`" (substring s start end))]
-            [(fx= i start)
-             (fail convert-mode "`@` cannot be at start in `~.a`" (substring s start end))]
-            [must-i?
-             (fail convert-mode "too many signs in `~.a`" (substring s start end))]
-            [else
-             (loop (fx+ 1 i) any-digits? any-hashes? i-pos i
-                   #f #f #f #f
-                   must-i?)])]
-         [(and (or (char=? c #\i) (char=? c #\I))
-               sign-pos)
-          (cond
-            [(or @-pos (eq? in-complex '@))
-             (fail convert-mode "cannot mix `@` and `i` in `~.a`" (substring s start end))]
-            [(or ((fx+ 1 i) . fx< . end) (eq? in-complex 'i))
-             (fail convert-mode "`i` must be at the end in `~.a`" (substring s start end))]
-            [else
-             (loop (fx+ 1 i) any-digits? any-hashes? i @-pos
-                   sign-pos #f #f #f
-                   #f)])]
-         [else
-          (cond
-            [(char=? c #\nul)
-             (fail convert-mode "nul character in `~.a`" s)]
-            [else
-             (fail convert-mode "bad digit `~a`" c)])])])))
+       (read-decimal sgn (+ (* (or n 0) radix) c) (fx+ 1 exp) s (fx+ 1 start) end radix state)])]
+   [(#\.)
+    (bad-misplaced "." s state)]
+   [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (if n
+        (read-exponent sgn (* sgn n) (- exp) s (fx+ 1 start) end radix (set-exactness-by-char state c))
+        (bad-no-digits "." s state))]
+   [(#\/)
+    (bad-mixed-decimal-fraction s state)]
+   [(#\#)
+    (if n
+        (read-approx sgn n (fx- 0 exp) #t s (fx+ 1 start) end radix state)
+        (bad-misplaced "#" s state))]
+   [(#\+ #\-)
+    (if n
+        (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)
+        (bad-no-digits "." s state))]
+   [(#\@)
+    (maybe (get-n)
+           (lambda (n)
+             (read-polar sgn n s (fx+ 1 start) end radix state)))]
+   [(#\i)
+    (maybe (get-n)
+           (lambda (n)
+             (finish-imaginary sgn n s (fx+ 1 start) end state)))]
+   [else
+    (bad-digit c s state)]))
 
-;; Parse and combine the halves of an impginary number, either
-;; in `<real>[+-]<imag>i` form or `<mag>@<angle>` form as
-;; indicated by `in-complex`
-(define (string->complex-number s start1 end1 start2 end2
-                                i-pos sign-pos
-                                radix #:radix-set? radix-set?
-                                exactness
-                                #:in-complex in-complex ; 'i or '@
-                                convert-mode)
-  (define v1 (cond
-               [(fx= start1 end1)
-                ;; The input was "[+-]<num>i", so the real part
-                ;; is implicitly "0"
-                (if (eq? exactness 'inexact)
-                    0.0
-                    0)]
-               [else
-                (do-string->number s start1 end1
-                                   radix #:radix-set? radix-set?
-                                   exactness
-                                   #:in-complex in-complex
-                                   convert-mode)]))
-  (define v2 (cond
-               [(and (eq? in-complex 'i)
-                     (fx= (fx- end2 start2) 1))
-                ;; The input ends "[+-]i", so the number is implicitly
-                ;; "1"
-                (define neg? (char=? (string-ref s start2) #\-))
-                (cond
-                  [(eq? exactness 'inexact)
-                   (if neg? -1.0 1.0)]
-                  [else
-                   (if neg? -1 1)])]
-               [else
-                (do-string->number s start2 end2
-                                   radix #:radix-set? radix-set?
-                                   exactness
-                                   #:in-complex in-complex
-                                   convert-mode)]))
+;; consumed digits and maybe "." and some "#"s
+(define (read-approx sgn n exp saw-.? s start end radix state)
+  (define (get-n) (lazy-number (* sgn n) radix exp))
+  (parse-case
+   s start end radix => c
+   [(eof) (finish sgn (get-n) s state)]
+   [(digit)
+    (bad-misplaced "#" s state)]
+   [(#\.)
+    (if saw-.?
+        (bad-misplaced "." s state)
+        (read-approx sgn n exp #t s (fx+ 1 start) end radix state))]
+   [(#\#)
+    (read-approx sgn n (if saw-.? exp (fx+ 1 exp)) saw-.? s (fx+ 1 start) end radix state)]
+   [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (read-exponent sgn (* sgn n) exp s (fx+ 1 start) end radix (set-exactness-by-char state c))]
+   [(#\/)
+    (if saw-.?
+        (bad-mixed-decimal-fraction s state)
+        (read-rational sgn (get-n) #f s (fx+ 1 start) end radix state))]
+   [(#\+ #\-)
+    (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
+   [(#\@)
+    (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
+   [(#\i)
+    (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed digits and "e" (or similar)
+(define (read-exponent sgn sgn-n exp s start end radix state)
+  (parse-case
+   s start end radix => c
+   [(eof #\@) (fail state "empty exponent `~.a`" s)]
+   [(digit)
+    (read-signed-exponent sgn sgn-n exp 1 c s (fx+ 1 start) end radix state)]
+   [(#\+ #\-)
+    (define sgn2 (if (eqv? c #\+) +1 -1))
+    (read-signed-exponent sgn sgn-n exp sgn2 #f s (fx+ 1 start) end radix state)]
+   [(#\. #\# #\/ #\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (bad-misplaced c s state)]
+   [(#\i)
+    (if (state-has-first-half? state)
+        (fail state "empty exponent `~.a`" s)
+        (bad-misplaced "i" s state))]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed digits and "e" (or similar) and "+" or "-" (if any) and maybe digits
+(define (read-signed-exponent sgn sgn-n exp sgn2 exp2 s start end radix state)
+  (define (get-n) (if exp2
+                      (lazy-number sgn-n radix (+ exp (* sgn2 exp2)))
+                      (fail state "empty exponent `~.a`" s)))
+  (parse-case
+   s start end radix => c
+   [(eof) (or (and exp2
+                   (number? sgn-n)
+                   (fast-inexact state (if (eqv? sgn-n 0) sgn 1) sgn-n radix exp sgn2 exp2))
+              (maybe (get-n)
+                     (lambda (n)
+                       (finish sgn n s state))))]
+   [(digit)
+    (define new-exp2 (+ (if exp2 (* exp2 radix) 0) c))
+    (read-signed-exponent sgn sgn-n exp sgn2 new-exp2 s (fx+ 1 start) end radix state)]
+   [(#\+ #\-)
+    (maybe (get-n)
+           (lambda (n)
+             (read-imag c sgn n (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)))]
+   [(#\. #\# #\/ #\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (bad-misplaced c s state)]
+   [(#\@)
+    (maybe (get-n)
+           (lambda (n)
+             (read-polar sgn n s (fx+ 1 start) end radix state)))]
+   [(#\i)
+    (maybe (get-n)
+           (lambda (n)
+             (finish-imaginary sgn n s (fx+ 1 start) end state)))]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed "+in" or "-in"
+(define (read-infinity sgn c s start end radix state)
+  (parse-case*
+   s start end
+   [[(#\f #\F)
+     (#\.)
+     (#\0 #\f #\t)]
+    (define n (if (negative? sgn) -inf.0 +inf.0))
+    (define new-state (set-exactness-by-char state (string-ref s (fx+ start 2))
+                                             #:override? #t))
+    (parse-case
+     s (fx+ 3 start) end radix => c2
+     [(eof) (finish sgn n s new-state)]
+     [(#\+ #\-)
+      (read-imag c2 sgn n (if (eqv? c2 #\+) +1 -1) s (fx+ 4 start) end radix new-state)]
+     [(#\@)
+      (read-polar sgn n s (fx+ 4 start) end radix new-state)]
+     [(#\i)
+      (finish-imaginary sgn n s (fx+ 4 start) end new-state)]
+     [else
+      (bad-digit c s state)])]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed "+n"
+(define (read-nan c s start end radix state)
+  (parse-case*
+   s start end
+   [[(#\a #\A)
+     (#\n #\N)
+     (#\.)
+     (#\0 #\f #\t)]
+    (define n +nan.0)
+    (define new-state (set-exactness-by-char state (string-ref s (fx+ start 3))
+                                             #:override? #t))
+    (parse-case
+     s (fx+ 4 start) end radix => c2
+     [(eof) (finish +1 n s new-state)]
+     [(#\+ #\-)
+      (read-imag c2 1 n (if (eqv? c2 #\+) +1 -1) s (fx+ 5 start) end radix new-state)]
+     [(#\@)
+      (read-polar 1 n s (fx+ 5 start) end radix new-state)]
+     [(#\i)
+      (finish-imaginary +1 n s (fx+ 5 start) end new-state)]
+     [else
+      (bad-digit c s state)])]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed digits and "/"
+(define (read-rational sgn sgn-n d s start end radix state)
+  (define (get-n) (if d
+                      (lazy-divide sgn-n d 'exact)
+                      (bad-no-digits "/" s state)))
+  (parse-case
+   s start end radix => c
+   [(eof)
+    (maybe (get-n)
+           (lambda (n)
+             (finish sgn n s state)))]
+   [(digit)
+    (read-rational sgn sgn-n (+ (if d (* d radix) 0) c) s (fx+ 1 start) end radix state)]
+   [(#\.)
+    (bad-mixed-decimal-fraction s state)]
+   [(#\#)
+    (if d
+        (read-denom-approx sgn sgn-n d 1 s (fx+ 1 start) end radix (set-exactness state 'approx))
+        (bad-misplaced "#" s state))]
+   [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (maybe (get-n)
+           (lambda (sgn-n)
+             (read-exponent sgn sgn-n 0 s (fx+ 1 start) end radix (set-exactness-by-char state c))))]
+   [(#\/)
+    (bad-misplaced "/" s state)]
+   [(#\+ #\-)
+    (maybe (get-n)
+           (lambda (n)
+             (read-imag c sgn n (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)))]
+   [(#\@)
+    (maybe (get-n)
+           (lambda (n)
+             (read-polar sgn n s (fx+ 1 start) end radix state)))]
+   [(#\i)
+    (maybe (get-n)
+           (lambda (n)
+             (finish-imaginary sgn n s (fx+ 1 start) end state)))]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed digits and "/" and digits and "#"
+(define (read-denom-approx sgn sgn-n d exp s start end radix state)
+  (define (get-n) (lazy-divide sgn-n (lazy-number d radix exp) 'approx))
+  (parse-case
+   s start end radix => c
+   [(eof) (finish sgn (get-n) s state)]
+   [(#\#)
+    (read-denom-approx sgn sgn-n d (fx+ 1 exp) s (fx+ 1 start) end radix state)]
+   [(digit)
+    (bad-misplaced "#" s state)]
+   [(#\. #\/)
+    (bad-misplaced c s state)]
+   [(#\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
+    (read-exponent sgn (get-n) 0 s (fx+ 1 start) end radix (set-exactness-by-char state c))]
+   [(#\+ #\-)
+    (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
+   [(#\@)
+    (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
+   [(#\i)
+    (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
+   [else
+    (bad-digit c s state)]))
+
+;; consumed "+" or "-" after the number in `real`
+(define (read-imag c real-sgn real sgn s start end radix state)
   (cond
-    [(or (not v1) (not v2))
-     #f]
-    [(and (or (extflonum? v1) (extflonum? v2))
-          (not (eq? convert-mode 'must-read)))
-     ;; If no 'must-read, then an extflonum-combination
-     ;; failure hides even a divide-by-zero error
-     (fail-extflonum convert-mode v1)]
-    [(string? v1) v1]
-    [(extflonum? v1)
-     (fail-extflonum convert-mode v1)]
-    [(string? v2) v2]
-    [(extflonum? v2)
-     (fail-extflonum convert-mode v2)]
-    [(eq? in-complex 'i)
-     (make-rectangular v1 v2)]
+    [(or (state-has-first-half? state)
+         (eq? 'extended (parse-state-exactness state)))
+     ;; already parsing a complex number
+     (bad-misplaced c s state)]
     [else
-     (define p (make-polar v1 v2))
-     (if (eq? exactness 'exact)
-         (inexact->exact p)
-         p)]))
+     ;; take it from almost the top, pushing the number so far into `state`;
+     ;; we don't have to start at the very top, because we saw a "+" or "-"
+     (read-signed sgn s start end radix (state-set-first-half state (rect-prefix real-sgn real)))]))
 
-;; Parse a real number that might be a fraction, have `.`, or have `#`s
-(define (string->real-number s start end
-                             dot-pos slash-pos exp-pos
-                             any-hashes? ; can be false-positive
-                             radix
-                             exactness
-                             convert-mode)
-  ;; Try shortcut of using primitive `string->number`, which should
-  ;; work on real numbers and extflonums
-  (define (extfl-mark?) (char=? (char-downcase (string-ref s exp-pos)) #\t))
-  (define simple?
-    (and (not slash-pos)
-         (or (eq? exactness 'inexact)
-             (eq? exactness 'decimal-as-inexact)
-             (and (not dot-pos) (not exp-pos)))
-         (or (not exp-pos)
-             (not (eq? convert-mode 'number-or-false))
-             (not (extfl-mark?)))
-         (not (and any-hashes? (hashes? s start end)))))
-  (define has-sign? (and (end . fx> . start) (char-sign? (string-ref s start))))
+;; consumed "@" after the number in `real`
+(define (read-polar real-sgn real s start end radix state)
   (cond
-    [(fx= (fx- end start) (fx+ (if dot-pos 1 0) (if exp-pos 1 0) (if has-sign? 1 0)))
-     (if (fx= end start)
-         (fail convert-mode "missing digits")
-         (fail convert-mode "missing digits in `~.a`" (substring s start end)))]
-    [simple?
-     (cond
-       [(and exp-pos (fx= (fx- exp-pos start)
-                          (fx+ (if (and dot-pos (fx< dot-pos exp-pos)) 1 0)
-                               (if has-sign? 1 0))))
-        (fail convert-mode "missing digits before exponent marker in `~.a`" (substring s start end))]
-       [(and exp-pos
-             (or (fx= exp-pos (fx- end 1))
-                 (and (fx= exp-pos (fx- end 2))
-                      (char-sign? (string-ref s (fx- end 1))))))
-        (fail convert-mode "missing digits after exponent marker in `~.a`" (substring s start end))]
-       [else
-        (define n (host:string->number (maybe-substring s start end) radix
-                                       ;; Use 'read mode as needed to enable extflonum results
-                                       (if (or (eq? convert-mode 'number-or-false)
-                                               (not exp-pos)
-                                               (not (extfl-mark?)))
-                                           'number-or-false
-                                           'read)))
-        (cond
-          [(or (not n) (string? n))
-           (error 'string->number "host `string->number` failed on ~s with radix ~s" (substring s start end) radix)]
-          [(eq? exactness 'inexact)
-           (cond
-             [(extflonum? n)
-              (fail convert-mode "cannot convert extflonum `~.a` to inexact" (substring s start end))]
-             [(and (eqv? n 0)
-                   (char=? (string-ref s start) #\-))
-              -0.0]
-             [else
-              (exact->inexact n)])]
-          [else n])])]
-    [exp-pos
-     (define m-v (string->real-number s start exp-pos
-                                      dot-pos slash-pos #f
-                                      any-hashes?
-                                      radix
-                                      'exact
-                                      convert-mode))
-     (define e-v (string->exact-integer-number s (fx+ exp-pos 1) end
-                                               radix
-                                               convert-mode))
-     (define (real->precision-inexact r)
-       (case (string-ref s exp-pos)
-         [(#\s #\S #\f #\F) (real->single-flonum r)]
-         [(#\t #\T)
-          (if (extflonum-available?)
-              (real->extfl r)
-              ;; The host `string->number` can make a string-based
-              ;; representation to preserve the content, if not compute
-              ;; with it
-              (host:string->number (replace-hashes s start end) radix 'read))]
-         [else (real->double-flonum r)]))
-     (define get-extfl? (extfl-mark?))
-     (cond
-       [(or (not m-v) (not e-v)) #f]
-       [(string? m-v) m-v]
-       [(string? e-v) e-v]
-       [(and (eq? convert-mode 'number-or-false) get-extfl?)
-        #f]
-       [(and (or (eq? exactness 'inexact) (eq? exactness 'decimal-as-inexact))
-             (let ([m-v-e (/ (- (integer-length (numerator m-v))
-                                (integer-length (denominator m-v)))
-                             (log radix 2))])
-               ((abs (+ e-v m-v-e)) . > . (if get-extfl? (expt 2 15) (expt 2 11)))))
-        ;; Don't calculate a huge exponential to return a float:
-        (real->precision-inexact
-         (cond
-           [(eqv? m-v 0) (if (char=? (string-ref s start) #\-)
-                             -0.0
-                             0.0)]
-           [(positive? m-v) (if (positive? e-v)
-                                +inf.0
-                                +0.0)]
-           [else (if (positive? e-v)
-                     -inf.0
-                     -0.0)]))]
-       [(and (exactness-set? exactness) get-extfl?)
-        (fail convert-mode "cannot convert extflonum `~.a` to ~a" (substring s start end) exactness)]
-       [else
-        ;; This calculation would lose precision for floating-point
-        ;; numbers, but we don't get here for inexact `m-v`:
-        (define n (* m-v (expt radix e-v)))
-        (cond
-          [(and (not get-extfl?)
-                (or (eq? exactness 'exact) (eq? exactness 'decimal-as-exact)))
-           n]
-          [(and (eqv? n 0)
-                (char=? (string-ref s start) #\-))
-           (real->precision-inexact -0.0)]
-          [else
-           (real->precision-inexact n)])])]
-    [slash-pos
-     ;; the numerator or demoniator doesn't have a decimal
-     ;; place or exponent marker, but it may have `#`s
-     (define n-v (string->real-number s start slash-pos
-                                      #f #f #f
-                                      any-hashes?
-                                      radix
-                                      'exact
-                                      convert-mode))
-     (define d-v (string->real-number s (fx+ 1 slash-pos) end
-                                      #f #f #f
-                                      any-hashes?
-                                      radix
-                                      'exact
-                                      convert-mode))
-     (define (get-inexact? from-pos)
-       (or (eq? exactness 'inexact)
-           (and (not (or (eq? exactness 'exact)
-                         (eq? exactness 'decimal-as-exact)))
-                (hashes? s from-pos end))))
-     (cond
-       [(or (not n-v) (not d-v)) #f]
-       [(string? n-v) n-v]
-       [(string? d-v) d-v]
-       [(eqv? d-v 0)
-        (cond
-          [(get-inexact? (fx+ 1 slash-pos))
-           (if (negative? n-v)
-               -inf.0
-               +inf.0)]
-          [else
-           ;; The reader always complains about divide-by-zero
-           (fail (read-complains convert-mode) "division by zero in `~.a`" (substring s start end))])]
-       [else
-        (define n (/ n-v d-v))
-        (if (get-inexact? start)
-            (exact->inexact n)
-            n)])]
-    ;; We get this far only if the input has `#` or if the input has a
-    ;; `.` and we want exact
+    [(or (state-has-first-half? state)
+         (eq? 'extended (parse-state-exactness state)))
+     ;; already parsing a complex number
+     (bad-misplaced "@" s state)]
     [else
-     (string->decimal-number s start end
-                             dot-pos
-                             radix
-                             exactness
-                             convert-mode)]))
-
-;; Parse a number that might have `.` and/or `#` in additon to digits
-;; and possibiliy a leading `+` or `-`
-(define (string->decimal-number s start end
-                                dot-pos
-                                radix
-                                exactness
-                                convert-mode)
-  (define get-exact? (or (eq? exactness 'exact) (eq? exactness 'decimal-as-exact)))
-  (define new-str (make-string (fx- end start (if (and dot-pos get-exact?) 1 0))))
-  (let loop ([i (fx- end 1)] [j (fx- (string-length new-str) 1)] [hashes-pos end])
-    (cond
-      [(i . fx< . start)
-       ;; Convert `new-str` to an integer and finish up
-       (cond
-         [(fx= hashes-pos start)
-          (fail convert-mode "misplaced `#` in `~.a`" (substring s start end))]
-         [else
-          (define n (host:string->number new-str radix))
-          (cond
-            [(not n)
-             (fail-bad-number convert-mode s start end)]
-            [(not get-exact?)
-             (if (and (eqv? n 0)
-                      (char=? (string-ref s start) #\-))
-                 -0.0
-                 (exact->inexact n))]
-            [(and dot-pos get-exact?)
-             (/ n (expt 10 (fx- end dot-pos 1)))]
-            [else n])])]
+     ;; take it from the top, pushing the number so far into `state`
+     (parse-case
+      s start end radix => c
+      [(eof)
+       (bad-misplaced "@" s state)]
+      [(#\+ #\-)
+       (define new-state (state-set-first-half state (polar-prefix real-sgn real)))
+       (read-signed (if (eq? c '#\+) 1 -1) s (fx+ 1 start) end radix new-state)]
+      [(digit)
+       (define new-state (state-set-first-half state (polar-prefix real-sgn real)))
+       (read-integer 1 c s (fx+ 1 start) end radix new-state)]
       [else
-       (define c (string-ref s i))
-       (cond
-         [(char=? c #\.)
-          (cond
-            [get-exact?
-             (loop (fx- i 1) j (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))]
-            [else
-             (string-set! new-str j c)
-             (loop (fx- i 1) (fx- j 1) (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))])]
-         [(or (char=? c #\-) (char=? c #\+))
-          (string-set! new-str j c)
-          (loop (fx- i 1) (fx- j 1) (if (fx= hashes-pos (fx+ 1 i)) i hashes-pos))]
-         [(char=? c #\#)
-          (cond
-            [(fx= hashes-pos (fx+ 1 i))
-             (string-set! new-str j #\0)
-             (loop (fx- i 1) (fx- j 1) i)]
-            [else
-             (fail convert-mode "misplaced `#` in `~.a`" (substring s start end))])]
-         [else
-          (string-set! new-str j c)
-          (loop (fx- i 1) (fx- j 1) hashes-pos)])])))
-
-;; Parse an integer that might have `#` and a leading `+` or `-`, but
-;; no other non-digit characters
-(define (string->exact-integer-number s start end
-                                      radix
-                                      convert-mode)
-  (cond
-    [(hashes? s start end)
-     (fail convert-mode "misplaced `#` in `~.a`" (substring s start end))]
-    [else
-     (define n (host:string->number (maybe-substring s start end) radix))
-     (cond
-       [(not n)
-        (fail convert-mode "bad exponent `~.a`" (substring s start end))]
-       [else n])]))
-
-;; Try to read as `+inf.0`, etc.
-(define (read-special-number s start end convert-mode)
-  (and
-   (fx= (fx- end start) 6)
-   (or (char=? (string-ref s start) #\+)
-       (char=? (string-ref s start) #\-))
-   (or
-    (and (char=? (char-downcase (string-ref s (fx+ start 1))) #\i)
-         (char=? (char-downcase (string-ref s (fx+ start 2))) #\n)
-         (char=? (char-downcase (string-ref s (fx+ start 3))) #\f)
-         (char=? (char-downcase (string-ref s (fx+ start 4))) #\.)
-         (or
-          (and
-           (char=? (char-downcase (string-ref s (fx+ start 5))) #\0)
-           (if (char=? (string-ref s start) #\+)
-               +inf.0
-               -inf.0))
-          (and
-           (char=? (char-downcase (string-ref s (fx+ start 5))) #\f)
-           (if (char=? (string-ref s start) #\+)
-               +inf.f
-               -inf.f))
-          (and
-           (char=? (char-downcase (string-ref s (fx+ start 5))) #\t)
-           (not (eq? convert-mode 'number-or-false))
-           (if (char=? (string-ref s start) #\+)
-               +inf.t
-               -inf.t))))
-    (and (char=? (char-downcase (string-ref s (fx+ start 1))) #\n)
-         (char=? (char-downcase (string-ref s (fx+ start 2))) #\a)
-         (char=? (char-downcase (string-ref s (fx+ start 3))) #\n)
-         (char=? (char-downcase (string-ref s (fx+ start 4))) #\.)
-         (or (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\0)
-                  +nan.0)
-             (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\f)
-                  +nan.f)
-             (and (char=? (char-downcase (string-ref s (fx+ start 5))) #\t)
-                  (not (eq? convert-mode 'number-or-false))
-                  +nan.t))))))
-
-(define (fail-extflonum convert-mode v)
-  (fail convert-mode "cannot combine extflonum `~a` into complex number" v))
-
-;; Read the other half of something like `+inf.0+...i` or `...@-inf.0`
-(define (read-for-special-compound s start end
-                                   radix
-                                   exactness
-                                   convert-mode
-                                   #:in-complex in-complex
-                                   #:reading-first? [reading-first? #f]
-                                   v combine)
-  (cond
-    [(eq? exactness 'exact)
-     (fail convert-mode "no exact representation for `~a`" v)]
-    [(and (extflonum? v) (or (not reading-first?)
-                             ;; If no 'must-read, then an extflonum-combination
-                             ;; failure hides even a divide-by-zero error
-                             (not (eq? convert-mode 'must-read))))
-     (fail-extflonum convert-mode v)]
-    [else
-     (define v2
-       (do-string->number s start end
-                          radix #:radix-set? #t
-                          exactness
-                          #:in-complex in-complex
-                          convert-mode))
-     (cond
-       [(string? v2) v2]
-       [(not v2) v2]
-       [(extflonum? v)
-        (fail-extflonum convert-mode v)]
-       [else (combine v v2)])]))
-
-(define (hashes? s start end)
-  (for/or ([c (in-string s start end)])
-    (char=? c #\#)))
-
-(define (replace-hashes s start end)
-  (define new-s (make-string (fx- end start)))
-  (for ([c (in-string s start end)]
-        [i (in-naturals)])
-    (if (char=? c #\#)
-        (string-set! new-s i #\0)
-        (string-set! new-s i c)))
-  new-s)
-
-(define (maybe-substring s start end)
-  (if (and (fx= 0 start)
-           (fx= end (string-length s)))
-      s
-      (substring s start end)))
-
-(define (exactness-set? exactness)
-  (or (eq? exactness 'exact) (eq? exactness 'inexact)))
-
-(define (char-sign? c)
-  (or (char=? c #\-) (char=? c #\+)))
-
-(define (digit? c radix)
-  (define v (char->integer c)) 
-  (or (and (v . fx>= . (char->integer #\0))
-           ((fx- v (char->integer #\0)) . fx< . radix))
-      (and (radix . fx> . 10)
-           (or (and
-                (v . fx>= . (char->integer #\a))
-                ((fx- v (fx- (char->integer #\a) 10)) . fx< . radix))
-               (and
-                (v . fx>= . (char->integer #\A))
-                ((fx- v (fx- (char->integer #\A) 10)) . fx< . radix))))))
-
-(define (fail-bad-number convert-mode s start end)
-  (fail convert-mode "bad number `~.a`" (substring s start end)))
-
-(define (read-complains convert-mode)
-  (if (eq? convert-mode 'read) 'must-read convert-mode))
+       (bad-digit c s state)])]))
 
 ;; ----------------------------------------
 
 (module+ test
+  (require (only-in racket/base
+                    [string->number racket:string->number]))
   (define (try s)
-    (define expect (host:string->number s 10 'read 'decimal-as-inexact))
+    (define expect (racket:string->number s 10 'read 'decimal-as-inexact))
     (define got (string->number s 10 'read 'decimal-as-inexact))
     (unless (equal? expect got)
       (error 'fail "~e\n  expect: ~e\n  got: ~e" s expect got)))
 
   (try "#i+inf.0")
   (try "-inf.0")
+  (try "#i+inf.f")
+  (try "-inf.f")
+  (try "#e+inf.0")
+  (try "-inf.t")
   (try "10")
   (try "10.1")
   (try "1+2i")
@@ -783,6 +802,7 @@
   (try "1.2+i")
   (try "1/2+3")
   (try "1.2+3")
+  (try "#i1.2t0+3i")
   (try "#i-0")
   (try "#i0")
   (try "-0#")
@@ -804,7 +824,7 @@
   (try "1/0")
   (try "1@+inf.0")
   (try "1/1@+inf.0")
-  (try "#d1/0+3.0i")
+  ;(try "#d1/0+3.0i")
   (try "3.0t0+1/0i")
   (try "1/0+3.0t0i")
   (try "+inf.t0+1/0i")
