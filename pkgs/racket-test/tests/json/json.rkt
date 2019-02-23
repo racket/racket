@@ -94,10 +94,21 @@
         ))
 
 (define (parse-tests)
-  (test (string->jsexpr @T{  1   }) =>  1
+  (test (string->jsexpr @T{  0   }) =>  0
+        (string->jsexpr @T{  1   }) =>  1
         (string->jsexpr @T{ -1   }) => -1 ; note: `+' is forbidden
+        (string->jsexpr @T{ -12  }) => -12
+        (string->jsexpr @T{ -123 }) => -123
         (string->jsexpr @T{  1.0 }) =>  1.0
+        (string->jsexpr @T{  1.3 }) =>  1.3
+        (string->jsexpr @T{  1.34}) =>  1.34
         (string->jsexpr @T{ -1.0 }) => -1.0
+        (string->jsexpr @T{ -1.3 }) => -1.3
+        (string->jsexpr @T{-10.34}) => -10.34
+        (string->jsexpr @T{-10.34e3}) => -10340.0
+        (string->jsexpr @T{-10.34e+3}) => -10340.0
+        (string->jsexpr @T{-10.34e-3}) => -1.034e-2
+        (string->jsexpr @T{-10.34e+31}) => -1.034e32
         (string->jsexpr @T{ true  }) => #t
         (string->jsexpr @T{ false }) => #f
         (string->jsexpr @T{ null  }) => 'null
@@ -132,7 +143,7 @@
         (string->jsexpr " \t\r\n") => eof
 
         ;; Invalid UTF-8 input.
-        (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail:contract?
+        (bytes->jsexpr #"\"\377\377\377\"") =error> exn:fail?
 
         ;; More string escapes:
         (string->jsexpr @T{ "hel\"lo" }) => "hel\"lo"
@@ -142,6 +153,17 @@
         (string->jsexpr @T{ "/" }) => "/"
         (string->jsexpr @T{ "\/" }) => "/"
         ;; More error tests:
+        (string->jsexpr @T{ -}) =error> #rx"string->jsexpr:.*-"
+        (string->jsexpr @T{ -x}) =error> #rx"string->jsexpr:.*-x"
+        (string->jsexpr @T{ 1.}) =error> #rx"string->jsexpr:.*1[.]"
+        (string->jsexpr @T{ 1.x }) =error> #rx"string->jsexpr:.*1[.]x"
+        (string->jsexpr @T{ -1.}) =error> #rx"string->jsexpr:.*-1[.]"
+        (string->jsexpr @T{ -1.x }) =error> #rx"string->jsexpr:.*-1[.]x"
+        (string->jsexpr @T{ -13e }) =error> #rx"string->jsexpr:.*-13e"
+        (string->jsexpr @T{ -1.3e }) =error> #rx"string->jsexpr:.*-1[.]3e"
+        (string->jsexpr @T{ -1.3ex}) =error> #rx"string->jsexpr:.*-1[.]3e"
+        (string->jsexpr @T{ 10.3ex}) =error> #rx"string->jsexpr:.*10[.]3e"
+        (string->jsexpr @T{ [00] }) =error> "string->jsexpr:"
         (string->jsexpr @T{ [1,2,,3] }) =error> "string->jsexpr:"
         (string->jsexpr @T{ [1,2,3,] }) =error> "string->jsexpr:"
         (string->jsexpr @T{ {42 : "bad-key!"} }) =error> "string->jsexpr:"
