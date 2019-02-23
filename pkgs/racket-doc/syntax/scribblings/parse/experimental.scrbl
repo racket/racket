@@ -370,7 +370,7 @@ invalid binding list.
  @examples[#:eval the-eval
            (define (my-metafunction-proc stx)
              (syntax-case stx ()
-               [(_ n) (datum->syntax #'n (add1 (syntax-e #'n)))]))
+               [(_ n) (datum->syntax #'n (add1 (syntax-e #'n)) #'n #'n)]))
 
            (begin-for-syntax
              (struct mf-struct (proc-id)
