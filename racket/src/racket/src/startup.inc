@@ -53716,7 +53716,7 @@ static const char *startup_source =
 "(let-values() c_0)"
 "(if(fx< v_0(char->integer '#\\A))"
 "(let-values() c_0)"
-"(if(fx< v_0(+ radix_0(char->integer '#\\A)))"
+"(if(fx< v_0(+ radix_0(-(char->integer '#\\A) 10)))"
 "(let-values()(fx- v_0(-(char->integer '#\\A) 10)))"
 "(if(fx< v_0(char->integer '#\\a))"
 "(let-values() c_0)"

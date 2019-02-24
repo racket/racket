@@ -18,7 +18,7 @@
      (fx- v (char->integer #\0))]
     [(radix . fx<= . 10) c]
     [(v . fx< . (char->integer #\A)) c]
-    [(v . fx< . (+ radix (char->integer #\A)))
+    [(v . fx< . (+ radix (- (char->integer #\A) 10)))
      (fx- v (- (char->integer #\A) 10))]
     [(v . fx< . (char->integer #\a)) c]
     [(v . fx< . (+ radix (- (char->integer #\a) 10)))
