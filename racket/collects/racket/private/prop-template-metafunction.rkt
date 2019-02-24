@@ -10,7 +10,7 @@
   ;;  - a function that takes the structure instance and produces such an
   ;;    identifier
   ;; At run-time, when processing the template, the syntax object whose first
-  ;; element is a metafunction identifiers is passed to this metafunction
+  ;; element is a metafunction identifier is passed to this metafunction
   ;; procedure.
 
   ;; Internally, the value inside the property will be stored as a function
@@ -70,7 +70,9 @@
                                   (let-values ([(failure-result) (car more-args)])
                                     (template-metafunction-raw-accessor instance
                                                                         failure-result))
-                                  (error "invalid number of arguments [TODO]")))])
+                                  (raise-arity-error 'template-metafunction-accessor
+                                                     (list 1 2)
+                                                     (cons instance more-args))))])
         (raw instance))))
   
   ;; A default struct type with prop:template-metafunction.
