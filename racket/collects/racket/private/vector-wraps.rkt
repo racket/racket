@@ -62,23 +62,24 @@
           (with-syntax ([orig-stx orig-stx]
                         [for_/fold/derived for_/fold/derived-stx]
                         [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))])
-            (syntax/loc stx
-              (let-values ([(vec i)
-                            (for_/fold/derived
-                             orig-stx
-                             ([vec (make-fXvector 16)]
-                              [i 0])
-                             (for-clause ...) 
-                             middle-body ...
-                             (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
-                                                (grow-fXvector vec)
-                                                vec)])
-                               (let ([elem (let () last-body ...)])
-                                 (if (fX? elem)
-                                     (unsafe-fXvector-set! new-vec i elem)
-                                     (not-an-fX 'for*/fXvector elem)))
-                               (values new-vec (unsafe-fx+ i 1))))])
-                (shrink-fXvector vec i))))]
+            (syntax-protect
+             (syntax/loc stx
+               (let-values ([(vec i)
+                             (for_/fold/derived
+                              orig-stx
+                              ([vec (make-fXvector 16)]
+                               [i 0])
+                              (for-clause ...) 
+                              middle-body ...
+                              (let ([new-vec (if (eq? i (unsafe-fXvector-length vec))
+                                                 (grow-fXvector vec)
+                                                 vec)])
+                                (let ([elem (let () last-body ...)])
+                                  (if (fX? elem)
+                                      (unsafe-fXvector-set! new-vec i elem)
+                                      (not-an-fX 'for*/fXvector elem)))
+                                (values new-vec (unsafe-fx+ i 1))))])
+                 (shrink-fXvector vec i)))))]
          [(for*/fXvector #:length length-expr #:fill fill-expr (for-clause ...) body ...)
           (with-syntax ([orig-stx orig-stx]
                         [(limited-for-clause ...)
@@ -111,24 +112,25 @@
                         [((middle-body ...) (last-body ...)) (split-for-body stx #'(body ...))]
                         [for_/fXvector for_/fXvector-stx]
                         [for_/fold/derived for_/fold/derived-stx])
-            (syntax/loc stx
-              (let ([len length-expr])
-                (unless (exact-nonnegative-integer? len)
-                  (raise-argument-error 'for_/fXvector "exact-nonnegative-integer?" len))
-                (let ([fill fill-expr])
-                  (let ([v (make-fXvector len fill)])
-                    (unless (zero? len)
-                      (for_/fold/derived
-                       orig-stx 
-                       ([i 0])
-                       (limited-for-clause ...)
-                       middle-body ...
-                       (let ([elem (let () last-body ...)])
-                         (if (fX? elem)
-                             (unsafe-fXvector-set! v i elem)
-                             (not-an-fX 'for*/vector elem)))
-                       (unsafe-fx+ 1 i)))
-                    v)))))]
+            (syntax-protect
+             (syntax/loc stx
+               (let ([len length-expr])
+                 (unless (exact-nonnegative-integer? len)
+                   (raise-argument-error 'for_/fXvector "exact-nonnegative-integer?" len))
+                 (let ([fill fill-expr])
+                   (let ([v (make-fXvector len fill)])
+                     (unless (zero? len)
+                       (for_/fold/derived
+                        orig-stx 
+                        ([i 0])
+                        (limited-for-clause ...)
+                        middle-body ...
+                        (let ([elem (let () last-body ...)])
+                          (if (fX? elem)
+                              (unsafe-fXvector-set! v i elem)
+                              (not-an-fX 'for*/vector elem)))
+                        (unsafe-fx+ 1 i)))
+                     v))))))]
          [(_ #:length length-expr (for-clause ...) body ...)
           (for_/fXvector #'(fv #:length length-expr #:fill fXzero (for-clause ...) body ...) 
                          orig-stx for_/fXvector-stx for_/fold/derived-stx wrap-all?)]))

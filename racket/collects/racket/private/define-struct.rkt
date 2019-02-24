@@ -515,8 +515,10 @@
                                                    (if (struct-type? the-super)
                                                        the-super
                                                        (check-struct-type 'fm the-super)))))]
-                       [prune (lambda (stx) (identifier-prune-lexical-context stx
-                                                                              (list (syntax-e stx) '#%top)))]
+                       [prune (lambda (stx)
+                                (syntax-protect
+                                 (identifier-prune-lexical-context stx
+                                                                   (list (syntax-e stx) '#%top))))]
                        [reflect-name-expr (if reflect-name-expr
                                               (syntax-case reflect-name-expr (quote)
                                                 [(quote id)

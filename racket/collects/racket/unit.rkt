@@ -51,17 +51,19 @@
      (begin
        (check-id #'name)
        (check-id #'arg)
-       #'(define-syntax name
-           (make-set!-transformer
-            (make-signature-form (λ (arg ignored) . val))))))
+       (syntax-protect
+        #'(define-syntax name
+            (make-set!-transformer
+             (make-signature-form (λ (arg ignored) . val)))))))
     ((_ (name arg intro-arg) . val)
      (begin
        (check-id #'name)
        (check-id #'arg)
        (check-id #'intro-arg)
-       #'(define-syntax name
-           (make-set!-transformer
-            (make-signature-form (λ (arg intro-arg) . val))))))
+       (syntax-protect
+        #'(define-syntax name
+            (make-set!-transformer
+             (make-signature-form (λ (arg intro-arg) . val)))))))
     ((_ . l)
      (let ((l (checked-syntax->list stx)))
        (unless (>= 3 (length l))
@@ -981,7 +983,8 @@
                      [(icount ...) (map
                                     (lambda (import) (length (car import)))
                                     import-sigs)])
-         (values 
+         (values
+          (syntax-protect
           (intro
            (quasisyntax/loc (error-syntax)
             (make-unit
@@ -1033,7 +1036,7 @@
                     (unit-export ((export-key ...)
                                   (vector-immutable (λ () (check-not-unsafe-undefined (unbox eloc) 'int-evar))
                                                     ...))
-                                 ...))))))))
+                                 ...)))))))))
           import-tagged-sigids
           export-tagged-sigids
           dep-tagged-sigids))))))
@@ -1358,7 +1361,8 @@
                              orig-export-tagged-infos)]
                        [name (syntax-local-infer-name (error-syntax))]
                        [form (syntax-e (stx-car (error-syntax)))])
-           (values 
+           (values
+            (syntax-protect
             (quasisyntax/loc (error-syntax)
               (let ([unit-tmp unit-exp])
                 (check-unit unit-tmp 'form)
@@ -1390,7 +1394,7 @@
                                                    orig-export-tagged-infos
                                                    orig-export-sigs
                                                    export-tagged-infos
-                                                   export-sigs))))))))
+                                                   export-sigs)))))))))
             import-tagged-sigids
             export-tagged-sigids
             dep-tagged-sigids)))))))
@@ -1649,6 +1653,7 @@
               ;; created via compound-unit/infer. Only the `inferred` dependencies
               ;; will appear in this syntax property, when no inference occurs the property
               ;; will contain an empty list.
+              (syntax-protect
               (syntax-property
                (quasisyntax/loc (error-syntax)
                  (let ([deps '()]
@@ -1676,7 +1681,7 @@
                'unit:inferred-init-depends
                (build-init-depend-property
                 static-dep-info
-                (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))))
+                (map syntax-e (syntax->list #'((import-tag . import-sigid) ...))))))
               (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))
               (map syntax-e (syntax->list #'((export-tag . export-sigid) ...)))
               static-dep-info))))))
@@ -1816,9 +1821,10 @@
        (with-syntax ((((int-id . ext-id) ...) int+ext-ids)
                      ((def-name ...) (generate-temporaries (map car int+ext-ids))))
          (values
-          #'(:unit (import) (export (rename export-spec (def-name int-id) ...))
-                   (define def-name int-id)
-                   ...)
+          (syntax-protect
+           #'(:unit (import) (export (rename export-spec (def-name int-id) ...))
+                    (define def-name int-id)
+                    ...))
           null
           (list (cadr tagged-export-sig))
           '()))))))
@@ -1853,17 +1859,18 @@
                          (((etag . esig) ...) e)
                          (((deptag . depsig) ...) d)
                          (contracted? contracted?))
-             (quasisyntax/loc (error-syntax)
-               (begin
-                 (define u #,exp)
-                 (define-syntax name
-                   (make-set!-transformer
-                    (make-unit-info (quote-syntax u)
-                                    (list (cons 'itag (quote-syntax isig)) ...)
-                                    (list (cons 'etag (quote-syntax esig)) ...)
-                                    (list (cons 'deptag (quote-syntax depsig)) ...)
-                                    (quote-syntax name)
-                                    contracted?)))))))))
+             (syntax-protect
+              (quasisyntax/loc (error-syntax)
+                (begin
+                  (define u #,exp)
+                  (define-syntax name
+                    (make-set!-transformer
+                     (make-unit-info (quote-syntax u)
+                                     (list (cons 'itag (quote-syntax isig)) ...)
+                                     (list (cons 'etag (quote-syntax esig)) ...)
+                                     (list (cons 'deptag (quote-syntax depsig)) ...)
+                                     (quote-syntax name)
+                                     contracted?))))))))))
       ((_)
        (raise-stx-err err-msg)))))
 
@@ -1899,21 +1906,22 @@
                       (map check-helper tagged-export-infos))
                      (form (stx-car (error-syntax))))
          (values
-          #`(let ([unit-tmp unit-exp])
-              #,(syntax/loc #'unit-exp
-                  (check-unit unit-tmp 'form))
-              #,(syntax/loc #'unit-exp
-                  (check-sigs unit-tmp 
-                              (vector-immutable
-                               (cons 'import-name
-                                     (vector-immutable import-keys ...))
-                               ...)
-                              (vector-immutable
-                               (cons 'export-name
-                                     (vector-immutable export-keys ...))
-                               ...)
-                              'form))
-              unit-tmp)
+          (syntax-protect
+           #`(let ([unit-tmp unit-exp])
+               #,(syntax/loc #'unit-exp
+                   (check-unit unit-tmp 'form))
+               #,(syntax/loc #'unit-exp
+                   (check-sigs unit-tmp 
+                               (vector-immutable
+                                (cons 'import-name
+                                      (vector-immutable import-keys ...))
+                                ...)
+                               (vector-immutable
+                                (cons 'export-name
+                                      (vector-immutable export-keys ...))
+                                ...)
+                               'form))
+               unit-tmp))
           tagged-import-sigids
           tagged-export-sigids
           tagged-dep-sigids))))))
@@ -1976,9 +1984,10 @@
                                         (export (export-tagged-sig-id [e.x e.c] ...) ...)
                                         dep
                                         #,@splicing-body-contract)))])
-                       (values 
-                        (syntax/loc stx
-                          (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name)))
+                       (values
+                        (syntax-protect
+                         (syntax/loc stx
+                           (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name))))
                         isigs esigs deps))))]
                 [(ic:import-clause/contract ec:export-clause/contract dep:dep-clause . bexps)
                  (build-unit/contract
@@ -2350,9 +2359,10 @@
            (with-syntax ([u units]
                          [(esig ...) esig]
                          [(isig ...) isig])
-             (if define?
-                 (syntax/loc (error-syntax) (define-values/invoke-unit u (import isig ...) (export esig ...)))
-                 (syntax/loc (error-syntax) (invoke-unit u (import isig ...))))))]
+             (syntax-protect
+              (if define?
+                  (syntax/loc (error-syntax) (define-values/invoke-unit u (import isig ...) (export esig ...)))
+                  (syntax/loc (error-syntax) (invoke-unit u (import isig ...)))))))]
         [(list? units)
          (let-values ([(isig esig) (imps/exps-from-units units exports)])
            (with-syntax ([(new-unit) (generate-temporaries '(new-unit))]
@@ -2366,13 +2376,14 @@
                                                  (export esig ...)
                                                  (link unit ...))))])
                                 u)])
-               (if define?
-                   (syntax/loc (error-syntax)
-                     (define-values/invoke-unit u
-                       (import isig ...) (export esig ...)))
-                   (syntax/loc (error-syntax)
-                     (invoke-unit u
-                                  (import isig ...)))))))]
+               (syntax-protect
+                (if define?
+                    (syntax/loc (error-syntax)
+                      (define-values/invoke-unit u
+                        (import isig ...) (export esig ...)))
+                    (syntax/loc (error-syntax)
+                      (invoke-unit u
+                                   (import isig ...))))))))]
         ;; just for error handling
         [else (lookup-def-unit units)]))
 

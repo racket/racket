@@ -466,4 +466,5 @@
                       make-method-call-to-possibly-wrapped-object
                       do-localize make-private-name
                       generate-super-call generate-inner-call
-                      generate-class-expand-context class-top-level-context?))
+                      generate-class-expand-context class-top-level-context?
+                      class-syntax-protect))

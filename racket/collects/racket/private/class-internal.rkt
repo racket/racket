@@ -32,52 +32,53 @@
          ;; needed for Typed Racket
          (protect-out do-make-object find-method/who))
 (define-syntax (provide-public-names stx)
-  (datum->syntax
-   stx
-   '(provide class class* class/derived
-            define-serializable-class define-serializable-class*
-            class? 
-            mixin
-            interface interface* interface?
-            object% object? externalizable<%> printable<%> writable<%> equal<%>
-            object=? object-or-false=? object=-hash-code
-            new make-object instantiate
-            send send/apply send/keyword-apply send* send+ dynamic-send
-            class-field-accessor class-field-mutator with-method
-            get-field set-field! field-bound? field-names
-            dynamic-get-field dynamic-set-field!
-            private* public*  pubment*
-            override* overment*
-            augride* augment*
-            public-final* override-final* augment-final*
-            define/private define/public define/pubment
-            define/override define/overment
-            define/augride define/augment
-            define/public-final define/override-final define/augment-final
-            define-local-member-name define-member-name 
-            member-name-key generate-member-key 
-            member-name-key? member-name-key=? member-name-key-hash-code
-            generic make-generic send-generic
-            is-a? subclass? implementation? interface-extension?
-            object-interface object-info object->vector
-            object-method-arity-includes?
-            method-in-interface? interface->method-names class->interface class-info
-            (struct-out exn:fail:object)
-            make-primitive-class
-            class/c ->m ->*m ->dm case->m object/c instanceof/c
-            dynamic-object/c
-            class-seal class-unseal
-           
-           ;; "keywords":
-            private public override augment
-            pubment overment augride
-            public-final override-final augment-final
-            field init init-field init-rest
-            rename-super rename-inner inherit inherit/super inherit/inner inherit-field
-            this this% super inner
-            super-make-object super-instantiate super-new
-            inspect absent abstract)
-   stx))
+  (class-syntax-protect
+   (datum->syntax
+    stx
+    '(provide class class* class/derived
+              define-serializable-class define-serializable-class*
+              class? 
+              mixin
+              interface interface* interface?
+              object% object? externalizable<%> printable<%> writable<%> equal<%>
+              object=? object-or-false=? object=-hash-code
+              new make-object instantiate
+              send send/apply send/keyword-apply send* send+ dynamic-send
+              class-field-accessor class-field-mutator with-method
+              get-field set-field! field-bound? field-names
+              dynamic-get-field dynamic-set-field!
+              private* public*  pubment*
+              override* overment*
+              augride* augment*
+              public-final* override-final* augment-final*
+              define/private define/public define/pubment
+              define/override define/overment
+              define/augride define/augment
+              define/public-final define/override-final define/augment-final
+              define-local-member-name define-member-name 
+              member-name-key generate-member-key 
+              member-name-key? member-name-key=? member-name-key-hash-code
+              generic make-generic send-generic
+              is-a? subclass? implementation? interface-extension?
+              object-interface object-info object->vector
+              object-method-arity-includes?
+              method-in-interface? interface->method-names class->interface class-info
+              (struct-out exn:fail:object)
+              make-primitive-class
+              class/c ->m ->*m ->dm case->m object/c instanceof/c
+              dynamic-object/c
+              class-seal class-unseal
+              
+              ;; "keywords":
+              private public override augment
+              pubment overment augride
+              public-final override-final augment-final
+              field init init-field init-rest
+              rename-super rename-inner inherit inherit/super inherit/inner inherit-field
+              this this% super inner
+              super-make-object super-instantiate super-new
+              inspect absent abstract)
+    stx)))
 
 ;;--------------------------------------------------------------------
 ;;  keyword setup
@@ -104,9 +105,10 @@
                                  (if (identifier? e)
                                      e
                                      (syntax-property e 'taint-mode 'transparent)))])
-       (syntax-property (syntax/loc stx (internal-id elem ...))
-                        'taint-mode
-                        'transparent))]))
+       (class-syntax-protect
+        (syntax-property (syntax/loc stx (internal-id elem ...))
+                         'taint-mode
+                         'transparent)))]))
 
 (define-syntax provide-renaming-class-keyword
   (syntax-rules ()
@@ -140,9 +142,10 @@
   (syntax-case stx ()
     [(_ elem ...)
      (with-syntax ([internal-id internal-id])
-       (syntax-property (syntax/loc stx (internal-id elem ...))
-                        'taint-mode
-                        'transparent))]))
+       (class-syntax-protect
+        (syntax-property (syntax/loc stx (internal-id elem ...))
+                         'taint-mode
+                         'transparent)))]))
 
 (define-syntax provide-naming-class-keyword
   (syntax-rules ()
@@ -1530,6 +1533,7 @@
                                                          #'(current-inspector))]
                                           [deserialize-id-expr deserialize-id-expr]
                                           [private-field-names private-field-names])
+                              (class-syntax-protect
                               (add-decl-props
                               (quasisyntax/loc stx
                                 (detect-field-unsafe-undefined
@@ -1712,7 +1716,7 @@
                                    ;; Extra argument added here by `detect-field-unsafe-undefined`
                                    #; check-undef?
                                    ;; Not primitive:
-                                   #f))))))))))))))))
+                                   #f)))))))))))))))))
     
     ;; The class* and class entry points:
     (values
@@ -1772,36 +1776,39 @@
                                           #`((runtime-require (submod "." deserialize-info))
                                              (module+ deserialize-info (provide #,deserialize-name-info)))
                                           #'())])
-         #'(begin
-             (define-values (name deserialize-name-info)
-               (class/derived orig-stx [name
-                                        super-expression 
-                                        (interface-expr ...)
-                                        #'deserialize-name-info]
-                              defn-or-expr ...))
-             provision ...)))]))
+         (class-syntax-protect
+          #'(begin
+              (define-values (name deserialize-name-info)
+                (class/derived orig-stx [name
+                                         super-expression 
+                                         (interface-expr ...)
+                                         #'deserialize-name-info]
+                  defn-or-expr ...))
+              provision ...))))]))
 
 (define-syntax (define-serializable-class* stx)
   (syntax-case stx ()
     [(_ name super-expression (interface-expr ...)
         defn-or-expr ...)
      (with-syntax ([orig-stx stx])
-       #'(-define-serializable-class orig-stx
-                                     name
-                                     super-expression
-                                     (interface-expr ...)
-                                     defn-or-expr ...))]))
+       (class-syntax-protect
+        #'(-define-serializable-class orig-stx
+                                      name
+                                      super-expression
+                                      (interface-expr ...)
+                                      defn-or-expr ...)))]))
 
 (define-syntax (define-serializable-class stx)
   (syntax-case stx ()
     [(_ name super-expression
         defn-or-expr ...)
      (with-syntax ([orig-stx stx])
-       #'(-define-serializable-class orig-stx
-                                     name
-                                     super-expression
-                                     ()
-                                     defn-or-expr ...))]))
+       (class-syntax-protect
+        #'(-define-serializable-class orig-stx
+                                      name
+                                      super-expression
+                                      ()
+                                      defn-or-expr ...)))]))
 
 (define-syntaxes (private* public* pubment* override* overment* augride* augment*
                            public-final* override-final* augment-final*)
@@ -1833,11 +1840,12 @@
                     (with-syntax ([(name ...) (map car name-exprs)]
                                   [(expr ...) (map cdr name-exprs)]
                                   [decl-form decl-form])
-                      (syntax
-                       (begin
-                         (decl-form name ...)
-                         (define name expr)
-                         ...)))))])))])
+                      (class-syntax-protect
+                       (syntax
+                        (begin
+                          (decl-form name ...)
+                          (define name expr)
+                          ...))))))])))])
     (values
      (mk 'private* (syntax private))
      (mk 'public* (syntax public))
@@ -1863,10 +1871,11 @@
                 "use of a class keyword is not in a class top-level"
                 stx))
              (let-values ([(id rhs) (normalize-definition stx #'lambda #f #t)])
-               (quasisyntax/loc stx
-                 (begin
-                   (#,decl-form #,id)
-                   (define #,id #,rhs))))))])
+               (class-syntax-protect
+                (quasisyntax/loc stx
+                  (begin
+                    (#,decl-form #,id)
+                    (define #,id #,rhs)))))))])
     (values
      (mk #'private)
      (mk #'public)
@@ -1910,11 +1919,12 @@
                               (define-syntaxes (id ...)
                                 (values (make-private-name (quote-syntax id) (quote-syntax gen-id))
                                         ...)))])
-               (syntax/loc stx
-                 (begin
-                   (define-values (gen-id ...)
-                     (values (generate-local-member-name 'id) ...))
-                   stx-defs))))))]))
+               (class-syntax-protect
+                (syntax/loc stx
+                  (begin
+                    (define-values (gen-id ...)
+                      (values (generate-local-member-name 'id) ...))
+                    stx-defs)))))))]))
 
 (define-syntax (define-member-name stx)
   (syntax-case stx ()
@@ -1932,9 +1942,10 @@
                         (define-syntax id
                           (make-private-name (quote-syntax id) 
                                              ((syntax-local-certifier) (quote-syntax member-name)))))])
-         #'(begin
-             (define member-name (check-member-key 'id expr))
-             stx-def)))]))
+         (class-syntax-protect
+          #'(begin
+              (define member-name (check-member-key 'id expr))
+              stx-def))))]))
 
 (define (generate-local-member-name id)
   (string->uninterned-symbol
@@ -1965,7 +1976,8 @@
     [(_ id)
      (identifier? #'id)
      (with-syntax ([id (localize #'id)])
-       (syntax/loc stx (make-member-key `id)))]
+       (class-syntax-protect
+        (syntax/loc stx (make-member-key `id))))]
     [(_ x)
      (raise-syntax-error
       #f
@@ -3087,15 +3099,15 @@ An example
          (with-syntax ([name (datum->syntax #f name #f)]
                        [(var ...) (map localize vars)]
                        [((v c) ...) (filter (λ (p) (cadr p)) (map list vars ctcs))])
-           (syntax/loc
-               stx
-             (compose-interface
-              'name
-              (list interface-expr ...)
-              `(var ...)
-              (make-immutable-hash (list (cons 'v c) ...))
-              (list prop ...)
-              (list prop-val ...)))))])))
+           (class-syntax-protect
+            (syntax/loc stx
+              (compose-interface
+               'name
+               (list interface-expr ...)
+               `(var ...)
+               (make-immutable-hash (list (cons 'v c) ...))
+               (list prop ...)
+               (list prop-val ...))))))])))
 
 (define-syntax (_interface stx)
   (syntax-case stx ()
@@ -3310,8 +3322,9 @@ An example
   (syntax-case stx ()
     [(_ cls (id arg) ...)
      (andmap identifier? (syntax->list (syntax (id ...))))
-     (quasisyntax/loc stx
-       (instantiate cls () (id arg) ...))]
+     (class-syntax-protect
+      (quasisyntax/loc stx
+        (instantiate cls () (id arg) ...)))]
     [(_ cls (id arg) ...)
      (for-each (lambda (id)
                  (unless (identifier? id)
@@ -3334,21 +3347,24 @@ An example
      (syntax-case stx ()
              [id
               (identifier? #'id)
-              (quasisyntax/loc stx
-                (make-object/proc (current-contract-region)))]
+              (class-syntax-protect
+               (quasisyntax/loc stx
+                 (make-object/proc (current-contract-region))))]
              [(_ class arg ...)
-              (quasisyntax/loc stx
-                (do-make-object
-                 (current-contract-region)
-                 class (list arg ...) (list)))]
+              (class-syntax-protect
+               (quasisyntax/loc stx
+                 (do-make-object
+                  (current-contract-region)
+                  class (list arg ...) (list))))]
              [(_) (raise-syntax-error 'make-object "expected class" stx)]))))
 
 (define-syntax (instantiate stx)
   (syntax-case stx ()
     [(form class (arg ...) . x)
      (with-syntax ([orig-stx stx])
-       (quasisyntax/loc stx 
-         (-instantiate do-make-object orig-stx #t (class) (list arg ...) . x)))]))
+       (class-syntax-protect
+        (quasisyntax/loc stx 
+          (-instantiate do-make-object orig-stx #t (class) (list arg ...) . x))))]))
 
 ;; Helper; used by instantiate and super-instantiate
 (define-syntax -instantiate
@@ -3358,12 +3374,13 @@ An example
        (andmap identifier? (syntax->list (syntax (kw ...))))
        (with-syntax ([(kw ...) (map localize (syntax->list (syntax (kw ...))))]
                      [(blame ...) (if (syntax-e #'first?) #'((current-contract-region)) null)])
-         (syntax/loc stx
-           (do-make-object blame ...
-                           maker-arg ...
-                           args
-                           (list (cons `kw arg)
-                                 ...))))]
+         (class-syntax-protect
+          (syntax/loc stx
+            (do-make-object blame ...
+                            maker-arg ...
+                            args
+                            (list (cons `kw arg)
+                                  ...)))))]
       [(_ super-make-object orig-stx first? (make-arg ...) args kwarg ...)
        ;; some kwarg must be bad:
        (for-each (lambda (kwarg)
@@ -3744,22 +3761,23 @@ An example
              (set! let-bindings (cons #`[#,var #,x] let-bindings))]))
         (set! arg-list (reverse arg-list))
         (set! let-bindings (reverse let-bindings))
-        
-        (syntax-property
-         (quasisyntax/loc stx
-          (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
-                        [(receiver) (unsyntax obj)]
-                        [(method) (find-method/who '(unsyntax form) receiver sym)])
-            (let (#,@(if kw-args
-                         (list #`[kw-arg-tmp #,(cadr kw-args)])
-                         (list))
-                  #,@let-bindings)
-              (unsyntax
-               (make-method-call-to-possibly-wrapped-object
-                stx kw-args/var arg-list rest-arg?
-                #'sym #'method #'receiver
-                (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
-         'feature-profile:send-dispatch #t)))
+
+        (class-syntax-protect
+         (syntax-property
+          (quasisyntax/loc stx
+            (let*-values ([(sym) (quasiquote (unsyntax (localize name)))]
+                          [(receiver) (unsyntax obj)]
+                          [(method) (find-method/who '(unsyntax form) receiver sym)])
+              (let (#,@(if kw-args
+                           (list #`[kw-arg-tmp #,(cadr kw-args)])
+                           (list))
+                    #,@let-bindings)
+                (unsyntax
+                 (make-method-call-to-possibly-wrapped-object
+                  stx kw-args/var arg-list rest-arg?
+                  #'sym #'method #'receiver
+                  (quasisyntax/loc stx (find-method/who '(unsyntax form) receiver sym)))))))
+          'feature-profile:send-dispatch #t))))
     
     (define (core-send apply? kws?)
       (lambda (stx)
@@ -3830,18 +3848,19 @@ An example
 (define-syntax (send* stx)
   (syntax-case stx ()
     [(form obj clause ...)
-     (quasisyntax/loc stx
-       (let* ([o obj])
-         (unsyntax-splicing
-          (map
-           (lambda (clause-stx)
-             (syntax-case clause-stx ()
-               [(meth . args)
-                (quasisyntax/loc stx
-                  (send o meth . args))]
-               [_ (raise-syntax-error
-                   #f "bad method call" stx clause-stx)]))
-           (syntax->list (syntax (clause ...)))))))]))
+     (class-syntax-protect
+      (quasisyntax/loc stx
+        (let* ([o obj])
+          (unsyntax-splicing
+           (map
+            (lambda (clause-stx)
+              (syntax-case clause-stx ()
+                [(meth . args)
+                 (quasisyntax/loc stx
+                   (send o meth . args))]
+                [_ (raise-syntax-error
+                    #f "bad method call" stx clause-stx)]))
+            (syntax->list (syntax (clause ...))))))))]))
 
 ;; functional chained send
 (define-syntax (send+ stx)
@@ -3850,10 +3869,12 @@ An example
     (pattern [name:id . args]))
   (syntax-parse stx
     [(_ obj:expr clause-0:send-clause clause:send-clause ...)
-     (quasisyntax/loc stx
-       (let ([o (send obj clause-0.name . clause-0.args)])
-         (send+ o clause ...)))]
-    [(_ obj:expr) (syntax/loc stx obj)]))
+     (class-syntax-protect
+      (quasisyntax/loc stx
+        (let ([o (send obj clause-0.name . clause-0.args)])
+          (send+ o clause ...))))]
+    [(_ obj:expr) (class-syntax-protect
+                   (syntax/loc stx obj))]))
 
 ;; find-method/who : symbol[top-level-form/proc-name]
 ;;                   any[object] 
@@ -4019,17 +4040,18 @@ An example
             [flat-stx (if proper? args-stx (flatten-args args-stx))])
        (with-syntax ([(gen obj)
                       (generate-temporaries (syntax (generic object)))])
-         (quasisyntax/loc stx
-           (let* ([obj object]
-                  [gen generic])
-             ;(check-generic gen)
-             (unsyntax
-              (make-method-call-to-possibly-wrapped-object
-               stx #f flat-stx (not proper?)
-               #'(generic-name gen) 
-               #'((generic-applicable gen) obj) 
-               #'obj
-               #'((generic-applicable gen) obj)))))))]))
+         (class-syntax-protect
+          (quasisyntax/loc stx
+            (let* ([obj object]
+                   [gen generic])
+              ;(check-generic gen)
+              (unsyntax
+               (make-method-call-to-possibly-wrapped-object
+                stx #f flat-stx (not proper?)
+                #'(generic-name gen) 
+                #'((generic-applicable gen) obj) 
+                #'obj
+                #'((generic-applicable gen) obj))))))))]))
 
 (define (check-generic gen)
   (unless (generic? gen)
@@ -4050,7 +4072,8 @@ An example
                      name))
                   (with-syntax ([name (localize name)]
                                 [make make])
-                    (syntax/loc stx (make class-expr `name))))]
+                    (class-syntax-protect
+                     (syntax/loc stx (make class-expr `name)))))]
                [(_ class-expr)
                 (raise-syntax-error
                  #f
@@ -4067,7 +4090,8 @@ An example
     [(_ name obj val)
      (identifier? #'name)
      (with-syntax ([localized (localize #'name)])
-       (syntax/loc stx (set-field!/proc `localized obj val)))]
+       (class-syntax-protect
+        (syntax/loc stx (set-field!/proc `localized obj val))))]
     [(_ name obj val)
      (raise-syntax-error
       'set-field! "expected a field name as first argument"
@@ -4121,7 +4145,8 @@ An example
     [(_ name obj)
      (identifier? (syntax name))
      (with-syntax ([localized (localize (syntax name))])
-       (syntax/loc stx (get-field/proc `localized obj)))]
+       (class-syntax-protect
+        (syntax/loc stx (get-field/proc `localized obj))))]
     [(_ name obj)
      (raise-syntax-error
       'get-field "expected a field name as first argument"
@@ -4175,7 +4200,8 @@ An example
     [(_ name obj)
      (identifier? (syntax name))
      (with-syntax ([localized (localize (syntax name))])
-       (syntax (field-bound?/proc `localized obj)))]
+       (class-syntax-protect
+        (syntax (field-bound?/proc `localized obj))))]
     [(_ name obj)
      (raise-syntax-error
       'field-bound? "expected a field name as first argument"
@@ -4223,19 +4249,20 @@ An example
        (with-syntax ([(method ...) (generate-temporaries ids)]
                      [(method-obj ...) (generate-temporaries ids)]
                      [(name ...) (map localize names)])
-         (syntax/loc stx (let-values ([(method method-obj)
-                                       (let ([obj obj-expr])
-                                         (values (find-method/who 'with-method obj `name)
-                                                 obj))]
-                                      ...)
-                           (letrec-syntaxes+values ([(id) (make-with-method-map
-                                                           (quote-syntax set!)
-                                                           (quote-syntax id)
-                                                           (quote-syntax method)
-                                                           (quote-syntax method-obj))]
-                                                    ...)
-                             ()
-                             body0 body1 ...)))))]
+         (class-syntax-protect
+          (syntax/loc stx (let-values ([(method method-obj)
+                                        (let ([obj obj-expr])
+                                          (values (find-method/who 'with-method obj `name)
+                                                  obj))]
+                                       ...)
+                            (letrec-syntaxes+values ([(id) (make-with-method-map
+                                                            (quote-syntax set!)
+                                                            (quote-syntax id)
+                                                            (quote-syntax method)
+                                                            (quote-syntax method-obj))]
+                                                     ...)
+                                                    ()
+                              body0 body1 ...))))))]
     ;; Error cases:
     [(_ (clause ...) . body)
      (begin
@@ -4783,16 +4810,16 @@ An example
                             (λ (super%)
                               (check-mixin-super mixin-name super% (list from-ids ...))
                               class-expr))])
-             
              ;; Finally, build the complete mixin expression:
-             (syntax/loc stx
-               (let ([from-ids from] ...)
-                 (let ([to-ids to] ...)
-                   (check-mixin-from-interfaces (list from-ids ...))
-                   (check-mixin-to-interfaces (list to-ids ...))
-                   (check-interface-includes (list (quasiquote super-vars) ...)
-                                             (list from-ids ...))
-                   mixin-expr)))))))]))
+             (class-syntax-protect
+              (syntax/loc stx
+                (let ([from-ids from] ...)
+                  (let ([to-ids to] ...)
+                    (check-mixin-from-interfaces (list from-ids ...))
+                    (check-mixin-to-interfaces (list to-ids ...))
+                    (check-interface-includes (list (quasiquote super-vars) ...)
+                                              (list from-ids ...))
+                    mixin-expr))))))))]))
 
 (define externalizable<%>
   (_interface () externalize internalize))

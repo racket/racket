@@ -7,7 +7,7 @@
            '#%unsafe)
 (#%provide force promise? promise-forced? promise-running?
            ;; provided to create extensions
-           (struct promise ()) pref pset! prop:force reify-result
+           (struct promise ()) (protect pref pset!) prop:force reify-result
            promise-forcer
            promise-printer
            (struct running ()) (struct reraise ())
@@ -249,7 +249,7 @@
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
 (#%provide (rename lazy* lazy))
 (define lazy make-composable-promise)
-(define-syntax (lazy* stx) (make-delayer stx #'lazy '()))
+(define-syntax (lazy* stx) (syntax-protect (make-delayer stx #'lazy '())))
 
 ;; Creates a (generic) promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
@@ -261,7 +261,7 @@
 ;; but provided for regular delay/force uses.)
 (#%provide (rename delay* delay))
 (define delay make-promise)
-(define-syntax (delay* stx) (make-delayer stx #'delay '()))
+(define-syntax (delay* stx) (syntax-protect (make-delayer stx #'delay '())))
 
 ;; For simplicity and efficiency this code uses thunks in promise values for
 ;; exceptions: this way, we don't need to tag exception values in some special

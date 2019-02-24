@@ -12,24 +12,29 @@
   (define-syntax (case stx)
     (syntax-case stx (else)
       ;; Empty case
-      [(_ v) (syntax/loc stx (#%expression (begin v (void))))]
+      [(_ v)
+       (syntax-protect
+        (syntax/loc stx (#%expression (begin v (void)))))]
       
       ;; Else-only case
       [(_ v [else e es ...])
-       (syntax/loc stx (#%expression (begin v (let-values () e es ...))))]
+       (syntax-protect
+        (syntax/loc stx (#%expression (begin v (let-values () e es ...)))))]
       
       ;; If we have a syntactically correct form without an 'else' clause,
       ;; add the default 'else' and try again.
       [(self v [(k ...) e1 e2 ...] ...)
-       (syntax/loc stx (self v [(k ...) e1 e2 ...] ... [else (void)]))]
+       (syntax-protect
+        (syntax/loc stx (self v [(k ...) e1 e2 ...] ... [else (void)])))]
       
       ;; The general case
       [(_ v [(k ...) e1 e2 ...] ... [else x1 x2 ...])
-       (if (< (length (syntax-e #'(k ... ...))) *sequential-threshold*)
-           (syntax/loc stx (let ([tmp v])
-                             (case/sequential tmp [(k ...) e1 e2 ...] ... [else x1 x2 ...])))
-           (syntax/loc stx (let ([tmp v])
-                             (case/dispatch   tmp [(k ...) e1 e2 ...] ... [else x1 x2 ...]))))]
+       (syntax-protect
+        (if (< (length (syntax-e #'(k ... ...))) *sequential-threshold*)
+            (syntax/loc stx (let ([tmp v])
+                              (case/sequential tmp [(k ...) e1 e2 ...] ... [else x1 x2 ...])))
+            (syntax/loc stx (let ([tmp v])
+                              (case/dispatch   tmp [(k ...) e1 e2 ...] ... [else x1 x2 ...])))))]
       
       ;; Error cases
       [(_ v clause ...)
@@ -83,23 +88,27 @@
   (define-syntax (case/sequential stx)
     (syntax-case stx (else)
       [(_ v [(k ...) es ...] arms ... [else xs ...])
-       #'(if (case/sequential-test v (k ...))
-             (let-values () es ...)
-             (case/sequential v arms ... [else xs ...]))]
+       (syntax-protect
+        #'(if (case/sequential-test v (k ...))
+              (let-values () es ...)
+              (case/sequential v arms ... [else xs ...])))]
       [(_ v [(k ...) es ...] [else xs ...])
-       #'(if (case/sequential-test v (k ...))
-             (let-values () es ...)
-             (let-values () xs ...))]
+       (syntax-protect
+        #'(if (case/sequential-test v (k ...))
+              (let-values () es ...)
+              (let-values () xs ...)))]
       [(_ v [else xs ...])
-       #'(let-values () xs ...)]))
+       (syntax-protect
+        #'(let-values () xs ...))]))
   
   (define-syntax (case/sequential-test stx)
-    (syntax-case stx ()
-      [(_ v ())         #'#f]
-      [(_ v (k))        #`(equal? v 'k)]
-      [(_ v (k ks ...)) #`(if (equal? v 'k)
-                              #t
-                              (case/sequential-test v (ks ...)))]))
+    (syntax-protect
+     (syntax-case stx ()
+       [(_ v ())         #'#f]
+       [(_ v (k))        #`(equal? v 'k)]
+       [(_ v (k ks ...)) #`(if (equal? v 'k)
+                               #t
+                               (case/sequential-test v (ks ...)))])))
   
   ;; Triple-dispatch case:
   ;; (1) From the type of the value to a type-specific mechanism for
@@ -109,29 +118,30 @@
   (define-syntax (case/dispatch stx)
     (syntax-case stx (else)
       [(_ v [(k ...) es ...] ... [else xs ...])
-       #`(let ([index
-                #,(let* ([ks  (partition-constants #'((k ...) ...))]
-                         [exp #'0]
-                         [exp (if (null? (consts-other ks))
-                                  exp
-                                  (dispatch-other #'v (consts-other ks) exp))]
-                         [exp (if (null? (consts-char ks))
-                                  exp
-                                  #`(if (char? v)
-                                        #,(dispatch-char #'v (consts-char ks))
-                                        #,exp))]
-                         [exp (if (null? (consts-symbol ks))
-                                  exp
-                                  #`(if #,(test-for-symbol #'v (consts-symbol ks))
-                                        #,(dispatch-symbol #'v (consts-symbol ks) #'0)
-                                        #,exp))]
-                         [exp (if (null? (consts-fixnum ks))
-                                  exp
-                                  #`(if (fixnum? v)
-                                        #,(dispatch-fixnum #'v (consts-fixnum ks))
-                                        #,exp))])
-                    exp)])
-           #,(index-binary-search #'index #'([xs ...] [es ...] ...)))]))
+       (syntax-protect
+        #`(let ([index
+                 #,(let* ([ks  (partition-constants #'((k ...) ...))]
+                          [exp #'0]
+                          [exp (if (null? (consts-other ks))
+                                   exp
+                                   (dispatch-other #'v (consts-other ks) exp))]
+                          [exp (if (null? (consts-char ks))
+                                   exp
+                                   #`(if (char? v)
+                                         #,(dispatch-char #'v (consts-char ks))
+                                         #,exp))]
+                          [exp (if (null? (consts-symbol ks))
+                                   exp
+                                   #`(if #,(test-for-symbol #'v (consts-symbol ks))
+                                         #,(dispatch-symbol #'v (consts-symbol ks) #'0)
+                                         #,exp))]
+                          [exp (if (null? (consts-fixnum ks))
+                                   exp
+                                   #`(if (fixnum? v)
+                                         #,(dispatch-fixnum #'v (consts-fixnum ks))
+                                         #,exp))])
+                     exp)])
+            #,(index-binary-search #'index #'([xs ...] [es ...] ...))))]))
 
     
   (begin-for-syntax
