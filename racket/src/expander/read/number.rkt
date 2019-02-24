@@ -54,8 +54,8 @@
   #:authentic)
 
 ;; `sgn/z` records a sign in case `n` is zero
-(struct rect-prefix (sgn/z n) #:authentic)
-(struct polar-prefix (sgn/z n) #:authentic)
+(struct rect-prefix (sgn/z n start) #:authentic)
+(struct polar-prefix (sgn/z n start) #:authentic)
 
 ;; Exactness state is one of
 ;;   - 'exact      ; found "#e"
@@ -243,7 +243,9 @@
 ;; The `sgn/z` argument lets us produce -0.0 instead of 0.0 as needed
 ;; when converting an exact zero to inexact. That is, the sign is `-1`
 ;; when the input has a literal "-", but it's only used when `n` is 0.
-(define (finish sgn/z n s state)
+(define (finish sgn/z n s state
+                ;; Used only when we have to resort to host:string->number:
+                #:range [range #f])
   (define fst (parse-state-fst state))
   (cond
     [(or (not fst) (eq? fst '+/-))
@@ -268,7 +270,10 @@
                   (lambda (r)
                     (real->extfl r)))]
           [else
-           (host:string->number s 10 'read)])]
+           (define trim-s (trim-number s
+                                       (if range (car range) 0)
+                                       (if range (cdr range) (string-length s))))
+           (host:string->number trim-s 10 'read)])]
        [(double inexact approx)
         (maybe (force-lazy-inexact sgn/z n state s)
                (lambda (r0)
@@ -279,8 +284,11 @@
         (fail state "cannot convert extflonum to exact in `~a`" s)]
        [else (force-lazy-exact n state s)])]
     [(polar-prefix? fst)
-     (define m (finish (polar-prefix-sgn/z fst) (polar-prefix-n fst) s (state-first-half state)))
-     (define a (finish sgn/z n s (state-second-half state)))
+     (define pos (polar-prefix-start fst))
+     (define m (finish (polar-prefix-sgn/z fst) (polar-prefix-n fst) s (state-first-half state)
+                       #:range (cons 0 pos)))
+     (define a (finish sgn/z n s (state-second-half state)
+                       #:range (cons pos (string-length s))))
      ;; extflonum errors take precedence over errors like divide-by-zero
      (cond
        [(extflonum? m)
@@ -318,8 +326,11 @@
                  (make-rectangular zero i)])))]
     [(and (rect-prefix? fst)
           (fx= start end))
-     (define r (finish (rect-prefix-sgn/z fst) (rect-prefix-n fst) s (state-first-half state)))
-     (define i (finish sgn/z n s (state-second-half state)))
+     (define pos (rect-prefix-start fst))
+     (define r (finish (rect-prefix-sgn/z fst) (rect-prefix-n fst) s (state-first-half state)
+                       #:range (cons 0 pos)))
+     (define i (finish sgn/z n s (state-second-half state)
+                       #:range (cons pos (string-length s))))
      ;; extflonum errors take precedence over other errors (such as divide-by-zero)
      (cond
        [(extflonum? r)
@@ -372,6 +383,17 @@
      [(#\f #\F #\s #\S) 'single]
      [(#\t #\T) 'extended])
    #:override? override?))
+
+;; When we have to use `host:string->number` to deal with extflonums,
+;; we need to extract the right part of the string. Remove any '#'
+;; from the front and any 'i' at the end.
+(define (trim-number s start end)
+  (cond
+    [(eqv? (string-ref s start) #\#)
+     (trim-number s (fx+ 2 start) end)]
+    [(eqv? (string-ref s (fx- end 1)) #\i)
+     (trim-number s start (fx- end 1))]
+    [else (substring s start end)]))
 
 ;; ----------------------------------------
 
@@ -739,7 +761,7 @@
     [else
      ;; take it from almost the top, pushing the number so far into `state`;
      ;; we don't have to start at the very top, because we saw a "+" or "-"
-     (read-signed sgn s start end radix (state-set-first-half state (rect-prefix real-sgn real)))]))
+     (read-signed sgn s start end radix (state-set-first-half state (rect-prefix real-sgn real (fx- start 1))))]))
 
 ;; consumed "@" after the number in `real`
 (define (read-polar real-sgn real s start end radix state)
@@ -755,10 +777,10 @@
       [(eof)
        (bad-misplaced "@" s state)]
       [(#\+ #\-)
-       (define new-state (state-set-first-half state (polar-prefix real-sgn real)))
+       (define new-state (state-set-first-half state (polar-prefix real-sgn real start)))
        (read-signed (if (eq? c '#\+) 1 -1) s (fx+ 1 start) end radix new-state)]
       [(digit)
-       (define new-state (state-set-first-half state (polar-prefix real-sgn real)))
+       (define new-state (state-set-first-half state (polar-prefix real-sgn real start)))
        (read-integer 1 c s (fx+ 1 start) end radix new-state)]
       [else
        (bad-digit c s state)])]))
