@@ -104,6 +104,14 @@
   
   (check-true (is-metafunction? mf3)))
 
+(test-case "use define-template-metafunction"
+  (define-template-metafunction (mf-def-for-use stx)
+    (syntax-case stx ()
+      [(_ n) #`#,(/ (syntax-e #'n) 2)]))
+
+  (check-equal? (syntax->datum (template (x (mf-def-for-use 6) z)))
+                '(x 3 z)))
+
 (begin-for-syntax
   (struct my-template-metafunction4 (proc-id)
     #:property prop:template-metafunction (struct-field-index proc-id)))
