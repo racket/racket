@@ -2338,5 +2338,56 @@
           (restore))))
 
 ;; ----------------------------------------
+;; Make sure somethign reasonable happens when a `for-syntax` `define`
+;; is seen via `local-expand` but is not preserved in the expansion
+
+(module module-compiles-but-does-not-visit racket/base
+  (require (for-syntax racket/base))
+
+  (begin-for-syntax
+    (when (eq? (syntax-local-context) 'module)
+      (local-expand
+       #'(#%plain-module-begin
+          (begin-for-syntax
+            (define x 42)))
+       'module-begin
+       '())))
+
+  (begin-for-syntax
+    ;; Weird: can be 42 at compile time, but since the for-syntax
+    ;; `define` did not survive in the fully expanded form, it
+    ;; turns into a reference to an undefined variable.
+    x))
+
+(err/rt-test (begin
+               (eval '(require 'module-compiles-but-does-not-visit))
+               ;; triggers visit:
+               (eval #t))
+             exn:fail:contract:variable?)
+
+;; ----------------------------------------
+;; Make sure a reasonable exceptoion happens when `local-expand`
+;; is misused under `begin-for-syntax`
+
+(module module-also-compiles-but-does-not-visit racket/base
+  (require (for-syntax racket/base))
+
+  (begin-for-syntax
+    (local-expand
+     #'(#%plain-module-begin
+        (begin-for-syntax
+          (define x 42)))
+     'module-begin
+     '())))
+
+(err/rt-test (begin
+               (eval '(require 'module-also-compiles-but-does-not-visit))
+               ;; triggers visit:
+               (eval #t))
+             (lambda (exn)
+               (and (exn:fail:syntax? exn) ; the error is from `#%plain-module-begin`
+                    (regexp-match? #rx"not currently transforming a module" (exn-message exn)))))
+
+;; ----------------------------------------
 
 (report-errs)

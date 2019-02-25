@@ -204,15 +204,20 @@
           (error "internal error: cannot assign to a primitive:" (module-binding-sym b)))
         ;; Expect each primitive to be bound:
         (module-binding-sym b)]
-       [(eq? mpi (compile-context-module-self cctx))
-        ;; Direct reference to a variable defined in the same module:
-        (define header (compile-context-header cctx))
-        (hash-ref (header-binding-sym-to-define-sym header)
-                  (module-binding-sym b))]
+       [(and (eq? mpi (compile-context-module-self cctx))
+             ;; Direct reference to a variable defined in the same module:
+             (hash-ref (header-binding-sym-to-define-sym (compile-context-header cctx))
+                       (module-binding-sym b)
+                       ;; If this `#f` is used as the result, then the identifier must be a
+                       ;; reference to a binding that was introduced through `local-expand`,
+                       ;; but didn't survive to a definition in the full expansion; treat it
+                       ;; as an undefined export.
+                       #f))
+        => (lambda (sym) sym)]
        [else
         ;; Reference to a variable defined in another module or in an
         ;; environment (such as the top level) other than a module
-        ;; context; register as a linklet import
+        ;; context; register as a linklet import or export
         (register-required-variable-use! (compile-context-header cctx)
                                          (if (inside-module-context? mpi (compile-context-self cctx))
                                              (compile-context-self cctx)

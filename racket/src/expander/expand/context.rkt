@@ -215,7 +215,7 @@
 ;; Register a callback for `raise-syntax-error`
 (set-current-previously-unbound!
  (lambda ()
-   (define ctx (current-expand-context))
+   (define ctx (force (current-expand-context)))
    (define phase-to-ids (and ctx (expand-context-need-eventually-defined ctx)))
    (and phase-to-ids
         (hash-ref phase-to-ids (expand-context-phase ctx) null))))
