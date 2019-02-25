@@ -3625,7 +3625,10 @@ Scheme_Object *scheme_chaperone_hash_table_filtered_copy(Scheme_Object *obj,
   Scheme_Object *a[3], *v, *v2, *idx, *key, *val;
   int is_eq, is_eqv;
 
-  v = SCHEME_CHAPERONE_VAL(obj);
+  if (SCHEME_CHAPERONEP(obj))
+    v = SCHEME_CHAPERONE_VAL(obj);
+  else
+    v = obj;
 
   a[0] = obj;
   is_eq = SCHEME_TRUEP(scheme_hash_eq_p(1, a));
