@@ -82,9 +82,9 @@ enum {
 
   /* other eqv?-able values (must be with numbers) */
   scheme_char_type,                     /* 53 */
+  scheme_long_double_type,              /* 54 */
 
   /* other values */
-  scheme_long_double_type,              /* 54 */
   scheme_char_string_type,              /* 55 */
   scheme_byte_string_type,              /* 56 */
   scheme_unix_path_type,                /* 57 */

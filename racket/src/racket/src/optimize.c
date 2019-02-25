@@ -3618,6 +3618,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_not_proc;
     if (SCHEME_PROCP(expr))
       return scheme_procedure_p_proc;
+    if (SCHEME_LONG_DBLP(expr))
+      return scheme_extflonum_p_proc;
   }
 
   /* This test is slower, so put it at the end */  
@@ -5712,13 +5714,13 @@ static int relevant_predicate(Scheme_Object *pred)
       || SAME_OBJ(pred, scheme_byte_string_p_proc)
       || SAME_OBJ(pred, scheme_vector_p_proc)
       || SAME_OBJ(pred, scheme_procedure_p_proc)
-      || SAME_OBJ(pred, scheme_syntax_p_proc)
-      || SAME_OBJ(pred, scheme_extflonum_p_proc))
+      || SAME_OBJ(pred, scheme_syntax_p_proc))
     return RLV_IS_RELEVANT;
   if (SAME_OBJ(pred, scheme_char_p_proc)
       || SAME_OBJ(pred, scheme_flonum_p_proc)
       || SAME_OBJ(pred, scheme_number_p_proc)
-      || SAME_OBJ(pred, scheme_real_p_proc))
+      || SAME_OBJ(pred, scheme_real_p_proc)
+      || SAME_OBJ(pred, scheme_extflonum_p_proc))
     return RLV_EQV_TESTEABLE;
   if (SAME_OBJ(pred, scheme_symbol_p_proc)
       || SAME_OBJ(pred, scheme_keyword_p_proc)

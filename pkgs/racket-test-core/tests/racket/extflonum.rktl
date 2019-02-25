@@ -20,6 +20,20 @@
 (when (extflonum-available?)
   ;; ----------------------------------------
 
+  (test #t eqv? +nan.0 (string->number "+nan.0" 10 'read))
+  (test #t eqv? +inf.0 (string->number "+inf.0" 10 'read))
+  (test #t eqv? -inf.0 (string->number "-inf.0" 10 'read))
+  (test #f eqv? -inf.0 (string->number "+nan.0" 10 'read))
+
+  ;; Check JIT-inlined `eqv?`
+  (let ([eqv (lambda (a b)
+               (eqv? a b))])
+    (set! eqv (if (zero? (random 1)) eqv list))
+    (test #t eqv +nan.0 (string->number "+nan.0" 10 'read))
+    (test #t eqv +inf.0 (string->number "+inf.0" 10 'read))
+    (test #t eqv -inf.0 (string->number "-inf.0" 10 'read))
+    (test #f eqv -inf.0 (string->number "+nan.0" 10 'read)))
+
   (define (extflonum-close? fl1 fl2)
     (extfl<= (extflabs (fl- fl1 fl2))
              (real->extfl 1e-8)))
