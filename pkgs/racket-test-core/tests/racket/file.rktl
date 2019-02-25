@@ -363,7 +363,9 @@
   (delete-file tempfilename))
 
 (err/rt-test (open-output-file tempfilename #:exists 'update) exn:fail:filesystem?)
-(test #t output-port? (open-output-file tempfilename #:exists 'can-update))
+(let ([p (open-output-file tempfilename #:exists 'can-update)])
+  (test #t output-port? p)
+  (close-output-port p))
 (delete-file tempfilename)
 
 (let ([p (open-output-file tempfilename)])
