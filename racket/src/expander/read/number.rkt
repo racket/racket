@@ -210,7 +210,7 @@
                             exp))
      (cond
        [(eqv? n 0) (if (fx= sgn/z -1) (- 0.0) 0.0)]
-       [(approx-expt . > . precision) +inf.0]
+       [(approx-expt . > . precision) (if (fx= sgn/z -1) -inf.0 +inf.0)]
        [(approx-expt . < . (- precision)) (if (fx= sgn/z -1) (- 0.0) 0.0)]
        [else
         (* n (expt radix exp))])]
@@ -224,19 +224,31 @@
        [(state-has-first-half? state) #f]
        [(eqv? n 0) (if (fx= sgn 1) 0.0 (- 0.0))]
        [(and (fixnum? n)
-             ((integer-length n) . < . 50))
+             (n . < . (expt 2 50))
+             (n . > . (- (expt 2 50))))
         ;; No loss of precision in mantissa from early flonum conversion
         (let ([exp (+ exp (* sgn2 exp2))]
               [m (fx->fl (if (fx= sgn -1)
                              (fx- 0 n)
-                             n))]
-              [radix (if (fx= radix 10)
-                         10.0
-                         (fx->fl radix))])
+                             n))])
           (cond
             [(eqv? exp 0) m]
-            [(exp . < . 0) (/ m (expt radix (- exp)))]
-            [else (* m (expt radix exp))]))]
+            [(not (fixnum? exp)) #f]
+            [else
+             (define fradix (if (fx= radix 10)
+                                10.0
+                                (fx->fl radix)))
+             (cond
+               [(exp . fx< . 0)
+                ;; Stay well away from limits on the exponent to make
+                ;; sure there's still no loss of precision. We could
+                ;; use `(integer-length n)` to improve the bounds,
+                ;; but this seems good enough for the common case.
+                (and (exp . fx> . (cond
+                                    [(radix . fx<= . 10) -300]
+                                    [else -240]))
+                     (/ m (expt fradix (fx- 0 exp))))]
+               [else (* m (expt fradix exp))])]))]
        [else #f])]
     [else #f]))
 

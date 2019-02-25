@@ -2507,6 +2507,7 @@
 (test 10.0+0.0i string->number (string-append "#i1" (make-string 8000 #\0) "/" "1" (make-string 7998 #\0) "#@0"))
 (test 1 string->number (string-append "1" (make-string 8000 #\0) "/" "1" (make-string 8000 #\0) "@0"))
 (test 10.0 string->number (string-append "1" (make-string 8000 #\0) "/" "1" (make-string 7998 #\0) "#@0"))
+(test #f zero? (string->number "7.4109846876187e-323"))
 
 (test #t andmap (lambda (x) (and (>= x 0) (< x 10))) (map random '(10 10 10 10)))
 (test (void) random-seed 5)
