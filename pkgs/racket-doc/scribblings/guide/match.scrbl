@@ -92,6 +92,22 @@ which does not bind (and thus is usually used as a catch-all):
   [_ 'something-else])
 ]
 
+Note that the identifier @racket[else] is @bold{not} a catch-all.
+If @racket[else] appears in a pattern then its default binding may be
+shadowed, and this can cause problems with @racket[cond] and @racket[case].
+
+@interaction[
+#:eval match-eval
+(match 1
+  [else
+   (case 2
+    [else 3])])
+(match #f
+  [else
+   (cond
+    [else 1]
+    [#t 2])])
+]
 
 An ellipsis, written @litchar{...}, acts like a Kleene star within a
 list or vector pattern: the preceding sub-pattern can be used to match
