@@ -98,6 +98,7 @@ In more detail, patterns match as follows:
        instances of an @racket[_id] in different @racketidfont{or} and
        @racketidfont{not} sub-patterns are independent. The binding for @racket[_id] is
        not available in other parts of the same pattern.
+       @margin-note{@racket[else] is not a reserved name.}
 
        @examples[
        #:eval match-eval
@@ -107,6 +108,8 @@ In more detail, patterns match as follows:
        (match '(1 (x y z) 1)
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
+       (match #false
+         [else (cond [else else])])
        ]}
 
  @item{@racketidfont{_} --- matches anything, without binding any
