@@ -110,7 +110,10 @@ In more detail, patterns match as follows:
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
        (match #f
-         [else (cond [else else])])
+         [else
+          (cond
+            [#f 'not-evaluated]
+            [else 'also-not-evaluated])])
        ]}
 
  @item{@racketidfont{_} --- matches anything, without binding any

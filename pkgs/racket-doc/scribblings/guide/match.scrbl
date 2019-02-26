@@ -102,12 +102,13 @@ If @racket[else] appears in a pattern then its binding from
 (match 1
   [else
    (case 2
-    [else 3])])
+     [(a 1 b) 3]
+     [else 4])])
 (match #f
   [else
    (cond
-    [else 1]
-    [#t 2])])
+     [#f 'not-evaluated]
+     [else 'also-not-evaluated])])
 ]
 
 An ellipsis, written @litchar{...}, acts like a Kleene star within a
