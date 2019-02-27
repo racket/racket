@@ -92,7 +92,7 @@ which does not bind (and thus is usually used as a catch-all):
   [_ 'something-else])
 ]
 
-Note that the identifier @racket[else] is @bold{not} a reserved catch-all.
+Note that the identifier @racket[else] is @bold{not} a reserved catch-all (like @racket[_]).
 If @racket[else] appears in a pattern then its binding from
 @racketmodname[racket/base] may be shadowed, and this can cause problems with
 @racket[cond] and @racket[case].
