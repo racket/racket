@@ -67,7 +67,28 @@
                [(bad . _)
                 (raise-syntax-error 
                  #f
-                 "bad syntax (not a datum sequence)"
+                 ;; If #'bad is an identifier, report its binding in the error message.
+                 ;; This helps resolving the syntax error when `else' is shadowed somewhere
+                 (if (not (symbol? (syntax-e (syntax bad))))
+                     "bad syntax (not a datum sequence)"
+                     (string-append
+                      "bad syntax (not a datum sequence)\n"
+                      "  expected: a datum sequence or the binding 'else' from racket/base\n"
+                      "  given: "
+                      (let ([binding (identifier-binding (syntax bad))])
+                        (cond
+                          [(not binding) "an unbound identifier"]
+                          [(eq? binding 'lexical) "a locally bound identifier"]
+                          [else
+                           (let*-values ([(src) (car binding)]
+                                         [(mpath base) (module-path-index-split src)])
+                             (cond
+                               [(not mpath)
+                                "an identifier bound by the current module"]
+                               [else
+                                (format "an identifier required from the module ~a"
+                                        (resolved-module-path-name
+                                         (module-path-index-resolve src)))]))]))))
                  stx
                  (syntax bad))]
                [_
