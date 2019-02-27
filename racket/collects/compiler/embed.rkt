@@ -543,12 +543,6 @@
                             ;; check for run-time paths by visiting the module in an
                             ;; expand-time namespace:
                             (parameterize ([current-namespace expand-namespace])
-                              (define no-submodule-code
-                                ;; Strip away submodules to avoid re-declaring them:
-                                (module-compiled-submodules 
-                                 (module-compiled-submodules code #f null)
-                                 #t
-                                 null))
                               (let ([module-path
                                      (if (path? module-path)
                                          (path->complete-path module-path)
@@ -558,7 +552,7 @@
                                                   (module-path-index-resolve (module-path-index-join
                                                                               module-path
                                                                               #f))])
-                                    (eval no-submodule-code)))
+                                    (eval code)))
                                 (define e (expand `(,#'module m racket/kernel
                                                      (#%require (only ,module-path)
                                                                 racket/runtime-path)

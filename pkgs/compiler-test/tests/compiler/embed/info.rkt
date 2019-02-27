@@ -11,7 +11,8 @@
                              "embed-bsla.rkt"
                              "embed-isl.rkt"
                              "embed-isll.rkt"
-                             "embed-asl.rkt"))
+                             "embed-asl.rkt"
+                             "embed-me36.rkt"))
 
 (define test-omit-paths '("embed-me9.rkt"
                           "embed-planet-1"
