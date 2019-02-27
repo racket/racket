@@ -2055,7 +2055,11 @@
 (define (follow-chain who obj names len)
   (for ([s (in-list names)]
         [i (in-range len)])
-    (unless (string? s) (raise-type-error who "string" s)))
+    (unless (or (string? s)
+                (and (list? s)
+                     (pair? s)
+                     (string? (car s))))
+      (raise-argument-error who "(or/c string? (cons/c string? list?))" s)))
   (define-values (target-obj release?)
     (for/fold ([obj obj] [release? #f]) ([i (in-range (sub1 len))]
                                          [s (in-list names)])
@@ -2078,7 +2082,7 @@
 	   (string? (car name)))
       (do-com-invoke 'com-get-property obj (car name) (cdr name) INVOKE_PROPERTYGET)]
      [else
-      (raise-argument-error 'com-get-property "(or/c string? (cons/c string? list))"
+      (raise-argument-error 'com-get-property "(or/c string? (cons/c string? list?))"
 			    name)])]
    [(obj name1 . more-names)
     (check-com-obj 'com-get-property obj)
