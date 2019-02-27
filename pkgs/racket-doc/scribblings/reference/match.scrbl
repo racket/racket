@@ -91,7 +91,9 @@ In more detail, patterns match as follows:
        @racketidfont{...}, @racketidfont{___},
        @racketidfont{..}@racket[_k], and
        @racketidfont{..}@racket[_k] for non-negative integers
-       @racket[_k]) or @racket[(var _id)] --- matches anything, and binds @racket[_id] to the
+       @racket[_k]) @margin-note{Unlike in @racket[cond] and @racket[case],
+       @racket[else] is not a keyword in @racket[match].} or @racket[(var _id)]
+       --- matches anything, and binds @racket[_id] to the
        matching values. If an @racket[_id] is used multiple times
        within a pattern, the corresponding matches must be the same
        according to @racket[(match-equality-test)], except that
@@ -107,6 +109,11 @@ In more detail, patterns match as follows:
        (match '(1 (x y z) 1)
          [(list a b a) (list a b)]
          [(list a b c) (list c b a)])
+       (match #f
+         [else
+          (cond
+            [#f 'not-evaluated]
+            [else 'also-not-evaluated])])
        ]}
 
  @item{@racketidfont{_} --- matches anything, without binding any
