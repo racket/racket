@@ -13,7 +13,8 @@
          cpointer? cpointer-gcable? prop:cpointer
          ptr-equal? ptr-add ptr-ref ptr-set! (protect-out cast)
          ptr-offset ptr-add! offset-ptr? set-ptr-offset!
-         vector->cpointer flvector->cpointer extflvector->cpointer saved-errno lookup-errno
+         vector->cpointer fxvector->cpointer flvector->cpointer extflvector->cpointer
+         saved-errno lookup-errno
          ctype? make-ctype make-cstruct-type make-array-type make-union-type
          make-sized-byte-string ctype->layout
          _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64 _wchar

@@ -2995,6 +2995,15 @@ static Scheme_Object *foreign_flvector_to_cpointer(int argc, Scheme_Object *argv
 }
 #undef MYNAME
 
+#define MYNAME "fxvector->cpointer"
+static Scheme_Object *foreign_fxvector_to_cpointer(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_FXVECTORP(argv[0]))
+    scheme_wrong_contract(MYNAME, "fxvector?", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (intptr_t)SCHEME_FXVEC_ELS((Scheme_Object *)0x0), NULL);
+}
+#undef MYNAME
+
 #define MYNAME "extflvector->cpointer"
 static Scheme_Object *foreign_extflvector_to_cpointer(int argc, Scheme_Object *argv[])
 {
@@ -4960,6 +4969,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
     scheme_make_immed_prim(foreign_vector_to_cpointer, "vector->cpointer", 1, 1), env);
   scheme_addto_prim_instance("flvector->cpointer",
     scheme_make_immed_prim(foreign_flvector_to_cpointer, "flvector->cpointer", 1, 1), env);
+  scheme_addto_prim_instance("fxvector->cpointer",
+    scheme_make_immed_prim(foreign_fxvector_to_cpointer, "fxvector->cpointer", 1, 1), env);
   scheme_addto_prim_instance("extflvector->cpointer",
     scheme_make_immed_prim(foreign_extflvector_to_cpointer, "extflvector->cpointer", 1, 1), env);
   scheme_addto_prim_instance("memset",
@@ -5325,6 +5336,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "vector->cpointer", 1, 1), env);
   scheme_addto_primitive_instance("flvector->cpointer",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "flvector->cpointer", 1, 1), env);
+  scheme_addto_primitive_instance("fxvector->cpointer",
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "fxvector->cpointer", 1, 1), env);
   scheme_addto_primitive_instance("extflvector->cpointer",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "extflvector->cpointer", 1, 1), env);
   scheme_addto_primitive_instance("memset",
