@@ -61,6 +61,7 @@ values would be equal. See also @racket[gen:equal+hash] and @racket[prop:imperso
 (equal? (mcons 1 2) (mcons 1 2))
 (equal? (integer->char 955) (integer->char 955))
 (equal? (make-string 3 #\z) (make-string 3 #\z))
+(equal? #t #t)
 ]}
 
 
@@ -87,6 +88,7 @@ in the case of @tech{complex numbers}. Two characters are
 (eqv? (mcons 1 2) (mcons 1 2))
 (eqv? (integer->char 955) (integer->char 955))
 (eqv? (make-string 3 #\z) (make-string 3 #\z))
+(eqv? #t #t)
 ]}
 
 
@@ -104,6 +106,7 @@ object, @racket[#f] otherwise. See also @secref["model-eq"].
 (eq? (mcons 1 2) (mcons 1 2))
 (eq? (integer->char 955) (integer->char 955))
 (eq? (make-string 3 #\z) (make-string 3 #\z))
+(eq? #t #t)
 ]}
 
 
@@ -144,6 +147,7 @@ of the datatype. In particular, @racket[immutable?] produces
 (immutable? #(0 1 2 3))
 (immutable? (make-hash))
 (immutable? (make-immutable-hash '([a b])))
+(immutable? #t)
 ]}
 
 @defthing[gen:equal+hash any/c]{
