@@ -2151,6 +2151,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       scheme_mz_unbox_restore(jitter, &ubs);
 
       mz_runstack_unskipped(jitter, 1);
+      mz_rs_sync();
 
       mz_prepare(1);
       jit_pusharg_p(JIT_R0);

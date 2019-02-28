@@ -935,5 +935,30 @@
                    (unsafe-fxlshift 1 31)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that allocation by inlined `unsafe-flrandom` is ok
+
+(test #t
+      symbol?
+      (let ([r (current-pseudo-random-generator)])
+        (for/fold ([v #f]) ([i (in-range 1000000)])
+          ;; The pattern of `if`s here is intended to check the JIT's
+          ;; runstack pointer is syned for allocation
+          (let* ([a (let ([v (unsafe-flrandom r)])
+                      (if (negative? v)
+                          (error "oops")
+                          v))]
+                 [b (let ([v (unsafe-flrandom r)])
+                      (if (negative? v)
+                          (error "oops")
+                          v))]
+                 [c (let ([v (unsafe-flrandom r)])
+                      (if (negative? v)
+                          (error "oops")
+                          v))])
+            (if (and (eqv? a b) (eqv? b c))
+                'same
+                'diff)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
