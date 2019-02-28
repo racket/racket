@@ -2173,7 +2173,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   Branch_Info_Addr nary_addrs[3];
   GC_CAN_IGNORE jit_insn *refslow, *reffx, *refdone;
   GC_CAN_IGNORE jit_insn *reffalse = NULL, *refdone3 = NULL;
-#ifdef INLINE_FP_OPS
+#ifdef INLINE_FP_COMP
   int args_unboxed;
   GC_CAN_IGNORE jit_insn *reffl, *refdone2;
   int use_fl = !unsafe_fx;
@@ -2188,6 +2188,18 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     /* bitwise operators are fixnum, only */
     mzSET_USE_FL(use_fl = 0);
   }
+
+#ifdef INLINE_FP_COMP
+# ifndef INLINE_FP_OPS
+  if ((arith == ARITH_ADD)
+      || (arith == ARITH_SUB)
+      || (arith == ARITH_MUL)
+      || (arith == ARITH_DIV)) {
+    /* assert: unsafe_fl < 1 */
+    use_fl = 0;
+  }
+# endif
+#endif
 
   c = app->num_args;
   if (!c) {
@@ -2265,7 +2277,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   } else
     reffx = NULL;
 
-#ifdef INLINE_FP_OPS
+#ifdef INLINE_FP_COMP
   if (use_fl && (unsafe_fl < 1)) {
     /* First argument a flonum? */
     jit_ldxi_s(JIT_R0, JIT_R0, &((Scheme_Object *)0x0)->type);
@@ -2331,7 +2343,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     reffalse = NULL;
   }
 
-#ifdef INLINE_FP_OPS
+#ifdef INLINE_FP_COMP
   if (use_fl) {
     /* Flonum branch: */
     if (unsafe_fl < 1) {
@@ -2414,7 +2426,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     }
   }
 
-#ifdef INLINE_FP_OPS
+#ifdef INLINE_FP_COMP
   if (use_fl && use_fx) {
     mz_patch_ucbranch(refdone2);
   }
