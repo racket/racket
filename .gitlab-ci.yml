@@ -46,6 +46,7 @@ scan-build:racket:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
     - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
+    - find $INSTALL_DIR -type f
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
@@ -68,6 +69,7 @@ scan-build:racketcs:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
     - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++ git uuid-dev
+    - find $INSTALL_DIR -type f
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
