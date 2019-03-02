@@ -359,7 +359,7 @@
                                  'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                 form ...)]))
         (include "../rktio/rktio.rktl"))))
-  
+
   ;; ----------------------------------------
 
   (define format

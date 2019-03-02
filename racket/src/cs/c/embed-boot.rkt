@@ -8,6 +8,7 @@
 
 (define expect-elf? #f)
 (define alt-dests '())
+(define target #f)
 
 (command-line
  #:once-each
@@ -15,6 +16,8 @@
   (enable-compress!)]
  [("--expect-elf") "Record offset from ELF section"
   (set! expect-elf? #t)]
+ [("--target") machine "Select target machine"
+  (set! target machine)]
  #:multi
  [("++exe") src dest "Select an alternative executable"
   (set! alt-dests (cons (cons src dest) alt-dests))]
@@ -39,12 +42,12 @@
                    bstr2 terminator
                    bstr3 terminator))
    (define pos
-     (case (path->string (system-library-subpath #f))
+     (case (or target (path->string (system-library-subpath #f)))
        [("x86_64-darwin" "i386-darwin" "x86_64-macosx" "i386-macosx")
         ;; Mach-O
         (copy-file src-file dest-file #t)
         (add-plt-segment dest-file data #:name #"__RKTBOOT")]
-       [("win32\\x86_64" "win32\\i386")
+       [("ta6nt" "ti3nt" "win32\\x86_64" "win32\\i386")
         (copy-file src-file dest-file #t)
         (define-values (pe rsrcs) (call-with-input-file*
                                    dest-file

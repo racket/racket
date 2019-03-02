@@ -171,7 +171,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
 #endif
 
   Sbuild_heap(NULL, init_foreign);
-  
+
   {
     ptr l = Snil;
     int i;

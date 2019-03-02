@@ -182,7 +182,7 @@
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
   (define (compile* e)
-    (call-with-system-wind (lambda () (compile e))))
+    (call-with-system-wind (lambda () (eval e)))) ; eval => compile, except in cross mode
   (define (interpret* e)
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)

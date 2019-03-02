@@ -20,7 +20,8 @@ AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
-AC_ARG_ENABLE(mach,       [  --enable-mach=<mac>     Use Chez Scheme machine type <mach>])
+AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    Use Chez Scheme machine type <mach>])
+AC_ARG_ENABLE(target,     [  --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>])
 m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
@@ -61,6 +62,7 @@ show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
+show_explicitly_set "${enable_target}" "cross-build machine type"
 
 if test "${enable_csonly}" = "yes" ; then
   enable_csdefault=yes
@@ -111,6 +113,8 @@ use_flag_posix_pthread=no
 INCLUDEDEP="#"
 OSX="not_osx"
 NOT_OSX=""
+MINGW="not_mingw"
+NOT_MINGW=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 ELF_COMP=""
@@ -134,7 +138,26 @@ fi
 AC_CHECK_LIB(m, fmod)
 AC_CHECK_LIB(dl, dlopen)
 
+AC_PROG_RANLIB
+if test "$AR" = '' ; then 
+  AR="${ac_tool_prefix}ar"
+  AC_CHECK_PROG(platform_ar_found, $AR, yes, no)
+  if test "$platform_ar_found" = 'no' ; then
+    AR="ar"
+  fi
+fi
+if test "$ARFLAGS" = '' ; then 
+  ARFLAGS=ruv
+fi
+
+LD="${ac_tool_prefix}ld"
+
+WINDRES=windres
+
 ############## platform tests ################
+
+# At first, `MACH` means the target that we're building for. In
+# cross-build mode, `MACH` will be moved to `TARGET_MACH`.
 
 MACH_HOST_CPU="${host_cpu}"
 extra_scheme_config_args=
@@ -173,7 +196,14 @@ case "$host_os" in
     ;;
   *mingw*)
     skip_iconv_check=yes
-    ;;    
+    use_flag_pthread=no
+    MACH_OS=nt
+    MINGW=""
+    NOT_MINGW="mingw"
+    if `which ${host}-windres > /dev/null` ; then
+      WINDRES="${host}-windres"
+    fi
+    ;;
   cygwin*)
     ;;
   darwin*)
@@ -242,10 +272,8 @@ if test "${enable_pthread}" = "" ; then
 fi
 
 thread_prefix=""
-thread_config_arg=""
 if test "${enable_pthread}" = "yes" ; then
   thread_prefix="t"
-  thread_config_arg="--threads"
 fi
 
 case "$MACH_HOST_CPU" in
@@ -263,6 +291,88 @@ case "$MACH_HOST_CPU" in
     ;;
 esac
 
+if test "${enable_mach}" != "" ; then
+  MACH="${enable_mach}"
+fi
+
+if test "${enable_target}" != "" ; then
+  TARGET_MACH=${enable_target}
+  CROSS_MODE="cross"
+elif test "${build_os}_${build_cpu}" != "${host_os}_${host_cpu}" ; then
+  BUILD_THREAD_PREFIX="${thread_prefix}"
+  case "$build_os" in
+    solaris2*)
+      BUILD_OS=s2
+      ;;
+    *freebsd*)
+      BUILD_OS=fb
+      ;;
+    openbsd*)
+      BUILD_OS=ob
+      ;;
+    netbsd*)
+      BUILD_OS=nb
+      ;;
+    linux*)
+      BUILD_OS=le
+      ;;
+    *mingw*)
+      BUILD_OS=nt
+      ;;
+    darwin*)
+      BUILD_OS=osx
+      ;;
+    nto-qnx*)
+      BUILD_OS=qnx
+      ;;
+    *)
+      echo "unknown build OS"
+      exit 1
+      ;;
+  esac
+  case "$build_cpu" in
+    x86_64)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}a6${BUILD_OS}"
+      ;;
+    x86|i*86)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}i3${BUILD_OS}"
+      ;;
+    arm*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}arm32${BUILD_OS}"
+      ;;
+    power*)
+      BUILD_MACH="${BUILD_THREAD_PREFIX}ppc32${BUILD_OS}"
+      ;;
+  esac
+  TARGET_MACH=${MACH}
+  MACH=${BUILD_MACH}
+  CROSS_MODE="cross"
+else
+  BUILD_MACH=${MACH}
+  TARGET_MACH=${MACH}
+  CROSS_MODE=""
+fi
+
+if test "${CROSS_MODE}" = "cross" ; then
+  if test "${enable_scheme}" = "" ; then
+    echo "Need --enable-scheme=... for cross-build mode"
+    exit 1
+  fi
+  if test "${enable_racket}" = "" ; then
+    echo "Need --enable-racket=... for cross-build mode"
+    exit 1
+  fi
+  T_CROSS_MODE="-cross"
+  TT_CROSS_MODE="--cross"
+else
+  T_CROSS_MODE=""
+  TT_CROSS_MODE=""
+fi
+
+# From this point on, `MACH` means the build machine, and
+# `TARGET_MACH` is the target that we're building for (which
+# is different in cross-build mode).
+
 SCHEME_SRC=../../ChezScheme
 MAKE_BUILD_SCHEME=y
 
@@ -275,11 +385,8 @@ if test "${enable_racket}" != "" ; then
   RACKET="${enable_racket}"
 fi
 
-if test "${enable_mach}" != "" ; then
-  MACH="${enable_mach}"
-fi
-
-SCHEME_CONFIG_ARGS="--machine=${MACH} ${thread_config_arg} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
+SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 
 if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
@@ -435,17 +542,48 @@ fi
 
 ############## final output ################
 
+# Pass certain configure args on to rktio
+keep_configure_args=
+fixup_prev=
+eval "set x $ac_configure_args"
+shift
+for fixup_arg
+do
+  case $fixup_arg in
+  # Strip away all feature choices
+  -enable* | --enable* | -disable* | --disable*)
+    ;;
+  *)
+    case $fixup_arg in
+    *\'*) fixup_arg=`echo "$fixup_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+    esac
+    keep_configure_args="$keep_configure_args '$fixup_arg'" ;;
+  esac
+done
+
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
+
+############## final output ################
+
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
 
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
+AC_SUBST(LD)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LIBS)
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
 AC_SUBST(STATIC_AR)
+AC_SUBST(WINDRES)
 AC_SUBST(ICP)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
@@ -456,14 +594,21 @@ AC_SUBST(RKTL_POST)
 AC_SUBST(RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
+AC_SUBST(TARGET_MACH)
+AC_SUBST(CROSS_MODE)
+AC_SUBST(T_CROSS_MODE)
+AC_SUBST(TT_CROSS_MODE)
 AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
+AC_SUBST(MINGW)
+AC_SUBST(NOT_MINGW)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
 AC_SUBST(ELF_COMP)
 AC_SUBST(SCHEME_SRC)
 AC_SUBST(MAKE_BUILD_SCHEME)
 AC_SUBST(SCHEME_CONFIG_ARGS)
+AC_SUBST(SCHEME_CROSS_CONFIG_ARGS)
 AC_SUBST(FRAMEWORK_INSTALL_DIR)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(FRAMEWORK_REL_INSTALL)
@@ -478,4 +623,4 @@ AC_OUTPUT($makefiles)
 mkdir -p rktio
 abssrcdir=`(cd ${srcdir}; pwd)`
 echo "=== configuring in rktio (${abssrcdir}/../../rktio)"
-cd rktio; eval "${abssrcdir}/../../rktio/configure ${SUB_CONFIGURE_EXTRAS}"
+cd rktio; eval "${abssrcdir}/../../rktio/configure ${keep_configure_args} ${SUB_CONFIGURE_EXTRAS}"

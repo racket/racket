@@ -324,9 +324,6 @@ variant of MinGW without "libdelayimp.a", get the implementation of
  Cross-compiling
 ========================================================================
 
-[Currently, cross-compilation works only for the traditional Racket
- implementation.]
-
 Cross-compilation requires at least two flags to `configure`:
 
  * `--host=OS`, where OS is something like `i386-gnu-linux` to
@@ -337,7 +334,9 @@ Cross-compilation requires at least two flags to `configure`:
 
  * `--enable-racket=RACKET`, where RACKET is a path to a Racket
    executable that runs on the build platform; the executable must be
-   the same version of Racket as being built for the target platform.
+   the same version of Racket and the same virtual machine (i.e.,
+   traditional Racket or Racket on Chez Scheme) as being built for the
+   target platform.
 
    This flag is needed because building and installing Racket requires
    running (an existing build of) Racket.
@@ -347,7 +346,14 @@ Cross-compilation requires at least two flags to `configure`:
    run `configure` again (with no arguments) in a "local" subdirectory
    to create a build for the current platform.
 
-Some less commonly needed `configure` flags:
+For Racket-on-Chez, an additional flag is needed:
+
+ * `--enable-scheme=SCHEME`, where SCHEME is a path to a Chez Scheme
+   build directory. Chez Scheme must be built there already for the
+   current platform, and a cross-compiled Chez Scheme will be created
+   in the same directory.
+
+Some less commonly needed `configure` flags for traditional Racket:
 
  * `--enable-stackup`, if the target platform`s stack grows up.
 
@@ -363,8 +369,8 @@ Some less commonly needed `configure` flags:
  Cross-compiling for Android
 ========================================================================
 
-[Currently, cross-compilation works only for the traditional Racket
- implementation.]
+[Currently, cross-compilation for Android works only for the
+ traditional Racket implementation.]
 
 As an example of cross-compiling, to compile for Android on ARM using
 the NDK, use (all on one line)

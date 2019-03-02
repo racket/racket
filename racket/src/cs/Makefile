@@ -15,7 +15,11 @@ COMPRESS_COMP = # --compress
 # "--srcloc" for procedure-level source locations:
 DEBUG_COMP = # --debug
 
-COMPILE_FILE = $(SCHEME) --script compile-file.ss $(UNSAFE_COMP) $(COMPRESS_COMP) $(DEBUG_COMP) --dest "$(BUILDDIR)"
+# For cross-compiling, set `CROSS_COMP` to `-m <machine>`, where
+# the Chez Scheme directory must have "<machine>/s/xpatch":
+CROSS_COMP =
+
+COMPILE_FILE = $(SCHEME) --script compile-file.ss $(UNSAFE_COMP) $(COMPRESS_COMP) $(DEBUG_COMP) $(CROSS_COMP) --dest "$(BUILDDIR)"
 COMPILE_FILE_DEPS = compile-file.ss include.ss place-register.ss 
 
 RACKET_SETUP_ARGS = ../../bin/racket ../../bin/racket ../collects ../etc 0 true false 0 ""
@@ -40,26 +44,33 @@ CONVERT_DEPS = $(PRIMITIVES_TABLES)
 CONVERT_RACKET = $(RACKET) -l- setup --chain ../setup-go.rkt $(BUILDDIR)compiled
 CONVERT = $(CONVERT_RACKET) '(CONVERTED)' $(BUILDDIR)compiled/convert.d convert.rkt $(UNSAFE_COMP)
 
+# This extension changes for cross builds:
+CSO = so
+
 # Depenency chain for ".so" files:
-RUMBLE_DEPS = $(BUILDDIR)chezpart.so
-THREAD_DEPS = $(RUMBLE_DEPS) $(BUILDDIR)rumble.so
-IO_DEPS = $(THREAD_DEPS) $(BUILDDIR)thread.so
-REGEXP_DEPS = $(IO_DEPS) $(BUILDDIR)io.so
-SCHEMIFY_DEPS = $(REGEXP_DEPS) $(BUILDDIR)regexp.so
-LINKLET_DEPS = $(SCHEMIFY_DEPS) $(BUILDDIR)schemify.so
-EXPANDER_DEPS = $(LINKLET_DEPS) $(BUILDDIR)linklet.so
-MAIN_DEPS = $(EXPANDER_DEPS) $(BUILDDIR)expander.so
+RUMBLE_DEPS = $(BUILDDIR)chezpart.$(CSO)
+THREAD_DEPS = $(RUMBLE_DEPS) $(BUILDDIR)rumble.$(CSO)
+IO_DEPS = $(THREAD_DEPS) $(BUILDDIR)thread.$(CSO)
+REGEXP_DEPS = $(IO_DEPS) $(BUILDDIR)io.$(CSO)
+SCHEMIFY_DEPS = $(REGEXP_DEPS) $(BUILDDIR)regexp.$(CSO)
+LINKLET_DEPS = $(SCHEMIFY_DEPS) $(BUILDDIR)schemify.$(CSO)
+EXPANDER_DEPS = $(LINKLET_DEPS) $(BUILDDIR)linklet.$(CSO)
+MAIN_DEPS = $(EXPANDER_DEPS) $(BUILDDIR)expander.$(CSO)
 
 all:
 	$(MAKE) rktio
 	$(MAKE) rktl
 	$(MAKE) $(BUILDDIR)racket.so
 
-expander-demo: $(BUILDDIR)expander.so demo/expander.ss ../../bin/racket
-	$(SCHEME) $(EXPANDER_DEPS) $(BUILDDIR)expander.so demo/expander.ss
+CROSS_TARGET = all
+cross:
+	$(MAKE) $(CROSS_TARGET) CSO=$(HOST) CROSS_COMP="--xpatch $(XPATCH)"
 
-run: $(BUILDDIR)main.so ../../bin/racket
-	$(SCHEME) --script $(BUILDDIR)main.so $(RACKET_SETUP_ARGS) $(ARGS)
+expander-demo: $(BUILDDIR)expander.$(CSO) demo/expander.ss ../../bin/racket
+	$(SCHEME) $(EXPANDER_DEPS) $(BUILDDIR)expander.$(CSO) demo/expander.ss
+
+run: $(BUILDDIR)main.$(CSO) ../../bin/racket
+	$(SCHEME) --script $(BUILDDIR)main.$(CSO) $(RACKET_SETUP_ARGS) $(ARGS)
 
 setup:
 	$(MAKE) run ARGS="-l- setup $(ARGS)"
@@ -70,10 +81,10 @@ setup-v:
 run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 	$(SCHEME) --script $(BUILDDIR)racket.so $(RACKET_SETUP_ARGS) $(ARGS)
 
-$(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
+$(BUILDDIR)racket.so: $(BUILDDIR)main.$(CSO) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) --whole-program $(BUILDDIR)racket.so $(BUILDDIR)main.wpo
 
-$(BUILDDIR)main.so: $(MAIN_DEPS) main.sps main/help.ss $(COMPILE_FILE_DEPS)
+$(BUILDDIR)main.$(CSO): $(MAIN_DEPS) main.sps main/help.ss $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) main.sps $(MAIN_DEPS)
 
 strip:
@@ -92,7 +103,7 @@ rktl:
 	mkdir -p ../../bin
 	touch ../../bin/racket
 
-$(BUILDDIR)expander.so: expander.sls $(BUILDDIR)compiled/expander.scm $(PRIMITIVES_TABLES) $(EXPANDER_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)expander.$(CSO): expander.sls $(BUILDDIR)compiled/expander.scm $(PRIMITIVES_TABLES) $(EXPANDER_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) expander.sls $(EXPANDER_DEPS)
 
 $(BUILDDIR)compiled/expander.scm: $(BUILDDIR)compiled/expander.rktl $(CONVERT_DEPS)
@@ -104,8 +115,8 @@ $(BUILDDIR)compiled/expander.rktl:
 expander-rktl:
 	$(MAKE) bounce BOUNCE_DIR=../expander BOUNCE_TARGET=expander-src BUILDDIR="../cs/"
 
-linklet-demo: $(BUILDDIR)linklet.so
-	$(SCHEME) $(LINKLET_DEPS) $(BUILDDIR)linklet.so demo/linklet.ss
+linklet-demo: $(BUILDDIR)linklet.$(CSO)
+	$(SCHEME) $(LINKLET_DEPS) $(BUILDDIR)linklet.$(CSO) demo/linklet.ss
 
 LINKLET_SRCS = linklet/read.ss \
                linklet/write.ss \
@@ -114,11 +125,11 @@ LINKLET_SRCS = linklet/read.ss \
                linklet/compress.ss \
                linklet/db.ss
 
-$(BUILDDIR)linklet.so: linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)linklet.$(CSO): linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) linklet.sls $(LINKLET_DEPS)
 
 
-$(BUILDDIR)schemify.so: schemify.sls $(BUILDDIR)compiled/schemify.scm $(BUILDDIR)compiled/known.scm $(SCHEMIFY_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)schemify.$(CSO): schemify.sls $(BUILDDIR)compiled/schemify.scm $(BUILDDIR)compiled/known.scm $(SCHEMIFY_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) schemify.sls $(SCHEMIFY_DEPS)
 
 $(BUILDDIR)compiled/schemify.scm: $(BUILDDIR)compiled/schemify.rktl $(CONVERT_DEPS)
@@ -142,10 +153,10 @@ known-rktl:
 	$(MAKE) bounce BOUNCE_DIR=../schemify BOUNCE_TARGET=known-src BUILDDIR="../cs/"
 
 
-regexp-demo: $(BUILDDIR)regexp.so
-	$(SCHEME) $(REGEXP_DEPS) $(BUILDDIR)regexp.so demo/regexp.ss
+regexp-demo: $(BUILDDIR)regexp.$(CSO)
+	$(SCHEME) $(REGEXP_DEPS) $(BUILDDIR)regexp.$(CSO) demo/regexp.ss
 
-$(BUILDDIR)regexp.so: $(BUILDDIR)compiled/regexp.scm regexp.sls $(REGEXP_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)regexp.$(CSO): $(BUILDDIR)compiled/regexp.scm regexp.sls $(REGEXP_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) regexp.sls $(REGEXP_DEPS)
 
 $(BUILDDIR)compiled/regexp.scm: $(BUILDDIR)compiled/regexp.rktl $(CONVERT_DEPS)
@@ -158,10 +169,10 @@ regexp-rktl:
 	$(MAKE) bounce BOUNCE_DIR=../regexp BOUNCE_TARGET=regexp-src BUILDDIR="../cs/"
 
 
-io-demo: $(BUILDDIR)io.so
-	$(SCHEME) $(IO_DEPS) $(BUILDDIR)io.so demo/io.ss
+io-demo: $(BUILDDIR)io.$(CSO)
+	$(SCHEME) $(IO_DEPS) $(BUILDDIR)io.$(CSO) demo/io.ss
 
-$(BUILDDIR)io.so: $(BUILDDIR)compiled/io.scm io.sls $(IO_DEPS) ../rktio/rktio.rktl $(COMPILE_FILE_DEPS)
+$(BUILDDIR)io.$(CSO): $(BUILDDIR)compiled/io.scm io.sls $(IO_DEPS) ../rktio/rktio.rktl $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) io.sls $(IO_DEPS)
 
 $(BUILDDIR)compiled/io.scm: $(BUILDDIR)compiled/io.rktl $(CONVERT_DEPS)
@@ -177,10 +188,10 @@ rktio:
 	$(MAKE) bounce BOUNCE_DIR=../io BOUNCE_TARGET=rktio
 
 
-thread-demo: $(BUILDDIR)thread.so
-	$(SCHEME) $(THREAD_DEPS) $(BUILDDIR)thread.so demo/thread.ss
+thread-demo: $(BUILDDIR)thread.$(CSO)
+	$(SCHEME) $(THREAD_DEPS) $(BUILDDIR)thread.$(CSO) demo/thread.ss
 
-$(BUILDDIR)thread.so: $(BUILDDIR)compiled/thread.scm thread.sls $(THREAD_DEPS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)thread.$(CSO): $(BUILDDIR)compiled/thread.scm thread.sls $(THREAD_DEPS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) thread.sls $(THREAD_DEPS)
 
 $(BUILDDIR)compiled/thread.scm: $(BUILDDIR)compiled/thread.rktl $(CONVERT_DEPS)
@@ -200,29 +211,29 @@ bounce-go:
 	cd $(BOUNCE_DIR); $(MAKE) RACO="$(RACKET) -N raco -l- raco" $(BOUNCE_TARGET)
 
 
-chaperone-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/chaperone.ss
+chaperone-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/chaperone.ss
 
-hash-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/hash.ss
+hash-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/hash.ss
 
-struct-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/struct.ss
+struct-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/struct.ss
 
-control-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/control.ss
+control-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/control.ss
 
-foreign-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/foreign.ss
+foreign-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/foreign.ss
 
-will-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/will.ss
+will-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/will.ss
 
-future-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/future.ss
+future-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/future.ss
 
-future2-demo: $(BUILDDIR)rumble.so
-	$(SCHEME) $(BUILDDIR)chezpart.so $(BUILDDIR)rumble.so demo/future2.ss
+future2-demo: $(BUILDDIR)rumble.$(CSO)
+	$(SCHEME) $(BUILDDIR)chezpart.$(CSO) $(BUILDDIR)rumble.$(CSO) demo/future2.ss
 
 RUMBLE_SRCS = rumble/define.ss \
               rumble/virtual-register.ss \
@@ -286,16 +297,16 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/inline.ss \
               ../racket/src/schvers.h
 
-$(BUILDDIR)rumble.so: $(RUMBLE_DEPS) rumble.sls $(RUMBLE_SRCS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)rumble.$(CSO): $(RUMBLE_DEPS) rumble.sls $(RUMBLE_SRCS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) rumble.sls $(RUMBLE_DEPS)
 
-$(BUILDDIR)chezpart.so: chezpart.sls $(COMPILE_FILE_DEPS)
+$(BUILDDIR)chezpart.$(CSO): chezpart.sls $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) chezpart.sls
 
 clean:
-	rm -f chezpart.so rumble.so regexp.so io.so linklet.so expander.so schemify.so
+	rm -f chezpart.$(CSO) rumble.$(CSO) regexp.$(CSO) io.$(CSO) linklet.$(CSO) expander.$(CSO) schemify.$(CSO)
 	rm -f chezpart.wpo rumble.wpo regexp.wpo io.wpo linklet.wpo expander.wpo schemify.wpo
-	rm -f thread.so thread.wpo main.wpo main.so
+	rm -f thread.$(CSO) thread.wpo main.wpo main.$(CSO)
 	rm -rf compiled
 
 

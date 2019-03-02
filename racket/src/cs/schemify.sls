@@ -61,14 +61,13 @@
   (define prim-knowns
     (let-syntax ([gen
                   (lambda (stx)
-                    (include-generated "known.scm")
-                    ;; Constructed a quoted literal hash table that
-                    ;; maps symbols to `known` prefabs
+                    ;; Construct a hash table that maps symbols to
+                    ;; `known` prefabs
                     (let ([known-l '()])
                       (define-syntax define-primitive-table
                         (syntax-rules ()
                           [(_ id [prim known] ...)
-                           (begin (set! known-l (cons (cons 'prim known) known-l))
+                           (begin (set! known-l (cons (cons 'prim 'known) known-l))
                                   ...)]))
                       (include "primitive/kernel.ss")
                       (include "primitive/unsafe.ss")
@@ -80,9 +79,20 @@
                       (include "primitive/place.ss")
                       (include "primitive/foreign.ss")
                       (include "primitive/linklet.ss")
-                      (let loop ([l known-l] [knowns (hasheq)])
-                        (if (null? l)
-                            #`(quote #,knowns)
-                            (loop (cdr l)
-                                  (hash-set knowns (caar l) (cdar l)))))))])
+                      (let ([knowns (make-hashtable equal-hash equal?)])
+                        (for-each (lambda (k)
+                                    (hashtable-set! knowns (cdr k) (gensym)))
+                                  known-l)
+                        (with-syntax ([(id) stx])
+                          (#%datum->syntax
+                           #'id
+                           `(let ([ht (make-eq-hashtable)]
+                                  ,@(#%map (lambda (k)
+                                             `[,(hashtable-ref knowns k #f) ,k])
+                                           (#%vector->list (hashtable-keys knowns))))
+                              ,@(#%map (lambda (k)
+                                         `(hashtable-set! ht ',(car k)
+                                                          ,(hashtable-ref knowns (cdr k) #f)))
+                                       known-l)
+                              (eq-hashtable->hash ht)))))))])
       (gen))))

@@ -376,7 +376,7 @@ static int bytes_main(int argc, char **argv,
   return 0;
 }
 
-#if defined(WIN32) && defined(CHECK_SINGLE_INSTANCE)
+#if defined(WIN32) && (defined(CHECK_SINGLE_INSTANCE) || defined(__MINGW32__))
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   int argc;
@@ -387,11 +387,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored
 
   argv = cmdline_to_argv(&argc, &normalized_path);
 
+#ifdef CHECK_SINGLE_INSTANCE
   if (CheckSingleInstance(normalized_path, argv))
     return 0;
   wm = wm_is_gracket;
   guid = GRACKET_GUID;
-
+#endif
+  
   return bytes_main(argc, argv, wm, guid);
 }
 #elif defined(WIN32)

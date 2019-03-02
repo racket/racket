@@ -28,6 +28,9 @@
    [() (create-mutable-hash (make-eq-hashtable) 'eq?)]
    [(alist) (fill-hash! 'make-hasheq (make-hasheq) alist)]))
 
+(define (eq-hashtable->hash ht)
+  (create-mutable-hash ht 'eq?))
+
 (define make-weak-hasheq
   (case-lambda
    [() (create-mutable-hash (make-weak-eq-hashtable) 'eq?)]

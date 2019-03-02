@@ -128,23 +128,9 @@
 
 ;; ----------------------------------------
 
-(define vector-content-offset
-  (let-syntax ([vector-content-offset
-                (lambda (stx)
-                  ;; Hack: use `s_fxmul` as an identity function
-                  ;; to corece a bytevector's start to an address
-                  (define hack-bytevector->addr ; call with GC disabled
-                    (foreign-procedure "(cs)fxmul"
-                                       (u8* uptr)
-                                       uptr))
-                  (let* ([s (make-bytevector 1 0)]
-                         [offset
-                          ;; Disable interrupts to avoid a GC:
-                          (with-interrupts-disabled
-                           (- (hack-bytevector->addr s 1)
-                              (#%$object-address s 0)))])
-                    (datum->syntax #'here offset)))])
-    (vector-content-offset)))
+;; Hack: hardwired number that depends on the tagging regime,
+;; but happens currently to be the same for all platforms:
+(define bytevector-content-offset 9)
 
 (define (object->addr v) ; call with GC disabled
   (#%$object-address v 0))
@@ -153,13 +139,13 @@
   (#%$address->object n 0))
 
 (define (bytevector->addr bv) ; call with GC disabled
-  (#%$object-address bv vector-content-offset))
+  (#%$object-address bv bytevector-content-offset))
 
 ;; Convert a raw foreign address to a Scheme value on the
 ;; assumption that the address is the payload of a byte
-;; string or vector:
+;; string:
 (define (addr->gcpointer-memory v)  ; call with GC disabled
-  (#%$address->object v (- vector-content-offset)))
+  (#%$address->object v (- bytevector-content-offset)))
 
 ;; Converts a primitive cpointer (normally the result of
 ;; `unwrap-cpointer`) to a raw foreign address. The
@@ -199,9 +185,8 @@
   (cond
    [(integer? memory) memory]
    [(bytes? memory) (bytevector->addr memory)]
-   [else
-    (+ (object->addr memory)
-       vector-content-offset)]))
+   [else (object->addr memory)]))
+
 ;; ----------------------------------------
 
 (define (cpointer-strip p)
@@ -1065,67 +1050,63 @@
                                "source" from)])]
      [else
       (with-interrupts-disabled
-       (let ([to (fx+ (cpointer*-address to) to-offset)]
-             [from (fx+ (cpointer*-address from) from-offset)])
+       (let ([to (+ (cpointer*-address to) to-offset)]
+             [from (+ (cpointer*-address from) from-offset)])
        (cond
         [(and move?
               ;; overlap?
-              (or (<= to from (fx+ to len -1))
-                  (<= from to (fx+ from len -1)))
+              (or (<= to from (+ to len -1))
+                  (<= from to (+ from len -1)))
               ;; shifting up?
               (< from to))
          ;; Copy from high to low to move in overlapping region
-         (let loop ([to (+ to len)] [from (+ from len)] [len len])
+         (let loop ([len len])
            (unless (fx= len 0)
              (cond
-              #;
-              [(fx>= len 8)
-               (let ([to (fx- to 8)]
-                     [from (fx- from 8)])
-                 (foreign-set! 'integer-64 to 0
-                               (foreign-ref 'integer-64 from 0))
-                 (loop to from (fx- len 8)))]
-              [(and (meta-cond [(> (fixnum-width) 32) #t] [else #f])
+              [(and (> (fixnum-width) 64)
+                    (fx>= len 8))
+               (let ([len (fx- len 8)])
+                 (foreign-set! 'integer-64 to len
+                               (foreign-ref 'integer-64 from len))
+                 (loop len))]
+              [(and (> (fixnum-width) 32)
                     (fx>= len 4))
-               (let ([to (fx- to 4)]
-                     [from (fx- from 4)])
-                 (foreign-set! 'integer-32 to 0
-                               (foreign-ref 'integer-32 from 0))
-                 (loop to from (fx- len 4)))]
+               (let ([len (fx- len 4)])
+                 (foreign-set! 'integer-32 to len
+                               (foreign-ref 'integer-32 from len))
+                 (loop len))]
               [(fx>= len 2)
-               (let ([to (fx- to 2)]
-                     [from (fx- from 2)])
-                 (foreign-set! 'integer-16 to 0
-                               (foreign-ref 'integer-16 from 0))
-                 (loop to from (fx- len 2)))]
+               (let ([len (fx- len 2)])
+                 (foreign-set! 'integer-16 to len
+                               (foreign-ref 'integer-16 from len))
+                 (loop len))]
               [else
-               (let ([to (fx- to 1)]
-                     [from (fx- from 1)])
-                 (foreign-set! 'integer-8 to 0
-                               (foreign-ref 'integer-8 from 0))
-                 (loop to from (fx- len 1)))])))]
+               (let ([len (fx- len 1)])
+                 (foreign-set! 'integer-8 to len
+                               (foreign-ref 'integer-8 from len))
+                 (loop len))])))]
         [else
-         (let loop ([to to] [from from] [len len])
-           (unless (fx= len 0)
+         (let loop ([pos 0])
+           (when (fx< pos len)
              (cond
-              #;
-              [(fx>= len 8)
-               (foreign-set! 'integer-64 to 0
-                             (foreign-ref 'integer-64 from 0))
-               (loop (fx+ to 8) (fx+ from 8) (fx- len 8))]
-              [(and (meta-cond [(> (fixnum-width) 32) #t] [else #f])
-                    (fx>= len 4))
-               (foreign-set! 'integer-32 to 0
-                             (foreign-ref 'integer-32 from 0))
-               (loop (fx+ to 4) (fx+ from 4) (fx- len 4))]
-              [(fx>= len 2)
-               (foreign-set! 'integer-16 to 0
-                             (foreign-ref 'integer-16 from 0))
-               (loop (fx+ to 2) (fx+ from 2) (fx- len 2))]
+              [(and (> (fixnum-width) 64)
+                    (fx<= (fx+ pos 8) len))
+               (foreign-set! 'integer-64 to pos
+                             (foreign-ref 'integer-64 from pos))
+               (loop (fx+ pos 8))]
+              [(and (> (fixnum-width) 32)
+                    (fx<= (fx+ pos 4) len))
+               (foreign-set! 'integer-32 to pos
+                             (foreign-ref 'integer-32 from pos))
+               (loop (fx+ pos 4))]
+              [(fx<= (fx+ pos 2) len)
+               (foreign-set! 'integer-16 to pos
+                             (foreign-ref 'integer-16 from pos))
+               (loop (fx+ pos 2))]
               [else
-               (foreign-set! 'integer-8 to 0
-                             (foreign-ref 'integer-8 from 0))
-               (loop (fx+ to 1) (fx+ from 1) (fx- len 1))])))])))])))
+               (foreign-set! 'integer-8 to pos
+                             (foreign-ref 'integer-8 from pos))
+               (loop (fx+ pos 1))])))])))])))
 
 (define memcpy/memmove
   (case-lambda

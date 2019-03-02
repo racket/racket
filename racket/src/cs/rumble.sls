@@ -273,6 +273,7 @@
           hash? hash-eq? hash-equal? hash-eqv? hash-weak? immutable-hash?
           hash-count
           hash-keys-subset?
+          eq-hashtable->hash   ; not exported to racket
 
           datum-intern-literal
           set-intern-regexp?!  ; not exported to racket
