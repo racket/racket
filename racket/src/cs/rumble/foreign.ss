@@ -128,9 +128,10 @@
 
 ;; ----------------------------------------
 
-;; Hack: hardwired number that depends on the tagging regime,
-;; but happens currently to be the same for all platforms:
+;; HACK: hardwired numbers that depend on the tagging regime
+;; and other representation details
 (define bytevector-content-offset 9)
+(define vector-content-offset (if (> (fixnum-width) 32) 9 5))
 
 (define (object->addr v) ; call with GC disabled
   (#%$object-address v 0))
@@ -138,8 +139,11 @@
 (define (address->object n) ; call with GC disabled
   (#%$address->object n 0))
 
-(define (bytevector->addr bv) ; call with GC disabled
+(define (bytevector->addr bv) ; call with GC disabled or locked object
   (#%$object-address bv bytevector-content-offset))
+
+(define (vector->addr bv) ; call with GC disabled or locked object
+  (#%$object-address bv vector-content-offset))
 
 ;; Convert a raw foreign address to a Scheme value on the
 ;; assumption that the address is the payload of a byte
@@ -185,6 +189,7 @@
   (cond
    [(integer? memory) memory]
    [(bytes? memory) (bytevector->addr memory)]
+   [(vector? memory) (vector->addr memory)] ; used for immobile cells
    [else (object->addr memory)]))
 
 ;; ----------------------------------------
