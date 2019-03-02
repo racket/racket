@@ -310,9 +310,9 @@
     ;; Check for delimiter, defined for our purposes as matching #rx"\\b":
     (define b (peek-byte i))
     (unless (eof-object? b)
-      (when (or (< (char->integer #\a) b (char->integer #\z))
-                (< (char->integer #\A) b (char->integer #\Z))
-                (< (char->integer #\0) b (char->integer #\9))
+      (when (or (<= (char->integer #\a) b (char->integer #\z))
+                (<= (char->integer #\A) b (char->integer #\Z))
+                (<= (char->integer #\0) b (char->integer #\9))
                 (eqv? b (char->integer #\_)))
         (bad-input bstr))))
   ;;

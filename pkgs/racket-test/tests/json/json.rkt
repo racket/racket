@@ -174,6 +174,7 @@
         (string->jsexpr " [\"x\",1, \"y\",2} ") =error> "string->jsexpr:"
         (string->jsexpr @T{ truelove }) =error> "string->jsexpr:"
         (string->jsexpr @T{ truebred }) =error> "string->jsexpr:"
+        (string->jsexpr @T{ truea }) =error> "string->jsexpr:"
         (string->jsexpr @T{ falsehood }) =error> "string->jsexpr:"
         (string->jsexpr @T{ falsetto }) =error> "string->jsexpr:"
         (string->jsexpr @T{ nullity }) =error> "string->jsexpr:"
