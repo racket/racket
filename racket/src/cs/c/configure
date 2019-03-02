@@ -642,6 +642,7 @@ OSX
 TT_CROSS_MODE
 T_CROSS_MODE
 CROSS_MODE
+DIFF_MACH
 TARGET_MACH
 MACH
 SCHEME_DIR
@@ -4135,6 +4136,11 @@ if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
 fi
 
+DIFF_MACH=skip
+if test "${MACH}" != "${TARGET_MACH}" ; then
+  DIFF_MACH=
+fi
+
 ############## Strip tool ################
 
 if test "${enable_strip}" = "" ; then
@@ -4917,6 +4923,7 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

@@ -392,6 +392,11 @@ if test "${enable_compress}" = "yes" ; then
   COMPRESS_COMP="--compress"
 fi
 
+DIFF_MACH=skip
+if test "${MACH}" != "${TARGET_MACH}" ; then
+  DIFF_MACH=
+fi
+
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
@@ -595,6 +600,7 @@ AC_SUBST(RACKET)
 AC_SUBST(SCHEME_DIR)
 AC_SUBST(MACH)
 AC_SUBST(TARGET_MACH)
+AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
 AC_SUBST(T_CROSS_MODE)
 AC_SUBST(TT_CROSS_MODE)

@@ -157,7 +157,7 @@ scheme-cross:
 
 # Rebuild cross "petite.boot" and "scheme.boot" when older
 # than the build-host "scheme.boot"
-@SCHEME_SRC@/@TARGET_MACH@/boot/@TARGET_MACH@/scheme.boot: @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
+@SCHEME_SRC@/@TARGET_MACH@/boot/@TARGET_MACH@/scheme.boot@DIFF_MACH@: @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
 	cd @SCHEME_SRC@/@TARGET_MACH@/s && $(MAKE) -f Mf-cross m=@MACH@ xm=@TARGET_MACH@ Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
 
 XPATCH =
@@ -277,7 +277,7 @@ grres.o: $(srcdir)/../../worksp/gracket/gracket.rc $(srcdir)/../../worksp/gracke
 libres.o: $(srcdir)/../../worksp/cs/libracket.rc
 	@WINDRES@ -i $(srcdir)/../../worksp/cs/libracket.rc -o libres.o
 
-starter:
+starter@MINGW@:
 	$(MAKE) MzStart.exe
 	$(MAKE) MrStart.exe
 
