@@ -282,11 +282,9 @@
                           (rktio_set_file_size rktio
                                                (fd-output-port-fd p)
                                                pos))
-                        (cond
-                          [(rktio-error? result)
-                           (end-atomic)
-                           (raise-rktio-error 'file-truncate result  "error setting file size")]
-                          [else result]))]
+                        (when (rktio-error? result)
+                          (end-atomic)
+                          (raise-rktio-error 'file-truncate result  "error setting file size")))]
   [prop:place-message (lambda (port)
                         (lambda ()
                           (fd-port->place-message port)))])
