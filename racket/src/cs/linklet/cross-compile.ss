@@ -1,4 +1,4 @@
-;; The server half of this interaction is in "../main/cross-compile.ss".
+;; The server half of this interaction is in "../c/cross-serve.ss".
 
 ;; Currently, cross-compilation support in Chez Scheme replaces the
 ;; compiler for the build machine. Until that changes, we can't load
@@ -52,22 +52,16 @@
    (unsafe-place-local-set! cross-machine-compiler-cache
                             (cons a (unsafe-place-local-ref cross-machine-compiler-cache)))))
 
-(define (do-cross machine msg v)
+(define (cross-compile machine v)
   (let* ([a (find-cross 'cross-compile machine)]
          [ch (cadr a)]
          [reply-ch (make-channel)])
-    (channel-put ch (list msg
-                          (marshal-annotation v)
+    (channel-put ch (list 'compile
+                          v
                           reply-ch))
     (begin0
      (channel-get reply-ch)
      (cache-cross-compiler a))))
-
-(define (cross-compile machine v)
-  (do-cross machine 'compile v))
-
-(define (cross-fasl-to-string machine v)
-  (do-cross machine 'fasl v))
 
 ;; Start a compiler as a Racket thread under the root custodian.
 ;; Using Racket's scheduler lets us use the event and I/O system,
@@ -84,8 +78,8 @@
     (let clean-up ()
       (when (will-try-execute we)
         (clean-up)))
-    (let ([exe (car exe+x)]
-          [xpatch (cdr exe+x)]
+    (let ([exe (find-exe (car exe+x))]
+          [xpatch-dir (cdr exe+x)]
           [msg-ch (make-channel)]
           [c (unsafe-make-custodian-at-root)])
       (with-continuation-mark
@@ -98,11 +92,14 @@
         ;; At this point, we're under the root custodian
         (thread
          (lambda ()
+           (define (patchfile base)
+             (build-path xpatch-dir (string-append base "-xpatch." (symbol->string machine))))
            (let-values ([(subproc from to err)
                          (subprocess #f #f (get-original-error-port)
                                      exe
                                      "--cross-server"
-                                     xpatch)])
+                                     (patchfile "compile")
+                                     (patchfile "library"))])
              (define (->string v) (#%format "~s\n" v))
              (define (string-> str) (#%read (open-string-input-port str)))
              ;; If this compiler instance becomes unreachable because the
@@ -112,8 +109,53 @@
                (let ([msg (channel-get msg-ch)])
                  ;; msg is (list <command> <value> <reply-channel>)
                  (write-string (->string (car msg)) to)
-                 (write-string (->string (cadr msg)) to)
+                 (write-string (->string (fasl-to-bytevector (cadr msg))) to)
                  (flush-output to)
                  (channel-put (caddr msg) (string-> (read-line from)))
                  (loop)))))))
       (list machine msg-ch))))
+
+(define (fasl-to-bytevector v)
+  (let-values ([(o get) (open-bytevector-output-port)])
+    (fasl-write v o)
+    (get)))
+
+(define (find-exe exe)
+  (let-values ([(base name dir?) (split-path exe)])
+    (cond
+     [(eq? base 'relative)
+      (let loop ([paths (get-exe-search-path)])
+        (cond
+         [(null? paths) exe]
+         [else
+          (let ([f (build-path (car paths) exe)])
+            (if (file-exists? f)
+                f
+                (loop (cdr paths))))]))]
+     [else
+      (path->complete-path exe (find-system-path 'orig-dir))])))
+
+(define (get-exe-search-path)
+  (define (accum->path one-accum)
+    (bytes->path (u8-list->bytevector (reverse one-accum))))
+  (let ([path (environment-variables-ref
+               (|#%app| current-environment-variables)
+               (string->utf8 "PATH"))])
+    (cond
+     [(not path) '()]
+     [else
+      (let loop ([bytes (bytevector->u8-list path)] [one-accum '()] [accum '()])
+        (cond
+         [(null? bytes) (let ([accum (if (null? one-accum)
+                                         accum
+                                         (cons (accum->path one-accum)
+                                               accum))])
+                          (reverse accum))]
+         [(eqv? (car bytes) (if (eq? 'windows (system-type))
+                                (char->integer #\;)
+                                (char->integer #\:)))
+          (if (null? one-accum)
+              (loop (cdr bytes) '() accum)
+              (loop (cdr bytes) '() (cons (accum->path one-accum) accum)))]
+         [else
+          (loop (cdr bytes) (cons (car bytes) one-accum) accum)]))])))

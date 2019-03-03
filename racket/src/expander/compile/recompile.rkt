@@ -20,8 +20,9 @@
 (define (compiled-expression-recompile c)
   (unless (compiled-expression? c)
     (raise-argument-error 'compiled-expression-recompile "compiled-expression?" c))
+  (define target-machine (current-compile-target-machine))
   (cond
-    [(not (current-compile-target-machine))
+    [(not target-machine)
      ;; There's no use for machine-independent mode, and
      ;; `recompile-bundle` assumes that it should actually compile
      c]
@@ -43,7 +44,8 @@
                                   "submodule path" k))
          (hash-set! recompileds k (recompile-bundle b
                                                     force-recompile-bundle
-                                                    ns)))
+                                                    ns
+                                                    target-machine)))
        (hash-ref recompileds k))
      (for ([k (in-hash-keys bundles)])
        (force-recompile-bundle k))
@@ -95,7 +97,7 @@
   #:authentic)
 
 ;; Takes a bundle and returns a recompiled
-(define (recompile-bundle b get-submodule-recompiled ns)
+(define (recompile-bundle b get-submodule-recompiled ns target-machine)
   ;; We have to execute the parts of the bundle that supply data, such
   ;; as the mpis and link modules, then use that data for cross-module
   ;; optimization while recompiling the per-phase body units, and then
@@ -111,11 +113,20 @@
                  (values k (force-compile-linklet v))]
                 [else (values k v)])))
 
+  ;; For now, there's ony one target machine that is supported by each VM:
+  (define can-eval-compiled?
+    (eq? target-machine (system-type 'target-machine)))
+
+  (define (eval-metadata-linklet key)
+    (if can-eval-compiled?
+        (eval-linklet (hash-ref h key))
+        (eval-correlated-linklet (hash-ref orig-h key))))
+
   (define data-instance
-    (instantiate-linklet (eval-linklet (hash-ref h 'data))
+    (instantiate-linklet (eval-metadata-linklet 'data)
                          (list deserialize-instance)))
   (define declaration-instance
-    (instantiate-linklet (eval-linklet (hash-ref h 'decl))
+    (instantiate-linklet (eval-metadata-linklet 'decl)
                          (list deserialize-instance
                                data-instance)))
   (define (decl key)

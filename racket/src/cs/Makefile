@@ -44,7 +44,7 @@ CONVERT_DEPS = $(PRIMITIVES_TABLES)
 CONVERT_RACKET = $(RACKET) -l- setup --chain ../setup-go.rkt $(BUILDDIR)compiled
 CONVERT = $(CONVERT_RACKET) '(CONVERTED)' $(BUILDDIR)compiled/convert.d convert.rkt $(UNSAFE_COMP)
 
-# This extension changes for cross builds:
+# This extension is for libraries, and it changes for cross builds:
 CSO = so
 
 # Depenency chain for ".so" files:
@@ -69,8 +69,8 @@ cross:
 expander-demo: $(BUILDDIR)expander.$(CSO) demo/expander.ss ../../bin/racket
 	$(SCHEME) $(EXPANDER_DEPS) $(BUILDDIR)expander.$(CSO) demo/expander.ss
 
-run: $(BUILDDIR)main.$(CSO) ../../bin/racket
-	$(SCHEME) --script $(BUILDDIR)main.$(CSO) $(RACKET_SETUP_ARGS) $(ARGS)
+run: $(BUILDDIR)main.so ../../bin/racket
+	$(SCHEME) --script $(BUILDDIR)main.so $(RACKET_SETUP_ARGS) $(ARGS)
 
 setup:
 	$(MAKE) run ARGS="-l- setup $(ARGS)"
@@ -81,13 +81,12 @@ setup-v:
 run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 	$(SCHEME) --script $(BUILDDIR)racket.so $(RACKET_SETUP_ARGS) $(ARGS)
 
-$(BUILDDIR)racket.so: $(BUILDDIR)main.$(CSO) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)racket.so: $(BUILDDIR)main.so $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) --whole-program $(BUILDDIR)racket.so $(BUILDDIR)main.wpo
 
-MAIN_SRCS = main/help.ss \
-            main/cross-compile.ss
+MAIN_SRCS = main/help.ss
 
-$(BUILDDIR)main.$(CSO): $(MAIN_DEPS) main.sps $(MAIN_SRCS) $(COMPILE_FILE_DEPS)
+$(BUILDDIR)main.so: $(MAIN_DEPS) main.sps $(MAIN_SRCS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) main.sps $(MAIN_DEPS)
 
 strip:
@@ -309,8 +308,9 @@ $(BUILDDIR)chezpart.$(CSO): chezpart.sls $(COMPILE_FILE_DEPS)
 
 clean:
 	rm -f chezpart.$(CSO) rumble.$(CSO) regexp.$(CSO) io.$(CSO) linklet.$(CSO) expander.$(CSO) schemify.$(CSO)
+	rm -f chezpart.so rumble.so regexp.so io.so linklet.so expander.so schemify.so
 	rm -f chezpart.wpo rumble.wpo regexp.wpo io.wpo linklet.wpo expander.wpo schemify.wpo
-	rm -f thread.$(CSO) thread.wpo main.wpo main.$(CSO)
+	rm -f thread.$(CSO) thread.wpo main.wpo main.so
 	rm -rf compiled
 
 

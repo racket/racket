@@ -622,6 +622,9 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+INSTALL_SETUP_RACKET_FLAGS
+INSTALL_SETUP_FLAGS
+RUN_RACKET
 CROSS_COMPILE_TARGET_KIND
 CS_COMPILED_SUBDIR
 CS_INSTALLED
@@ -2808,6 +2811,10 @@ FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
+RUN_RACKET='$(RUN_THIS_RACKET)'
+
+INSTALL_SETUP_FLAGS=
+INSTALL_SETUP_RACKET_FLAGS=
 
 enable_pthread_by_default=yes
 
@@ -4098,16 +4105,9 @@ else
 fi
 
 if test "${CROSS_MODE}" = "cross" ; then
-  if test "${enable_scheme}" = "" ; then
-    echo "Need --enable-scheme=... for cross-build mode"
-    exit 1
-  fi
-  if test "${enable_racket}" = "" ; then
-    echo "Need --enable-racket=... for cross-build mode"
-    exit 1
-  fi
   T_CROSS_MODE="-cross"
   TT_CROSS_MODE="--cross"
+  RUN_RACKET='$(RACKET)'
 else
   T_CROSS_MODE=""
   TT_CROSS_MODE=""
@@ -4923,6 +4923,9 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
+
+
 
 
 

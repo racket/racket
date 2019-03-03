@@ -10,6 +10,7 @@
          correlated-linklet-name
 
          force-compile-linklet
+         eval-correlated-linklet
 
          correlated-linklet-vm-bytes
          write-correlated-linklet-bundle-hash
@@ -32,6 +33,21 @@
            (set-correlated-linklet-compiled! l c)
            c))]
     [else l]))
+
+;; Ignore compiled version, if any, and evaluate from correlated source:
+(define (eval-correlated-linklet l)
+  (cond
+    [(correlated-linklet? l)
+     (eval-linklet
+      ;; Omitting `'serializable` should generate a preferred and
+      ;; executable compilation
+      (compile-linklet (correlated-linklet-expr l)
+                       (correlated-linklet-name l)
+                       #f
+                       (lambda (import-key) (values #f #f))
+                       '()))]
+    [else
+     (error 'eval-correlated-linklet "cannot evaluate unknown linklet: ~s" l)]))
 
 ;; ----------------------------------------
 

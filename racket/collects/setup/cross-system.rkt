@@ -26,9 +26,11 @@
                                   ;; because cross-compiling requires the same VM.
                                   (eq? (system-type 'vm)
                                        (hash-ref ht 'vm #f))
-                                  (for/and ([sym (in-list (list*
-                                                           'library-subpath
-                                                           'library-subpath-convention
+                                  (for/and ([sym (in-list (append
+                                                           (if (eq? 'racket (system-type 'vm))
+                                                               '(library-subpath
+                                                                 library-subpath-convention)
+                                                               null)
                                                            system-type-symbols))])
                                     (not (void? (hash-ref ht sym (void)))))
                                   (not
@@ -42,9 +44,10 @@
                                               (and (not v)
                                                    (eq? sym 'target-machine)
                                                    (eq? (system-type 'cross) 'infer))))
-                                        (equal? (bytes->path (hash-ref ht 'library-subpath)
-                                                             (hash-ref ht 'library-subpath-convention))
-                                                (system-library-subpath #f))))
+                                        (or (not (eq? 'racket (system-type 'vm)))
+                                            (equal? (bytes->path (hash-ref ht 'library-subpath)
+                                                                 (hash-ref ht 'library-subpath-convention))
+                                                    (system-library-subpath #f)))))
                                   ht))))))
     (if ht
         (set! cross-system-table ht)

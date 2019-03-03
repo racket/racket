@@ -5,11 +5,9 @@
 
 (define (write-linklet-bundle-hash ht dest-o)
   (let-values ([(ht cross-machine) (encode-linklet-paths ht)])
-    (let ([bstr (if cross-machine
-                    (cross-fasl-to-string cross-machine ht)
-                    (let-values ([(o get) (open-bytevector-output-port)])
-                      (fasl-write* ht o)
-                      (get)))])
+    (let ([bstr (let-values ([(o get) (open-bytevector-output-port)])
+                  (fasl-write* ht o)
+                  (get))])
       (write-bytes (integer->integer-bytes (bytes-length bstr) 4 #f #f) dest-o)
       (write-bytes bstr dest-o))))
 

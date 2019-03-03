@@ -355,14 +355,14 @@
                                         ""))])))
 
 (define (cross-multi-compile? roots)
-  ;; Combination of cross-installation mode, compiling to non-default target machine,
+  ;; Combination of cross-installation mode, compiling to machine-independent form,
   ;; and multiple compiled-file roots triggers a special multi-target compilation mode.
   ;; Write code compiled for the running Racket to the first root, and write code for
   ;; the cross-compile target to the second root --- but count the cross-compile target
   ;; as machine-independent if it would be the same as the current target.
   (and ((length roots) . > . 1)
        (cross-installation?)
-       (not (eq? (system-type 'target-machine) (current-compile-target-machine)))))
+       (not (current-compile-target-machine))))
 
 ;; Handle cross-multi-compile mode, or just continue on to `compile-zo*`
 (define (compile-zo*/cross-compile path->mode roots path src-sha1 read-src-syntax orig-zo-name

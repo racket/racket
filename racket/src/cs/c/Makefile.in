@@ -42,6 +42,7 @@ libpltdir_rel = @libpltdir_rel@
 etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
+configdir = @etcpltdir@
 
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(libpltdir)"
@@ -83,7 +84,7 @@ RACKET_SO_ENV = @CONFIGURE_RACKET_SO_COMPILE@ env COMPILED_SCM_DIR="$(builddir)/
 
 CS_PROGS = RACKET="$(RACKET)" SCHEME="$(SCHEME)" CONVERT_RACKET="$(CONVERT_RACKET)"
 CS_OPTS = COMPRESS_COMP=@COMPRESS_COMP@
-CS_OPTScross = $(CS_OPTS) CSO=@MACH@ CROSS_COMP="--xpatch $(SCHEME_SRC)/@TARGET_MACH@/s/xpatch"
+CS_OPTScross = $(CS_OPTS) CSO=$(MACH) CROSS_COMP="--xpatch $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch"
 
 build-racket-so:
 	$(MAKE) @RKTL_PRE@expander@RKTL_POST@
@@ -132,36 +133,36 @@ scheme:
 SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LD="$(LD)" LDFLAGS="$(LDFLAGS)" AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)"
 
 scheme-make:
-	cd @SCHEME_SRC@ && git submodule -q init && git submodule -q update
-	cd @SCHEME_SRC@ && ./configure @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-	mkdir -p @SCHEME_SRC@/@MACH@/boot/@MACH@
-	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h
-	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot
-	$(MAKE) @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
-	cd @SCHEME_SRC@ && $(MAKE)
+	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
+	cd $(SCHEME_SRC) && ./configure @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
+	mkdir -p $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
+	cd $(SCHEME_SRC) && $(MAKE)
 
 # Replace "equates.h", etc., if they seem to be out of date.
 # Otherwise, `make` on Chez Scheme can fail.
-@SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h: @SCHEME_SRC@/boot/@MACH@/equates.h
-	cp @SCHEME_SRC@/boot/@MACH@/equates.h @SCHEME_SRC@/@MACH@/boot/@MACH@/equates.h
-@SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot: @SCHEME_SRC@/boot/@MACH@/petite.boot
-	cp @SCHEME_SRC@/boot/@MACH@/petite.boot @SCHEME_SRC@/@MACH@/boot/@MACH@/petite.boot
-@SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot: @SCHEME_SRC@/boot/@MACH@/scheme.boot
-	cp @SCHEME_SRC@/boot/@MACH@/scheme.boot @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h: $(SCHEME_SRC)/boot/$(MACH)/equates.h
+	cp $(SCHEME_SRC)/boot/$(MACH)/equates.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot: $(SCHEME_SRC)/boot/$(MACH)/petite.boot
+	cp $(SCHEME_SRC)/boot/$(MACH)/petite.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(MACH)/scheme.boot
+	cp $(SCHEME_SRC)/boot/$(MACH)/scheme.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
 
 scheme-cross:
-	cd @SCHEME_SRC@ && git submodule -q init && git submodule -q update
-	cd @SCHEME_SRC@ && ./configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-	cd @SCHEME_SRC@/@TARGET_MACH@/c && $(MAKE) o=o cross=t
-	$(MAKE) @SCHEME_SRC@/@TARGET_MACH@/boot/@TARGET_MACH@/scheme.boot
+	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
+	cd $(SCHEME_SRC) && ./configure @SCHEME_CROSS_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
+	cd $(SCHEME_SRC)/$(TARGET_MACH)/c && $(MAKE) o=o cross=t
+	$(MAKE) $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch
 
-# Rebuild cross "petite.boot" and "scheme.boot" when older
+# Rebuild patch file and cross "petite.boot" and "scheme.boot" when older
 # than the build-host "scheme.boot"
-@SCHEME_SRC@/@TARGET_MACH@/boot/@TARGET_MACH@/scheme.boot@DIFF_MACH@: @SCHEME_SRC@/@MACH@/boot/@MACH@/scheme.boot
-	cd @SCHEME_SRC@/@TARGET_MACH@/s && $(MAKE) -f Mf-cross m=@MACH@ xm=@TARGET_MACH@ Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
+$(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch: $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
+	cd $(SCHEME_SRC)/$(TARGET_MACH)/s && $(MAKE) -f Mf-cross m=$(MACH) xm=$(TARGET_MACH) Scheme="$(SCHEME_BIN)" SCHEMEHEAPDIRS="$(SCHEME_INC)"
 
 XPATCH =
-XPATCHcross = --xpatch $(SCHEME_SRC)/@TARGET_MACH@/s/xpatch
+XPATCHcross = --xpatch $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch
 
 racket.boot: racket.so
 	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
@@ -252,7 +253,7 @@ EXE_DESTS = ++exe raw_racketcs.exe RacketCS.exe ++exe raw_gracketcs.exe GRacketC
 V_BOOTS = petite-v.boot scheme-v.boot racket-v.boot
 
 RacketCS.exe GRacketCS.exe $(RKT_DLL): raw_libracketcs.dll raw_gracketcs.exe raw_racketcs.exe $(EMBED_DEPS) $(V_BOOTS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target @TARGET_MACH@ @COMPRESS_COMP@ $(EXE_DESTS) raw_libracketcs.dll $(RKT_DLL) $(V_BOOTS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @COMPRESS_COMP@ $(EXE_DESTS) raw_libracketcs.dll $(RKT_DLL) $(V_BOOTS)
 
 raw_racketcs.exe: main.o MemoryModule.o rres.o
 	$(CC) $(CFLAGS) -o raw_racketcs.exe main.o MemoryModule.o rres.o $(LDFLAGS)
@@ -294,30 +295,40 @@ gstart_rc.o: $(srcdir)/../../worksp/starters/start.rc
 	@WINDRES@ -DMRSTART -i $(srcdir)/../../worksp/starters/start.rc -o gstart_rc.o
 
 install@MINGW@:
-	$(MAKE) plain-install CS_INSTALLED=`echo $(CS_INSTALLED) | awk '{print toupper($0)}'`
+	$(MAKE) plain-install
 
 plain-install@MINGW@:
+	$(MAKE) plain-install-upcased CS_INSTALLED=`echo $(CS_INSTALLED) | awk '{print toupper($0)}'`
+
+plain-install-upcased:
 	$(ICP) libracketcsxxxxxxx.dll $(libdir)/libracketcsxxxxxxx.dll
 	$(ICP) RacketCS.exe $(prefix)/Racket$(CS_INSTALLED).exe
 	$(ICP) GRacketCS.exe $(libpltdir)/GRacket$(CS_INSTALLED).exe
 	$(ICP) MzStart.exe $(libpltdir)/MzStart.exe
 	$(ICP) MrStart.exe $(libpltdir)/MrStart.exe
 	$(MAKE) system-install
-	$(MAKE) racket-xpatch.$(TARGET_MACH)
+	$(MAKE) compile-xpatch.$(TARGET_MACH)
+	$(MAKE) library-xpatch.$(TARGET_MACH)
 
-SCHEME_XPATCH = $(SCHEME_SRC)/@TARGET_MACH@/s/xpatch
+SCHEME_XPATCH = $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch
+
+compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss
+	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss
+	cat cross-serve.so $(SCHEME_XPATCH) > compile-xpatch.$(TARGET_MACH)
+
 RACKET_XPATCH = chezpart.$(MACH) rumble.$(MACH)	thread.$(MACH) \
                 io.$(MACH) regexp.$(MACH) schemify.$(MACH) linklet.$(MACH) expander.$(MACH)
-ALL_XPATCH = $(SCHEME_XPATCH) $(RACKET_XPATCH)
 
-racket-xpatch.$(TARGET_MACH): $(ALL_XPATCH)
-	cat $(ALL_XPATCH) > racket-xpatch.$(TARGET_MACH)
+library-xpatch.$(TARGET_MACH): $(RACKET_XPATCH)
+	cat $(RACKET_XPATCH) > library-xpatch.$(TARGET_MACH)
 
 # ----------------------------------------
 # Common
 
-DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
-DEF_CONFIG_DIR = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../..; pwd`/etc"'"'
+DEF_COLLECTS_DIR@NOT_MINGW@ = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
+DEF_CONFIG_DIR@NOT_MINGW@ = -DINITIAL_CONFIG_DIRECTORY='"'"`cd $(srcdir)/../../..; pwd`/etc"'"'
+DEF_COLLECTS_DIR@MINGW@ =
+DEF_CONFIG_DIR@MINGW@ =
 DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 COMP_SUBDIR = -DCS_COMPILED_SUBDIR=@CS_COMPILED_SUBDIR@
 
@@ -344,8 +355,18 @@ install@NOT_MINGW@:
 	$(MAKE) plain-install
 	$(MAKE) setup-install
 
+# RUN_RACKET typically redirects to RUN_THIS_RACKET, but it can also
+# redirect to a compatible existing Racket executable (e.g., for
+# cross-compilation)
+RUN_THIS_RACKET = $(DESTDIR)$(bindir)/racket$(CS_INSTALLED)
+
+INST_CONFIG = -X "$(DESTDIR)$(collectsdir)" -G "$(DESTDIR)$(configdir)"
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SETUP_MACHINE_FLAGS) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
+SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
+
 setup-install:
-	$(DESTDIR)$(bindir)/racket$(CS_INSTALLED) $(SELF_RACKET_FLAGS) -N raco -l- raco setup $(PLT_SETUP_OPTIONS)
+	@RUN_RACKET@ $(SELF_RACKET_FLAGS) $(SETUP_ARGS)
 
 no-setup-install:
 	echo done
@@ -410,3 +431,15 @@ macos-install-gracket:
 	$(STRIP_DEBUG) $(DESTDIR)"$(libpltdir)/GRacket$(CS_GR_INSTALLED).app/Contents/MacOS/GRacket$(CS_GR_INSTALLED)"
 	rm -rf $(DESTDIR)"$(libpltdir)/Starter.app"
 	$(ICP) -r Starter.app $(DESTDIR)"$(libpltdir)/."
+
+# ----------------------------------------
+# Reconfigure
+
+CONFIGURE_SRCS = $(srcdir)/configure $(srcdir)/Makefile.in \
+                 $(srcdir)/../../rktio/Makefile.in $(srcdir)/../../rktio/configure
+
+reconfigure:
+	$(MAKE) Makefile
+
+Makefile: $(CONFIGURE_SRCS)
+	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

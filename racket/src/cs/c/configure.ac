@@ -123,6 +123,10 @@ FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
+RUN_RACKET='$(RUN_THIS_RACKET)'
+
+INSTALL_SETUP_FLAGS=
+INSTALL_SETUP_RACKET_FLAGS=
 
 enable_pthread_by_default=yes
 
@@ -354,16 +358,9 @@ else
 fi
 
 if test "${CROSS_MODE}" = "cross" ; then
-  if test "${enable_scheme}" = "" ; then
-    echo "Need --enable-scheme=... for cross-build mode"
-    exit 1
-  fi
-  if test "${enable_racket}" = "" ; then
-    echo "Need --enable-racket=... for cross-build mode"
-    exit 1
-  fi
   T_CROSS_MODE="-cross"
   TT_CROSS_MODE="--cross"
+  RUN_RACKET='$(RACKET)'
 else
   T_CROSS_MODE=""
   TT_CROSS_MODE=""
@@ -621,6 +618,9 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(CS_INSTALLED)
 AC_SUBST(CS_COMPILED_SUBDIR)
 AC_SUBST(CROSS_COMPILE_TARGET_KIND)
+AC_SUBST(RUN_RACKET)
+AC_SUBST(INSTALL_SETUP_FLAGS)
+AC_SUBST(INSTALL_SETUP_RACKET_FLAGS)
 
 makefiles="Makefile"
 

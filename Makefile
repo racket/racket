@@ -262,7 +262,10 @@ GIT_CLONE_ARGS_qq = -q --depth 1
 
 # Altenative source for Chez Scheme repo, normally set by
 # the distro-build client driver
-EXTRA_REPOS_BASE = 
+EXTRA_REPOS_BASE =
+
+# Set to "-cross" for a cross build:
+CS_CROSS_SUFFIX =
 
 # Redirected for `cs-as-is` and `cs-base`:
 CS_SETUP_TARGET = plain-in-place-after-base
@@ -299,11 +302,11 @@ cs-after-racket:
          then $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET_BUILT_FOR_CS)" SETUP_BOOT_MODE=--boot ; \
          else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" CS_CONFIG_TARGET=run-cfg-cs ; fi
 
-RACKETCS_SUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault" PLAIN_RACKET="$(PLAIN_RACKET)3m"
+RACKETCS_NOSUFFIX_CONFIG = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-csdefault"
 
 racket-then-cs:
 	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
-         then $(MAKE) racket-configured-then-cs $(RACKETCS_SUFFIX_CONFIG) ; \
+         then $(MAKE) racket-configured-then-cs $(RACKETCS_NOSUFFIX_CONFIG) PLAIN_RACKET="$(PLAIN_RACKET)3m" ; \
          else $(MAKE) racket-configured-then-cs ; fi
 
 racket-configured-then-cs:
@@ -312,7 +315,9 @@ racket-configured-then-cs:
 
 cs-only:
 	$(MAKE) racket/src/build/Makefile SRC_MAKEFILE_CONFIG=cfg-cs
-	$(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)"
+	if [ "$(RACKETCS_SUFFIX)" = "" ] ; \
+	  then $(MAKE) cs-after-racket-with-racket $(RACKETCS_NOSUFFIX_CONFIG) RACKET="$(RACKET)" ; \
+	  else $(MAKE) cs-after-racket-with-racket RACKET="$(RACKET)" ; fi
 
 SETUP_BOOT_MODE = --chain
 ABS_SETUP_BOOT = -l- setup $(SETUP_BOOT_MODE) racket/src/setup-go.rkt racket/src/build/compiled
@@ -334,7 +339,13 @@ cs-after-racket-with-abs-paths:
 	cd racket/src/build/cs/c; $(MAKE) RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME="$(MAKE_BUILD_SCHEME)"
 	$(MAKE) base-config
 	cd racket/src/build; $(MAKE) install-cs RACKET="$(RACKET)" CS_INSTALLED=$(RACKETCS_SUFFIX) $(INSTALL_SETUP_ARGS)
+	$(MAKE) cs-setup$(CS_CROSS_SUFFIX)
+
+cs-setup:
 	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET=racket/bin/racket$(RACKETCS_SUFFIX)
+
+cs-setup-cross:
+	$(MAKE) $(CS_SETUP_TARGET) PLAIN_RACKET="$(RACKET)" PLT_SETUP_OPTIONS="--no-pkg-deps $(PLT_SETUP_OPTIONS)"
 
 nothing-after-base:
 	echo base done
@@ -405,6 +416,35 @@ win32-just-cs:
 	cmd /c echo #hash((links-search-files . ())) > build\config\config.rktd
 	racket\racket$(RACKETCS_SUFFIX) -G build\config -N raco -l- raco setup $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 	$(MAKE) $(WIN32_CS_SETUP_TARGET) WIN32_PLAIN_RACKET=racket\racket$(RACKETCS_SUFFIX) $(WIN32_CS_COPY_ARGS)
+
+
+# For cross-compilation, build a native executable with no configure options:
+native-cs-for-cross:
+	if [ "$(SCHEME_SRC)" = "" ] ; \
+         then $(MAKE) scheme-src-then-cross ; \
+         else $(MAKE) native-cs-for-cross-after-scheme-src ; fi
+
+scheme-src-then-cross:
+	$(MAKE) scheme-src
+	$(MAKE) native-cs-for-cross-after-scheme-src SCHEME_SRC="`pwd`/racket/src/build/ChezScheme"
+
+native-cs-for-cross-after-scheme-src:
+	if [ "$(RACKET)" = "" ] ; \
+         then $(MAKE) native-for-cross-racket-then-cross ; \
+         else $(MAKE) native-cs-for-cross-after-scheme-src-and-racket ; fi
+
+native-for-cross-racket-then-cross:
+	$(MAKE) native-for-cross
+	$(MAKE) native-cs-for-cross-after-scheme-src-and-racket RACKET="`pwd`/racket/src/build/racket/racket3m"
+
+native-cs-for-cross-after-scheme-src-and-racket:
+	mkdir -p racket/src/build/cross/cs/c
+	$(MAKE) racket/src/build/cross/cs/c/Makefile
+	cd racket/src/build/cross/cs/c; $(MAKE) reconfigure
+	cd racket/src/build/cross/cs/c; $(MAKE)
+
+racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
+	cd racket/src/build/cross/cs/c; ../../../../cs/c/configure
 
 # ------------------------------------------------------------
 # Both traditional Racket and RacketCS

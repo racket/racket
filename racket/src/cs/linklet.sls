@@ -30,7 +30,6 @@
           variable-reference-from-unsafe?
 
           add-cross-compiler!        ; not exported to racket
-          unmarshal-annotation       ; not exported to racket
 
           compile-enforce-module-constants
           compile-context-preservation-enabled
@@ -88,11 +87,15 @@
                 find-system-path
                 build-path
                 format
+                ;; Used by cross-compiler:
                 get-original-error-port
                 subprocess
                 write-string
                 flush-output
-                read-line)
+                read-line
+                split-path
+                path->complete-path
+                file-exists?)
           (only (thread)
                 current-process-milliseconds
                 ;; Used by cross-compiler:
@@ -249,7 +252,9 @@
   (define (make-cross-compile-to-bytevector machine)
     (lambda (s paths format)
       (let ([bv (cond
-                 [(eq? format 'interpret) (cross-fasl-to-string machine s)]
+                 [(eq? format 'interpret)
+                  ;; fasl format is not machine-specific:
+                  (compile-to-bytevector s paths format)]
                  [else (cross-compile machine s)])])
         (if compress-code?
             (bytevector-compress bv)
@@ -532,7 +537,11 @@
                                            (lambda (expr arity-mask name)
                                              (performance-region
                                               'compile-nested
-                                              (let ([code ((if serializable? compile*-to-bytevector compile*)
+                                              (let ([code ((if serializable?
+                                                               (if cross-machine
+                                                                   (lambda (s) (cross-compile cross-machine s))
+                                                                   compile*-to-bytevector)
+                                                               compile*)
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
                                                     (make-wrapped-code code arity-mask name)
