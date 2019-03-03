@@ -169,7 +169,8 @@
       (for/fold ([knowns (hasheq)]) ([ex-id (in-list ex-ids)])
         (define id (ex-int-id ex-id))
         (define v (known-inline->export-known (hash-ref defn-info id #f)
-                                              prim-knowns imports exports))
+                                              prim-knowns imports exports
+                                              serializable?))
         (cond
          [(not (set!ed-mutated-state? (hash-ref mutated id #f)))
           (define ext-id (ex-ext-id ex-id))

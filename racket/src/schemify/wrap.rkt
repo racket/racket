@@ -3,13 +3,15 @@
          (for-syntax racket/base))
 
 (provide unwrap unwrap-list
+         wrap?
          wrap-pair? wrap-null? wrap-car wrap-cdr wrap-list?
          wrap-eq? wrap-equal?
          in-wrap-list
          wrap-property
          wrap-property-set
          wrap-source
-         reannotate)
+         reannotate
+         reannotate/new-srcloc)
 
 (import-from-primitive-table
  #%kernel
@@ -20,12 +22,16 @@
  [syntax-source correlated-source]
  [syntax-line correlated-line]
  [syntax-column correlated-column]
- [syntax-position correlated-position])
+ [syntax-position correlated-position]
+ [syntax-span correlated-span])
 
 (define (unwrap v)
   (if (correlated? v)
       (correlated-e v)
       v))
+
+(define (wrap? v)
+  (correlated? v))
 
 (define (unwrap-list v)
   (cond
@@ -86,13 +92,17 @@
      (values (correlated-source a)
              (correlated-line a)
              (correlated-column a)
-             (correlated-position a))]
-    [else (values #f #f #f #f)]))
+             (correlated-position a)
+             (correlated-span a))]
+    [else (values #f #f #f #f #f)]))
 
 (define (reannotate old-term new-term)
   (if (correlated? old-term)
-      (datum->correlated #f new-term old-term)
+      (datum->correlated #f new-term old-term old-term)
       new-term))
+
+(define (reannotate/new-srcloc old-term new-term new-srcloc)
+  (datum->correlated #f new-term new-srcloc old-term))
 
 (define-sequence-syntax in-wrap-list
   (lambda (stx) (raise-argument-error "allowed only in `for` forms" stx))

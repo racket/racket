@@ -303,6 +303,15 @@ plain-install@MINGW@:
 	$(ICP) MzStart.exe $(libpltdir)/MzStart.exe
 	$(ICP) MrStart.exe $(libpltdir)/MrStart.exe
 	$(MAKE) system-install
+	$(MAKE) racket-xpatch.$(TARGET_MACH)
+
+SCHEME_XPATCH = $(SCHEME_SRC)/@TARGET_MACH@/s/xpatch
+RACKET_XPATCH = chezpart.$(MACH) rumble.$(MACH)	thread.$(MACH) \
+                io.$(MACH) regexp.$(MACH) schemify.$(MACH) linklet.$(MACH) expander.$(MACH)
+ALL_XPATCH = $(SCHEME_XPATCH) $(RACKET_XPATCH)
+
+racket-xpatch.$(TARGET_MACH): $(ALL_XPATCH)
+	cat $(ALL_XPATCH) > racket-xpatch.$(TARGET_MACH)
 
 # ----------------------------------------
 # Common

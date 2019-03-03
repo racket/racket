@@ -24,7 +24,8 @@
                   [correlated-source rumble:correlated-source]
                   [correlated-line rumble:correlated-line]
                   [correlated-column rumble:correlated-column]
-                  [correlated-position rumble:correlated-position])
+                  [correlated-position rumble:correlated-position]
+                  [correlated-span rumble:correlated-span])
           (regexp)
           (io))
 
@@ -42,7 +43,8 @@
              'syntax-source rumble:correlated-source
              'syntax-line rumble:correlated-line
              'syntax-column rumble:correlated-column
-             'syntax-position rumble:correlated-position)]
+             'syntax-position rumble:correlated-position
+             'syntax-span rumble:correlated-span)]
       [else #f]))
 
   ;; For direct access by schemified schemify:
@@ -54,6 +56,7 @@
   (define syntax-line rumble:correlated-line)
   (define syntax-column rumble:correlated-column)
   (define syntax-position rumble:correlated-position)
+  (define syntax-span rumble:correlated-span)
 
   (include "include.ss")
   (include-generated "schemify.scm")

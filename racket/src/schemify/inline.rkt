@@ -3,7 +3,8 @@
          "match.rkt"
          "known.rkt"
          "import.rkt"
-         "export.rkt")
+         "export.rkt"
+         "wrap-path.rkt")
 
 (provide init-inline-fuel
          can-inline?
@@ -203,18 +204,23 @@
 
 ;; ----------------------------------------
 
-(define (known-inline->export-known k prim-knowns imports exports)
+(define (known-inline->export-known k prim-knowns imports exports serializable?)
   (cond
     [(known-procedure/can-inline? k)
+     (define expr (known-procedure/can-inline-expr k))
      (define needed
-       (needed-imports (known-procedure/can-inline-expr k) prim-knowns imports exports '() '#hasheq()))
+       (needed-imports expr prim-knowns imports exports '() '#hasheq()))
      (cond
        [(not needed) (known-procedure (known-procedure-arity-mask k))]
-       [(hash-empty? needed) k]
+       [(hash-empty? needed) (cond
+                               [serializable? (known-procedure/can-inline
+                                               (known-procedure-arity-mask k)
+                                               (wrap-truncate-paths expr))]
+                               [else k])]
        [else
         (known-procedure/can-inline/need-imports
          (known-procedure-arity-mask k)
-         (known-procedure/can-inline-expr k)
+         (if serializable? (wrap-truncate-paths expr) expr)
          (hash->list needed))])]
     [(known-field-accessor? k)
      (define needed (needed-imports (known-field-accessor-type-id k) prim-knowns imports exports '() '#hasheq()))

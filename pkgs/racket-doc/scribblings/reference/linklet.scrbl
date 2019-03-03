@@ -507,7 +507,8 @@ primitive.}
                                                (or/c exact-nonnegative-integer? #f)
                                                (or/c exact-positive-integer? #f)
                                                (or/c exact-nonnegative-integer? #f)))
-                                #f])
+                                #f]
+                         [prop (or/c correlated? #f)])
           correlated?]
 @defproc*[([(correlated-property [stx correlated?]
                                  [key any/c]
@@ -530,4 +531,7 @@ recur through the given S-expression and convert pieces to
 simply wrapped around the immediate value. In contrast,
 @racket[correlated->datum] recurs through its argument (which is not
 necessarily a @tech{correlated object}) to discover any
-@tech{correlated objects} and convert them to plain S-expressions.}
+@tech{correlated objects} and convert them to plain S-expressions.
+
+@history[#:changed "7.6.0.6" @elem{Added the @racket[prop] argument
+                                   to @racket[datum->correlated].}]}

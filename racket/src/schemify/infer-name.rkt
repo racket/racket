@@ -11,7 +11,7 @@
      ;; `infer-procedure-name`) take care of it
      new-s]
     [else
-     (define-values (src line col pos) (wrap-source orig-s))
+     (define-values (src line col pos span) (wrap-source orig-s))
      (define (add-property str)
        (wrap-property-set (reannotate orig-s new-s)
                           'inferred-name

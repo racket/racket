@@ -17,6 +17,8 @@
          set-collects-dir!
          set-config-dir!
          set-addon-dir!
+         set-host-collects-dir!
+         set-host-config-dir!
 
          init-current-directory!)
 
@@ -28,10 +30,16 @@
                        (string->path "/usr/local/bin/racket"))]
       [(run-file) (or run-file
                       (find-system-path 'exec-file))]
-      [(config-dir host-config-dir) (as-dir (or config-dir
+      [(config-dir) (as-dir (or config-dir
                                                 (string->path "../etc")))]
-      [(collects-dir host-collects-dir) (as-dir (or collects-dir
-                                                    (string->path "../collects")))]
+      [(collects-dir) (as-dir (or collects-dir
+                                  (string->path "../collects")))]
+      [(host-config-dir) (as-dir (or host-config-dir
+                                     config-dir
+                                     (string->path "../etc")))]
+      [(host-collects-dir) (as-dir (or host-collects-dir
+                                       collects-dir
+                                       (string->path "../collects")))]
       [(orig-dir) (as-dir orig-dir)]
       [(temp-dir) (as-dir (rktio-system-path who RKTIO_PATH_TEMP_DIR))]
       [(sys-dir) (as-dir (rktio-system-path who RKTIO_PATH_SYS_DIR))]
@@ -95,6 +103,12 @@
 
 (define addon-dir #f)
 (define (set-addon-dir! p) (set! addon-dir p))
+
+(define host-collects-dir #f)
+(define (set-host-collects-dir! p) (set! host-collects-dir p))
+
+(define host-config-dir #f)
+(define (set-host-config-dir! p) (set! host-config-dir p))
 
 (define (rktio-system-path who key)
   (start-atomic)

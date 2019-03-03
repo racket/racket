@@ -61,6 +61,8 @@
          set-collects-dir!
          set-config-dir!
          set-addon-dir!
+         set-host-collects-dir!
+         set-host-config-dir!
 
          _path)
 

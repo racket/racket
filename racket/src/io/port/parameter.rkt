@@ -14,7 +14,8 @@
          orig-output-port
          orig-error-port
 
-         init-current-ports!)
+         init-current-ports!
+         get-original-error-port)
 
 (define (make-stdin)
   (open-input-fd (check-rktio-error
@@ -80,3 +81,5 @@
                                         #:plumber plumber))
   (current-error-port orig-error-port))
 
+(define (get-original-error-port)
+  orig-error-port)

@@ -9,28 +9,32 @@
 
 (define-record correlated (e srcloc props))
 
-(define/who (datum->correlated ignored datum src)
-  (check who
-         :test (or (not src) (correlated? src) (srcloc? src) (encoded-srcloc? src))
-         :contract (string-append "(or #f syntax? srcloc?\n"
-                                  "    (list/c any/c\n"
-                                  "            (or/c exact-positive-integer? #f)\n"
-                                  "            (or/c exact-nonnegative-integer? #f)\n"
-                                  "            (or/c exact-positive-integer? #f)\n"
-                                  "            (or/c exact-nonnegative-integer? #f))\n"
-                                  "    (vector/c any/c\n"
-                                  "              (or/c exact-positive-integer? #f)\n"
-                                  "              (or/c exact-nonnegative-integer? #f)\n"
-                                  "              (or/c exact-positive-integer? #f)\n"
-                                  "              (or/c exact-nonnegative-integer? #f)))")
-         src)
-  (if (correlated? datum)
-      datum
-      (make-correlated datum
-                       (extract-srcloc src)
-                       (if (correlated? src)
-                           (correlated-props src)
-                           empty-hasheq))))
+(define/who datum->correlated
+  (case-lambda
+   [(ignored datum src props)
+    (check who
+           :test (or (not src) (correlated? src) (srcloc? src) (encoded-srcloc? src))
+           :contract (string-append "(or #f syntax? srcloc?\n"
+                                    "    (list/c any/c\n"
+                                    "            (or/c exact-positive-integer? #f)\n"
+                                    "            (or/c exact-nonnegative-integer? #f)\n"
+                                    "            (or/c exact-positive-integer? #f)\n"
+                                    "            (or/c exact-nonnegative-integer? #f))\n"
+                                    "    (vector/c any/c\n"
+                                    "              (or/c exact-positive-integer? #f)\n"
+                                    "              (or/c exact-nonnegative-integer? #f)\n"
+                                    "              (or/c exact-positive-integer? #f)\n"
+                                    "              (or/c exact-nonnegative-integer? #f)))")
+           src)
+    (check who correlated? :or-false props)
+    (if (correlated? datum)
+        datum
+        (make-correlated datum
+                         (extract-srcloc src)
+                         (if props
+                             (correlated-props props)
+                             empty-hasheq)))]
+   [(ignored datum src) (datum->correlated ignored datum src #f)]))
 
 (define (correlated->datum e)
   (cond
@@ -95,6 +99,7 @@
 (define (extract-srcloc src)
   (cond
    [(not src) #f]
+   [(srcloc? src) src]
    [(correlated? src) (correlated-srcloc src)]
    [(vector? src) (|#%app|
                    srcloc

@@ -84,7 +84,10 @@ run-wpo: $(BUILDDIR)racket.so ../../bin/racket
 $(BUILDDIR)racket.so: $(BUILDDIR)main.$(CSO) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) --whole-program $(BUILDDIR)racket.so $(BUILDDIR)main.wpo
 
-$(BUILDDIR)main.$(CSO): $(MAIN_DEPS) main.sps main/help.ss $(COMPILE_FILE_DEPS)
+MAIN_SRCS = main/help.ss \
+            main/cross-compile.ss
+
+$(BUILDDIR)main.$(CSO): $(MAIN_DEPS) main.sps $(MAIN_SRCS) $(COMPILE_FILE_DEPS)
 	$(COMPILE_FILE) main.sps $(MAIN_DEPS)
 
 strip:
@@ -123,6 +126,7 @@ LINKLET_SRCS = linklet/read.ss \
                linklet/performance.ss \
                linklet/annotation.ss \
                linklet/compress.ss \
+               linklet/cross-compile.ss \
                linklet/db.ss
 
 $(BUILDDIR)linklet.$(CSO): linklet.sls $(LINKLET_SRCS) $(LINKLET_DEPS) $(COMPILE_FILE_DEPS)

@@ -44,7 +44,10 @@
                platform-independent-zo-mode?
                linklet-performance-init!
                linklet-performance-report!
-               current-compile-target-machine))
+               current-compile-target-machine
+               compile-target-machine?
+               add-cross-compiler!
+               unmarshal-annotation))
 
  (linklet-performance-init!)
  (unless omit-debugging?
@@ -140,9 +143,12 @@
                     [else "compiled"]))))
    (define user-specific-search-paths? #t)
    (define load-on-demand? #t)
-   (define compile-machine-independent? (getenv "PLT_COMPILE_ANY"))
+   (define compile-target-machine (if (getenv "PLT_COMPILE_ANY")
+                                      #f
+                                      (machine-type)))
    (define compiled-roots-path-list-string (getenv "PLTCOMPILEDROOTS"))
    (define embedded-load-in-places #f)
+   (define cross-compile-server-patch-file #f)
 
    (define (see saw . args)
      (let loop ([saw saw] [args args])
@@ -151,6 +157,8 @@
            (loop (hash-set saw (car args) #t) (cdr args)))))
    (define (saw? saw tag)
      (hash-ref saw tag #f))
+   (define (saw-something? saw)
+     (positive? (hash-count saw)))
 
    (define rx:logging-spec (pregexp "^[\\s]*(none|fatal|error|warning|info|debug)(?:@([^\\s @]+))?(.*)$"))
    (define rx:all-whitespace (pregexp "^[\\s]*$"))
@@ -244,8 +252,8 @@
    (define syslog-logging-arg #f)
    (define runtime-for-init? #t)
    (define exit-value 0)
-   (define host-collects-dir init-collects-dir)
-   (define host-config-dir init-config-dir)
+   (define host-collects-dir #f)
+   (define host-config-dir #f)
    (define addon-dir #f)
    (define rev-collects-post-extra '())
 
@@ -288,6 +296,7 @@
                  loads)))
 
    (include "main/help.ss")
+   (include "main/cross-compile.ss")
 
    (define-syntax string-case
      ;; Assumes that `arg` is a variable
@@ -306,7 +315,7 @@
                      [saw (hasheq)])
       ;; An element of `args` can become `(cons _arg _within-arg)`
       ;; due to splitting multiple flags with a single "-"
-      (define (loop args) (flags-loop args saw))
+      (define (loop args) (flags-loop args (see saw 'something)))
       ;; Called to handle remaining non-switch arguments:
       (define (finish args saw)
         (cond
@@ -513,8 +522,29 @@
                [else
                 (raise-bad-switch arg within-arg)])]
              [("-M" "--compile-any")
-              (set! compile-machine-independent? #t)
+              (set! compile-target-machine #f)
               (loop (cdr args))]
+             [("--compile-machine")
+              (let-values ([(mach-str rest-args) (next-arg "target machine" arg within-arg args)])
+                (let ([mach (string->symbol mach-str)])
+                  (unless (compile-target-machine? mach)
+                    (raise-user-error 'racket "machine not supported as a compile target: ~a" mach))
+                  (set! compile-target-machine mach))
+                (loop rest-args))]
+             [("--cross-compiler")
+              (let-values ([(mach rest-args) (next-arg "target machine" arg within-arg args)])
+                (let-values ([(xpatch-file rest-args) (next-arg "cross-compiler path" arg within-arg (cons arg rest-args))])
+                  (add-cross-compiler! (string->symbol mach)
+                                       (path->complete-path (->path (find-original-bytes xpatch-file)))
+                                       (find-system-path 'exec-file))
+                  (loop rest-args)))]
+             [("--cross-server")
+              (let-values ([(xpatch-file rest-args) (next-arg "xpatch path" arg within-arg args)])
+                (set! cross-compile-server-patch-file xpatch-file)
+                (when (or (saw-something? saw)
+                          (not (null? rest-args)))
+                  (raise-user-error 'racket "--cross-server <path> cannot be combined with any other arguments"))
+                (flags-loop null (see saw 'non-config)))]
              [("-j" "--no-jit")
               (loop (cdr args))]
              [("-h" "--help")
@@ -668,8 +698,8 @@
      (|#%app| use-compiled-file-paths compiled-file-paths)
      (|#%app| use-user-specific-search-paths user-specific-search-paths?)
      (|#%app| load-on-demand-enabled load-on-demand?)
-     (when compile-machine-independent?
-       (|#%app| current-compile-target-machine #f))
+     (unless (eq? compile-target-machine (machine-type))
+       (|#%app| current-compile-target-machine compile-target-machine))
      (boot)
      (when (and stderr-logging
                 (not (null? stderr-logging)))
@@ -680,6 +710,10 @@
      (when (and syslog-logging
                 (not (null? syslog-logging)))
        (apply add-syslog-log-receiver! (|#%app| current-logger) syslog-logging))
+     (when host-collects-dir
+       (set-host-collects-dir! host-collects-dir))
+     (when host-config-dir
+       (set-host-config-dir! host-config-dir))
      (cond
       [(eq? init-collects-dir 'disable)
        (|#%app| use-collection-link-paths #f)
@@ -731,6 +765,9 @@
    (call-in-main-thread
     (lambda ()
       (initialize-place!)
+      (when cross-compile-server-patch-file
+        ;; does not return:
+        (serve-cross-compile cross-compile-server-patch-file))
 
       (when init-library
         (namespace-require+ init-library))

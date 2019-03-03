@@ -28,7 +28,9 @@ GLOBALS = --no-global \
           ++global-ok run-file \
           ++global-ok collects-dir \
           ++global-ok config-dir \
-          ++global-ok addon-dir
+          ++global-ok addon-dir \
+          ++global-ok host-collects-dir \
+          ++global-ok host-config-dir
 
 io-src: $(RKTIO_DEP)
 	$(RACO) make ../expander/bootstrap-run.rkt

@@ -53,7 +53,8 @@
          (all-from-out "machine/main.rkt")
          (all-from-out "run/main.rkt")
          make-place-ports+fds
-         io-place-init!)
+         io-place-init!
+         get-original-error-port)
 
 (define (io-place-init! in-fd out-fd err-fd cust plumber)
   (sandman-place-init!)

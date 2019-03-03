@@ -64,8 +64,8 @@
 (define (correlated? e)
   (syntax? e))
 
-(define (datum->correlated d [srcloc #f])
-  (datum->syntax #f d srcloc))
+(define (datum->correlated d [srcloc #f] [props #f])
+  (datum->syntax #f d srcloc props))
 
 (define (correlated-e e)
   (syntax-e e))

@@ -29,6 +29,9 @@
           variable-reference-constant?
           variable-reference-from-unsafe?
 
+          add-cross-compiler!        ; not exported to racket
+          unmarshal-annotation       ; not exported to racket
+
           compile-enforce-module-constants
           compile-context-preservation-enabled
           compile-allow-set!-undefined
@@ -84,9 +87,25 @@
                 current-environment-variables
                 find-system-path
                 build-path
-                format)
+                format
+                get-original-error-port
+                subprocess
+                write-string
+                flush-output
+                read-line)
           (only (thread)
-                current-process-milliseconds)
+                current-process-milliseconds
+                ;; Used by cross-compiler:
+                unsafe-make-custodian-at-root
+                current-custodian
+                custodian-shutdown-all
+                thread
+                make-channel
+                channel-put
+                channel-get
+                make-will-executor
+                will-register
+                will-try-execute)
           (regexp)
           (schemify))
 
@@ -182,7 +201,7 @@
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
   (define (compile* e)
-    (call-with-system-wind (lambda () (eval e)))) ; eval => compile, except in cross mode
+    (call-with-system-wind (lambda () (compile e))))
   (define (interpret* e)
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
@@ -226,6 +245,15 @@
       (if compress-code?
           (bytevector-compress bv)
           bv)))
+
+  (define (make-cross-compile-to-bytevector machine)
+    (lambda (s paths format)
+      (let ([bv (cond
+                 [(eq? format 'interpret) (cross-fasl-to-string machine s)]
+                 [else (cross-compile machine s)])])
+        (if compress-code?
+            (bytevector-compress bv)
+            bv))))
 
   (define (eval-from-bytevector c-bv paths format)
     (let ([bv (if (bytevector-uncompressed-fasl? c-bv)
@@ -393,7 +421,7 @@
     (fields (mutable code) ; the procedure or interpretable form
             paths          ; list of paths; if non-empty, `code` expects them as arguments
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
-            (mutable preparation) ; 'faslable, 'faslable-strict, 'callable, or 'lazy
+            (mutable preparation) ; 'faslable, 'faslable-strict, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
             exports-info   ; hash(sym -> known) for info about each export; see "known.rkt"
             name           ; name of the linklet (for debugging purposes)
@@ -423,6 +451,17 @@
                   (linklet-importss linklet)
                   (linklet-exports linklet)))
 
+  (define (set-linklet-preparation linklet preparation)
+    (make-linklet (linklet-code linklet)
+                  (linklet-paths linklet)
+                  (linklet-format linklet)
+                  preparation
+                  (linklet-importss-abi linklet)
+                  (linklet-exports-info linklet)
+                  (linklet-name linklet)
+                  (linklet-importss linklet)
+                  (linklet-exports linklet)))
+
   (define compile-linklet
     (case-lambda
      [(c) (compile-linklet c #f #f (lambda (key) (values #f #f)) '(serializable))]
@@ -432,6 +471,10 @@
      [(c name import-keys get-import options)
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
+      (define cross-machine (and serializable?
+                                 (let ([m  (|#%app| current-compile-target-machine)])
+                                   (and (not (eq? m (machine-type)))
+                                        m))))
       (performance-region
        'schemify
        (define jitify-mode?
@@ -513,15 +556,17 @@
        (performance-region
         'compile-linklet
         ;; Create the linklet:
-        (let ([lk (make-linklet (call-with-system-wind
-                                 (lambda ()
-                                   ((if serializable? compile-to-bytevector outer-eval)
-                                    (show (and jitify-mode? post-interp-on?) "post-interp" impl-lam/interpable)
-                                    paths
-                                    format)))
+        (let ([lk (make-linklet ((if serializable?
+                                     (if cross-machine
+                                         (make-cross-compile-to-bytevector cross-machine)
+                                         compile-to-bytevector)
+                                     outer-eval)
+                                 (show (and jitify-mode? post-interp-on?) "post-interp" impl-lam/interpable)
+                                 paths
+                                 format)
                                 paths
                                 format
-                                (if serializable? 'faslable 'callable)
+                                (if serializable? (if cross-machine (cons 'cross cross-machine) 'faslable) 'callable)
                                 importss-abi
                                 exports-info
                                 name
@@ -974,6 +1019,8 @@
           (loop (cdr vars) (cdr syms))))]))
 
   ;; --------------------------------------------------
+
+  (include "linklet/cross-compile.ss")
   
   (define compile-enforce-module-constants
     (make-parameter #t (lambda (v) (and v #t))))
@@ -997,7 +1044,9 @@
   (define (compile-target-machine? v)
     (unless (symbol? v)
       (raise-argument-error 'compile-target-machine? "symbol?" v))
-    (eq? v (machine-type)))
+    (or (eq? v (machine-type))
+        (and (#%assq v cross-machine-types)
+             #t)))
 
   (define eval-jit-enabled
     (make-parameter #t (lambda (v) (and v #t))))
