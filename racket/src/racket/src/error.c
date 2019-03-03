@@ -815,7 +815,7 @@ void scheme_init_error(Scheme_Startup_Env *env)
   ADD_NONCM_PRIM("make-logger",       make_logger,     0, -1, env);
   ADD_NONCM_PRIM("make-log-receiver", make_log_reader, 2, -1, env);
 
-  ADD_PRIM_W_ARITY("log-message",    log_message,   4, 6, env);
+  ADD_PRIM_W_ARITY("log-message",    log_message,   3, 6, env);
   ADD_FOLDING_PRIM("logger?",        logger_p,      1, 1, 1, env);
   ADD_FOLDING_PRIM("logger-name",    logger_name,   1, 1, 1, env);
   ADD_FOLDING_PRIM("log-receiver?",  log_reader_p,  1, 1, 1, env);
@@ -4062,6 +4062,7 @@ log_message(int argc, Scheme_Object *argv[])
   Scheme_Logger *logger;
   Scheme_Object *bytes;
   Scheme_Object *name;
+  Scheme_Object *data;
   int level, pos, pfx;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
@@ -4086,9 +4087,14 @@ log_message(int argc, Scheme_Object *argv[])
     pfx = SCHEME_TRUEP(argv[pos+1]);
   else
     pfx = 1;
+
+  if (pos >= argc)
+    data = scheme_false;
+  else
+    data = argv[pos];
   
   scheme_log_name_pfx_message(logger, level, name,
-                              SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[pos],
+                              SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), data,
                               pfx);
 
   return scheme_void;

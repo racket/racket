@@ -93,15 +93,26 @@
 (define/who log-message
   ;; Complex dispatch based on number and whether third is a string:
   (case-lambda
-    [(logger level message data)
+    [(logger level message)
      (define topic (and (logger? logger) (logger-name logger)))
-     (do-log-message who logger level topic message data #t)]
+     (do-log-message who logger level topic message #f #t)]
+    [(logger level topic/message message/data)
+     (cond
+       [(string? topic/message)
+        (define topic (and (logger? logger) (logger-name logger)))
+        (do-log-message who logger level topic topic/message message/data #t)]
+       [(or (not topic/message) (symbol? topic/message))
+        (do-log-message who logger level topic/message message/data #f #t)]
+       [else
+        (check who logger? logger)
+        (check-level who level)
+        (raise-argument-error who "(or/c string? symbol?)" topic/message)])]
     [(logger level topic/message message/data data/prefix?)
      (cond
        [(string? topic/message)
         (define topic (and (logger? logger) (logger-name logger)))
         (do-log-message who logger level topic topic/message message/data data/prefix?)]
-       [(symbol? topic/message)
+       [(or (not topic/message) (symbol? topic/message))
         (do-log-message who logger level topic/message message/data data/prefix? #t)]
        [else
         (check who logger? logger)

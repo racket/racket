@@ -320,5 +320,20 @@
  #rx"define-logger: contract violation.+expected: \\(or/c logger\\? #f\\).+given: 'not-a-logger")
 
 ; --------------------
+;; optional data for `log-message`
+
+(let ()
+  (define logger (make-logger))
+  (define m (make-log-receiver logger 'error))
+  (log-message logger 'error 'whatever "hi")
+  (test '#(error "whatever: hi" #f whatever) sync m))
+
+(let ()
+  (define logger (make-logger))
+  (define m (make-log-receiver logger 'error))
+  (log-message logger 'error "hi")
+  (test '#(error "hi" #f #f) sync m))
+
+; --------------------
 
 (report-errs)

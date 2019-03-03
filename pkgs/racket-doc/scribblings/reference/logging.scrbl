@@ -160,7 +160,7 @@ is evaluated.
                       [level log-level/c]
                       [topic (or/c symbol? #f) (logger-name logger)]
                       [message string?]
-                      [data any/c]
+                      [data any/c #f]
                       [prefix-message? any/c #t])
           void?]{
 
@@ -174,7 +174,8 @@ addition, if @racket[topic] and @racket[prefix-message?] are not
 @racket[#f], then @racket[message] is prefixed with the topic followed
 by @racket[": "] before it is sent to receivers.
 
-@history[#:changed "6.0.1.10" @elem{Added the @racket[prefix-message?] argument.}]}
+@history[#:changed "6.0.1.10" @elem{Added the @racket[prefix-message?] argument.}
+         #:changed "7.2.0.7" @elem{Made the @racket[data] argument optional.}]}
 
 
 @defproc[(log-level? [logger logger?]
