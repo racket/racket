@@ -196,7 +196,8 @@
 	  "--script"
 	  "../cs/c/convert-to-boot.ss"
 	  "../build/racket.so"
-	  "../build/racket.boot")
+	  "../build/racket.boot"
+	  machine)
 
 (system*! scheme
 	  "--script"
