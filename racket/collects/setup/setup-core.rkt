@@ -2027,7 +2027,9 @@
 
   (setup-printf "version" "~a" (version))
   (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
-  (setup-printf "target machine" "~a" (or (current-compile-target-machine) 'any))
+  (setup-printf "target machine" "~a" (or (current-compile-target-machine)
+                                          (cross-system-type 'target-machine)
+                                          'any))
   (when (cross-installation?)
     (setup-printf "cross-installation" "yes"))
   (setup-printf "installation name" "~a" (get-installation-name))

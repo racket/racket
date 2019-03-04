@@ -34,7 +34,8 @@
                          (if props
                              (correlated-props props)
                              empty-hasheq)))]
-   [(ignored datum src) (datum->correlated ignored datum src #f)]))
+   [(ignored datum src) (datum->correlated ignored datum src #f)]
+   [(ignored datum) (datum->correlated ignored datum #f #f)]))
 
 (define (correlated->datum e)
   (cond

@@ -225,16 +225,17 @@ racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile
 	mkdir -p racket/src/build
 	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
 
+MORE_CROSS_CONFIGURE_ARGS =
 
 # For cross-compilation, build a native executable with no configure options:
 native-for-cross:
 	mkdir -p racket/src/build/cross
 	$(MAKE) racket/src/build/cross/Makefile
-	cd racket/src/build/cross; $(MAKE) reconfigure
+	cd racket/src/build/cross; $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
 	cd racket/src/build/cross/racket; $(MAKE)
 
 racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
-	cd racket/src/build/cross; ../../configure
+	cd racket/src/build/cross; ../../configure $(MORE_CROSS_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
 # Racket-on-Chez build
@@ -361,24 +362,26 @@ run-cfg-cs:
 no-cfg-cs:
 	echo done
 
+BUILD_FOR_FOR_SCHEME_DIR = racket/src/build
+
 scheme-src:
-	$(MAKE) racket/src/build/ChezScheme
+	$(MAKE) $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme
 	$(MAKE) update-ChezScheme
 
-racket/src/build/ChezScheme:
-	mkdir -p racket/src/build
+$(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme:
+	mkdir -p $(BUILD_FOR_FOR_SCHEME_DIR)
 	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
-          then cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO) ChezScheme ; \
+          then cd $(BUILD_FOR_FOR_SCHEME_DIR) && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO) ChezScheme ; \
           else $(MAKE) clone-ChezScheme-as-extra GIT_CLONE_ARGS_qq="" ; fi
 
 update-ChezScheme:
-	cd racket/src/build/ChezScheme && git pull -q && git submodule -q update
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git pull -q && git submodule -q update
 
 clone-ChezScheme-as-extra:
-	cd racket/src/build && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
-	cd racket/src/build/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
+	cd $(BUILD_FOR_FOR_SCHEME_DIR) && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
                                      SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
@@ -422,22 +425,26 @@ win32-just-cs:
 native-cs-for-cross:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
          then $(MAKE) scheme-src-then-cross ; \
-         else $(MAKE) native-cs-for-cross-after-scheme-src ; fi
+         else $(MAKE) native-cs-for-cross-after-scheme-src MAKE_BUILD_SCHEME=n ; fi
+
+CS_CROSS_SCHEME_CONFIG = SCHEME_SRC="`pwd`/racket/src/build/cross/ChezScheme" MAKE_BUILD_SCHEME=y
 
 scheme-src-then-cross:
-	$(MAKE) scheme-src
-	$(MAKE) native-cs-for-cross-after-scheme-src SCHEME_SRC="`pwd`/racket/src/build/ChezScheme"
+	$(MAKE) scheme-src BUILD_FOR_FOR_SCHEME_DIR="racket/src/build/cross/"
+	$(MAKE) native-cs-for-cross-after-scheme-src $(CS_CROSS_SCHEME_CONFIG)
 
 native-cs-for-cross-after-scheme-src:
 	if [ "$(RACKET)" = "" ] ; \
          then $(MAKE) native-for-cross-racket-then-cross ; \
-         else $(MAKE) native-cs-for-cross-after-scheme-src-and-racket ; fi
+         else $(MAKE) native-cs-for-cross-finish ; fi
+
+CS_CROSS_CONFIG_CONFIG = MORE_CROSS_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS) --enable-csdefault"
 
 native-for-cross-racket-then-cross:
-	$(MAKE) native-for-cross
-	$(MAKE) native-cs-for-cross-after-scheme-src-and-racket RACKET="`pwd`/racket/src/build/racket/racket3m"
+	$(MAKE) native-for-cross $(CS_CROSS_CONFIG_CONFIG)
+	$(MAKE) native-cs-for-cross-finish RACKET="`pwd`/racket/src/build/cross/racket/racket3m"
 
-native-cs-for-cross-after-scheme-src-and-racket:
+native-cs-for-cross-finish:
 	mkdir -p racket/src/build/cross/cs/c
 	$(MAKE) racket/src/build/cross/cs/c/Makefile
 	cd racket/src/build/cross/cs/c; $(MAKE) reconfigure
@@ -599,7 +606,7 @@ SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 # Helper macros:
 USER_CONFIG = -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
 USER_RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
-USER_RACO = $(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) $(USER_CONFIG) -N raco -l- raco
+USER_RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
@@ -642,6 +649,9 @@ with-setup-flags:
 	if [ "$(SERVER_COMPILE_MACHINE)" = "-M" ] ; \
          then $(MAKE) $(NEXT_TARGET) $(ANY_COMPILE_MACHINE_ARGS_qq) ; \
          else $(MAKE) $(NEXT_TARGET) ; fi
+
+random:
+	echo $(MORE_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
@@ -808,7 +818,7 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
 	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(IN_BUNDLE_RACO) setup -l racket/base
+	$(IN_BUNDLE_RACO) setup
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket
@@ -817,7 +827,8 @@ bundle-from-server:
 # installing packages. The host build must have all native libraries
 # that installation will need.
 bundle-cross-from-server:
-	$(MAKE) bundle-from-server $(COPY_ARGS) IN_BUNDLE_RACO="$(BUNDLE_RACO)"
+	rm -rf "build/zo`pwd`/bundle"
+	$(MAKE) bundle-from-server $(COPY_ARGS) IN_BUNDLE_RACO="$(PLAIN_RACKET) $(SETUP_MACHINE_FLAGS) $(BUNDLE_RACO_FLAGS)"
 
 UPLOAD_q = --readme "$(README)" --upload "$(UPLOAD)" --desc "$(DIST_DESC)"
 DIST_ARGS_q = $(UPLOAD_q) $(RELEASE_MODE) $(SOURCE_MODE) $(VERSIONLESS_MODE) \

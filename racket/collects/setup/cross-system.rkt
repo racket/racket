@@ -27,10 +27,8 @@
                                   (eq? (system-type 'vm)
                                        (hash-ref ht 'vm #f))
                                   (for/and ([sym (in-list (append
-                                                           (if (eq? 'racket (system-type 'vm))
-                                                               '(library-subpath
-                                                                 library-subpath-convention)
-                                                               null)
+                                                           '(library-subpath
+                                                             library-subpath-convention)
                                                            system-type-symbols))])
                                     (not (void? (hash-ref ht sym (void)))))
                                   (not
@@ -44,10 +42,9 @@
                                               (and (not v)
                                                    (eq? sym 'target-machine)
                                                    (eq? (system-type 'cross) 'infer))))
-                                        (or (not (eq? 'racket (system-type 'vm)))
-                                            (equal? (bytes->path (hash-ref ht 'library-subpath)
-                                                                 (hash-ref ht 'library-subpath-convention))
-                                                    (system-library-subpath #f)))))
+                                        (equal? (bytes->path (hash-ref ht 'library-subpath)
+                                                             (hash-ref ht 'library-subpath-convention))
+                                                (system-library-subpath #f))))
                                   ht))))))
     (if ht
         (set! cross-system-table ht)
