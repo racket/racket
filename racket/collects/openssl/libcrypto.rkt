@@ -46,7 +46,10 @@
     ;; Other specific known versions
     "1.0.1k" "1.0.1j" "1.0.1g" "1.0.1e"
     "1.0" "1.0.0" "1.0.0e" "1.0.0d" "1.0.0c" "1.0.0b" "1.0.0a"
-    "0.9.8e" "0.9.8b" "0.9.8" "0.9.7"))
+    "0.9.8e" "0.9.8b" "0.9.8" "0.9.7"
+
+    ;; Known versions for *BSD variants
+    "111"))
 
 (define libcrypto-load-fail-reason #f)
 
