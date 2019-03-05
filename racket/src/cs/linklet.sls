@@ -561,7 +561,7 @@
        (when known-on?
          (show "known" (hash-map exports-info (lambda (k v) (list k v)))))
        (when (and cp0-on? (not jitify-mode?))
-         (show "cp0" (#%expand/optimize impl-lam/paths)))
+         (show "cp0" (#%expand/optimize (correlated->annotation impl-lam/paths))))
        (performance-region
         'compile-linklet
         ;; Create the linklet:
