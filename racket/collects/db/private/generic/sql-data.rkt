@@ -11,15 +11,23 @@
 ;; NULL
 
 (define-values (sql-null sql-null?)
-  (let ()
+  (let ([created? #false])
     (struct sql-null ()
-            ;; must deserialize to singleton, so can't just use serializable-struct
-            #:property prop:serializable
-            (make-serialize-info (lambda _ '#())
-                                 #'deserialize-info:sql-null-v0
-                                 #f
-                                 (or (current-load-relative-directory)
-                                     (current-directory))))
+      #:transparent
+      #:authentic
+      #:guard (lambda (n)
+                (when created?
+                  (error 'sql-null "cannot create new instances of sql-null"))
+                (set! created? #true)
+                (values))
+      #:property prop:custom-write (lambda (v p w?) (write-string "#<sql-null>" p))
+      ;; must deserialize to singleton, so can't just use serializable-struct
+      #:property prop:serializable
+      (make-serialize-info (lambda _ '#())
+                           #'deserialize-info:sql-null-v0
+                           #f
+                           (or (current-load-relative-directory)
+                               (current-directory))))
     (values (sql-null) sql-null?)))
 
 (define (sql-null->false x)
