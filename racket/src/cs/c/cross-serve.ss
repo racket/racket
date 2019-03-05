@@ -15,7 +15,12 @@
   (keyboard-interrupt-handler void)
   ;; Restore output
   (current-output-port original-output-port)
-  ;; Set up the enviornment
+  ;; Racket compilation mode
+  (generate-inspector-information #f)
+  (enable-arithmetic-left-associative #t)
+  (generate-procedure-source-information #t)
+  (expand-omit-library-invocations #t)
+  ;; Set up the environment
   (expand `(import (rename (rumble)
                            [correlated? syntax?]
                            [correlated-source syntax-source]
@@ -32,7 +37,6 @@
                    (io)
                    (regexp)
                    (linklet)))
-  (expand-omit-library-invocations #t)
   ;; Serve requests to compile or to fasl data:
   (let loop ()
     (let ([cmd (read)])
