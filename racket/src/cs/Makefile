@@ -120,8 +120,10 @@ expander-rktl:
 linklet-demo: $(BUILDDIR)linklet.$(CSO)
 	$(SCHEME) $(LINKLET_DEPS) $(BUILDDIR)linklet.$(CSO) demo/linklet.ss
 
-LINKLET_SRCS = linklet/read.ss \
+LINKLET_SRCS = linklet/version.ss \
+               linklet/read.ss \
                linklet/write.ss \
+               linklet/check.ss \
                linklet/performance.ss \
                linklet/annotation.ss \
                linklet/compress.ss \

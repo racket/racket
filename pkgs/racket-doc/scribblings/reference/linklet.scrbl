@@ -120,7 +120,8 @@ otherwise.}
                              [name any/c #f]
                              [import-keys #f #f]
                              [get-import #f #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static 'use-prompt))
+                             [options (listof (or/c 'serializable 'unsafe 'static
+                                                     'use-prompt 'uninterned-literal))
                                       '(serializable)])
             linklet?]
            [(compile-linklet [form (or/c correlated? any/c)]
@@ -129,7 +130,8 @@ otherwise.}
                              [get-import (or/c #f (any/c . -> . (values (or/c linklet? instance? #f)
                                                                         (or/c vector? #f))))
                                          #f]
-                             [options (listof (or/c 'serializable 'unsafe 'static 'use-prompt))
+                             [options (listof (or/c 'serializable 'unsafe 'static
+                                                    'use-prompt 'uninterned-literal))
                                       '(serializable)])
             (values linklet? vector?)])]{
 
@@ -199,28 +201,37 @@ supplying @racket[#t] as the @racket[_use-prompt?] argument to
 @racket[instantiate-linklet] may only wrap a prompt around the entire
 instantiation.
 
+If @racket['uninterned-literal] is included in @racket[options], then
+literals in @racket[form] will not necessarily be interned via
+@racket[datum-intern-literal] when compiling or loading the linklet.
+Disabling the use of @racket[datum-intern-literal] can be especially
+useful of the linklet includes a large string or byte string constant
+that is not meant to be shared.
+
 The symbols in @racket[options] must be distinct, otherwise
 @exnraise[exn:fail:contract].
 
-@history[#:changed "7.1.0.8" @elem{Added the @racket['no-prompt] option.}]}
+@history[#:changed "7.1.0.8" @elem{Added the @racket['use-prompt] option.}
+         #:changed "7.1.0.10" @elem{Added the @racket['uninterned-literal] option.}]}
 
 
 @defproc*[([(recompile-linklet [linklet linklet?]
                                [name any/c #f]
                                [import-keys #f #f]
-                               [get-import (any/c . -> . (values (or/c linklet? #f)
-                                                                 (or/c vector? #f)))
-                                           (lambda (import-key) (values #f #f))]
-                               [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                               [get-import #f #f]
+                               [options (listof (or/c 'serializable 'unsafe 'static
+                                                      'use-prompt 'uninterned-literal))
                                         '(serializable)])
             linklet?]
            [(recompile-linklet [linklet linklet?]
                                [name any/c]
                                [import-keys vector?]
-                               [get-import (any/c . -> . (values (or/c linklet? #f)
-                                                                 (or/c vector? #f)))
+                               [get-import (or/c (any/c . -> . (values (or/c linklet? #f)
+                                                                       (or/c vector? #f)))
+                                                 #f)
                                            (lambda (import-key) (values #f #f))]
-                               [options (listof (or/c 'serializable 'unsafe 'static 'no-prompt))
+                               [options (listof (or/c 'serializable 'unsafe 'static
+                                                      'use-prompt 'uninterned-literal))
                                         '(serializable)])
              (values linklet? vector?)])]{
 
@@ -228,7 +239,8 @@ Like @racket[compile-linklet], but takes an already-compiled linklet
 and potentially optimizes it further.
 
 @history[#:changed "7.1.0.6" @elem{Added the @racket[options] argument.}
-         #:changed "7.1.0.8" @elem{Added the @racket['no-prompt] option.}]}
+         #:changed "7.1.0.8" @elem{Added the @racket['use-prompt] option.}
+         #:changed "7.1.0.10" @elem{Added the @racket['uninterned-literal] option.}]}
 
 
 @defproc[(eval-linklet [linklet linklet?]) linklet?]{

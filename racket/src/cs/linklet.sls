@@ -193,6 +193,7 @@
                              (correlated->annotation v))))))))
       v]))
 
+  (include "linklet/check.ss")
   (include "linklet/version.ss")
   (include "linklet/write.ss")
   (include "linklet/read.ss")
@@ -420,7 +421,9 @@
   ;; indicated by the "ABI" (which is based on information about which
   ;; exports of an imported linklet are constants).
 
-  ;; A linklet also has a table of information about its 
+  ;; A linklet also has a table of information about its exports. That
+  ;; known-value information is used by schemify to perform
+  ;; cross-linklet inlining and related optimizations.
 
   (define-record-type linklet
     (fields (mutable code) ; the procedure or interpretable form
@@ -469,11 +472,12 @@
 
   (define compile-linklet
     (case-lambda
-     [(c) (compile-linklet c #f #f (lambda (key) (values #f #f)) '(serializable))]
-     [(c name) (compile-linklet c name #f (lambda (key) (values #f #f)) '(serializable))]
-     [(c name import-keys) (compile-linklet c name import-keys (lambda (key) (values #f #f)) '(serializable))]
+     [(c) (compile-linklet c #f #f #f '(serializable))]
+     [(c name) (compile-linklet c name #f #f '(serializable))]
+     [(c name import-keys) (compile-linklet c name import-keys #f '(serializable))]
      [(c name import-keys get-import) (compile-linklet c name import-keys get-import '(serializable))]
      [(c name import-keys get-import options)
+      (define check-result (check-compile-args 'compile-linklet import-keys get-import options))
       (define serializable? (#%memq 'serializable options))
       (define use-prompt? (#%memq 'use-prompt options))
       (define cross-machine (and serializable?
@@ -500,8 +504,10 @@
                            prim-knowns
                            ;; Callback to get a specific linklet for a
                            ;; given import:
-                           (lambda (key)
-                             (lookup-linklet-or-instance get-import key))
+                           (if get-import
+                               (lambda (key) (values #f #f #f))
+                               (lambda (key)
+                                 (lookup-linklet-or-instance get-import key)))
                            import-keys))
        (define impl-lam/lifts
          (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)))
@@ -609,8 +615,20 @@
          [else (values #f #f #f)]))]
      [else (values #f #f #f)]))
 
-  (define (recompile-linklet lnk . args) lnk)
-
+  (define recompile-linklet
+    (case-lambda
+     [(lnk) (recompile-linklet lnk #f #f #f '(serializable))]
+     [(lnk name) (recompile-linklet lnk name #f #f '(serializable))]
+     [(lnk name import-keys) (recompile-linklet lnk name import-keys #f '(serializable))]
+     [(lnk name import-keys get-import) (recompile-linklet lnk name import-keys get-import '(serializable))]
+     [(lnk name import-keys get-import options)
+      (unless (linklet? lnk)
+        (raise-argument-error 'recompile-linklet "linklet?" lnk))
+      (check-compile-args 'recompile-linklet import-keys get-import options)
+      (if import-keys
+          (values lnk import-keys)
+          lnk)]))
+    
   ;; Intended to speed up reuse of a linklet in exchange for not being
   ;; able to serialize anymore
   (define (eval-linklet linklet)
