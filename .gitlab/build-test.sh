@@ -45,7 +45,7 @@ until
 	    JOBS=$1
 	    ;;
 	--single-thread)
-	    JOBS=$1
+	    JOBS=1
 	    ;;
 	--with-arch)
 	    shift
@@ -86,11 +86,41 @@ set -eu
 CHROOT_DIR=/tmp/racket-chroot
 
 # ---------------------------------------------------------------------------------------------------
+# Set QEMU ARCH which depends on ARCH
+QEMU_ARCH=
+
+case ${ARCH} in
+    "amd64")
+	QEMU_ARCH="x86_64"
+	;;
+    "arm64")
+	QEMU_ARCH="aarch64"
+	;;
+    "armel"|"armhf")
+	QEMU_ARCH="arm"
+	;;
+    "i386"|"mips"|"mipsel"|"mips64el"|"s390x"|"x86_64")
+	QEMU_ARCH=${ARCH}
+	;;
+    "ppc64el")
+	QEMU_ARCH="ppc64le"
+	;;
+    *)
+	echo "Unknown architecture ${ARCH}"
+	echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64le"
+	echo "These are the official names for the debian ports available listed at:"
+	echo "https://www.debian.org/ports/"
+	echo "NOTE: we also accept x86_64 as an alias for amd64"
+	exit 1
+	;;
+esac
+
+# ---------------------------------------------------------------------------------------------------
 # Packages to install on the HOST
-HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild"
+HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild rsync"
 
 # Packages to install on the GUEST
-GUEST_DEPENDENCIES="build-essential git m4 sudo python"
+GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev"
 
 function setup_chroot {
     # Host dependencies
@@ -99,11 +129,11 @@ function setup_chroot {
     # Create chrooted environment
     mkdir ${CHROOT_DIR}
     debootstrap --foreign --no-check-gpg --include=fakeroot,build-essential \
-		--arch=${CHROOT_ARCH} ${VERSION} ${CHROOT_DIR} ${MIRROR}
-    cp /usr/bin/qemu-${ARCH}-static ${CHROOT_DIR}/usr/bin/
+		--arch=${ARCH} ${DEBIAN} ${CHROOT_DIR} ${DEBIAN_MIRROR}
+    cp /usr/bin/qemu-${QEMU_ARCH}-static ${CHROOT_DIR}/usr/bin/
     chroot ${CHROOT_DIR} ./debootstrap/debootstrap --second-stage
-    sbuild-createchroot --arch=${CHROOT_ARCH} --foreign --setup-only \
-			${VERSION} ${CHROOT_DIR} ${MIRROR}
+    sbuild-createchroot --arch=${ARCH} --foreign --setup-only \
+			${DEBIAN} ${CHROOT_DIR} ${DEBIAN_MIRROR}
 
     # Create file with environment variables which will be used inside chrooted
     # environment
@@ -152,6 +182,7 @@ make CPUS=${JOBS} \
 echo "Running tests"
 echo "Environment: $(uname -a)"
 
+export PATH=${BUILD_DIR}/racket/bin:$PATH
 which racket
 racket -v
 raco test -l tests/racket/test
