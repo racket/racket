@@ -921,6 +921,7 @@ normal dependency counts as a build-time dependency, too).
 
 @defproc[(setup [#:file file (or/c #f path-string?) #f]
                 [#:collections collections (or/c #f (listof (listof path-string?))) #f]
+                [#:pkgs pkgs (or/c #f (listof string?)) #f]
                 [#:planet-specs planet-specs (or/c #f 
                                                    (listof (list/c string?
                                                                    string?
@@ -932,6 +933,9 @@ normal dependency counts as a build-time dependency, too).
                 [#:make-docs? make-docs? any/c #t]
                 [#:make-doc-index? make-doc-index? any/c #f]
                 [#:force-user-docs? force-user-docs? any/c #f]
+                [#:check-pkg-deps? check-pkg-deps? any/c #f]
+                [#:fix-pkg-deps? fix-pkg-deps? any/c #f]
+                [#:unused-pkg-deps? unused-pkg-deps? any/c #f]
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
@@ -946,10 +950,16 @@ Runs @exec{raco setup} with various options:
        a @filepath{.plt} archive.}
 
  @item{@racket[collections] --- if not @racket[#f], constrains setup to
-       the named collections, along with @racket[planet-specs], if any}
+       the named collections (along with @racket[pkgs] and
+       @racket[planet-specs], if any)}
+
+ @item{@racket[pkgs] --- if not @racket[#f], constrains setup to the
+       named packages (along with @racket[collections] and
+       @racket[planet-specs], if any)}
 
  @item{@racket[planet-spec] --- if not @racket[#f], constrains setup to
-       the named @|PLaneT| packages, along with @racket[collections], if any}
+       the named @|PLaneT| packages (along with @racket[collections] and
+       @racket[pkgs], if any)}
 
  @item{@racket[make-user?] --- if @racket[#f], disables any
        user-specific setup actions}
@@ -967,6 +977,18 @@ Runs @exec{raco setup} with various options:
  @item{@racket[force-user-docs?] --- if true, then when building
        documentation, creates a user-specific documentation entry point
        even if it has the same content as the installation}
+
+ @item{@racket[check-pkg-deps?] --- if true, enables
+       package-dependency checking even when @racket[collections],
+       @racket[pkgs], or @racket[planet-specs] is non-@racket[#f].}
+
+ @item{@racket[fix-pkg-deps?] --- if true, implies
+       @racket[check-pkg-deps?] and attempts to automatically correct
+       discovered package-dependency problems}
+ 
+ @item{@racket[unused-pkg-deps?] --- if true, implies
+       @racket[check-pkg-deps?] and also reports dependencies that
+       appear to be unused}
 
  @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
 
@@ -992,7 +1014,10 @@ Instead of using @envvar{PLT_COMPILED_FILE_CHECK}, @racket[setup] is
 sensitive to the @racket[use-compiled-file-check] parameter.
 
 @history[#:changed "6.1" @elem{Added the @racket[fail-fast?] argument.}
-         #:changed "6.1.1" @elem{Added the @racket[force-user-docs?] argument.}]}
+         #:changed "6.1.1" @elem{Added the @racket[force-user-docs?] argument.}
+         #:changed "7.2.0.7" @elem{Added the @racket[check-pkg-deps?],
+                                   @racket[fix-pkg-deps?], and @racket[unused-pkg-deps?]
+                                   arguments.}]}
 
 
 
