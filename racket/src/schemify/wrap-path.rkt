@@ -15,11 +15,13 @@
      (define u-e (wrap-truncate-paths orig))
      (define-values (src line col pos span) (wrap-source e))
      (cond
-       [(and (not (path? src))
+       [(and (not (path-for-some-system? src))
              (eq? orig u-e))
         e]
+       [(path-for-some-system? src)
+        (reannotate/new-srcloc e u-e (srcloc (truncate-path src) line col pos span))]
        [else
-        (reannotate/new-srcloc e u-e (srcloc (truncate-path src) line col pos span))])]
+        (reannotate e u-e)])]
     [(pair? e)
      (define a (wrap-truncate-paths (car e)))
      (define d (wrap-truncate-paths (cdr e)))
