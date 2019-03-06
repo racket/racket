@@ -87,34 +87,38 @@ CHROOT_DIR=/tmp/racket-chroot
 
 # ---------------------------------------------------------------------------------------------------
 # Set QEMU ARCH which depends on ARCH
-QEMU_ARCH=
 
-case ${ARCH} in
-    "amd64")
-	QEMU_ARCH="x86_64"
-	;;
-    "arm64")
-	QEMU_ARCH="aarch64"
-	;;
-    "armel"|"armhf")
-	QEMU_ARCH="arm"
-	;;
-    "i386"|"mips"|"mipsel"|"mips64el"|"s390x"|"x86_64")
-	QEMU_ARCH=${ARCH}
-	;;
-    "ppc64el")
-	QEMU_ARCH="ppc64le"
-	;;
-    *)
-	echo "Unknown architecture ${ARCH}"
-	echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64le"
-	echo "These are the official names for the debian ports available listed at:"
-	echo "https://www.debian.org/ports/"
-	echo "NOTE: we also accept x86_64 as an alias for amd64"
-	exit 1
-	;;
-esac
+if [ ! -e "/.chroot_is_done" ]
+then
+    QEMU_ARCH=
 
+    case ${ARCH} in
+	"amd64")
+	    QEMU_ARCH="x86_64"
+	    ;;
+	"arm64")
+	    QEMU_ARCH="aarch64"
+	    ;;
+	"armel"|"armhf")
+	    QEMU_ARCH="arm"
+	    ;;
+	"i386"|"mips"|"mipsel"|"mips64el"|"s390x"|"x86_64")
+	    QEMU_ARCH=${ARCH}
+	    ;;
+	"ppc64el")
+	    QEMU_ARCH="ppc64le"
+	    ;;
+	*)
+	    echo "Unknown architecture ${ARCH}"
+	    echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64le"
+	    echo "These are the official names for the debian ports available listed at:"
+	    echo "https://www.debian.org/ports/"
+	    echo "NOTE: we also accept x86_64 as an alias for amd64"
+	    exit 1
+	    ;;
+    esac
+fi
+	
 # ---------------------------------------------------------------------------------------------------
 # Packages to install on the HOST
 HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild rsync"
