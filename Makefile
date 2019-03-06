@@ -41,6 +41,9 @@ WIN32_RUN_RACO = $(WIN32_RUN_RACKET) -N raco -l- raco
 
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
+# Options passed along to any `raco setup` run:
+PLT_SETUP_OPTIONS = 
+
 # Belongs in the "Configuration options" section, but here
 # to accomodate nmake:
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
@@ -66,6 +69,10 @@ INSTALL_PKGS_ARGS = $(JOB_OPTIONS) --no-setup --pkgs \
                     $(REQUIRED_PKGS) $(PKGS)
 ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 
+# Allow `--error-out`, etc., for final setup setp, so `make both` can
+# continue from errors at that level
+IN_PLACE_SETUP_OPTIONS =
+
 plain-in-place:
 	$(MAKE) plain-minimal-in-place
 	$(MAKE) in-place-setup
@@ -85,7 +92,7 @@ plain-minimal-in-place-after-base:
 	$(RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
 
 in-place-setup:
-	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
@@ -103,7 +110,7 @@ win32-minimal-in-place-after-base:
 
 win32-in-place-after-base:
 	$(MAKE) win32-minimal-in-place-after-base PKGS="$(PKGS)" SRC_CATALOG="$(SRC_CATALOG)" WIN32_PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
-	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
 
 # Rebuild without consulting catalogs or package sources:
 
@@ -121,7 +128,7 @@ plain-as-is:
 
 win32-as-is:
 	$(MAKE) win32-base
-	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS) $(IN_PLACE_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS, only)
@@ -458,8 +465,8 @@ racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/
 # ... but update packages and builds docs only once
 
 both:
-	$(MAKE) in-place
-	$(MAKE) also-cs
+	$(MAKE) in-place IN_PLACE_SETUP_OPTIONS="--error-out build/step"
+	$(MAKE) also-cs IN_PLACE_SETUP_OPTIONS="--error-in build/step"
 
 also-cs:
 	$(MAKE) cs CS_SETUP_TARGET=in-place-setup PLT_SETUP_OPTIONS="-D $(PLT_SETUP_OPTIONS)"

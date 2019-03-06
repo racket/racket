@@ -88,6 +88,8 @@
 (define-flag-param force-unpacks #f)
 (define-flag-param doc-pdf-dest #f)
 (define-flag-param fail-fast #f)
+(define-flag-param next-error-out-file #f)
+(define-flag-param previous-error-in-file #f)
 
 (define specific-collections (make-parameter null))
 (define specific-packages (make-parameter null))

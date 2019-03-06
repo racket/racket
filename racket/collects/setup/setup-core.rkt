@@ -206,9 +206,29 @@
       (when (pause-on-errors)
         (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
         (read-line))
-      (exit 1))
+      (set! exit-code 1))
+    (manage-prevous-and-next)
     (exit exit-code))
 
+  (define (manage-prevous-and-next)
+    (define prev (previous-error-in-file))
+    (when (and prev (file-exists? prev))
+      (setup-printf #f "--- previous errors ---")
+      (setup-printf #f "errors were~a reported by a previous process"
+                    (if (zero? exit-code) "" " also"))
+      (set! exit-code 1))
+    (define next (next-error-out-file))
+    (when next
+      (cond
+        [(zero? exit-code)
+         (delete-directory/files next #:must-exist? #f)]
+        [else
+         (call-with-output-file*
+          next
+          #:exists 'truncate/replace
+          (lambda (o) (fprintf o "Errors reported\n")))
+         (set! exit-code 0)])))
+      
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Archive Unpacking               ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

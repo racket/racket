@@ -147,6 +147,10 @@
       (add-flags `((compile-mode ,mode)))]
      [("--fail-fast") "Trigger a break on the first error"
       (add-flags '((fail-fast #t)))]
+     [("--error-out") file "On continuable error, create <file> and exit as success"
+      (add-flags `((next-error-out-file ,file)))]
+     [("--error-in") file "Check <file> for report of previous errors"
+      (add-flags `((previous-error-in-file ,file)))]
      [("-p" "--pause") "Pause at the end if there are any errors"
       (add-flags '((pause-on-errors #t)))]
      #:help-labels

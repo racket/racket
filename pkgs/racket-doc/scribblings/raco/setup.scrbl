@@ -273,6 +273,19 @@ flags:
  @item{@DFlag{fail-fast} --- attempt to break as soon as any error is
   discovered.}
 
+ @item{@DFlag{error-out} @nonterm{file} --- handle survivable errors
+  by writing @nonterm{file} and exiting as successful, which
+  facilitates chaining multiple @exec{raco setup} invocations in
+  combination with @DFlag{error-in}. If there are no errors and
+  @nonterm{file} already exists, it is deleted.}
+
+ @item{@DFlag{error-in} @nonterm{file} --- treat the existence of
+  @nonterm{file} as a ``errors were reported by a previous process''
+  error. Typically, @nonterm{file} is created by previous @exec{raco
+  setup} run using @DFlag{error-out}. A file for @DFlag{error-in} is
+  detected before creating a file via @DFlag{error-out}, so the same
+  file can be used to chain a sequence of @exec{raco setup} steps.}
+
  @item{@DFlag{pause} or @Flag{p} --- pause for user input if any
   errors are reported (so that a user has time to inspect output that
   might otherwise disappear when the @exec{raco setup} process ends).}
@@ -337,7 +350,8 @@ update a compiled file's timestamp if the file is not recompiled.
          #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}
          #:changed "6.6.0.3" @elem{Added support for @envvar{PLT_COMPILED_FILE_CHECK}.}
-         #:changed "7.0.0.19" @elem{Added @DFlag{places} and  @DFlag{processes}.}]
+         #:changed "7.0.0.19" @elem{Added @DFlag{places} and  @DFlag{processes}.}
+         #:changed "7.2.0.7" @elem{Added @DFlag{error-in} and  @DFlag{error-out}.}]
 
 @; ------------------------------------------------------------------------
 
