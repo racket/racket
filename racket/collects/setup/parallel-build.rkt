@@ -41,13 +41,13 @@
             (wrkr/send wrkr (list 'compiled))
             'done]
            [(list w waitlst) 
-            (hash-set! depends wrkr (cons w fn))
-            (let ([fns (check-cycles wrkr (hash) null)])
+            (let ([fns (check-cycles w (hasheq wrkr #t) null)])
               (cond
                [fns
                 (wrkr/send wrkr (list 'cycle (cons fn fns)))
                 v]
                [else
+                (hash-set! depends wrkr (cons w fn))
                 (list w (append waitlst (list wrkr)))]))]
            [else
             (wrkr/send wrkr (list 'locked))
