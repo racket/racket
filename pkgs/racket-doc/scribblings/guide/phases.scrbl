@@ -19,7 +19,7 @@ the other.  Similarly, Racket effectively allows multiple invocations of
 a module to exist in the same process but separated by phase.  Racket
 enforces @emph{separation} of such phases, where different phases cannot
 communicate in any way other than via the protocol of macro expansion,
-where the output of one phases is the code used in the next.
+where the output of one phase is the code used in the next.
 
 @section{Phases and Bindings}
 
