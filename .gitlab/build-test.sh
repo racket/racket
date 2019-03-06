@@ -25,6 +25,7 @@ function usage () {
     echo "                       [--with-configure-args <configure-args>]"
     echo "                       [--enable-cs]"
     echo "                       [--with-project-path <project-path>]"
+    echo "                       [--with-chroot-path <chroot-path>]"
     exit 1
 }
 
@@ -35,6 +36,7 @@ RACKET_CONFIGURE_ARGS=
 ARCH="$(uname -m)"
 BUILD_DIR=${CI_PROJECT_PATH}
 MAKE_TARGET="in-place"
+CHROOT_DIR="/tmp/racket-chroot"
 
 # Parse options
 until
@@ -70,6 +72,10 @@ until
 	    shift
 	    BUILD_DIR=$1
 	    ;;
+	--with-chroot-path)
+	    shift
+	    CHROOT_DIR=$1
+	    ;;
 	?*)
 	    usage "Unknown argument $1"
 	    ;;
@@ -82,8 +88,6 @@ do
 done	    
 
 set -eu
-
-CHROOT_DIR=/tmp/racket-chroot
 
 # ---------------------------------------------------------------------------------------------------
 # Set QEMU ARCH which depends on ARCH
