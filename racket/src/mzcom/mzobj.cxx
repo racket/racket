@@ -579,6 +579,11 @@ void operator delete(void * p, unsigned long long)
   free(p);
 }
 
+void operator delete(void * p, unsigned int)
+{
+  free(p);
+}
+
 #endif
 
 #ifdef MZ_PRECISE_GC
