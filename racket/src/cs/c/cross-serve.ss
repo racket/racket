@@ -45,6 +45,9 @@
           (case cmd
             [(compile)
              (compile-to-port (list `(lambda () ,(read-fasled))) o)]
+            [(fasl)
+             ;; Reads host fasl format, then writes target fasl format
+             (fasl-write (read-fasled) o)]
             [else
              (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])
           (let ([result (get)])

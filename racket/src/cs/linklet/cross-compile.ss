@@ -52,16 +52,22 @@
    (unsafe-place-local-set! cross-machine-compiler-cache
                             (cons a (unsafe-place-local-ref cross-machine-compiler-cache)))))
 
-(define (cross-compile machine v)
+(define (do-cross cmd machine v)
   (let* ([a (find-cross 'cross-compile machine)]
          [ch (cadr a)]
          [reply-ch (make-channel)])
-    (channel-put ch (list 'compile
+    (channel-put ch (list cmd
                           v
                           reply-ch))
     (begin0
      (channel-get reply-ch)
      (cache-cross-compiler a))))
+
+(define (cross-compile machine v)
+  (do-cross 'compile machine v))
+
+(define (cross-fasl-to-string machine v)
+  (do-cross 'fasl machine v))
 
 ;; Start a compiler as a Racket thread under the root custodian.
 ;; Using Racket's scheduler lets us use the event and I/O system,
