@@ -44,7 +44,7 @@
       (compile-linklet (correlated-linklet-expr l)
                        (correlated-linklet-name l)
                        #f
-                       (lambda (import-key) (values #f #f))
+                       #f
                        '()))]
     [else
      (error 'eval-correlated-linklet "cannot evaluate unknown linklet: ~s" l)]))

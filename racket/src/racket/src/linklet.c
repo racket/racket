@@ -337,7 +337,7 @@ void extract_import_info(const char *who, int argc, Scheme_Object **argv,
       if (!*_import_keys) {
         scheme_contract_error(who,
                               "no vector supplied for import keys, but import-getting function provided;\n"
-                              " the function argument must be `#f' when the vector argument is `#f'",
+                              " the function argument must be `#f` when the vector argument is `#f`",
                               "import-getting function", 1, argv[3],
                               NULL);
       }

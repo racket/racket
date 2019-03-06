@@ -8,7 +8,7 @@
     (raise-arguments-error who
                            (string-append
                             "no vector supplied for import keys, but import-getting function provided;\n"
-                            " the function argument must be `#f' when the vector argument is `#f'")
+                            " the function argument must be `#f` when the vector argument is `#f`")
                            "import-getting function" get-import))
   (let loop ([options orig-options]
              [redundant #f]
