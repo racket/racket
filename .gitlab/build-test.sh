@@ -5,6 +5,8 @@ set -e
 # Script called by jobs in .gitlab-ci.yml to build and test racket,
 # possibly in a cross environment.
 
+last_command=
+current_command=
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
@@ -133,17 +135,17 @@ GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make g
 function setup_chroot {
     # Host dependencies
     echo "Installing host dependencies"
-    apt-get install -y ${HOST_DEPENDENCIES}
+    apt-get install -y "${HOST_DEPENDENCIES}"
 
     # Create chrooted environment
     echo "Creating chroot environment"
-    mkdir ${CHROOT_DIR}
+    mkdir "${CHROOT_DIR}"
     debootstrap --foreign --no-check-gpg --include=fakeroot,build-essential \
-		--arch=${ARCH} ${DEBIAN} ${CHROOT_DIR} ${DEBIAN_MIRROR}
-    cp /usr/bin/qemu-${QEMU_ARCH}-static ${CHROOT_DIR}/usr/bin/
-    chroot ${CHROOT_DIR} ./debootstrap/debootstrap --second-stage
-    sbuild-createchroot --arch=${ARCH} --foreign --setup-only \
-			${DEBIAN} ${CHROOT_DIR} ${DEBIAN_MIRROR}
+		--arch="${ARCH}" "${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
+    cp /usr/bin/qemu-${QEMU_ARCH}-static "${CHROOT_DIR}"/usr/bin/
+    chroot "${CHROOT_DIR}" ./debootstrap/debootstrap --second-stage
+    sbuild-createchroot --arch="${ARCH}" --foreign --setup-only \
+			"${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
 
     # Create file with environment variables which will be used inside chrooted
     # environment
@@ -153,24 +155,24 @@ function setup_chroot {
 
     # Install dependencies inside chroot
     echo "Installing guest dependencies"
-    chroot ${CHROOT_DIR} apt-get update
-    chroot ${CHROOT_DIR} apt-get --allow-unauthenticated install \
-           -y ${GUEST_DEPENDENCIES}
+    chroot "${CHROOT_DIR}" apt-get update
+    chroot "${CHROOT_DIR}" apt-get --allow-unauthenticated install \
+           -y "${GUEST_DEPENDENCIES}"
 
     # Create build dir and copy travis build files to our chroot environment
     echo "Copying into chroot: ${BUILD_DIR}/ -> ${CHROOT_DIR}/${BUILD_DIR}/"
-    mkdir -p ${CHROOT_DIR}/${BUILD_DIR}
-    rsync -av ${BUILD_DIR}/ ${CHROOT_DIR}/${BUILD_DIR}/
+    mkdir -p "${CHROOT_DIR}"/"${BUILD_DIR}"
+    rsync -av "${BUILD_DIR}"/ "${CHROOT_DIR}"/"${BUILD_DIR}"/
 
     # Indicate chroot environment has been set up
-    touch ${CHROOT_DIR}/.chroot_is_done
+    touch "${CHROOT_DIR}"/.chroot_is_done
 
     # Call ourselves again which will cause tests to run
     echo "Recursively calling script"
     if [ ${MAKE_TARGET} = "cs" ]; then
-	chroot ${CHROOT_DIR} bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs ${JOBS} --with-project-path ${BUILD_DIR} --enable-cs
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs "${JOBS}" --with-project-path "${BUILD_DIR}" --enable-cs
     else
-	chroot ${CHROOT_DIR} bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs ${JOBS} --with-project-path ${BUILD_DIR}
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs "${JOBS}" --with-project-path "${BUILD_DIR}"
     fi
 }
 
@@ -179,7 +181,8 @@ echo "Building for arch ${ARCH}"
 if [ -e "/.chroot_is_done" ]; then
   # We are inside chroot
   echo "Running inside chrooted environment"
-  . ./envvars.sh
+  # shellcheck disable=SC1091  
+  source ./envvars.sh
 else
   if [ "${ARCH}" != "$(uname -m)" ]; then
     # test run, need to set up chrooted environment first
@@ -200,7 +203,7 @@ echo "Running tests"
 echo "Environment: $(uname -a)"
 
 export PATH=${BUILD_DIR}/racket/bin:$PATH
-which racket
+command -v racket
 racket -v
 raco test -l tests/racket/test
 racket -l tests/racket/contract/all
