@@ -173,6 +173,7 @@ test:ubsan:cs:
 # * ppc64le
 
 .preparearch:
+  image: ubuntu:18.04
   stage: prepare
   tags:
     - x86_64
