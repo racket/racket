@@ -2,6 +2,7 @@ stages:
   - prepare
   - test
 
+# ---------------------------------------------------------------------------------------------------
 # Using debian:stable-slim to perform an llvm build with Z3 support
 # The reason this is necessary is that we need Z3 support in scan-build
 # to be able to crosscheck errors with z3 which decreases the false positives
@@ -15,6 +16,7 @@ prepare-cache:
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   script:
@@ -42,6 +44,7 @@ scan-build:racket:
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -65,6 +68,7 @@ scan-build:racketcs:
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -82,6 +86,7 @@ scan-build:racketcs:
     paths:
       - $INSTALL_DIR
 
+# ---------------------------------------------------------------------------------------------------
 ##
 ## The following jobs build/test racket and racketcs with ubsan enabled
 ## 
@@ -93,15 +98,6 @@ scan-build:racketcs:
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - export PATH=$PWD/racket/bin:$PATH
-
-# This is just used to provide some environment information for debugging purposes    
-envinfo:
-  extends: .prepare
-  script:
-    - cat /proc/cpuinfo
-    - lsb_release -a
-    - gcc -v
-    - export
 
 test:ubsan:
   extends: .prepare
@@ -162,6 +158,7 @@ test:ubsan:cs:
       - cs-logs/
       - runtime-errors.log
 
+# ---------------------------------------------------------------------------------------------------
 # Runs a cross compilation and testing using qemu chrooted into the correct architecture
 # Each of the test:<arch>: will extend .preparearch which run the proper script
 # Currently testing:
