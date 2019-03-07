@@ -1,4 +1,6 @@
 #! /bin/bash
+# This script shows no error on shellcheck:
+# https://github.com/koalaman/shellcheck
 set -e
 
 # ---------------------------------------------------------------------------------------------------
@@ -135,7 +137,7 @@ GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make g
 function setup_chroot {
     # Host dependencies
     echo "Installing host dependencies"
-    apt-get install -y "${HOST_DEPENDENCIES}"
+    apt-get install -y ${HOST_DEPENDENCIES}
 
     # Create chrooted environment
     echo "Creating chroot environment"
@@ -157,7 +159,7 @@ function setup_chroot {
     echo "Installing guest dependencies"
     chroot "${CHROOT_DIR}" apt-get update
     chroot "${CHROOT_DIR}" apt-get --allow-unauthenticated install \
-           -y "${GUEST_DEPENDENCIES}"
+           -y ${GUEST_DEPENDENCIES}
 
     # Create build dir and copy travis build files to our chroot environment
     echo "Copying into chroot: ${BUILD_DIR}/ -> ${CHROOT_DIR}/${BUILD_DIR}/"
