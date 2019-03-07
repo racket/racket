@@ -178,7 +178,20 @@ function setup_chroot {
     fi
 }
 
-echo "Building for arch ${ARCH}"
+# Information about environment
+echo "Environment information"
+echo "======================="
+echo "              Machine : $(uname -m)"
+echo "                 Jobs : ${JOBS}"
+echo "          Target Arch : ${ARCH}"
+echo "            QEMU Arch : ${QEMU_ARCH}"
+echo "          chroot Path : ${CHROOT_DIR}"
+echo "           Build Path : ${BUILD_PATH}"
+echo "          Make Target : ${MAKE_TARGET}"
+echo "               Debian : ${DEBIAN}"
+echo "        Debian Mirror : ${DEBIAN_MIRROR}"
+echo "Racket Configure Args : ${RACKET_CONFIGURE_ARGS}"
+
 
 if [ -e "/.chroot_is_done" ]; then
   # We are inside chroot
