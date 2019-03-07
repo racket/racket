@@ -161,3 +161,78 @@ test:ubsan:cs:
     paths:
       - cs-logs/
       - runtime-errors.log
+
+# Runs a cross compilation and testing using qemu chrooted into the correct architecture
+# Each of the test:<arch>: will extend .preparearch which run the proper script
+# Currently testing:
+# * arm64
+# * armel
+# * armhf
+# * i386
+# * mips
+# * mipsel
+# * mips64el
+# * s390x
+# * ppc64le
+
+.preparearch:
+  tags:
+    - x86_64
+    - privileged
+    - linux
+  script:
+    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_PATH} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot
+
+test:arm64:
+  extends: .preparearch
+  variables:
+    ARCH: "arm64"
+    JOBS: 6
+
+test:armel:
+  extends: .preparearch
+  variables:
+    ARCH: "armel"
+    JOBS: 6
+
+test:armhf:
+  extends: .preparearch
+  variables:
+    ARCH: "armhf"
+    JOBS: 6
+
+test:i386:
+  extends: .preparearch
+  variables:
+    ARCH: "i386"
+    JOBS: 6
+    
+test:mips:
+  extends: .preparearch
+  variables:
+    ARCH: "mips"
+    JOBS: 6
+  
+test:mipsel:
+  extends: .preparearch
+  variables:
+    ARCH: "mipsel"
+    JOBS: 6
+
+test:mips64el:
+  extends: .preparearch
+  variables:
+    ARCH: "mips64el"
+    JOBS: 6
+    
+test:s390x:
+  extends: .preparearch
+  variables:
+    ARCH: "s390x"
+    JOBS: 6
+
+test:ppc64le:
+  extends: .preparearch
+  variables:
+    ARCH: "ppc64le"
+    JOBS: 6
