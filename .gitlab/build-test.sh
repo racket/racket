@@ -162,7 +162,11 @@ function setup_chroot {
     touch ${CHROOT_DIR}/.chroot_is_done
 
     # Call ourselves again which will cause tests to run
-    chroot ${CHROOT_DIR} bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh"
+    if [ ${MAKE_TARGET} = "cs" ]; then
+	chroot ${CHROOT_DIR} bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs ${JOBS} --with-project-path ${BUILD_DIR} --enable-cs
+    else
+	chroot ${CHROOT_DIR} bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs ${JOBS} --with-project-path ${BUILD_DIR}
+    fi
 }
 
 echo "Building for arch ${ARCH}"
