@@ -176,6 +176,7 @@ test:ubsan:cs:
 # * ppc64le
 
 .preparearch:
+  stage: prepare
   tags:
     - x86_64
     - privileged
