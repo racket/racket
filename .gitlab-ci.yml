@@ -179,6 +179,8 @@ test:ubsan:cs:
     - x86_64
     - privileged
     - linux
+  before_script:
+    - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_PATH} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot
 
