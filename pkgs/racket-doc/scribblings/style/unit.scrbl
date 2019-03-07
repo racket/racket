@@ -290,7 +290,7 @@ racket
  ;;
  ;; (define-strategy (s board tiles available score) ...)
  ;; defines a function from an instance of player to a
- ;; placement. The four identifier denote the state of
+ ;; placement. The four identifiers denote the state of
  ;; the board, the player's hand, the places where a
  ;; tile can be placed, and the player's current score.
  define-strategy)
