@@ -193,7 +193,9 @@ if [ ! -e "/.chroot_is_done" ]; then
     # test run, need to set up chrooted environment first
     echo "Setting up chrooted ${ARCH} environment"
     setup_chroot
-  fi
+  else # We are compiling and running tests natively
+    apt-get install -y ${GUEST_DEPENDENCIES}
+  fi      
 fi
 
 echo "Compiling"
