@@ -86,7 +86,7 @@ until
 	*)
 	    ;;
     esac
-    [ "x${opt}" = "x" ]
+[ "x${opt}" = "x" ]
 do
     shift
 done	    
@@ -149,12 +149,6 @@ function setup_chroot {
     sbuild-createchroot --arch="${ARCH}" --foreign --setup-only \
 			"${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
 
-    # Create file with environment variables which will be used inside chrooted
-    # environment
-    echo "export ARCH=${ARCH}" > envvars.sh
-    echo "export BUILD_DIR=${BUILD_DIR}" >> envvars.sh
-    chmod a+x envvars.sh
-
     # Install dependencies inside chroot
     echo "Installing guest dependencies"
     chroot "${CHROOT_DIR}" apt-get update
@@ -172,9 +166,9 @@ function setup_chroot {
     # Call ourselves again which will cause tests to run
     echo "Recursively calling script"
     if [ ${MAKE_TARGET} = "cs" ]; then
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs "${JOBS}" --with-project-path "${BUILD_DIR}" --enable-cs
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --enable-cs"
     else
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh" --jobs "${JOBS}" --with-project-path "${BUILD_DIR}"
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR}"
     fi
 }
 
@@ -184,21 +178,17 @@ echo "======================="
 echo "              Machine : $(uname -m)"
 echo "                 Jobs : ${JOBS}"
 echo "          Target Arch : ${ARCH}"
-echo "            QEMU Arch : ${QEMU_ARCH}"
 echo "          chroot Path : ${CHROOT_DIR}"
 echo "           Build Path : ${BUILD_DIR}"
 echo "          Make Target : ${MAKE_TARGET}"
 echo "               Debian : ${DEBIAN}"
 echo "        Debian Mirror : ${DEBIAN_MIRROR}"
 echo "Racket Configure Args : ${RACKET_CONFIGURE_ARGS}"
+if [ ! -e "./chroot_is_done" ]; then
+echo "            QEMU Arch : ${QEMU_ARCH}"
+fi
 
-
-if [ -e "/.chroot_is_done" ]; then
-  # We are inside chroot
-  echo "Running inside chrooted environment"
-  # shellcheck disable=SC1091  
-  source ./envvars.sh
-else
+if [ ! -e "/.chroot_is_done" ]; then
   if [ "${ARCH}" != "$(uname -m)" ]; then
     # test run, need to set up chrooted environment first
     echo "Setting up chrooted ${ARCH} environment"
