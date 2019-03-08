@@ -78,7 +78,8 @@
              [trans-idss null] ; accumulated `define-syntaxes` identifiers that have disappeared
              [trans-stxs null] ; accumulated `define-syntaxes` forms for tracking
              [stx-clauses null] ; accumulated syntax-binding clauses, used when observing
-             [dups (make-check-no-duplicate-table)])
+             [dups (make-check-no-duplicate-table)]
+             [just-saw-define-syntaxes? #f]) ; make sure that `define-syntaxes` isn't last
     (cond
      [(null? bodys)
       ;; Partial expansion is complete, so finish by rewriting to
@@ -89,6 +90,7 @@
                              #:original-bodys init-bodys
                              #:source s
                              #:stratified? stratified?
+                             #:just-saw-define-syntaxes? just-saw-define-syntaxes?
                              #:name name
                              #:disappeared-transformer-bindings (reverse trans-idss)
                              #:disappeared-transformer-forms (reverse trans-stxs))]
@@ -118,7 +120,8 @@
                trans-idss
                trans-stxs
                stx-clauses
-               dups)]
+               dups
+               just-saw-define-syntaxes?)]
         [(define-values)
          ;; Found a variable definition; add bindings, extend the
          ;; environment, and continue
@@ -166,7 +169,8 @@
                trans-idss
                trans-stxs
                stx-clauses
-               new-dups)]
+               new-dups
+               #f)]
         [(define-syntaxes)
          ;; Found a macro definition; add bindings, evaluate the
          ;; compile-time right-hand side, install the compile-time
@@ -204,7 +208,8 @@
                (cons ids trans-idss)
                (cons (keep-as-needed body-ctx exp-body #:for-track? #t) trans-stxs)
                (cons (datum->syntax #f (list ids (m 'rhs)) exp-body) stx-clauses)
-               new-dups)]
+               new-dups
+               #t)]
         [else
          (cond
           [stratified?
@@ -223,7 +228,8 @@
                  trans-idss
                  trans-stxs
                  stx-clauses
-                 dups)]
+                 dups
+                 #f)]
           [else
            ;; Found an expression; accumulate it and continue
            (loop body-ctx
@@ -236,7 +242,8 @@
                  trans-idss
                  trans-stxs
                  stx-clauses
-                 dups)])])])))
+                 dups
+                 #f)])])])))
 
 ;; Partial expansion is complete, so assumble the result as a
 ;; `letrec-values` form and continue expanding
@@ -246,10 +253,12 @@
                                #:original-bodys init-bodys
                                #:source s
                                #:stratified? stratified?
+                               #:just-saw-define-syntaxes? just-saw-define-syntaxes?
                                #:name name
                                #:disappeared-transformer-bindings disappeared-transformer-bindings
                                #:disappeared-transformer-forms disappeared-transformer-forms)
-  (when (null? done-bodys)
+  (when (or (null? done-bodys)
+            just-saw-define-syntaxes?)
     (raise-syntax-error (string->symbol "begin (possibly implicit)")
                         "no expression after a sequence of internal definitions"
                         (datum->syntax #f (cons 'begin init-bodys) s)

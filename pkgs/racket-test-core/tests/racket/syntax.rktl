@@ -715,6 +715,7 @@
 (test 5 'let* (let* ([x 4][x 5]) x))
 (error-test-let #'(() (define x 10)))
 (error-test-let #'(() (define x 10) (define y 20)))
+(error-test-let #'(() 8 (define-syntax-rule (m) 10)))
 
 (define (do-error-test-let-values/no-* expr syntax-test)
   (syntax-test (datum->syntax #f (cons 'let-values expr) #f))
