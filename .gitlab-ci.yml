@@ -184,6 +184,12 @@ test:ubsan:cs:
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot
 
+test:x86_64:
+  extends: .preparearch
+  variables:
+    ARCH: "x86_64"
+    JOBS: 6
+
 test:arm64:
   extends: .preparearch
   variables:
@@ -237,3 +243,29 @@ test:ppc64le:
   variables:
     ARCH: "ppc64le"
     JOBS: 6
+
+
+.preparearch:cs:
+  image: ubuntu:18.04
+  stage: prepare
+  tags:
+    - x86_64
+    - privileged
+    - linux
+  before_script:
+    - apt-get update
+  script:
+    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs
+
+test:x86_64:cs:
+  extends: .preparearch:cs
+  variables:
+    ARCH: "x86_64"
+    JOBS: 6
+
+test:i386:cs:
+  extends: .preparearch:cs
+  variables:
+    ARCH: "i386"
+    JOBS: 6
+
