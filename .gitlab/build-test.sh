@@ -184,7 +184,7 @@ echo "          Make Target : ${MAKE_TARGET}"
 echo "               Debian : ${DEBIAN}"
 echo "        Debian Mirror : ${DEBIAN_MIRROR}"
 echo "Racket Configure Args : ${RACKET_CONFIGURE_ARGS}"
-if [ ! -e "./chroot_is_done" ]; then
+if [ ! -e "/.chroot_is_done" ]; then
 echo "            QEMU Arch : ${QEMU_ARCH}"
 fi
 
