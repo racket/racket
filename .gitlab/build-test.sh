@@ -132,7 +132,7 @@ fi
 HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild rsync"
 
 # Packages to install on the GUEST
-GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev"
+GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev uuid-dev"
 
 function setup_chroot {
     # Host dependencies
