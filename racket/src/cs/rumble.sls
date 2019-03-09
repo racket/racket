@@ -274,6 +274,7 @@
           hash-count
           hash-keys-subset?
           eq-hashtable->hash   ; not exported to racket
+          hash->eq-hashtable   ; not exported to racket
 
           datum-intern-literal
           set-intern-regexp?!  ; not exported to racket

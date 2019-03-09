@@ -429,11 +429,11 @@
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
-            exports-info   ; hash(sym -> known) for info about each export; see "known.rkt"
+            (mutable exports-info) ; hash(sym -> known) for info about export; see "known.rkt"; unfasl on demand
             name           ; name of the linklet (for debugging purposes)
             importss       ; list of list of import symbols
             exports)       ; list of export symbol-or-pair, pair is (cons export-symbol src-symbol)
-    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-1}))
+    (nongenerative #{linklet Zuquy0g9bh5vmeespyap4g-2}))
 
   (define (set-linklet-code linklet code preparation)
     (make-linklet code
@@ -467,6 +467,30 @@
                   (linklet-name linklet)
                   (linklet-importss linklet)
                   (linklet-exports linklet)))
+
+  (define (linklet-pack-exports-info! l)
+    (let ([info (linklet-exports-info l)])
+      (when (hash? info)
+        (let ([new-info
+               (cond
+                [(zero? (hash-count info)) #f]
+                [else
+                 (let-values ([(o get) (open-bytevector-output-port)])
+                   ;; convert to a hashtable so the fasled form is compact and
+                   ;; doesn't have hash codes:
+                   (fasl-write (hash->eq-hashtable (hash-copy info)) o)
+                   (get))])])
+          (linklet-exports-info-set! l new-info)))))
+
+  (define (linklet-unpack-exports-info! l)
+    (let ([info (linklet-exports-info l)])
+      (unless (hash? info)
+        (let ([new-info
+               (cond
+                [(not info) (hasheq)]
+                [else
+                 (eq-hashtable->hash (fasl-read (open-bytevector-input-port info)))])])
+          (linklet-exports-info-set! l new-info)))))
 
   (define compile-linklet
     (case-lambda
@@ -602,6 +626,7 @@
       (let-values ([(lnk/inst more-import-keys) (get-import key)])
         (cond
          [(linklet? lnk/inst)
+          (linklet-unpack-exports-info! lnk/inst)
           (values (linklet-exports-info lnk/inst)
                   ;; No conversion needed:
                   #f

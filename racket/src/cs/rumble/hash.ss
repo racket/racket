@@ -30,6 +30,8 @@
 
 (define (eq-hashtable->hash ht)
   (create-mutable-hash ht 'eq?))
+(define (hash->eq-hashtable ht)
+  (mutable-hash-ht ht))
 
 (define make-weak-hasheq
   (case-lambda

@@ -20,21 +20,25 @@
        [(not i) (values ht cross-machine)]
        [else
         (let-values ([(key v) (hash-iterate-key+value orig-ht i)])
-          (let ([new-ht (if (and (linklet? v)
-                                 (pair? (linklet-paths v)))
-                            (hash-set ht key
-                                      (adjust-cross-perparation
-                                       (set-linklet-paths
-                                        v
-                                        (map path->compiled-path
-                                             (linklet-paths v)))))
-                            ht)])
-            (loop (hash-iterate-next orig-ht i)
-                  new-ht
-                  (or cross-machine
-                      (and (linklet? v)
-                           (let ([prep (linklet-preparation v)])
-                             (and (pair? prep) (cdr prep))))))))]))))
+          (let ([new-v (if (and (linklet? v)
+                                (pair? (linklet-paths v)))
+                           (adjust-cross-perparation
+                            (set-linklet-paths
+                             v
+                             (map path->compiled-path
+                                  (linklet-paths v))))
+                           v)])
+            (when (linklet? new-v)
+              (linklet-pack-exports-info! new-v))
+            (let ([new-ht (if (eq? v new-v)
+                              ht
+                              (hash-set ht key new-v))])
+              (loop (hash-iterate-next orig-ht i)
+                    new-ht
+                    (or cross-machine
+                        (and (linklet? v)
+                             (let ([prep (linklet-preparation v)])
+                               (and (pair? prep) (cdr prep)))))))))]))))
 
 ;; Before fasl conversion, change 'cross to 'faslable
 (define (adjust-cross-perparation l)
