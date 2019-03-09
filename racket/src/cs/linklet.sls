@@ -325,7 +325,7 @@
      [else
       ;; Combine an annotation with a hash code in a vector
       (let-values ([(o get) (open-bytevector-output-port)])
-        (fasl-write (cons (version) a) o)
+        (fasl-write* (cons (version) a) o)
         (vector (sha1-bytes (get)) a))]))
 
   (define-record-type wrapped-code
@@ -478,7 +478,7 @@
                  (let-values ([(o get) (open-bytevector-output-port)])
                    ;; convert to a hashtable so the fasled form is compact and
                    ;; doesn't have hash codes:
-                   (fasl-write (hash->eq-hashtable (hash-copy info)) o)
+                   (fasl-write* (hash->eq-hashtable (hash-copy info)) o)
                    (get))])])
           (linklet-exports-info-set! l new-info)))))
 

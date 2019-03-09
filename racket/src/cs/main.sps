@@ -536,13 +536,14 @@
                                        (find-system-path 'exec-file))
                   (loop rest-args)))]
              [("--cross-server")
-              (let-values ([(scheme-xpatch-file rest-args) (next-arg "compiler xpatch path" arg within-arg args)])
-                (let-values ([(scheme-xpatch-file rest-args) (next-arg "library xpatch path" arg within-arg (cons arg rest-args))])
-                  (when (or (saw-something? saw)
-                            (not (null? rest-args)))
-                    (raise-user-error 'racket "--cross-server <path> cannot be combined with any other arguments")))
-                (raise-user-error 'racket "--cross-server should have been handled earlier")
-                (flags-loop null (see saw 'non-config)))]
+              (let-values ([(scheme-xpatch-file rest-args) (next-arg "target machine" arg within-arg args)])
+                (let-values ([(scheme-xpatch-file rest-args) (next-arg "compiler xpatch path" arg within-arg (cons arg rest-args))])
+                  (let-values ([(scheme-xpatch-file rest-args) (next-arg "library xpatch path" arg within-arg (cons arg rest-args))])
+                    (when (or (saw-something? saw)
+                              (not (null? rest-args)))
+                      (raise-user-error 'racket "--cross-server cannot be combined with any other arguments"))
+                    (raise-user-error 'racket "--cross-server should have been handled earlier"))))
+              (flags-loop null (see saw 'non-config))]
              [("-j" "--no-jit")
               (loop (cdr args))]
              [("-h" "--help")

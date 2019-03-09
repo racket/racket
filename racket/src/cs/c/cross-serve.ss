@@ -10,7 +10,7 @@
   (current-output-port o))
 
 ;; Server function to run after cross-compiler is loaded:
-(define (serve-cross-compile)
+(define (serve-cross-compile target)
   ;; Don't exit due to Ctl-C:
   (keyboard-interrupt-handler void)
   ;; Restore output
@@ -47,7 +47,9 @@
              (compile-to-port (list `(lambda () ,(read-fasled))) o)]
             [(fasl)
              ;; Reads host fasl format, then writes target fasl format
-             (fasl-write (read-fasled) o)]
+             (let ([v (read-fasled)])
+               (parameterize ([#%$target-machine (string->symbol target)])
+                 (fasl-write v o)))]
             [else
              (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])
           (let ([result (get)])

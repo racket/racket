@@ -104,6 +104,7 @@
                          (subprocess #f #f (get-original-error-port)
                                      exe
                                      "--cross-server"
+                                     (symbol->string machine)
                                      (patchfile "compile")
                                      (patchfile "library"))])
              (define (->string v) (#%format "~s\n" v))
@@ -123,7 +124,7 @@
 
 (define (fasl-to-bytevector v)
   (let-values ([(o get) (open-bytevector-output-port)])
-    (fasl-write v o)
+    (fasl-write* v o)
     (get)))
 
 (define (find-exe exe)

@@ -66,7 +66,7 @@
     "  -L <levels>, --syslog <levels> : Set syslog logging to <levels>\n"
     "  --compile-machine <machine> : Compile for <machine>\n"
     "  --cross-compiler <machine> <plugin-dir> : Use compiler plugin for <machine>\n"
-    "  --cross-server <compiler> <library> : Drive cross-compiler (as only option)\n"
+    "  --cross-server <mach> <comp> <lib> : Drive cross-compiler (as only option)\n"
     " Meta options:\n"
     "  -- : No argument following this switch is used as a switch\n"
     "  -h, --help : Show this information and exits, ignoring other options\n"
