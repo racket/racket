@@ -2034,6 +2034,9 @@
                                                      'build
                                                      'run))))
                                         setup-printf setup-fprintf
+                                        (lambda (exn)
+                                          (set! exit-code 1)
+                                          (setup-printf #f "check failure: ~a" (exn->string exn)))
                                         (check-unused-dependencies)
                                         (fix-dependencies)
                                         (verbose)

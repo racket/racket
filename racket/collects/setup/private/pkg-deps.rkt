@@ -28,7 +28,7 @@
          coll-paths
          coll-main?s
          coll-modes
-         setup-printf setup-fprintf
+         setup-printf setup-fprintf report-error
          check-unused? fix? verbose?
          all-pkgs-lazily?
          must-declare-deps?)
@@ -369,32 +369,36 @@
                              (append (map path-element->string coll-path) (list base))
                              "/")))
       (define zo-path (build-path dir zo-f))
-      (define mod-code (call-with-input-file*
-                        zo-path
-                        (lambda (i)
-                          (parameterize ([read-accept-compiled #t]
-                                         [read-on-demand-source zo-path])
-                            (read i)))))
-      ;; Recur to cover submodules:
-      (let loop ([mod-code mod-code])
-        (define name (module-compiled-name mod-code))
-        (unless (and (list? name)
-                     (memq (last name) build-only-submod-names))
-          ;; Check the module's imports:
-          (for* ([imports (in-list (module-compiled-imports mod-code))]
-                 [import (cdr imports)])
-            (define mod (let ([m (collapse-module-path-index import in-mod)])
-                          (if (and (pair? m)
-                                   (eq? (car m) 'submod))
-                              (cadr m)
-                              m)))
-            (when (and (pair? mod) (eq? 'lib (car mod)))
-              (check-mod! mod 'run pkg zo-f dir)))
-          ;; Recur for submodules:
-          (for-each loop
-                    (append
-                     (module-compiled-submodules mod-code #t)
-                     (module-compiled-submodules mod-code #f)))))))
+      (let/ec esc
+        (define mod-code (with-handlers ([exn:fail? (lambda (exn)
+                                                      (report-error exn)
+                                                      (esc (void)))])
+                           (call-with-input-file*
+                            zo-path
+                            (lambda (i)
+                              (parameterize ([read-accept-compiled #t]
+                                             [read-on-demand-source zo-path])
+                                (read i))))))
+        ;; Recur to cover submodules:
+        (let loop ([mod-code mod-code])
+          (define name (module-compiled-name mod-code))
+          (unless (and (list? name)
+                       (memq (last name) build-only-submod-names))
+            ;; Check the module's imports:
+            (for* ([imports (in-list (module-compiled-imports mod-code))]
+                   [import (cdr imports)])
+              (define mod (let ([m (collapse-module-path-index import in-mod)])
+                            (if (and (pair? m)
+                                     (eq? (car m) 'submod))
+                                (cadr m)
+                                m)))
+              (when (and (pair? mod) (eq? 'lib (car mod)))
+                (check-mod! mod 'run pkg zo-f dir)))
+            ;; Recur for submodules:
+            (for-each loop
+                      (append
+                       (module-compiled-submodules mod-code #t)
+                       (module-compiled-submodules mod-code #f))))))))
 
   ;; ----------------------------------------
   (define (find-compiled-directories path)
