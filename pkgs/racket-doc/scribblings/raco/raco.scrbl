@@ -34,3 +34,4 @@ a typical Racket installation.
 @include-section["scribble.scrbl"]
 @include-section["command.scrbl"]
 @include-section["config.scrbl"]
+@include-section["whereis.scrbl"]

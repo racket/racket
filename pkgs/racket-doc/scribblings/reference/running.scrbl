@@ -11,3 +11,4 @@
 @include-section["interactive.scrbl"]
 @include-section["debugging.scrbl"]
 @include-section["kernel.scrbl"]
+@include-section["whereis.scrbl"]
