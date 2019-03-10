@@ -13,6 +13,7 @@
                     setup/main-collects
                     setup/collection-name
                     setup/collection-search
+                    setup/collection-paths
                     setup/matching-platform
                     setup/cross-system
                     setup/path-to-relative
@@ -2026,6 +2027,20 @@ Returns @racket[#t] if @racket[v] is a module path (in the sense of
 @racket[_str] contains at least one slash. The
 @racket[collapse-module-path] function produces such module paths for
 collection-based module references.}
+
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "collection-paths"]{API for Collection Paths}
+
+@defmodule[setup/collection-paths]
+
+@defproc[(collection-paths [name collection-name?])
+         (listof path-string?)]{
+
+Generalizes @racket[collection-path] to returns a list of all
+directory paths corresponding to the given collection.}
+
 
 @; ------------------------------------------------------------------------
 
