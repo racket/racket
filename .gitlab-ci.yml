@@ -174,7 +174,7 @@ test:ubsan:cs:
 
 .preparearch:
   image: ubuntu:18.04
-  stage: prepare
+  stage: test
   tags:
     - x86_64
     - privileged
@@ -247,7 +247,7 @@ test:ppc64el:
 
 .preparearch:cs:
   image: ubuntu:18.04
-  stage: prepare
+  stage: test
   tags:
     - x86_64
     - privileged
