@@ -132,7 +132,7 @@ fi
 HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild rsync"
 
 # Packages to install on the GUEST
-GUEST_DEPENDENCIES="build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev uuid-dev"
+GUEST_DEPENDENCIES="devscripts build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev uuid-dev"
 
 function setup_chroot {
     # Host dependencies
@@ -201,10 +201,10 @@ fi
 echo "Compiling"
 echo "Environment: $(uname -a)"
 
-make CPUS=${JOBS} \
-     PKGS="racket-test db-test unstable-flonum-lib net-test" \
-     CONFIGURE_ARGS_qq="${RACKET_CONFIGURE_ARGS}" \
-     ${MAKE_TARGET}
+annotate-output make CPUS=${JOBS} \
+		PKGS="racket-test db-test unstable-flonum-lib net-test" \
+		CONFIGURE_ARGS_qq="${RACKET_CONFIGURE_ARGS}" \
+		${MAKE_TARGET}
      
 echo "Running tests"
 echo "Environment: $(uname -a)"
@@ -212,21 +212,21 @@ echo "Environment: $(uname -a)"
 export PATH=${BUILD_DIR}/racket/bin:$PATH
 command -v racket
 racket -v
-raco test -l tests/racket/test
-racket -l tests/racket/contract/all
-raco test -l tests/json/json
-raco test -l tests/file/main
-raco test -l tests/net/head
-raco test -l tests/net/uri-codec
-raco test -l tests/net/url
-raco test -l tests/net/url-port
-raco test -l tests/net/encoders
-raco test -l tests/openssl/basic
-raco test -l tests/openssl/https
-raco test -l tests/match/main
-raco test -l tests/zo-path
-raco test -l tests/xml/test
-raco test -l tests/db/all-tests
-raco test -c tests/stxparse
+annotate-output raco test -l tests/racket/test
+annotate-output racket -l tests/racket/contract/all
+annotate-output raco test -l tests/json/json
+annotate-output raco test -l tests/file/main
+annotate-output raco test -l tests/net/head
+annotate-output raco test -l tests/net/uri-codec
+annotate-output raco test -l tests/net/url
+annotate-output raco test -l tests/net/url-port
+annotate-output raco test -l tests/net/encoders
+annotate-output raco test -l tests/openssl/basic
+annotate-output raco test -l tests/openssl/https
+annotate-output raco test -l tests/match/main
+annotate-output raco test -l tests/zo-path
+annotate-output raco test -l tests/xml/test
+annotate-output raco test -l tests/db/all-tests
+annotate-output raco test -c tests/stxparse
 
 echo "DONE!"
