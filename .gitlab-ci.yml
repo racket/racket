@@ -176,7 +176,7 @@ test:ubsan:cs:
 # * ppc64el
 
 prepare-cache:qemu:
-  image: ubuntu18.04
+  image: ubuntu:18.04
   stage: prepare
   tags:
     - linux
