@@ -106,9 +106,9 @@ exception handler obtains control, and the handler itself is
 (eval:error (raise 'failed #t))
 ]}
 
-@defproc*[([(error [sym symbol?]) any]
-           [(error [msg string?] [v any/c] ...) any]
-           [(error [src symbol?] [format string?] [v any/c] ...) any])]{
+@defproc*[([(error [message-sym symbol?]) any]
+           [(error [message-str string?] [v any/c] ...) any]
+           [(error [who-sym symbol?] [format-str string?] [v any/c] ...) any])]{
 
 Raises the exception @racket[exn:fail], which contains an error
 string. The different forms produce the error string in different
@@ -116,23 +116,23 @@ ways:
 
 @itemize[
 
- @item{@racket[(error sym)] creates a message string by concatenating
-  @racket["error: "] with the string form of @racket[sym]. Use this
+ @item{@racket[(error message-sym)] creates a message string by concatenating
+  @racket["error: "] with the string form of @racket[message-sym]. Use this
   form sparingly.}
 
- @item{@racket[(error msg v ...)] creates a message string by
- concatenating @racket[msg] with string versions of the @racket[v]s
+ @item{@racket[(error message-str v ...)] creates a message string by
+ concatenating @racket[message-str] with string versions of the @racket[v]s
  (as produced by the current error value conversion handler; see
  @racket[error-value->string-handler]). A space is inserted before
  each @racket[v]. Use this form sparingly, because it does not conform
  well to Racket's @tech{error message conventions}; consider
  @racket[raise-arguments-error], instead. }
 
- @item{@racket[(error src frmat v ...)] creates a
+ @item{@racket[(error who-sym format-str v ...)] creates a
  message string equivalent to the string created by
 
   @racketblock[
-  (format (string-append "~s: " frmat) src v ...)
+  (format (string-append "~s: " format-str) who-sym v ...)
   ]
 
  When possible, use functions such as @racket[raise-argument-error],
@@ -151,9 +151,9 @@ In all cases, the constructed message string is passed to
 ]}
 
 
-@defproc*[([(raise-user-error [sym symbol?]) any]
-           [(raise-user-error [msg string?] [v any/c] ...) any]
-           [(raise-user-error [src symbol?] [format string?] [v any/c] ...) any])]{
+@defproc*[([(raise-user-error [message-sym symbol?]) any]
+           [(raise-user-error [message-str string?] [v any/c] ...) any]
+           [(raise-user-error [who-sym symbol?] [format-str string?] [v any/c] ...) any])]{
 
 Like @racket[error], but constructs an exception with
 @racket[make-exn:fail:user] instead of @racket[make-exn:fail]. The
