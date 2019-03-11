@@ -10,7 +10,7 @@ stages:
 #
 # Also, this should only be performed once. Once in cache llvm won't be build anymore
 # until we force it.
-prepare-cache:
+prepare-cache:llvm:
   image: debian:stable-slim
   stage: prepare
   tags:
@@ -35,6 +35,7 @@ prepare-cache:
     - make -j5
     - make -j5 install
   cache:
+    key: llvm-HEAD
     paths:
       - $INSTALL_DIR
       
@@ -58,6 +59,7 @@ scan-build:racket:
     paths:
       - scan-report_cc/
   cache:
+    key: llvm-HEAD
     policy: pull
     paths:
       - $INSTALL_DIR
@@ -82,6 +84,7 @@ scan-build:racketcs:
     paths:
       - scan-report-cs_cc/
   cache:
+    key: llvm-HEAD
     policy: pull
     paths:
       - $INSTALL_DIR
@@ -171,6 +174,30 @@ test:ubsan:cs:
 # * mips64el
 # * s390x
 # * ppc64el
+
+prepare-cache:qemu:
+  image: ubuntu18.04
+  stage: prepare
+  tags:
+    - linux
+    - x86_64
+    - privileged
+  variables:
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  script:
+    - if [ -d $INSTALL_DIR ]; then exit 0; fi
+    - apt-get update && apt-get install -y gcc make bison flex git wget xz-utils python pkg-config libglib2.0-dev libpixman-1-dev
+    - wget https://download.qemu.org/qemu-3.1.0.tar.xz
+    - tar -xvJf qemu-3.1.0.tar.xz
+    - mkdir qemu-build
+    - cd qemu-build
+    - ../qemu-3.1.0/configure --static --disable-kvm --disable-xen --disable-spice --target-list='i386-linux-user aarch64-linux-user mips-linux-user mipsel-linux-user mips64el-linux-user s390x-linux-user ppc64le-linux-user riscv64-linux-user' --prefix=$INSTALL_DIR
+    - make -j5
+    - make -j5 install
+  cache:
+    key: qemu-3.1.0
+    paths:
+      - $INSTALL_DIR
 
 .preparearch:
   image: ubuntu:18.04
