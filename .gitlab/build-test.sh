@@ -118,7 +118,7 @@ then
 	    ;;
 	*)
 	    echo "Unknown architecture ${ARCH}"
-	    echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64le"
+	    echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64el"
 	    echo "These are the official names for the debian ports available listed at:"
 	    echo "https://www.debian.org/ports/"
 	    echo "NOTE: we also accept x86_64 as an alias for amd64"

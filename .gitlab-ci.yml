@@ -170,7 +170,7 @@ test:ubsan:cs:
 # * mipsel
 # * mips64el
 # * s390x
-# * ppc64le
+# * ppc64el
 
 .preparearch:
   image: ubuntu:18.04
@@ -238,10 +238,10 @@ test:s390x:
     ARCH: "s390x"
     JOBS: 6
 
-test:ppc64le:
+test:ppc64el:
   extends: .preparearch
   variables:
-    ARCH: "ppc64le"
+    ARCH: "ppc64el"
     JOBS: 6
 
 
