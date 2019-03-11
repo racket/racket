@@ -259,6 +259,7 @@ test:ppc64el:
 
 test:x86_64:cs:
   extends: .preparearch:cs
+  allow_failure: true
   variables:
     ARCH: "x86_64"
     JOBS: 6
