@@ -139,7 +139,8 @@
                 (if (member (car flags)
                             ;; Flags that take 1 argument:
                             '("--mode" "--doc-pdf"
-                              "-j" "--jobs" "--workers"))
+                              "-j" "--jobs" "--workers"
+                              "--error-in" "--error-out"))
                     (if (pair? (cdr flags))
                         (filter-flags queued-flags (cddr flags))
                         queued-flags)
@@ -215,7 +216,7 @@
       ;; Load the cm instance to be installed while loading Setup PLT.
       ;; This has to be dynamic, so we get a chance to turn off compiled
       ;;  file loading, and so it can be in a separate namespace.
-      (let-values ([(mk trust-zos)
+      (let-values ([(mk trust-zos managed-recompile-only)
 		    ;; Load cm.rkt into its own namespace, so that cm compiles
 		    ;;  itself and its required modules in the right order
 		    ;;  (i.e., when some module requires cm or one of its
@@ -304,11 +305,16 @@
 				    (dynamic-require 'compiler/private/cm-minimal
 						     'make-compilation-manager-load/use-compiled-handler)]
 				   [trust-zos
-				    (dynamic-require 'compiler/private/cm-minimal 'trust-existing-zos)])
-			       ;; Return the two extracted functions:
-			       (lambda () (values mk trust-zos)))))))))])
+				    (dynamic-require 'compiler/private/cm-minimal 'trust-existing-zos)]
+                                   [managed-recompile-only
+                                    (dynamic-require 'compiler/private/cm-minimal 'managed-recompile-only)])
+			       ;; Return the extracted functions:
+			       (lambda () (values mk trust-zos managed-recompile-only)))))))))])
 	(if (on? "--trust-zos")
             (trust-zos #t)
+            (void))
+        (if (on? "--recompile-only")
+            (managed-recompile-only #t)
             (void))
 	(current-load/use-compiled (mk))))
 

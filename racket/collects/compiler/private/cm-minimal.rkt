@@ -17,6 +17,7 @@
          managed-compile-zo
          make-caching-managed-compile-zo
          trust-existing-zos
+         managed-recompile-only
          manager-compile-notify-handler
          manager-skip-file-handler
          manager-trace-handler
@@ -55,6 +56,7 @@
 (define manager-trace-handler (make-parameter default-manager-trace-handler))
 (define indent (make-parameter 0))
 (define trust-existing-zos (make-parameter #f))
+(define managed-recompile-only (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
 (define depth (make-parameter 0))
 (define parallel-lock-client (make-parameter #f))
@@ -370,6 +372,11 @@
                                    #:recompile-from recompile-from
                                    #:assume-compiled-sha1 assume-compiled-sha1
                                    #:use-existing-deps use-existing-deps)
+  (when (and (not recompile-from)
+             (managed-recompile-only))
+    (error 'compile-zo 
+           "compile from source disallowed\n  module: ~a"
+           path))
   (cond
     [(cross-multi-compile? roots)
      (define running-root (car roots))

@@ -80,6 +80,8 @@
       (add-flags '((make-zo #f)))]
      [("--trust-zos") "Trust existing \".zo\"s (use only with prepackaged \".zo\"s)"
       (add-flags '((trust-existing-zos #t)))]
+     [("--recompile-only") "Fail if compilation must start from source"
+      (add-flags '((recompile-only #t)))]
      [("-x" "--no-launcher") "Do not produce launcher programs"
       (add-flags '((make-launchers #f)))]
      [("-F" "--no-foreign-libs") "Do not install foreign libraries"

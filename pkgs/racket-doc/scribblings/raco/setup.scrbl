@@ -161,6 +161,12 @@ flags:
    @envvar{PLT_COMPILED_FILE_CHECK} environment variable is set to
    @litchar{exists}, in which case timestamps are ignored).}
 
+ @item{@DFlag{recompile-only} --- disallow recompilation of modules
+  from source, imposing the constraint that each @filepath{.zo} file
+  is up-to-date, needs only a timestamp adjustment, or can be
+  recompiled from an existing @filepath{.zo} in machine-independent
+  format (when compiling to a machine-dependent format).}
+
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
    executables or installing @tt{man} pages (as specified in
    @filepath{info.rkt}; see @secref["setup-info"]).}
@@ -351,7 +357,8 @@ update a compiled file's timestamp if the file is not recompiled.
          #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}
          #:changed "6.6.0.3" @elem{Added support for @envvar{PLT_COMPILED_FILE_CHECK}.}
          #:changed "7.0.0.19" @elem{Added @DFlag{places} and  @DFlag{processes}.}
-         #:changed "7.2.0.7" @elem{Added @DFlag{error-in} and  @DFlag{error-out}.}]
+         #:changed "7.2.0.7" @elem{Added @DFlag{error-in} and  @DFlag{error-out}.}
+         #:changed "7.2.0.8" @elem{Added @DFlag{recompile-only}.}]
 
 @; ------------------------------------------------------------------------
 
@@ -952,6 +959,7 @@ normal dependency counts as a build-time dependency, too).
                 [#:unused-pkg-deps? unused-pkg-deps? any/c #f]
                 [#:clean? clean? any/c #f]
                 [#:tidy? tidy? any/c #f]
+                [#:recompile-only? recompile-only? any/c #f]
                 [#:jobs jobs exact-nonnegative-integer? #f]
                 [#:fail-fast? fail-fast? any/c #f]
                 [#:get-target-dir get-target-dir (or/c #f (-> path-string?)) #f])
@@ -1010,6 +1018,10 @@ Runs @exec{raco setup} with various options:
        documentation and metadata indexes even when @racket[collections]
        or @racket[planet-specs] is non-@racket[#f]}
 
+ @item{@racket[recompile-only?] --- if true, disallows compilation
+       from source, allowing only timestamp adjustments and recompilation
+       from machine-independent form}
+
  @item{@racket[jobs] --- if not @racket[#f], determines the maximum number of parallel
        tasks used for setup}
 
@@ -1030,8 +1042,9 @@ sensitive to the @racket[use-compiled-file-check] parameter.
 @history[#:changed "6.1" @elem{Added the @racket[fail-fast?] argument.}
          #:changed "6.1.1" @elem{Added the @racket[force-user-docs?] argument.}
          #:changed "7.2.0.7" @elem{Added the @racket[check-pkg-deps?],
-                                   @racket[fix-pkg-deps?], and @racket[unused-pkg-deps?]
-                                   arguments.}]}
+                                   @racket[fix-pkg-deps?] , and @racket[unused-pkg-deps?]
+                                   arguments.}
+         #:changed "7.2.0.8" @elem{Added the @racket[recompile-only?] argument.}]}
 
 
 

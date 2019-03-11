@@ -329,6 +329,9 @@
                           [current-compile-target-machine (if (memq 'compile-any options)
                                                               #f
                                                               (current-compile-target-machine))]
+                          [managed-recompile-only (if (memq 'recompile-only options)
+                                                      #t
+                                                      (managed-recompile-only))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]

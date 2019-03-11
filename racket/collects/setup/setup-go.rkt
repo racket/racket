@@ -31,6 +31,8 @@
                       (current-target-plt-directory-getter))]
                  [trust-existing-zos (or (has-x-flag? 'trust-existing-zos)
                                          (trust-existing-zos))]
+                 [managed-recompile-only (or (has-x-flag? 'recompile-only)
+                                             (managed-recompile-only))]
                  [specific-collections x-specific-collections]
                  [specific-packages x-specific-packages]
                  [archives x-archives]

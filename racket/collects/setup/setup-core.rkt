@@ -1138,9 +1138,13 @@
             (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct
                               #:use-places? (parallel-use-places)
-                              #:options (if (not (current-compile-target-machine))
-                                            '(compile-any)
-                                            '()))
+                              #:options (append
+                                         (if (not (current-compile-target-machine))
+                                             '(compile-any)
+                                             '())
+                                         (if (managed-recompile-only)
+                                             '(recompile-only)
+                                             '())))
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode

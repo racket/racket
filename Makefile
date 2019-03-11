@@ -610,6 +610,9 @@ SVR_PRT = $(SERVER):$(SERVER_PORT)
 
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
+# Catch problems due to malformed distribution-build packages
+RECOMPILE_OPTIONS = --recompile-only
+
 # Helper macros:
 USER_CONFIG = -G build/user/config -X racket/collects -A build/user $(SETUP_MACHINE_FLAGS)
 USER_RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
@@ -619,8 +622,8 @@ WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS)
-REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
-REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
+REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS) $(RECOMPILE_OPTIONS)
+REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS) $(RECOMPILE_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 BUNDLE_RACO_FLAGS = -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
@@ -825,7 +828,7 @@ bundle-from-server:
 	$(USER_RACKET) -l setup/winstrip bundle/racket
 	$(USER_RACKET) -l setup/winvers-change bundle/racket
 	$(USER_RACKET) -l- distro-build/unpack-collects $(UNPACK_COLLECTS_FLAGS) http://$(SVR_PRT)/$(SERVER_COLLECTS_PATH)
-	$(IN_BUNDLE_RACO) setup $(JOB_OPTIONS)
+	$(IN_BUNDLE_RACO) setup $(JOB_OPTIONS) $(RECOMPILE_OPTIONS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(REQUIRED_PKGS)
 	$(IN_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(PKGS)
 	$(USER_RACKET) -l setup/unixstyle-install post-adjust "$(SOURCE_MODE)" "$(PKG_SOURCE_MODE)" racket bundle/racket

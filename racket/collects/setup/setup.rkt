@@ -2,7 +2,8 @@
 (require "option.rkt"
          "setup-core.rkt"
          launcher/launcher
-         compiler/compiler)
+         compiler/compiler
+         compiler/cm)
 
 (provide setup)
 
@@ -19,6 +20,7 @@
                #:avoid-main? [avoid-main? #f]
                #:force-user-docs? [force-user-docs? #f]
                #:jobs [parallel #f]
+               #:recompile-only? [recompile-only? #f]
                #:fail-fast? [fail-fast? #f]
                #:check-pkg-deps? [always-check-dependencies? #f]
                #:fix-pkg-deps? [fix-dependencies? #f]
@@ -68,7 +70,9 @@
                                    always-check-dependencies?)]
     
     [setup-program-name "raco setup"]
-    
+
+    [recompile-only recompile-only?]
+    [managed-recompile-only recompile-only?]
     [parallel-workers (if parallel parallel (parallel-workers))])
 
    (let/ec esc
