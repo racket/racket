@@ -310,10 +310,10 @@
                         bundle)]
             [bundle (if (null? pre-submodules)
                         bundle
-                        (hash-set bundle 'pre (map car pre-submodules)))]
+                        (hash-set bundle 'pre (sort (map car pre-submodules) symbol<?)))]
             [bundle (if (null? post-submodules)
                         bundle
-                        (hash-set bundle 'post (map car post-submodules)))]
+                        (hash-set bundle 'post (sort (map car post-submodules) symbol<?)))]
             [bundle (if cross-phase-persistent?
                         (hash-set bundle 'cross-phase-persistent? #t)
                         bundle)]

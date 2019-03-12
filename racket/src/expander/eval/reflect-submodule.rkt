@@ -101,5 +101,4 @@
   (hash->linklet-bundle
    (hash-set (linklet-bundle->hash b)
              (if pre? 'pre 'post)
-             (map module-compiled-immediate-name submods))))
-
+             (sort (map module-compiled-immediate-name submods) symbol<?))))
