@@ -7,7 +7,7 @@
 @(define contract-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])
-       (the-eval '(require racket/contract racket/contract/parametric racket/list))
+       (the-eval '(require racket/contract racket/contract/parametric racket/list racket/math))
        the-eval)))
 
 @(define blame-object @tech{blame object})
@@ -1175,13 +1175,29 @@ produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
 function must produce an integer.
 
+@examples[#:eval (contract-eval) #:once
+          (define/contract (maybe-invert i b)
+            (-> integer? boolean? integer?)
+            (if b (- i) i))
+
+          (maybe-invert 1 #t)
+          (eval:error (maybe-invert #f 1))]
+
 A domain specification may include a keyword. If so, the function must
 accept corresponding (mandatory) keyword arguments, and the values for
 the keyword arguments must match the corresponding contracts. For
 example:
-@racketblock[(integer? #:x boolean? . -> . integer?)]
+@racketblock[(integer? #:invert? boolean? . -> . integer?)]
 is a contract on a function that accepts a by-position argument that
-is an integer and a @racket[#:x] argument that is a boolean.
+is an integer and an @racket[#:invert] argument that is a boolean.
+
+@examples[#:eval (contract-eval) #:once
+          (define/contract (maybe-invert i #:invert? b)
+            (-> integer? #:invert? boolean? integer?)
+            (if b (- i) i))
+
+          (maybe-invert 1 #:invert? #t)
+          (eval:error (maybe-invert 1 #f))]
 
 As an example that uses an @racket[...], this contract:
 @racketblock[(integer? string? ... integer? . -> . any)]
@@ -1189,14 +1205,52 @@ on a function insists that the first and last arguments to
 the function must be integers (and there must be at least
 two arguments) and any other arguments must be strings.
 
+@examples[#:eval (contract-eval) #:once
+          (define/contract (string-length/between? lower-bound s1 . more-args)
+            (-> integer? string? ... integer? boolean?)
+
+            (define all-but-first-arg-backwards (reverse (cons s1 more-args)))
+            (define upper-bound (first all-but-first-arg-backwards))
+            (define strings (rest all-but-first-arg-backwards))
+            (define strings-length
+              (for/sum ([str (in-list strings)])
+                (string-length str)))
+            (<= lower-bound strings-length upper-bound))
+
+          (string-length/between? 4 "farmer" "john" 40)
+          (eval:error (string-length/between? 4 "farmer" 'john 40))
+          (eval:error (string-length/between? 4 "farmer" "john" "fourty"))]
+
 If @racket[any] is used as the last sub-form for @racket[->], no
 contract checking is performed on the result of the function, and
 thus any number of values is legal (even different numbers on different
 invocations of the function).
 
+@examples[#:eval (contract-eval) #:once
+          (define/contract (multiple-xs n x)
+            (-> natural? any/c any)
+            (apply
+             values
+             (for/list ([_ (in-range n)])
+               n)))
+
+          (multiple-xs 4 "four")]
+
 If @racket[(values range-expr ...)] is used as the last sub-form of
 @racket[->], the function must produce a result for each contract, and
 each value must match its respective contract.
+
+
+@examples[#:eval (contract-eval) #:once
+          (define/contract (multiple-xs n x)
+            (-> natural? any/c (values any/c any/c any/c))
+            (apply
+             values
+             (for/list ([_ (in-range n)])
+               n)))
+
+          (multiple-xs 3 "three")
+          (eval:error (multiple-xs 4 "four"))]
 
 @history[#:changed "6.4.0.5" @list{Added support for ellipses}]
 }
