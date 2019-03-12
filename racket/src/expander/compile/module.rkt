@@ -265,7 +265,7 @@
                            (make-correlated-linklet s 'syntax-literals-data)
                            (performance-region
                             ['compile 'module 'linklet]
-                            (compile-linklet s 'syntax-literals-data #f #f '(serializable uninterned-literal)))))
+                            (compile-linklet s 'syntax-literals-data #f #f '(serializable)))))
            `(linklet
              ;; imports
              (,deserialize-imports

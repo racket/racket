@@ -759,7 +759,7 @@
 (struct faslable-correlated-linklet (expr name)
   #:prefab)
 
-(struct faslable-correlated (e source position line column span name)
+(struct faslable-correlated (e source position line column span props)
   #:prefab)
 
 (define (strip-correlated v)

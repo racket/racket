@@ -4,6 +4,7 @@
          "match.rkt"
          "wrap.rkt"
          "path-for-srcloc.rkt"
+         "to-fasl.rkt"
          "interp-match.rkt"
          "interp-stack.rkt")
 
@@ -84,7 +85,8 @@
                     (let ([rhs (cadr binding)])
                       (cons (cond
                               [(or (path? rhs)
-                                   (path-for-srcloc? rhs))
+                                   (path-for-srcloc? rhs)
+                                   (to-fasl? rhs))
                                ;; The caller must extract all the paths from the bindings
                                ;; and pass them back in at interp time; assume '#%path is
                                ;; not a primitive

@@ -1,10 +1,10 @@
 #lang racket/base
 (require racket/extflonum
          racket/prefab
-         racket/fasl
          "match.rkt"
          "wrap.rkt"
          "path-for-srcloc.rkt"
+         "to-fasl.rkt"
          "quoted.rkt")
 
 (provide convert-for-serialize)
@@ -78,8 +78,7 @@
                `(,(convert rator) ,@(convert-body exps))]
               [`,_
                (cond
-                 [(and for-cify?
-                       (not (symbol? v))
+                 [(and (not (symbol? v))
                        (lift-quoted? v for-cify? datum-intern?))
                   (convert `(quote ,v))]
                  [else v])])))
@@ -136,8 +135,7 @@
       [`(,exps ...)
        (for/or ([exp (in-list exps)])
          (convert-any? exp))]
-      [`,_ (and for-cify?
-                (not (symbol? v))
+      [`,_ (and (not (symbol? v))
                 (lift-quoted? v for-cify? datum-intern?))])))
 
 ;; Construct an expression to be lifted
@@ -155,8 +153,10 @@
   (cond
     [(and (not for-cify?)
           (large-quoted? q))
-     (add-lifted `(fasl->s-exp/intern
-                   ',(s-exp->fasl q)))]
+     ;; a `to-fasl` struct is recognized like
+     ;; paths and `path-for-srcloc`:
+     (define id (add-lifted (to-fasl (box q) #f)))
+     `(force-unfasl ,id)]
     [else    
      (let make-construct ([q q])
        (define lifted-constants (if (or (string? q) (bytes? q))

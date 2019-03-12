@@ -36,4 +36,4 @@
   [make-pthread-parameter (known-procedure 2)]
   [break-enabled-key (known-constant)]
 
-  [fasl->s-exp/intern (known-procedure 2)])
+  [force-unfasl (known-procedure 2)])

@@ -9,6 +9,7 @@
           linklet-bigger-than?
           make-path->compiled-path
           compiled-path->path
+          force-unfasl
           prim-knowns
           known-procedure
           known-procedure/pure
