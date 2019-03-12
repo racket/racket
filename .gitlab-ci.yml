@@ -31,7 +31,7 @@ prepare-cache:llvm:
     - cd llvm-project
     - mkdir build
     - cd build
-    - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ ../llvm/
+    - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ -DCMAKE_BUILD_TYPE=MinSizeRel ../llvm/
     - make -j5
     - make -j5 install
   cache:
