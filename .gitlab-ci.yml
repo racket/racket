@@ -27,7 +27,7 @@ prepare-cache:llvm:
     - mkdir $INSTALL_DIR
     - mv z3-4.8.4.d6df51951f4c-x64-debian-8.11/bin z3-4.8.4.d6df51951f4c-x64-debian-8.11/include $INSTALL_DIR
     - export PATH=$INSTALL_DIR/bin:$PATH
-    - git clone https://github.com/llvm/llvm-project.git
+    - git clone -b release/8.x https://github.com/llvm/llvm-project.git
     - cd llvm-project
     - mkdir build
     - cd build
