@@ -269,12 +269,14 @@
            (define-values ,_
              (lambda ,_
                (begin
-                 (vector-copy! ,_ ,_ (let-values (((.inspector) #f))
-                                       (deserialize .mpi-vector .inspector .bulk-binding-registry
-                                                    ',num-mutables ',mutable-vec
-                                                    ',num-shares ',share-vec
-                                                    ',mutable-fill-vec
-                                                    ',result-vec)))
+                 (vector-copy! ,_ ,_ (let-values ([(.inspector) #f])
+                                       (let-values ([(data)
+                                                     '#(,mutable-vec ,share-vec ,mutable-fill-vec ,result-vec)])
+                                         (deserialize .mpi-vector .inspector .bulk-binding-registry
+                                                      ',num-mutables (,_ data 0)
+                                                      ',num-shares (,_ data 1)
+                                                      (,_ data 2)
+                                                      (,_ data 3)))))
                  ,_))))
         (decompile-deserialize '.mpi-vector '.inspector '.bulk-binding-registry
                                num-mutables mutable-vec
@@ -282,7 +284,6 @@
                                mutable-fill-vec
                                result-vec)]
        [else
-        (log-error ">> HERE ~.s" (strip-correlated expr))
         (decompile-linklet l)])]
     [else
      (decompile-linklet l)]))

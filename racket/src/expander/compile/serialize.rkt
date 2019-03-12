@@ -624,27 +624,17 @@
       ,mutable-fills-expr
       ,result-expr))
 
-  (cond
-    [(eq? 'chez-scheme (system-type 'vm))
-     ;; It's better to interpret the quoted-data construction in Chez Scheme,
-     ;; instead of compiling the construction, because it's more compact
-     ;; and easier to delay. Rely on `fasl->s-exp/intern` as a primitive
-     ;; (from the linklet perspective) that is installed on startup.
-     `(let-values ([(data) (fasl->s-exp/intern
-                            ,(s-exp->fasl
-                              (vector mutable-shell-bindings
-                                      shared-bindings
-                                      mutable-fills
-                                      result)))])
-        ,(finish '(unsafe-vector-ref data 0)
-                 '(unsafe-vector-ref data 1)
-                 '(unsafe-vector-ref data 2)
-                 '(unsafe-vector-ref data 3)))]
-    [else
-     (finish `',mutable-shell-bindings
-             `',shared-bindings
-             `',mutable-fills
-             `',result)]))
+  ;; Putting the quoted-data construction into one vector makes
+  ;; it easy to specialize in some back ends to a more compact
+  ;; format.
+  `(let-values ([(data) ',(vector mutable-shell-bindings
+                                  shared-bindings
+                                  mutable-fills
+                                  result)])
+     ,(finish '(unsafe-vector*-ref data 0)
+              '(unsafe-vector*-ref data 1)
+              '(unsafe-vector*-ref data 2)
+              '(unsafe-vector*-ref data 3))))
 
 (define (sorted-hash-keys ht)
   (define ks (hash-keys ht))
