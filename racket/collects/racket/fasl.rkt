@@ -195,10 +195,18 @@
               (write-fasl-integer v o)])]
           [(flonum? v)
            (write-byte fasl-flonum-type o)
-           (write-bytes (real->floating-point-bytes v 8 #f) o)]
+           (write-bytes (if (eqv? v +nan.0)
+                            ;; use a canonical NaN (0 mantissa)
+                            #"\0\0\0\0\0\0\370\177"
+                            (real->floating-point-bytes v 8 #f))
+                        o)]
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
-           (write-bytes (real->floating-point-bytes v 4 #f) o)]
+           (write-bytes (if (eqv? v +nan.f)
+                            ;; use a canonical NaN (0 mantissa)
+                            #"\0\0\300\177"
+                            (real->floating-point-bytes v 4 #f))
+                        o)]
           [(extflonum? v)
            (write-byte fasl-extflonum-type o)
            (define bstr (string->bytes/utf-8 (format "~a" v)))
