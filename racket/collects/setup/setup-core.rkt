@@ -40,6 +40,7 @@
          "collection-name.rkt"
          "private/format-error.rkt"
          "private/encode-relative.rkt"
+         "private/time.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -201,7 +202,7 @@
 
   (define (done)
     (unless (null? errors)
-      (setup-printf #f "--- summary of errors ---")
+      (setup-printf #f (add-time "--- summary of errors ---"))
       (show-errors (current-error-port))
       (when (pause-on-errors)
         (eprintf "INSTALLATION FAILED.\nPress Enter to continue...\n")
@@ -213,7 +214,7 @@
   (define (manage-prevous-and-next)
     (define prev (previous-error-in-file))
     (when (and prev (file-exists? prev))
-      (setup-printf #f "--- previous errors ---")
+      (setup-printf #f (add-time "--- previous errors ---"))
       (setup-printf #f "errors were~a reported by a previous process"
                     (if (zero? exit-code) "" " also"))
       (set! exit-code 1))
@@ -840,7 +841,7 @@
                 [else (void)])))))
 
   (define (clean-step)
-    (setup-printf #f "--- cleaning collections ---")
+    (setup-printf #f (add-time "--- cleaning collections ---"))
     (define dependencies (make-hash))
     ;; Main deletion:
     (for ([cc ccs-to-compile]) (clean-collection cc dependencies))
@@ -883,11 +884,12 @@
 
   (define (do-install-part part)
     (when (if (eq? part 'post) (call-post-install) (call-install))
-      (setup-printf #f (format "--- ~ainstalling collections ---"
-                               (case part
-                                 [(pre) "pre-"]
-                                 [(general) ""]
-                                 [(post) "post-"])))
+      (setup-printf #f (add-time
+                        (format "--- ~ainstalling collections ---"
+                                (case part
+                                  [(pre) "pre-"]
+                                  [(general) ""]
+                                  [(post) "post-"]))))
       (for ([cc ccs-to-call-installers])
         (let/ec k
           (begin-record-error cc (case part
@@ -1115,7 +1117,7 @@
                  #:group 'libs
                  #:namespace info-ns)])
         (lambda (p) (regexp-match? rx p))))
-    (setup-printf #f "--- compiling collections ---")
+    (setup-printf #f (add-time "--- compiling collections ---"))
     (if ((parallel-workers) . > . 1)
       (begin
         (when (or no-specific-collections?
@@ -1153,7 +1155,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-info-domain-step)
-    (setup-printf #f "--- updating info-domain tables ---")
+    (setup-printf #f (add-time "--- updating info-domain tables ---"))
     ;; Each ht maps a collection root dir to an info-domain table. Even when
     ;; `collections-to-compile' is a subset of all collections, we only care
     ;; about those collections that exist in the same root as the ones in
@@ -1395,7 +1397,7 @@
               setup-printf))
 
   (define (make-docs-step)
-    (setup-printf #f "--- building documentation ---")
+    (setup-printf #f (add-time "--- building documentation ---"))
     (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
@@ -1408,7 +1410,7 @@
       (doc:setup-scribblings #f auto-start-doc?)))
 
   (define (doc-pdf-dest-step)
-    (setup-printf #f "--- building PDF documentation (via pdflatex) ---")
+    (setup-printf #f (add-time "--- building PDF documentation (via pdflatex) ---"))
     (define dest-dir (path->complete-path (doc-pdf-dest)))
     (unless (directory-exists? dest-dir)
       (make-directory dest-dir))
@@ -1439,7 +1441,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (make-launchers-step)
-    (setup-printf #f "--- creating launchers ---")
+    (setup-printf #f (add-time "--- creating launchers ---"))
     (define (name-list l)
       (unless (list-of relative-path-string? l)
         (error "result is not a list of relative path strings:" l)))
@@ -1744,7 +1746,7 @@
                                fixup-lib
                                copy-user-lib)
     (define (make-libs-step)
-      (setup-printf #f (format "--- installing ~a ---" whats))
+      (setup-printf #f (add-time (format "--- installing ~a ---" whats)))
       (define installed-libs (make-hash))
       (define dests (make-hash))
       (for ([cc ccs-to-compile])
@@ -2019,7 +2021,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (do-check-package-dependencies)
-    (setup-printf #f (format "--- checking package dependencies ---"))
+    (setup-printf #f (add-time (format "--- checking package dependencies ---")))
     (unless (check-package-dependencies (map cc-path ccs-to-compile)
                                         (map cc-collection ccs-to-compile)
                                         (map cc-main? ccs-to-compile)

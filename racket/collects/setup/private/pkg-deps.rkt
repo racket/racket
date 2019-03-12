@@ -13,7 +13,8 @@
          setup/dirs
          setup/doc-db
          version/utils
-         compiler/private/dep)
+         compiler/private/dep
+         "time.rkt")
 
 (provide check-package-dependencies)
 
@@ -573,7 +574,7 @@
                        (zero? (hash-count missing-pkgs))))
   (unless all-ok?
     (setup-fprintf (current-error-port) #f
-                   "--- summary of package problems ---")
+                   (add-time "--- summary of package problems ---"))
     (for ([(pkg) (in-hash-keys missing-pkgs)])
       (setup-fprintf* (current-error-port) #f
                       "package not installed: ~a"

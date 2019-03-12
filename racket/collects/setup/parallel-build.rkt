@@ -12,6 +12,7 @@
          racket/place
          syntax/modresolve
          "private/format-error.rkt"
+         "private/time.rkt"
          (for-syntax racket/base))
 
 
@@ -368,7 +369,8 @@
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree
                           #:options [options '()]
                           #:use-places? [use-places? #t])
-  (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
+  (setup-fprintf (current-output-port) #f (add-time
+                                           (format "--- parallel build using ~a jobs ---" worker-count)))
   (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error
                                       (append options '(set-directory))))
   (parallel-build collects-queue worker-count
