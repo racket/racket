@@ -1184,10 +1184,32 @@ is a contract on a function that accepts a by-position argument that
 is an integer and a @racket[#:x] argument that is a boolean.
 
 As an example that uses an @racket[...], this contract:
-@racketblock[(integer? string? ... integer? . -> . any)]
+@racketblock[(integer? string? ... integer? . -> . boolean?)]
 on a function insists that the first and last arguments to
 the function must be integers (and there must be at least
-two arguments) and any other arguments must be strings.
+two arguments) and any other arguments must be strings. 
+This syntax is particularly non-intuitive because it could 
+be expected that contracts with @racket[->] match closely 
+the syntax of the argument list of a function. The following 
+function, which returns @racket[#true] if the total length of 
+the strings is between the two integers specified in the domain 
+and @racket[#false] otherwise, satisfies the contract. 
+@codeblock|{
+#lang racket
+
+(provide
+  (contract-out
+    [string-length/between? (integer? string? ... integer? . -> . boolean?)]))
+
+(define (string-length/between? n1 . rest-args)
+  (define rev (reverse rest-args))
+  (define n2 (first rev))
+  (define strlen
+    (for/fold ([l 0])
+              ([s (in-list (rest rev))])
+      (+ l (string-length s))))
+  (<= n1 strlen n2))
+|}
 
 If @racket[any] is used as the last sub-form for @racket[->], no
 contract checking is performed on the result of the function, and
