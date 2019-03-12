@@ -1188,11 +1188,8 @@ As an example that uses an @racket[...], this contract:
 on a function insists that the first and last arguments to
 the function must be integers (and there must be at least
 two arguments) and any other arguments must be strings. 
-This syntax is particularly non-intuitive because it could 
-be expected that contracts with @racket[->] match closely 
-the syntax of the argument list of a function. The following 
-function, which returns @racket[#true] if the total length of 
-the strings is between the two integers specified in the domain 
+The following function, which returns @racket[#true] if the total 
+length of the strings is between the two integers specified in the domain 
 and @racket[#false] otherwise, satisfies the contract. 
 @codeblock|{
 #lang racket
