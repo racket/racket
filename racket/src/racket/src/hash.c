@@ -4,6 +4,8 @@
 #include <math.h>
 #include "../gc2/gc2_obj.h"
 
+READ_ONLY static Scheme_Hash_Tree *empty_hash_tree[3];
+
 THREAD_LOCAL_DECL(intptr_t scheme_hash_request_count);
 THREAD_LOCAL_DECL(intptr_t scheme_hash_iteration_count);
 
@@ -3169,7 +3171,23 @@ static Scheme_Hash_Tree *make_hash_tree(int eql_kind, int popcount)
 
 Scheme_Hash_Tree *scheme_make_hash_tree(int eql_kind)
 {
-  return make_hash_tree(eql_kind, 0);
+  return empty_hash_tree[eql_kind];
+}
+
+void scheme_init_hash_tree(void)
+{
+  Scheme_Hash_Tree *t;
+
+  REGISTER_SO(empty_hash_tree);
+
+  t = make_hash_tree(0, 0);
+  empty_hash_tree[0] = t;
+
+  t = make_hash_tree(1, 0);
+  empty_hash_tree[1] = t;
+
+  t = make_hash_tree(2, 0);
+  empty_hash_tree[2] = t;
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype)
@@ -3187,15 +3205,14 @@ Scheme_Hash_Tree *scheme_make_hash_tree_placeholder(int eql_kind)
    the cycle (since we don't know in advance how large the top record
    needs to be) */
 {
-  Scheme_Hash_Tree *ht, *sub;
+  Scheme_Hash_Tree *ht;
 
   ht = make_hash_tree(eql_kind, 1);
   ht->iso.so.type = scheme_hash_tree_indirection_type;
   ht->count = 0;
   ht->bitmap = 1;
 
-  sub = make_hash_tree(eql_kind, 0);
-  ht->els[0] = (Scheme_Object *)sub;
+  ht->els[0] = (Scheme_Object *)empty_hash_tree[eql_kind];
 
   return ht;
 }
@@ -3368,13 +3385,14 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
       /* replace */
       tree = resolve_placeholder(tree);
       if (!val) {
-        int kind = SCHEME_HASHTR_KIND(tree);
         tree = hamt_remove(tree, h, 0);
         if (!tree) {
-          tree = hamt_alloc(kind, 0);
-          tree->iso.so.type = stype;
-          SCHEME_HASHTR_FLAGS(tree) = kind;
-          return tree;
+           if (stype == scheme_eq_hash_tree_type)
+             return empty_hash_tree[0];
+           else if (stype == scheme_hash_tree_type)
+             return empty_hash_tree[1];
+           else
+             return empty_hash_tree[2];
         } else
           return tree;
       } else if (SAME_OBJ(val, mzHAMT_VAL(in_tree, pos))) {

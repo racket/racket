@@ -156,6 +156,7 @@ Scheme_Env *scheme_basic_env()
 
   scheme_init_finalization();
 
+  scheme_init_hash_tree();
   scheme_init_portable_case();
   scheme_init_compenv();
   scheme_init_letrec_check();

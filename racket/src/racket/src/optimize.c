@@ -2256,6 +2256,7 @@ int scheme_ir_duplicate_ok(Scheme_Object *fb, int cross_linklet)
           || SCHEME_EOFP(fb)
           || SCHEME_INTP(fb)
           || SCHEME_NULLP(fb)
+          || (SCHEME_HASHTRP(fb) && !((Scheme_Hash_Tree *)fb)->count)
           || (!cross_linklet && SAME_TYPE(SCHEME_TYPE(fb), scheme_ir_toplevel_type))
           || (!cross_linklet && SAME_TYPE(SCHEME_TYPE(fb), scheme_ir_local_type))
           || SCHEME_PRIMP(fb)
@@ -4131,10 +4132,17 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
       return le;
   }
 
-  if (!app->num_args  
-      && (SAME_OBJ(rator, scheme_list_proc)
-          || (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "append")))) {
-    return scheme_null;
+  if (!app->num_args && SCHEME_PRIMP(rator)) {
+    if (SAME_OBJ(rator, scheme_list_proc))
+      return scheme_null;
+    if (SAME_OBJ(rator, scheme_append_proc))
+      return scheme_null;
+    if (SAME_OBJ(rator, scheme_hasheq_proc))
+      return (Scheme_Object *)scheme_make_hash_tree(0);
+    if (SAME_OBJ(rator, scheme_hash_proc))
+      return (Scheme_Object *)scheme_make_hash_tree(1);
+    if (SAME_OBJ(rator, scheme_hasheqv_proc))
+      return (Scheme_Object *)scheme_make_hash_tree(2);
   }
    
   if (SCHEME_PRIMP(rator)

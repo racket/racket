@@ -208,7 +208,7 @@
     [(22) 'case-lambda-sequence-type]
     [(23) 'inline-variant-type]
     [(25) 'linklet-type]
-    [(89) 'prefix-type]
+    [(88) 'prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 ;; ----------------------------------------

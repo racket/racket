@@ -55,7 +55,12 @@ keys and values.  See also @racket[in-hash], @racket[in-hash-keys],
 Two hash tables cannot be @racket[equal?] unless they use the same
 key-comparison procedure (@racket[equal?], @racket[eqv?], or
 @racket[eq?]), both hold keys strongly or weakly, and have the same
-mutability.
+mutability. Empty immutable hash tables are @racket[eq?] when they
+are @racket[equal?].
+
+@history[#:changed "7.2.0.9" @elem{Made empty immutable hash tables
+                                   @racket[eq?] when they are
+                                   @racket[equal?].}]
 
 @elemtag['(caveat "concurrency")]{@bold{Caveats concerning concurrent
 modification:}} A mutable hash table can be manipulated with

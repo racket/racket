@@ -479,7 +479,7 @@ MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
 XFORM_NONGCING_NONALIASING MZ_EXTERN int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash, mzlonglong start);
 
-MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
+XFORM_NONGCING MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
 MZ_EXTERN Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
 XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);

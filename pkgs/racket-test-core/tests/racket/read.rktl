@@ -426,6 +426,10 @@
 (err/rt-test (readstr "#0=#hash(#0#)") exn:fail:read?)
 (err/rt-test (readstr "#hash([1 . 2))") exn:fail:read?)
 
+(test #t eq? (readstr "#hash()") (hash))
+(test #t eq? (readstr "#hasheq()") (hasheq))
+(test #t eq? (readstr "#hasheqv()") (hasheqv))
+
 (define (test-ht t size eq? key val)
   (test #t hash? t)
   (test eq? hash-eq? t)

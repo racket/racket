@@ -376,6 +376,16 @@
 (test #f immutable? (make-weak-hasheq))
 (test #f immutable? (make-weak-hash))
 
+(test #t eq? (hash) #hash())
+(test #t eq? (hasheq) #hasheq())
+(test #t eq? (hasheqv) #hasheqv())
+(test #t eq? (make-immutable-hash) #hash())
+(test #t eq? (make-immutable-hasheq) #hasheq())
+(test #t eq? (make-immutable-hasheqv) #hasheqv())
+(test #t eq? (hash) (hash-remove (hash 3 4) 3))
+(test #t eq? (hasheq) (hash-remove (hasheq 3 4) 3))
+(test #t eq? (hasheqv) (hash-remove (hasheqv 3 4) 3))
+
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
 (test #f symbol? "bar")

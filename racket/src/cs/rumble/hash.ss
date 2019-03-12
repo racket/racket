@@ -59,15 +59,18 @@
   (syntax-rules ()
     [(_ vararg-ctor list-ctor empty-hash)
      (begin
-       (define (vararg-ctor . kvs)
-         (let loop ([kvs kvs] [h empty-hash])
-           (cond [(null? kvs) h]
-                 [else
-                  (loop (cddr kvs) (intmap-set h (car kvs) (cadr kvs)))])))
+       (define vararg-ctor
+         (case-lambda
+          [() empty-hash]
+          [kvs
+           (let loop ([kvs kvs] [h empty-hash])
+             (cond
+              [(null? kvs) h]
+              [else (loop (cddr kvs) (intmap-set h (car kvs) (cadr kvs)))]))]))
 
        (define list-ctor
          (case-lambda
-          [() (vararg-ctor)]
+          [() empty-hash]
           [(alist)
            (check 'list-ctor
                   :test (and (list? alist) (andmap pair? alist))

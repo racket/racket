@@ -14,10 +14,14 @@ READ_ONLY Scheme_Object *scheme_list_p_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
 READ_ONLY Scheme_Object *scheme_list_pair_p_proc;
+READ_ONLY Scheme_Object *scheme_append_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
 READ_ONLY Scheme_Object *scheme_box_immutable_proc;
 READ_ONLY Scheme_Object *scheme_box_p_proc;
 READ_ONLY Scheme_Object *scheme_hash_ref_proc;
+READ_ONLY Scheme_Object *scheme_hash_proc;
+READ_ONLY Scheme_Object *scheme_hasheq_proc;
+READ_ONLY Scheme_Object *scheme_hasheqv_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cons_list_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_car_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cdr_proc;
@@ -317,7 +321,9 @@ scheme_init_list (Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("length", p, env);
 
+  REGISTER_SO(scheme_append_proc);
   p = scheme_make_immed_prim(append_prim, "append", 0, -1);
+  scheme_append_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance ("append", p, env);
   
@@ -565,15 +571,21 @@ scheme_init_list (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_addto_prim_instance("make-immutable-hasheqv", p, env);
 
+  REGISTER_SO(scheme_hash_proc);
   p = scheme_make_immed_prim(direct_hash, "hash", 0, -1);
+  scheme_hash_proc = p;
   /* not SCHEME_PRIM_IS_OMITABLE_ALLOCATION, because `equal?`-hashing functions are called */
   scheme_addto_prim_instance("hash", p, env);
 
+  REGISTER_SO(scheme_hasheq_proc);
   p = scheme_make_immed_prim(direct_hasheq, "hasheq", 0, -1);
+  scheme_hasheq_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_addto_prim_instance("hasheq", p, env);
 
+  REGISTER_SO(scheme_hasheqv_proc);
   p = scheme_make_immed_prim(direct_hasheqv, "hasheqv", 0, -1);
+  scheme_hasheqv_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_addto_prim_instance("hasheqv", p, env);
   

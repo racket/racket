@@ -142,6 +142,12 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 #define SCHEME_CHAPERONE_HASHTPx(obj) (SCHEME_HASHTPx(obj) \
                                        || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_HASHTP(SCHEME_CHAPERONE_VAL(obj))))
 
+#define SCHEME_CHAPERONE_NONEMPTY_HASHTRP(obj) (SCHEME_CHAPERONEP(obj)  \
+                                                ? (SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj)) \
+                                                   && ((Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj))->count) \
+                                                : (SCHEME_HASHTRP(obj)  \
+                                                   && ((Scheme_Hash_Tree *)(obj))->count))
+
 #define HAS_SUBSTRUCT(obj, qk) \
    (SCHEME_PAIRP(obj) \
     || SCHEME_MUTABLE_PAIRP(obj) \
@@ -154,7 +160,7 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p);
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
     || (qk(SCHEME_CHAPERONE_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
     || (qk(pp->print_struct, 1) && SCHEME_CHAPERONE_STRUCTP(obj) && SCHEME_PREFABP(obj)) \
-    || (qk(pp->print_hash_table, 1) && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_HASHTRP(obj))))
+    || (qk(pp->print_hash_table, 1) && (SCHEME_CHAPERONE_HASHTPx(obj) || SCHEME_CHAPERONE_NONEMPTY_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
 #define ssALLp(x, isbox) isbox

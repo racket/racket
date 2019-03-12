@@ -140,9 +140,13 @@
 
 (define (intmap-remove t key)
   (let ([et (intmap-eqtype t)])
-    (make-intmap
-     et
-     ($intmap-remove et (intmap-root t) (hash-code et key) key))))
+    (let ([r ($intmap-remove et (intmap-root t) (hash-code et key) key)])
+      (if r
+          (make-intmap et r)
+          (case et
+           [(eq) empty-hasheq]
+           [(equal) empty-hash]
+           [else empty-hasheqv])))))
 
 (define ($intmap-remove et t h key)
   (cond
