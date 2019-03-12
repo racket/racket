@@ -553,6 +553,17 @@ since an index cannot become invalid for an immutable @racket[hash].
 @history[#:added "6.4.0.6"
          #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
+@defproc[(unsafe-make-srcloc [source any/c]
+                             [line (or/c exact-positive-integer? #f)]
+                             [column (or/c exact-nonnegative-integer? #f)]
+                             [position (or/c exact-positive-integer? #f)]
+                             [span (or/c exact-nonnegative-integer? #f)])
+         srcloc?]{
+
+Unsafe version of @racket[srcloc].
+
+@history[#:added "7.2.0.10"]}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "unsafeextfl"]{Unsafe Extflonum Operations}

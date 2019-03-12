@@ -3807,6 +3807,7 @@ Scheme_Object *scheme_copy_list(Scheme_Object *l);
 Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2);
 
 Scheme_Object *scheme_unsafe_make_location(void);
+Scheme_Object *scheme_unsafe_make_srcloc(int argc, Scheme_Object **argv);
 
 void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 

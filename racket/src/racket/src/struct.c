@@ -5763,6 +5763,21 @@ Scheme_Object *scheme_unsafe_make_location(void)
   return (Scheme_Object *)inst;
 }
 
+Scheme_Object *scheme_unsafe_make_srcloc(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *srcloc;
+
+  srcloc = scheme_unsafe_make_location();
+
+  ((Scheme_Structure *)srcloc)->slots[0] = argv[0];
+  ((Scheme_Structure *)srcloc)->slots[1] = argv[1];
+  ((Scheme_Structure *)srcloc)->slots[2] = argv[2];
+  ((Scheme_Structure *)srcloc)->slots[3] = argv[3];
+  ((Scheme_Structure *)srcloc)->slots[4] = argv[4];
+
+  return srcloc;
+}
+
 int scheme_is_location(Scheme_Object *o)
 {
   if (SCHEME_CHAPERONEP(o))

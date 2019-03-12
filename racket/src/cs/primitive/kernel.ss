@@ -767,7 +767,7 @@
   [sleep (known-procedure 3)]
   [split-path (known-procedure 2)]
   [sqrt (known-procedure 2)]
-  [srcloc (known-constant)]
+  [srcloc (known-procedure/has-unsafe 32 'unsafe-make-srcloc)]
   [srcloc->string (known-procedure 2)]
   [srcloc-column (known-procedure 2)]
   [srcloc-line (known-procedure 2)]

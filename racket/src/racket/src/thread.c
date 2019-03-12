@@ -692,6 +692,8 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("unsafe-place-local-set!", p, env);
+
+  ADD_PRIM_W_ARITY("unsafe-make-srcloc", scheme_unsafe_make_srcloc, 5, 5, env);
 }
 
 void scheme_init_thread_places(void) {
