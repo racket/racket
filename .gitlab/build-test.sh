@@ -30,6 +30,7 @@ function usage () {
     echo "                       [--enable-cs]"
     echo "                       [--with-project-path <project-path>]"
     echo "                       [--with-chroot-path <chroot-path>]"
+    echo "                       [--with-qemu-path <qemu-path>]"
     exit 1
 }
 
