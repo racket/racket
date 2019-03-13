@@ -1189,7 +1189,7 @@ the keyword arguments must match the corresponding contracts. For
 example:
 @racketblock[(integer? #:invert? boolean? . -> . integer?)]
 is a contract on a function that accepts a by-position argument that
-is an integer and an @racket[#:invert] argument that is a boolean.
+is an integer and an @racket[#:invert?] argument that is a boolean.
 
 @examples[#:eval (contract-eval) #:once
           (define/contract (maybe-invert i #:invert? b)
