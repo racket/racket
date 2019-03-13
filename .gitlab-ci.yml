@@ -207,69 +207,86 @@ prepare-cache:qemu:
     - privileged
     - linux
   before_script:
+    - export PATH=$INSTALL_DIR:$PATH
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot
+  cache:
+    key: qemu-3.1.0
+    policy: pull
+    paths:
+      - $INSTALL_DIR
 
 test:x86_64:
   extends: .preparearch
   variables:
     ARCH: "x86_64"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
 
 test:arm64:
   extends: .preparearch
   variables:
     ARCH: "arm64"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:armel:
   extends: .preparearch
   variables:
     ARCH: "armel"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:armhf:
   extends: .preparearch
   variables:
     ARCH: "armhf"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:i386:
   extends: .preparearch
   variables:
     ARCH: "i386"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
     
 test:mips:
   extends: .preparearch
   variables:
     ARCH: "mips"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
   
 test:mipsel:
   extends: .preparearch
   variables:
     ARCH: "mipsel"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:mips64el:
   extends: .preparearch
   variables:
     ARCH: "mips64el"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
     
 test:s390x:
   extends: .preparearch
   variables:
     ARCH: "s390x"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:ppc64el:
   extends: .preparearch
   variables:
     ARCH: "ppc64el"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 
 .preparearch:cs:
@@ -280,6 +297,7 @@ test:ppc64el:
     - privileged
     - linux
   before_script:
+    - export PATH=$INSTALL_DIR:$PATH
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs
@@ -290,10 +308,12 @@ test:x86_64:cs:
   variables:
     ARCH: "x86_64"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:i386:cs:
   extends: .preparearch:cs
   variables:
     ARCH: "i386"
     JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
 

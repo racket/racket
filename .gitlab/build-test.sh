@@ -129,7 +129,7 @@ fi
 	
 # ---------------------------------------------------------------------------------------------------
 # Packages to install on the HOST
-HOST_DEPENDENCIES="debootstrap qemu-user-static binfmt-support sbuild rsync"
+HOST_DEPENDENCIES="debootstrap binfmt-support sbuild rsync"
 
 # Packages to install on the GUEST
 GUEST_DEPENDENCIES="devscripts build-essential git m4 sudo python libfontconfig1-dev make gcc libpango1.0-dev libcairo2-dev openssl emacs25-nox libturbojpeg0-dev uuid-dev"
@@ -144,7 +144,7 @@ function setup_chroot {
     mkdir "${CHROOT_DIR}"
     debootstrap --foreign --no-check-gpg --include=fakeroot,build-essential \
 		--arch="${ARCH}" "${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
-    cp /usr/bin/qemu-${QEMU_ARCH}-static "${CHROOT_DIR}"/usr/bin/
+    cp /usr/bin/qemu-${QEMU_ARCH} "${CHROOT_DIR}"/usr/bin/
     chroot "${CHROOT_DIR}" ./debootstrap/debootstrap --second-stage
     sbuild-createchroot --arch="${ARCH}" --foreign --setup-only \
 			"${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
