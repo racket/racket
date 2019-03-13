@@ -12,8 +12,7 @@ supplies additional contract constructors, notably @racket[->*] and
 
 @ctc-section[#:tag "optional"]{Optional Arguments}
 
-Take a look at this excerpt from a string-processing module, inspired by the
-@link["http://schemecookbook.org"]{Scheme cookbook}: 
+Take a look at this excerpt from a string-processing module:
 
 @racketmod[
 racket
