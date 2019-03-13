@@ -207,6 +207,7 @@ prepare-cache:qemu:
     - privileged
     - linux
   before_script:
+    - ls -la
     - find $INSTALL_DIR -type f
     - export PATH=$INSTALL_DIR/bin:$PATH
     - apt-get update
