@@ -41,6 +41,7 @@ ARCH="$(uname -m)"
 BUILD_DIR=${CI_PROJECT_DIR}
 MAKE_TARGET="in-place"
 CHROOT_DIR="/tmp/racket-chroot"
+QEMU_PATH=
 
 # Parse options
 until
@@ -79,6 +80,10 @@ until
 	--with-chroot-path)
 	    shift
 	    CHROOT_DIR=$1
+	    ;;
+	--with-qemu-path)
+	    shift
+	    QEMU_PATH=$1
 	    ;;
 	?*)
 	    usage "Unknown argument $1"
@@ -144,7 +149,7 @@ function setup_chroot {
     mkdir "${CHROOT_DIR}"
     debootstrap --foreign --no-check-gpg --include=fakeroot,build-essential \
 		--arch="${ARCH}" "${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
-    cp /usr/bin/qemu-${QEMU_ARCH} "${CHROOT_DIR}"/usr/bin/
+    cp ${QEMU_PATH}/bin/qemu-${QEMU_ARCH} "${CHROOT_DIR}"/usr/bin/qemu-${QEMU_ARCH}-static
     chroot "${CHROOT_DIR}" ./debootstrap/debootstrap --second-stage
     sbuild-createchroot --arch="${ARCH}" --foreign --setup-only \
 			"${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
