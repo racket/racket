@@ -303,7 +303,11 @@ test:ppc64el:
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
-
+  cache:
+    key: qemu-3.1.0
+    paths:
+      - $INSTALL_DIR
+      
 test:x86_64:cs:
   extends: .preparearch:cs
   allow_failure: true
