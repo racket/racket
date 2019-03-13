@@ -207,7 +207,8 @@ prepare-cache:qemu:
     - privileged
     - linux
   before_script:
-    - export PATH=$INSTALL_DIR:$PATH
+    - find $INSTALL_DIR -type f
+    - export PATH=$INSTALL_DIR/bin:$PATH
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot
