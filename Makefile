@@ -610,6 +610,9 @@ SVR_PRT = $(SERVER):$(SERVER_PORT)
 
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
+# To configure package installations on the server:
+SERVER_PKG_INSTALL_OPTIONS =
+
 # Catch problems due to malformed distribution-build packages
 RECOMPILE_OPTIONS = --recompile-only
 
@@ -621,7 +624,7 @@ WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
 WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
-SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS)
+SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS)
 REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS) $(RECOMPILE_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"

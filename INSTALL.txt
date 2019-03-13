@@ -493,6 +493,12 @@ In more detail:
      get package sources and native-library packages. The default is
      "http://pkgs.racket-lang.org".
 
+     The `SERVER_PKG_INSTALL_OPTIONS` variable determines extra flags
+     that are passed to `raco pkg install` when installing on the
+     server (to create package builds that are sent to clients). For
+     example, `SERVER_PKG_INSTALL_OPTIONS=--source` could be useful
+     to ensure that the server always builds from sources.
+
      The server provides README files from the "build/readmes"
      directory. If "README.txt" does not exist when the sever is
      started, a default file is created (and clients download
