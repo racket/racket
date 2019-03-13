@@ -57,7 +57,7 @@ static int compare_sym_likes(Scheme_Object *a, Scheme_Object *b)
   
   for (i = 0; i < l; i++) {
     if (SCHEME_SYM_VAL(a)[i] != SCHEME_SYM_VAL(b)[i])
-      return (SCHEME_SYM_VAL(a)[i] - SCHEME_SYM_VAL(b)[i]);
+      return (((unsigned char *)SCHEME_SYM_VAL(a))[i] - ((unsigned char *)SCHEME_SYM_VAL(b))[i]);
   }
 
   return SCHEME_SYM_LEN(a) - SCHEME_SYM_LEN(b);
