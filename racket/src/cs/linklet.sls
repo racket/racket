@@ -91,8 +91,9 @@
                 get-original-error-port
                 subprocess
                 write-string
+                write-bytes
                 flush-output
-                read-line
+                read-bytes
                 split-path
                 path->complete-path
                 file-exists?)

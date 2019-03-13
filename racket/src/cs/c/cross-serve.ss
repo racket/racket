@@ -38,28 +38,34 @@
                    (regexp)
                    (linklet)))
   ;; Serve requests to compile or to fasl data:
-  (let loop ()
-    (let ([cmd (read)])
-      (unless (eof-object? cmd)
-        (let-values ([(o get) (open-bytevector-output-port)])
-          (case cmd
-            [(compile)
-             (compile-to-port (list `(lambda () ,(read-fasled))) o)]
-            [(fasl)
-             ;; Reads host fasl format, then writes target fasl format
-             (let ([v (read-fasled)])
-               (parameterize ([#%$target-machine (string->symbol target)])
-                 (fasl-write v o)))]
-            [else
-             (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])
-          (let ([result (get)])
-            (write result)
-            (newline)
-            (flush-output-port)))
-        (loop)))))
+  (let ([in (standard-input-port)]
+        [out (standard-output-port)])
+    (let loop ()
+      (let ([cmd (get-u8 in)])
+        (unless (eof-object? cmd)
+          (get-u8 in) ; newline
+          (let-values ([(o get) (open-bytevector-output-port)])
+            (case (integer->char cmd)
+              [(#\c)
+               (compile-to-port (list `(lambda () ,(read-fasled in))) o)]
+              [(#\f)
+               ;; Reads host fasl format, then writes target fasl format
+               (let ([v (read-fasled in)])
+                 (parameterize ([#%$target-machine (string->symbol target)])
+                   (fasl-write v o)))]
+              [else
+               (error 'serve-cross-compile (format "unrecognized command: ~s" cmd))])
+            (let ([result (get)]
+                  [len-bv (make-bytevector 8)])
+              (bytevector-u64-set! len-bv 0 (bytevector-length result) (endianness little))
+              (put-bytevector out len-bv)
+              (put-bytevector out result)
+              (flush-output-port out)))
+          (loop))))))
 
 ;; ----------------------------------------
 
-(define (read-fasled)
-  (let ([bstr (read)])
-    (fasl-read (open-bytevector-input-port bstr))))
+(define (read-fasled in)
+  (let ([len-bv (get-bytevector-n in 8)])
+    (fasl-read (open-bytevector-input-port
+                (get-bytevector-n in (bytevector-u64-ref len-bv 0 (endianness little)))))))
