@@ -191,7 +191,7 @@ prepare-cache:qemu:
     - tar -xvJf qemu-3.1.0.tar.xz
     - mkdir qemu-build
     - cd qemu-build
-    - ../qemu-3.1.0/configure --static --disable-kvm --disable-xen --disable-spice --target-list='i386-linux-user aarch64-linux-user mips-linux-user mipsel-linux-user mips64el-linux-user s390x-linux-user ppc64le-linux-user riscv64-linux-user' --prefix=$INSTALL_DIR
+    - ../qemu-3.1.0/configure --static --disable-kvm --disable-xen --disable-spice --target-list='i386-linux-user aarch64-linux-user arm-linux-user mips-linux-user mipsel-linux-user mips64el-linux-user s390x-linux-user ppc64le-linux-user riscv64-linux-user' --prefix=$INSTALL_DIR
     - make -j5
     - make -j5 install
   cache:
