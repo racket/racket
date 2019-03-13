@@ -282,7 +282,7 @@ and has no effect on the returned syntax object.}
 @deftogether[(
 @defproc[(syntax-binding-set? [v any/c]) boolean?]
 @defproc[(syntax-binding-set) syntax-binding-set?]
-@defproc[(syntax-binding-set->syntax [binding-set syntax-binding-set?] [datum any/c]) syntax-binding-set?]
+@defproc[(syntax-binding-set->syntax [binding-set syntax-binding-set?] [datum any/c]) syntax?]
 @defproc[(syntax-binding-set-extend [binding-set syntax-binding-set?]
                                     [symbol symbol?]
                                     [phase (or/c exact-integer? #f)]
