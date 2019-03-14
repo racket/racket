@@ -35,9 +35,14 @@ prepare-cache:llvm:
     - make -j5
     - make -j5 install
   cache:
-    key: llvm-HEAD
+    key: llvm-8x-HEAD
     paths:
       - $INSTALL_DIR
+  artifacts:
+    name: "llvm-8x-HEAD"
+    paths:
+      - $INSTALL_DIR
+    expire_in: 1 week
       
 # Build racket with scan-build
 scan-build:racket:
@@ -55,14 +60,11 @@ scan-build:racket:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' 
+  dependencies:
+    - prepare-cache:llvm
   artifacts:
     paths:
       - scan-report_cc/
-  cache:
-    key: llvm-HEAD
-    policy: pull
-    paths:
-      - $INSTALL_DIR
 
 # Build racketcs with scan-build
 scan-build:racketcs:
@@ -80,14 +82,11 @@ scan-build:racketcs:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
+  dependencies:
+    - prepare-cache:llvm
   artifacts:
     paths:
       - scan-report-cs_cc/
-  cache:
-    key: llvm-HEAD
-    policy: pull
-    paths:
-      - $INSTALL_DIR
 
 # ---------------------------------------------------------------------------------------------------
 ##
@@ -198,7 +197,12 @@ prepare-cache:qemu:
     key: qemu-3.1.0
     paths:
       - $INSTALL_DIR
-
+  artifacts:
+    name: "qemu-3.1.0"
+    paths:
+      - $INSTALL_DIR
+    expire_in: 1 week
+      
 .preparearch:
   image: ubuntu:18.04
   stage: test
@@ -213,11 +217,8 @@ prepare-cache:qemu:
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
-  cache:
-    key: qemu-3.1.0
-    policy: pull
-    paths:
-      - $INSTALL_DIR
+  dependencies:
+    - prepare-cache:qemu
 
 test:x86_64:
   extends: .preparearch
@@ -303,11 +304,9 @@ test:ppc64el:
     - apt-get update
   script:
     - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
-  cache:
-    key: qemu-3.1.0
-    paths:
-      - $INSTALL_DIR
-      
+  dependencies:
+    - prepare-cache:qemu
+    
 test:x86_64:cs:
   extends: .preparearch:cs
   allow_failure: true
