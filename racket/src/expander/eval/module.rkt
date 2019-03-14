@@ -190,8 +190,16 @@
 
                                    (define module-body-instance-instance
                                      (make-module-body-instance-instance
-                                      #:set-transformer! (lambda (name val)
-                                                           (namespace-set-transformer! ns (sub1 phase-level) name val))))
+                                      #:set-transformer! (cond
+                                                          [(zero-phase? phase-level)
+                                                           (lambda (name val)
+                                                             (error 'define-syntax "should not happen at phase level 0"))]
+                                                          [(zero-phase? (phase+ phase-shift phase-level))
+                                                           ;; No use for phase -1 bindings
+                                                           (lambda (name val) (void))]
+                                                          [else
+                                                           (lambda (name val)
+                                                             (namespace-set-transformer! ns (sub1 phase-level) name val))])))
 
                                    (define (instantiate-body)
                                      (instantiate-linklet phase-linklet
