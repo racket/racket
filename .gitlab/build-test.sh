@@ -113,7 +113,7 @@ then
 	"arm64")
 	    QEMU_ARCH="aarch64"
 	    ;;
-	"armel"|"armhf")
+	"armel"|"armhf"|"armv7l")
 	    QEMU_ARCH="arm"
 	    ;;
 	"i386"|"mips"|"mipsel"|"mips64el"|"s390x"|"x86_64")
@@ -124,7 +124,7 @@ then
 	    ;;
 	*)
 	    echo "Unknown architecture ${ARCH}"
-	    echo "Available archs: amd64, arm64, armel, armhf, i386, mips, mipsel, mips64el, s390x, ppc64el"
+	    echo "Available archs: amd64, arm64, armel, armhf, armv7l, i386, mips, mipsel, mips64el, s390x, ppc64el"
 	    echo "These are the official names for the debian ports available listed at:"
 	    echo "https://www.debian.org/ports/"
 	    echo "NOTE: we also accept x86_64 as an alias for amd64"
