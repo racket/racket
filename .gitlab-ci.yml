@@ -227,7 +227,16 @@ test:x86_64:
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-
+test:armv7l:
+  extends: .preparearch
+  variables:
+    ARCH: "armv7l"
+    JOBS: 5
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  tags:
+    - armv7l
+    - linux
+    
 test:arm64:
   extends: .preparearch
   variables:
