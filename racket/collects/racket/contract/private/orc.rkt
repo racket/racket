@@ -228,6 +228,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection single-or/c-late-neg-projection
    #:name single-or/c-name
    #:first-order single-or/c-first-order
@@ -243,6 +244,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection single-or/c-late-neg-projection
    #:name single-or/c-name
    #:first-order single-or/c-first-order
@@ -358,6 +360,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection multi-or/c-late-neg-proj
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
@@ -373,6 +376,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection multi-or/c-late-neg-proj
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
@@ -390,6 +394,7 @@
   (λ (this) (flat-or/c-flat-ctcs this))
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name
    (λ (ctc)
       (apply build-compound-type-name 
@@ -495,6 +500,7 @@
 (define-struct (chaperone-first-or/c base-first-or/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection first-or/c-late-neg-proj
    #:name first-or/c-name
    #:first-order first-or/c-first-order
@@ -506,6 +512,7 @@
 (define-struct (impersonator-first-or/c base-first-or/c) ()
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection first-or/c-late-neg-proj
    #:name first-or/c-name
    #:first-order first-or/c-first-order
@@ -546,6 +553,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name
    (λ (ctc) (flat-rec-contract-name ctc))
    #:stronger

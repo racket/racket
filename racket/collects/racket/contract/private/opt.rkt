@@ -379,6 +379,7 @@
   (λ (val port mode) (fprintf port "#<opt-flat-contract: ~.s>" (opt-contract-name val)))
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
    #:first-order (λ (ctc) (flat-opt-contract-predicate ctc))
    #:name (λ (ctc) (opt-contract-name ctc))

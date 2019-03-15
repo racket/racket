@@ -57,6 +57,7 @@
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection
    (λ (ctc)
      (define flds (object-contract-fields ctc))
@@ -122,6 +123,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (define % (subclass/c-% ctc)) (λ (x) (subclass? x %)))
    #:stronger (λ (this that)
                 (cond
@@ -141,6 +143,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (define <%> (implementation/c-<%> ctc)) (λ (x) (implementation? x <%>)))
    #:stronger (λ (this that)
                 (cond
@@ -173,6 +176,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order
    (λ (ctc)
      (define <%> (is-a?-ctc-<%> ctc))
@@ -249,4 +253,3 @@
      'is-a?/c
      (format "~s" '(or/c interface? class?))
      <%>)))
-  

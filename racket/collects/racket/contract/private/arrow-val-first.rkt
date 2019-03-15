@@ -1560,6 +1560,7 @@
                (base->-method? ->stct)
                #t)))
   (build-X-property
+   #:trusted trust-me
    #:name (base->-name #|print-as-method-if-method|# #t)
    #:first-order ->-first-order
    #:projection

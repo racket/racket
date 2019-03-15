@@ -324,6 +324,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection flat-recursive-contract-late-neg-projection
@@ -335,6 +336,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection recursive-contract-late-neg-projection
@@ -346,6 +348,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
    #:late-neg-projection recursive-contract-late-neg-projection

@@ -9,6 +9,7 @@
          "../contract/base.rkt"
          "../contract/combinator.rkt"
          (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal)
+         (only-in "../contract/private/prop.rkt" trust-me)
          (only-in "../contract/private/case-arrow.rkt" case->-internal)
          (only-in "../contract/private/arr-d.rkt" ->d-internal)
          (submod "../contract/private/collapsible-common.rkt" properties))
@@ -1083,6 +1084,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection class/c-late-neg-proj
    #:name build-class/c-name
    #:stronger class/c-stronger
@@ -1522,7 +1524,8 @@
 (define-struct base-instanceof/c (class-ctc)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
-  (build-contract-property 
+  (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection instanceof/c-late-neg-proj
    #:name
    (λ (ctc)
@@ -1660,6 +1663,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection instanceof/c-late-neg-proj
    #:name
    (λ (ctc)

@@ -577,6 +577,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (late-neg-->d-proj impersonate-procedure)
    #:name (->d-name #|print-as-method-if-method?|# #t)
    #:first-order ->d-first-order

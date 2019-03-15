@@ -320,6 +320,7 @@ it around flattened out.
           
           (define lazy-contract-property
             (build-contract-property
+             #:trusted trust-me
              #:projection lazy-contract-proj
              #:name lazy-contract-name
              #:first-order (lambda (ctc) predicate)

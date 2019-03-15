@@ -577,6 +577,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
    #:name (λ (ctc) (eq-contract-name ctc))
    #:generate
@@ -605,6 +606,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
    #:name (λ (ctc) (equal-contract-name ctc))
    #:stronger
@@ -629,6 +631,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
    #:name (λ (ctc) (=-contract-name ctc))
    #:stronger
@@ -686,6 +689,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order
    (λ (ctc)
      (define low (char-in/c-low ctc))
@@ -738,6 +742,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:first-order
    (λ (ctc)
      (define reg (regexp/c-reg ctc))
@@ -759,6 +764,7 @@
   #:property prop:custom-write contract-custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:stronger predicate-contract-equivalent
    #:equivalent predicate-contract-equivalent
    #:name (λ (ctc) (predicate-contract-name ctc))

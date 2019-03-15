@@ -198,6 +198,7 @@
 (define (mk-prop chaperone?)
   (define c-or-i-procedure (if chaperone? chaperone-procedure impersonate-procedure))
   ((if chaperone? build-chaperone-contract-property build-contract-property)
+   #:trusted trust-me
    #:val-first-projection
    (λ (ctc)
      (define blame-accepting-proj (arr->i-late-neg-proj ctc c-or-i-procedure))

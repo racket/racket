@@ -32,6 +32,7 @@
   #:property prop:custom-write custom-write-property-proc  
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name (λ (ctc) (∀∃/c-name ctc))
    #:first-order (λ (ctc) (λ (x) #t)) ;; ???
    #:late-neg-projection ∀∃-late-neg-proj

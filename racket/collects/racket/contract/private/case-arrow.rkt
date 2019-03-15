@@ -289,6 +289,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:late-neg-projection (case->-proj chaperone-procedure)
    #:name (case->-name #|print-as-method-if-method?|# #t)
    #:first-order case->-first-order
@@ -298,6 +299,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:late-neg-projection (case->-proj impersonate-procedure)
    #:name (case->-name #|print-as-method-if-method?|# #t)
    #:first-order case->-first-order

@@ -134,6 +134,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:late-neg-projection (λ (ctc) 
@@ -315,6 +316,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
@@ -325,6 +327,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:equivalent vectorof-equivalent
@@ -458,6 +461,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
@@ -646,6 +650,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger
@@ -656,6 +661,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name vector/c-name
    #:first-order vector/c-first-order
    #:stronger vector/c-stronger

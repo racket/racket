@@ -32,6 +32,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name
    (lambda (c)
      `(parametric->/c ,(polymorphic-contract-vars c) ,(polymorphic-contract-body-src-exp c)))
@@ -119,6 +120,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name (lambda (c) (barrier-contract-name c))
    #:first-order (λ (c) (barrier-contract-pred c))
    #:stronger (λ (this that) (eq? this that))

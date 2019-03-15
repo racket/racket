@@ -135,6 +135,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
+   #:trusted trust-me
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
@@ -206,6 +207,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
+   #:trusted trust-me
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
@@ -216,6 +218,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
+   #:trusted trust-me
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger

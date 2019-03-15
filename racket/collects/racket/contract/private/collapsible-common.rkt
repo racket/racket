@@ -143,7 +143,7 @@
        (for/or ([old-ctc (in-list contract-list)])
          (and old-ctc
               (flat-contract-struct? new-ctc)
-              (contract-struct-stronger? old-ctc new-ctc)))))
+              (trusted-contract-struct-stronger? old-ctc new-ctc)))))
 
 ;; join two collapsible-leaf contracts
 (define (join-collapsible-leaf/c new-collapsible new-neg old-collapsible old-neg)

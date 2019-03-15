@@ -1452,4 +1452,32 @@
       (define iv (vector-ref cv3 0))
       (vector-set! iv 0 -1))
    "neg1")
+
+  (test/neg-blame
+   'dont-trust-untrustworthy-stronger-implementations
+   '(let ()
+      (define stronger-any/c
+        (make-chaperone-contract #:name 'stronger-any/c
+                                 #:late-neg-projection (lambda (blame)
+                                                         (lambda (val neg-party)
+                                                           val))
+                                 #:stronger (lambda (a b) #t)))
+
+      (define (add-ctcs ctc f)
+        (for/fold ([f f])
+                  ([i (in-range 10)])
+          (contract ctc f 'A 'B #f #f)))
+
+      (define ovec (vector (cons 1 2)))
+
+      (define vec
+        (contract (vector/c pair?)
+                  ovec
+                  'pos 'neg))
+
+      (vector-set! (add-ctcs (vector/c stronger-any/c) vec) 0 "bad value")
+      ;; need to be sure this doesn't return `"bad value"` but the
+      ;; previous line is where the exception gets raised
+      (vector-ref ovec 0)))
+
   )
