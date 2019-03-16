@@ -1230,6 +1230,18 @@
       (eval '(dynamic-require ''provide/contract66-m2 #f)))
    "provide/contract66-m1")
 
+  (test/spec-passed
+   'provide/contract67
+   '(let ()
+      (eval '(module provide/contract67-a racket/base
+               (require racket/contract/base)
+               (struct stream (x [y #:mutable]))
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract67-b racket/base
+               (require 'provide/contract67-a racket/contract/base)
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))))
+
   (contract-error-test
    'provide/contract-struct-out
    #'(begin

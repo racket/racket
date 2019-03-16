@@ -460,6 +460,8 @@
     [(_ p/c-ele ...)
      (let ()
 
+       (define mangled-id-scope (make-syntax-introducer))
+
        ;; ids : table[id -o> (listof id)]
        ;; code-for-each-clause adds identifiers to this map.
        ;; when it binds things; they are then used to signal
@@ -710,9 +712,10 @@
                        #t))]
                 [mutator-ids (reverse (list-ref the-struct-info 4))] ;; (listof (union #f identifier))
                 [field-contract-ids (map (λ (field-name field-contract)
-                                           (a:mangle-id "provide/contract-field-contract"
-                                                        field-name
-                                                        struct-name))
+                                           (mangled-id-scope
+                                            (a:mangle-id "provide/contract-field-contract"
+                                                         field-name
+                                                         struct-name)))
                                          field-names
                                          field-contracts)]
                 [struct:struct-name
@@ -1083,11 +1086,12 @@
            (syntax code)))
 
        (define (id-for-one-id user-rename-id reflect-id id [mangle-for-maker? #f])
-         ((if mangle-for-maker?
-              a:mangle-id-for-maker
-              a:mangle-id)
-          "provide/contract-id"
-          (or user-rename-id reflect-id id)))
+         (mangled-id-scope
+          ((if mangle-for-maker?
+               a:mangle-id-for-maker
+               a:mangle-id)
+           "provide/contract-id"
+           (or user-rename-id reflect-id id))))
        
        (define pos-module-source-id
          ;; Avoid context on this identifier, since it will be defined
@@ -1118,8 +1122,9 @@
            (free-identifier-mapping-put!
             struct-id-mapping
             a
-            (a:mangle-id "provide/contract-struct-expandsion-info-id"
-                         a))
+            (mangled-id-scope
+             (a:mangle-id "provide/contract-struct-expandsion-info-id"
+                          a)))
            (define parent-selectors
              (if parent
                  (let ([parent-selectors (list-ref (extract-struct-info (syntax-local-value parent))
