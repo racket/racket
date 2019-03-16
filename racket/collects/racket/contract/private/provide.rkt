@@ -1123,7 +1123,7 @@
             struct-id-mapping
             a
             (mangled-id-scope
-             (a:mangle-id "provide/contract-struct-expandsion-info-id"
+             (a:mangle-id "provide/contract-struct-expansion-info-id"
                           a)))
            (define parent-selectors
              (if parent
