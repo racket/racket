@@ -1193,6 +1193,9 @@
 (test 'blinky ghost-name (struct-copy GHOST (ghost 'red 'blinky)))
 (syntax-test #'GHOST)
 
+(syntax-test #'(struct ghost (color name) #:extra-name GHOST #:omit-define-syntaxes)
+             "cannot be combined")
+
 ;; ----------------------------------------
 ;; Check `#:authentic`:
 
