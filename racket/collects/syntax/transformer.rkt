@@ -6,8 +6,8 @@
          make-constant-like-transformer)
 
 (define (make-variable-like-transformer ref-stx [set!-handler #f])
-  (unless (syntax? ref-stx)
-    (raise-type-error 'make-variable-like-transformer "syntax?" ref-stx))
+  (unless (or (syntax? ref-stx) (procedure? ref-stx))
+    (raise-type-error 'make-variable-like-transformer "(or/c syntax? procedure?)" ref-stx))
   (unless (or (syntax? set!-handler) (procedure? set!-handler) (eq? set!-handler #f))
     (raise-type-error 'make-variable-like-transformer "(or/c syntax? procedure? #f)" set!-handler))
   (define ref-f
@@ -27,13 +27,14 @@
         (ref-f stx)]))))
 
 (define (make-constant-like-transformer ref-stx)
-  (unless (syntax? ref-stx)
-    (raise-type-error 'make-constant-like-transformer "syntax?" ref-stx))
+  (unless (or (syntax? ref-stx) (procedure? ref-stx))
+    (raise-type-error 'make-constant-like-transformer "(or/c syntax? procedure?)" ref-stx))
   (lambda (stx)
     (syntax-case stx ()
       [id
        (identifier? #'id)
-       ref-stx]
+       (cond [(syntax? ref-stx) ref-stx]
+             [else              (ref-stx stx)])]
       [(id . args)
        (let ([stx* (cons #'(#%expression id) (cdr (syntax-e stx)))])
          (datum->syntax stx stx* stx))])))
