@@ -37,4 +37,28 @@ op
 @history[#:added "6.3"]{}
 }
 
+@defproc[(make-constant-like-transformer [reference-stx syntax?])
+         (-> syntax? syntax?)]{
+
+Creates a transformer that replaces references to the macro identifier
+with @racket[reference-stx]. Uses of the macro in operator position
+are interpreted as an application with @racket[reference-stx] as the
+function and the arguments as given.
+
+Note that this does not necessarily behave like a constant
+if the @racket[reference-stx] expression produces different
+values at different times.
+
+@examples[#:eval the-eval
+(define the-box (box add1))
+(define-syntax op
+  (make-constant-like-transformer
+   #'(unbox the-box)))
+(op 5)
+op
+]
+
+@history[#:added "7.2.0.10"]
+}
+
 @close-eval[the-eval]
