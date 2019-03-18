@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #ifdef WIN32
-# include <Windows.h>
+# include <windows.h>
 # define DOS_FILE_SYSTEM
 static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 			      char *dest, int dest_len, int get_utf16);
