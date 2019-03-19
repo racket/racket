@@ -90,7 +90,7 @@ racket
               (and (memq r lov)
                    (for/and ([v lov]) (>= f@r (f v)))))))]))
 ]
- The @racket[memq] function ensures that @racket[r] is @emph{intentionally equal}
+ The @racket[memq] function ensures that @racket[r] is @emph{intensionally equal}
  @margin-note*{That is, "pointer equality" for those who prefer to think at
  the hardware level.} to one of the members of @racket[lov]. Of course, a
  moment's worth of reflection shows that it is impossible to make up such a
@@ -122,7 +122,7 @@ racket
 ]
  That is, the @racket[memf] function determines the first element of
  @racket[lov] whose value under @racket[f] is equal to @racket[r]'s value
- under @racket[f]. If this element is intentionally equal to @racket[r],
+ under @racket[f]. If this element is intensionally equal to @racket[r],
  the result of @racket[argmax] is correct.
 
 This second refinement step introduces two problems. First, both conditions
