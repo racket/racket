@@ -51,10 +51,12 @@
                               member-table
                               i)))]
               [(x . y)
-               (quote-syntax
-                (#,(add-ctc i (bound-identifier-mapping-get
-                               member-table
-                               i)) . y))])))])))
+               (quasisyntax
+                (#,(quote-syntax
+                    #,(add-ctc i (bound-identifier-mapping-get
+                                  member-table
+                                  i)))
+                 . y))])))])))
 
 (define-syntax (unit-export stx)
   (syntax-case stx ()

@@ -2276,3 +2276,30 @@
 
       (define result (foo 1 2 3))))
   (test 7 (dynamic-require ''m 'result)))
+
+;; ----------------------------------------
+;; Contracts that use other contracted bindings work when exporting through define-values/invoke-unit
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval
+   '(module m racket/base
+      (require racket/contract
+               racket/unit)
+
+      (provide g)
+
+      (define-signature a^
+        [(contracted
+          [f (-> integer? contract?)]
+          [g (f 10)])])
+
+      (define-unit a@
+        (import)
+        (export a^)
+        (define (f x) (>=/c x))
+        (define g 11))
+
+      (define-values/invoke-unit a@
+        (import)
+        (export a^))))
+  (test 11 (dynamic-require ''m 'g)))
