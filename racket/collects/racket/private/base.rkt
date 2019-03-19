@@ -1,6 +1,7 @@
 (module base "pre-base.rkt"
 
-  (#%require "hash.rkt"
+  (#%require "error.rkt" ; shadows `raise-argument-error`
+             "hash.rkt"
              "list.rkt" ; shadows `reverse', `mem{q,v,ber}'
              "string.rkt"
              "stxcase-scheme.rkt"
@@ -25,8 +26,9 @@
                               with-output-to-file
                               directory-list
                               regexp-replace*
-                              new-apply-proc)
+                              new-apply-proc)             
              struct
+             (all-from "error.rkt")
              (all-from-except "hash.rkt" paired-fold)
              (all-from "list.rkt")
              (all-from-except "string.rkt"

@@ -44,3 +44,4 @@
 (unless building-flat-tests?
   (load-relative "name.rktl"))
 (load-relative "srcloc.rktl")
+(load-relative "error.rktl")
