@@ -17,8 +17,7 @@
                      "private/unit-compiletime.rkt"
                      "private/unit-syntax.rkt"))
 
-(require racket/block
-         racket/unsafe/undefined
+(require racket/unsafe/undefined
          racket/contract/base
          racket/contract/region
          racket/stxparam
@@ -602,7 +601,7 @@
          #'(((int-sid ...) sbody) ...)
          #'(((int-vid ...) vbody) ...)))))
 
-;; build-post-val-defs : sig -> (list syntax-object)
+;; build-post-val-defs+ctcs : sig -> (list/c stx-list? (listof syntax?))
 (define-for-syntax (build-post-val-defs+ctcs sig)
   (define introduced-sig (map-sig (lambda (x) x)
                                   (make-syntax-introducer)
@@ -767,19 +766,15 @@
            (x
             (identifier? #'x)
             (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs post-val-defs (cons #f ctcs)))
-           ((x (y z) ...)
-            (and (identifier? #'x)
-                 (free-identifier=? #'x #'contracted)
-                 (andmap identifier? (syntax->list #'(y ...))))
+           ((contracted (y z) ...)
+            (andmap identifier? (syntax->list #'(y ...)))
             (loop (cdr sig-exprs)
-                  (append (syntax->list #'(y ...)) bindings)
+                  (append (reverse (syntax->list #'(y ...))) bindings)
                   val-defs
                   stx-defs
                   post-val-defs
-                  (append (syntax->list #'(z ...)) ctcs)))
-           ((x . z)
-            (and (identifier? #'x)
-                 (free-identifier=? #'x #'contracted))
+                  (append (reverse (syntax->list #'(z ...))) ctcs)))
+           ((contracted . z)
             (raise-syntax-error 
              'define-signature
              "expected a list of [id contract] pairs after the contracted keyword"
@@ -1102,6 +1097,14 @@
                               (list #'(define-values (id ...) rhs))))]
                          [else (list defn-or-expr)])))
                    defns&exprs)))]
+              [ends-in-defn?
+               (syntax-case expanded-body ()
+                 [(_ ... (x . _))
+                  (and (identifier? #'x)
+                       (member #'x
+                               (list #'define-values #'define-syntaxes #'define-syntax)
+                               free-identifier=?))]
+                 [_ #f])]
               ;; Get all the defined names, sorting out variable definitions
               ;; from syntax definitions.
               [defined-names-table
@@ -1160,51 +1163,75 @@
                  "definition for imported identifier"
                  (var-info-id defid)))))
           (syntax->list (localify #'ivars def-ctx)))
-         
-         (let ([marker (lambda (id) ((make-syntax-introducer) (datum->syntax #f (syntax-e id))))])
-           (with-syntax ([(defn-or-expr ...)
-                          (apply append
-                                 (map (λ (defn-or-expr)
-                                        (syntax-case defn-or-expr (define-values)
-                                          [(define-values (id ...) body)
-                                           (let* ([ids (syntax->list #'(id ...))]
-                                                  [tmps (map marker ids)]
-                                                  [do-one
-                                                   (λ (id tmp)
-                                                     (let ([var-info (bound-identifier-mapping-get
-                                                                      defined-names-table
-                                                                      id)])
-                                                       (cond
-                                                         [(var-info-exported? var-info)
-                                                          =>
-                                                          (λ (export-loc)
-                                                            (let ([ctc (var-info-ctc var-info)])
-                                                              (list (if ctc
-                                                                        (quasisyntax/loc defn-or-expr
-                                                                          (begin
-                                                                            (contract #,ctc #,tmp
-                                                                                      (current-contract-region)
-                                                                                      'cant-happen
-                                                                                      (quote #,id)
-                                                                                      (quote-srcloc #,id))
-                                                                            (set-box! #,export-loc
-                                                                                      (cons #,tmp (current-contract-region)))))
-                                                                        (quasisyntax/loc defn-or-expr
-                                                                          (set-box! #,export-loc #,tmp)))
-                                                                    (quasisyntax/loc defn-or-expr
-                                                                      (define-syntax #,id 
-                                                                        (make-id-mapper (quote-syntax #,tmp)))))))]
-                                                         [else (list (quasisyntax/loc defn-or-expr
-                                                                       (define-syntax #,id
-                                                                         (make-rename-transformer (quote-syntax #,tmp)))))])))])
-                                             (cons (quasisyntax/loc defn-or-expr
-                                                     (define-values #,tmps body))
-                                                   (apply append (map do-one ids tmps))))]
-                                          [else (list defn-or-expr)]))
-                                      expanded-body))])
-             (internal-definition-context-track
-              def-ctx
-              #'(block defn-or-expr ...)))))))))
+
+         ;; Handles redirection of exported definitions and collects
+         ;; positive-blaming `contract` expressions
+         (define (process-defn-or-expr defn-or-expr)
+           (syntax-case defn-or-expr (define-values)
+             [(define-values (id ...) body)
+              (let* ([ids (syntax->list #'(id ...))]
+                     [tmps (generate-temporaries ids)]
+                     [do-one
+                      (λ (id tmp)
+                        (let ([var-info (bound-identifier-mapping-get
+                                         defined-names-table
+                                         id)])
+                          (cond
+                            [(var-info-exported? var-info)
+                             =>
+                             (λ (export-loc)
+                               (let ([ctc (var-info-ctc var-info)])
+                                 (values
+                                  #`(begin
+                                      #,(quasisyntax/loc defn-or-expr
+                                          (set-box! #,export-loc
+                                                    #,(if ctc
+                                                          #`(cons #,tmp (current-contract-region))
+                                                          tmp)))
+                                      #,(quasisyntax/loc defn-or-expr
+                                          (define-syntax #,id
+                                            (make-id-mapper (quote-syntax #,tmp)))))
+                                  (and ctc
+                                       #`(contract #,ctc #,tmp
+                                                   (current-contract-region)
+                                                   'cant-happen
+                                                   (quote #,id)
+                                                   (quote-srcloc #,id))))))]
+                            [else (values (quasisyntax/loc defn-or-expr
+                                            (define-syntax #,id
+                                              (make-rename-transformer (quote-syntax #,tmp))))
+                                          #f)])))])
+                (define-values (defns-and-exprs ctc-exprs)
+                  (for/lists [defns-and-exprs ctc-exprs]
+                             ([id (in-list ids)]
+                              [tmp (in-list tmps)])
+                    (do-one id tmp)))
+                (list (cons (quasisyntax/loc defn-or-expr
+                              (define-values #,tmps
+                                #,(if (and (pair? ids) (null? (cdr ids)))
+                                      (syntax-property #'body 'inferred-name (car ids))
+                                      #'body)))
+                            defns-and-exprs)
+                      (filter values ctc-exprs)))]
+             [else (list (list defn-or-expr) '())]))
+
+         (internal-definition-context-track
+          def-ctx
+          (if (null? expanded-body)
+              #'(void)
+              (with-syntax ([([(defn-or-expr ...) (ctc-expr ...)] ...)
+                             (map process-defn-or-expr expanded-body)])
+                (if ends-in-defn?
+                    #'(let ()
+                        defn-or-expr ... ...
+                        ctc-expr ... ...
+                        (void))
+                    (with-syntax ([(defn-or-expr ... last-defn-or-expr) #'(defn-or-expr ... ...)])
+                      #'(let ()
+                          defn-or-expr ...
+                          (begin0
+                            last-defn-or-expr
+                            ctc-expr ... ...))))))))))))
 
 (define-for-syntax (redirect-imports/exports import?)
   (lambda (table-stx
