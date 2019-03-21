@@ -655,7 +655,7 @@ win32-pkgs-catalog:
 # ------------------------------------------------------------
 # Handle `SERVER_COMPILE_MACHINE` for various targets
 
-SERVER_COMPILE_MACHINE =
+SERVER_COMPILE_MACHINE = -M
 ANY_COMPILE_MACHINE_ARGS_qq = SETUP_MACHINE_FLAGS="-MCR `pwd`/build/zo:" \
                               MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) --enable-crossany"
 
