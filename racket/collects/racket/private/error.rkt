@@ -24,14 +24,14 @@
   ; will return #f, same list identical to the original, and a flag #f to indicate no element was
   ; found and was not removed from the list.
   (define (remove-at-pos pos lst)
-    (define (iter found-item lst current-index)
+    (define (iter lst current-index)
       (cond
         [(null? lst) (values #f '() #f)]
         [(= current-index pos) (values (car lst) (cdr lst) #t)]
         [else
-         (define-values (found-item reduced-lst found?) (iter #f (cdr lst) (add1 current-index)))
+         (define-values (found-item reduced-lst found?) (iter (cdr lst) (add1 current-index)))
          (values found-item (cons (car lst) reduced-lst) found?)]))
-    (iter #f lst 0))
+    (iter lst 0))
   
   (define (raise-one-argument-error name expected v [more-info #f] [cmarks (current-continuation-marks)])
     (raise
