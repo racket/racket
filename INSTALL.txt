@@ -340,6 +340,14 @@ drives the build farm, and the resulting installers are in
 installer filenames in "build/installer/table.rktd". A log file
 for each client is written to "build/log".
 
+If you have the "distro-build-server" package installed in some Racket
+build (not the one for building installers), you can use
+
+ make describe-clients CONFIG=my-site-config.rkt
+
+to see, without building anything, the effect of the configuration and
+the planned build steps.
+
 The default `CONFIG` path is "build/site.rkt", so you could put your
 configuration file there and omit the `CONFIG` argument to `make`. A
 default configuration file is created there automatically. Supply
