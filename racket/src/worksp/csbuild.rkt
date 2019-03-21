@@ -84,7 +84,9 @@
      (clone (format "~astex/.git" extra-repos-base)
             (build-path scheme-dir "stex"))
      (clone (format "~azlib/.git" extra-repos-base)
-            (build-path scheme-dir "zlib"))]
+            (build-path scheme-dir "zlib"))
+     (clone (format "~alz4/.git" extra-repos-base)
+            (build-path scheme-dir "lz4"))]
     [else
      (clone "https://github.com/mflatt/ChezScheme"
             scheme-dir

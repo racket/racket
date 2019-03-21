@@ -16,7 +16,7 @@ AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok
 AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
-AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code])
+AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
@@ -57,7 +57,7 @@ show_explicitly_set()
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
-show_explicitly_enabled "${enable_compress}" "Compressed code"
+show_explicitly_disabled "${enable_compress}" "Compressed code"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
@@ -385,7 +385,7 @@ fi
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 SCHEME_CROSS_CONFIG_ARGS="--machine=${TARGET_MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
 
-if test "${enable_compress}" = "yes" ; then
+if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
 fi
 
@@ -570,6 +570,7 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} RANLIB="'"'"${RANLIB}"'"'
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
 
 ############## final output ################
 

@@ -46,6 +46,7 @@
               (unless (eq? (vector-ref v 0) (vector-ref v 1))
                 (error 'eq-on-flonum "no")))))
 (check-defined 'procedure-known-single-valued?)
+(check-defined 'compress-format)
 
 ;; ----------------------------------------
 

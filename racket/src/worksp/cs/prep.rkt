@@ -43,6 +43,7 @@
   (copy-one-dir "mats")
   (copy-one-dir "nanopass")
   (copy-one-dir "zlib")
+  (copy-one-dir "lz4")
   (copy-one-dir (build-path "boot" machine-name))
 
   (define config-h (build-path dir machine-name "c" "config.h"))

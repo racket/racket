@@ -389,6 +389,7 @@ clone-ChezScheme-as-extra:
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)lz4/.git
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
                                      SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"
