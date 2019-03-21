@@ -438,6 +438,8 @@ macos-install-gracket:
 # ----------------------------------------
 # Reconfigure
 
+COMP_SUBDIR_CONFIGURE_ARGS=@COMP_SUBDIR_CONFIGURE_ARGS@
+
 CONFIGURE_SRCS = $(srcdir)/configure $(srcdir)/Makefile.in \
                  $(srcdir)/../../rktio/Makefile.in $(srcdir)/../../rktio/configure
 
@@ -445,4 +447,4 @@ reconfigure:
 	$(MAKE) Makefile
 
 Makefile: $(CONFIGURE_SRCS)
-	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	$(srcdir)/configure $(COMP_SUBDIR_CONFIGURE_ARGS) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

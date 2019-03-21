@@ -626,6 +626,7 @@ INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 RUN_RACKET
 CROSS_COMPILE_TARGET_KIND
+COMP_SUBDIR_CONFIGURE_ARGS
 CS_COMPILED_SUBDIR
 CS_INSTALLED
 FRAMEWORK_REL_INSTALL
@@ -2609,10 +2610,11 @@ if test "${enable_csdefault}" = "yes" ; then
 fi
 
 CS_COMPILED_SUBDIR=1
+COMP_SUBDIR_CONFIGURE_ARGS=
 if test "${enable_csdefault}" = "yes" ; then
   CS_COMPILED_SUBDIR=0
+  COMP_SUBDIR_CONFIGURE_ARGS=--enable-csdefault
 fi
-
 
 ############## Install targets ################
 
@@ -4924,6 +4926,7 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 
