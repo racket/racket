@@ -70,19 +70,19 @@
   ;   ... 
   ;
   ; <error-field> :-
-  ; <field>: <detail>
+  ; <label>: <detail>
   ;  <detail>
   ;  ...
   ;
   ; <ellipsis-field> :-
-  ; <field>...:
+  ; <label>...:
   ;  <detail>
   ;  ...
 
   ; struct error-field
   ; label : string/c
   ; details : (listof any/c)
-  ; indent-all : (or/c #f (not #f)) if #f and details is not empty then first details
+  ; indent-all? : (or/c #f (not #f)) if #f and details is not empty then first detail
   ;                                 is printed on same line as label and all other details
   ;                                 are printed on separate lines and indented with respect
   ;                                 to the label line.
@@ -102,13 +102,12 @@
 
   ; ~v is the default print mode for the field detail but allow ~a to be specified
   ; instead if desired.
-  ; indent-all is #f by default.
+  ; indent-all? is #f by default.
   (define (make-error-field label #:indent-all? [indent-all? #f] #:print-mode [print-mode '~v] . details)
     (error-field label details indent-all? print-mode))
   
-  ; struct ellipsis-field  
-  ; details : (listof any/c)
-  ; all details are always indented so indent-all? is #t
+  ; struct ellipsis-field : error-field
+  ; all details are always indented so indent-all? is #t by default
   (struct ellipsis-field error-field () #:transparent)
 
   (define (make-ellipsis-field label #:print-mode [print-mode '~v] . details)
@@ -217,7 +216,7 @@
            formatted-label
            details))
 
-  ; too-long? : any/c -> boolean?
+  ; first-detail-too-long? : any/c -> boolean?
   ; checks to see if error-field's first detail when printed for error output would exceed
   ; (error-detail-print-width)
   (define (first-detail-too-long? ef)
