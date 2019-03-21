@@ -918,7 +918,8 @@ DRIVE_ARGS_q = $(RELEASE_MODE) $(VERSIONLESS_MODE) $(SOURCE_MODE) \
                $(CLEAN_MODE) $(SERVER_COMPILE_MACHINE) "$(CONFIG)" "$(CONFIG_MODE)" \
                $(SERVER) $(SERVER_PORT) "$(SERVER_HOSTS)" \
                "$(PKGS)" "$(DOC_SEARCH)" "$(DIST_NAME)" $(DIST_BASE) $(DIST_DIR)
-DRIVE_CMD_q = -l- distro-build/drive-clients $(DRIVE_ARGS_q)
+DRIVE_DESCRIBE =
+DRIVE_CMD_q = -l- distro-build/drive-clients $(DRIVE_DESCRIBE) $(DRIVE_ARGS_q)
 
 # Full server build and clients drive, based on `CONFIG':
 installers:
@@ -934,7 +935,10 @@ plain-installers-from-built:
 
 # Just the clients, assuming server is already running:
 drive-clients:
-	$(DRIVE_CMD)
+	$(PLAIN_RACKET) $(DRIVE_CMD_q)
+
+describe-clients:
+	$(MAKE) drive-clients DRIVE_DESCRIBE=--describe
 
 # ------------------------------------------------------------
 # Create installers, then assemble as a web site:
