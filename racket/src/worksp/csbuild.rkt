@@ -83,7 +83,7 @@
      (for ([submodule (in-list submodules)])
        (define dir (build-path scheme-dir submodule))
        (unless (directory-exists? (build-path dir ".git"))
-         (clone (format "~a~a/.git" submodule extra-repos-base)
+         (clone (format "~a~a/.git" extra-repos-base submodule)
                 (build-path scheme-dir submodule))))
      (when pull?
        (parameterize ([current-directory scheme-dir])
