@@ -2146,6 +2146,57 @@
 (syntax-test #'(evil-via-delta-introducer (m)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `syntax-make-delta-introducer` transfers
+;; shifts along with scopes [example by Alexis]
+
+(let ([m '(module defines-introducer-to-submodule-binding racket/base
+            (provide foo-val)
+
+            (module foo racket/base
+              (provide foo)
+              (define foo 42))
+
+            (module introducer racket/base
+              (require (for-syntax racket/base
+                                   racket/syntax)
+                       syntax/parse/define)
+
+              (provide begin-foo)
+
+              (begin-for-syntax
+                (define scopeless-stx (datum->syntax #f #f)))
+
+              (define-syntax-parser define-cached-require-introducer
+                [(_ x:id mod-path)
+                 #:with scoped-stx (syntax-local-introduce #'mod-path)
+                 #'(begin
+                     (require scoped-stx)
+                     (begin-for-syntax
+                       (define x (make-syntax-delta-introducer (quote-syntax scoped-stx) scopeless-stx))))])
+
+              (define-cached-require-introducer introduce-foo (submod ".." foo))
+
+              (define-syntax-parser begin-foo
+                [(_ form ...)
+                 (introduce-foo
+                  #'(begin form ...))]))
+
+            (require 'introducer)
+            (define foo-val (begin-foo foo)))])
+  (eval (expand m)))
+
+(test 42 dynamic-require ''defines-introducer-to-submodule-binding 'foo-val)
+
+(module uses-introducer-to-submodule-binding racket/base
+  (provide also-foo-val)
+  
+  (require (submod 'defines-introducer-to-submodule-binding introducer))
+
+  (define also-foo-val (begin-foo foo)))
+
+(test 42 dynamic-require ''uses-introducer-to-submodule-binding 'also-foo-val)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that a for-syntax reference can precede a
 ;;  for-syntax definition
 
