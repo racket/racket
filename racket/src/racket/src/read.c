@@ -2738,10 +2738,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         Scheme_Object *k;
 
 	kind = read_compact_number(port);
+        if ((kind < 0) || (kind > 2))
+          scheme_ill_formed_code(port);
 	len = read_compact_number(port);
 
         ht = scheme_make_hash_tree(kind);
-	while (len--) {
+        while (len--) {
 	  k = read_compact(port, 0);
 	  v = read_compact(port, 0);
           ht = scheme_hash_tree_set(ht, k, v);
