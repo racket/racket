@@ -412,9 +412,14 @@
                  (define path
                    (let loop ([prev prev])
                      (cond
-                      [(submod? prev)
-                       (loop (cadr prev))]
-                      [else (resolve-module-path prev (build-path dir "dummy.rkt"))])))
+                       [(submod? prev)
+                        (define base (cadr prev))
+                        (cond
+                          [(or (equal? base "..") (equal? base "."))
+                           #f]
+                          [else
+                           (loop (cadr prev))])]
+                       [else (resolve-module-path prev (build-path dir "dummy.rkt"))])))
                  (when (path? path)
                    (send/add path)))
                p])))
