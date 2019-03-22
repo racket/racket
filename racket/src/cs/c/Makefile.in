@@ -213,7 +213,7 @@ RKTFW = $(RKTFWDIR)/Racket
 GRAPPSKEL = GRacketCS.app/Contents/Info.plist
 
 racketcs@OSX@: main.o $(RKTFW)
-	$(CC) $(CFLAGS) -o racketcs main.o -F. -framework Racket
+	$(CC) $(CFLAGS) -o racketcs main.o -F. -framework Racket $(LDFLAGS)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
 
 GRACKET_BIN = GRacketCS.app/Contents/MacOS/GracketCS
@@ -222,7 +222,7 @@ gracketcs@OSX@:
 	$(MAKE) $(GRACKET_BIN)
 
 $(GRACKET_BIN): grmain.o $(RKTFW) $(GRAPPSKEL)
-	$(CC) $(CFLAGS) -o $(GRACKET_BIN) grmain.o -F. -framework Racket
+	$(CC) $(CFLAGS) -o $(GRACKET_BIN) grmain.o -F. -framework Racket $(LDFLAGS)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/../../../Racket.framework/Versions/$(FWVERSION)_CS/Racket" $(GRACKET_BIN)
 
 $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h $(srcdir)/../../mac/icon/GRacket.icns

@@ -262,8 +262,8 @@
                                 (+ link-edit-addr (round-up-page link-edit-vmlen)))])
               (unless ((+ end-cmd new-cmd-sz) . < . min-used)
                 (error 'check-header 
-                       "no room for a new section load command (current end is ~a; min used is ~a)"
-                       end-cmd min-used))
+                       "no room for a new section load command (current end is ~a; min used is ~a; need ~a)"
+                       end-cmd min-used new-cmd-sz))
               ;; Shift commands starting with link-edit command:
               (unless link-edit-pos (error "LINKEDIT not found"))
               (file-position p link-edit-pos)
