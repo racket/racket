@@ -92,7 +92,14 @@
       [(closure code gen-id) #t]
       [(inline-variant direct inline) #t]
       [(case-lam name clauses) #t]
-      [_ (lam? b)]))
+      [(let-one rhs body type unused?)
+       (and (pure? rhs)
+            (pure? body))]
+      [(seq forms)
+       (for/and ([form (in-list forms)])
+         (pure? form))]
+      [_ (or (lam? b)
+             (void? b))]))
 
   (for ([b (in-list body)])
     (match b
@@ -114,7 +121,8 @@
        (unless (or assume-pure?
                    (pure? rhs))
          (used-rhs!))]
-      [_ (used! b)]))
+      [_ (unless (pure? b)
+           (used! b))]))
   
   ;; Anything not marked as used at this point can be dropped
   (define new-internals
@@ -152,7 +160,7 @@
                         [(def-values ids rhs)
                          (for/or ([id (in-list ids)])
                            (eq? 'used (hash-ref used (toplevel-pos id) #f)))]
-                        [else (not (void? b))]))
+                        [else (not (pure? b))]))
       b))
 
   (define new-body (remap-positions used-body
