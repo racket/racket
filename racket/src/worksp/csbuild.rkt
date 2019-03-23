@@ -89,7 +89,7 @@
        (parameterize ([current-directory scheme-dir])
          (system*! "git" "pull")
          (for ([submodule (in-list submodules)])
-           (parameterize ([current-directory (build-path scheme-dir submodule)])
+           (parameterize ([current-directory (build-path submodule)])
              (system*! "git" "pull")))))]
     [else
      (unless (directory-exists? scheme-dir)
@@ -98,8 +98,7 @@
               git-clone-args))
      (when pull?
        (parameterize ([current-directory scheme-dir])
-         (system*! "git" "pull"))
-       (parameterize ([current-directory scheme-dir])
+         (system*! "git" "pull")
          (system*! "git" "submodule" "init")
          (system*! "git" "submodule" "update")))]))
 
