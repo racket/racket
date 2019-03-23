@@ -381,15 +381,30 @@ $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme:
           then cd $(BUILD_FOR_FOR_SCHEME_DIR) && git clone $(GIT_CLONE_ARGS_qq) $(CHEZ_SCHEME_REPO) ChezScheme ; \
           else $(MAKE) clone-ChezScheme-as-extra GIT_CLONE_ARGS_qq="" ; fi
 
-update-ChezScheme:
-	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git pull -q && git submodule -q update
-
+# For this target, `GIT_CLONE_ARGS_qq` normally should not include "--depth 1",
+# because `EXTRA_REPOS_BASE` is likely to be a dumb transport that does not
+# support shallow copies
 clone-ChezScheme-as-extra:
 	cd $(BUILD_FOR_FOR_SCHEME_DIR) && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)ChezScheme/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)nanopass/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)stex/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)zlib/.git
 	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git clone $(GIT_CLONE_ARGS_qq) $(EXTRA_REPOS_BASE)lz4/.git
+
+update-ChezScheme:
+	if [ "$(EXTRA_REPOS_BASE)" = "" ] ; \
+         then $(MAKE) update-ChezScheme-normal ; \
+         else $(MAKE) update-ChezScheme-as-extra ; fi
+
+update-ChezScheme-normal:
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git pull -q && git submodule -q init && git submodule -q update
+
+update-ChezScheme-as-extra:
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme && git pull -q
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/nanopass && git pull origin master -q
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/stex && git pull origin master -q
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/zlib && git pull origin master -q
+	cd $(BUILD_FOR_FOR_SCHEME_DIR)/ChezScheme/lz4 && git pull origin master -q
 
 WIN32_CS_COPY_ARGS_EXCEPT_PKGS_SUT = SRC_CATALOG="$(SRC_CATALOG)" RACKETCS_SUFFIX="$(RACKETCS_SUFFIX)" \
                                      SCHEME_SRC="$(SCHEME_SRC)" EXTRA_REPOS_BASE="$(EXTRA_REPOS_BASE)"

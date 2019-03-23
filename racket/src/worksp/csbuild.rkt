@@ -67,7 +67,8 @@
 
 ;; ----------------------------------------
 
-(let ([submodules '("nanopass" "stex" "zlib" "lz4")])
+(let ([submodules '("nanopass"  "stex"   "zlib"   "lz4")]
+      [readmes    '("ReadMe.md" "ReadMe" "README" "README.md")])  
   (define (clone from to [git-clone-args '()])
     (apply system*! (append
                      (list "git"
@@ -76,13 +77,15 @@
                      (list from to))))
   (cond
     [extra-repos-base
-     ;; Intentionally not using `git-clone-args`
+     ;; Intentionally not using `git-clone-args`, because dumb transport
+     ;; (likely for `extra-repos-base`) does not support shallow copies
      (unless (directory-exists? scheme-dir)
        (clone (format "~aChezScheme/.git" extra-repos-base)
               scheme-dir))
-     (for ([submodule (in-list submodules)])
+     (for ([submodule (in-list submodules)]
+           [readme (in-list readmes)])
        (define dir (build-path scheme-dir submodule))
-       (unless (directory-exists? (build-path dir ".git"))
+       (unless (file-exists? (build-path dir readme))
          (clone (format "~a~a/.git" extra-repos-base submodule)
                 (build-path scheme-dir submodule))))
      (when pull?
@@ -90,7 +93,7 @@
          (system*! "git" "pull")
          (for ([submodule (in-list submodules)])
            (parameterize ([current-directory (build-path submodule)])
-             (system*! "git" "pull")))))]
+             (system*! "git" "pull" "origin" "master")))))]
     [else
      (unless (directory-exists? scheme-dir)
        (clone "https://github.com/mflatt/ChezScheme"
