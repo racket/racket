@@ -8,10 +8,12 @@
 (provide define-vector-wraps)
 
 (define-syntax-rule (define-vector-wraps
+                      ; inputs
                       fXvector-str
                       fX?-str fX?
                       fXvector? fXvector-length fXvector-ref fXvector-set! make-fXvector
                       unsafe-fXvector-ref unsafe-fXvector-set! unsafe-fXvector-length
+                      ; outputs
                       in-fXvector*
                       in-fXvector
                       for/fXvector
