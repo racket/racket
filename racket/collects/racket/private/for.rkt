@@ -22,6 +22,7 @@
              for for*
              for/list for*/list
              for/vector for*/vector
+             for/string for*/string
              for/lists for*/lists
              for/and for*/and
              for/or for*/or
