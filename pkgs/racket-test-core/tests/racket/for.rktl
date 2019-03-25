@@ -265,7 +265,7 @@
 (test "llllmnlnp" 'for*/string (for*/string ((i (in-range 3))
                                              (j (in-range 3)))
                                  (integer->char (+ 108 i j))
-                                 (integer->char (+ 108 (* i j))))
+                                 (integer->char (+ 108 (* i j)))))
 (test "llllmnlnp" 'for*/string-fast (for*/string #:length 9 ((i (in-range 3))
                                                              (j (in-range 3)))
                                       (integer->char (+ 108 i j))
@@ -291,7 +291,7 @@
       (vector-length (for*/vector #:length 5 ((i (in-range 3)) (j (in-range 3))) (+ i j))))
 
 (let ((s (string-append "ij" (make-string 1))))
-  (test v 'for/string-short-iter (for/string #:length 3 ((i (in-range 2)))
+  (test s 'for/string-short-iter (for/string #:length 3 ((i (in-range 2)))
                                    (integer->char (+ 105 i)))))
 
 (let ((s (make-string 10)))
