@@ -22,6 +22,7 @@
              for for*
              for/list for*/list
              for/vector for*/vector
+             for/bytes for*/bytes
              for/string for*/string
              for/lists for*/lists
              for/and for*/and
@@ -1771,6 +1772,17 @@
     (vector-copy! new-vec 0 vec 0 i)
     new-vec)
 
+  (define (grow-bytes b)
+    (define n (bytes-length b))
+    (define new-b (make-bytes (* 2 n)))
+    (bytes-copy! new-b 0 b 0 n)
+    new-b)
+
+  (define (shrink-bytes b i)
+    (define new-b (make-bytes i))
+    (bytes-copy! new-b 0 b 0 i)
+    new-b)
+
   (define (grow-string s)
     (define n (string-length s))
     (define new-s (make-string (* 2 n)))
@@ -1798,6 +1810,16 @@
          unsafe-vector*-set!
          grow-vector
          shrink-vector))
+
+    ;; VectorLikeOps
+    ;; where type Vec = (and/c bytes? (not/c immutable?))
+    ;;   and type Elem = Byte
+    (define bytes-vec-like-ops
+      #'(make-bytes
+         unsafe-bytes-length
+         unsafe-bytes-set!
+         grow-bytes
+         shrink-bytes))
 
     ;; VectorLikeOps
     ;; where type Vec = (and/c string? (not/c immutable?))
@@ -1897,6 +1919,12 @@
 
   (define-syntax (for*/vector stx)
     (for_/vector stx stx #'for*/vector #'for*/fold/derived #t vector-vec-like-ops #'0))
+
+  (define-syntax (for/bytes stx)
+    (for_/vector stx stx #'for/bytes #'for/fold/derived #f bytes-vec-like-ops #'0))
+
+  (define-syntax (for*/bytes stx)
+    (for_/vector stx stx #'for*/bytes #'for*/fold/derived #t bytes-vec-like-ops #'0))
 
   (define-syntax (for/string stx)
     (for_/vector stx stx #'for/string #'for/fold/derived #f string-vec-like-ops #'#\nul))
