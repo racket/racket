@@ -8,7 +8,8 @@
 (define timeout 30)
 
 (define (url->port url)
-  (get-pure-port (string->url url)))
+  (get-pure-port (string->url url)
+                 #:redirections 5))
 
 (define error-value
   (case-lambda
