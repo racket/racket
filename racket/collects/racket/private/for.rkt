@@ -1809,7 +1809,9 @@
          grow-string
          shrink-string)))
 
-  (define-for-syntax (for_/vector stx orig-stx for_/vector-stx for_/fold/derived-stx wrap-all? vec-like-ops)
+  (define-for-syntax (for_/vector stx orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?
+                                  vec-like-ops
+                                  fill-default)
     (syntax-case stx ()
       [(_ (for-clause ...) body ...)
        (with-syntax ([orig-stx orig-stx]
@@ -1884,21 +1886,23 @@
                    (unsafe-fx+ 1 i)))
                 v)))))]
       [(_ #:length length-expr (for-clause ...) body ...)
-       (for_/vector #'(fv #:length length-expr #:fill 0 (for-clause ...) body ...) 
-                    orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?
-                    vec-like-ops)]))
+       (with-syntax ([fill-default fill-default])
+         (for_/vector #'(fv #:length length-expr #:fill fill-default (for-clause ...) body ...) 
+                      orig-stx for_/vector-stx for_/fold/derived-stx wrap-all?
+                      vec-like-ops
+                      #'fill-default))]))
 
   (define-syntax (for/vector stx)
-    (for_/vector stx stx #'for/vector #'for/fold/derived #f vector-vec-like-ops))
+    (for_/vector stx stx #'for/vector #'for/fold/derived #f vector-vec-like-ops #'0))
 
   (define-syntax (for*/vector stx)
-    (for_/vector stx stx #'for*/vector #'for*/fold/derived #t vector-vec-like-ops))
+    (for_/vector stx stx #'for*/vector #'for*/fold/derived #t vector-vec-like-ops #'0))
 
   (define-syntax (for/string stx)
-    (for_/vector stx stx #'for/string #'for/fold/derived #f string-vec-like-ops))
+    (for_/vector stx stx #'for/string #'for/fold/derived #f string-vec-like-ops #'#\nul))
 
   (define-syntax (for*/string stx)
-    (for_/vector stx stx #'for*/string #'for*/fold/derived #t string-vec-like-ops))
+    (for_/vector stx stx #'for*/string #'for*/fold/derived #t string-vec-like-ops #'#\nul))
 
   (define-for-syntax (do-for/lists for/fold-id stx)
     (define (do-without-result-clause normalized-stx)
