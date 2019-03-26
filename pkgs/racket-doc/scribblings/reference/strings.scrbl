@@ -497,8 +497,9 @@ replaced if @racket[all?] is @racket[#f].
                        [#:repeat? repeat? any/c #f])
          (listof string?)]{
 
-Splits the input @racket[str] on whitespaces, returning a list of
-substrings of @racket[str] that are separated by @racket[sep]. The
+Splits the input @racket[str] on @racket[sep], returning a list of
+substrings of @racket[str] that are separated by @racket[sep], defaulting 
+to splitting the input on whitespaces. The
 input is first trimmed using @racket[sep] (see @racket[string-trim]),
 unless @racket[trim?] is @racket[#f]. Empty matches are handled in the
 same way as for @racket[regexp-split]. As a special case, if
