@@ -164,19 +164,23 @@ does not satisfy the predicate, @racket[#f] is returned and the
 identifier is not recorded as a disappeared use.
 }
 
-@defproc[(record-disappeared-uses [id (or/c identifier? (listof identifier?))])
+@defproc[(record-disappeared-uses [id (or/c identifier? (listof identifier?))]
+                                  [intro? boolean? (syntax-transforming?)])
          void?]{
 
-Add @racket[id] to @racket[(current-recorded-disappeared-uses)] after calling
-@racket[syntax-local-introduce] on the identifier. If @racket[id] is a list,
-perform the same operation on all the identifiers.
+Add @racket[id] to @racket[(current-recorded-disappeared-uses)]. If
+@racket[id] is a list, perform the same operation on all the
+identifiers. If @racket[intro?] is true, then
+@racket[syntax-local-introduce] is first called on the identifiers.
 
 If not used within the extent of a @racket[with-disappeared-uses] 
 form or similar, has no effect.
 
 @history[#:changed "6.5.0.7"
          @elem{Added the option to pass a single identifier instead of
-               requiring a list.}]
+               requiring a list.}
+         #:changed "7.2.0.11"
+         @elem{Added the @racket[intro?] argument.}]
 }
 
 
