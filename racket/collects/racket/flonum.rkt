@@ -23,12 +23,13 @@
   "flonum?" flonum?
   flvector? flvector-length flvector-ref flvector-set! make-flvector
   unsafe-flvector-ref unsafe-flvector-set! unsafe-flvector-length
+  0.0
+  ;---
   in-flvector*
   in-flvector
   for/flvector
   for*/flvector
   flvector-copy
-  0.0
   check-flvector)
 
 (define (flrandom r)

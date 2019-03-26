@@ -150,12 +150,13 @@
   "boolean?" boolean?
   bit-vector? bit-vector-length bit-vector-ref bit-vector-set! make-bit-vector
   unsafe-bit-vector-ref bit-vector-set! bit-vector-length
+  #f
+  ;---
   in-bit-vector*
   in-bit-vector
   for/bit-vector
   for*/bit-vector
   bit-vector-copy
-  #f
   check-bitvector)
 
 ;; A bit vector is represented as bytes.
