@@ -207,7 +207,8 @@ equivalent to including each of the alternatives in the pattern via
 are prefixed with the name given to @racket[~eh-var].
 
 Unlike syntax classes, ellipsis-head alternative sets must be defined
-before they are referenced.
+before they are referenced, and they do not delimit cuts (use
+@racket[~delimit-cut] instead).
 }
 
 @racketgrammar*[#:literals (~eh-var)
