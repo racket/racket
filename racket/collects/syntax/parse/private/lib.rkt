@@ -15,7 +15,7 @@
          exact-integer
          exact-nonnegative-integer
          exact-positive-integer
-
+         
          id
          nat
          char
@@ -38,6 +38,8 @@
 (define exact-integer-stx? (stxof exact-integer?))
 (define exact-nonnegative-integer-stx? (stxof exact-nonnegative-integer?))
 (define exact-positive-integer-stx? (stxof exact-positive-integer?))
+(define regexp-stx? (stxof regexp?))
+(define byte-regexp-stx? (stxof byte-regexp?))
 
 
 ;; == Integrable syntax classes ==
@@ -59,10 +61,16 @@
 
 (define-integrable-syntax-class -string (quote "string") string-stx?)
 (define-integrable-syntax-class -bytes (quote "bytes") bytes-stx?)
+(define-integrable-syntax-class -regexp (quote "regexp") regexp-stx?)
+(define-integrable-syntax-class -byte-regexp (quote "byte-regexp") byte-regexp-stx?)
+
+;; Overloading the meaning of existing identifiers
 (begin-for-syntax
   (set-box! alt-stxclass-mapping
             (list (cons #'string (syntax-local-value #'-string))
-                  (cons #'bytes  (syntax-local-value #'-bytes)))))
+                  (cons #'bytes  (syntax-local-value #'-bytes))
+                  (cons #'regexp (syntax-local-value #'-regexp))
+                  (cons #'byte-regexp (syntax-local-value #'-byte-regexp)))))
 
 ;; Aliases
 (define-syntax id (make-rename-transformer #'identifier))
