@@ -168,17 +168,17 @@
 
 (define (disappeared! x)
   (cond [(identifier? x)
-         (when (syntax-property x 'disappeared-uses)
-           (record-disappeared-uses (syntax-property x 'disappeared-uses)))
          (record-disappeared-uses (list x))]
         [(and (stx-pair? x) (identifier? (stx-car x)))
-         (when (syntax-property (stx-car x) 'disappeared-uses)
-           (record-disappeared-uses (syntax-property (stx-car x) 'disappeared-uses)))
          (record-disappeared-uses (list (stx-car x)))]
         [else
          (raise-type-error 'disappeared!
                            "identifier or syntax with leading identifier"
                            x)]))
+
+(define (propagate-disappeared! stx)
+  (cond [(and (syntax? stx) (syntax-property stx 'disappeared-use))
+         => (lambda (xs) (record-disappeared-uses (filter identifier? (flatten xs)) #f))]))
 
 ;; ---
 
@@ -451,6 +451,7 @@
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
   (define not-shadowed? (make-not-shadowed? decls))
+  (propagate-disappeared! stx)
   (check-pattern
   (syntax-case* stx (~var ~literal ~datum ~and ~or ~or* ~alt ~not ~rest ~describe
                      ~seq ~optional ~! ~bind ~fail ~parse ~do ~undo
@@ -626,6 +627,7 @@
     (unless (stx-list? stx) (wrong-syntax stx "expected sequence of patterns"))
     (apply append (map recur (cdr (stx->list stx)))))
   (define not-shadowed? (make-not-shadowed? decls))
+  (propagate-disappeared! stx)
   (syntax-case* stx (~eh-var ~or ~alt ~between ~optional ~once)
                 (make-not-shadowed-id=? decls)
     [id
