@@ -29,9 +29,9 @@
   (-> syntax?
       boolean?)]
  [parse-rhs
-  (-> syntax? boolean?
-      #:context (or/c false/c syntax?)
-      rhs?)]
+  (->* [syntax? boolean? #:context (or/c false/c syntax?)]
+       [#:default-description (or/c #f string?)]
+       rhs?)]
  [parse-pattern+sides
   (-> syntax? syntax?
       #:splicing? boolean?
@@ -178,8 +178,8 @@
 
 ;; ---
 
-;; parse-rhs : Syntax Boolean #:context Syntax -> RHS
-(define (parse-rhs stx splicing? #:context ctx)
+;; parse-rhs : Syntax Boolean #:context Syntax #:default-description (U String #f) -> RHS
+(define (parse-rhs stx splicing? #:context ctx #:default-description [default-description #f])
   (call/txlifts
    (lambda ()
      (parameterize ((current-syntax-context ctx))
@@ -194,7 +194,7 @@
          (or attributes
              (filter (lambda (a) (symbol-interned? (attr-name a)))
                      (intersect-sattrss (map variant-attrs variants)))))
-       (make rhs sattrs transp? description variants
+       (make rhs sattrs transp? (or description #`(quote #,default-description)) variants
              (append (get-txlifts-as-definitions) defs)
              commit? delimit-cut?)))))
 

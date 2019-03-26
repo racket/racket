@@ -54,11 +54,11 @@
         (let-values ([(name formals arity)
                       (let ([p (check-stxclass-header #'header stx)])
                         (values (car p) (cadr p) (caddr p)))])
-          (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx)])
+          (let ([the-rhs (parse-rhs #'rhss splicing? #:context stx
+                                    #:default-description (symbol->string (syntax-e name)))])
             (with-syntax ([name name]
                           [formals formals]
-                          [desc (cond [(rhs-description the-rhs) => constant-desc]
-                                      [else (symbol->string (syntax-e name))])]
+                          [desc (cond [(rhs-description the-rhs) => constant-desc] [else #f])]
                           [parser (generate-temporary (format-symbol "parse-~a" name))]
                           [arity arity]
                           [attrs (rhs-attrs the-rhs)]
@@ -155,7 +155,7 @@
    (with-syntax ([formals* formals*]
                  [(def ...) defs]
                  [((vdef ...) ...) vdefss]
-                 [description (or description (symbol->string (syntax-e name)))]
+                 [description description]
                  [transparent? transparent?]
                  [delimit-cut? delimit-cut?]
                  [body body])
