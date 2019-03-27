@@ -55,6 +55,7 @@ values would be equal. See also @racket[gen:equal+hash] and @racket[prop:imperso
 @examples[
 (equal? 'yes 'yes)
 (equal? 'yes 'no)
+(equal? (* 6 7) 42)
 (equal? (expt 2 100) (expt 2 100))
 (equal? 2 2.0)
 (let ([v (mcons 1 2)]) (equal? v v))
@@ -82,6 +83,7 @@ in the case of @tech{complex numbers}. Two characters are
 @examples[
 (eqv? 'yes 'yes)
 (eqv? 'yes 'no)
+(eqv? (* 6 7) 42)
 (eqv? (expt 2 100) (expt 2 100))
 (eqv? 2 2.0)
 (let ([v (mcons 1 2)]) (eqv? v v))
@@ -95,11 +97,14 @@ in the case of @tech{complex numbers}. Two characters are
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
 Return @racket[#t] if @racket[v1] and @racket[v2] refer to the same
-object, @racket[#f] otherwise. See also @secref["model-eq"].
+object, @racket[#f] otherwise. As a special case among @tech{numbers}, 
+two @tech{fixnums} that are @racket[=] are also the same according 
+to @racket[eq?]. See also @secref["model-eq"]. 
 
 @examples[
 (eq? 'yes 'yes)
 (eq? 'yes 'no)
+(eq? (* 6 7) 42)
 (eq? (expt 2 100) (expt 2 100))
 (eq? 2 2.0)
 (let ([v (mcons 1 2)]) (eq? v v))
