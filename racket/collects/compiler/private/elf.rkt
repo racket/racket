@@ -48,7 +48,7 @@
                        sh-offset sh-esize sh-ecount
                        class format sh-str-index)
   #:transparent)
-(struct section (name-offset addr offset size type)
+(struct section (name-offset addr offset size type alloc?)
   #:transparent)
 (struct program (offset vaddr paddr size)
   #:transparent)
@@ -206,7 +206,8 @@
                              [info (read-word)]
                              [align (read-xword)]
                              [esize (read-xword)])
-                         (section name-offset addr offset size type)))])
+			 (define alloc? (bitwise-bit-set? flags 1))
+                         (section name-offset addr offset size type alloc?)))])
                 ;; Read program headers ------------------------
                 (let ([programs
                        (for/list ([i (in-range ph-ecount)])
@@ -253,7 +254,8 @@
 
 (define (find-section-by-offset offset sections)
   (for/or ([s (in-list sections)])
-    (and (offset . >= . (section-offset s))
+    (and (section-alloc? s)
+         (offset . >= . (section-offset s))
          (offset . < . (+ (section-offset s)
                           (section-size s)))
          s)))
