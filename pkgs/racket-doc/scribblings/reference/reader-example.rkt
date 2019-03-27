@@ -74,8 +74,8 @@
                                                              [(integer? v) v]
                                                              [(real? v) `(/ ,(numerator v)
                                                                             ,(denominator v))]
-                                                             [(complex? v) `(make-complex ,(loop (real-part v))
-                                                                                          ,(loop (imag-part v)))])))]
+                                                             [(complex? v) `(make-rectangular ,(loop (real-part v))
+                                                                                              ,(loop (imag-part v)))])))]
                                                      [(list? v) `(list ,@(map loop v))]
                                                      [(vector? v) `(vector ,@(map loop (vector->list v)))]
                                                      [(box? v) `(box ,(loop (unbox v)))]
