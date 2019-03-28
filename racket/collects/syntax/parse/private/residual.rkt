@@ -240,7 +240,7 @@
                        ;; Don't extend es! That way we don't get spurious "expected ()"
                        ;; that *should* have been cancelled out by ineffable pair failures.
                        |#)
-                   (values 'fail (failure pr es)))])))))
+                   (values 'fail (failure* pr es)))])))))
 
 (provide illegal-cut-error)
 
