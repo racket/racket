@@ -55,6 +55,8 @@ code does the parsing and validation of the syntax.
 ;;         'desc => #:pre/desc or #:post/desc
 ;;         'bool => #:pre or #:post
 (struct pre/post (vars kind exp quoted-dep-src-code) #:transparent)
+(struct pre/post-pre pre/post () #:transparent)
+(struct pre/post-post pre/post () #:transparent)
 
 (define (parse-->i stx)
   (if (identifier? stx)
@@ -487,12 +489,12 @@ code does the parsing and validation of the syntax.
                           [x (void)])
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (loop #'pre-leftover 
-                              (cons (pre/post (syntax->list #'(id ...)) 
-                                              (if (equal? '#:pre/desc (syntax-e #'kwd))
-                                                  'desc
-                                                  'bool)
-                                              #'pre-cond
-                                              (compute-quoted-src-expression #'pre-cond))
+                              (cons (pre/post-pre (syntax->list #'(id ...))
+                                                  (if (equal? '#:pre/desc (syntax-e #'kwd))
+                                                      'desc
+                                                      'bool)
+                                                  #'pre-cond
+                                                  (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(kwd . rest)
                       (or (equal? (syntax-e #'kwd) '#:pre)
@@ -523,10 +525,10 @@ code does the parsing and validation of the syntax.
                            stx
                            #'str))
                         (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) 
-                                              (syntax-e #'str)
-                                              #'pre-cond
-                                              (compute-quoted-src-expression #'pre-cond))
+                              (cons (pre/post-pre (syntax->list #'(id ...))
+                                                  (syntax-e #'str)
+                                                  #'pre-cond
+                                                  (compute-quoted-src-expression #'pre-cond))
                                     conditions)))]
                      [(#:pre/name . rest)
                       (raise-syntax-error
@@ -564,12 +566,12 @@ code does the parsing and validation of the syntax.
                                 stx #'post-cond)]
                           [_ (void)])
                         (loop #'leftover
-                              (cons (pre/post (syntax->list #'(id ...))
-                                              (if (equal? (syntax-e #'kwd) '#:post/desc)
-                                                  'desc
-                                                  'bool)
-                                              #'post-cond
-                                              (compute-quoted-src-expression #'post-cond))
+                              (cons (pre/post-post (syntax->list #'(id ...))
+                                                   (if (equal? (syntax-e #'kwd) '#:post/desc)
+                                                       'desc
+                                                       'bool)
+                                                   #'post-cond
+                                                   (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
                      [(kwd a b . stuff)
                       (or (equal? (syntax-e #'kwd) '#:post/desc)
@@ -589,7 +591,7 @@ code does the parsing and validation of the syntax.
                          (format "expected a sequence of variables and an expression to follow ~a"
                                  (syntax-e #'kwd))
                          stx #'a))]
-                     [(#:post/name (id ...) str post-cond . pre-leftover)
+                     [(#:post/name (id ...) str post-cond . post-leftover)
                       (begin
                         (for-each (λ (x) (check-id stx x)) (syntax->list #'(id ...)))
                         (syntax-case range (any)
@@ -604,9 +606,10 @@ code does the parsing and validation of the syntax.
                             " declaration to be a string")
                            stx
                            #'str))
-                        (loop #'pre-leftover
-                              (cons (pre/post (syntax->list #'(id ...)) (syntax-e #'str) #'post-cond
-                                              (compute-quoted-src-expression #'post-cond))
+                        (loop #'post-leftover
+                              (cons (pre/post-post (syntax->list #'(id ...)) (syntax-e #'str)
+                                                   #'post-cond
+                                                   (compute-quoted-src-expression #'post-cond))
                                     post-conds)))]
                      [(#:post/name . stuff)
                       (begin
@@ -661,4 +664,6 @@ code does the parsing and validation of the syntax.
  (struct-out arg)
  (struct-out lres)
  (struct-out eres)
- (struct-out pre/post))
+ (struct-out pre/post)
+ (struct-out pre/post-pre)
+ (struct-out pre/post-post))

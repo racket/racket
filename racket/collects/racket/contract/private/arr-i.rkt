@@ -13,10 +13,10 @@
                      racket/stxparam-exptime
                      syntax/name
                      "arr-i-parse.rkt"
-                     
+
                      (rename-in
                       syntax/private/boundmap
-                      ;; the private version of the library 
+                      ;; the private version of the library
                       ;; (the one without contracts)
                       ;; has these old, wrong names in it.
                       [make-module-identifier-mapping make-free-identifier-mapping]
@@ -33,18 +33,18 @@
   (define indy-arg-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x)))
                                   (->i-indy-arg-ctcs ctc)))
   (define rng-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x))) (->i-rng-ctcs ctc)))
-  (define indy-rng-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x))) 
+  (define indy-rng-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x)))
                                   (->i-indy-rng-ctcs ctc)))
   (define has-rest (->i-rest ctc))
   (define here (->i-here ctc))
-  
+
   (define blames (for/list ([blame-info (->i-blame-info ctc)])
                    (define name (vector-ref blame-info 0))
                    (define indy? (vector-ref blame-info 1))
                    (define dom? (vector-ref blame-info 2))
                    (define non-indy-blame
                      (blame-add-context
-                      blame 
+                      blame
                       (format (if dom? "the ~a argument of" "the ~a result of")
                               name)
                       #:swap? dom?))
@@ -54,39 +54,39 @@
   (define swapped-blame (blame-swap blame))
   (define indy-dom-blame (blame-replace-negative swapped-blame here))
   (define indy-rng-blame (blame-replace-negative blame here))
-  
-  (define partial-doms 
+
+  (define partial-doms
     (for/list ([dom-proj (in-list arg-ctc-projs)]
                [pr (in-list (->i-arg-ctcs ctc))])
-      (dom-proj (blame-add-context swapped-blame 
+      (dom-proj (blame-add-context swapped-blame
                                    (format "the ~a argument of" (->i-arg-name pr))))))
   (define partial-indy-doms
     (for/list ([dom-proj (in-list indy-arg-ctc-projs)]
                [dom-pr (in-list (->i-indy-arg-ctcs ctc))])
-      (dom-proj (blame-add-context indy-dom-blame 
+      (dom-proj (blame-add-context indy-dom-blame
                                    (format "the ~a argument of" (car dom-pr))))))
-  
-  (define partial-rngs 
+
+  (define partial-rngs
     (for/list ([rng-proj (in-list rng-ctc-projs)]
                [pr (in-list (->i-rng-ctcs ctc))]
                [n (in-naturals 1)])
       (define name (car pr))
-      (rng-proj (blame-add-context blame 
+      (rng-proj (blame-add-context blame
                                    (if (eq? '_ name)
                                        (if (null? (cdr rng-ctc-projs))
                                            "the result of"
                                            (format "the ~a result of" (n->th n)))
                                        (format "the ~a result of" name))))))
-  (define partial-indy-rngs 
+  (define partial-indy-rngs
     (for/list ([rng-proj (in-list indy-rng-ctc-projs)]
                [rng-pr (in-list (->i-indy-rng-ctcs ctc))])
-      (rng-proj (blame-add-context indy-rng-blame (format "the ~a result of" 
+      (rng-proj (blame-add-context indy-rng-blame (format "the ~a result of"
                                                           (car rng-pr))))))
   (list* c-or-i-procedure
          (λ (val mtd?)
            (if has-rest
                (check-procedure/more val mtd?
-                                     (->i-mandatory-args ctc) 
+                                     (->i-mandatory-args ctc)
                                      (->i-mandatory-kwds ctc)
                                      (->i-opt-kwds ctc)
                                      blame #f)
@@ -143,13 +143,13 @@
           (values (λ (f)
                     (call-with-values
                      (λ ()
-                       (define kwd-args 
+                       (define kwd-args
                          (for/list ([kwd-gen (in-list kwd-gens)])
                            (kwd-gen)))
-                       (define regular-args 
+                       (define regular-args
                          (for/list ([gen (in-list gens)])
                            (gen)))
-                       (keyword-apply 
+                       (keyword-apply
                         f
                         dom-kwds
                         kwd-args
@@ -187,7 +187,7 @@
 ;; rest : (or/c symbol? #f)
 ;; here : quoted-spec for use in assigning indy blame
 ;; mk-wrapper : creates the a wrapper function that implements the contract checking
-(struct ->i (blame-info 
+(struct ->i (blame-info
              arg-ctcs arg-dep-ctcs indy-arg-ctcs
              rng-ctcs rng-dep-ctcs indy-rng-ctcs
              pre/post-procs
@@ -344,7 +344,7 @@
 ;; the second result maps back from the sorted order
 ;;   (in the first result) to the original order (in `args`)
 (define-for-syntax (find-ordering args)
-  
+
   #|
 
 This uses a variation of the topological sorting algorithm
@@ -381,7 +381,13 @@ evaluted left-to-right.)
     (hash-set! numbers arg i)
     (free-identifier-mapping-put! id->arg/res (get-var arg) arg))
 
-  
+  ;; track the original order of the pre/post conditions
+  (define pre/post-numbers (make-hasheq))
+  (let ([i 0])
+    (for ([arg (in-list args)])
+      (when (pre/post? arg)
+        (hash-set! pre/post-numbers arg i)
+        (set! i (+ i 1)))))
   ;; build the graph, where `comes-before` are the backwards
   ;; edges and `comes-after` are the forwards edges
   ;; we use new temporary variables for the pre/posts
@@ -412,13 +418,13 @@ evaluted left-to-right.)
          comes-after
          dep-id
          (cons arg (free-identifier-mapping-get comes-after dep-id))))))
-  
+
   (define sorted '())
   (define no-incoming-edges
     (for/list ([arg (in-list args)]
                #:when (null? (free-identifier-mapping-get comes-before (get-var arg))))
       arg))
-  
+
   (define (pick-next-node)
     (define least-node
       (let loop ([nodes (cdr no-incoming-edges)]
@@ -434,7 +440,7 @@ evaluted left-to-right.)
               (loop (cdr nodes) least-node)])])))
     (set! no-incoming-edges (remove least-node no-incoming-edges))
     least-node)
-  
+
   (define (remove-edge from to)
     (define from-id (get-var from))
     (define to-id (get-var to))
@@ -446,7 +452,7 @@ evaluted left-to-right.)
      comes-after
      from-id
      (remove to (free-identifier-mapping-get comes-after from-id))))
-  
+
   (let loop ()
     (unless (null? no-incoming-edges)
       (define n (pick-next-node))
@@ -456,12 +462,13 @@ evaluted left-to-right.)
         (when (null? (free-identifier-mapping-get comes-before (get-var m)))
           (set! no-incoming-edges (cons m no-incoming-edges))))
       (loop)))
-  
+
   (values sorted
           (for/list ([arg (in-list sorted)])
             (if (arg/res? arg)
                 (hash-ref numbers arg)
-                "pre/post, which has an index we don't want to use"))))
+                "pre/post, which has an index we don't want to use"))
+          pre/post-numbers))
 
 ;; args/vars->arglist : (listof arg?) (vectorof identifier?) -> syntax
 ;; (vector-length vars) = (length args)
@@ -513,8 +520,8 @@ evaluted left-to-right.)
 
     (define kwd-args (filter arg-kwd args))
     (define non-kwd-args (filter (λ (x) (not (arg-kwd x))) args))
-    
-    (define sorted-kwd/arg-pairs 
+
+    (define sorted-kwd/arg-pairs
       (sort
        (map (λ (arg) (cons (arg-kwd arg) (hash-ref wrapper-args arg))) kwd-args)
        (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y))))))
@@ -523,8 +530,8 @@ evaluted left-to-right.)
     (cond
       [(and opts? (ormap arg-kwd args))
        ;; has both optional and keyword args
-       #`(keyword-return/no-unsupplied 
-          #,(if (null? result-checkers) #f (car result-checkers)) 
+       #`(keyword-return/no-unsupplied
+          #,(if (null? result-checkers) #f (car result-checkers))
           '#,(map car sorted-kwd/arg-pairs)
           (list #,@keyword-arguments)
           #,(if rst
@@ -550,15 +557,15 @@ evaluted left-to-right.)
          [(null? keyword-arguments)
           #`(values #,@result-checkers #,@this-params #,@regular-arguments)]
          [rst
-          #`(apply values #,@result-checkers (list #,@keyword-arguments) 
+          #`(apply values #,@result-checkers (list #,@keyword-arguments)
                    #,@this-params #,@regular-arguments rest-args)]
          [else
-          #`(values #,@result-checkers (list #,@keyword-arguments) 
+          #`(values #,@result-checkers (list #,@keyword-arguments)
                     #,@this-params #,@regular-arguments)])])))
 
 (define (return/no-unsupplied res-checker rest-args . args)
   (if res-checker
-      (apply values res-checker 
+      (apply values res-checker
              (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))
       (apply values (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))))
 
@@ -568,7 +575,7 @@ evaluted left-to-right.)
                            [kwd-args kwd-args])
                   (cond
                     [(null? kwds) (values '() '())]
-                    [else 
+                    [else
                      (let-values ([(kwds-rec args-rec) (loop (cdr kwds) (cdr kwd-args))])
                        (cond
                          [(eq? (car kwd-args) the-unsupplied-arg)
@@ -583,10 +590,10 @@ evaluted left-to-right.)
       [(null? supplied-kwd-args)
        (apply values (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
       [res-checker
-       (apply values res-checker supplied-kwd-args 
+       (apply values res-checker supplied-kwd-args
               (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))]
       [else
-       (apply values supplied-kwd-args 
+       (apply values supplied-kwd-args
               (append (filter (λ (x) (not (eq? x the-unsupplied-arg))) args) rest-args))])))
 
 (define-for-syntax (maybe-generate-temporary x)
@@ -597,7 +604,7 @@ evaluted left-to-right.)
     (apply
      string-append
      (for/list ([var-info (in-list var-infos)])
-       (format "\n      ~s: ~e" 
+       (format "\n      ~s: ~e"
                (list-ref var-info 0)
                (list-ref var-info 1)))))
   (define msg
@@ -606,7 +613,7 @@ evaluted left-to-right.)
       [(or (equal? kind 'bool)
            (and (equal? kind 'desc)
                 (equal? condition-result #f)))
-       (string-append 
+       (string-append
         (if pre? "#:pre" "#:post")
         " condition violation"
         (if (null? var-infos)
@@ -617,65 +624,53 @@ evaluted left-to-right.)
        (pre-post/desc-result->string condition-result pre? '->i)]))
   (raise-blame-error blame #:missing-party neg-party val "~a" msg))
 
-(define-for-syntax (add-pre-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
-                                 call-stx)
-  #`(begin #,@(for/list ([pre (in-list (istx-pre an-istx))]
-                         [i (in-naturals)])
-                (define id (string->symbol (format "pre-proc~a" i)))
-                #`(let ([condition-result
-                         (#,id #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars
-                                                                     ordered-args
-                                                                     indy-res-vars
-                                                                     ordered-ress
-                                                                     var))
-                                       (pre/post-vars pre)))])
-                    (unless #,(if (equal? (pre/post-kind pre) 'desc)
-                                  #'(equal? condition-result #t)
-                                  #'condition-result)
-                      (signal-pre/post #t
-                                       val
-                                       '#,(pre/post-kind pre)
-                                       swapped-blame
-                                       neg-party
-                                       condition-result
-                                       #,@(map (λ (x) #`(list '#,x 
-                                                              #,(arg/res-to-indy-var indy-arg-vars 
-                                                                                     ordered-args 
-                                                                                     indy-res-vars 
-                                                                                     ordered-ress 
-                                                                                     x)))
-                                               (pre/post-vars pre))))))
+(define-for-syntax (add-pre-conds an-istx pre-indicies
+                                  indy-arg-vars ordered-args indy-res-vars ordered-ress
+                                  call-stx)
+  call-stx #;
+  #`(begin #,@(for/list ([pre (in-list (istx-pre an-istx))])
+                (build-pre/post-code pre pre-indicies
+                                     indy-arg-vars ordered-args indy-res-vars ordered-ress))
            #,call-stx))
 
-(define-for-syntax (add-post-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
-                                  call-stx)
-  #`(begin #,@(for/list ([post (in-list (istx-post an-istx))]
-                         [i (in-naturals)])
-                (define id (string->symbol (format "post-proc~a" i)))
-                #`(let ([condition-result
-                         (#,id #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars 
-                                                                     ordered-args 
-                                                                     indy-res-vars 
-                                                                     ordered-ress 
-                                                                     var))
-                                       (pre/post-vars post)))])
-                (unless #,(if (equal? (pre/post-kind post) 'desc)
-                              #'(equal? condition-result #t)
-                              #'condition-result)
-                  (signal-pre/post
-                   #f
-                   val
-                   '#,(pre/post-kind post)
-                   blame
-                   neg-party
-                   condition-result
-                   #,@(map (λ (x) #`(list '#,x #,(arg/res-to-indy-var indy-arg-vars 
-                                                                      ordered-args 
-                                                                      indy-res-vars 
-                                                                      ordered-ress 
-                                                                      x)))
-                           (pre/post-vars post))))))
+(define-for-syntax (add-post-conds an-istx post-indices
+                                   indy-arg-vars ordered-args indy-res-vars ordered-ress
+                                   call-stx)
+  call-stx
+  #;
+  #`(begin #,@(for/list ([post (in-list (istx-post an-istx))])
+                (build-pre/post-code post post-indices
+                                     indy-arg-vars ordered-args indy-res-vars ordered-ress))
            #,call-stx))
+
+(define-for-syntax (build-pre/post-code a-pre/post pre-indicies/post-indicies
+                                        indy-arg-vars ordered-args indy-res-vars ordered-ress)
+  (define pre? (pre/post-pre? a-pre/post))
+  (define id (string->symbol (format (if pre? "pre-proc~a" "post-proc~a")
+                                     (hash-ref pre-indicies/post-indicies a-pre/post))))
+  #`(let ([condition-result
+           (#,id #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars
+                                                       ordered-args
+                                                       indy-res-vars
+                                                       ordered-ress
+                                                       var))
+                         (pre/post-vars a-pre/post)))])
+      (unless #,(if (equal? (pre/post-kind a-pre/post) 'desc)
+                    #'(equal? condition-result #t)
+                    #'condition-result)
+        (signal-pre/post
+         #,pre?
+         val
+         '#,(pre/post-kind a-pre/post)
+         #,(if pre? #'swapped-blame #'blame)
+         neg-party
+         condition-result
+         #,@(map (λ (x) #`(list '#,x #,(arg/res-to-indy-var indy-arg-vars
+                                                            ordered-args
+                                                            indy-res-vars
+                                                            ordered-ress
+                                                            x)))
+                 (pre/post-vars a-pre/post))))))
 
 ;; add-wrapper-let :
 ;;   syntax? -- placed into the body position of the generated let expression
@@ -693,19 +688,23 @@ evaluted left-to-right.)
 ;;   (vectorof identifier) -- wrapper-arg/ress, bound to the original, unwrapped values, sorted like
 ;;        original arg/ress (not evaluation order). the generated lets rebind these variables to
 ;;        their projected counterparts, with normal blame
-;;   (listof identifier) -- indy-arg/res-vars, bound to wrapped values with indy blame, 
+;;   (listof identifier) -- indy-arg/res-vars, bound to wrapped values with indy blame,
 ;;        sorted like `ordered-arg/reses`
+;;   (hash [pre/post -o> nat]) pre-indicies/post-indicies, indicates the original
+;;        ordering of the pre/post conditions (mapping from the order in indy-arg/res-vars
+;;        to the ordering in the original istx object, aka program order)
 ;;   (listof identifier) (listof arg/var) (listof identifier) (listof arg/var)
 ;;        the last four inputs are used only to call arg/res-to-indy-var.
-;; adds nested lets that bind the wrapper-args and the indy-arg/res-vars to projected values, 
+;; adds nested lets that bind the wrapper-args and the indy-arg/res-vars to projected values,
 ;; with 'body' in the body of the let also handles adding code to check to see if unsupplied
-;; args are present (skipping the contract check, if so) 
+;; args are present (skipping the contract check, if so)
 (define-for-syntax (add-wrapper-let body is-chaperone-contract? swapped-blame?
                                     ordered-arg/reses indicies
-                                    arg/res-proj-vars indy-arg/res-proj-vars 
+                                    arg/res-proj-vars indy-arg/res-proj-vars
                                     wrapper-arg/ress indy-arg/res-vars
+                                    pre-indicies/post-indicies
                                     indy-arg-vars ordered-args indy-res-vars ordered-ress)
-  
+
   (define (add-unsupplied-check an-arg/res wrapper-arg stx)
     (if (and (arg? an-arg/res)
              (arg-optional? an-arg/res))
@@ -788,23 +787,26 @@ evaluted left-to-right.)
                         #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))]
                  #,@indy-binding)
              #,body))]
-      [else body])))
+      [else
+       #`(begin #,(build-pre/post-code an-arg/res pre-indicies/post-indicies
+                                       indy-arg-vars ordered-args indy-res-vars ordered-ress)
+                #,body)])))
 
 
 ;;   (identifier arg -o> identifier) -- maps the original var in the arg to the corresponding indy-var
 ;;      free-identifier-mapping[id -o> (listof (list/c boolean?[indy?] boolean?[dom?]))]
-;; mutates blame-var-table to record which 
+;; mutates blame-var-table to record which
 ;; blame records needs to be computed (and passed in)
 (define-for-syntax (build-blame-ids ordered-args ordered-reses)
   (define blame-var-table (make-free-identifier-mapping))
   (define needed-blame-vars (make-hash))
-  
+
   (define (add-blame-var indy? dom? id)
     (define olds (free-identifier-mapping-get blame-var-table id (λ () '())))
     (define new (list indy? dom?))
     (unless (member new olds)
       (free-identifier-mapping-put! blame-var-table id (cons new olds))))
-  
+
   (define (build-some ordered-arg/reses swapped-blame?)
     (for ([an-arg/res (in-list ordered-arg/reses)])
       (when (and (arg/res? an-arg/res) (arg/res-vars an-arg/res))
@@ -812,7 +814,7 @@ evaluted left-to-right.)
         (if (eres? an-arg/res)
             (add-blame-var #f swapped-blame? (arg/res-var an-arg/res))
             (add-blame-var #f swapped-blame? (arg/res-var an-arg/res))))))
-  
+
   (build-some ordered-args #t)
   (build-some ordered-reses #f)
 
@@ -839,7 +841,7 @@ evaluted left-to-right.)
 ;; Returns an empty list if no result contracts and a list of a single syntax value
 ;; which should be a function from results to projection-applied versions of the same
 ;; if there are result contracts.
-(define-for-syntax (build-result-checkers an-istx
+(define-for-syntax (build-result-checkers an-istx post-indicies
                                           ordered-ress res-indices
                                           res-proj-vars indy-res-proj-vars
                                           wrapper-ress indy-res-vars
@@ -854,14 +856,16 @@ evaluted left-to-right.)
           [#,wrapper-ress-as-list
            (with-contract-continuation-mark
             blame+neg-party
-            #,(add-wrapper-let 
-               (add-post-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
-                              #`(values #,@wrapper-ress-as-list))
+            #,(add-wrapper-let
+               (add-post-conds an-istx post-indicies
+                               indy-arg-vars ordered-args indy-res-vars ordered-ress
+                               #`(values #,@wrapper-ress-as-list))
                (istx-is-chaperone-contract? an-istx)
                #f
                ordered-ress res-indices
-               res-proj-vars indy-res-proj-vars 
+               res-proj-vars indy-res-proj-vars
                wrapper-ress indy-res-vars
+               post-indicies
                indy-arg-vars ordered-args indy-res-vars ordered-ress))]
           [args
            (bad-number-of-results blame val
@@ -871,7 +875,7 @@ evaluted left-to-right.)
      null]))
 
 (define-for-syntax (add-eres-lets an-istx res-proj-vars
-                                  indy-arg-vars ordered-args indy-res-vars ordered-ress 
+                                  indy-arg-vars ordered-args indy-res-vars ordered-ress
                                   stx)
   (cond
     [(and (positive? (vector-length res-proj-vars))
@@ -882,10 +886,10 @@ evaluted left-to-right.)
         [res-proj-var (in-vector res-proj-vars (- (vector-length res-proj-vars) 1) -1 -1)])
        (if (arg/res-vars an-arg/res)
            #`(let ([#,(eres-eid an-arg/res)
-                    (#,res-proj-var #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars 
-                                                                          ordered-args 
-                                                                          indy-res-vars 
-                                                                          ordered-ress 
+                    (#,res-proj-var #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars
+                                                                          ordered-args
+                                                                          indy-res-vars
+                                                                          ordered-ress
                                                                           var))
                                             (arg/res-vars an-arg/res)))])
                #,body)
@@ -893,13 +897,14 @@ evaluted left-to-right.)
     [else stx]))
 
 (define-for-syntax (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars method?)
-  
+
   (define-values (wrapper-proc-arglist
                   blame-ids args+rst
                   ordered-args arg-indices
                   ordered-ress res-indices
                   arg-proj-vars indy-arg-proj-vars
-                  res-proj-vars indy-res-proj-vars)
+                  res-proj-vars indy-res-proj-vars
+                  pre-indicies post-indicies)
     (build-wrapper-proc-arglist an-istx used-indy-vars))
 
   ;; hash[arg/res -o> identifier]
@@ -927,22 +932,22 @@ evaluted left-to-right.)
     (for/list ([ordered-arg (in-list ordered-ress)])
       (and (arg/res? ordered-arg)
            (car (generate-temporaries (list (arg/res-var ordered-arg)))))))
-  
-  
+
+
   (define this-param (and method? (car (generate-temporaries '(this)))))
 
   (define wrapper-body
     (add-wrapper-let
-     (add-pre-cond 
-      an-istx
+     (add-pre-conds
+      an-istx pre-indicies
       indy-arg-vars ordered-args indy-res-vars ordered-ress
       (add-eres-lets
        an-istx
        res-proj-vars
-       indy-arg-vars ordered-args indy-res-vars ordered-ress 
+       indy-arg-vars ordered-args indy-res-vars ordered-ress
        (args/vars->arg-checker
         (build-result-checkers
-         an-istx
+         an-istx post-indicies
          ordered-ress res-indices
          res-proj-vars indy-res-proj-vars
          wrapper-ress indy-res-vars
@@ -954,8 +959,9 @@ evaluted left-to-right.)
      (istx-is-chaperone-contract? an-istx)
      #t
      ordered-args arg-indices
-     arg-proj-vars indy-arg-proj-vars 
+     arg-proj-vars indy-arg-proj-vars
      wrapper-args indy-arg-vars
+     pre-indicies
      indy-arg-vars ordered-args indy-res-vars ordered-ress))
   (values
    (map cdr blame-ids)
@@ -1000,9 +1006,9 @@ evaluted left-to-right.)
   (or (try indy-arg-vars ordered-args)
       (try indy-res-vars ordered-ress)
       (error '->i "internal error; did not find a matching var for ~s" var)))
-  
+
 (define-for-syntax (build-wrapper-proc-arglist an-istx used-indy-vars)
-  
+
   (define pre+args+rst (append (istx-pre an-istx)
                                (istx-args an-istx)
                                (if (istx-rst an-istx)
@@ -1010,16 +1016,16 @@ evaluted left-to-right.)
                                    '())))
   (define res+post (append (istx-post an-istx)
                            (or (istx-ress an-istx) '())))
-  (define-values (ordered-args arg-indices) (find-ordering pre+args+rst))
-  (define-values (ordered-ress res-indices) (find-ordering res+post))
+  (define-values (ordered-args arg-indices pre-indicies) (find-ordering pre+args+rst))
+  (define-values (ordered-ress res-indices post-indicies) (find-ordering res+post))
 
   (define arg-proj-vars
     (for/vector ([pre+arg+rst (in-list pre+args+rst)])
       (and (arg/res? pre+arg+rst)
            (car (generate-temporaries (list (arg/res-var pre+arg+rst)))))))
-  
+
   (define blame-ids (build-blame-ids ordered-args ordered-ress))
-  
+
   ;; this vector is parallel to arg-proj-vars (so use arg-indices to find the right ones)
   ;; but it contains #fs in places where we don't need the indy projections (because the corresponding
   ;; argument is not dependened on by anything or this one is a pre/post condition)
@@ -1031,14 +1037,14 @@ evaluted left-to-right.)
                                               (arg/res-var an-arg/res)
                                               (λ () #f))
                  (arg/res-var an-arg/res))))))
-  
+
   (define res-proj-vars
     (for/vector ([an-arg/res (in-list res+post)])
       (and (arg/res? an-arg/res)
            (car (generate-temporaries (list (arg/res-var an-arg/res)))))))
-  
+
   ;; this list is parallel to res-proj-vars (so use res-indices to find the right ones)
-  ;; but it contains #fs in places where we don't need the indy projections (because the 
+  ;; but it contains #fs in places where we don't need the indy projections (because the
   ;; corresponding result is not dependened on by anything)
   (define indy-res-proj-vars
     (for/vector ([an-arg/res (in-list res+post)])
@@ -1048,10 +1054,10 @@ evaluted left-to-right.)
                                               (arg/res-var an-arg/res)
                                               (λ () #f))
                  (arg/res-var an-arg/res))))))
-  
+
   (define wrapper-proc-arglist
     #`(c-or-i-procedure chk ctc blame swapped-blame #,@(map car blame-ids)
-           
+
            ;; the pre- and post-condition procs
            #,@(for/list ([pres (istx-pre an-istx)]
                          [i (in-naturals)])
@@ -1059,7 +1065,7 @@ evaluted left-to-right.)
            #,@(for/list ([pres (istx-post an-istx)]
                          [i (in-naturals)])
                 (string->symbol (format "post-proc~a" i)))
-           
+
            ;; first the non-dependent arg projections
            #,@(for/list ([arg/res (in-list pre+args+rst)]
                          [arg-proj-var (in-vector arg-proj-vars)]
@@ -1081,7 +1087,7 @@ evaluted left-to-right.)
                                      (not (arg/res-vars arg/res))
                                      arg-proj-var))
                 arg-proj-var)
-           
+
            ;; then the non-dependent res projections
            #,@(for/list ([arg/res (in-list res+post)]
                          [res-proj-var (in-vector res-proj-vars)]
@@ -1103,13 +1109,14 @@ evaluted left-to-right.)
                                      (not (arg/res-vars arg/res))
                                      indy-res-proj-var))
                 indy-res-proj-var)))
-  
+
   (values wrapper-proc-arglist
           blame-ids pre+args+rst
           ordered-args arg-indices
           ordered-ress res-indices
           arg-proj-vars indy-arg-proj-vars
-          res-proj-vars indy-res-proj-vars))
+          res-proj-vars indy-res-proj-vars
+          pre-indicies post-indicies))
 
 (define-for-syntax (build-call-to-original-function args rst vars this-param)
   (define argument-list
@@ -1122,7 +1129,7 @@ evaluted left-to-right.)
           (list (arg-kwd arg) var)]
          [else
           (list var)]))))
-  (if rst 
+  (if rst
       #`(apply f #,@argument-list rest-args)
       #`(f #,@argument-list)))
 
@@ -1142,46 +1149,46 @@ evaluted left-to-right.)
                        (coerce-chaperone-contract '->i orig-ctc)
                        (coerce-contract '->i orig-ctc)))
        (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
-  
+
   (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame?)
     (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame?))
-  
+
   (define (un-dep orig-ctc obj blame neg-party indy-blame?)
     (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f indy-blame?)))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
-    
+
     ;; add in regular arguments' uses
     (for ([an-arg (in-list (istx-args an-istx))])
       (when (arg/res-vars an-arg)
         (for ([var (in-list (arg/res-vars an-arg))])
           (free-identifier-mapping-put! vars var #t))))
-    
+
     ;; add in rest argument uses
     (when (istx-rst an-istx)
       (let ([an-arg/rst (istx-rst an-istx)])
         (when (arg/res-vars an-arg/rst)
           (for ([var (in-list (arg/res-vars an-arg/rst))])
             (free-identifier-mapping-put! vars var #t)))))
-    
+
     ;; pre-condition
     (for ([pre (in-list (istx-pre an-istx))])
       (for ([var (in-list (pre/post-vars pre))])
         (free-identifier-mapping-put! vars var #t)))
-    
+
     ;; results
     (when (istx-ress an-istx)
       (for ([a-res (in-list (istx-ress an-istx))])
         (when (arg/res-vars a-res)
           (for ([var (in-list (arg/res-vars a-res))])
             (free-identifier-mapping-put! vars var #t)))))
-    
+
     ;; post-condition
     (for ([post (in-list (istx-post an-istx))])
       (for ([var (in-list (pre/post-vars post))])
         (free-identifier-mapping-put! vars var #t)))
-    
+
     vars))
 
 (define-syntax (->i/m stx)
@@ -1202,13 +1209,13 @@ evaluted left-to-right.)
     (append (or (istx-ress an-istx) '())
             args+rst))
   (define this->i (gensym 'this->i))
-  (with-syntax ([(arg-exp-xs ...) 
-                 (generate-temporaries 
+  (with-syntax ([(arg-exp-xs ...)
+                 (generate-temporaries
                   (filter values (map (λ (arg)
                                         (and (not (arg/res-vars arg)) (arg/res-var arg)))
                                       args+rst)))]
                 [((arg-names arg-kwds arg-is-optional?s arg-exps) ...)
-                 (filter values (map (λ (arg) (and (not (arg/res-vars arg)) 
+                 (filter values (map (λ (arg) (and (not (arg/res-vars arg))
                                                    (list
                                                     (arg/res-var arg)
                                                     (and (arg? arg) (arg-kwd arg))
@@ -1218,11 +1225,11 @@ evaluted left-to-right.)
                                                       (arg/res-ctc arg)
                                                       'racket/contract:negative-position
                                                       this->i)
-                                                     'racket/contract:contract-on-boundary 
+                                                     'racket/contract:contract-on-boundary
                                                      (gensym '->i-indy-boundary)))))
                                      args+rst))]
-                
-                [(res-exp-xs ...) 
+
+                [(res-exp-xs ...)
                  (if (istx-ress an-istx)
                      (generate-temporaries (filter values (map (λ (res) (and (not (arg/res-vars res))
                                                                              (arg/res-var res)))
@@ -1230,19 +1237,19 @@ evaluted left-to-right.)
                      '())]
                 [((res-names res-exps) ...)
                  (if (istx-ress an-istx)
-                     (filter values (map (λ (res) (and (not (arg/res-vars res)) 
+                     (filter values (map (λ (res) (and (not (arg/res-vars res))
                                                        (list
                                                         (arg/res-var res)
                                                         (syntax-property
-                                                         (syntax-property 
+                                                         (syntax-property
                                                           (arg/res-ctc res)
                                                           'racket/contract:positive-position
                                                           this->i)
-                                                         'racket/contract:contract-on-boundary 
+                                                         'racket/contract:contract-on-boundary
                                                          (gensym '->i-indy-boundary)))))
                                          (istx-ress an-istx)))
                      '())])
-    
+
     (define (find-orig-vars ids arg/ress-to-look-in)
       (for/list ([an-id (in-list ids)])
         (define ans
@@ -1250,13 +1257,13 @@ evaluted left-to-right.)
             (and (free-identifier=? an-id (arg/res-var o-arg))
                  (arg/res-var o-arg))))
         (unless ans
-          (error 'contract/arr-i.rkt:find-orig-vars 
+          (error 'contract/arr-i.rkt:find-orig-vars
                  "could not find ~s in ~s\n"
                  an-id arg/ress-to-look-in))
         ans))
 
     (define is-chaperone-contract? (istx-is-chaperone-contract? an-istx))
-    
+
     #`(let ([arg-exp-xs (coerce-contract '->i arg-exps)] ...
             [res-exp-xs (coerce-contract '->i res-exps)] ...)
         #,(syntax-property
@@ -1272,9 +1279,9 @@ evaluted left-to-right.)
                          (define orig-vars (find-orig-vars (arg/res-vars arg) args+rst))
                          (define ctc-stx
                            (syntax-property
-                            (syntax-property 
+                            (syntax-property
                              (arg/res-ctc arg)
-                             'racket/contract:negative-position 
+                             'racket/contract:negative-position
                              this->i)
                             'racket/contract:contract-on-boundary
                             (gensym '->i-indy-boundary)))
@@ -1285,31 +1292,30 @@ evaluted left-to-right.)
                              #,ctc-stx)))
               ;; then the non-dependent argument contracts that are themselves depended on
               (list #,@(filter values
-                               (map (λ (arg/res indy-id) 
+                               (map (λ (arg/res indy-id)
                                       (and (free-identifier-mapping-get used-indy-vars
                                                                         (arg/res-var arg/res)
                                                                         (λ () #f))
                                            #`(cons '#,(arg/res-var arg/res) #,indy-id)))
                                     (filter (λ (arg/res) (not (arg/res-vars arg/res))) args+rst)
                                     (syntax->list #'(arg-exp-xs ...)))))
-              
-              
+
               #,(if (istx-ress an-istx)
                     #`(list (cons 'res-names res-exp-xs) ...)
                     #''())
               #,(if (istx-ress an-istx)
-                    #`(list #,@(for/list ([arg (in-list 
+                    #`(list #,@(for/list ([arg (in-list
                                                 (istx-ress an-istx))]
                                           #:when (arg/res-vars arg))
-                                 (define orig-vars 
+                                 (define orig-vars
                                    (find-orig-vars (arg/res-vars arg) args+rst+results))
                                  (define arg-stx
                                    (syntax-property
-                                    (syntax-property 
+                                    (syntax-property
                                      (arg/res-ctc arg)
                                      'racket/contract:positive-position
                                      this->i)
-                                    'racket/contract:contract-on-boundary 
+                                    'racket/contract:contract-on-boundary
                                     (gensym '->i-indy-boundary)))
                                  (if (eres? arg)
                                      #`(λ #,orig-vars
@@ -1323,17 +1329,17 @@ evaluted left-to-right.)
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
-                                       (map (λ (arg/res indy-id) 
+                                       (map (λ (arg/res indy-id)
                                               (and (free-identifier-mapping-get used-indy-vars
                                                                                 (arg/res-var arg/res)
                                                                                 (λ () #f))
                                                    #`(cons '#,(arg/res-var arg/res) #,indy-id)))
-                                            (filter (λ (arg/res) 
+                                            (filter (λ (arg/res)
                                                       (not (arg/res-vars arg/res)))
                                                     (istx-ress an-istx))
                                             (syntax->list #'(res-exp-xs ...)))))
                     #''())
-              
+
               #,(let ([func (λ (pre/post vars-to-look-in)
                               (define orig-vars (find-orig-vars (pre/post-vars pre/post)
                                                                 vars-to-look-in))
@@ -1344,21 +1350,21 @@ evaluted left-to-right.)
                                (func pre args+rst))
                           #,@(for/list ([post (in-list (istx-post an-istx))])
                                (func post args+rst+results))))
-              
-              #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) 
+
+              #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg))
                                                           (not (arg-optional? arg))))
                                             (istx-args an-istx))))
               #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) (arg-optional? arg)))
                                             (istx-args an-istx))))
-              '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg)) 
-                                                         (arg-kwd arg) 
+              '#,(sort (filter values (map (λ (arg) (and (not (arg-optional? arg))
+                                                         (arg-kwd arg)
                                                          (syntax-e (arg-kwd arg))))
-                                           (istx-args an-istx))) 
+                                           (istx-args an-istx)))
                        keyword<?)
               '#,(sort (filter values (map (λ (arg) (and (arg-optional? arg)
                                                          (arg-kwd arg)
                                                          (syntax-e (arg-kwd arg))))
-                                           (istx-args an-istx))) 
+                                           (istx-args an-istx)))
                        keyword<?)
               '#,(and (istx-rst an-istx) (arg/res-var (istx-rst an-istx)))
               #,method?
@@ -1366,7 +1372,7 @@ evaluted left-to-right.)
               #,wrapper-func
               '#(#,(for/list ([an-arg (in-list (istx-args an-istx))])
                      `(,(if (arg/res-vars an-arg) 'dep 'nodep)
-                       ,(syntax-e (arg/res-var an-arg)) 
+                       ,(syntax-e (arg/res-var an-arg))
                        ,(if (arg/res-vars an-arg)
                             (map syntax-e (arg/res-vars an-arg))
                             '())
@@ -1401,7 +1407,7 @@ evaluted left-to-right.)
                      (list (map syntax-e (pre/post-vars post))
                            (pre/post-kind post)
                            (pre/post-quoted-dep-src-code post)))))
-           'racket/contract:contract 
+           'racket/contract:contract
            (let ()
              (define (find-kwd kwd)
                (for/or ([x (in-list (syntax->list stx))])
@@ -1410,7 +1416,7 @@ evaluted left-to-right.)
              (define pre (find-kwd '#:pre))
              (define post (find-kwd '#:post))
              (define orig (list (car (syntax-e stx))))
-             (vector this->i 
+             (vector this->i
                      ;; the ->i in the original input to this guy
                      (if post (cons post orig) orig)
                      (if pre (list pre) '())))))))
