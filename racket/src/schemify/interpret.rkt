@@ -224,13 +224,15 @@
       [`(letrec* . ,_) (compile-letrec e env stack-depth stk-i tail?)]
       [`(begin . ,vs)
        (compile-body vs env stack-depth stk-i tail?)]
+      [`(begin0 ,e)
+       (compile-expr e env stack-depth stk-i tail?)]
       [`(begin0 ,e . ,vs)
        (define new-body (compile-body vs env stack-depth stk-i #f))
        (vector 'begin0
                (compile-expr e env stack-depth stk-i #f)
                new-body)]
       [`($value ,e)
-       (compile-expr e env stack-depth stk-i tail?)]
+       (vector '$value (compile-expr e env stack-depth stk-i #f))]
       [`(if ,tst ,thn ,els)
        (define then-stk-i (stack-info-branch stk-i))
        (define else-stk-i (stack-info-branch stk-i))
@@ -610,6 +612,8 @@
                       (apply values vals)
                       (apply values new-stack vals))
                   (loop (fx+ i 1) new-stack)))))]
+        [#($value ,e)
+         (begin0 (interpret e stack) (void))]
         [#(clear ,clears ,e)
          (let loop ([clears clears] [stack stack])
            (cond
