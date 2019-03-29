@@ -6,6 +6,8 @@
 (define current-start-time '())
 (define current-gc-start-time '())
 
+(define performance-thread-id (get-thread-id))
+
 ;; List keys for passes related to register allocation as recorded by
 ;; Chez Scheme and reported from `$pass-stats`:
 (define register-allocation-passes
@@ -37,7 +39,8 @@
 
 (define (measure-performance-region label thunk)
   (cond
-   [measure-performance?
+   [(and measure-performance?
+         (eqv? (get-thread-id) performance-thread-id))
     (with-interrupts-disabled
      (set! current-start-time (cons (current-process-milliseconds) current-start-time))
      (set! current-gc-start-time (cons (current-gc-milliseconds) current-gc-start-time)))
