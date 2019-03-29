@@ -220,14 +220,14 @@ prepare-cache:qemu:
   dependencies:
     - prepare-cache:qemu
 
-test:x86_64:
+test:native:x86_64:
   extends: .preparearch
   variables:
     ARCH: "x86_64"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:armv7l:
+test:native:armv7l:
   extends: .preparearch
   variables:
     ARCH: "armv7l"
@@ -237,63 +237,63 @@ test:armv7l:
     - armv7l
     - linux
     
-test:arm64:
+test:emulation:arm64:
   extends: .preparearch
   variables:
     ARCH: "arm64"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:armel:
+test:emulation:armel:
   extends: .preparearch
   variables:
     ARCH: "armel"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:armhf:
+test:emulation:armhf:
   extends: .preparearch
   variables:
     ARCH: "armhf"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:i386:
+test:emulation:i386:
   extends: .preparearch
   variables:
     ARCH: "i386"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
     
-test:mips:
+test:emulation:mips:
   extends: .preparearch
   variables:
     ARCH: "mips"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
   
-test:mipsel:
+test:emulation:mipsel:
   extends: .preparearch
   variables:
     ARCH: "mipsel"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:mips64el:
+test:emulation:mips64el:
   extends: .preparearch
   variables:
     ARCH: "mips64el"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
     
-test:s390x:
+test:emulation:s390x:
   extends: .preparearch
   variables:
     ARCH: "s390x"
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:ppc64el:
+test:emulation:ppc64el:
   extends: .preparearch
   variables:
     ARCH: "ppc64el"
@@ -316,7 +316,7 @@ test:ppc64el:
   dependencies:
     - prepare-cache:qemu
     
-test:x86_64:cs:
+test:native:x86_64:cs:
   extends: .preparearch:cs
   allow_failure: true
   variables:
@@ -324,7 +324,7 @@ test:x86_64:cs:
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:i386:cs:
+test:native:i386:cs:
   extends: .preparearch:cs
   variables:
     ARCH: "i386"
