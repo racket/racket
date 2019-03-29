@@ -613,7 +613,8 @@
                       (apply values new-stack vals))
                   (loop (fx+ i 1) new-stack)))))]
         [#($value ,e)
-         (begin0 (interpret e stack) (void))]
+         (let ([v (interpret e stack)])
+           v)]
         [#(clear ,clears ,e)
          (let loop ([clears clears] [stack stack])
            (cond
