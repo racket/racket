@@ -2,7 +2,11 @@
   (make-struct-type-property 'method-arity-error))
 
 (define-values (prop:arity-string arity-string? arity-string-ref)
-  (make-struct-type-property 'arity-string))
+  (make-struct-type-property 'arity-string (lambda (v info)
+                                             (check 'guard-for-prop:arity-string
+                                                    (procedure-arity-includes/c 1)
+                                                    v)
+                                             v)))
 
 (define-values (prop:procedure procedure-struct? procedure-struct-ref)
   (make-struct-type-property 'procedure (lambda (v info)
