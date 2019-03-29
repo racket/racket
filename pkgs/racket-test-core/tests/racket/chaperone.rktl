@@ -3401,5 +3401,25 @@
     (test gen impersonated-current-pseudo-random-generator)))
 
 ;; ----------------------------------------
+;; Test keyword-argument procedures and impersonator properties
+
+(let ()
+  (define (group-rows #:group x) 1)
+  
+  (define-values (impersonator-prop:contracted 
+                  has-impersonator-prop:contracted? 
+                  get-impersonator-prop:contracted)
+    (make-impersonator-property 'impersonator-prop:contracted))
+
+  (define group-rows*
+    (chaperone-procedure group-rows
+                         (λ (#:group x) (list x))
+                         impersonator-prop:contracted 2))
+  
+  (test #t procedure? group-rows*)
+  (test #t has-impersonator-prop:contracted? group-rows*)
+  (test 1 'apply (group-rows* #:group 10)))
+  
+;; ----------------------------------------
 
 (report-errs)

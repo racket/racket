@@ -610,18 +610,13 @@
 ;; ----------------------------------------
 
 (define (set-impersonator-applicables!)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor props-procedure-impersonator)
-                        impersonate-apply)  
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor props-procedure-chaperone)
-                        impersonate-apply)
-  (struct-property-set! prop:procedure-arity
-                        (record-type-descriptor props-procedure-impersonator)
-                        3)
-  (struct-property-set! prop:procedure-arity
-                        (record-type-descriptor props-procedure-chaperone)
-                        3)
+  (let ([add (lambda (rtd)
+               (struct-property-set! prop:procedure rtd impersonate-apply)  
+               (struct-property-set! prop:procedure-arity rtd 3))])
+    (add (record-type-descriptor props-procedure-impersonator))
+    (add (record-type-descriptor props-procedure-chaperone))
+    (add (record-type-descriptor props-procedure~-impersonator))
+    (add (record-type-descriptor props-procedure~-chaperone)))
 
   (struct-property-set! prop:procedure
                         (record-type-descriptor impersonator-property-accessor-procedure)
