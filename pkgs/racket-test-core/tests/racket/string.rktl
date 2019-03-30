@@ -3,7 +3,8 @@
 
 (Section 'string)
 
-(require racket/string)
+(require racket/string
+         (submod racket/string private))
 
 ;; ---------- real->decimal-string ----------
 (test "0." real->decimal-string 0 0)
@@ -532,14 +533,65 @@
 ;; ---------- string-contains? ----------
 
 (let ()
-  (test #t string-contains? "racket" "racket")
-  (test #t string-contains? "racket" "cket")
-  (test #t string-contains? "racket" "acke")
-  (test #t string-contains? "racket" "t")
-  (test #t string-contains? "racket" "")
-  (test #f string-contains? "racket" "b")
-  (test #f string-contains? "racket" "R")
-  (test #f string-contains? "racket" "kc")
-  (test #f string-contains? "racket" "racketr"))
+  (define (test-contains? v x y)
+    (test v string-contains? x y)
+    (test v string-contains?/old x y))
+    
+  (test-contains? #t "racket" "racket")
+  (test-contains? #t "racket" "cket")
+  (test-contains? #t "racket" "acke")
+  (test-contains? #t "racket" "t")
+  (test-contains? #t "racket" "")
+  (test-contains? #f "racket" "b")
+  (test-contains? #f "racket" "R")
+  (test-contains? #f "racket" "kc")
+  (test-contains? #f "racket" "racketr")
+  (test-contains? #t "" "")
+  (test-contains? #f "racket" "a..e")
+  (test-contains? #t "ra..et" "a..e")
+  (test-contains? #t "racket012345678901234567890123456789012345678901234567890123456789racket"
+                     "racket012345678901234567890123456789012345678901234567890123456789racket")
+  (test-contains? #t "racket012345678901234567890123456789012345678901234567890123456789racket"
+                     "racket01234567890123456789")
+  (test-contains? #t "racket012345678901234567890123456789012345678901234567890123456789racket"
+                     "01234567890123456789racket")
+  (test-contains? #t "racket012345678901234567890123456789012345678901234567890123456789racket"
+                     "012345678901234567890123456789")
+  (test-contains? #f "racket012345678901234567890123456789012345678901234567890123456789racket"
+                     "racket01234567890123456789racket")
+  (test-contains? #t "racket0123456789012345678901234567890123456789aaaaaaaaaaaaaaaaaaaaaaaaa"
+                     "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test-contains? #t "aaaaaaaaaaaaaaaaaaaaaaaaa0123456789012345678901234567890123456789racket"
+                     "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test-contains? #f "aaaaaaaaaaaaaaaaaaaaaaaa_012345678901234567890_aaaaaaaaaaaaaaaaaaaaaaaa"
+                     "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test-contains? #t "aaaaaaaaaaaaaaaaaaaaaaaaa012345678901234567890_aaaaaaaaaaaaaaaaaaaaaaaa"
+                     "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test-contains? #t "aaaaaaaaaaaaaaaaaaaaaaaa_012345678901234567890aaaaaaaaaaaaaaaaaaaaaaaaa"
+                     "aaaaaaaaaaaaaaaaaaaaaaaaa")
+  (test-contains? #t "1234567890aaaaa123456789012345678901234567890aaaaa1234567890123456789012345678901234567890"
+                     "1234567890123456789012345678901234567890")
+  (test-contains? #f "1234567890aaaaa123456789012345678901234567890aaaaa123456789012345678901234567890aaaa"
+                     "1234567890123456789012345678901234567890")
+  (test-contains? #f "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                     "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+  (test-contains? #f "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                     "xxxxxxxxxxxxxxxxxxxxxxxxy")
+  (test-contains? #f "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                     "yxxxxxxxxxxxxxxxxxxxxxxxx")
+  (test-contains? #f "xxxxxxxxxxxxxxxxxxxxxxxxyxxxxxxxxxxxxxxxxxxxxxxxxyxxxxxxxxxxxxxxxxxxxxx"
+                     "xxxxxxxxxxxxxxxxxxxxxxxxx"))
+
+;; ---------- build-kmp-table ----------
+
+; The tables have one more coefficient than the usual tables,
+; that can be used to get or count all the matches.
+(let ()
+  (test #(#f 0 0 0 0 0 0) build-kmp-table "racket")
+  (test #(#f #f #f #f #f #f 5) build-kmp-table "rrrrrr")
+  (test #(#f 0 #f 0 #f 0 4) build-kmp-table "ababab")
+  ; examples from https://en.wikipedia.org/wiki/Knuth–Morris–Pratt_algorithm
+  (test #(#f 0 0 0 #f 0 2 0) build-kmp-table "abcdabd")
+  (test #(#f 0 #f 1 #f 0 #f 3 2 0) build-kmp-table "abacababc"))
 
 (report-errs)
