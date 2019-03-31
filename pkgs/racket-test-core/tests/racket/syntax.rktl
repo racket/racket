@@ -2223,6 +2223,27 @@
             (define x (param))))
         x))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; check interpreted `begin0`, 0 results, and
+;; non-0 results along the way
+
+;; This is a regression test for a bug that caused a crash
+(let ()
+  (define f
+    (impersonate-procedure
+     (λ (x) #f)
+     (λ (x) (values (λ (x) x) x))))
+
+  (call-with-values
+   (λ ()
+     (begin0
+       ((lambda (pos)
+          (set! pos pos)
+          (values))
+        0)
+       (f #f)))
+   (λ args (void))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -1917,7 +1917,7 @@ static Scheme_Object *begin0_execute(Scheme_Object *obj)
       p->values_buffer = NULL;
   } else {
     mv = NULL;
-    mc = 0; /* makes compilers happy */
+    mc = 1;
   }
 
   apos = 1;
@@ -1925,7 +1925,7 @@ static Scheme_Object *begin0_execute(Scheme_Object *obj)
     ignore_result(_scheme_eval_linked_expr_multi(((Scheme_Sequence *)obj)->array[apos++]));
   }
 
-  if (mv) {
+  if (mc != 1) {
     Scheme_Thread *p = scheme_current_thread;
     p->ku.multiple.array = mv;
     p->ku.multiple.count = mc;

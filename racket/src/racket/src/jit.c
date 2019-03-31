@@ -2332,7 +2332,6 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         if (multi_ok) {
           mz_pushr_p(JIT_R0);
           mz_pushr_p(JIT_R0);
-          mz_pushr_p(JIT_R0);
           mz_rs_sync();
           __START_SHORT_JUMPS__(1);
           ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
