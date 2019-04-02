@@ -324,7 +324,7 @@ test:native:x86_64:cs:
     JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
-test:native:i386:cs:
+test:emulation:i386:cs:
   extends: .preparearch:cs
   variables:
     ARCH: "i386"
