@@ -521,8 +521,9 @@
     (when (null? args)
       (raise-arguments-error
        who
-       "when inject-proc, add-proc, shrink-proc, and extract-proc are #f,"
-       " at least one property must be supplied")))
+       (string-append
+        "when inject-proc, add-proc, shrink-proc, and extract-proc are #f,"
+        " at least one property must be supplied"))))
   (values clear-proc
           (or equal-key-proc (λ (s e) e))
           args))
