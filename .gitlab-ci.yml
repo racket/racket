@@ -2,6 +2,7 @@ stages:
   - prepare
   - test
 
+# ---------------------------------------------------------------------------------------------------
 # Using debian:stable-slim to perform an llvm build with Z3 support
 # The reason this is necessary is that we need Z3 support in scan-build
 # to be able to crosscheck errors with z3 which decreases the false positives
@@ -9,12 +10,13 @@ stages:
 #
 # Also, this should only be performed once. Once in cache llvm won't be build anymore
 # until we force it.
-prepare-cache:
+prepare-cache:llvm:
   image: debian:stable-slim
   stage: prepare
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   script:
@@ -25,16 +27,22 @@ prepare-cache:
     - mkdir $INSTALL_DIR
     - mv z3-4.8.4.d6df51951f4c-x64-debian-8.11/bin z3-4.8.4.d6df51951f4c-x64-debian-8.11/include $INSTALL_DIR
     - export PATH=$INSTALL_DIR/bin:$PATH
-    - git clone https://github.com/llvm/llvm-project.git
+    - git clone -b release/8.x https://github.com/llvm/llvm-project.git
     - cd llvm-project
     - mkdir build
     - cd build
-    - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ ../llvm/
+    - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ -DCMAKE_BUILD_TYPE=MinSizeRel ../llvm/
     - make -j5
     - make -j5 install
   cache:
+    key: llvm-8x-HEAD
     paths:
       - $INSTALL_DIR
+  artifacts:
+    name: "llvm-8x-HEAD"
+    paths:
+      - $INSTALL_DIR
+    expire_in: 1 week
       
 # Build racket with scan-build
 scan-build:racket:
@@ -42,6 +50,7 @@ scan-build:racket:
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -51,13 +60,11 @@ scan-build:racket:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' 
+  dependencies:
+    - prepare-cache:llvm
   artifacts:
     paths:
       - scan-report_cc/
-  cache:
-    policy: pull
-    paths:
-      - $INSTALL_DIR
 
 # Build racketcs with scan-build
 scan-build:racketcs:
@@ -65,6 +72,7 @@ scan-build:racketcs:
   tags:
     - linux
     - x86_64
+    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -74,14 +82,13 @@ scan-build:racketcs:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
+  dependencies:
+    - prepare-cache:llvm
   artifacts:
     paths:
       - scan-report-cs_cc/
-  cache:
-    policy: pull
-    paths:
-      - $INSTALL_DIR
 
+# ---------------------------------------------------------------------------------------------------
 ##
 ## The following jobs build/test racket and racketcs with ubsan enabled
 ## 
@@ -93,15 +100,6 @@ scan-build:racketcs:
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
     - export PATH=$PWD/racket/bin:$PATH
-
-# This is just used to provide some environment information for debugging purposes    
-envinfo:
-  extends: .prepare
-  script:
-    - cat /proc/cpuinfo
-    - lsb_release -a
-    - gcc -v
-    - export
 
 test:ubsan:
   extends: .prepare
@@ -161,3 +159,175 @@ test:ubsan:cs:
     paths:
       - cs-logs/
       - runtime-errors.log
+
+# ---------------------------------------------------------------------------------------------------
+# Runs a cross compilation and testing using qemu chrooted into the correct architecture
+# Each of the test:<arch>: will extend .preparearch which run the proper script
+# Currently testing:
+# * arm64
+# * armel
+# * armhf
+# * i386
+# * mips
+# * mipsel
+# * mips64el
+# * s390x
+# * ppc64el
+
+prepare-cache:qemu:
+  image: ubuntu:18.04
+  stage: prepare
+  tags:
+    - linux
+    - x86_64
+    - privileged
+  variables:
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  script:
+    - if [ -d $INSTALL_DIR ]; then exit 0; fi
+    - apt-get update && apt-get install -y gcc make bison flex git wget xz-utils python pkg-config libglib2.0-dev libpixman-1-dev
+    - wget https://download.qemu.org/qemu-3.1.0.tar.xz
+    - tar -xvJf qemu-3.1.0.tar.xz
+    - mkdir qemu-build
+    - cd qemu-build
+    - ../qemu-3.1.0/configure --static --disable-kvm --disable-xen --disable-spice --target-list='i386-linux-user aarch64-linux-user arm-linux-user mips-linux-user mipsel-linux-user mips64el-linux-user s390x-linux-user ppc64le-linux-user riscv64-linux-user' --prefix=$INSTALL_DIR
+    - make -j5
+    - make -j5 install
+  cache:
+    key: qemu-3.1.0
+    paths:
+      - $INSTALL_DIR
+  artifacts:
+    name: "qemu-3.1.0"
+    paths:
+      - $INSTALL_DIR
+    expire_in: 1 week
+      
+.preparearch:
+  image: ubuntu:18.04
+  stage: test
+  tags:
+    - x86_64
+    - privileged
+    - linux
+  before_script:
+    - ls -la
+    - find $INSTALL_DIR -type f
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - apt-get update
+  script:
+    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
+  dependencies:
+    - prepare-cache:qemu
+
+test:native:x86_64:
+  extends: .preparearch
+  variables:
+    ARCH: "x86_64"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:native:armv7l:
+  extends: .preparearch
+  variables:
+    ARCH: "armv7l"
+    JOBS: 5
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  tags:
+    - armv7l
+    - linux
+    
+test:emulation:arm64:
+  extends: .preparearch
+  variables:
+    ARCH: "arm64"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:armel:
+  extends: .preparearch
+  variables:
+    ARCH: "armel"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:armhf:
+  extends: .preparearch
+  variables:
+    ARCH: "armhf"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:i386:
+  extends: .preparearch
+  variables:
+    ARCH: "i386"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+    
+test:emulation:mips:
+  extends: .preparearch
+  variables:
+    ARCH: "mips"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  
+test:emulation:mipsel:
+  extends: .preparearch
+  variables:
+    ARCH: "mipsel"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:mips64el:
+  extends: .preparearch
+  variables:
+    ARCH: "mips64el"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+    
+test:emulation:s390x:
+  extends: .preparearch
+  variables:
+    ARCH: "s390x"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:ppc64el:
+  extends: .preparearch
+  variables:
+    ARCH: "ppc64el"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+
+.preparearch:cs:
+  image: ubuntu:18.04
+  stage: test
+  tags:
+    - x86_64
+    - privileged
+    - linux
+  before_script:
+    - export PATH=$INSTALL_DIR:$PATH
+    - apt-get update
+  script:
+    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
+  dependencies:
+    - prepare-cache:qemu
+    
+test:native:x86_64:cs:
+  extends: .preparearch:cs
+  allow_failure: true
+  variables:
+    ARCH: "x86_64"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:native:i386:cs:
+  extends: .preparearch:cs
+  variables:
+    ARCH: "i386"
+    JOBS: 6
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
