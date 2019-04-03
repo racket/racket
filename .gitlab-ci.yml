@@ -59,7 +59,7 @@ scan-build:racket:
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
-    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' 
+    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' 
   dependencies:
     - prepare-cache:llvm
   artifacts:
@@ -81,7 +81,7 @@ scan-build:racketcs:
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
-    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g -DMZ_DECLARE_NORETURN" --disable-strip' cs
+    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' cs
   dependencies:
     - prepare-cache:llvm
   artifacts:
