@@ -428,7 +428,7 @@
                           handled-args
                           (let-values ([(prefix suffix) (grab-same-inits inits/c)])
                             (loop suffix
-                                  (apply-init-contracts prefix init-args)))))])
+                                  (apply-init-contracts prefix handled-args)))))])
                ;; Since we never consume init args, we can ignore si_leftovers
                ;; since init-args is the same.
                (if never-wrapped?
@@ -769,53 +769,15 @@
         ;; Unlike the others, we always want to do this, even if there are no init contracts,
         ;; since we still need to handle either calling the previous class/c's init or
         ;; calling continue-make-super appropriately.
-        (let ()
-          ;; grab all the inits+contracts that involve the same init arg
-          ;; (assumes that inits and contracts were sorted in class/c creation)
-          (define (grab-same-inits lst)
-            (if (null? lst)
-                (values null null)
-                (let loop ([inits/c (cdr lst)]
-                           [prefix (list (car lst))])
-                  (cond
-                    [(null? inits/c) 
-                     (values (reverse prefix) inits/c)]
-                    [(eq? (list-ref (car inits/c) 0) (list-ref (car prefix) 0))
-                     (loop (cdr inits/c)
-                           (cons (car inits/c) prefix))]
-                    [else (values (reverse prefix) inits/c)]))))
-          ;; run through the list of init-args and apply contracts for same-named
-          ;; init args
-          (define (apply-init-contracts inits/c init-args)
-            (let loop ([init-args init-args]
-                       [inits/c inits/c]
-                       [handled-args null])
-              (cond
-                [(null? init-args)
-                 (reverse handled-args)]
-                [(null? inits/c)
-                 (append (reverse handled-args) init-args)]
-                [(eq? (list-ref (car inits/c) 0) (car (car init-args)))
-                 (let ([init-arg (car init-args)]
-                       [p (list-ref (car inits/c) 1)])
-                   (loop (cdr init-args)
-                         (cdr inits/c)
-                         (cons (cons (car init-arg) (if p
-                                                        (p (cdr init-arg))
-                                                        (cdr init-arg)))
-                               handled-args)))]
-                [else (loop (cdr init-args)
-                            inits/c
-                            (cons (car init-args) handled-args))])))
-          (set-class-init! 
-           c
-           (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
-             ;; Since we never consume init args, we can ignore si_leftovers
-             ;; since init-args is the same.
-             (if never-wrapped?
-                 (super-go the-obj si_c si_inited? init-args null null)
-                 (init the-obj super-go si_c si_inited? init-args init-args)))))
-        
+        (set-class-init!
+         c
+         (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+           ;; Since we never consume init args, we can ignore si_leftovers
+           ;; since init-args is the same.
+           (if never-wrapped?
+               (super-go the-obj si_c si_inited? init-args null null)
+               (init the-obj super-go si_c si_inited? init-args init-args))))
+
         (copy-seals cls c)))))
 
 (define (blame-add-init-context blame name)

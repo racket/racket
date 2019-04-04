@@ -2712,4 +2712,40 @@
    (lambda (e)
      (regexp-match? "a method that accepts the #:x keyword argument"
                     (exn-message e))))
+
+  (test/spec-passed
+   'multiple-init-args-1
+   '(let ([c% (contract (class/c (init [a (-> integer?)]
+                                       [b (-> symbol?)]))
+                        (class object%
+                          (init a b)
+                          (super-new)
+                          (void (a) (b)))
+                        'pos 'neg)])
+      (new c% [a (lambda () 1)]
+              [b (lambda () 'x)])))
+
+  (test/neg-blame
+   'multiple-init-args-2
+   '(let ([c% (contract (class/c (init [a (-> integer?)]
+                                       [b (-> symbol?)]))
+                        (class object%
+                          (init a b)
+                          (super-new)
+                          (void (a) (b)))
+                        'pos 'neg)])
+      (new c% [a (lambda () #f)]
+              [b (lambda () 'x)])))
+
+  (test/neg-blame
+   'multiple-init-args-3
+   '(let ([c% (contract (class/c (init [a (-> integer?)]
+                                       [b (-> symbol?)]))
+                        (class object%
+                          (init a b)
+                          (super-new)
+                          (void (a) (b)))
+                        'pos 'neg)])
+      (new c% [a (lambda () 1)]
+              [b (lambda () #f)])))
   )
