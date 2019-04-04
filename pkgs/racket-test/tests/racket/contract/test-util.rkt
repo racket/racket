@@ -351,7 +351,8 @@
 
 ;; blame : (or/c 'pos 'neg string?)
 ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
-(define (test/spec-failed name expression blame)
+;; important : (or/c (cons/c string? (or/c 'pos 'neg)) #f)
+(define (test/spec-failed name expression blame #:important [important #f])
   (define (has-proper-blame? msg)
     (define reg
       (cond
@@ -360,6 +361,20 @@
         [(string? blame) (string-append "blaming: " (regexp-quote blame))]
         [else #f]))
     (and reg (regexp-match? reg msg)))
+  (define (has-proper-important-blame? msg)
+    (cond
+      [(not important)]
+      [(not (or (eq? blame 'pos) (eq? blame 'neg)))
+       #f]
+      [else
+       (define important-name (car important))
+       (define important-party (cdr important))
+       (define self-or-not
+         (if (equal? (eq? blame 'pos) (eq? important-party 'pos))
+             "broke its own contract"
+             "contract violation"))
+       (define reg (string-append (regexp-quote important-name) ": " self-or-not))
+       (regexp-match? reg msg)]))
   (contract-eval
    #:test-case-name name
    `(,test-an-error
@@ -368,7 +383,8 @@
      ',expression
      (lambda (exn)
        (and (exn:fail:contract:blame? exn)
-            (,has-proper-blame? (exn-message exn))))))
+            (,has-proper-blame? (exn-message exn))
+            (,has-proper-important-blame? (exn-message exn))))))
   (define (rewrite-test wrapper wrapper-name short-wrapper-name)
     (unless (member short-wrapper-name (contract-rewrite-tests-to-skip))
       (let/ec k
@@ -381,12 +397,15 @@
              ',rewritten
              (lambda (exn)
                (and (exn:fail:contract:blame? exn)
-                    (,has-proper-blame? (exn-message exn))))))))))
+                    (,has-proper-blame? (exn-message exn))
+                    (,has-proper-important-blame? (exn-message exn))))))))))
   (rewrite-test rewrite-to-add-opt/c  "rewrite-to-add-opt/c"   "opt/c")
   (rewrite-test rewrite-to-multi-wrap "rewrite-to-double-wrap" "double"))
 
-(define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
-(define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
+(define (test/pos-blame name expression #:important [important #f])
+  (test/spec-failed name expression 'pos #:important important))
+(define (test/neg-blame name expression #:important [important #f])
+  (test/spec-failed name expression 'neg #:important important))
 
 (define-syntax (ctest/rewrite stx)
   (syntax-case stx ()

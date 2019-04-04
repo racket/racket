@@ -459,7 +459,7 @@
       (for/list ([name (in-list (internal-class/c-inners internal-ctc))]
                  [c (in-list (internal-class/c-inner-contracts internal-ctc))])
         (and c
-             ((contract-late-neg-projection c) (blame-add-method-context bswap name)))))
+             ((contract-late-neg-projection c) (blame-swap (blame-add-method-context blame name))))))
     
     (define internal-field-projections
       (for/list ([f (in-list (internal-class/c-inherit-fields internal-ctc))]
@@ -515,7 +515,7 @@
       (for/list ([m (in-list (internal-class/c-overrides internal-ctc))]
                  [c (in-list (internal-class/c-override-contracts internal-ctc))])
         (and c
-             ((contract-late-neg-projection c) (blame-add-method-context bswap m)))))
+             ((contract-late-neg-projection c) (blame-swap (blame-add-method-context blame m))))))
     
     (define augment/augride-projections
       (for/list ([m (in-list (append (internal-class/c-augments internal-ctc)
