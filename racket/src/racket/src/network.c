@@ -1213,8 +1213,7 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
       ready_pos = tcp_check_accept(listener, NULL);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
-  } else
-    ready_pos = 0;
+  }
 
   if (was_closed) {
     if (_fail_reason)
