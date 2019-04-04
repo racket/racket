@@ -757,7 +757,7 @@ int (*scheme_directory_exists)(char *dirname);
 char *(*scheme_expand_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
 char *(*scheme_expand_user_filename)(char* filename, int ilen, const char *errorin, int *ex, int guards);
 char *(*scheme_expand_string_filename)(Scheme_Object *f, const char *errorin, int *ex, int guards);
-char *(*scheme_os_getcwd)(char *buf, int buflen, int *actlen, int noexn);
+char *(*scheme_os_getcwd)(char *buf, size_t buflen, int *actlen, int noexn);
 int (*scheme_os_setcwd)(char *buf, int noexn);
 char *(*scheme_getdrive)(void);
 Scheme_Object *(*scheme_split_path)(const char *path, int len, Scheme_Object **base, int *isdir, int kind);

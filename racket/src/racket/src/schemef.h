@@ -919,7 +919,7 @@ MZ_EXTERN char *scheme_expand_filename(char* filename, int ilen, const char *err
 MZ_EXTERN char *scheme_expand_user_filename(char* filename, int ilen, const char *errorin, int *ex, int guards);
 MZ_EXTERN char *scheme_expand_string_filename(Scheme_Object *f, const char *errorin, int *ex, int guards);
 
-MZ_EXTERN char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn);
+MZ_EXTERN char *scheme_os_getcwd(char *buf, size_t buflen, int *actlen, int noexn);
 MZ_EXTERN int scheme_os_setcwd(char *buf, int noexn);
 MZ_EXTERN char *scheme_getdrive(void);
 

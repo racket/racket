@@ -884,7 +884,7 @@ static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
 /*                                                                    */
 /**********************************************************************/
 
-char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
+char *scheme_os_getcwd(char *buf, size_t buflen, int *actlen, int noexn)
 {
   char *s;
   int slen;
