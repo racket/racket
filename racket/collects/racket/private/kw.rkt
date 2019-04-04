@@ -18,7 +18,11 @@
                          "qqstx.rkt"
                          "sort.rkt"
                          "kw-prop-key.rkt"
-                         "immediate-default.rkt"))
+                         "immediate-default.rkt")
+             (for-meta 2 '#%kernel
+                         "small-scheme.rkt"
+                         "stxcase-scheme.rkt"
+                         "qqstx.rkt"))
 
   (#%provide new-lambda new-λ
              new-define
@@ -403,14 +407,42 @@
                            (current-inspector)
                            fail-proc)]))
 
+  ;; To avoid ending up with inferred names that point inside this module, we
+  ;; need to ensure that both 'inferred-name is (void) and there is no source
+  ;; location on the expression
+  (define-syntax (no-inferred-name stx)
+    (syntax-case stx ()
+      [(_ e)
+       (syntax-property (datum->syntax #'e (syntax-e #'e) #f #'e)
+                        'inferred-name (void))]))
+
+  ;; Similar to the above, when we copy source locations from an input
+  ;; expression, we need to ensure the source location is copied even if there
+  ;; is no source location on the input, but (quasi)syntax/loc doesn’t copy
+  ;; the source location if it is #f
+  (begin-for-syntax
+    (define-syntaxes (syntax/loc/always quasisyntax/loc/always)
+      (let ([mk (lambda (syntax-id)
+                  (lambda (stx)
+                    (syntax-case stx ()
+                      [(_ src-expr template)
+                       #`(let ([result (#,syntax-id template)])
+                           (datum->syntax result (syntax-e result) src-expr result))])))])
+        (values (mk #'syntax) (mk #'quasisyntax)))))
+
   ;; ----------------------------------------
 
   (define make-keyword-procedure
     (case-lambda 
-     [(proc) (make-keyword-procedure 
-              proc
-              (lambda args
-                (apply proc null null args)))]
+     [(proc) (let ([proc-name (object-name proc)]
+                   [plain-proc (no-inferred-name
+                                (lambda args
+                                  (apply proc null null args)))])
+               (make-keyword-procedure
+                proc
+                (if (symbol? proc-name)
+                    (procedure-rename plain-proc proc-name)
+                    plain-proc)))]
      [(proc plain-proc)
       (make-optional-keyword-procedure
        (make-keyword-checker null #f (and (procedure? proc) ; reundant check helps purity inference
@@ -590,7 +622,7 @@
        (if (simple-args? #'args)
            ;; Use plain old `lambda':
            (non-kw-k
-            (syntax/loc stx
+            (syntax/loc/always stx
               (lambda args body1 body ...)))
            ;; Handle keyword or optional arguments:
            (with-syntax ([((plain-id ...)
@@ -725,7 +757,7 @@
                         (lambda (kw-core?)
                           ;; entry point without keywords:
                           (annotate-method
-                           (quasisyntax/loc stx
+                           (quasisyntax/loc/always stx
                              (opt-cases #,(if kw-core?
                                               #'(unpack null null)
                                               #'(core))
@@ -798,7 +830,7 @@
                       (mk-unpack)
                       (with-syntax ([kws (map car sorted-kws)]
                                     [needed-kws needed-kws]
-                                    [no-kws (mk-no-kws #t)]
+
                                     [with-kws (mk-with-kws)]
                                     [(_ mk-id . _) (with-syntax ([n (or local-name
                                                                         (syntax-local-infer-name stx)
@@ -892,37 +924,40 @@
   ;; argument is split into two: a boolean argument that
   ;; indicates whether it was supplied, and an argument 
   ;; for the value (if supplied).
-  (define-syntax opt-cases 
-    (syntax-rules ()
+  (define-syntax (opt-cases stx)
+    (syntax-case stx ()
       [(_ (core ...) () (base ...)
           () ()
           (rest-empty rest-id . rest) ())
        ;; This case only happens when there are no optional arguments
-       (case-lambda
-         [(base ... . rest-id)
-          (core ... base ... . rest)])]
+       (syntax/loc/always stx
+         (case-lambda
+           [(base ... . rest-id)
+            (core ... base ... . rest)]))]
       [(_ (core ...) ([opt-id opt-arg not-supplied-val]) (base ...)
           (done-id ...) (done-not-supplied ...)
           (rest-empty rest-id . rest) clauses)
        ;; Handle the last optional argument and the rest args (if any)
        ;; at the same time.
-       (case-lambda
-         [(base ...) (core ... base ... done-not-supplied ... not-supplied-val . rest-empty)]
-         [(base ... done-id ... opt-arg . rest-id)
-          (core ... base ... done-id ... opt-arg . rest)]
-         . clauses)]
+       (syntax/loc/always stx
+         (case-lambda
+           [(base ...) (core ... base ... done-not-supplied ... not-supplied-val . rest-empty)]
+           [(base ... done-id ... opt-arg . rest-id)
+            (core ... base ... done-id ... opt-arg . rest)]
+           . clauses))]
       [(_ (core ...) ([opt-id opt-arg not-supplied-val] [more-id more-arg more-not-supplied] ...) (base ...)
           (done-id ...) (done-not-supplied ...)
           (rest-empty rest-id . rest) clauses)
        ;; Handle just one optional argument, add it to the "done" sequence,
        ;; and continue generating clauses for the remaining optional arguments.
-       (opt-cases (core ...) ([more-id more-arg more-not-supplied] ...) (base ...)
-                  (done-id ... opt-id) (done-not-supplied ... not-supplied-val)
-                  (rest-empty rest-id . rest)
-                  ([(base ... done-id ... opt-arg)
-                    (core ... base ... 
-                          done-id ... opt-arg more-not-supplied ... . rest-empty)]
-                   . clauses))]))
+       (syntax/loc/always stx
+         (opt-cases (core ...) ([more-id more-arg more-not-supplied] ...) (base ...)
+                    (done-id ... opt-id) (done-not-supplied ... not-supplied-val)
+                    (rest-empty rest-id . rest)
+                    ([(base ... done-id ... opt-arg)
+                      (core ... base ...
+                            done-id ... opt-arg more-not-supplied ... . rest-empty)]
+                     . clauses)))]))
 
   ;; Helper macro:
   ;; Similar to opt-cases, but just pass all arguments along to `fail'.
