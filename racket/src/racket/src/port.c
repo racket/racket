@@ -4818,7 +4818,6 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
          filled in parallel to the buffer. */
       ext_target = 0;
       target = fip->buffer;
-      target_offset = 0;
       if (fip->flush == MZ_FLUSH_ALWAYS)
         target_size = 1;
       else
