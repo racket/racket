@@ -706,6 +706,7 @@
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
+  (include "rumble/layout.ss")
   (include "rumble/begin0.ss")
   (include "rumble/letrec.ss")
   (include "rumble/syntax-rule.ss")
