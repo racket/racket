@@ -2389,5 +2389,32 @@
                     (regexp-match? #rx"not currently transforming a module" (exn-message exn)))))
 
 ;; ----------------------------------------
+;; Make sure `syntax-local-bind-syntaxes` binds installs `free-identifier=?`
+;; equivalences in a context in which previous definitions in the context are bound
+
+(module syntax-local-bind-syntaxes-free-id-context racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+  (define-syntax (letrec-syntax/intdef stx)
+    (syntax-case stx ()
+      [(_ ([x rhs] ...) e)
+       (let ()
+         (define intdef (syntax-local-make-definition-context))
+         (for ([x (in-list (syntax->list #'(x ...)))]
+               [rhs (in-list (syntax->list #'(rhs ...)))])
+           (syntax-local-bind-syntaxes (list x) rhs intdef))
+         (local-expand #'e 'expression '() intdef))]))
+  (begin-for-syntax
+    (struct indirect-rename-transformer (target-holder)
+      #:property prop:rename-transformer
+      (lambda (self) (syntax-local-value (indirect-rename-transformer-target-holder self)))))
+  (define result
+    (letrec-syntax/intdef ([holder #'add1]
+                           [add1-indirect (indirect-rename-transformer #'holder)])
+      (add1-indirect 10))))
+
+(test 11 dynamic-require ''syntax-local-bind-syntaxes-free-id-context 'result)
+
+;; ----------------------------------------
 
 (report-errs)
