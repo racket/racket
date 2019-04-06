@@ -78,7 +78,7 @@ identifier's @tech{symbol} and @tech{scope set} to its meaning: a
 @tech{variable}, a @tech{syntactic form}, or a @tech{transformer}. An
 identifier refers to a particular binding when the reference's symbol
 and the identifier's symbol are the same, and when the reference's
-@tech{scope set} is a subset of the binding's
+@tech{scope set} is a superset of the binding's
 @tech{scope set}. For a given identifier, multiple bindings may have
 @tech{scope sets} that are subsets of the identifier's; in that case,
 the identifier refers to the binding whose set is a superset of all
