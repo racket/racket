@@ -89,21 +89,22 @@
                  (add-local-binding! intdef-id phase counter
                                      #:frame-id (internal-definition-context-frame-id intdef)
                                      #:local-sym local-sym)))
+  (define local-ctx
+    (and s
+         (let ()
+           (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)]
+                                                                       [intdef-id (in-list intdef-ids)])
+                             (env-extend env sym (local-variable intdef-id))))
+           (make-local-expand-context (struct*-copy expand-context ctx
+                                                    [env tmp-env])
+                                      #:context 'expression
+                                      #:intdefs all-intdefs))))
   (define vals
     (cond
      [s
       (define input-s (flip-introduction-scopes (add-intdef-scopes s all-intdefs) ctx))
-      (define tmp-env (for/fold ([env (expand-context-env ctx)]) ([sym (in-list syms)]
-                                                                  [intdef-id (in-list intdef-ids)])
-                        (env-extend env sym (local-variable intdef-id))))
       (log-expand ctx 'enter-bind)
-      (define vals
-        (eval-for-syntaxes-binding 'syntax-local-bind-syntaxes
-                                   input-s ids
-                                   (make-local-expand-context (struct*-copy expand-context ctx
-                                                                            [env tmp-env])
-                                                              #:context 'expression
-                                                              #:intdefs all-intdefs)))
+      (define vals (eval-for-syntaxes-binding 'syntax-local-bind-syntaxes input-s ids local-ctx))
       (log-expand ctx 'exit-bind)
       vals]
      [else
@@ -112,7 +113,8 @@
   (set-box! env-mixins (append (for/list ([intdef-id (in-list intdef-ids)]
                                           [sym (in-list syms)]
                                           [val (in-list vals)])
-                                 (maybe-install-free=id-in-context! val intdef-id phase ctx)
+                                 (when local-ctx
+                                   (maybe-install-free=id-in-context! val intdef-id phase local-ctx))
                                  (env-mixin intdef-id sym val (make-weak-hasheq)))
                                (unbox env-mixins)))
   (log-expand ctx 'exit-local-bind))
