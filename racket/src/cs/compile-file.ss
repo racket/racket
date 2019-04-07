@@ -2,6 +2,12 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 
+(let-values ([(maj min sub) (scheme-version-number)])
+  (unless (and (>= maj 9)
+               (>= maj 5)
+               (>= maj 3))
+    (error 'compile-file "need a newer Chez Scheme")))
+
 (define (check-ok what thunk)
   (unless (guard (x [else #f]) (thunk))
     (error 'compile-file
