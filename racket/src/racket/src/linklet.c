@@ -8,6 +8,7 @@ SHARED_OK Scheme_Hash_Tree *empty_hash_tree;
 
 SHARED_OK static int validate_compile_result = 0;
 SHARED_OK static int recompile_every_compile = 0;
+SHARED_OK static int show_linklets = 0;
 
 static Scheme_Object *serializable_symbol;
 static Scheme_Object *unsafe_symbol;
@@ -189,6 +190,9 @@ void scheme_init_linklet(Scheme_Startup_Env *env)
         recompile_every_compile = 32;
     }
   }
+
+  if (scheme_getenv("PLT_LINKLET_SHOW"))
+    show_linklets = 1;
 }
 
 void scheme_init_unsafe_linklet(Scheme_Startup_Env *env)
@@ -418,6 +422,13 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
   e = argv[0];
   if (!SCHEME_STXP(e))
     e = scheme_datum_to_syntax(e, scheme_false, DTS_CAN_GRAPH);
+
+  if (show_linklets) {
+    char *s;
+    intptr_t s_len;
+    s = scheme_write_to_string(scheme_syntax_to_datum(e), &s_len);
+    printf("%s\n", s);
+  }
 
   if (argc > 4)
     parse_compile_options("compile-linklet", 4, argc, argv, &unsafe, &static_mode);
