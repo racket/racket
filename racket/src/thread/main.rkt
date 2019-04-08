@@ -69,6 +69,8 @@
          semaphore-wait/enable-break
          call-with-semaphore
          call-with-semaphore/enable-break
+         unsafe-semaphore-post
+         unsafe-semaphore-wait
 
          semaphore-peek-evt
          semaphore-peek-evt?

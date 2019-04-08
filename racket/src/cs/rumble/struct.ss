@@ -974,9 +974,9 @@
           (putprop (record-type-uid rtd) 'guards new-guards))))))
 
 (define (unsafe-struct*-ref s i)
-  (#%$object-ref 'scheme-object s (fx+ record-content-offset (fx* i (foreign-sizeof 'void*)))))
+  (#%$record-ref s i))
 (define (unsafe-struct*-set! s i v)
-  (#%$object-set! 'scheme-object s (fx+ record-content-offset (fx* i (foreign-sizeof 'void*))) v))
+  (#%$record-set! s i v))
 (define (unsafe-struct? v r)
   (#3%record? v r))
 

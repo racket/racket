@@ -171,8 +171,8 @@
      (|#%app| (|#%app| 1/exit-handler) v)))
 
   (set-scheduler-lock-callbacks! (lambda () (1/make-semaphore 1))
-                                 1/semaphore-wait
-                                 1/semaphore-post)
+                                 unsafe-semaphore-wait
+                                 unsafe-semaphore-post)
 
   (set-scheduler-atomicity-callbacks! (lambda ()
                                         (current-atomic (fx+ (current-atomic) 1)))

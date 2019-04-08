@@ -483,10 +483,10 @@
   (let ([vec (locked-iterable-hash-cells ht)])
     (cond
      [(and vec
-           (let ([len (#%vector-length vec)]
-                 [want-len (or i 0)])
-             (or (> len want-len)
-                 (and (fx= len want-len)
+           (fixnum? i)
+           (let ([len (#%vector-length vec)])
+             (or (fx> len i)
+                 (and (fx= len i)
                       (not (locked-iterable-hash-retry? ht))))))
       (lock-release (locked-iterable-hash-lock ht))
       vec]
@@ -499,7 +499,7 @@
                                  0)
                              32))])
         (let ([len (#%vector-length new-vec)])
-          (when (= len (hash-count ht))
+          (when (fx= len (hash-count ht))
             (set-locked-iterable-hash-retry?! ht #f))
           (when weak?
             (let loop ([i 0])
@@ -653,20 +653,20 @@
                         p))
                   '(#!bwp . #!bwp))]
            [key (car p)]
-           [v (if (bwp-object? key)
-                  none
-                  (cdr p))])
-      (if (eq? v none)
+           [v (cdr p)])
+      (if (or (bwp-object? key)
+              (bwp-object? v))
           (if (eq? bad-index-v none)
               (raise-arguments-error who "no element at index"
                                      "index" i)
               (bad-index-result key? value? pair? bad-index-v))
           (cond
-           [(and key? value?)
-            (if pair?
-                (cons key v)
-                (values key v))]
-           [key? key]
+           [key?
+            (if value?
+                (if pair?
+                    (cons key v)
+                    (values key v))
+                key)]
            [else v])))]
    [(and (impersonator? ht)
          (authentic-hash? (impersonator-val ht)))
