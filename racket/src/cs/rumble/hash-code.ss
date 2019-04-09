@@ -41,7 +41,7 @@
 (define number-hash
   (lambda (z)
     (cond
-     [(fixnum? z) (if (fx< z 0) (fxnot z) z)]
+     [(fixnum? z) (if (fx< z 0) (fxand z (most-positive-fixnum)) z)]
      [(flonum? z) (#3%$flhash z)]
      [(bignum? z) (modulo z (most-positive-fixnum))]
      [(ratnum? z) (number-hash (+ (* (numerator z) 5) (denominator z)))]
