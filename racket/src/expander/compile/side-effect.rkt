@@ -170,8 +170,20 @@
              (loop (caddr (correlated->list rhs)))
              (loop #f))]
         [else
-         (for/fold ([locals locals]) ([id (in-list (correlated->list ids))])
-           (hash-set locals (correlated-e id) #t))]))))
+         (define ids* (correlated->list ids))
+         (cond
+           [(and (pair? ids*) (null? (cdr ids*)))
+            (hash-set locals (correlated-e (car ids*)) (infer-known rhs))]
+           [else
+            (for/fold ([locals locals]) ([id (in-list ids*)])
+              (hash-set locals (correlated-e id) #t))])]))))
+
+(define (infer-known e)
+  (case (and (pair? (correlated-e e))
+             (correlated-e (car (correlated-e e))))
+    [(lambda case-lambda)
+     (known-satisfies 'procedure)]
+    [else #t]))
 
 ;; ----------------------------------------
 

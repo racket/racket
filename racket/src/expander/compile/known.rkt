@@ -22,7 +22,7 @@
 ;; defined as a struct property with no guard
 
 (struct known-function (arity pure?) #:prefab)
-;; function of known arity and maybe known pure, where
+;; function of known arity and maybe known pure (at least, no side effect), where
 ;; pure must return 1 value
 
 (struct known-function-of-satisfying (arg-predicate-keys) #:prefab)

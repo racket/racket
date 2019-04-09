@@ -69,9 +69,10 @@
       [`(begin (quote ,_) ,e) e]
       [else orig-body]))
   (cond
-   [(and (pair? body)
-         (eq? (car body) self-id)
-         ((sub1 (length body)) . > . (length args)))
+   [(let ([result (extract-result body)])
+      (and (pair? result)
+           (eq? (car result) self-id)
+           ((sub1 (length result)) . > . (length args))))
     ;; Allow a self-call as pure, as long as the number of arguments
     ;; grows. We'll only conclude that the function is pure overall if
     ;; that assumption now as justified, but we require the number of
@@ -90,6 +91,11 @@
     (not (any-side-effects? body 1
                             #:known-defns seen-defns
                             #:known-locals locals))]))
+
+(define (extract-result body)
+  (match body
+    [`(let-values ,_ ,e) (extract-result e)]
+    [_ body]))
 
 (define struct-general-op-types
   '(struct-type constructor predicate general-accessor general-mutator))
