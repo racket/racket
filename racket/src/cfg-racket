@@ -829,6 +829,7 @@ enable_cgcdefault
 enable_sgc
 enable_sgcdebug
 enable_backtrace
+enable_cify
 enable_pthread
 enable_stackup
 enable_bigendian
@@ -2806,9 +2807,9 @@ if test "${enable_backtrace+set}" = set; then :
 fi
 
 
-# Check whether --enable-backtrace was given.
-if test "${enable_backtrace+set}" = set; then :
-  enableval=$enable_backtrace;
+# Check whether --enable-cify was given.
+if test "${enable_cify+set}" = set; then :
+  enableval=$enable_cify;
 fi
 
 

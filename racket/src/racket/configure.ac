@@ -62,7 +62,7 @@ AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
-AC_ARG_ENABLE(backtrace, [  --enable-cify           compile startup code to C instead of bytecode])
+AC_ARG_ENABLE(cify, [  --enable-cify           compile startup code to C instead of bytecode])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
