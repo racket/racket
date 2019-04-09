@@ -3,16 +3,16 @@
    or unmarshaled.
 
    See "eval.c" for an overview of compilation passes and JIT
-   prepraration. */
+   preparation. */
 
 #include "schpriv.h"
 #include "schrunst.h"
 #include "schmach.h"
 
 THREAD_LOCAL_DECL(static Scheme_Object *current_linklet_native_lambdas);
-static int force_jit;
 
 #ifdef MZ_USE_JIT
+static int force_jit;
 
 void scheme_init_jitprep()
 {
@@ -391,7 +391,6 @@ static Scheme_Object *with_immed_mark_jit(Scheme_Object *o)
 
 Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 {
-#ifdef MZ_USE_JIT
   Scheme_Case_Lambda *seqin = (Scheme_Case_Lambda *)expr;
 
   if (!seqin->native_code) {
@@ -473,8 +472,7 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 
     return (Scheme_Object *)seqout;
   }
-#endif
- 
+
   return expr;
 }
 
@@ -538,7 +536,6 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
   /* If lr is supplied as a letrec binding this closure, it may be used
      for JIT compilation. */
 {
-#ifdef MZ_USE_JIT
   Scheme_Lambda *data = (Scheme_Lambda *)code, *data2;
 
   /* We need to cache clones to support multiple references
@@ -582,9 +579,6 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
     return scheme_make_native_closure(data2->u.native_code);
 
   return (Scheme_Object *)data2;
-#endif
-
-  return code;
 }
 
 /*========================================================================*/
@@ -616,7 +610,7 @@ static Scheme_Object *jit_expr(Scheme_Object *expr)
       return scheme_handle_stack_overflow(jit_expr_k);
     }
   }
-#endif
+#endif /* DO_STACK_CHECK */
 
   switch (type) {
   case scheme_application_type:
@@ -722,11 +716,11 @@ Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
   return new_linklet;
 }
 
-#else
+#else /* ! MZ_USE_JIT */
 
 Scheme_Linklet *scheme_jit_linklet(Scheme_Linklet *linklet, int step)
 {
   return linklet;
 }
 
-#endif
+#endif /* MZ_USE_JIT */
