@@ -9,9 +9,8 @@
 #include "schrunst.h"
 #include "schmach.h"
 
-THREAD_LOCAL_DECL(static Scheme_Object *current_linklet_native_lambdas);
-
 #ifdef MZ_USE_JIT
+THREAD_LOCAL_DECL(static Scheme_Object *current_linklet_native_lambdas);
 static int force_jit;
 
 void scheme_init_jitprep()
