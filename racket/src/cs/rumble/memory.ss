@@ -102,7 +102,7 @@
    [(mode)
     (cond
      [(not mode) (bytes-allocated)]
-     [(eq? mode 'cumulative) (sstats-bytes (statistics))]
+     [(eq? mode 'cumulative) (+ (bytes-deallocated) (bytes-allocated))]
      ;; must be a custodian; hook is reposnsible for complaining if not
      [else (custodian-memory-use mode (bytes-allocated))])]))
 
