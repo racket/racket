@@ -30,11 +30,12 @@
    [(char? x) (char->integer x)]
    [else
     (with-global-lock
-     (or (eq-hashtable-ref codes x #f)
-         (let ([c (fx1+ counter)])
-           (set! counter c)
-           (eq-hashtable-set! codes x counter)
-           c)))]))
+     (let ([p (eq-hashtable-cell codes x #f)])
+       (or (cdr p)
+           (let ([c (fx1+ counter)])
+             (set! counter c)
+             (set-cdr! p c)
+             c))))]))
 
 ;; Mostly copied from Chez Scheme's "newhash.ss":
 (define number-hash

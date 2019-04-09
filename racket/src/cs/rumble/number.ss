@@ -272,18 +272,51 @@
 
 (define/who number->string
   (case-lambda
-   [(n) (number->string n 10)]
    [(n radix)
-    (check who number? n)
+    (unless (or (eq? radix 2) (eq? radix 8) (eq? radix 10) (eq? radix 16))
+      (check who number? n)
+      (check who (lambda (radix) #f)
+             :contract "(or/c 2 8 10 16)"
+             radix))
+    (do-number->string n radix)]
+   [(n)
+    (do-number->string n 10)]))
+
+(define (do-number->string n radix)
+  ;; Host `number->string` goes through `format`, so we can do
+  ;; significantly better for fixnums by handling them directly
+  (cond
+   [(fixnum? n)
+    (let-values ([(result pos) ; result string and pos after written so far
+                  (let loop ([v (fxabs n)] [len 0])
+                    (cond
+                     [(fx= v 0)
+                      (cond
+                       [(fx= len 0)
+                        (values (#%make-string 1 #\0) 1)]
+                       [(fx< n 0)
+                        (let ([result (#%make-string (fx+ 1 len))])
+                          (string-set! result 0 #\-)
+                          (values result 1))]
+                       [else
+                        (values (#%make-string len)
+                                0)])]
+                     [else
+                      (let ([q (fxquotient v radix)])
+                        (let-values ([(d) (fx- v (fx* q radix))]
+                                     [(result pos) (loop q (fx+ 1 len))])
+                          (string-set! result pos (integer->char (+ d (if (fx< d 10)
+                                                                          (char->integer #\0)
+                                                                          (fx- (char->integer #\a) 10)))))
+                          (values result (fx+ 1 pos))))]))])
+      result)]
+   [else
     (cond
      [(eq? radix 16)
       ;; Host generates uppercase letters, Racket generates lowercase
-      (string-downcase (chez:number->string n 16))]
+      (string-downcase (#2%number->string n radix))]
      [else
-      (check who (lambda (radix) (or (eq? radix 2) (eq? radix 8) (eq? radix 10) (eq? radix 16)))
-             :contract "(or/c 2 8 10 16)"
-             radix)
-      (chez:number->string n radix)])]))
+      (#2%number->string n radix)])]))
 
 (define/who (quotient/remainder n m)
   (check who integer? n)
