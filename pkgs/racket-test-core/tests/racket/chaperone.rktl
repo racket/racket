@@ -3419,6 +3419,39 @@
   (test #t procedure? group-rows*)
   (test #t has-impersonator-prop:contracted? group-rows*)
   (test 1 'apply (group-rows* #:group 10)))
+
+;; ----------------------------------------
+;; Check that position-consuming accessor and mutators work with
+;; `impersonate-struct`.
+
+(let ()
+  (define-values (struct:s make-s s? s-ref s-set!)
+    (make-struct-type 's #f 1 0 #f))
+
+  (define a-s (make-s 0))
+  
+  (test '(0)
+        s-ref
+        (impersonate-struct
+         a-s
+         s-ref
+         (lambda (k v) (list v))
+         s-set!
+         (lambda (k v) (list v)))
+        0)
+  
+  (test (void)
+        s-set!
+        (impersonate-struct
+         a-s
+         s-ref
+         (lambda (k v) (list v))
+         s-set!
+         (lambda (k v) (list v)))
+        0
+        7)
+
+  (test '(7) s-ref a-s 0))
   
 ;; ----------------------------------------
 

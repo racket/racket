@@ -398,10 +398,16 @@
        #t))
 
 (define (struct-accessor-procedure-rtd+pos v)
-  (with-global-lock* (hashtable-ref struct-field-accessors v #f)))
+  (if (position-based-accessor? v)
+      (cons (position-based-accessor-rtd v)
+            (position-based-accessor-offset v))
+      (with-global-lock* (hashtable-ref struct-field-accessors v #f))))
 
 (define (struct-mutator-procedure-rtd+pos v)
-  (with-global-lock* (hashtable-ref struct-field-mutators v #f)))
+  (if (position-based-mutator? v)
+      (cons (position-based-mutator-rtd v)
+            (position-based-mutator-offset v))
+      (with-global-lock* (hashtable-ref struct-field-mutators v #f))))
 
 ;; This indirection prevents the whole-program optimizer from inlining
 ;; the `with-glocal-lock*` expansion --- which, at the time of
