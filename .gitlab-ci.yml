@@ -106,6 +106,7 @@ test:ubsan:
   script:
     - mkdir logs
     - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' in-place 2>&1 | tee logs/build.log
+    - sed -i 's/(sleep 1200)/(sleep 3600)/' pkgs/racket-test-core/tests/racket/quiet.rktl
     - raco test -l tests/racket/test 2>&1 | tee logs/test.log
     - racket -l tests/racket/contract/all 2>&1 | tee logs/contract-test.log
     - raco test -l tests/json/json 2>&1 | tee logs/json-test.log
@@ -137,6 +138,7 @@ test:ubsan:cs:
   script:
     - mkdir cs-logs
     - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq='CFLAGS="-fno-var-tracking-assignments" --enable-ubsan' cs 2>&1 | tee cs-logs/build.log
+    - sed -i 's/(sleep 1200)/(sleep 3600)/' pkgs/racket-test-core/tests/racket/quiet.rktl
     - racocs test -l tests/racket/test 2>&1 | tee cs-logs/test.log
     - racketcs -l tests/racket/contract/all 2>&1 | tee cs-logs/contract-test.log
     - racocs test -l tests/json/json 2>&1 | tee cs-logs/json-test.log
