@@ -1210,7 +1210,7 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
                          tcp_accept_needs_wakeup, 
                          listener, 
                          0.0);
-      ready_pos = tcp_check_accept(listener, NULL);
+      (void)tcp_check_accept(listener, NULL);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
   }
