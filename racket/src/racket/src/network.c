@@ -1204,7 +1204,8 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
   was_closed = LISTENER_WAS_CLOSED(listener);
 
   if (!was_closed) {
-    int ready_pos = tcp_check_accept(listener, NULL);
+    int ready_pos;
+    ready_pos = tcp_check_accept(listener, NULL);
     if (!ready_pos) {
       scheme_block_until((Scheme_Ready_Fun)tcp_check_accept, 
                          tcp_accept_needs_wakeup, 
