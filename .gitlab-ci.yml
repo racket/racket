@@ -241,6 +241,8 @@ test:native:armv7l:
 test:emulation:arm64:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "arm64"
     JOBS: 6
@@ -249,6 +251,8 @@ test:emulation:arm64:
 test:emulation:armel:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "armel"
     JOBS: 6
@@ -257,6 +261,8 @@ test:emulation:armel:
 test:emulation:armhf:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "armhf"
     JOBS: 6
@@ -265,6 +271,8 @@ test:emulation:armhf:
 test:emulation:i386:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "i386"
     JOBS: 6
@@ -273,6 +281,8 @@ test:emulation:i386:
 test:emulation:mips:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "mips"
     JOBS: 6
@@ -281,6 +291,8 @@ test:emulation:mips:
 test:emulation:mipsel:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "mipsel"
     JOBS: 6
@@ -289,6 +301,8 @@ test:emulation:mipsel:
 test:emulation:mips64el:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "mips64el"
     JOBS: 6
@@ -297,6 +311,8 @@ test:emulation:mips64el:
 test:emulation:s390x:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "s390x"
     JOBS: 6
@@ -305,6 +321,8 @@ test:emulation:s390x:
 test:emulation:ppc64el:
   extends: .preparearch
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "ppc64el"
     JOBS: 6
@@ -336,6 +354,8 @@ test:native:x86_64:cs:
 test:emulation:i386:cs:
   extends: .preparearch:cs
   allow_failure: true
+  only:
+    - schedules
   variables:
     ARCH: "i386"
     JOBS: 6
