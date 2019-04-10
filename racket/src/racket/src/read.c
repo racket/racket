@@ -653,7 +653,7 @@ static Scheme_Object *read_inner(Scheme_Object *port, ReadParams *params, int pr
           return read_quote("quasiquoting #`", quasisyntax_symbol, 2, port, params);
 	case ',':
           if (scheme_peekc(port) == '@') {
-            ch = scheme_getc(port); /* must be '@' */
+            (void)scheme_getc(port); /* must be '@' */
             return read_quote("unquoting #`@", unsyntax_splicing_symbol, 3, port, params);
           } else
             return read_quote("unquoting #`", unsyntax_symbol, 2, port, params);
