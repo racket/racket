@@ -804,15 +804,21 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     else
       return bc;
   } else {
-    /* We use a non-blocking read here, even though we've waited
-       for input above, because an external process might have
-       gobbled the characters that we expected to get. */
     int old_flags;
+
+    /* Check that input is available. This step is needed
+       for fifos to avoid getting an EOF-looking result
+       if there's no writer, yet. */
+    if (!rktio_poll_read_ready(rktio, rfd))
+      return 0;
     
     old_flags = fcntl(rfd->fd, F_GETFL, 0);
     if (!(old_flags & RKTIO_NONBLOCKING))
       fcntl(rfd->fd, F_SETFL, old_flags | RKTIO_NONBLOCKING);
     
+    /* We use a non-blocking read here, even though we've waited
+       for input above, because an external process might have
+       gobbled the characters that we expected to get. */
     do {
       bc = read(rfd->fd, buffer, len);
     } while ((bc == -1) && errno == EINTR);
