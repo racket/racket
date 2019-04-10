@@ -24,5 +24,5 @@
   (hash-set! seen-defns 'procedure? (known-predicate 'procedure))
   (hash-set! seen-defns 'procedure-arity (known-function-of-satisfying '(procedure)))
   (hash-set! seen-defns 'procedure-arity-mask (known-function-of-satisfying '(procedure)))
-  (hash-set! seen-defns 'object-name (known-function 1 #t))
+  (hash-set! seen-defns 'object-name (known-function 1 #t)) ; assuming no `prop:object-name`
   (hash-set! seen-defns 'procedure-rename (known-function-of-satisfying '(procedure symbol))))

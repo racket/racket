@@ -559,7 +559,7 @@
   [number->string (known-procedure 6)]
   [number? (known-procedure/pure 2)]
   [numerator (known-procedure 2)]
-  [object-name (known-procedure/succeeds 2)]
+  [object-name (known-procedure 2)]
   [odd? (known-procedure 2)]
   [open-input-bytes (known-procedure 6)]
   [open-input-file (known-procedure 14)]
