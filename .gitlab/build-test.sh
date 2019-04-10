@@ -43,6 +43,8 @@ BUILD_DIR=${CI_PROJECT_DIR}
 MAKE_TARGET="in-place"
 CHROOT_DIR="/tmp/racket-chroot"
 QEMU_PATH=
+RACKETEXE="racket"
+RACOEXE="raco"
 
 # Parse options
 until
@@ -73,6 +75,8 @@ until
 	    ;;
 	--enable-cs)
 	    MAKE_TARGET="cs"
+	    RACKETEXE="racketcs"
+	    RACOEXE="racocs"
 	    ;;
 	--with-project-path)
 	    shift
@@ -216,23 +220,23 @@ echo "Running tests"
 echo "Environment: $(uname -a)"
 
 export PATH=${BUILD_DIR}/racket/bin:$PATH
-command -v racket
-racket -v
-annotate-output raco test -l tests/racket/test
-annotate-output racket -l tests/racket/contract/all
-annotate-output raco test -l tests/json/json
-annotate-output raco test -l tests/file/main
-annotate-output raco test -l tests/net/head
-annotate-output raco test -l tests/net/uri-codec
-annotate-output raco test -l tests/net/url
-annotate-output raco test -l tests/net/url-port
-annotate-output raco test -l tests/net/encoders
-annotate-output raco test -l tests/openssl/basic
-annotate-output raco test -l tests/openssl/https
-annotate-output raco test -l tests/match/main
-annotate-output raco test -l tests/zo-path
-annotate-output raco test -l tests/xml/test
-annotate-output raco test -l tests/db/all-tests
-annotate-output raco test -c tests/stxparse
+command -v ${RACKETEXE}
+${RACKETEXE} -v
+annotate-output ${RACOEXE} test -l tests/racket/test
+annotate-output ${RACKETEXE} -l tests/racket/contract/all
+annotate-output ${RACOEXE} test -l tests/json/json
+annotate-output ${RACOEXE} test -l tests/file/main
+annotate-output ${RACOEXE} test -l tests/net/head
+annotate-output ${RACOEXE} test -l tests/net/uri-codec
+annotate-output ${RACOEXE} test -l tests/net/url
+annotate-output ${RACOEXE} test -l tests/net/url-port
+annotate-output ${RACOEXE} test -l tests/net/encoders
+annotate-output ${RACOEXE} test -l tests/openssl/basic
+annotate-output ${RACOEXE} test -l tests/openssl/https
+annotate-output ${RACOEXE} test -l tests/match/main
+annotate-output ${RACOEXE} test -l tests/zo-path
+annotate-output ${RACOEXE} test -l tests/xml/test
+annotate-output ${RACOEXE} test -l tests/db/all-tests
+annotate-output ${RACOEXE} test -c tests/stxparse
 
 echo "DONE!"
