@@ -1192,7 +1192,7 @@ static Scheme_Object *
 do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail_reason)
 /* If _fail_reason is not NULL, never raise an exception. */
 {
-  int was_closed = 0, ready_pos;
+  int was_closed = 0;
   Scheme_Object *listener;
   rktio_fd_t *s;
 
@@ -1204,17 +1204,17 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
   was_closed = LISTENER_WAS_CLOSED(listener);
 
   if (!was_closed) {
+    int ready_pos;
     ready_pos = tcp_check_accept(listener, NULL);
     if (!ready_pos) {
       scheme_block_until((Scheme_Ready_Fun)tcp_check_accept, 
                          tcp_accept_needs_wakeup, 
                          listener, 
                          0.0);
-      ready_pos = tcp_check_accept(listener, NULL);
+      (void)tcp_check_accept(listener, NULL);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
-  } else
-    ready_pos = 0;
+  }
 
   if (was_closed) {
     if (_fail_reason)
