@@ -322,6 +322,19 @@
   (test #t list? (identifier-binding (namespace-syntax-introduce (datum->syntax #f 'lambda)))))
 
 ;; ----------------------------------------
+;; Check that `namespace-require/copy` works with complex module specs
+
+(let ()
+  (define ns (make-base-namespace))
+  (eval '(module m racket/base
+           (provide y x)
+           (define-syntax-rule (y) 8)
+           (define x 5))
+        ns)
+  (namespace-require/copy '(for-meta 0 'm) ns)
+  (test 5 eval 'x ns))
+
+;; ----------------------------------------
 ;; Check that bulk `require` replaces individual bindings
 
 (let ([ns (make-base-empty-namespace)])
