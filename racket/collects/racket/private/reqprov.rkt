@@ -1202,9 +1202,7 @@
                           (list* #'only-meta-in 0 (syntax->list #'(spec ...)))
                           stx))]
                        [(names) (map import-local-id imports)]
-                       [(reqd-names)
-                        (let ([ctx (syntax-local-get-shadower (datum->syntax #f (gensym)))])
-                          (map (lambda (n) (datum->syntax ctx (syntax-e n) n)) names))]
+                       [(reqd-names) (generate-temporaries names)]
                        [(renamed-imports) (map rename-import imports reqd-names)]
                        [(raw-specs) (map import->raw-require-spec renamed-imports)]
                        [(lifts) (map syntax-local-lift-require raw-specs reqd-names)])
