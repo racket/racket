@@ -175,16 +175,13 @@
 ;; The library name changes with the version, so extract it from the
 ;; Chez Scheme makefile
 (define scheme-lib
-  (let ()
-    (define name
-      (call-with-input-file*
-       (build-path scheme-dir "c" (format "Makefile.~a" machine))
-       (lambda (i)
-         (for/or ([l (in-lines i)])
-           (define m (regexp-match #rx"MTKernelLib *= *.*(csv.*mt.lib)" l))
-           (and m
-                (cadr m))))))
-    (build-path scheme-dir machine "boot" machine name)))
+  (call-with-input-file*
+   (build-path scheme-dir "c" (format "Makefile.~a" machine))
+   (lambda (i)
+     (for/or ([l (in-lines i)])
+       (define m (regexp-match #rx"MTKernelLib *= *.*(csv.*mt.lib)" l))
+       (and m
+            (cadr m))))))
 
 (define rel2-scheme-dir (build-path 'up
 				    (if (relative-path? scheme-dir)
