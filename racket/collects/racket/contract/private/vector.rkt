@@ -94,7 +94,7 @@
       [else
        (raise-blame-error blame #:missing-party neg-party
                           val
-                          '(expected "a vector," given: "~e") 
+                          '(expected "a vector" given: "~e")
                           val)])))
 
 (define (vectorof-first-order ctc)
