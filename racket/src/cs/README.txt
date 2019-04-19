@@ -10,6 +10,11 @@ organized into two layers:
    wrapper executables that combine Chez Scheme with the Racket
    functionality implemented in this immediate directory.
 
+In addition, "bootstrap" implements a simulation of Chez Scheme in
+Racket that can be used to bootstrap Chez Scheme from source (i.e.,
+using an existing Racketbuild, but without an existing Chez Scheme
+build).
+
 
 ========================================================================
  Requirements
