@@ -210,7 +210,9 @@
          [(chaperone-recursive-contract? ctc)
           (coerce-chaperone-contract 'recursive-contract (thunk))]
          [(impersonator-recursive-contract? ctc)
-          (coerce-contract 'recursive-contract (thunk))]))
+          (coerce-contract 'recursive-contract (thunk))]
+         [else ;; internal error
+          (raise-argument-error 'force-recursive-contract "recursive-contract?" ctc)]))
      (when (recursive-contract-list-contract? ctc)
        (unless (list-contract? forced-ctc)
          (raise-argument-error 'recursive-contract "list-contract?" forced-ctc)))
