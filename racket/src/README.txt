@@ -63,9 +63,9 @@ Racket-on-Chez requires either a "ChezScheme" build checkout within
 the build directory or at at an alternate location specified by the
 `--enable-scheme=...` argument to `configure`.
 
-For now, use the fork of Chez Scheme at
+For now, use the patched version of Chez Scheme at
 
-    https://github.com/mflatt/ChezScheme
+    https://github.com/racket/ChezScheme
 
 We hope to eventually return to the current development version from
 

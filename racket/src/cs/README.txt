@@ -12,7 +12,7 @@ organized into two layers:
 
 In addition, "bootstrap" implements a simulation of Chez Scheme in
 Racket that can be used to bootstrap Chez Scheme from source (i.e.,
-using an existing Racketbuild, but without an existing Chez Scheme
+using an existing Racket build, but without an existing Chez Scheme
 build).
 
 

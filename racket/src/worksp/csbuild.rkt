@@ -98,7 +98,7 @@
              (system*! "git" "pull" "origin" "master")))))]
     [else
      (unless (directory-exists? scheme-dir)
-       (clone "https://github.com/mflatt/ChezScheme"
+       (clone "https://github.com/racket/ChezScheme"
               scheme-dir
               git-clone-args))
      (when pull?

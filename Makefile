@@ -265,7 +265,7 @@ SCHEME_SRC =
 DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 MAKE_BUILD_SCHEME = y
 
-CHEZ_SCHEME_REPO = https://github.com/mflatt/ChezScheme
+CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
 GIT_CLONE_ARGS_qq = -q --depth 1
 
 # Altenative source for Chez Scheme repo, normally set by
