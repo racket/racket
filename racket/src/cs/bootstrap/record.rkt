@@ -21,6 +21,9 @@
          record-predicate
          record-accessor
          record-mutator
+         compile-time-record-predicate
+         compile-time-record-accessor
+         compile-time-record-mutator
          csv7:record-field-accessor
          csv7:record-field-mutator
          csv7:record-field-mutable?
@@ -190,6 +193,18 @@
            (pred (hash-ref rtd-extensions v #f))
            (pred v)))]))
 
+(define (compile-time-record-predicate rtd)
+  (and (not (base-rtd-subtype-rtd? rtd))
+       (struct-type-make-predicate rtd)))
+
+(define (base-rtd-subtype-rtd? rtd)
+  (or (eq? struct:base-rtd-subtype rtd)
+      (let ()
+        (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
+          (struct-type-info rtd))
+        (or (not super)
+            (base-rtd-subtype-rtd? super)))))
+
 ;; `i` does not count parent fields
 (define (record-accessor rtd i [name #f])
   (cond
@@ -206,13 +221,25 @@
                     rtd/ext)))
          acc)]))
 
-(define mutators (make-weak-hasheq))
+(define (compile-time-record-accessor rtd i)
+  (and (not (base-rtd-subtype-rtd? rtd))
+       (let ()
+         (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
+           (struct-type-info rtd))
+         (make-struct-field-accessor ref i))))
 
 ;; `i` does not count parent fields
 (define (record-mutator rtd i [name #f])
   (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
     (struct-type-info rtd))
   (make-struct-field-mutator set i name))
+
+(define (compile-time-record-mutator rtd i)
+  (and (not (base-rtd-subtype-rtd? rtd))
+       (let ()
+         (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
+           (struct-type-info rtd))
+         (make-struct-field-mutator set i))))
 
 (define base-rtd-fields
   (map vector-copy

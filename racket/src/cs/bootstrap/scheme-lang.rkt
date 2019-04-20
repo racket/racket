@@ -17,6 +17,7 @@
          "scheme-struct.rkt"
          "symbol.rkt"
          "record.rkt"
+         (for-syntax "record.rkt")
          "constant.rkt"
          (only-in "r6rs-lang.rkt"
                   make-record-constructor-descriptor
@@ -30,13 +31,13 @@
                      [gen-let-values let-values]
                      [s:module module]
                      [s:parameterize parameterize]
-                     [letrec letrec*]
                      [s:dynamic-wind dynamic-wind])
          set-who!
          import
          include
          when-feature
          fluid-let
+         letrec*
          putprop getprop remprop
          $sputprop $sgetprop $sremprop
          prim-mask
@@ -354,6 +355,53 @@
             swap
             (lambda () body ...)
             swap)))]))
+
+;; Help the Racket compiler by lifting immediate record operations out
+;; of a `letrec`. Otherwise, the Racket compiler cannot figure out that
+;; they won't capture continuations, etc., and will make access slow.
+;; We may even be able to substitute a literal procedure, since all record
+;; types are prefab structs.
+(define-syntax (letrec* stx)
+  (syntax-case stx ()
+    [(_ (clause ...) . body)
+     (let loop ([clauses (syntax->list #'(clause ...))] [lets '()] [letrecs '()])
+       (cond
+         [(null? clauses)
+          #`(let #,(reverse lets)
+              (letrec #,(reverse letrecs)
+                . body))]
+         [else
+          (syntax-case* (car clauses) ($primitive quote record-accessor record-predicate) (lambda (a b)
+                                                                                            (eq? (syntax-e a)
+                                                                                                 (syntax-e b)))
+            [[id (($primitive _ record-accessor) 'rtd n)]
+             (and (struct-type? (syntax-e #'rtd))
+                  (integer? (syntax-e #'n)))
+             (let ([a (compile-time-record-accessor (syntax-e #'rtd) (syntax-e #'n))])
+               (loop (cdr clauses) (cons (if a
+                                             #`[id '#,a]
+                                             (car clauses))
+                                         lets)
+                     letrecs))]
+            [[id (($primitive _ record-mutator) 'rtd n)]
+             (and (struct-type? (syntax-e #'rtd))
+                  (integer? (syntax-e #'n)))
+             (let ([m (compile-time-record-mutator (syntax-e #'rtd) (syntax-e #'n))])
+               (loop (cdr clauses) (cons (if m
+                                             #`[id '#,m]
+                                             (car clauses))
+                                         lets)
+                     letrecs))]
+            [[id (($primitive _ record-predicate) 'rtd)]
+             (struct-type? (syntax-e #'rtd))
+             (let ([p (compile-time-record-predicate (syntax-e #'rtd))])
+               (loop (cdr clauses) (cons (if p
+                                             #`[id '#,p]
+                                             (car clauses))
+                                         lets)
+                     letrecs))]
+            [else
+             (loop (cdr clauses) lets (cons (car clauses) letrecs))])]))]))
 
 (define-syntax (s:parameterize stx)
   (syntax-case stx ()
