@@ -1232,6 +1232,7 @@
 
   (test/spec-passed
    'provide/contract67
+   ;; https://github.com/racket/racket/issues/2469
    '(let ()
       (eval '(module provide/contract67-a racket/base
                (require racket/contract/base)
@@ -1277,6 +1278,23 @@
 
       (eval '(dynamic-require ''provide/contract69-b 'answer)))
    '#f)
+
+  (test/spec-passed
+   'provide/contract70
+   ;; https://github.com/racket/racket/issues/2572
+   '(let ()
+      (eval '(module provide/contract70-a racket/base
+               (require racket/contract/base)
+               (struct stream (x [y #:mutable]))
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract70-b racket/base
+               (require 'provide/contract70-a racket/contract/base)
+               (provide (contract-out (struct stream ([x any/c] [y any/c]))))))
+
+      (eval '(module provide/contract70-c racket/base
+               (require 'provide/contract70-b racket/contract/base)
+               (void stream stream? stream-x stream-y set-stream-y!)))))
 
   (contract-error-test
    'provide/contract-struct-out
