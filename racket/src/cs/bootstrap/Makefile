@@ -1,6 +1,6 @@
 RACKET=racket
 
-SCHEME_DIR=../../build/ChezScheme
+SCHEME_SRC=../../build/ChezScheme
 
 boot:
-	env SCHEME_DIR="$(SCHEME_DIR)" $(RACKET) make-boot.rkt
+	env SCHEME_SRC="$(SCHEME_SRC)" $(RACKET) make-boot.rkt

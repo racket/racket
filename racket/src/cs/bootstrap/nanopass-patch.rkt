@@ -19,7 +19,7 @@
                   body)])))))
      (free-identifier=? #'id #'make-in-context-transformer)
      (begin
-       (printf "Nanopass patch applied\n")
+       (printf "Apply nanopass patch\n")
        #'(...
           (define id
             (lambda args

@@ -2,15 +2,16 @@
 (require ffi/unsafe/global)
 
 (provide scheme-dir
-         target-machine)
+         target-machine
+         optimize-level-init)
 
 (define ht (get-place-table))
 
 (define scheme-dir (or (hash-ref ht 'make-boot-scheme-dir #f)
                        (simplify-path
                         (path->complete-path
-                         (or (getenv "SCHEME_DIR")
-                             (error "set `SCHEME_DIR` environment variable"))))))
+                         (or (getenv "SCHEME_SRC")
+                             (error "set `SCHEME_SRC` environment variable"))))))
 (hash-set! ht 'make-boot-scheme-dir scheme-dir)
 
 (define target-machine (or (hash-ref ht 'make-boot-targate-machine #f)
@@ -26,3 +27,5 @@
                               (error "set `MACH` environment variable")])))
 
 (hash-set! ht 'make-boot-targate-machine target-machine)
+
+(define optimize-level-init 3)

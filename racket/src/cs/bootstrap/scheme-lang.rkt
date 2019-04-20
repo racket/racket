@@ -17,6 +17,7 @@
          "scheme-struct.rkt"
          "symbol.rkt"
          "record.rkt"
+         "constant.rkt"
          (only-in "r6rs-lang.rkt"
                   make-record-constructor-descriptor
                   set-car!
@@ -123,7 +124,7 @@
                      [arithmetic-shift ash]
                      [arithmetic-shift bitwise-arithmetic-shift-left]
                      [arithmetic-shift bitwise-arithmetic-shift]
-                     [fxrshift fxsrl]
+                     [fxrshift fxsra]
                      [bitwise-not lognot]
                      [bitwise-ior logor]
                      [bitwise-xor logxor]
@@ -168,6 +169,7 @@
                      [logbit1 fxlogbit1]
                      [logbit0 fxlogbit0]
                      [logtest fxlogtest])
+         fxsrl
          fxbit-field
          bitwise-bit-count
          bitwise-arithmetic-shift-right
@@ -553,6 +555,13 @@
   (bitwise-and (bitwise-not (arithmetic-shift 1 i)) n))
 (define (logtest a b)
   (not (eqv? 0 (bitwise-and a b))))
+
+(define (fxsrl v amt)
+  (if (and (v . fx< . 0)
+           (amt . fx> . 0))
+      (bitwise-and (fxrshift v amt)
+                   (- (fxlshift 1 (- fixnum-bits amt)) 1))
+      (fxrshift v amt)))
 
 (define (fxbit-field fx1 fx2 fx3)
   (fxand (fxrshift fx1 fx2) (fx- (fxlshift 1 (- fx3 fx2)) 1)))

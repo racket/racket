@@ -5,6 +5,7 @@
          racket/list
          "immediate.rkt"
          "symbol.rkt"
+         "gensym.rkt"
          "constant.rkt")
 
 (provide do-$make-record-type
@@ -57,8 +58,15 @@
 
 
 (define (do-$make-record-type in-base-rtd in-super in-name fields sealed? opaque? more
-                              #:uid [uid #f])
-  (define name (if (string? in-name) (string->symbol in-name) in-name))
+                              #:uid [in-uid #f])
+  (define name (cond
+                 [(string? in-name) (string->symbol in-name)]
+                 [(gensym? in-name) (string->symbol (gensym->pretty-string in-name))]
+                 [else in-name]))
+  (define uid (or in-uid
+                  (cond
+                    [(gensym? in-name) in-name]
+                    [else #f])))
   (define super
     (cond
       [(base-rtd? in-super) struct:base-rtd-subtype]
@@ -113,7 +121,7 @@
 (define (fld-type fld) (vector-ref fld 3))
 (define (fld-byte fld) (vector-ref fld 4))
 (define (set-fld-byte! fld v) (vector-set! fld 4 v))
-(define fld-byte-value 0) ; gets replaced
+(define fld-byte-value 0) ; doesn't matter; gets replaced in field vectors
 
 (define (register-rtd-fields! struct:name fields)
   (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
@@ -476,10 +484,10 @@
   (void))
 
 (define (fix-offsets flds)
-  (let loop ([flds flds] [offset (add1 fld-byte-value)])
+  (let loop ([flds flds] [offset (+ record-ptr-offset ptr-bytes)])
     (unless (null? flds)
       (set-fld-byte! (car flds) offset)
-      (loop (cdr flds) (+ offset fld-byte-value))))
+      (loop (cdr flds) (+ offset ptr-bytes))))
   flds)
 
 (define ($object-ref type v offset)
@@ -493,7 +501,7 @@
      (unless (or (eq? type 'scheme-object)
                  (eq? type 'ptr))
        (error '$object-ref "unrecognized type: ~e" type))
-     (define i (quotient (- offset (add1 fld-byte-value)) fld-byte-value))
+     (define i (quotient (- offset (+ record-ptr-offset ptr-bytes)) ptr-bytes))
      (cond
        [(struct-type? v)
         (cond

@@ -5,7 +5,8 @@
          racket/runtime-path
 	 compiler/find-exe
 	 racket/system
-	 "cs/prep.rkt")
+	 "cs/prep.rkt"
+	 "cs/recompile.rkt")
 
 (define-runtime-path here ".")
 
@@ -67,6 +68,7 @@
 
 ;; ----------------------------------------
 
+;; Download Chez Scheme source
 (let ([submodules '("nanopass"  "stex"   "zlib"   "lz4")]
       [readmes    '("ReadMe.md" "ReadMe" "README" "README.md")])  
   (define (clone from to [git-clone-args '()])
@@ -105,11 +107,29 @@
          (system*! "git" "submodule" "init")
          (system*! "git" "submodule" "update")))]))
 
+;; Bootstrap Chez Scheme boot files
+(let/ec esc
+  (parameterize ([current-environment-variables
+		  (environment-variables-copy (current-environment-variables))]
+		 [exit-handler (let ([orig-exit (exit-handler)])
+				 (lambda (v)
+				   (if (zero? v)
+				       (esc)
+				       (orig-exit v))))])
+    (putenv "SCHEME_SRC" (path->string scheme-dir))
+    (putenv "MACH" machine)
+    (dynamic-require (build-path here 'up "cs" "bootstrap" "make-boot.rkt") #f)))
+
+;; Prepare to use Chez Scheme makefile
 (prep-chez-scheme scheme-dir machine)
 
+;; Finish building Chez Scheme
 (parameterize ([current-directory (build-path scheme-dir machine "c")])
   (system*! "nmake"
 	    (format "Makefile.~a" machine)))
+
+;; Replace Chez-on-Racket-built bootfiles with Chez-built bootfiles
+(recompile scheme-dir machine #:system* system*!)
 
 ;; ----------------------------------------
 

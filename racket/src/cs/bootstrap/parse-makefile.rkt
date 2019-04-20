@@ -6,6 +6,7 @@
 (define (get-sources-from-makefile scheme-dir)
   (call-with-input-file*
    (build-path scheme-dir "s" "Mf-base")
+   #:mode 'text
    (lambda (i)
      (define (extract-files m)
        (string-split (regexp-replace* #rx"\\\\" (bytes->string/utf-8 (cadr m)) "")))

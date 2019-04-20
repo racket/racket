@@ -2,7 +2,8 @@
 (require racket/runtime-path
          racket/match
          racket/file
-         (only-in "r6rs-lang.rkt")
+         (only-in "r6rs-lang.rkt"
+                  optimize-level)
          (only-in "scheme-lang.rkt"
                   current-expand)
          (submod "scheme-lang.rkt" callback)
@@ -12,23 +13,46 @@
          "parse-makefile.rkt"
          "config.rkt")
 
-;; Writes ".boot" and ".h" files to a "compiled" subdirectory of the
-;; current directory.
-
-;; Set `SCHEME_DIR` and `MACH` to specify the ChezScheme source
+;; Set `SCHEME_SRC` and `MACH` to specify the ChezScheme source
 ;; directory and the target machine.
 
+;; Writes ".boot" and ".h" files to a "boot" subdirectory of
+;; `SCHEME_SRC`.
+
+(define-runtime-path here-dir ".")
+(define out-subdir (build-path scheme-dir "boot" target-machine))
 (define nano-dir (build-path scheme-dir "nanopass"))
+
+(define (status msg)
+  (printf "~a\n" msg)
+  (flush-output))
+
+(define sources-date
+  (for/fold ([d 0]) ([dir (in-list (list here-dir
+                                         nano-dir
+                                         (build-path scheme-dir "s")))])
+    (status (format "Use ~a" dir))
+    (for/fold ([d d]) ([f (in-list (directory-list dir))]
+                       #:when (regexp-match? #rx"[.](?:rkt|ss|sls)$" f))
+      (max d (file-or-directory-modify-seconds (build-path dir f))))))
+
+(status (format "Check ~a" out-subdir))
+(when (for/and ([f (in-list (list "scheme.h"
+                                  "equates.h"
+                                  "petite.boot"
+                                  "scheme.boot"))])
+        (define d (file-or-directory-modify-seconds (build-path out-subdir f) #f (lambda () #f)))
+        (and d (d . >= . sources-date)))
+  (status "Up-to-date")
+  (exit))
+
+;; ----------------------------------------
 
 (define-runtime-module-path r6rs-lang-mod "r6rs-lang.rkt")
 (define-runtime-module-path scheme-lang-mod "scheme-lang.rkt")
 
 (define-values (petite-sources scheme-sources)
   (get-sources-from-makefile scheme-dir))
-
-(define (status msg)
-  (printf "~a\n" msg)
-  (flush-output))
 
 (define ns (make-base-empty-namespace))
 (namespace-attach-module (current-namespace) r6rs-lang-mod ns)
@@ -110,7 +134,6 @@
   (set-current-expand-set-callback!
    (lambda ()
      (start-fully-unwrapping-syntax!)
-     (status "Load expander")
      (define $uncprep (orig-eval '$uncprep))
      (current-eval
       (lambda (stx)
@@ -260,11 +283,14 @@
            (lambda (ty)
              (filter-foreign-type ty))))
 
+  (make-directory* out-subdir)
+  
   (status "Load mkheader")
   (load-ss (build-path scheme-dir "s/mkheader.ss"))
   (status "Generate headers")
-  (eval `(mkscheme.h "compiled/scheme.h" ,target-machine))
-  (eval `(mkequates.h "compiled/equates.h"))
+  (eval `(mkscheme.h ,(path->string (build-path out-subdir "scheme.h")) ,target-machine))
+  (eval `(mkequates.h ,(path->string (build-path out-subdir "equates.h"))))
+  (plumber-flush-all (current-plumber))
 
   (for ([s (in-list '("ftype.ss"
                       "fasl.ss"
@@ -281,14 +307,12 @@
     (status (format "Load ~a" s))
     (load-ss (build-path scheme-dir "s" s)))
 
-  (make-directory* "compiled")
-  
   (let ([failed? #f])
     (for ([src (append petite-sources scheme-sources)])
-      (let ([dest (path->string (path->complete-path (build-path "compiled" (path-replace-suffix src #".so"))))])
+      (let ([dest (path->string (path->complete-path (build-path out-subdir (path-replace-suffix src #".so"))))])
         (parameterize ([current-directory (build-path scheme-dir "s")])
           ;; (status (format "Compile ~a" src)) - Chez Scheme prints its own message
-          (with-handlers ([exn:fail? (lambda (exn)
+          (with-handlers (#;[exn:fail? (lambda (exn)
                                        (eprintf "ERROR: ~s\n" (exn-message exn))
                                        (set! failed? #t))])
             ((orig-eval 'compile-file) src dest)))))
@@ -296,10 +320,12 @@
       (raise-user-error 'make-boot "compilation failure(s)")))
 
   (let ([src->so (lambda (src)
-                   (path->string (build-path "compiled" (path-replace-suffix src #".so"))))])
+                   (path->string (build-path out-subdir (path-replace-suffix src #".so"))))])
     (status "Writing petite.boot")
-    (eval `($make-boot-file "compiled/petite.boot" ',(string->symbol target-machine) '()
+    (eval `($make-boot-file ,(path->string (build-path out-subdir "petite.boot"))
+                            ',(string->symbol target-machine) '()
                             ,@(map src->so petite-sources)))
     (status "Writing scheme.boot")
-    (eval `($make-boot-file "compiled/scheme.boot" ',(string->symbol target-machine) '("petite")
+    (eval `($make-boot-file ,(path->string (build-path out-subdir "scheme.boot"))
+                            ',(string->symbol target-machine) '("petite")
                             ,@(map src->so scheme-sources)))))

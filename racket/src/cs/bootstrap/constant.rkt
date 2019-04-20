@@ -44,7 +44,7 @@
     (provide id ...)
     (define id (hash-ref ht 'id)) ...))
 
-(hash-set! ht 'ptr-bytes (* 8 (hash-ref ht 'ptr-bits)))
+(hash-set! ht 'ptr-bytes (/ (hash-ref ht 'ptr-bits) 8))
 
 (define-constant
   ptr-bytes
@@ -58,4 +58,5 @@
   prelex-sticky-mask
   prelex-is-mask)
 
-
+(provide record-ptr-offset)
+(define record-ptr-offset 1)

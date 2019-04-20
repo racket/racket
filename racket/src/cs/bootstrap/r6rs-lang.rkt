@@ -12,6 +12,7 @@
          "format.rkt"
          "syntax-mode.rkt"
          "constant.rkt"
+         "config.rkt"
          (only-in "record.rkt"
                   do-$make-record-type
                   register-rtd-name!
@@ -769,9 +770,8 @@
 
 (define (s:fixnum? x)
   (and (fixnum? x)
-       (let ([w (fixnum-width)])
-         (<= low-fixnum x high-fixnum))))
+       (<= low-fixnum x high-fixnum)))
 
 (define (make-compile-time-value v) v)
 
-(define optimize-level (make-parameter 2))
+(define optimize-level (make-parameter optimize-level-init))
