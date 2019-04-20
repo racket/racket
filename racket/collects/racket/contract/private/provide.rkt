@@ -43,15 +43,44 @@
                                   stx)]
       [_ (syntax orig)])))
 
-(define-for-syntax make-applicable-struct-info
-  (letrec-values ([(struct: make- ? ref set!)
-                   (make-struct-type 'self-ctor-struct-info struct:struct-info
-                                     1 0 #f
-                                     (list (cons prop:procedure
-                                                 (lambda (v stx)
-                                                   (self-ctor-transformer ((ref v 0)) stx))))
-                                     (current-inspector) #f '(0))])
-    make-))
+;; make-contract-out-redirect-struct-info
+;; : (-> (-> (and/c struct-info? list?)) (-> identifier?) struct-info?)
+;; Create a struct-info? value from two thunks:
+;;  the 1st must be a valid argument for `make-struct-info`, and
+;;  the 2nd must return an identifier for a structure type descriptor.
+;; The 2nd thunk is used to recover the original names for a struct --- from before
+;;  `contract-out` started to mangle them.
+;;
+;; make-applicable-contract-out-redirect-struct-info
+;; : (-> (-> (and/c struct-info? list?)) (-> identifier?) (-> identifier?) struct-info?)
+;; Similar to the above, but the 3rd thunk must return an identifier for a
+;;  contract-protected constructor.
+;; Creates a value that can be applied to construct instances of the struct type.
+;;
+;; undo-contract-out-redirect
+;; : (-> any/c (or/c identifier? #f))
+;; Return the original struct name associated with the argument, or #f if
+;;  the input is not an indirect struct info.
+(define-values-for-syntax [make-contract-out-redirect-struct-info
+                           make-applicable-contract-out-redirect-struct-info
+                           undo-contract-out-redirect]
+  (let-values ([(struct:r make-r r? r-ref r-set!)
+                (make-struct-type
+                  'contract-out-redirect-struct-info struct:struct-info
+                  1 0 #f
+                  '()
+                  (current-inspector) #f '(0))])
+    (letrec-values ([(struct:app-r make-app-r app-r? app-r-ref app-r-set!)
+                     (make-struct-type
+                       'applicable-contract-out-redirect-struct-info struct:r
+                        1 0 #f
+                        (list (cons prop:procedure
+                                    (lambda (v stx)
+                                      (self-ctor-transformer ((app-r-ref v 0)) stx))))
+                        (current-inspector) #f '(0))])
+      (define (undo-contract-out-redirect v)
+        (and (r? v) ((r-ref v 0))))
+      (values make-r make-app-r undo-contract-out-redirect))))
 
 (begin-for-syntax
 
@@ -696,9 +725,16 @@
                                                (car (car pp)))))]
 
                 [the-struct-info (a:lookup-struct-info struct-name-position provide-stx)]
-                [constructor-id (list-ref the-struct-info 1)]
-                [predicate-id (list-ref the-struct-info 2)]
-                [selector-ids (reverse (list-ref the-struct-info 3))]
+                [orig-struct-name
+                  (or (undo-contract-out-redirect the-struct-info)
+                      struct-name)]
+                [the-struct-info-list (extract-struct-info the-struct-info)]
+                [orig-struct-info-list (extract-struct-info (syntax-local-value orig-struct-name))]
+                [constructor-id (list-ref the-struct-info-list 1)]
+                [predicate-id (list-ref the-struct-info-list 2)]
+                [orig-predicate-id (list-ref orig-struct-info-list 2)]
+                [selector-ids (reverse (list-ref the-struct-info-list 3))]
+                [orig-selector-ids (reverse (list-ref orig-struct-info-list 3))]
                 [type-is-only-constructor? (free-identifier=? constructor-id struct-name)]
                 ; I think there's no way to detect when the struct-name binding isn't a constructor
                 [type-is-constructor? #t] 
@@ -710,7 +746,8 @@
                            (parent-struct-count . <= . i))
                        id
                        #t))]
-                [mutator-ids (reverse (list-ref the-struct-info 4))] ;; (listof (union #f identifier))
+                [mutator-ids (reverse (list-ref the-struct-info-list 4))] ;; (listof (union #f identifier))
+                [orig-mutator-ids (reverse (list-ref orig-struct-info-list 4))]
                 [field-contract-ids (map (λ (field-name field-contract)
                                            (mangled-id-scope
                                             (a:mangle-id "provide/contract-field-contract"
@@ -719,7 +756,7 @@
                                          field-names
                                          field-contracts)]
                 [struct:struct-name
-                 (or (list-ref the-struct-info 0)
+                 (or (list-ref the-struct-info-list 0)
                      (datum->syntax
                       struct-name
                       (string->symbol
@@ -817,48 +854,45 @@
                           (cdr selector-strs)
                           (cdr field-names)))])))
            (with-syntax ([((selector-codes selector-new-names) ...)
-                          (filter
-                           (λ (x) x)
-                           (map/count (λ (selector-id field-contract-id index)
-                                        (if (is-new-id? index)
-                                            (code-for-one-id/new-name
-                                             stx
-                                             selector-id #f
-                                             (build-selector-contract struct-name
-                                                                      predicate-id
-                                                                      field-contract-id)
-                                             #f)
-                                            #f))
-                                      selector-ids
-                                      field-contract-ids))]
+                          (for/list ([selector-id (in-list selector-ids)]
+                                     [orig-selector-id (in-list orig-selector-ids)]
+                                     [field-contract-id (in-list field-contract-ids)]
+                                     [index (in-naturals)]
+                                     #:when (is-new-id? index))
+                            (code-for-one-id/new-name
+                             stx
+                             selector-id #f
+                             (build-selector-contract struct-name
+                                                      predicate-id
+                                                      field-contract-id)
+                             (datum->syntax stx orig-selector-id)))]
                          [(rev-selector-old-names ...)
                           (reverse
-                           (filter
-                            (λ (x) x)
                             (for/list ([selector-id (in-list selector-ids)]
-                                       [index (in-naturals)])
-                              (if (is-new-id? index)
-                                  #f
-                                  (let ([in-map (free-identifier-mapping-get struct-id-mapping
-                                                                             selector-id
-                                                                             (λ () #f))])
-                                    (or in-map
-                                        selector-id))))))]
+                                       [index (in-naturals)]
+                                       #:unless (is-new-id? index))
+                              (let ([in-map (free-identifier-mapping-get struct-id-mapping
+                                                                         selector-id
+                                                                         (λ () #f))])
+                                (or in-map
+                                    selector-id))))]
                          [(mutator-codes/mutator-new-names ...)
-                          (map/count (λ (mutator-id field-contract-id index)
-                                       (if (and mutator-id (is-new-id? index))
-                                           (code-for-one-id/new-name 
-                                            stx
-                                            mutator-id #f
-                                            (build-mutator-contract struct-name
-                                                                    predicate-id
-                                                                    field-contract-id)
-                                            #f)
-                                           #f))
-                                     mutator-ids
-                                     field-contract-ids)]
+                          (for/list ([mutator-id (in-list mutator-ids)]
+                                     [orig-mutator-id (in-list orig-mutator-ids)]
+                                     [field-contract-id (in-list field-contract-ids)]
+                                     [index (in-naturals)])
+                            (if (and mutator-id (is-new-id? index))
+                                (code-for-one-id/new-name
+                                 stx
+                                 mutator-id #f
+                                 (build-mutator-contract struct-name
+                                                         predicate-id
+                                                         field-contract-id)
+                                 (datum->syntax stx orig-mutator-id))
+                                #f))]
                          [(predicate-code predicate-new-name)
-                          (code-for-one-id/new-name stx predicate-id #f (syntax predicate/c) #f)]
+                          (code-for-one-id/new-name stx predicate-id #f (syntax predicate/c)
+                                                    (datum->syntax stx orig-predicate-id))]
                          [(constructor-code constructor-new-name)
                           (if omit-constructor?
                               #'((void) (void))
@@ -886,12 +920,10 @@
                          [(field-contracts ...) field-contracts]
                          [(field-contract-ids ...) field-contract-ids])
 
-             (with-syntax ([((mutator-codes mutator-new-names) ...)
+             (with-syntax ([((mutator-codes _) ...)
                             (filter syntax-e (syntax->list #'(mutator-codes/mutator-new-names ...)))])
                (with-syntax ([(rev-selector-new-names ...)
-                              (reverse (syntax->list (syntax (selector-new-names ...))))]
-                             [(rev-mutator-new-names ...)
-                              (reverse (syntax->list (syntax (mutator-new-names ...))))])
+                              (reverse (syntax->list (syntax (selector-new-names ...))))])
                  (with-syntax ([struct-code
                                 (with-syntax ([id-rename
                                                (or (free-identifier-mapping-get struct-id-mapping
@@ -901,6 +933,7 @@
                                                           "internal error.2: ~s"
                                                           struct-name))]
                                               [struct-name struct-name]
+                                              [orig-struct-name orig-struct-name]
                                               [-struct:struct-name -struct:struct-name]
                                               [super-id 
                                                (if (boolean? super-id)
@@ -912,14 +945,14 @@
                                                                        (λ () #f))
                                                                       super-id)])
                                                      (syntax (quote-syntax the-super-id))))]
-                                              [(mutator-id-info ...)
-                                               (for/list ([x (in-list
-                                                              (syntax->list
-                                                               #'(mutator-codes/mutator-new-names
-                                                                  ...)))])
-                                                 (syntax-case x ()
-                                                   [(a b) #'(quote-syntax b)]
-                                                   [else #f]))]
+                                              [(rev-mutator-id-info ...)
+                                               (reverse
+                                                 (for/list ([x (in-list
+                                                                (syntax->list
+                                                                 #'(mutator-codes/mutator-new-names ...)))])
+                                                   (syntax-case x ()
+                                                     [(a b) #'(quote-syntax b)]
+                                                     [else #f])))]
                                               [(exported-selector-ids ...) (reverse selector-ids)])
                                   (define proc
                                     #`(λ ()
@@ -930,17 +963,22 @@
                                               (quote-syntax predicate-new-name)
                                               (list (quote-syntax rev-selector-new-names) ...
                                                     (quote-syntax rev-selector-old-names) ...)
-                                              (list mutator-id-info ...)
+                                              (list rev-mutator-id-info ...)
                                               super-id)))
                                   #`(begin
                                       (provide (rename-out [id-rename struct-name]))
                                       (define-syntax id-rename
                                         #,(if (and type-is-constructor? (not omit-constructor?))
-                                              #`(make-applicable-struct-info 
+                                              #`(make-applicable-contract-out-redirect-struct-info
                                                  #,proc
                                                  (lambda ()
+                                                   (quote-syntax orig-struct-name))
+                                                 (lambda ()
                                                    (quote-syntax constructor-new-name)))
-                                              #`(make-struct-info #,proc)))))]
+                                              #`(make-contract-out-redirect-struct-info
+                                                 #,proc
+                                                 (lambda ()
+                                                   (quote-syntax orig-struct-name)))))))]
                                [struct:struct-name struct:struct-name]
                                [-struct:struct-name -struct:struct-name]
                                [struct-name struct-name]
@@ -983,16 +1021,6 @@
                                               field-contract-ids ...))
                        (provide (rename-out [-struct:struct-name struct:struct-name]))))))))))
 
-       (define (map/count f . ls)
-         (let loop ([ls ls]
-                    [i 0])
-           (cond
-             [(andmap null? ls) '()]
-             [(ormap null? ls) (error 'map/count "mismatched lists")]
-             [else (cons (apply f (append (map car ls) (list i)))
-                         (loop (map cdr ls)
-                               (+ i 1)))])))
-
        ;; andmap/count : (X Y int -> Z) (listof X) (listof Y) -> (listof Z)
        (define (andmap/count f l1)
          (let loop ([l1 l1]
@@ -1010,7 +1038,7 @@
                     [orig-struct? #t])
            (let ([parent-info
                   (and (identifier? parent-info-id)
-                       (a:lookup-struct-info parent-info-id provide-stx))])
+                       (extract-struct-info (a:lookup-struct-info parent-info-id provide-stx)))])
              (cond
                [(boolean? parent-info) null]
                [else
