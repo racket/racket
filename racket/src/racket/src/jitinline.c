@@ -172,7 +172,7 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
     }
   }
 
-  return check_val_struct_prim(o, 1);
+  return check_val_struct_prim(o, arity);
 }
 
 int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)

@@ -1074,6 +1074,18 @@
     (un 'b '(lambda (ht) (hash-ref ht 'a #f)) '#hash((a . b)) #t
         #:name 'hash-ref)
 
+    (un-exact 7 'arity-at-least-value (make-arity-at-least 7) #t)
+    (err/rt-test (let ([f (eval '(lambda () (arity-at-least-value)))]) (f)))
+
+    (un-exact 20 'date-day (make-date 0 0 0 20 1 0 0 0 #f 0) #t)
+    (err/rt-test (let ([f (eval '(lambda () (date-day)))]) (f)))
+
+    (un-exact 12345 'date*-nanosecond (make-date* 0 0 0 20 1 0 0 0 #f 0 12345 "UTC") #t)
+    (err/rt-test (let ([f (eval '(lambda () (date*-nanosecond)))]) (f)))
+
+    (un-exact 'here 'srcloc-source (make-srcloc 'here #f #f #f #f) #t)
+    (err/rt-test (let ([f (eval '(lambda () (srcloc-source)))]) (f)))
+
     ))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
