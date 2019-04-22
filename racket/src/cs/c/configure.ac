@@ -373,11 +373,16 @@ fi
 # is different in cross-build mode).
 
 SCHEME_SRC=../../ChezScheme
-MAKE_BUILD_SCHEME=y
+MAKE_BUILD_SCHEME=checkout
 
 if test "${enable_scheme}" != "" ; then
   SCHEME_SRC="${enable_scheme}"
-  MAKE_BUILD_SCHEME=n
+  MAKE_BUILD_SCHEME=none
+else
+  # Check for a directory packaged with a source distribution
+  if test -d "${srcdir}/../../ChezScheme" ; then
+    MAKE_BUILD_SCHEME=copy
+  fi
 fi
 
 if test "${enable_racket}" != "" ; then

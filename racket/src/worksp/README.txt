@@ -57,8 +57,10 @@ The result is "..\..\Racket.exe", DLLs and "GRacket.exe" in
 "..\..\lib", and other files in "..\..\lib", "..\..\etc", etc.
 
 Many intermediate files will be put in "../build", including a Chez
-Scheme checkout if it's not already present (in which case `git` must
-be available).
+Scheme checkout if it's not already present there; if a "ChezScheme"
+directory exists in the Racket suorce directory, it is copied to the
+build directory, otherwise it is cloned from a Git repository (in
+which case `git` must be available).
 
 See also "Completing the Build" below.
 

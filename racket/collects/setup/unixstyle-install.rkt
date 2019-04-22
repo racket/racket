@@ -29,7 +29,8 @@
 
 #lang racket/base
 (require setup/cross-system
-         racket/file)
+         racket/file
+         racket/list)
 
 (module test racket/base)
 
@@ -90,6 +91,7 @@
       [(man)      #f]
       [(applications) #f]
       [(src)      1]
+      [(ChezScheme) 1]
       [(README)   #f] ; moved last
       [else (error 'level-of "internal-error -- unknown dir: ~e" dir)])))
 
@@ -149,7 +151,7 @@
 
 ;; copy a file or a directory (recursively), preserving time stamps
 ;; (racket's copy-file preservs permission bits)
-(define (cp src dst)
+(define (cp src dst #:build-path? [build-path? #f])
   (define skip-filter (current-skip-filter))
   (let loop ([src src] [dst dst])
     (let ([time! (lambda ()
@@ -160,8 +162,12 @@
              (make-file-or-directory-link (resolve-path src) dst)]
             [(directory-exists? src)
              (make-directory dst)
-             (parameterize ([current-directory src])
-               (for-each (lambda (p) (loop p (make-path dst p))) (ls)))]
+             (if build-path?
+                 (for-each (lambda (p) (loop (make-path src p) (make-path dst p)))
+                           (parameterize ([current-directory src])
+                             (ls)))
+                 (parameterize ([current-directory src])
+                   (for-each (lambda (p) (loop p (make-path dst p))) (ls))))]
             [(file-exists? src) (copy-file src dst) (time!)]
             [else (error 'cp "internal error: ~e" src)]))))
 
@@ -196,6 +202,10 @@
 ;; like `cp', but also record copies
 (define (cp* src dst)
   (cp src dst)
+  (register-change! 'cp src dst))
+
+(define (cp*/build src dst)
+  (cp src dst #:build-path? #t)
   (register-change! 'cp src dst))
 
 (define (fix-executable file)
@@ -414,7 +424,9 @@
                  [(n) (error "Abort!")]
                  [else (loop)]))))))
 
-(define ((move/copy-tree move?) src dst* #:missing [missing 'error])
+(define ((move/copy-tree move?) src dst*
+                                #:missing [missing 'error]
+                                #:build-path? [build-path? #f])
   (define skip-filter (current-skip-filter))
   (define dst (if (symbol? dst*) (dir: dst*) dst*))
   (define src-exists?
@@ -426,7 +438,7 @@
      (let loop ([src (path->string (simplify-path src #f))]
                 [dst (path->string (simplify-path dst #f))]
                 [lvl (level-of src)]) ; see above
-       (let ([doit (let ([doit (if move? mv* cp*)]) (lambda () (doit src dst)))]
+       (let ([doit (let ([doit (if move? mv* (if build-path? cp*/build cp*))]) (lambda () (doit src dst)))]
              [src-d? (directory-exists? src)]
              [dst-l? (link-exists? dst)]
              [dst-d? (directory-exists? dst)]
@@ -504,10 +516,12 @@
     (current-directory (dirname rktdir))
     (delete-directory rktdir)))
 
+(define dot-file?
+  ;; skip all dot-names, except ".LOCK..."
+  (lambda (p) (regexp-match? #rx"^[.](?!LOCK)" (basename p))))
+
 (define (skip-dot-files!)
-  (current-skip-filter
-   ;; skip all dot-names, except ".LOCK..."
-   (lambda (p) (regexp-match? #rx"^[.](?!LOCK)" (basename p)))))
+  (current-skip-filter dot-file?))
 
 (define (make-install-copytree)
   (define copytree (move/copy-tree #f))
@@ -556,6 +570,11 @@
     (current-skip-filter ; skip src/build
      (lambda (p) (regexp-match? #rx"^build$" p)))
     (do-tree "src" (build-path base-destdir "src"))
+    ;; Copy Chez Scheme source, if present
+    (let ([src-cs "src/build/ChezScheme"])
+      (when (directory-exists? src-cs)
+        (current-skip-filter (make-chez-source-skip src-cs))
+        (do-tree src-cs (build-path base-destdir "src/ChezScheme") #:build-path? #t)))
     ;; Remove directories that get re-created:
     (define (remove! dst*) (rm (dir: dst*)))
     (remove! 'bin)
@@ -567,6 +586,66 @@
     (when (regexp-match? #rx"--source" (cadr adjust-mode))
       ;; strip "compiled" directories back out of "collects"
       (rm-compiled (dir: 'collects)))))
+
+;; --------------------------------------------------------------------------
+
+(define (make-chez-source-skip src-cs)
+  (define orig-skip? (current-skip-filter))
+  (define git-skip? (read-git-ignore-paths src-cs))
+  ;; Keep only the part of LZ4 that we need, since it has a more liberal license
+  (define src-cs-ex (explode-path src-cs))
+  (define (lz4-skip? p)
+    (define-values (base name dir?) (split-path p))
+    (and (not (equal? (path->string name) "lib"))
+         (path? base)
+         (let-values ([(base name dir?) (split-path base)])
+           (and (equal? (explode-path base) src-cs-ex)
+                (equal? (path->string name) "lz4")))))
+  (lambda (p)
+    (or (dot-file? p)
+        (orig-skip? p)
+        (git-skip? p)
+        (lz4-skip? p))))
+
+(define (read-git-ignore-paths subdir)
+  (define subdir-len (length (explode-path subdir)))
+  (define pred-on-exploded
+    (call-with-input-file*
+     (build-path subdir ".gitignore")
+     (lambda (i)
+       (let loop ([pred (lambda (elems) #f)])
+         (define l (read-line i 'any))
+         (cond
+           [(eof-object? l) pred]
+           [(or (string=? l "")
+                (eqv? #\# (string-ref l 0)))
+            (loop pred)]
+           [(eqv? #\/ (string-ref l 0))
+            (define match-elems? (map elem->matcher (explode-path (substring l 1))))
+            (loop (lambda (elems)
+                    (or (pred elems)
+                        (and (equal? (length elems) (+ subdir-len (length match-elems?)))
+                             (andmap (lambda (m? e) (m? e)) match-elems? (list-tail elems subdir-len))))))]
+           [else
+            (define match-elems? (map elem->matcher (explode-path (substring l 1))))
+            (loop (lambda (elems)
+                    (or (pred elems)
+                        (and ((length elems) . >= . (+ subdir-len (length match-elems?)))
+                             (andmap (lambda (m? e) (m? e)) match-elems? (take-right elems (length match-elems?)))))))])))))
+  (lambda (p)
+    (pred-on-exploded (explode-path p))))
+
+(define (elem->matcher elem)
+  (define s (path->string elem))
+  (cond
+    [(regexp-match? #rx"[*?.]" s)
+     (let* ([rx (regexp-replace* #rx"[.]" s "[.]")]
+            [rx (regexp-replace* #rx"[?]" s ".")]
+            [rx (regexp-replace* #rx"[*]" rx ".*")]
+            [rx (regexp rx)])
+       (lambda (p) (regexp-match? rx (path->string p))))]
+    [else
+     (lambda (p) (equal? (path->string p) s))]))
 
 ;; --------------------------------------------------------------------------
 

@@ -77,7 +77,11 @@
                            "clone")
                      git-clone-args
                      (list from to))))
+  (define bundled-src-dir (build-path here 'up "ChezScheme"))
   (cond
+    [(directory-exists? bundled-src-dir)
+     (unless (directory-exists? scheme-dir)
+       (copy-directory/files bundled-src-dir scheme-dir))]
     [extra-repos-base
      ;; Intentionally not using `git-clone-args`, because dumb transport
      ;; (likely for `extra-repos-base`) does not support shallow copies

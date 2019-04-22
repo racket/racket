@@ -263,7 +263,7 @@ RACKET_BUILT_FOR_CS = racket/src/build/racket/racket3m
 # Chez Scheme from `CHEZ_SCHEME_REPO`
 SCHEME_SRC = 
 DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
-MAKE_BUILD_SCHEME = y
+MAKE_BUILD_SCHEME = checkout
 
 CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
 GIT_CLONE_ARGS_qq = -q --depth 1
@@ -336,7 +336,7 @@ ABS_SCHEME_SRC = `$(RACKET) $(ABS_BOOT) racket/src/cs/absify.rkt $(SCHEME_SRC)`
 cs-after-racket-with-racket:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
 	  then $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(DEFAULT_SCHEME_SRC)" ; \
-	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=n ; fi
+	  else $(MAKE) cs-after-racket-with-racket-and-scheme-src RACKET="$(RACKET)" SCHEME_SRC="$(SCHEME_SRC)" MAKE_BUILD_SCHEME=none ; fi
 
 cs-after-racket-with-racket-and-scheme-src:
 	$(RACKET) -O "info@compiler/cm" $(ABS_BOOT) racket/src/cs/absify.rkt just-to-compile-absify
@@ -448,9 +448,9 @@ win32-just-cs:
 native-cs-for-cross:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
          then $(MAKE) scheme-src-then-cross ; \
-         else $(MAKE) native-cs-for-cross-after-scheme-src MAKE_BUILD_SCHEME=n ; fi
+         else $(MAKE) native-cs-for-cross-after-scheme-src MAKE_BUILD_SCHEME=none ; fi
 
-CS_CROSS_SCHEME_CONFIG = SCHEME_SRC="`pwd`/racket/src/build/cross/ChezScheme" MAKE_BUILD_SCHEME=y
+CS_CROSS_SCHEME_CONFIG = SCHEME_SRC="`pwd`/racket/src/build/cross/ChezScheme" MAKE_BUILD_SCHEME=checkout
 
 scheme-src-then-cross:
 	$(MAKE) scheme-src BUILD_FOR_FOR_SCHEME_DIR="racket/src/build/cross/"

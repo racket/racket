@@ -58,12 +58,16 @@ To build Racket-on-Chez on Unix variants or Mac OS:
    The generated Racket-on-Chez executables will *not* have a "cs"
    suffix.
 
-Chez Scheme is not included with Racket sources, but building
-Racket-on-Chez requires either a "ChezScheme" build checkout within
-the build directory or at at an alternate location specified by the
-`--enable-scheme=...` argument to `configure`.
+Chez Scheme is included in a Racket source distribution, but not in
+the main Racket source repository. Building Racket-on-Chez requires
+either a "ChezScheme" build checkout within the build directory or at
+at an alternate location specified by the `--enable-scheme=...`
+argument to `configure`. If "--enable-scheme=...` is not specified,
+then a "ChezScheme" directory is copied if it exists to the build
+subdirectory, otherwise if must be checked out before configuring into
+the build directory.
 
-For now, use the patched version of Chez Scheme at
+Use the patched version of Chez Scheme at
 
     https://github.com/racket/ChezScheme
 

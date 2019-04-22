@@ -128,15 +128,24 @@ bounce:
 	cd $(srcdir)/../../schemify && $(MAKE) known-src-generate RACKET="$(BOOTSTRAP_RACKET)" BUILDDIR="$(builddir)/"
 
 scheme:
-	if [ "$(MAKE_BUILD_SCHEME)" = "y" ] ; \
-         then $(MAKE) scheme-make ; fi
+	$(MAKE) scheme-make-$(MAKE_BUILD_SCHEME)
+
+scheme-make-none:
+	echo Using Chez Scheme build as-is
+
+scheme-make-checkout:
+	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
+	$(MAKE) scheme-make-finish
+
+scheme-make-copy:
+	if [ ! -d "$(SCHEME_SRC)" ] ; then cp -r $(srcdir)/../../ChezScheme "$(SCHEME_SRC)" ; fi
+	$(MAKE) scheme-make-finish
 
 SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LD="$(LD)" LDFLAGS="$(LDFLAGS)" \
                      AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
                      WINDRES="$(WINDRES)"
 
-scheme-make:
-	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
+scheme-make-finish:
 	env SCHEME_SRC="$(SCHEME_SRC)" MACH="$(MACH)" $(BOOTSTRAP_RACKET) $(srcdir)/../bootstrap/make-boot.rkt
 	cd $(SCHEME_SRC) && ./configure @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
 	mkdir -p $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
