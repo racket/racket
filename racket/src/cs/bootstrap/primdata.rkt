@@ -1,13 +1,11 @@
 #lang racket/base
 (require racket/match
+         "scheme-struct.rkt"
          "scheme-readtable.rkt"
          "symbol.rkt")
 
 (provide get-primdata
          (struct-out priminfo))
-
-(struct primref (name flags arity signatures) #:prefab #:mutable
-  #:reflection-name '|{primref a0xltlrcpeygsahopkplcn-3}|)
 
 (struct priminfo (unprefixed libraries mask signatures arity))
 
