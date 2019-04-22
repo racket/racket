@@ -827,6 +827,10 @@ win32-client:
 	$(WIN32_RACKET) -l distro-build/set-config $(SET_BUNDLE_CONFIG_q)
 	$(MAKE) win32-installer-from-bundle $(COPY_ARGS)
 
+# Sensible when creating a source distribution with built packages:
+client-compile-any:
+	$(MAKE) client $(ANY_COMPILE_MACHINE_ARGS_qq) BUNDLE_FROM_SERVER_TARGET=bundle-cross-from-server
+
 # Install the "distro-build" package from the server into
 # a local build:
 distro-build-from-server:
