@@ -51,21 +51,28 @@ To build Racket-on-Chez on Unix variants or Mac OS:
  * ... in addition to the traditional variant of Racket: supply
    `--enable-cs` or `--enable-csdefault` to `configure`.
 
-   The generated Racket-on-Chez executables will have a "cs" suffix.
+   The generated Racket-on-Chez executables will have a "cs" suffix
+   for `--enable-cs`, and it will not have a "cs" suffix for
+   `--enable-csdefault`. Also, plain `make` will still build the
+   traditional Racket implementation with `--enable-cs`; use `make cs`
+   to build and `make install-cs` to inatll. With
+   `--enable-csdefault`, plain `make` and `make install` will build
+   and install Racket-on-Chez.
 
  * ... by itself: supply `--enable-csonly` to `configure`.
  
    The generated Racket-on-Chez executables will *not* have a "cs"
-   suffix.
+   suffix. Unlike `--emable-csdefault`, you must specify an existing
+   Racket using `--enable-racket=...`.
 
-Chez Scheme is included in a Racket source distribution, but not in
-the main Racket source repository. Building Racket-on-Chez requires
-either a "ChezScheme" build checkout within the build directory or at
-at an alternate location specified by the `--enable-scheme=...`
-argument to `configure`. If "--enable-scheme=...` is not specified,
-then a "ChezScheme" directory is copied if it exists to the build
-subdirectory, otherwise if must be checked out before configuring into
-the build directory.
+Chez Scheme is included in a Racket source distribution and
+`configure` detects that source, so no separate download or Git
+checkout is needed in that case.
+
+Chez Scheme is not included in the Racket Git repository. Building
+Racket-on-Chez from a Git checkout requires a "ChezScheme" build
+checkout within the build directory or at at an alternate location
+specified by the `--enable-scheme=...` argument to `configure`.
 
 Use the patched version of Chez Scheme at
 

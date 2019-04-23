@@ -34,7 +34,9 @@ automatically. You can select a different Racket excutable by
 supplying `--enable-racket=...` to `configure`.
 
 The Chez Scheme build must also be sufficiently new. See
-"../README.txt" for information on obtaining Chez Scheme.
+"../README.txt" for information on obtaining Chez Scheme (when not
+using a source Racket distribution that includes Chez Scheme's source
+already).
 
 
 ========================================================================
