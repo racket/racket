@@ -312,15 +312,15 @@ static void letrec_check_lets_resume(Letrec_Check_Frame *frame, Scheme_IR_Let_He
        that we have invalidated; i.e., adding check-undefineds around
        references means there is one (more) instance where the LHS
        variable is not used in application position */
-    k = head->count;
+    k = 0;
     for (i = head->num_clauses; i--;) {
       irlv = (Scheme_IR_Let_Value *) body;
-      k -= irlv->count;
       for (j = 0; j < irlv->count; j++) {
         was_checked = (frame->ref[k + j] & LET_CHECKED);
         if (was_checked)
           irlv->vars[j]->non_app_count = irlv->vars[j]->use_count;
       }
+      k += irlv->count;
       body = irlv->body;
     }
   }

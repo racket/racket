@@ -6430,4 +6430,31 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module regression-for-letrec-check-non-app-tracking racket/base
+  (require racket/match)
+
+  (define (j-emit j)
+    (struct :ec (x defs) #:transparent)
+    (struct :def (x e) #:transparent)
+    (define (e->c^ j) '(1 2 3))
+    (define (es->c^ js)
+      (define n (gensym))
+      (match js
+        ['() (e->c '(:con 'void))]
+        [(cons a d)
+         (match-define (:ec ax adefs) (e->c a))
+         (match-define (:ec dx ddefs) (es->c d))
+         (:ec n (list* (:def n 9)
+                       (append ddefs adefs)))]))
+
+    (define ((make-e->c e->c^) j)
+      (match-define (and r (:ec n defs)) (e->c^ j))
+      r)
+    (define e->c (make-e->c e->c^))
+    (define es->c (make-e->c es->c^))
+
+    6))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
