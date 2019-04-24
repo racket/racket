@@ -55,7 +55,7 @@ To build Racket-on-Chez on Unix variants or Mac OS:
    for `--enable-cs`, and it will not have a "cs" suffix for
    `--enable-csdefault`. Also, plain `make` will still build the
    traditional Racket implementation with `--enable-cs`; use `make cs`
-   to build and `make install-cs` to inatll. With
+   to build and `make install-cs` to install. With
    `--enable-csdefault`, plain `make` and `make install` will build
    and install Racket-on-Chez.
 
