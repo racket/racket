@@ -286,7 +286,9 @@
   ;; Host `number->string` goes through `format`, so we can do
   ;; significantly better for fixnums by handling them directly
   (cond
-   [(fixnum? n)
+   [(and (fixnum? n)
+         (or (fx> n 0)
+             (fixnum? (- n))))
     (let-values ([(result pos) ; result string and pos after written so far
                   (let loop ([v (fxabs n)] [len 0])
                     (cond
