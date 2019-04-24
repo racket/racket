@@ -83,7 +83,7 @@
           uncaught-exception-handler
           error-display-handler
           error-escape-handler
-          register-linklet-instantiate-continuation! ; not exported to Racket
+          linklet-instantiate-key ; not exported to Racket
           set-error-display-eprintf! ; not exported to Racket
           set-log-system-message! ; not exported to Racket
 

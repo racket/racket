@@ -676,9 +676,9 @@
        [target-instance
         ;; Instantiate into the given instance and return the
         ;; result of the linklet body:
-        (call/cc
-         (lambda (k)
-           (register-linklet-instantiate-continuation! k (instance-name target-instance))
+        (with-continuation-mark
+          linklet-instantiate-key (instance-name target-instance)
+          (begin
            (when (eq? 'lazy (linklet-preparation linklet))
              ;; Trigger lazy conversion of code from bytevector
              (let ([code (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))])

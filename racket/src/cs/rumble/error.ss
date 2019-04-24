@@ -470,9 +470,7 @@
 (define-thread-local link-instantiate-continuations (make-ephemeron-eq-hashtable))
 
 ;; For `instantiate-linklet` to help report which linklet is being run:
-(define (register-linklet-instantiate-continuation! k name)
-  (when name
-    (hashtable-set! link-instantiate-continuations k name)))
+(define linklet-instantiate-key (gensym "linklet"))
 
 ;; Convert a contination to a list of function-name and
 ;; source information. Cache the result half-way up the
@@ -481,7 +479,7 @@
 (define (continuation->trace k)
   (call-with-values
    (lambda ()
-     (let loop ([k k] [slow-k k] [move? #f])
+     (let loop ([k k] [slow-k k] [move? #f] [attachments (continuation-next-attachments k)])
        (cond
          [(or (not (#%$continuation? k))
               (eq? k #%$null-continuation))
@@ -490,9 +488,10 @@
           => (lambda (l)
                (values slow-k l))]
          [else
-          (let* ([name (or (let ([n (hashtable-ref link-instantiate-continuations
-                                                   k
-                                                   #f)])
+          (let* ([next-attachments (continuation-next-attachments k)]
+                 [name (or (let ([n (and (not (eq? attachments next-attachments))
+                                         (pair? attachments)
+                                         (extract-mark-from-frame (car attachments) linklet-instantiate-key #f))])
                              (and n
                                   (string->symbol (format "body of ~a" n))))
                            (let* ([c (#%$continuation-return-code k)]
@@ -513,7 +512,9 @@
                          (cons name src)))])
             (#%$split-continuation k 0)
             (call-with-values
-             (lambda () (loop (#%$continuation-link k) (if move? (#%$continuation-link slow-k) slow-k) (not move?)))
+             (lambda () (loop (#%$continuation-link k)
+                              (if move? (#%$continuation-link slow-k) slow-k) (not move?)
+                              next-attachments))
              (lambda (slow-k l)
                (let ([l (if desc
                             (cons desc l)

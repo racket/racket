@@ -5,7 +5,6 @@
 (define-primitive-table internal-table
   [extract-procedure (known-constant)]
   [set-ctl-c-handler! (known-constant)]
-  [register-linklet-instantiate-continuation! (known-constant)]
   [impersonator-val (known-constant)]
   [impersonate-ref (known-constant)]
   [impersonate-set! (known-constant)]
