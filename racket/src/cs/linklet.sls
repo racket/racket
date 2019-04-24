@@ -701,13 +701,12 @@
                     (linklet-code linklet)
                     (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet)))
                 (make-variable-reference target-instance #f)
-                (append (apply append
-                               (map (make-extract-variables target-instance)
-                                    import-instances
-                                    (linklet-importss linklet)
-                                    (linklet-importss-abi linklet)))
-                        (create-variables target-instance
-                                          (linklet-exports linklet)))))))))]
+                (extract-imported-variabless target-instance
+                                             import-instances
+                                             (linklet-importss linklet)
+                                             (linklet-importss-abi linklet)
+                                             (create-variables target-instance
+                                                               (linklet-exports linklet)))))))))]
        [else
         ;; Make a fresh instance, recur, and return the instance
         (let ([i (make-instance (linklet-name linklet))])
@@ -786,19 +785,28 @@
 
   ;; Find variables or values needed from an instance for a linklet's
   ;; imports
-  (define (make-extract-variables target-inst)
-    (lambda (inst syms imports-abi)
-      (let ([ht (instance-hash inst)])
-        (map (lambda (sym import-abi)
-               (let ([var (or (hash-ref ht sym #f)
-                              (raise-linking-failure "is not exported" target-inst inst sym))])
-                 (when (eq? (variable-val var) variable-undefined)
-                   (raise-linking-failure "is uninitialized" target-inst inst sym))
-                 (if import-abi
-                     (variable-val var)
-                     var)))
-             syms
-             imports-abi))))
+  (define (extract-imported-variabless target-inst insts symss imports-abis accum)
+    (cond
+     [(null? insts) accum]
+     [else (extract-imported-variables
+            target-inst (car insts) (car symss) (car imports-abis)
+            (extract-imported-variabless target-inst (cdr insts) (cdr symss) (cdr imports-abis)
+                                         accum))]))
+  (define (extract-imported-variables target-inst inst syms imports-abi accum)
+    (cond
+     [(null? syms) accum]
+     [else
+      (let ([sym (car syms)]
+            [import-abi (car imports-abi)])
+        (let ([var (or (hash-ref (instance-hash inst) sym #f)
+                       (raise-linking-failure "is not exported" target-inst inst sym))])
+          (when (eq? (variable-val var) variable-undefined)
+            (raise-linking-failure "is uninitialized" target-inst inst sym))
+          (let ([v (if import-abi
+                       (variable-val var)
+                       var)])
+            (cons v
+                  (extract-imported-variables target-inst inst (cdr syms) (cdr imports-abi) accum)))))]))
 
   (define (raise-linking-failure why target-inst inst sym)
     (raise-arguments-error 'instantiate-linklet
