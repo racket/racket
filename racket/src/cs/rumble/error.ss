@@ -207,7 +207,7 @@
    (|#%app|
     exn:fail:contract
     (string-append (symbol->string who)
-                   ": expected argument ot type <" what ">"
+                   ": expected argument of type <" what ">"
                    "; given: "
                    (error-value->string
                     (if pos (list-ref (cons arg args) pos) arg))
