@@ -951,7 +951,7 @@
     syntax-module-path-index-shift))
     
 (define deserialize-instance
-  (make-instance 'deserialize #f 'constant
+  (make-instance 'deserialize #f 'consistent
                  'deserialize-module-path-indexes deserialize-module-path-indexes
                  'syntax-module-path-index-shift syntax-module-path-index-shift/no-keywords
                  'syntax-shift-phase-level syntax-shift-phase-level
