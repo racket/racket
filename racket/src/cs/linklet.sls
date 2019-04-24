@@ -528,9 +528,8 @@
                            ;; Callback to get a specific linklet for a
                            ;; given import:
                            (if get-import
-                               (lambda (key) (values #f #f #f))
-                               (lambda (key)
-                                 (lookup-linklet-or-instance get-import key)))
+                               (lambda (key) (lookup-linklet-or-instance get-import key))
+                               (lambda (key) (values #f #f #f)))
                            import-keys))
        (define impl-lam/lifts
          (lift-in-schemified-linklet (show pre-lift-on? "pre-lift" impl-lam)))

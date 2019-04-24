@@ -95,8 +95,7 @@
                                                     (sstats-gc-cpu stats)))))))))))
 
 (define (current-gc-milliseconds)
-  (let ([stats (statistics)])
-    (inexact->exact (floor (time->ms (sstats-gc-cpu stats))))))
+  (inexact->exact (floor (time->ms (#%$gc-cpu-time)))))
 
 (define (current-milliseconds)
   (inexact->exact (floor (current-inexact-milliseconds))))
