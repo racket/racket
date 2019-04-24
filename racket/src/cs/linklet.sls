@@ -798,7 +798,7 @@
      [else
       (let ([sym (car syms)]
             [import-abi (car imports-abi)])
-        (let ([var (or (hash-ref (instance-hash inst) sym #f)
+        (let ([var (or (eq-hashtable-ref (hash->eq-hashtable (instance-hash inst)) sym #f) ; raw hashtable avoids unnecessary lock
                        (raise-linking-failure "is not exported" target-inst inst sym))])
           (when (eq? (variable-val var) variable-undefined)
             (raise-linking-failure "is uninitialized" target-inst inst sym))
@@ -844,20 +844,28 @@
       (current-continuation-marks)
       (variable-name var))))
 
-  ;; Create the variables needed for a linklet's exports
+  ;; Create the variables needed for a linklet's exports; assumes that
+  ;; the instance-hashtable lock is currently held
   (define (create-variables inst syms-or-pairs)
     (let ([ht (instance-hash inst)]
           [inst-box (weak-cons inst #f)])
-      (map (lambda (sym-or-pair)
-             (let-values ([(sym src-sym)
-                           (if (pair? sym-or-pair)
-                               (values (car sym-or-pair) (cdr sym-or-pair))
-                               (values sym-or-pair sym-or-pair))])
-               (or (hash-ref ht sym #f)
-                   (let ([var (make-variable variable-undefined sym src-sym #f inst-box)])
-                     (hash-set! ht sym var)
-                     var))))
-           syms-or-pairs)))
+      (let ([raw-ht (hash->eq-hashtable ht)])
+        (with-interrupts-disabled ; since we test and add to `raw-ht`, and it might be shared
+         (create-the-variables syms-or-pairs raw-ht inst-box)))))
+  (define (create-the-variables syms-or-pairs raw-ht inst-box)
+    (cond
+     [(null? syms-or-pairs) '()]
+     [else
+      (let ([sym-or-pair (car syms-or-pairs)])
+        (let-values ([(sym src-sym)
+                      (if (pair? sym-or-pair)
+                          (values (car sym-or-pair) (cdr sym-or-pair))
+                          (values sym-or-pair sym-or-pair))])
+          (cons (or (eq-hashtable-ref raw-ht sym #f)
+                    (let ([var (make-variable variable-undefined sym src-sym #f inst-box)])
+                      (eq-hashtable-set! raw-ht sym var)
+                      var))
+                (create-the-variables (cdr syms-or-pairs) raw-ht inst-box))))]))
 
   (define (variable->known var)
     (let ([desc (cdr (variable-inst-box var))])
@@ -919,6 +927,7 @@
      [(name data) (make-instance name data #f)]
      [(name data constance . content)
       (let* ([ht (make-hasheq)]
+             [raw-ht (hash->eq-hashtable ht)] ; note: raw-ht isn't shared, yet
              [inst (new-instance name data ht)]
              [inst-box (weak-cons inst #f)])
         (check-constance 'make-instance constance)
@@ -927,7 +936,7 @@
            [(null? content) (void)]
            [else
             (let ([name (car content)])
-              (hash-set! ht (car content) (make-variable (cadr content) name name constance inst-box)))
+              (eq-hashtable-set! raw-ht (car content) (make-variable (cadr content) name name constance inst-box)))
             (loop (cddr content))]))
         inst)]))
 
