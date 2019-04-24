@@ -79,6 +79,7 @@
                       provide-phase-level  ; providing module's import phase
                       phase-shift          ; providing module's instantiation phase
                       bulk-binding-registry) ; a registry for finding bulk bindings lazily
+  #:authentic
   #:property prop:bulk-binding
   (bulk-binding-class
    (lambda (b mpi-shifts)

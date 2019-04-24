@@ -459,7 +459,7 @@
                                [make-acc/mut (in-list make-acc/muts)])
                       (define raw-acc/mut (if can-impersonate? (gensym (unwrap acc/mut)) acc/mut))
                       (match make-acc/mut
-                        [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ,_)
+                        [`(make-struct-field-accessor ,(? (lambda (v) (wrap-eq? v -ref))) ,pos ',field-name)
                          (define raw-def `(define ,raw-acc/mut (record-accessor ,struct:s ,pos)))
                          (if can-impersonate?
                              `(begin
@@ -467,9 +467,10 @@
                                 (define ,acc/mut
                                   (lambda (s) (if (,raw-s? s)
                                                   (,raw-acc/mut s)
-                                                  ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s))))))
+                                                  ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s
+                                                                           ',(struct-type-info-name sti) ',field-name))))))
                              raw-def)]
-                        [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ,_)
+                        [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ',field-name)
                          (define raw-def `(define ,raw-acc/mut (record-mutator ,struct:s ,pos)))
                          (define abs-pos (+ pos (- (struct-type-info-field-count sti)
                                                    (struct-type-info-immediate-field-count sti))))
@@ -479,7 +480,8 @@
                                 (define ,acc/mut
                                   (lambda (s v) (if (,raw-s? s)
                                                     (,raw-acc/mut s v)
-                                                    ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v))))))
+                                                    ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v
+                                                                              ',(struct-type-info-name sti) ',field-name))))))
                              raw-def)]
                         [`,_ (error "oops")]))
                   (define ,(gensym)

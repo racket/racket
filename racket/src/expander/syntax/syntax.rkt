@@ -265,7 +265,8 @@
 ;; When serializing syntax objects, let nested objects know the
 ;; content of an enclosing syntax object, so sharing is enabled if the
 ;; nested syntax objects have the same context and source location.
-(struct syntax-state ([all-sharing? #:mutable] context-triple srcloc))
+(struct syntax-state ([all-sharing? #:mutable] context-triple srcloc)
+  #:authentic)
 
 ;; When sharing syntax information in serialization, we have to be
 ;; careful not to lose syntax objects that wrap a pair in a `cdr` (and

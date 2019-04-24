@@ -79,7 +79,7 @@
                    (cond
                     [(and (impersonator? v)
                           (pred v))
-                     (impersonate-struct-or-property-ref acc #f acc v)]
+                     (impersonate-struct-or-property-ref acc #f acc v #f #f)]
                     [else
                      (let* ([rtd (if (record-type-descriptor? v)
                                      v
@@ -655,14 +655,15 @@
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([p (record-field-accessor rtd
                                        (+ pos (position-based-accessor-offset pba)))]
+             [rec-name (record-type-name rtd)]
              [wrap-p
               (procedure-rename
                 (lambda (v)
                   ($value
                    (if (impersonator? v)
-                       (impersonate-ref p rtd pos v)
+                       (impersonate-ref p rtd pos v rec-name (or name 'field))
                        (p v))))
-                (string->symbol (string-append (symbol->string (record-type-name rtd))
+                (string->symbol (string-append (symbol->string rec-name)
                                                "-"
                                                (if name
                                                    (symbol->string name)
@@ -684,9 +685,10 @@
       (check-accessor-or-mutator-index who rtd pos)
       (let* ([abs-pos (+ pos (position-based-mutator-offset pbm))]
              [p (record-field-mutator rtd abs-pos)]
+             [rec-name (record-type-name rtd)]
              [name (string->symbol
                     (string-append "set-"
-                                   (symbol->string (record-type-name rtd))
+                                   (symbol->string rec-name)
                                    "-"
                                    (if name
                                        (symbol->string name)
@@ -697,7 +699,7 @@
                (if (struct-type-field-mutable? rtd pos)
                    (lambda (v a)
                      (if (impersonator? v)
-                         (impersonate-set! p rtd pos abs-pos v a)
+                         (impersonate-set! p rtd pos abs-pos v a rec-name (or name 'field))
                          (p v a)))
                    (lambda (v a)
                      (raise-arguments-error name
@@ -991,7 +993,7 @@
       (let loop ([rtd* (record-rtd (impersonator-val s))])
         (let ([pos (- i (struct-type-parent-total*-count rtd*))])
           (if (fx>= pos 0)
-              (impersonate-ref (record-field-accessor rtd* i) rtd* pos s)
+              (impersonate-ref (record-field-accessor rtd* i) rtd* pos s #f #f)
               (loop (record-type-parent rtd*)))))
       (unsafe-struct*-ref s i)))
 
@@ -1000,7 +1002,7 @@
       (let loop ([rtd* (record-rtd (impersonator-val s))])
         (let* ([pos (- i (struct-type-parent-total*-count rtd*))])
           (if (fx>= pos 0)
-              (impersonate-set! (record-field-mutator rtd* i) rtd* pos i s v)
+              (impersonate-set! (record-field-mutator rtd* i) rtd* pos i s v #f #f)
               (loop (record-type-parent rtd*)))))
       (unsafe-struct*-set! s i v)))
 
@@ -1201,7 +1203,7 @@
                      (lambda (v)
                        (if (authentic-name? v)
                            (name-field v)
-                           (pariah (impersonate-ref name-field struct:name field-index v))))))
+                           (pariah (impersonate-ref name-field struct:name field-index v 'name 'field))))))
                  ...
                  (define dummy
                    (begin

@@ -22,10 +22,10 @@
    "original" e
    "received" e2))
 
-(define (impersonate-ref acc rtd pos orig)
-  (impersonate-struct-or-property-ref acc rtd (cons rtd pos) orig))
+(define (impersonate-ref acc rtd pos orig record-name field-name)
+  (impersonate-struct-or-property-ref acc rtd (cons rtd pos) orig record-name field-name))
 
-(define (impersonate-struct-or-property-ref acc rtd key orig)
+(define (impersonate-struct-or-property-ref acc rtd key orig record-name field-name)
   (cond
    [(and (impersonator? orig)
          (or (not rtd)
@@ -63,10 +63,14 @@
         (loop (impersonator-next v))]
        [else (|#%app| acc v)]))]
    [else
-    ;; Let accessor report the error:
-    (|#%app| acc orig)]))
+    (raise-argument-error (string->symbol
+                           (string-append (symbol->string (or record-name 'struct))
+                                          "-"
+                                          (symbol->string (or field-name 'field))))
+                          (string-append (symbol->string (or record-name 'struct)) "?")
+                          orig)]))
 
-(define (impersonate-set! set rtd pos abs-pos orig a)
+(define (impersonate-set! set rtd pos abs-pos orig a record-name field-name)
   (cond
    [(and (impersonator? orig)
          (record? (impersonator-val orig) rtd))
@@ -102,8 +106,14 @@
           (loop (impersonator-next v) a)]
          [else (set v a)])))]
    [else
-    ;; Let mutator report the error:
-    (set orig a)]))
+    (raise-argument-error (string->symbol
+                           (string-append "set"
+                                          (symbol->string (or record-name 'struct))
+                                          "-"
+                                          (symbol->string (or field-name 'field))
+                                          "!"))
+                          (string-append (symbol->string (or record-name 'struct)) "?")
+                          orig)]))
 
 (define (impersonate-struct-info orig)
   (let loop ([v orig])
