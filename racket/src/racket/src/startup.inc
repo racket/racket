@@ -65435,7 +65435,7 @@ static const char *startup_source =
 "(path->complete-path(expand-user-path(cadr s_1))(get-dir_0)))))"
 "(void))))))))"
 "(if(symbol? s-parsed_0)"
-"(let-values()(1/make-resolved-module-path s-parsed_0))"
+"(let-values()(1/make-resolved-module-path(cons s-parsed_0 subm-path_0)))"
 "(if(not"
 "(let-values(((or-part_0)(path? s-parsed_0)))"
 "(if or-part_0 or-part_0(vector? s-parsed_0))))"

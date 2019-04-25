@@ -536,8 +536,6 @@
               [(symbol? s-parsed)
                ;; Return a genenerated symnol
                (make-resolved-module-path
-                s-parsed
-                #;
                 (cons s-parsed subm-path))]
               [(not (or (path? s-parsed)
                         (vector? s-parsed)))
