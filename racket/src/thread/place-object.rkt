@@ -26,10 +26,7 @@
                [pending-break #:mutable] ; #f, 'break, 'hangup, or 'terminate
                done-waiting              ; hash table of places to ping when this one ends
                [wakeup-handle #:mutable]
-               [dequeue-semas #:mutable] ; semaphores reflecting place-channel waits to recheck
-               [recent-process-milliseconds #:mutable] ; used by scheduler
-               [skipped-time-accums #:mutable]         ; used by scheduler
-               [thread-swap-count #:mutable])  ; number of thread swaps
+               [dequeue-semas #:mutable]); semaphores reflecting place-channel waits to recheck
   #:property prop:evt (struct-field-index pch)
   #:property prop:place-message (lambda (self) (lambda () (lambda () (place-pch self)))))
 
@@ -52,10 +49,7 @@
          #f                   ; pending-break
          (make-hasheq)        ; done-waiting
          #f                   ; wakeup-handle
-         '()                  ; dequeue-semas
-         0                    ; recent-process-milliseconds
-         0                    ; skipped-time-accums
-         0))                  ; thread-swap-count
+         '()))                ; dequeue-semas
 
 (define initial-place (make-place (host:make-mutex)
                                   root-custodian))

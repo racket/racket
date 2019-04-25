@@ -765,6 +765,19 @@
 
 ;; ----------------------------------------
 
+(call-with-output-file "compiled/demo-file3" void 'replace)
+(define e (filesystem-change-evt "compiled/demo-file3" (lambda () 'no)))
+(unless (eq? e 'no)
+  (test #t (evt? e))
+  ;; (test #f (sync/timeout 0.01 e)) ; bootstrap doesn't handle this
+  (call-with-output-file "compiled/demo-file3" (lambda (o) (write-char #\x o)) 'append)
+  (test e (sync/timeout 0.01 e))
+  (test e (sync/timeout 0.01 e))
+  (filesystem-change-evt-cancel e))
+(delete-file "compiled/demo-file3")
+
+;; ----------------------------------------
+
 'read-string
 (time
  (let loop ([j 10])

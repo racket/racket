@@ -14,6 +14,9 @@
 (define cross-mode 'infer)
 (define (set-cross-mode! m) (set! cross-mode m))
 
+(define fs-change-properties '#(#f #f #f #f))
+(define (set-fs-change-properties! vec) (set! fs-change-properties vec))
+
 (define (system-type* mode)
   (case mode
     [(vm) 'chez-scheme]
@@ -31,7 +34,7 @@
                    [(a6nt ta6nt i3nt ti3nt) (string->utf8 ".dll")]
                    [else (string->utf8 ".so")])]
     [(so-mode) 'local]
-    [(fs-change) '#(#f #f #f #f)] ; when this changes, change "gen-system.rkt", too
+    [(fs-change) fs-change-properties]
     [(target-machine) (machine-type)]
     [(cross) cross-mode]
     [else (raise-argument-error 'system-type

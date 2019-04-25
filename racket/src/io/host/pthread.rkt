@@ -25,4 +25,5 @@
         unsafe-place-local-set!
         unsafe-add-global-finalizer
         unsafe-strip-impersonator
-        prop:unsafe-authentic-override)
+        prop:unsafe-authentic-override
+        set-fs-change-properties!)

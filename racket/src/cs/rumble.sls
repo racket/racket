@@ -491,6 +491,7 @@
           system-library-subpath-string ; not exported to Racket
           set-get-machine-info!         ; not exported to Racket
           set-cross-mode!               ; not exported to Racket
+          set-fs-change-properties!     ; not exported to Racket
 
           unsafe-car
           unsafe-cdr

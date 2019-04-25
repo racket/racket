@@ -460,16 +460,12 @@
                  (cond
                    [(symbol? s)
                     (or (path-cache-get (cons s (get-reg)))
-                        (performance-region
-                         ['eval 'resolve-symbol]
                         (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                           (let* ([f-file (if (null? cols)
                                              "main.rkt"
                                              (string-append file ".rkt"))]
                                  [col (if (null? cols) file (car cols))]
                                  [col-path (if (null? cols) null (cdr cols))])
-                            (performance-region
-                             ['eval 'resolve-find]
                             (find-col-file (if (not subm-path)
                                                show-collection-err
                                                ;; Invent a fictional collection directory, if necessary,
@@ -479,7 +475,7 @@
                                            col
                                            col-path
                                            f-file
-                                           #t))))))]
+                                           #t))))]
                    [(string? s)
                     (let* ([dir (get-dir)])
                       (or (path-cache-get (cons s dir))
@@ -539,7 +535,9 @@
             (cond
               [(symbol? s-parsed)
                ;; Return a genenerated symnol
-               (make-resolved-module-path 
+               (make-resolved-module-path
+                s-parsed
+                #;
                 (cons s-parsed subm-path))]
               [(not (or (path? s-parsed)
                         (vector? s-parsed)))

@@ -41,10 +41,19 @@
   (set-root-custodian! c)
   (init-system-idle-evt!)
   (init-future-place!)
-  (call-in-main-thread thunk))
+  (call-in-main-thread thunk)
+  (init-schedule-counters!))
 
 ;; ----------------------------------------
 
+(define-place-local recent-process-milliseconds 0)
+(define-place-local skipped-time-accums 0)
+(define-place-local thread-swap-count 0)
+(define (init-schedule-counters!)
+  (set! recent-process-milliseconds 0)
+  (set! skipped-time-accums 0)
+  (set! thread-swap-count 0))
+ 
 (define (select-thread! [pending-callbacks null])
   (let loop ([g root-thread-group] [pending-callbacks pending-callbacks] [none-k maybe-done])
     (define callbacks (if (null? pending-callbacks)
@@ -74,9 +83,8 @@
   (set-thread-engine! t 'running)
   (set-thread-sched-info! t #f)
   (current-thread t)
-  (let ([pl current-place])
-    (set-place-current-thread! pl t)
-    (set-place-thread-swap-count! pl (add1 (place-thread-swap-count pl))))
+  (set-place-current-thread! current-place t)
+  (set! thread-swap-count (add1 thread-swap-count))
   (run-callbacks-in-engine
    e callbacks
    (lambda (e)
@@ -234,23 +242,19 @@
 ;; that don't keep swapping themselves out.
 
 (define (accum-cpu-time! t timeout?)
-  (define pl current-place)
   (cond
     [(not timeout?)
-     (define n (place-skipped-time-accums pl))
-     (set-place-skipped-time-accums! pl (add1 n))
+     (define n skipped-time-accums)
+     (set! skipped-time-accums (add1 n))
      (when (= n 100)
        (accum-cpu-time! t #t))]
     [else
-     (define start (place-recent-process-milliseconds pl))
+     (define start recent-process-milliseconds)
      (define now (current-process-milliseconds))
-     (set-place-recent-process-milliseconds! pl now)
-     (set-place-skipped-time-accums! pl 0)
+     (set! recent-process-milliseconds now)
+     (set! skipped-time-accums 0)
      (set-thread-cpu-time! t (+ (thread-cpu-time t)
                                 (- now start)))]))
-
-(define (thread-swap-count)
-  (place-thread-swap-count current-place))
 
 ;; ----------------------------------------
 
