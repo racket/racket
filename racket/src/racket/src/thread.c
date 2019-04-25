@@ -103,6 +103,7 @@ THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
+THREAD_LOCAL_DECL(static intptr_t process_time_skips);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
 #ifdef MZ_PRECISE_GC
@@ -2985,11 +2986,12 @@ static void do_swap_thread()
   } else {
     Scheme_Thread *new_thread = swap_target;
 
-    {
+    if ((!scheme_fuel_counter) || (++process_time_skips >= 100)) {
       intptr_t cpm;
       cpm = scheme_get_process_milliseconds();
       scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
       process_time_at_swap = cpm;
+      process_time_skips = 0;
     }
 
     swap_target = NULL;

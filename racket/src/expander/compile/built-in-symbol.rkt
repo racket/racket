@@ -64,4 +64,5 @@
                #%call-with-values
                make-pthread-parameter
                break-enabled-key
+               engine-block
                fasl->s-exp/intern))))

@@ -10,7 +10,6 @@
                   [unsafe-place-local-set! rumble:unsafe-place-local-set!]
                   ;; These are extracted via `#%linklet`:
                   [make-engine rumble:make-engine]
-                  [engine-block rumble:engine-block]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
                   [current-engine-state rumble:current-engine-state]
@@ -105,6 +104,7 @@
         'make-pthread-parameter make-pthread-parameter
         'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
         'break-enabled-key break-enabled-key
+        'engine-block engine-block
         ;; These are actually redirected by "place-register.ss", but
         ;; we list them here for compatibility with the bootstrapping
         ;; variant of `#%pthread`
@@ -114,7 +114,6 @@
       [(|#%engine|)
        (hasheq
         'make-engine rumble:make-engine
-        'engine-block rumble:engine-block
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
         'current-engine-state (lambda (v) (rumble:current-engine-state v))

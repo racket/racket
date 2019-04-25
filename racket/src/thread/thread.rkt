@@ -681,16 +681,21 @@
          (lambda (c) (and (real? c) (c . >=  . 0)))
          #:contract "(>=/c 0)"
          secs)
-  (define until-msecs (+ (* secs 1000.0)
-                         (current-inexact-milliseconds)))
-  (let loop ()
-    ((thread-deschedule! (current-thread)
-                         until-msecs
-                         void
-                         (lambda ()
-                           ;; Woke up due to an ignored break?
-                           ;; Try again:
-                           (loop))))))
+  (cond
+    [(and (zero? secs)
+          (zero? (current-atomic)))
+     (thread-yield #f)]
+    [else
+     (define until-msecs (+ (* secs 1000.0)
+                            (current-inexact-milliseconds)))
+     (let loop ()
+       ((thread-deschedule! (current-thread)
+                            until-msecs
+                            void
+                            (lambda ()
+                              ;; Woke up due to an ignored break?
+                              ;; Try again:
+                              (loop)))))]))
 
 ;; ----------------------------------------
 ;; Tracking thread progress

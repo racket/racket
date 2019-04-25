@@ -34,5 +34,6 @@
   [start-place (known-procedure 32)]
   [make-pthread-parameter (known-procedure 2)]
   [break-enabled-key (known-constant)]
+  [engine-block (known-procedure 1)]
 
   [force-unfasl (known-procedure 2)])

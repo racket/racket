@@ -23,11 +23,10 @@
 (provide call-in-main-thread
          call-in-another-main-thread
          set-atomic-timeout-callback!
-         set-check-place-activity!)
+         set-check-place-activity!
+         thread-swap-count)
 
 (define TICKS 100000)
-
-(define-place-local process-milliseconds 0)
 
 ;; Initializes the thread system:
 (define (call-in-main-thread thunk)
@@ -75,7 +74,9 @@
   (set-thread-engine! t 'running)
   (set-thread-sched-info! t #f)
   (current-thread t)
-  (set-place-current-thread! current-place t)
+  (let ([pl current-place])
+    (set-place-current-thread! pl t)
+    (set-place-thread-swap-count! pl (add1 (place-thread-swap-count pl))))
   (run-callbacks-in-engine
    e callbacks
    (lambda (e)
@@ -90,7 +91,7 @@
               (atomic-timeout-callback #f))))
         (lambda args
           (start-implicit-atomic-mode)
-          (accum-cpu-time! t)
+          (accum-cpu-time! t #t)
           (current-thread #f)
           (set-place-current-thread! current-place #f)
           (unless (zero? (current-atomic))
@@ -100,11 +101,11 @@
             (force-exit 0))
           (thread-did-work!)
           (select-thread!))
-        (lambda (e)
+        (lambda (e timeout?)
           (start-implicit-atomic-mode)
           (cond
             [(zero? (current-atomic))
-             (accum-cpu-time! t)
+             (accum-cpu-time! t timeout?)
              (current-thread #f)
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
@@ -225,11 +226,31 @@
 
 ;; ----------------------------------------
 
-(define (accum-cpu-time! t)
-  (define start process-milliseconds)
-  (set! process-milliseconds (current-process-milliseconds))
-  (set-thread-cpu-time! t (+ (thread-cpu-time t)
-                             (- process-milliseconds start))))
+;; Getting CPU time is expensive relative to a thread
+;; switch, so limit precision in the case that the thread
+;; did not use up its quantum. This loss of precision
+;; should be ok, since `(current-process-milliseconds <thread>)`
+;; is used rarely, and it makes the most sense for threads
+;; that don't keep swapping themselves out.
+
+(define (accum-cpu-time! t timeout?)
+  (define pl current-place)
+  (cond
+    [(not timeout?)
+     (define n (place-skipped-time-accums pl))
+     (set-place-skipped-time-accums! pl (add1 n))
+     (when (= n 100)
+       (accum-cpu-time! t #t))]
+    [else
+     (define start (place-recent-process-milliseconds pl))
+     (define now (current-process-milliseconds))
+     (set-place-recent-process-milliseconds! pl now)
+     (set-place-skipped-time-accums! pl 0)
+     (set-thread-cpu-time! t (+ (thread-cpu-time t)
+                                (- now start)))]))
+
+(define (thread-swap-count)
+  (place-thread-swap-count current-place))
 
 ;; ----------------------------------------
 

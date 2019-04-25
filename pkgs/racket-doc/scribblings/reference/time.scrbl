@@ -113,7 +113,9 @@ both user and system time.
 
  @item{If @racket[scope] is a thread, the result is specific to the
        time while the thread ran, but it may include time for other
-       @tech{places}.}
+       @tech{places}. The more a thread synchronizes with other
+       threads, the less precisely per-thread processor time is
+       recorded.}
 
  @item{If @racket[scope] is @racket['subprocesses], the result is the
        sum of process times for known-completed subprocesses (see

@@ -66,9 +66,11 @@
     (set! prefix next-prefix)
     (break-thread t)
     (thread-resume t)
+    (define timeout? #f)
     (define t2
       (thread (lambda ()
                 (sleep (/ ticks 1000000.0))
+                (set! timeout? #t)
                 (thread-suspend t))))
     ;; Limited break propagation while syncing:
     (call-with-exception-handler
@@ -85,7 +87,7 @@
      [(thread-dead? t)
       (apply complete 0 results)]
      [else
-      (expire go)]))
+      (expire go timeout?)]))
   go)
 
 (define (engine-block)
@@ -223,11 +225,11 @@
                   'unsafe-place-local-set! unsafe-place-local-set!
                   'unsafe-add-global-finalizer (lambda (v proc) (void))
                   'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag
-                  'break-enabled-key break-enabled-key))
+                  'break-enabled-key break-enabled-key
+                  'engine-block engine-block))
 (primitive-table '#%engine
                  (hash 
                   'make-engine make-engine
-                  'engine-block engine-block
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))

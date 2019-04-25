@@ -457,7 +457,7 @@
            (e 100
               (lambda () (set! started (add1 started)))
               (lambda (remain a b c) (list a b c n started))
-              (lambda (e)
+              (lambda (e timeout?)
                 (loop e (add1 n))))))
        '(1 2 3 10 11))
 
@@ -481,7 +481,7 @@
              (e 200
                 void
                 (lambda (remain a b c pre t-post) (list a b c pre t-post post n))
-                (lambda (e)
+                (lambda (e timeout?)
                   (loop e (add1 n)))))
            '(1 2 3 10 0 10 10))))
 
@@ -504,12 +504,12 @@
               100
               void
               (lambda (remain l) l)
-              (lambda (e) (error 'engine "oops"))))
+              (lambda (e timeout?) (error 'engine "oops"))))
   (define l2 ((list-ref l1 2)
               100
               void
               (lambda (remain l) l)
-              (lambda (e) (error 'engine "oops"))))
+              (lambda (e timeout?) (error 'engine "oops"))))
   (check (list-ref l1 0) 1)
   (check (list-ref l1 1) 100)
   (check (list-ref l1 3) 2)
@@ -528,7 +528,7 @@
              (extend-parameterization (continuation-mark-set-first #f parameterization-key) my-param 'set)
            (make-engine (lambda () (|#%app| my-param)) engine-tag #f #f))])
   (check (|#%app| my-param) 'init)
-  (check (e 1000 void (lambda (remain v) v) (lambda (e) (error 'engine "oops"))) 'set))
+  (check (e 1000 void (lambda (remain v) v) (lambda (e timeout?) (error 'engine "oops"))) 'set))
 
 (let ([also-my-param (make-derived-parameter my-param
                                              (lambda (v) (list v))
@@ -633,7 +633,7 @@
                                        (= prefixes (add1 i))
                                        (- (car v) i)
                                        (- (cadr v) i)))
-              (lambda (e) (loop e (add1 i))))))
+              (lambda (e timeout?) (loop e (add1 i))))))
        '(#t #t 1 0))
 
 ;; ----------------------------------------

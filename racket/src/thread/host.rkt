@@ -29,11 +29,11 @@
         unsafe-place-local-ref
         unsafe-place-local-set!
         unsafe-root-continuation-prompt-tag
-        break-enabled-key)
+        break-enabled-key
+        engine-block)
 
 (bounce #%engine
         make-engine
-        engine-block
         engine-timeout
         engine-return
         current-engine-state

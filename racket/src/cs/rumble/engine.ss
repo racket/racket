@@ -76,39 +76,46 @@
 (define (engine-block-via-timer)
   (cond
    [(current-in-uninterrupted)
-    (pending-interrupt-callback engine-block)]
+    (pending-interrupt-callback engine-block/timeout)]
    [else
-    (engine-block)]))
+    (engine-block/timeout)]))
     
-(define (engine-block)
-  (assert-not-in-uninterrupted)
-  (timer-interrupt-handler void)
-  (let ([es (current-engine-state)])
-    (unless es
-      (error 'engine-block "not currently running an engine"))
-    (reset-handler (engine-state-reset-handler es))
-    (start-implicit-uninterrupted 'block)
-    ;; Extra pair of parens around swap is to apply a prefix
-    ;; function on swapping back in:
-    ((swap-metacontinuation
-      (engine-state-mc es)
-      (lambda (saves)
-        (end-implicit-uninterrupted 'block)
-        (current-engine-state #f)
-        (lambda () ; returned to the `swap-continuation` in `create-engine`
-          ((engine-state-expire es)
-           (create-engine
-            saves
-            (lambda (prefix) prefix) ; returns `prefix` to the above "(("
-            (engine-state-thread-cell-values es)
-            (engine-state-init-break-enabled-cell es)))))))))
+(define engine-block
+  (case-lambda
+   [(timeout?)
+    (assert-not-in-uninterrupted)
+    (timer-interrupt-handler void)
+    (let ([es (current-engine-state)])
+      (unless es
+        (error 'engine-block "not currently running an engine"))
+      (reset-handler (engine-state-reset-handler es))
+      (start-implicit-uninterrupted 'block)
+      ;; Extra pair of parens around swap is to apply a prefix
+      ;; function on swapping back in:
+      ((swap-metacontinuation
+        (engine-state-mc es)
+        (lambda (saves)
+          (end-implicit-uninterrupted 'block)
+          (current-engine-state #f)
+          (lambda () ; returned to the `swap-continuation` in `create-engine`
+            ((engine-state-expire es)
+             (create-engine
+              saves
+              (lambda (prefix) prefix) ; returns `prefix` to the above "(("
+              (engine-state-thread-cell-values es)
+              (engine-state-init-break-enabled-cell es))
+             timeout?))))))]
+   [() (engine-block #f)]))
+
+(define (engine-block/timeout)
+  (engine-block #t))
 
 (define (engine-timeout)
   (let ([can-block? (fx= 1 (disable-interrupts))])
     (enable-interrupts)
     (cond
      [can-block?
-      (engine-block)]
+      (engine-block/timeout)]
      [else
       ;; Cause the timer to fire as soon as possible (i.e., as soon
       ;; as interrupts are enabled)

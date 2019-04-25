@@ -286,6 +286,8 @@
      #%procedure?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
+    [(eq? 'metacontinuation-frame (car args))
+     metacontinuation-frame?]
     [(symbol? (car args))
      #f
      ;; This is disaterously slow, so don't try it:
