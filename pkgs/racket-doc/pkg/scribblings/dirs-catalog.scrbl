@@ -62,4 +62,9 @@ and @racket[pkg-desc] definition in each package's @filepath{info.rkt}
 file. If either definition is missing and @racket[check-metadata?] is
 true, an error is reported.
 
-@history[#:changed "6.90.0.4" @elem{Added the @racket[#:immediate] argument.}]}
+If a package's @filepath{info.rkt} file defines @racket[pkg-name],
+then the defined name is used as the package's name instead of the
+package directory's name.
+
+@history[#:changed "6.90.0.4" @elem{Added the @racket[#:immediate] argument.}
+         #:changed "7.3.0.2" @elem{Added support for @racket[pkg-name] to name a package.}]}

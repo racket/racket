@@ -333,7 +333,7 @@
       (void))
     
     (define (expire future worker)
-      (lambda (new-eng)
+      (lambda (new-eng timeout?)
         (set-future*-engine! future new-eng)
         (cond
           [(positive? (current-atomic))

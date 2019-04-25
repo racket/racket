@@ -31,20 +31,21 @@
           [_ (void)])
         (loop)))))
 
-(call-with-input-file
- (build-path scheme-dir "s" (string-append target-machine ".def"))
- read-constants)
-
-(call-with-input-file
- (build-path scheme-dir "s" "cmacros.ss")
- read-constants)
+(when scheme-dir
+  (call-with-input-file
+   (build-path scheme-dir "s" (string-append target-machine ".def"))
+   read-constants)
+  
+  (call-with-input-file
+   (build-path scheme-dir "s" "cmacros.ss")
+   read-constants))
 
 (define-syntax-rule (define-constant id ...)
   (begin
     (provide id ...)
-    (define id (hash-ref ht 'id)) ...))
+    (define id (hash-ref ht 'id #f)) ...))
 
-(hash-set! ht 'ptr-bytes (/ (hash-ref ht 'ptr-bits) 8))
+(hash-set! ht 'ptr-bytes (/ (hash-ref ht 'ptr-bits 64) 8))
 
 (define-constant
   ptr-bytes

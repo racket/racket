@@ -16,6 +16,11 @@
 ;; Set `SCHEME_SRC` and `MACH` to specify the ChezScheme source
 ;; directory and the target machine.
 
+(unless scheme-dir
+  (error "set `SCHEME_SRC` environment variable"))
+(unless target-machine
+  (error "set `MACH` environment variable"))
+
 ;; Writes ".boot" and ".h" files to a "boot" subdirectory of
 ;; `SCHEME_SRC`.
 

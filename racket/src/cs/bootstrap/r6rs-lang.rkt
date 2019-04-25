@@ -760,7 +760,7 @@
 (define (set-car! p v) (unsafe-set-mcar! p v))
 (define (set-cdr! p v) (unsafe-set-mcdr! p v))
 
-(define (fixnum-width) fixnum-bits)
+(define (fixnum-width) (or fixnum-bits 63))
 
 (define low-fixnum (- (expt 2 (sub1 (fixnum-width)))))
 (define high-fixnum (sub1 (expt 2 (sub1 (fixnum-width)))))

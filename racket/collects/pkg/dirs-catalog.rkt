@@ -55,6 +55,13 @@
   
   (status-printf "Finding packages\n")
 
+  (define metadata-ns (make-base-namespace))
+  (define (get-pkg-info pkg-dir)
+    (get-info/full pkg-dir
+                   #:namespace metadata-ns
+                   #:bootstrap? #t))
+
+
   ;; Recur through directory tree, and treat each directory
   ;; that has an "info.rkt" file as a package (and don't recur
   ;; further into the package)
@@ -67,7 +74,8 @@
       (define (check-path src-f f)
         (cond
           [(file-exists? (build-path src-f "info.rkt"))
-           (define f-name (path->string f))
+           (define f-name (or ((get-pkg-info src-f) 'pkg-name (lambda _ #f))
+                              (path->string f)))
            (when (hash-ref found f-name #f)
              (error 'pack-local 
                     "found package ~a multiple times: ~a and ~a"
@@ -93,12 +101,6 @@
           (status-printf " Uncataloging package ~a\n" (path->string l))
           (delete-directory/files (build-path catalog-path "pkg" l))))))
   
-  (define metadata-ns (make-base-namespace))
-  (define (get-pkg-info pkg-dir)
-    (get-info/full pkg-dir
-                   #:namespace metadata-ns
-                   #:bootstrap? #t))
-
   (define missing-desc null)
   (define missing-authors null)
 

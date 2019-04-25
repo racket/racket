@@ -8,10 +8,11 @@
 (define ht (get-place-table))
 
 (define scheme-dir (or (hash-ref ht 'make-boot-scheme-dir #f)
-                       (simplify-path
-                        (path->complete-path
-                         (or (getenv "SCHEME_SRC")
-                             (error "set `SCHEME_SRC` environment variable"))))))
+                       (let ([scheme-dir
+                              (getenv "SCHEME_SRC")])
+                         (and scheme-dir
+                              (simplify-path
+                               (path->complete-path scheme-dir))))))
 (hash-set! ht 'make-boot-scheme-dir scheme-dir)
 
 (define target-machine (or (hash-ref ht 'make-boot-targate-machine #f)
@@ -24,8 +25,10 @@
                                            "ta6nt"
                                            "ti3nt")]
                              [else
-                              (error "set `MACH` environment variable")])))
-
+                              (case (path->string (system-library-subpath #f))
+                                [("x86_64-linux") "ta6le"]
+                                [("i386-linux") "ti3le"]
+                                [else #f])])))
 (hash-set! ht 'make-boot-targate-machine target-machine)
 
 (define optimize-level-init 3)
