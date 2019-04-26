@@ -9,15 +9,13 @@
           [~id (->* [] [#:context (or/c syntax? #f)
                         #:source source-location?
                         #:props (or/c syntax? #f 'infer)
-                        #:track (or/c #t (-> identifier? identifier?) #f)
-                        #:binder? any/c]
+                        #:track (or/c #t (-> identifier? identifier?) #f)]
                     #:rest (listof piece/c)
                     identifier?)]
           [~id/1 (->* [] [#:context (or/c syntax? #f 'infer)
                           #:source (or/c source-location? 'infer)
                           #:props (or/c syntax? #f 'infer)
-                          #:track (or/c #t (-> identifier? identifier?) #f)
-                          #:binder? any/c]
+                          #:track (or/c #t (-> identifier? identifier?) #f)]
                       #:rest (and/c (listof piece/c) list-contains-exactly-one-identifier?)
                       identifier?)]
           [~symbol (-> piece/c ... symbol?)]))

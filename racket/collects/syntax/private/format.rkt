@@ -11,7 +11,6 @@
              #:source [source context]
              #:props [props 'infer]
              #:track [track #t]
-             #:binder? [binder? #t]
              . pieces)
   ; Convert all the pieces to strings; hold onto the identifiers for attaching sub-range-binders.
   (define-values [symbol id-pieces] (pieces->symbol pieces #:keep-id-pieces? track))
@@ -73,12 +72,8 @@
                                         sub-range-binder-leaf?))
        (define relocated-old-leaves (filter-map relocate-old-leaf old-leaves))
 
-       (define new-value
-         (if binder?
-             (vector-immutable new-id-introduced new-id-start old-id-length 0.5 0.5
-                               old-id 0 old-id-length 0.5 0.5)
-             (vector-immutable old-id 0 old-id-length 0.5 0.5
-                               new-id-introduced new-id-start old-id-length 0.5 0.5)))
+       (define new-value (vector-immutable new-id-introduced new-id-start old-id-length 0.5 0.5
+                                           old-id 0 old-id-length 0.5 0.5))
        (if (empty? relocated-old-leaves) new-value (cons new-value relocated-old-leaves)))
 
      (syntax-property new-id 'sub-range-binders (map build-prop-leaf id-pieces))]
@@ -90,7 +85,6 @@
                #:source [source 'infer]
                #:props [props 'infer]
                #:track [track #t]
-               #:binder? [binder? #t]
                . pieces)
   (define the-id (first (filter identifier? pieces)))
   (define (infer-or x) (if (eq? x 'infer) the-id x))
@@ -98,8 +92,7 @@
          #:context (infer-or context)
          #:source (infer-or source)
          #:props props
-         #:track track
-         #:binder? binder?))
+         #:track track))
 
 (define (~symbol . pieces)
   (define-values [symbol id-pieces] (pieces->symbol pieces #:keep-id-pieces? #f))

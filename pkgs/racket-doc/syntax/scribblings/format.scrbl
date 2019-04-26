@@ -16,8 +16,7 @@
               [#:context context (or/c syntax? #f) #f]
               [#:source source source-location? context]
               [#:props props (or/c syntax? #f 'infer) 'infer]
-              [#:track track (or/c #t (-> identifier? identifier?) #f) #t]
-              [#:binder? binder? any/c #t])
+              [#:track track (or/c #t (-> identifier? identifier?) #f) #t])
          identifier?]{
 
 Builds an @tech[#:doc refman]{identifier} with a name constructed from the @racket[v]s, using
@@ -64,23 +63,13 @@ inside the @racket['sub-range-binders] property. If @racket[track] is @racket[#t
 @racket[identity] is used. (This default corresponds to the correct behavior when each @racket[_v-id]
 comes from the input to a @tech[#:doc refman]{syntax transformer}.)
 
-If @racket[binder?] is @racket[#f], then the new identifier is treated as a use rather than a binder,
-which swaps the order of @racket[_result-id] and @racket[_v-id] in the vectors attached to the
-@racket['sub-range-binders] property. If @racket[track] is @racket[#f], then the value of
-@racket[binder?] has no effect.
-
-@(examples
-  #:eval (make-format-eval) #:once
-  (syntax-property (~id #'foo "-" #'bar #:binder? #f) 'sub-range-binders))
-
-@history[#:added "7.3.0.1"]}
+@history[#:added "7.3.0.3"]}
 
 @defproc[(~id/1 [v (or/c identifier? string? symbol? keyword? char? number?)] ...
                 [#:context context (or/c syntax? #f 'infer) 'infer]
                 [#:source source (or/c source-location? 'infer) 'infer]
                 [#:props props (or/c syntax? #f 'infer) 'infer]
-                [#:track track (or/c #t (-> identifier? identifier?) #f) #t]
-                [#:binder? binder? any/c #t])
+                [#:track track (or/c #t (-> identifier? identifier?) #f) #t])
          identifier?]{
 
 Like @racket[~id], but exactly one @racket[v] must be an @tech[#:doc refman]{identifier}, which is
@@ -91,7 +80,7 @@ automatically used in place of @racket[context] and/or @racket[source] if their 
   #:eval (make-format-eval) #:once
   (~id/1 "prefixed-" #'and "-suffixed"))
 
-@history[#:added "7.3.0.1"]}
+@history[#:added "7.3.0.3"]}
 
 @defproc[(~symbol [v (or/c identifier? string? symbol? keyword? char? number?)] ...) symbol?]{
 
@@ -103,4 +92,4 @@ Like @racket[~id], but produces a @tech[#:doc refman]{symbol} instead of an
   (eval:check (~symbol #'hyphenated "-" #'symbol) 'hyphenated-symbol)
   (eval:check (~symbol #'made #\- 'from #\- '#:many #\- "pieces") 'made-from-many-pieces))
                                                                                               
-@history[#:added "7.3.0.1"]}
+@history[#:added "7.3.0.3"]}
