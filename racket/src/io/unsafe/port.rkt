@@ -3,7 +3,8 @@
          "../host/thread.rkt"
          "../string/convert.rkt"
          "../port/fd-port.rkt"
-         "../network/tcp-port.rkt")
+         "../network/tcp-port.rkt"
+         "../sandman/ltps.rkt")
 
 (provide unsafe-file-descriptor->port
          unsafe-port->file-descriptor
@@ -47,11 +48,22 @@
   (and (tcp-port? p)
        (unsafe-port->file-descriptor p)))
 
+(define (unsafe-fd->semaphore system-fd mode socket?)
+  (start-atomic)
+  (define fd (rktio_system_fd rktio system-fd
+                              (bitwise-ior RKTIO_OPEN_READ
+                                           RKTIO_OPEN_WRITE
+                                           (if socket? RKTIO_OPEN_SOCKET 0))))
+  (define sema (fd-semaphore-update! fd mode))
+  (rktio_forget rktio fd)
+  (end-atomic)
+  sema)
+
 (define (unsafe-file-descriptor->semaphore system-fd mode)
-  #f)
+  (unsafe-fd->semaphore system-fd mode #f))
 
 (define (unsafe-socket->semaphore system-fd mode)
-  #f)
+  (unsafe-fd->semaphore system-fd mode #t))
 
 (define (unsafe-poll-fd system-fd mode [socket? #t])
   (atomically

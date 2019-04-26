@@ -63,6 +63,7 @@
 
          make-semaphore
          semaphore-post
+         semaphore-post-all
          semaphore-wait
          semaphore-try-wait?
          semaphore?

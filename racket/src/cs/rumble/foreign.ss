@@ -144,7 +144,10 @@
 ;; assumption that the address is the payload of a byte
 ;; string:
 (define (addr->gcpointer-memory v)  ; call with GC disabled
-  (#%$address->object v (- bytevector-content-offset)))
+  (#%$address->object v bytevector-content-offset))
+
+(define (addr->vector v)  ; call with GC disabled or when reuslt is locked
+  (#%$address->object v vector-content-offset))
 
 ;; Converts a primitive cpointer (normally the result of
 ;; `unwrap-cpointer`) to a raw foreign address. The
@@ -1350,6 +1353,15 @@
 
 (define (free-immobile-cell b)
   (unlock-object (cpointer-memory b)))
+
+(define (immobile-cell-ref b)
+  (#%vector-ref (cpointer-memory b) 0))
+
+(define (immobile-cell->address b)
+  (vector->addr (cpointer-memory b)))
+
+(define (address->immobile-cell a)
+  (make-cpointer/cell (addr->vector a) #f))
 
 (define (malloc-mode? v)
   (chez:memq v '(raw atomic nonatomic tagged

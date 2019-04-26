@@ -27,6 +27,7 @@
           'thread-resume thread-resume
           'make-semaphore make-semaphore
           'semaphore-post semaphore-post
+          'semaphore-post-all semaphore-post-all
           'semaphore-wait semaphore-wait
           'semaphore-peek-evt semaphore-peek-evt
           'make-channel make-channel

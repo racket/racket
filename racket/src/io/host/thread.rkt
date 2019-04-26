@@ -37,6 +37,7 @@
         thread-resume
         make-semaphore
         semaphore-post
+        semaphore-post-all
         semaphore-wait
         semaphore-peek-evt
         make-channel

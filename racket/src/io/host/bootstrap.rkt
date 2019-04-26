@@ -5,6 +5,11 @@
                   unsafe-custodian-unregister)
          "../../thread/current-sandman.rkt"
          ffi/unsafe/atomic
+         (only-in ffi/unsafe
+                  malloc-immobile-cell
+                  free-immobile-cell
+                  ptr-ref
+                  _racket)
          "bootstrap-rktio.rkt")
 
 ;; Approximate scheduler cooperation where `async-evt` can be used
@@ -83,7 +88,12 @@
                          'unsafe-place-local-set! set-box!
                          'unsafe-add-global-finalizer (lambda (v proc) (void))
                          'unsafe-strip-impersonator (lambda (v) v)
-                         'prop:unsafe-authentic-override prop:unsafe-authentic-override))
+                         'prop:unsafe-authentic-override prop:unsafe-authentic-override
+                         'malloc-immobile-cell malloc-immobile-cell
+                         'free-immobile-cell free-immobile-cell
+                         'immobile-cell-ref (lambda (ib) (ptr-ref ib _racket))
+                         'immobile-cell->address (lambda (b) b)
+                         'address->immobile-cell (lambda (b) b)))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread
@@ -93,6 +103,8 @@
                          'thread-resume thread-resume
                          'make-semaphore make-semaphore
                          'semaphore-post semaphore-post
+                         'semaphore-post-all (lambda (s) (for ([i (in-range 100)])
+                                                           (semaphore-post s)))
                          'semaphore-wait semaphore-wait
                          'semaphore-peek-evt semaphore-peek-evt
                          'make-channel make-channel

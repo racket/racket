@@ -22,6 +22,7 @@
          sandman-poll-ctx-add-poll-set-adder!
          sandman-poll-ctx-merge-timeout
          sandman-set-background-sleep!
+         sandman-poll-ctx-poll?
          sandman-place-init!)
 
 (struct exts (timeout-at fd-adders))
@@ -46,6 +47,8 @@
                                  (schedule-info-current-exts sched-info)
                                  timeout))))
 
+(define (sandman-poll-ctx-poll? poll-ctx)
+  (poll-ctx-poll? poll-ctx))
 
 (define-place-local background-sleep #f)
 (define-place-local background-sleep-fd #f)
@@ -104,6 +107,7 @@
                                         [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
                                         [else 'break]))
            (check-signals)))
+       (fd-semaphore-poll-ready)
        ((sandman-do-poll timeout-sandman) mode wakeup))
 
      ;; get-wakeup

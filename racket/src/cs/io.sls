@@ -17,7 +17,9 @@
                   ;; Remapped to place-local register operations:
                   [unsafe-make-place-local rumble:unsafe-make-place-local]
                   [unsafe-place-local-ref rumble:unsafe-place-local-ref]
-                  [unsafe-place-local-set! rumble:unsafe-place-local-set!])
+                  [unsafe-place-local-set! rumble:unsafe-place-local-set!]
+                  [immobile-cell->address rumble:immobile-cell->address]
+                  [address->immobile-cell rumble:address->immobile-cell])
           (thread))
 
   (include "place-register.ss")
@@ -44,7 +46,7 @@
 
   ;; ----------------------------------------
 
-  (module (|#%rktio-instance| ptr->address)
+  (module (|#%rktio-instance| ptr->address address->ptr)
     (meta define (convert-type t)
           (syntax-case t (ref *ref rktio_bool_t rktio_const_string_t)
             [(ref . _) #'uptr]
@@ -359,6 +361,12 @@
                                  'rktio_get_ctl_c_handler rktio_get_ctl_c_handler]
                                 form ...)]))
         (include "../rktio/rktio.rktl"))))
+
+  (define (immobile-cell->address p)
+    (address->ptr (rumble:immobile-cell->address p)))
+
+  (define (address->immobile-cell p)
+    (rumble:address->immobile-cell (ptr->address p)))
 
   ;; ----------------------------------------
 

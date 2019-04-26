@@ -6,6 +6,7 @@
          "../host/thread.rkt"
          "../host/pthread.rkt"
          "../sandman/main.rkt"
+         "../sandman/ltps.rkt"
          "../file/error.rkt"
          "port.rkt"
          "input-port.rkt"
@@ -32,6 +33,7 @@
 (define (fd-close fd fd-refcount)
   (set-box! fd-refcount (sub1 (unbox fd-refcount)))
   (when (zero? (unbox fd-refcount))
+    (fd-semaphore-update! fd 'remove)
     (define v (rktio_close rktio fd))
     (when (rktio-error? v)
       (end-atomic)
@@ -400,6 +402,16 @@
         (cond
           [ready?
            (values (list fde) #f)]
+          ;; If the called is going to block (i.e., not just polling), then
+          ;; try to get a semaphore to represent the file descriptor, because
+          ;; that can be more scalable (especially for lots of TCP sockets)
+          [(and (not (sandman-poll-ctx-poll? ctx))
+                (fd-semaphore-update! (fd-evt-fd fde)
+                                      (if (eqv? RKTIO_POLL_READ (bitwise-and mode RKTIO_POLL_READ))
+                                          'read
+                                          'write)))
+           => (lambda (s) ; got a semaphore
+                (values #f (wrap-evt s (lambda (s) fde))))]
           [else
            ;; If `sched-info` in `poll-ctx` is not #f, then we can register this file
            ;; descriptor so that if no thread is able to make progress,

@@ -614,6 +614,9 @@
           ptr-set! saved-errno set-cpointer-tag! set-ptr-offset! vector->cpointer
           unsafe-register-process-global unsafe-add-global-finalizer
           (rename [ffi-lib* ffi-lib])
+          immobile-cell-ref               ; not exported to Racket
+          immobile-cell->address          ; not exported to Racket
+          address->immobile-cell          ; not exported to Racket
           set-ffi-get-lib-and-obj!        ; not exported to Racket
           poll-async-callbacks            ; not exported to Racket
           set-make-async-callback-poll-wakeup! ; not exported to Racket
