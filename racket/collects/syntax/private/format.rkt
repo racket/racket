@@ -9,33 +9,21 @@
 
 (define (~id #:context [context #f]
              #:source [source context]
-             #:props [props 'infer]
-             #:track [track #t]
+             #:track [track-introduce (default-track-introduce)]
+             ; If we’re attaching 'sub-range-binders, then we don’t want to copy properties, since
+             ; 'sub-range-binders doesn’t care about originalness, and in fact it will probably do
+             ; more harm than good. But if context is provided and we’re not attaching
+             ; 'sub-range-binders, then we probably want to copy originalness, after all.
+             #:props [props (if track-introduce #f context)]
              . pieces)
-  ; Convert all the pieces to strings; hold onto the identifiers for attaching sub-range-binders.
-  (define-values [symbol id-pieces] (pieces->symbol pieces #:keep-id-pieces? track))
-
+  ; Convert all the pieces to strings; hold onto the identifiers for attaching 'sub-range-binders.
+  (define-values [symbol id-pieces] (pieces->symbol pieces #:keep-id-pieces? track-introduce))
   ; Build the new identifier.
-  (define new-id (datum->syntax context
-                                symbol
-                                (build-source-location-vector source)
-                                (if (eq? props 'infer)
-                                    ; If we’re attaching 'sub-range-binders, then we don’t want to
-                                    ; copy properties, since 'sub-range-binders doesn’t care about
-                                    ; originalness, and in fact it will probably do more harm than
-                                    ; good. But if context is provided and we’re not attaching
-                                    ; 'sub-range-binders, then we probably want to copy originalness,
-                                    ; after all.
-                                    (if track #f context)
-                                    props)))
+  (define new-id (datum->syntax context symbol (build-source-location-vector source) props))
+
   (cond
     ; Attach 'sub-range-binders if relevant.
-    [(and track (not (empty? id-pieces)))
-     (define track-introduce (and track (if (procedure? track)
-                                            track
-                                            (if (syntax-transforming?)
-                                                syntax-local-introduce
-                                                values))))
+    [(and track-introduce (not (empty? id-pieces)))
      (define new-id-introduced (track-introduce new-id))
 
      ; Builds a 'sub-range-binders leaf from a given input identifier.
@@ -83,16 +71,16 @@
 
 (define (~id/1 #:context [context 'infer]
                #:source [source 'infer]
-               #:props [props 'infer]
-               #:track [track #t]
+               #:track [track-introduce (default-track-introduce)]
+               #:props [props (if track-introduce #f context)]
                . pieces)
   (define the-id (first (filter identifier? pieces)))
   (define (infer-or x) (if (eq? x 'infer) the-id x))
   (apply ~id pieces
          #:context (infer-or context)
          #:source (infer-or source)
-         #:props props
-         #:track track))
+         #:props (infer-or props)
+         #:track track-introduce))
 
 (define (~symbol . pieces)
   (define-values [symbol id-pieces] (pieces->symbol pieces #:keep-id-pieces? #f))
@@ -130,6 +118,9 @@
                 id-pieces))))
 
 ;; ---------------------------------------------------------------------------------------------------
+
+(define (default-track-introduce)
+  (if (syntax-transforming?) syntax-local-introduce values))
 
 (define (jumble->list v leaf?)
   (let recur ([v v])

@@ -15,8 +15,9 @@
 @defproc[(~id [v (or/c identifier? string? symbol? keyword? char? number?)] ...
               [#:context context (or/c syntax? #f) #f]
               [#:source source source-location? context]
-              [#:props props (or/c syntax? #f 'infer) 'infer]
-              [#:track track (or/c #t (-> identifier? identifier?) #f) #t])
+              [#:props props (or/c syntax? #f) (if track-introduce #f context)]
+              [#:track track-introduce (or/c (-> identifier? identifier?) #f)
+               (if (syntax-original?) syntax-local-introduce identity)])
          identifier?]{
 
 Builds an @tech[#:doc refman]{identifier} with a name constructed from the @racket[v]s, using
@@ -31,16 +32,14 @@ preceeding @litchar{#:} characters are not included).
   (~id #'hyphenated "-" #'id)
   (~id #'made #\- 'from #\- '#:many #\- "pieces"))
 
-If @racket[props] is a @tech[#:doc refman]{syntax object} or @racket[#f], then
+If @racket[props] is a @tech[#:doc refman]{syntax object}, then
 @tech[#:doc refman #:key "syntax property"]{syntax properties} from @racket[props] are copied to the
-new identifier in the same way as for @racket[datum->syntax]. If @racket[props] is @racket['infer],
-then the properties of the new identifier are copied from @racket[context] if @racket[track] is
-@racket[#f]; if @racket[track] is not @racket[#f], then no properties are copied.
+new identifier in the same way as for @racket[datum->syntax].
 
-If @racket[track] is not @racket[#f], then a @racket['sub-range-binders] @tech[#:doc refman]{syntax
-property} is added to the new identifier. The property value is a list containing an element for each
-@tech[#:doc refman]{identifier} @racket[_v-id] provided for @racket[v], and each element is an
-immutable @tech[#:doc refman]{vector} with the shape
+If @racket[track-introduce] is not @racket[#f], then a @racket['sub-range-binders]
+@tech[#:doc refman]{syntax property} is added to the new identifier. The property value is a list
+containing an element for each @tech[#:doc refman]{identifier} @racket[_v-id] provided for @racket[v],
+and each element is an immutable @tech[#:doc refman]{vector} with the shape
 
 @(racketblock
   (vector-immutable _result-id _v-id-position _v-id-length 0.5 0.5
@@ -57,24 +56,25 @@ the identifier should be treated as uses of the @racket[_v-id]s; see
   #:eval (make-format-eval) #:once
   (syntax-property (~id #'foo "-" #'bar) 'sub-range-binders))
 
-If @racket[track] is a procedure, then it is applied to @racket[_result-id] and to each @racket[_v-id]
-inside the @racket['sub-range-binders] property. If @racket[track] is @racket[#t], then
-@racket[syntax-local-introduce] is used if @racket[(syntax-transforming?)] is @racket[#t], otherwise
-@racket[identity] is used. (This default corresponds to the correct behavior when each @racket[_v-id]
-comes from the input to a @tech[#:doc refman]{syntax transformer}.)
+When @racket[track-introduce] is a procedure, then it is applied to @racket[_result-id] and to each
+@racket[_v-id] inside the @racket['sub-range-binders] property. The default value uses
+@racket[syntax-local-introduce] if @racket[(syntax-transforming?)] is @racket[#t], and otherwise uses
+@racket[identity]; this accommodates the common case when each @racket[_v-id] comes from the input to
+a @tech[#:doc refman]{syntax transformer}.
 
 @history[#:added "7.3.0.3"]}
 
 @defproc[(~id/1 [v (or/c identifier? string? symbol? keyword? char? number?)] ...
                 [#:context context (or/c syntax? #f 'infer) 'infer]
                 [#:source source (or/c source-location? 'infer) 'infer]
-                [#:props props (or/c syntax? #f 'infer) 'infer]
-                [#:track track (or/c #t (-> identifier? identifier?) #f) #t])
+                [#:props props (or/c syntax? #f 'infer) (if track-introduce #f context)]
+                [#:track track-introduce (or/c #t (-> identifier? identifier?) #f)
+                 (if (syntax-original?) syntax-local-introduce identity)])
          identifier?]{
 
 Like @racket[~id], but exactly one @racket[v] must be an @tech[#:doc refman]{identifier}, which is
-automatically used in place of @racket[context] and/or @racket[source] if their value is
-@racket['infer]. All other arguments are handled the same way as for @racket[~id].
+automatically used in place of @racket[context], @racket[source], and/or @racket[props] if their value
+is @racket['infer]. All other arguments are handled the same way as for @racket[~id].
 
 @(examples
   #:eval (make-format-eval) #:once
