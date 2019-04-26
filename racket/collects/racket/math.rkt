@@ -9,6 +9,7 @@
          "private/math-predicates.rkt")
 
 (provide pi pi.f
+         tau tau.f
          nan? infinite?
          positive-integer?
          negative-integer?
@@ -24,6 +25,8 @@
 
 (define pi   (atan 0 -1))
 (define pi.f (atan 0.0f0 -1.0f0))
+(define tau (* 2.0 pi))
+(define tau.f (* 2.0f0 pi.f))
 
 (begin-encourage-inline
 
