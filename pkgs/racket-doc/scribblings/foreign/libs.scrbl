@@ -63,7 +63,7 @@ process:
 @itemlist[
 
  @item{If @racket[path] is not an absolute path, look in each
-       directory reported by the @racket[#:get-lib-dirs] optional keyword 
+       directories specified by the @racket[#:get-lib-dirs] optional keyword
        (which defaults to @racket[get-lib-search-dirs]). In each
        directory, try @racket[path] with the first version in
        @racket[version], adding a suitable suffix if @racket[path]
