@@ -4,6 +4,7 @@
 @title[#:tag "syntax-helpers"]{Syntax Object Helpers}
 
 @include-section["stx.scrbl"]
+@include-section["format.scrbl"]
 @include-section["kerncase.scrbl"]
 @include-section["id-table.scrbl"]
 @include-section["id-set.scrbl"]
