@@ -117,17 +117,26 @@
                    (cursor-result info pst (box #f))]
                   [else
                    (simple-result
-                    (let ([last-insert-rowid (A (sqlite3_last_insert_rowid db))]
-                          [total-changes (A (sqlite3_total_changes db))])
+                    (let ([last-insert-rowid (A (sqlite3_last_insert_rowid db))])
                       ;; Not all statements clear last_insert_rowid, changes; so
                       ;; extra guards to make sure results are relevant.
+                      (define changes? (> (A (sqlite3_total_changes db)) saved-total-changes))
                       `((insert-id
-                         . ,(and (not (= last-insert-rowid saved-last-insert-rowid))
+                         ;; We want to report insert-id if statement was a *successful* INSERT,
+                         ;; but we can't check that directly. Instead, check if either
+                         ;; - last_insert_rowid changed (but this check might fail, if the inserted
+                         ;;   row happens to have the same rowid was the last INSERT; for example,
+                         ;;   because the last INSERT was to a different table); or
+                         ;; - the statement looked like an INSERT and the db reports changes
+                         ;;   (but this check misses WITH...INSERT statements).
+                         ;; Note that we can't use the errno approach of setting last_insert_rowid
+                         ;; to a known unused value, because there are no unused values (if an
+                         ;; INTEGER PRIMARY KEY field exists, that is the rowid) and because the
+                         ;; last_insert_rowid is visible to SQL statements.
+                         . ,(and (or (not (= last-insert-rowid saved-last-insert-rowid))
+                                     (and changes? (eq? (send pst get-stmt-type) 'insert)))
                                  last-insert-rowid))
-                        (affected-rows
-                         . ,(if (> total-changes saved-total-changes)
-                                (A (sqlite3_changes db))
-                                0)))))])))))
+                        (affected-rows . ,(if changes? (A (sqlite3_changes db)) 0)))))])))))
 
     (define/public (fetch/cursor fsym cursor fetch-size)
       (let ([pst (cursor-result-pst cursor)]

@@ -42,7 +42,9 @@
 ;; ========================================
 
 ;; SQL "parsing"
-;; We just care about detecting commands that affect transaction status.
+;; We mainly care about detecting commands that affect transaction status.
+;; We also want to detect INSERT statements to report 'insert-id (see query1
+;; in connection%).
 
 ;; classify-sl-sql : string [nat] -> symbol/#f
 (define classify-sl-sql
