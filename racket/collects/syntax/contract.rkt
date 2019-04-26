@@ -1,10 +1,9 @@
 #lang racket/base
 (require racket/contract/base
-         (for-template racket/base
-                       syntax/location)
          syntax/srcloc
          syntax/modcollapse
-         racket/syntax)
+         racket/syntax
+         syntax/location)
 
 (provide/contract
  [wrap-expr/c
@@ -16,7 +15,8 @@
                          'from-macro 'use-site 'unknown)
         #:name (or/c identifier? symbol? string? #f)
         #:macro (or/c identifier? symbol? string? #f)
-        #:context (or/c syntax? #f))
+        #:context (or/c syntax? #f)
+        #:phase exact-integer?)
        syntax?)])
 
 (module runtime racket/base
@@ -25,8 +25,11 @@
            racket/contract/base
            racket/contract/combinator
            (only-in racket/contract/private/base
-                    make-apply-contract))
-  (provide expr/contract
+                    make-apply-contract)
+           syntax/location)
+  (provide (all-from-out racket/base
+                         syntax/location)
+           expr/contract
            relative-source)
 
   (define (macro-expr/c arg? expr-name ctc0)
@@ -42,7 +45,7 @@
      #:late-neg-projection
      (λ (blame)
        (define blame* (blame-add-context blame (format "~s" (contract-name ctc)) #:swap? arg?))
-       (proj (blame-swap blame)))
+       (proj blame*))
      #:list-contract? (list-contract? ctc)))
 
   (define (macro-dep-expr/c arg? expr-name)
@@ -114,7 +117,11 @@
           [(symbol? r)
            (list 'quote r)]
           [else r])))
-(require (for-template (submod "." runtime)))
+
+;; Allow phase shift of 0 or 1 without needing to lift requires
+(require (for-template (submod "." runtime))
+         ;; for phase +1 uses, only need to instantiate, since we’ll shift
+         (only-in (submod "." runtime)))
 
 (define (wrap-expr/c ctc-expr expr
                      #:arg? [arg? #t]
@@ -122,7 +129,8 @@
                      #:negative [neg-source 'use-site]
                      #:name [expr-name #f]
                      #:macro [macro-name #f]
-                     #:context [ctx (current-syntax-context)])
+                     #:context [ctx (current-syntax-context)]
+                     #:phase [phase (syntax-local-phase-level)])
   (let* ([pos-source-expr
           (get-source-expr pos-source
                            (if (identifier? macro-name) macro-name ctx))]
@@ -141,13 +149,30 @@
                    [(x . _) (identifier? #'x) (syntax-e #'x)]
                    [x (identifier? #'x) (syntax-e #'x)]
                    [_ '?])]
-                [else '?])])
-    #`(expr/contract #,expr #,ctc-expr #,arg? '#,expr-name
-                     [#,pos-source-expr
-                      #,neg-source-expr
-                      '#,macro-name
-                      (quote-syntax #,expr)
-                      #f])))
+                [else '?])]
+         [introduce (make-syntax-introducer)]
+         [phase-shift (- phase (syntax-local-phase-level))]
+         [shift+introduce (lambda (stx) (introduce (syntax-shift-phase-level stx phase-shift)))]
+         [unshift+introduce (lambda (stx) (introduce (syntax-shift-phase-level stx (- phase-shift))))]
+         [expr+ctc (shift+introduce
+                    #`(expr/contract #,(unshift+introduce expr) #,(unshift+introduce ctc-expr)
+                                     '#,(and arg? #t) '#,expr-name
+                                     [#,pos-source-expr
+                                      #,neg-source-expr
+                                      '#,macro-name
+                                      (quote-syntax #,expr)
+                                      #f]))])
+    (cond
+      ;; no need to lift for common phases, since we explicitly require them in this module
+      [(memq phase-shift '(0 1))
+       expr+ctc]
+      [else
+       (unless (syntax-transforming?)
+         (raise-arguments-error 'wrap-expr/c "not currently expanding"))
+       (define phased-require-spec
+         (introduce (datum->syntax #'here `(for-meta ,phase-shift ,(quote-module-path runtime)))))
+       (syntax-local-introduce (syntax-local-lift-require (syntax-local-introduce phased-require-spec)
+                                                          (syntax-local-introduce expr+ctc)))])))
 
 (define (get-source-expr source ctx)
   (cond [(eq? source 'use-site)

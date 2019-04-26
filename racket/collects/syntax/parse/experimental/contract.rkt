@@ -15,7 +15,8 @@
                              #:negative [neg-blame 'use-site]
                              #:macro [macro-name #f]
                              #:name [expr-name not-given]
-                             #:context [ctx #f])
+                             #:context [ctx #f]
+                             #:phase [phase (syntax-local-phase-level)])
   #:attributes (c)
   #:commit
   (pattern y:expr
@@ -29,7 +30,8 @@
                                      this-role
                                      expr-name)
                           #:macro macro-name
-                          #:context (or ctx (this-context-syntax)))))
+                          #:context (or ctx (this-context-syntax))
+                          #:phase phase)))
 
 (provide-syntax-class/contract
  [expr/c (syntax-class/c (syntax?)
@@ -40,4 +42,5 @@
                                            'from-macro 'use-site 'unknown)
                           #:name (or/c identifier? string? symbol? #f)
                           #:macro (or/c identifier? string? symbol? #f)
-                          #:context (or/c syntax? #f)))])
+                          #:context (or/c syntax? #f)
+                          #:phase exact-integer?))])
