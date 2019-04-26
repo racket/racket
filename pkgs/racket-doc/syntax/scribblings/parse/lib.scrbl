@@ -4,8 +4,9 @@
           scribble/struct
           scribble/decode
           scribble/eval
+          "../common.rkt"
           "parse-common.rkt"
-          (for-label racket/base racket/contract syntax/kerncase))
+          (for-label racket/base racket/contract racket/syntax syntax/kerncase))
 
 @title{Library Syntax Classes and Literal Sets}
 
@@ -96,7 +97,8 @@ using @racket[#:literals] or @racket[~literal].
                       'use-site]
                      [#:name expr-name (or/c identifier? string? symbol?) #f]
                      [#:macro macro-name (or/c identifier? string? symbol?) #f]
-                     [#:context context (or/c syntax? #f) #, @elem{determined automatically}])]{
+                     [#:context context (or/c syntax? #f) #, @elem{determined automatically}]
+                     [#:phase phase exact-integer? (syntax-local-phase-level)])]{
 
 Accepts an expression (@racket[expr]) and computes an attribute
 @racket[c] that represents the expression wrapped with the contract
@@ -156,16 +158,45 @@ syntax pair with an identifier in operator position; in either case,
 that identifier is taken as the macro ultimately requesting the
 contract wrapping.
 
-See @secref{exprc} for an example.
+The @racket[phase] argument must indicate the @tech[#:doc
+refman]{phase level} at which the contracted expression will be
+evaluated. Using the contracted expression at a different phase level
+will cause a syntax error because it will contain introduced
+references bound in the wrong phase. In particular:
+@itemlist[
+
+@item{Use the default value, @racket[(syntax-local-phase-level)], when
+the contracted expression will be evaluated at the same phase as the
+form currently being expanded. This is usually the case.}
+
+@item{Use @racket[(add1 (syntax-local-phase-level))] in cases such as
+the following: the contracted expression will be placed inside a
+@racket[begin-for-syntax] form, used in the right-hand side of a
+@racket[define-syntax] or @racket[let-syntax] form, or passed to
+@racket[syntax-local-bind-syntaxes] or @racket[syntax-local-eval].}
+
+]
+Any phase level other than @racket[#f] (the @tech[#:doc refman]{label
+phase level}) is allowed, but phases other than
+@racket[(syntax-local-phase-level)] and @racket[(add1
+(syntax-local-phase-level))] may only be used when in the dynamic
+extent of a @tech[#:doc refman]{syntax transformer} or while a module
+is being @tech[#:doc refman]{visit}ed (see
+@racket[syntax-transforming?]), otherwise @racket[exn:fail:contract?]
+is raised.
+
+See @secref{exprc} for examples.
 
 @bold{Important:} Make sure when using @racket[expr/c] to use the
 @racket[c] attribute. The @racket[expr/c] syntax class does not change how
 pattern variables are bound; it only computes an attribute that
 represents the checked expression.
 
-@history[#:changed "7.2.0.3" @elem{Added the @racket[#:arg?] keyword
+@history[
+#:changed "7.2.0.3" @elem{Added the @racket[#:arg?] keyword
 argument and changed the default values and interpretation of the
-@racket[#:positive] and @racket[#:negative] arguments.}]}
+@racket[#:positive] and @racket[#:negative] arguments.}
+#:changed "7.3.0.3" @elem{Added the @racket[#:phase] keyword argument.}]}
 
 
 @section{Literal Sets}

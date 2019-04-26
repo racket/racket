@@ -61,4 +61,25 @@ produced.
 (invert 0.0)
 ]
 
+The following example shows a macro that uses a contracted expression
+at a different phase level. The macro's @racket[_ref] argument is used
+as a ``compile-time expression''---more precisely, it is used as an
+expression at a phase level one higher than the use of the macro
+itself. That is because the macro places the expression in the
+right-hand side of a @racket[define-syntax] form. The macro uses
+@racket[expr/c] with a @racket[#:phase] argument to ensure that
+@racket[_ref] produces an identifier when used as a compile-time
+expression.
+
+@interaction[#:eval the-eval
+(define-syntax (define-alias stx)
+  (syntax-parse stx
+    [(_ name:id ref)
+     #:declare ref (expr/c #'identifier?
+                           #:phase (add1 (syntax-local-phase-level)))
+     #'(define-syntax name (make-rename-transformer ref.c))]))
+(define-alias plus #'+)
+(define-alias zero 0)
+]
+
 @(close-eval the-eval)
