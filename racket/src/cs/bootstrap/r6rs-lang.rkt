@@ -757,8 +757,24 @@
         (hash-ref-cell ht key def-v))))
 
 ;; HACK!
-(define (set-car! p v) (unsafe-set-mcar! p v))
-(define (set-cdr! p v) (unsafe-set-mcdr! p v))
+(define-syntax (define-mutable-pair-hacks stx)
+  (syntax-case stx ()
+    [(_ set-car! set-cdr!)
+     (cond
+       [(eq? 'chez-scheme (system-type 'vm))
+        #'(begin
+            (require racket/linklet)
+            (define chez-eval (instantiate-linklet
+                               (compile-linklet '(linklet () () eval))
+                               null
+                               (make-instance 'scheme)))
+            (define set-car! (chez-eval 'set-car!))
+            (define set-cdr! (chez-eval 'set-cdr!)))]
+       [else
+        #'(begin
+            (define (set-car! p v) (unsafe-set-mcar! p v))
+            (define (set-cdr! p v) (unsafe-set-mcdr! p v)))])]))
+(define-mutable-pair-hacks set-car! set-cdr!)
 
 (define (fixnum-width) (or fixnum-bits 63))
 

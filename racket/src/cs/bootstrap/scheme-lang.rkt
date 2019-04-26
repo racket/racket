@@ -612,7 +612,7 @@
       (fxrshift v amt)))
 
 (define (fxbit-field fx1 fx2 fx3)
-  (fxand (fxrshift fx1 fx2) (fx- (fxlshift 1 (- fx3 fx2)) 1)))
+  (fxrshift (fxand fx1 (fxnot (fxlshift -1 fx3))) fx2))
 
 (define (bitwise-bit-count fx)
   (cond
