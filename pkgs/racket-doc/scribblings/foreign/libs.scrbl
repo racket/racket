@@ -63,7 +63,7 @@ process:
 @itemlist[
 
  @item{If @racket[path] is not an absolute path, look in each
-       directory reported by . In each
+       directory reported by @racket[get-lib-search-dirs]. In each
        directory, try @racket[path] with the first version in
        @racket[version], adding a suitable suffix if @racket[path]
        does not already end in the suffix, then try the second version
@@ -76,7 +76,7 @@ process:
        paths are tried in this step.)}
 
  @item{Try @racket[path] without adding any version or suffix, and
-       without converting to an absolute path.}@racket[get-lib-search-dirs]
+       without converting to an absolute path.}
 
  @item{Try the version-adjusted filenames again, but relative to the
        current directory. (If @racket[version] is an empty list, no
