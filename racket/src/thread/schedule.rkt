@@ -185,7 +185,7 @@
           (engine-block))
         (lambda args
           (internal-error "thread ended while it should run callbacks atomically"))
-        (lambda (e)
+        (lambda (e timeout?)
           (start-implicit-atomic-mode)
           (if done?
               (k e)
