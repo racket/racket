@@ -46,18 +46,24 @@
                variable-reference-constant?
                variable-reference-from-unsafe?))
 
-   ;; Linklet compilation on Chez Scheme 
+   ;; Linklet compilation on Chez Scheme; anything
+   ;; introduced by schemify needs to be here to
+   ;; make sure the introduced name isn't shadowed
+   ;; by a definition in expanded code
    (for-each register-built-in-symbol!
              '(or
                and
                let
                letrec*
                define
+               $value
                pariah
                variable-set!
                variable-ref
                variable-ref/no-check
+               variable-set!/check-undefined
                make-instance-variable-reference
+               instance-variable-reference
                annotation?
                annotation-expression
                #%app
@@ -65,4 +71,15 @@
                make-pthread-parameter
                break-enabled-key
                engine-block
-               fasl->s-exp/intern))))
+               fasl->s-exp/intern
+               make-record-type-descriptor
+               record-constructor
+               record-accessor
+               record-mutator
+               record-predicate
+               struct-type-install-properties!
+               register-struct-constructor!
+               register-struct-predicate!
+               register-struct-field-accessor!
+               register-struct-field-mutator!
+               raise-binding-result-arity-error))))
