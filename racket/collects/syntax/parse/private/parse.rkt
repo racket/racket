@@ -1196,7 +1196,7 @@ Conventions:
                           (define the-pattern (ehpat-head ehpat))
                           (define attrs (iattrs->sattrs (pattern-attrs the-pattern)))
                           (define the-variant (variant hstx attrs the-pattern null))
-                          (define the-rhs (rhs attrs #f #f (list the-variant) null #f #f))
+                          (define the-rhs (rhs attrs #t #f (list the-variant) null #f #f))
                           (with-syntax ([(parser) (generate-temporaries '(eh-alt-parser))]
                                         [the-rhs-expr (datum->expression the-rhs)])
                             (list (eh-alternative (ehpat-repc ehpat) attrs #'parser)

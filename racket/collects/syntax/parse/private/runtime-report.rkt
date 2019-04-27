@@ -333,10 +333,11 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
       ['#f acc]
       ['#t acc]
       [(expect:thing ps desc tr? role rest-es)
-       (cond [(and truncate-opaque? (not tr?))
-              (loop rest-es (cons (expect:thing #f desc #t role (ps->stx+index ps)) null))]
-             [else
-              (loop rest-es (cons (expect:thing #f desc tr? role (ps->stx+index ps)) acc))])]
+       (let* (;; discard frames so far if opaque
+              [acc (if (and truncate-opaque? (not tr?)) null acc)]
+              ;; discard this frame if desc is #f
+              [acc (if desc (cons (expect:thing #f desc tr? role (ps->stx+index ps)) acc) acc)])
+         (loop rest-es acc))]
       [(expect:message message rest-es)
        (loop rest-es (cons (expect:message message stx+index) acc))]
       [(expect:atom atom rest-es)
