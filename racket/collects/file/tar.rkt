@@ -197,7 +197,10 @@
 ;; writes a tar file to current-output-port
 (provide tar->output)
 (define (tar->output files [out (current-output-port)]
-                     #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
+                     #:timestamp [timestamp #f]
+                     #:get-timestamp [get-timestamp (if timestamp
+                                                        (lambda (p) timestamp)
+                                                        file-or-directory-modify-seconds)]
                      #:path-prefix [prefix #f]
                      #:follow-links? [follow-links? #f]
                      #:format [format 'pax])
@@ -215,7 +218,10 @@
              #:path-prefix [prefix #f]
              #:path-filter [path-filter #f]
              #:follow-links? [follow-links? #f]
-             #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
+             #:timestamp [timestamp #f]
+             #:get-timestamp [get-timestamp (if timestamp
+                                                (lambda (p) timestamp)
+                                                file-or-directory-modify-seconds)]
              #:format [format 'pax]
              . paths)
   (check-format 'tar format)
@@ -237,7 +243,10 @@
                   #:path-prefix [prefix #f]
                   #:path-filter [path-filter #f]
                   #:follow-links? [follow-links? #f]
-                  #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
+                  #:timestamp [timestamp #f]
+                  #:get-timestamp [get-timestamp (if timestamp
+                                                     (lambda (p) timestamp)
+                                                     file-or-directory-modify-seconds)]
                   #:format [format 'pax]
                   . paths)
   (check-format 'tar-gzip format)
