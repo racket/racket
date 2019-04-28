@@ -3676,7 +3676,12 @@ Scheme_Object *scheme_chaperone_hash_table_filtered_copy(Scheme_Object *obj,
     key = scheme_hash_table_iterate_key(2, a);
 
     val = scheme_chaperone_hash_get(obj, key);
-    if (filter && val) val = filter(val);
+    if (filter && val) {
+      key = filter(key);
+      if (!key) return NULL;
+      val = filter(val);
+      if (!val) return NULL;
+    }
     if (val) {
       a[0] = v2;
       a[1] = key;

@@ -1976,8 +1976,12 @@ static Scheme_Object *strip_chaperones(Scheme_Object *so)
     o = so;
 
   if (SCHEME_PAIRP(o)) {
-    return scheme_make_pair(strip_chaperones(SCHEME_CAR(o)),
-                            strip_chaperones(SCHEME_CDR(o)));
+    Scheme_Object *a, *d;
+    a = strip_chaperones(SCHEME_CAR(o));
+    if (!a) return NULL;
+    d = strip_chaperones(SCHEME_CDR(o));
+    if (!d) return NULL;
+    return scheme_make_pair(a, d);
   } else if (SCHEME_VECTORP(o)) {
     Scheme_Object *v, *e;
     intptr_t len = SCHEME_VEC_SIZE(o), i;
@@ -1988,6 +1992,7 @@ static Scheme_Object *strip_chaperones(Scheme_Object *so)
       else
         e = scheme_chaperone_vector_ref(so, i);
       e = strip_chaperones(e);
+      if (!e) return NULL;
       SCHEME_VEC_ELS(v)[i] = e;
     }
     return v;
@@ -2006,6 +2011,7 @@ static Scheme_Object *strip_chaperones(Scheme_Object *so)
       else
         e = scheme_struct_ref(so, i);
       e = strip_chaperones(e);
+      if (!e) return NULL;
       s2->slots[i] = e;
     }
     return (Scheme_Object *)s2;

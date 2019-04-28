@@ -106,6 +106,20 @@
   (test (not (place-enabled?)) place-message-allowed? (cons v 1))
   (test (not (place-enabled?)) place-message-allowed? (vector v)))
 
+(let ()
+  (struct s (a) #:prefab)
+  (struct p (x))
+  (define c (chaperone-struct (p 1)
+                              p-x
+                              (lambda (s v) v)))
+  (test (not (place-enabled?)) place-message-allowed? (s (lambda () 1)))
+  (test (not (place-enabled?)) place-message-allowed? (s c))
+  (test (not (place-enabled?)) place-message-allowed? (hasheq c 5))
+  (test (not (place-enabled?)) place-message-allowed? (hasheq 5 c))
+  (test (not (place-enabled?)) place-message-allowed? (vector c))
+  (test (not (place-enabled?)) place-message-allowed? (cons c 6))
+  (test (not (place-enabled?)) place-message-allowed? (cons 6 c)))
+
 ;; ----------------------------------------
 ;; Place messages and chaperones
 
