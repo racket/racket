@@ -115,6 +115,12 @@ library's symbols are not made available for future resolution. This
 local-versus-global choice does not affect whether the library's
 symbols are available via @racket[(ffi-lib #f)].
 
+The @racket[ffi-lib] procedure logs (see @secref["logging" #:doc '(lib
+"scribblings/reference/reference.scrbl")]) on the topic
+@racket['ffi-lib]. In particular, on failure it logs the paths
+attempted according to the rules above, but it cannot report the
+paths tried due to the operating system's library search path.
+
 Due to the way the operating system performs dynamic binding, loaded
 libraries are associated with Racket (or DrRacket) for the duration of
 the process. Re-evaluating @racket[ffi-lib] (or hitting the
@@ -124,7 +130,8 @@ corresponding library.
 @history[#:changed "6.1.0.5" @elem{Changed the way a version number is
                                    added with a @filepath{.dll} suffix
                                    to place it before the suffix,
-                                   instead of after.}]}
+                                   instead of after.}
+         #:changed "7.3.0.3" @elem{Added logging.}]}
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
                       [lib (or/c ffi-lib? path-string? #f)]
