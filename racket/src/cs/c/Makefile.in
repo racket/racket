@@ -146,24 +146,24 @@ SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LD="$(LD)" LDFLAGS="$(LD
                      WINDRES="$(WINDRES)"
 
 scheme-make-finish:
-	env SCHEME_SRC="$(SCHEME_SRC)" MACH="$(TARGET_MACH)" $(BOOTSTRAP_RACKET) $(srcdir)/../bootstrap/make-boot.rkt
+	env SCHEME_SRC="$(SCHEME_SRC)" MACH="$(MACH)" $(BOOTSTRAP_RACKET) $(srcdir)/../bootstrap/make-boot.rkt
 	cd $(SCHEME_SRC) && ./configure @SCHEME_CONFIG_ARGS@ $(SCHEME_CONFIG_VARS)
-	mkdir -p $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)
-	$(MAKE) $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/equates.h
-	$(MAKE) $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.h
-	$(MAKE) $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/petite.boot
-	$(MAKE) $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.boot
+	mkdir -p $(SCHEME_SRC)/$(MACH)/boot/$(MACH)
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
+	$(MAKE) $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
 	cd $(SCHEME_SRC) && $(MAKE)
 
 # If "equates.h", etc., are newly built since previous build, move them into place
-$(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/equates.h: $(SCHEME_SRC)/boot/$(TARGET_MACH)/equates.h
-	cp $(SCHEME_SRC)/boot/$(TARGET_MACH)/equates.h $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/equates.h
-$(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.h: $(SCHEME_SRC)/boot/$(TARGET_MACH)/scheme.h
-	cp $(SCHEME_SRC)/boot/$(TARGET_MACH)/scheme.h $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.h
-$(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/petite.boot: $(SCHEME_SRC)/boot/$(TARGET_MACH)/petite.boot
-	cp $(SCHEME_SRC)/boot/$(TARGET_MACH)/petite.boot $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/petite.boot
-$(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(TARGET_MACH)/scheme.boot
-	cp $(SCHEME_SRC)/boot/$(TARGET_MACH)/scheme.boot $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)/scheme.boot
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h: $(SCHEME_SRC)/boot/$(MACH)/equates.h
+	cp $(SCHEME_SRC)/boot/$(MACH)/equates.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/equates.h
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h: $(SCHEME_SRC)/boot/$(MACH)/scheme.h
+	cp $(SCHEME_SRC)/boot/$(MACH)/scheme.h $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.h
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot: $(SCHEME_SRC)/boot/$(MACH)/petite.boot
+	cp $(SCHEME_SRC)/boot/$(MACH)/petite.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/petite.boot
+$(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot: $(SCHEME_SRC)/boot/$(MACH)/scheme.boot
+	cp $(SCHEME_SRC)/boot/$(MACH)/scheme.boot $(SCHEME_SRC)/$(MACH)/boot/$(MACH)/scheme.boot
 
 scheme-cross:
 	cd $(SCHEME_SRC) && git submodule -q init && git submodule -q update
