@@ -13,15 +13,13 @@
 (define (make-ltps)
   (define ltps (rktio_ltps_open rktio))
   (unless (rktio-error? ltps)
-    ;; Rely on module ordering to ensure that this
-    ;; custodian registration precedes any port (or other)
-    ;; registrations that will need to be removed before
-    ;; the ltps is closed
     (unsafe-custodian-register (current-custodian)
                                ltps
                                ;; in atomic mode
                                (lambda (ltps)
-                                 (rktio_ltps_close rktio ltps))
+                                 (rktio_ltps_remove_all rktio ltps)
+                                 (rktio_ltps_close rktio ltps)
+                                 (shared-ltps-reset!))
                                #f
                                #f))
   (if (rktio-error? ltps)
@@ -32,6 +30,9 @@
 
 (define (shared-ltps-place-init!)
   (set! shared-ltps (make-ltps)))
+
+(define (shared-ltps-reset!)
+  (set! shared-ltps rktio_NULL))
 
 ;; ----------------------------------------
 
