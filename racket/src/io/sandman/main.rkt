@@ -62,8 +62,7 @@
 (define-place-local awoken-threads '())
 
 (define (sandman-place-init!)
-  (set! lock (make-lock))
-  (shared-ltps-place-init!))
+  (set! lock (make-lock)))
 
 (void
  (current-sandman

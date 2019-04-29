@@ -31,7 +31,7 @@
 (define-place-local shared-ltps (make-ltps))
 
 (define (shared-ltps-place-init!)
-  (make-ltps))
+  (set! shared-ltps (make-ltps)))
 
 ;; ----------------------------------------
 
