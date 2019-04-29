@@ -143,8 +143,7 @@
 (define (check-restricted-format-string who fmt)
   (unless (restricted-format-string? fmt)
     (raise-arguments-error who
-                           (format "format string should have ~a placeholders"
-                                   fmt)
+                           "format string should have only ~a placeholders"
                            "format string" fmt)))
 
 (define (make-subs who id fmt args arg-strs intro)
