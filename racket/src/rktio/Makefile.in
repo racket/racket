@@ -21,7 +21,7 @@ libdir = @libdir@
 
 RACKET = racket
 
-RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
+RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h $(srcdir)/rktio_platform.h rktio_config.h
 
 OBJS = rktio_fs.@LTO@ \
        rktio_fd.@LTO@ \
