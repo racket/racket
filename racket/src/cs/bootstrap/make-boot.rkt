@@ -14,7 +14,9 @@
          "config.rkt")
 
 ;; Set `SCHEME_SRC` and `MACH` to specify the ChezScheme source
-;; directory and the target machine.
+;; directory and the target machine. Set the `MAKE_BOOT_FOR_CROSS`
+;; environment variable to generate just enough to run `configure`
+;; for a corss build.
 
 (unless scheme-dir
   (error "set `SCHEME_SRC` environment variable"))
@@ -296,6 +298,16 @@
   (eval `(mkscheme.h ,(path->string (build-path out-subdir "scheme.h")) ,target-machine))
   (eval `(mkequates.h ,(path->string (build-path out-subdir "equates.h"))))
   (plumber-flush-all (current-plumber))
+
+  (when (getenv "MAKE_BOOT_FOR_CROSS")
+    ;; Working bootfiles are not needed for a cross build (only the
+    ;; ".h" files are needed), so just make dummy files in that case
+    ;; to let `configure` work
+    (define (touch p)
+      (unless (file-exists? p) (call-with-output-file* p void)))
+    (touch (build-path out-subdir "petite.boot"))
+    (touch (build-path out-subdir "scheme.boot"))
+    (exit))
 
   (for ([s (in-list '("ftype.ss"
                       "fasl.ss"
