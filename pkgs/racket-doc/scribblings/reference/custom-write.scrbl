@@ -108,7 +108,7 @@ property, @racket[#f] otherwise.}
 
 
 @defproc[(custom-write-accessor [v custom-write?])
-         (custom-write? output-port? boolean? . -> . any)]{
+         (custom-write? output-port? (or/c boolean? (integer-in 0 1)) . -> . any)]{
 
 Returns the custom-write procedure associated with @racket[v].}
 
