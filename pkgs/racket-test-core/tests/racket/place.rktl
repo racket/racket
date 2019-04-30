@@ -52,8 +52,11 @@
     ;interned into the same table as us and us2
     ;because the same place sends and receives
     (test #t equal? us (car r2))
-    (test #t equal? us2 (cdr r2))))
-  
+    (test #t equal? us2 (cdr r2)))
+
+  (place-channel-put out (make-prefab-struct 'vec (vector) (vector)))
+  (test (make-prefab-struct 'vec (vector) (vector)) place-channel-get in))
+
 (let ([p (place/splat (p1 ch)
           (printf "Hello form place 2\n")
           (exit 99))])

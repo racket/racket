@@ -81,11 +81,13 @@
   (define graph #f)
   (define used #f)
   (define (maybe-ph ph v)
-    (if (and used (hash-ref used ph #f))
-        (begin
-          (placeholder-set! ph v)
-          ph)
-        v))
+    (cond
+      [(and used (hash-ref used ph #f))
+       (placeholder-set! ph v)
+       ph]
+      [else
+       (hash-set! graph v #f)
+       v]))
   (define new-v
     (let loop ([v v])
       (cond
