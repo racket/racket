@@ -1655,7 +1655,8 @@ DEEP_VEC2:
       if (set_mode) {
         SCHEME_SET_IMMUTABLE(vec);
         new_so = vec;
-      }
+      } else
+        new_so = vec;
       RETURN;
       break;
 

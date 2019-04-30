@@ -100,6 +100,7 @@
   (test #t place-message-allowed? v)
   (test #t place-message-allowed? (list v))
   (test #t place-message-allowed? (vector v)))
+(test #t place-message-allowed? (vector))
 
 (for ([v (list (lambda () 10)
                add1)])
