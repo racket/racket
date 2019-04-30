@@ -212,7 +212,7 @@ Even More Instructions: Building Racket Pieces
 ==============================================
 
 Instead of just using `make in-place` or `make unix-style`, you can
-take more control over the build by understand how the pieces fit
+take more control over the build by understanding how the pieces fit
 together.
 
 Building Minimal Racket
