@@ -1871,11 +1871,10 @@
                 "use of a class keyword is not in a class top-level"
                 stx))
              (let-values ([(id rhs) (normalize-definition stx #'lambda #f #t)])
-               (class-syntax-protect
-                (quasisyntax/loc stx
-                  (begin
-                    (#,decl-form #,id)
-                    (define #,id #,rhs)))))))])
+               (quasisyntax/loc stx
+                 (begin
+                   (#,decl-form #,id)
+                   (define #,id #,rhs))))))])
     (values
      (mk #'private)
      (mk #'public)
