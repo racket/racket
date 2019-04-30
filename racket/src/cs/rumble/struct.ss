@@ -133,10 +133,10 @@
 
 (define/who make-sibling-inspector
   (case-lambda
-   [() (make-sibling-inspector (current-inspector))]
+   [() (make-sibling-inspector (|#%app| current-inspector))]
    [(i)
     (check who inspector? i)
-    (make-inspector (inspector-parent i))]))
+    (new-inspector (inspector-parent i))]))
 
 (define/who (inspector-superior? sup-insp sub-insp)
   (check who inspector? sup-insp)
@@ -145,7 +145,8 @@
       #f
       (let ([parent (inspector-parent sub-insp)])
         (or (eq? parent sup-insp)
-            (inspector-superior? sup-insp parent)))))
+            (and parent
+                 (inspector-superior? sup-insp parent))))))
 
 (define (inspector-ref rtd)
   (getprop (record-type-uid rtd) 'inspector none))

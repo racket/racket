@@ -647,6 +647,11 @@
 (test #f inspector-superior? (make-inspector) (make-inspector))
 (test #t inspector-superior? (current-inspector) (make-inspector (make-inspector (make-inspector))))
 
+(test #t inspector? (make-sibling-inspector))
+(test #f inspector-superior? (current-inspector) (make-sibling-inspector))
+(test #f inspector-superior? (make-sibling-inspector) (current-inspector))
+(test #t inspector-superior? (current-inspector) (make-sibling-inspector (make-inspector)))
+
 ;; ------------------------------------------------------------
 ;; Property accessor errors
 
