@@ -4,6 +4,7 @@
          "../host/rktio.rkt"
          "../security/main.rkt"
          "../sandman/main.rkt"
+         "../format/main.rkt"
          "port-number.rkt"
          "address.rkt"
          "error.rkt")

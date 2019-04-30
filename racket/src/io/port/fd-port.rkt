@@ -432,9 +432,9 @@
 
 (define (register-fd-close custodian fd fd-refcount flush-handle port)
   (unsafe-custodian-register custodian
-                             fd
+                             port
                              ;; in atomic mode
-                             (lambda (fd)
+                             (lambda (port)
                                (when flush-handle
                                  (plumber-flush-handle-remove! flush-handle))
                                (if (input-port? port)
