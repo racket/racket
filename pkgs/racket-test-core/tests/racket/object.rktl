@@ -2150,5 +2150,28 @@
                                    (free-identifier=? r b)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `define/public` doesn't add a dye pack unnecessarily
+
+(define-syntax (change-five-to-six stx)
+  (syntax-case stx ()
+    [(_ e)
+     (let loop ([e (local-expand #'e (syntax-local-context) (list #'begin #'define))])
+       (syntax-case e (begin)
+         [(begin . e)
+          #`(begin #,@(map loop (syntax->list #'e)))]
+         [(define id rhs)
+          #`(define id #,(loop #'rhs))]
+         [5 #'6]
+         [_ e]))]))
+
+(let ()
+  (define-local-member-name x y)
+  (test 6 values (send (new (class object%
+                              (change-five-to-six
+                               (define/public (x) 5))
+                              (super-new)))
+                       x)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
