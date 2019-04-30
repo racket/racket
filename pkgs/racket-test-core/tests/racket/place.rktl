@@ -182,6 +182,19 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-values (in out) (place-channel))
+
+  (define (try v)
+    (place-channel-put in v)
+    (test #t eq? v (place-channel-get out)))
+
+  (try (shared-bytes 0))
+  (try (make-shared-bytes 10))
+  (try (make-shared-bytes 10 3)))
+
+;; ----------------------------------------
+
 (require (submod "place-utils.rkt" place-test-submod))
 (test 0 p 0)
 

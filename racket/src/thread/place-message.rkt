@@ -31,7 +31,10 @@
         (symbol? v)
         (and (or (string? v)
                  (bytes? v))
-             (or (not direct?) (immutable? v)))
+             (or (not direct?)
+                 (immutable? v)
+                 (and (bytes? v)
+                      (place-shared? v))))
         (null? v)
         (and (pair? v)
              (or (hash-ref graph v #f)
@@ -60,7 +63,8 @@
         (and (not direct?)
              (or (cpointer? v)
                  (and (or (fxvector? v)
-                          (flvector? v))
+                          (flvector? v)
+                          (bytes? v))
                       (place-shared? v))
                  (and (place-message? v)
                       ((place-message-ref v) v)
@@ -102,7 +106,9 @@
         [(string? v)
          (string->immutable-string v)]
         [(bytes? v)
-         (bytes->immutable-bytes v)]
+         (if (place-shared? v)
+             v
+             (bytes->immutable-bytes v))]
         [else
          (unless graph (set! graph (make-hasheq)))
          (cond
