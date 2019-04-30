@@ -177,10 +177,6 @@ With @racket[require] specifications at the top of the implementation
 @; -----------------------------------------------------------------------------
 @subsection{Provide}
 
-@(define 1/2-line
-   @t{---------------------------------})
-
-
 A module's interface describes the services it provides; its body
  implements these services. Others have to read the interface if the
  external documentation doesn't suffice:
@@ -211,7 +207,7 @@ This helps people find the relevant information quickly.
   ;; tree traversal
   ai-strategy)
 
- (code:comment #, @1/2-line)
+ (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
  (require "basics.rkt")
@@ -236,7 +232,7 @@ This helps people find the relevant information quickly.
  ;; This module implements
  ;; several strategies.
 
- (code:comment #, @1/2-line)
+ (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
  (require "basics.rkt")
@@ -531,3 +527,168 @@ recursive fashion, submodule contract boundaries cannot enforce constraints
 on mutually recursive functions. It would thus be impossible to distribute
 the @racket[find-path] and @racket[find-path*] functions from the preceding
 code display into two distinct submodules.
+
+@; -----------------------------------------------------------------------------
+@section{No Contracts}
+
+Adding contracts to a library is good. 
+
+On some occasions, contracts impose a significant performance penalty. 
+For such cases, we recommend organizing the module into two parts: 
+@itemlist[
+
+@item{a submodule named @tt{no-contract}, which defines the 
+functionality and exports some of it to the surrounding module}
+
+@item{a @racket[provide] specification with a @racket[contract-out] clause
+in the outer module that re-exports the desired pieces of functionality.}
+
+]
+
+@compare[
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file
+ @tt{correct}
+ racket
+
+ (define state? ...)
+ (define action? ...)
+ (define strategy/c
+   (-> state? action?))
+
+ (provide
+   (contract-out
+     ;; people's strategy
+     (human strategy/c)
+
+     ;; tree traversal
+     (ai strategy/c)))
+
+ (code:comment #, @1/2-line[])
+ (code:comment #, @t{implementation})
+
+ (define (general p) ... )
+
+ (define human
+   (general create-gui))
+
+ (define ai
+   (general traversal))))
+
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file
+ @tt{fast}
+
+ (define state? ...)
+ (define action? ...)
+ (define strategy/c
+   (-> state? action?))
+
+ (provide
+   (contract-out
+     ;; people's strategy
+     (human strategy/c)
+
+     ;; tree traversal
+     (ai strategy/c)))
+
+ (code:comment #, @1/2-line[])
+ (code:comment #, @t{implementation})
+
+ (module no-contract racket 
+  (provide
+    human
+    ai)
+  
+  (define (general p) ... )
+
+  (define human
+    (general create-gui))
+  
+  (define ai
+    (general traversal)))
+
+ (require 'no-contract)))
+]
+
+The example labeled @tt{correct} illustrates what the module might look
+like originally. Every exported function comes with a contract, and the
+definitions of these functions can be found below the @racket[provide]
+specification in the module body. By comparison, the @tt{fast} module on
+the right encapsulates the definitions in a submodule called
+@tt{no-contract}; the @racket[provide] in this submodule exports the exact
+same identifiers as the @tt{correct} module on the left.  The main module
+@racket[require]s the submodule immediately, making the identifiers
+available in the outer scope so that the contracted @code{provide} can
+re-export them. 
+
+@compare[
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file
+ @tt{needs-correctness}
+ racket
+
+ (require coll/fast)
+
+ human
+ ;; comes with contracts 
+ ;; as if we had required 
+ ;; coll/correct 
+
+ (define state1 ...)
+ (define state2 (human state1))))
+
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file
+ @tt{needs-speed}
+ racket
+
+ (require 
+  (submod 
+    coll/fast no-contract))
+
+ human
+ ;; comes without contracts 
+
+ (define state* 
+   (build-list ...))
+ (define action*
+   (map human state*))))
+]
+
+Once the submodule exists, using the library with or without contracts is
+straightforward. Both modules from above @racket[require] @tt{fast}, but
+the left one requires just @tt{fast} and the right one the submodule called
+@tt{no-contract}. Hence the left module imports, say, @racket[human] with
+contracts; the right one imports the same function without contract and
+thus doesn't have to pay the performance penalty.
+
+In some cases, the presence of contracts prevents a module from being used
+in a context where contracts aren't available, say, for @rkt/base[] or the
+contracts library itself. Again, you may wish you had the same library
+without contracts. For these cases, we recommend a different strategy than
+the submodule one. Assuming the library is located at @tt{a/b/c}, we
+recommend 
+@itemlist[#:style 'ordered
+
+@item{creating a @tt{private/} sub-directory with the file  @tt{a/b/private/c-no-ctc.rkt},}
+
+@item{placing the functionality into @tt{c-no-ctc.rkt},}
+
+@item{importing it into @tt{a/b/c.rkt}, and}
+
+@item{exporting it from there with contracts.}
+
+]
+
+Once this arrangement is set up, a client module in a special context
+@rkt/base[] or for @racketmodname[#, 'racket/contract] can use @racket[(require
+a/b/private/c-no-ctc)]. In a regular module, though, it would suffice
+to write @racket[(require a/b/c)] and doing so would import contracted
+identifiers. 
