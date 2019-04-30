@@ -437,6 +437,9 @@
                              (lambda (fd)
                                (when flush-handle
                                  (plumber-flush-handle-remove! flush-handle))
+                               (if (input-port? port)
+                                   (send fd-input-port port on-close)
+                                   (send fd-output-port port on-close))
                                (fd-close fd fd-refcount)
                                (set-closed-state! port))
                              #f
