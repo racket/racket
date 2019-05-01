@@ -87,14 +87,14 @@
 (define (message-ize v fail)
   (define graph #f)
   (define used #f)
-  (define (maybe-ph ph v)
+  (define (maybe-ph ph v new-v)
     (cond
       [(and used (hash-ref used ph #f))
-       (placeholder-set! ph v)
+       (placeholder-set! ph new-v)
        ph]
       [else
-       (hash-set! graph v #f)
-       v]))
+       (hash-remove! graph v)
+       new-v]))
   (define new-v
     (let loop ([v v])
       (cond
@@ -123,19 +123,20 @@
            [(pair? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (maybe-ph ph (cons (loop (car v))
-                               (loop (cdr v))))]
+            (maybe-ph ph v (cons (loop (car v))
+                                 (loop (cdr v))))]
            [(vector? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (maybe-ph ph (for/vector #:length (vector-length v) ([e (in-vector v)])
-                           (loop e)))]
+            (maybe-ph ph v (for/vector #:length (vector-length v) ([e (in-vector v)])
+                             (loop e)))]
            [(immutable-prefab-struct-key v)
             => (lambda (k)
                  (define ph (make-placeholder #f))
                  (hash-set! graph v ph)
                  (maybe-ph
                   ph
+                  v
                   (apply make-prefab-struct
                          k
                          (for/list ([e (in-vector (struct->vector v) 1)])
@@ -143,16 +144,19 @@
            [(hash? v)
             (define ph (make-placeholder #f))
             (hash-set! graph v ph)
-            (cond
-              [(hash-eq? v)
-               (for/hasheq ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))]
-              [(hash-eqv? v)
-               (for/hasheqv ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))]
-              [else
-               (for/hash ([(k v) (in-hash v)])
-                 (values (loop k) (loop v)))])]
+            (maybe-ph
+             ph
+             v
+             (cond
+               [(hash-eq? v)
+                (for/hasheq ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]
+               [(hash-eqv? v)
+                (for/hasheqv ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]
+               [else
+                (for/hash ([(k v) (in-hash v)])
+                  (values (loop k) (loop v)))]))]
            [(cpointer? v)
             (ptr-add v 0)]
            [(and (or (fxvector? v)
