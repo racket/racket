@@ -792,4 +792,5 @@
   (set-procedure-impersonator-hash!)
   (set-vector-impersonator-hash!)
   (set-box-impersonator-hash!)
-  (set-cpointer-hash!))
+  (set-cpointer-hash!)
+  (set-exn-srcloc-properties!))

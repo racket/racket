@@ -86,6 +86,14 @@
 (struct exn:fail:unsupported exn:fail ())
 (struct exn:fail:user exn:fail ())
 
+(define (set-exn-srcloc-properties!)
+  (let ([add! (lambda (rtd)
+                (struct-property-set! prop:exn:srclocs rtd exn:fail:read-srclocs)
+                (hashtable-set! rtd-props rtd (list prop:exn:srclocs)))])
+    (add! struct:exn:fail:read)
+    (add! struct:exn:fail:read:non-char)
+    (add! struct:exn:fail:read:eof)))
+
 ;; ----------------------------------------
 
 (define (raise-arguments-error who what . more)
