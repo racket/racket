@@ -18,6 +18,11 @@
 #define CENTRALIZED_SIGCHILD
 #endif
 
+#ifdef RKTIO_SYSTEM_UNIX
+static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move);
+static void close_non_standard_fd(int fd);
+#endif
+
 /*========================================================================*/
 /* Process data structure                                                 */
 /*========================================================================*/
@@ -1443,33 +1448,52 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     case 0: /* child */
 
       {
-        int errid;
-        
-	/* Copy pipe descriptors to stdin and stdout */
-	do {
-	  errid = MSC_IZE(dup2)(to_subprocess[0], 0);
-	} while (errid == -1 && errno == EINTR);
-	do {
-	  errid = MSC_IZE(dup2)(from_subprocess[1], 1);
-	} while (errid == -1 && errno == EINTR);
-	do {
-	  errid = MSC_IZE(dup2)(err_subprocess[1], 2);
-	} while (errid == -1 && errno == EINTR);
+	int in_fd, out_fd, err_fd;
+	in_fd = to_subprocess[0];
+	out_fd = from_subprocess[1];
+	err_fd = err_subprocess[1];
+
+	/* Make sure out/err descriptors don't get clobbered by moving
+	   them if they're occupying a file descriptor we need to move
+	   a different descriptor into. (Note that while it's unlikely
+	   that input/output file descriptors will be the same, it
+	   isn't impossible, so handle that, too.) */
+	if ((err_fd == 0 && err_fd != in_fd)
+	    || (err_fd == 1 && err_fd != out_fd)) {
+	  int new_err_fd = 2;
+	  while (new_err_fd == in_fd || new_err_fd == out_fd) {
+	    new_err_fd++;
+	  }
+	  reliably_copy_or_move_fd(err_fd, new_err_fd, err_fd != in_fd);
+	  if (out_fd == err_fd) {
+	    out_fd = new_err_fd;
+	  }
+	  err_fd = new_err_fd;
+	}
+	if (out_fd == 0 && out_fd != in_fd) {
+	  int new_out_fd = 1;
+	  while (new_out_fd == in_fd || new_out_fd == err_fd) {
+	    new_out_fd++;
+	  }
+	  reliably_copy_or_move_fd(out_fd, new_out_fd, out_fd != in_fd);
+	  out_fd = new_out_fd;
+	}
+
+	/* Assign new process stdin/stdout/stderr, closing old
+	   descriptors when not used by some other descriptor */
+	reliably_copy_or_move_fd(in_fd, 0, in_fd != out_fd && in_fd != err_fd);
+	reliably_copy_or_move_fd(out_fd, 1, out_fd > 0 && out_fd != err_fd);
+	reliably_copy_or_move_fd(err_fd, 2, err_fd > 1);
 
 	/* Close unwanted descriptors */
 	if (!stdin_fd) {
-	  rktio_reliably_close(to_subprocess[0]);
-	  rktio_reliably_close(to_subprocess[1]);
+	  close_non_standard_fd(to_subprocess[1]);
 	}
 	if (!stdout_fd) {
-	  rktio_reliably_close(from_subprocess[0]);
-	  rktio_reliably_close(from_subprocess[1]);
+	  close_non_standard_fd(from_subprocess[0]);
 	}
-	if (!stderr_fd) {
-          if (!stderr_is_stdout) {
-            rktio_reliably_close(err_subprocess[0]);
-            rktio_reliably_close(err_subprocess[1]);
-          }
+	if (!stderr_fd && !stderr_is_stdout) {
+	  close_non_standard_fd(err_subprocess[0]);
 	}
 
         rktio_close_fds_after_fork(0, 1, 2);
@@ -1585,6 +1609,27 @@ int rktio_process_pid(rktio_t *rktio, rktio_process_t *sp)
 }
 
 #ifdef RKTIO_SYSTEM_UNIX
+static void reliably_copy_or_move_fd(int src_fd, int target_fd, int move)
+{
+  if (src_fd != target_fd) {
+    int errid;
+    do {
+      errid = MSC_IZE(dup2)(src_fd, target_fd);
+    } while (errid == -1 && errno == EINTR);
+    if (move) {
+      rktio_reliably_close(src_fd);
+    }
+  }
+}
+
+static void close_non_standard_fd(int fd)
+{
+  if (fd != 0 && fd != 1 && fd != 2) {
+    rktio_reliably_close(fd);
+  }
+}
+
+
 void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
 {
   int i;
@@ -1597,11 +1642,8 @@ void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
   i = getdtablesize();
 # endif
   while (i--) {
-    int cr;
     if ((i != skip1) && (i != skip2) && (i != skip3)) {
-      do {
-        cr = close(i);
-      } while ((cr == -1) && (errno == EINTR));
+      rktio_reliably_close(i);
     }
   }
 }
