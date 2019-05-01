@@ -569,6 +569,37 @@
     (delete-directory/files dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that closing file descriptors in the parent process doesn't
+;; cause problems
+
+(let ()
+  (define out (open-output-string))
+  (define err (open-output-string))
+  (test #t 'subprocess-closed-stdin
+        (parameterize ([current-output-port out]
+                       [current-error-port err])
+          (system* self "-e"
+                   (format "~s" '(let ()
+                                   (define self (vector-ref (current-command-line-arguments) 0))
+                                   (close-input-port (current-input-port))
+                                   (define-values (subp out in err)
+                                     (subprocess #f #f #f self "-e"
+                                                 (format "~s" '(begin
+                                                                 (display (read-line))
+                                                                 (display (read-line)
+                                                                          (current-error-port))))))
+                                   (displayln "hello" in)
+                                   (displayln "goodbye" in)
+                                   (close-output-port in)
+                                   (copy-port out (current-output-port))
+                                   (copy-port err (current-error-port))
+                                   (subprocess-wait subp)
+                                   (exit (subprocess-status subp))))
+                   "--" self)))
+  (test "hello" get-output-string out)
+  (test "goodbye" get-output-string err))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (for ([f (list tmpfile tmpfile2)] #:when (file-exists? f)) (delete-file f))
 
