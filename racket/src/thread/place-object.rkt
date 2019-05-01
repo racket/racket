@@ -23,7 +23,7 @@
                [current-thread #:mutable] ; running Racket thread, needed for accounting
                [post-shutdown #:mutable] ; list of callbacks
                [pumpers #:mutable]       ; vector of up to three pumper threads
-               [pending-break #:mutable] ; #f, 'break, 'hangup, or 'terminate
+               [pending-break #:mutable] ; #f, 'break, 'hang-up, or 'terminate
                done-waiting              ; hash table of places to ping when this one ends
                [wakeup-handle #:mutable]
                [dequeue-semas #:mutable]); semaphores reflecting place-channel waits to recheck

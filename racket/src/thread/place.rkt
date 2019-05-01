@@ -124,8 +124,8 @@
 
 (define/who (place-break p [kind #f])
   (check who place? p)
-  (unless (or (not kind) (eq? kind 'hangup) (eq? kind 'terminate))
-    (raise-argument-error who "(or/c #f 'hangup 'terminate)" kind))
+  (unless (or (not kind) (eq? kind 'hang-up) (eq? kind 'terminate))
+    (raise-argument-error who "(or/c #f 'hang-up 'terminate)" kind))
   (atomically
    (host:mutex-acquire (place-lock p))
    (define pending-break (place-pending-break p))
