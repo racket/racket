@@ -109,6 +109,8 @@
        ;; Place is done, so save the result and alert anyone waiting on
        ;; the place
        (do-custodian-shutdown-all orig-cust)
+       (for ([proc (in-list (place-post-shutdown new-place))])
+         (proc))
        (host:mutex-acquire lock)
        (set-place-result! new-place result)
        (host:mutex-release lock)
