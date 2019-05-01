@@ -667,7 +667,7 @@ Like @racket[assoc], but finds an element using @racket[eq?].
   (assq 'c (list (list 'a 'b) (list 'c 'd) (list 'e 'f)))]}
 
 
-@defproc[(assf [proc procedure?] [lst list?])
+@defproc[(assf [proc procedure?] [lst (listof pair?)])
          (or/c list? #f)]{
 
 Like @racket[assoc], but finds an element using the predicate
