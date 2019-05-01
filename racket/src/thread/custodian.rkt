@@ -6,7 +6,8 @@
          "host.rkt"
          "evt.rkt"
          "semaphore.rkt"
-         "parameter.rkt")
+         "parameter.rkt"
+         "sink.rkt")
 
 (provide current-custodian
          make-custodian
@@ -76,7 +77,13 @@
   (check who custodian? parent)
   (define c (create-custodian))
   (set-custodian-place! c (custodian-place parent))
-  (define cref (do-custodian-register parent c do-custodian-shutdown-all #f #t #t))
+  (define cref (do-custodian-register parent c
+                                      ;; Retain children procs as long as proc for `c`
+                                      (let ([children (custodian-children c)])
+                                        (lambda (c)
+                                          (reference-sink children)
+                                          (do-custodian-shutdown-all c)))
+                                      #f #f #t))
   (set-custodian-parent-reference! c cref)
   (unless cref (raise-custodian-is-shut-down who parent))
   c)
@@ -134,7 +141,8 @@
      (define gc-roots (custodian-gc-roots c))
      (when gc-roots
        (hash-remove! gc-roots obj))
-     (host:enable-interrupts))))
+     (host:enable-interrupts))
+    (void)))
 
 ;; Hook for thread scheduling:
 (define post-shutdown-action void)
