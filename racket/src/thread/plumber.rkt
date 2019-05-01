@@ -5,6 +5,7 @@
          make-plumber
          plumber?
          plumber-flush-all
+         plumber-flush-all/wrap
          plumber-add-flush!
          plumber-flush-handle?
          plumber-flush-handle-remove!
@@ -39,10 +40,13 @@
 
 (define/who (plumber-flush-all p)
   (check who plumber? p)
+  (plumber-flush-all/wrap p (lambda (proc h) (proc h))))
+
+(define (plumber-flush-all/wrap p app)
   (for ([(h proc) (in-hash (plumber-callbacks p))])
-    (proc h))
+    (app proc h))
   (for ([(h proc) (in-hash (plumber-weak-callbacks p))])
-    (proc h)))
+    (app proc h)))
 
 (define/who (plumber-flush-handle-remove! h)
   (check who plumber-flush-handle? h)
