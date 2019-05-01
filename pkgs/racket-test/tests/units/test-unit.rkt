@@ -1094,9 +1094,9 @@
   (define u1 (unit (import) (export x-sub y-sub) (define x 1) (define xx 2) (define y 3) (define yy 4)))
   (define-values/invoke-unit u1 (import) (export x-sig))
   (test 1 x)
-  (test-runtime-error exn? "xx: undefined;\n cannot reference an identifier before its definition" xx)
-  (test-runtime-error exn? "y: undefined;\n cannot reference an identifier before its definition" y)
-  (test-runtime-error exn? "yy: undefined;\n cannot reference an identifier before its definition" yy))
+  (test-runtime-error exn? "xx: undefined;\n cannot reference" xx)
+  (test-runtime-error exn? "y: undefined;\n cannot reference" y)
+  (test-runtime-error exn? "yy: undefined;\n cannot reference" yy))
 
 (let ()
   (define u1 (unit (import) (export x-sig) (define x 1)))
@@ -2062,9 +2062,9 @@
 
   (test 'zero (use-unit))
   (test 'zero (use-unit2))
-  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference an identifier before its definition"
+  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference"
                       (use-unit-badly1 u-a))
-  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference an identifier before its definition"
+  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference"
                       (use-unit-badly2 sig^))
 
   (test 12
