@@ -7,7 +7,10 @@
 ;; Make sure that `#:in-original-place?' doesn't lead to deadlock:
 
 (define scheme_malloc_atomic
-  (get-ffi-obj 'GC_malloc_atomic #f (_fun #:in-original-place? #t _long -> _pointer)))
+  (get-ffi-obj 'GC_malloc_atomic #f (_fun #:in-original-place? #t _long -> _pointer)
+               (lambda ()
+                 ;; Try something that will often work with CS; the leak doesn't matter
+                 (get-ffi-obj 'malloc #f (_fun #:in-original-place? #t _long -> _pointer)))))
 
 (define (x-main)
   (define ps
