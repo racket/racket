@@ -668,7 +668,7 @@ Like @racket[assoc], but finds an element using @racket[eq?].
 
 
 @defproc[(assf [proc procedure?] [lst (listof pair?)])
-         (or/c list? #f)]{
+         (or/c pair? #f)]{
 
 Like @racket[assoc], but finds an element using the predicate
 @racket[proc]; an element is found when @racket[proc] applied to the
