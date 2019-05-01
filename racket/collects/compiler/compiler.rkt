@@ -78,7 +78,10 @@
                      (build-path
                       (if (eq? destination-directory 'auto)
                           (let ([d (build-path (if (eq? base 'relative) 'same base)
-                                               "compiled")])
+                                               (let ([l (use-compiled-file-paths)])
+                                                 (if (pair? l)
+                                                     (car l)
+                                                     "compiled")))])
                             (unless (directory-exists? d) (make-directory* d))
                             d)
                           destination-directory)
