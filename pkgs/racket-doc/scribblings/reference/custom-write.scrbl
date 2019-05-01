@@ -89,7 +89,7 @@ This function is often used in conjunction with @racket[make-constructor-style-p
        (make-constructor-style-printer
         (lambda (obj) 'point)
         (lambda (obj) (list (point-x obj) (point-y obj)))))]))
- 
+
   (print (point 1 2))
 
   (write (point 1 2))]
@@ -108,7 +108,7 @@ property, @racket[#f] otherwise.}
 
 
 @defproc[(custom-write-accessor [v custom-write?])
-         (custom-write? output-port? (or/c boolean? (integer-in 0 1)) . -> . any)]{
+         (custom-write? output-port? (or/c #t #f 0 1) . -> . any)]{
 
 Returns the custom-write procedure associated with @racket[v].}
 
