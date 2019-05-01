@@ -56,24 +56,98 @@
   ;; threads, but not at Chez threads. Blocking a Chez thread might
   ;; block the Racket scheduler itself, so we just don't support it.
 
-  ;; Assume low contention on `eq?`- and `eqv?`-based tables across
-  ;; Chez Scheme threads, in which case a compare-and-set spinlock is
-  ;; good enough.
   ;; Taking a lock disables interrupts, which ensures that the GC
   ;; callback or other atomic actions can use hash tables without
   ;; deadlocking.
-  (define (make-spinlock) (box #f))
+
+  ;; Assume low contention on `eq?`- and `eqv?`-based tables across
+  ;; Chez Scheme threads, in which case a compare-and-set spinlock is
+  ;; usually good enough. But if not, transition to a real lock; use a
+  ;; mutex, but transitioning requires using an inintermediate
+  ;; semaphore.
+  (define (make-spinlock)
+    ;; Box content: #f (unlocked), #t (locked), sema (transitioning), or mutex
+    (box #f))
   (define (spinlock? v) (#%box? v))
   (define (spinlock-acquire q)
-    (let loop ()
+    (let loop ([n 0])
       (disable-interrupts)
-      (unless (#%box-cas! q #f #t)
+      (cond
+       [(#%box-cas! q #f #t)
+        ;; Took lock
+        (#%void)]
+       [(eq? #t (#%unbox q))
+        ;; Spin..
         (enable-interrupts)
-        (loop))))
+        (cond
+         [(fx= n 1000)
+          ;; There's contention after all, so trasition to a semaphore,
+          ;; where the current lock holder implicitly owns the semaphore.
+          ;; That lock holder can replace the semaphore with a mutex,
+          ;; which is cheaper to acquire and release.
+          (let ([lk (new-sema)])
+            (#%box-cas! q #t lk)
+            (loop 0))]
+         [else
+          (loop (fx+ n 1))])]
+       [else
+        (let ([l (#%unbox q)])
+          (cond
+           [(sema? l)
+            ;; Transitioning to slower lock; wait on semaphore, then
+            ;; try again
+            (enable-interrupts)
+            (sema-wait l)
+            (loop 0)]
+           [(mutex? l)
+            ;; Using (permanent) mutex as lock
+            (mutex-acquire l)]
+           [else
+            (enable-interrupts)
+            (loop 0)]))])))
+
   (define (spinlock-release q)
-    (#%set-box! q #f)
+    (unless (#%box-cas! q #t #f)
+      ;; Contention must have promoted to a semaphore or mutex...
+      (let ([l (#%unbox q)])
+        (cond
+         [(mutex? l)
+          ;; Must have been acquired as a plain mutex
+          (mutex-release l)]
+         [else
+          ;; Transitioning, so finish transition to a plain mutex
+          (#%set-box! q (make-mutex))
+          (sema-post-all l)])))
     (enable-interrupts)
     (#%void))
+
+  ;; Semaphores that include a "post all" operation
+  (define-record sema (v m c))
+  (define (new-sema)
+    (make-sema 0 (make-mutex) (make-condition)))
+  (define (sema-wait l)
+    (mutex-acquire (sema-m l))
+    (let loop ()
+      (let ([v (sema-v l)])
+        (cond
+         [(eqv? v #t) ; posted all
+          (mutex-release (sema-m l))]
+         [(eqv? 0 v)
+          (condition-wait (sema-c l) (sema-m l))
+          (loop)]
+         [else
+          (set-sema-v! l (sub1 v))
+          (mutex-release (sema-m l))]))))
+  (define (sema-post l)
+    (mutex-acquire (sema-m l))
+    (set-sema-v! l (add1 (sema-v l)))
+    (condition-signal (sema-c l))
+    (mutex-release (sema-m l)))
+  (define (sema-post-all l)
+    (mutex-acquire (sema-m l))
+    (set-sema-v! l #t)
+    (condition-broadcast (sema-c l))
+    (mutex-release (sema-m l)))
 
   (define (make-lock for-kind)
     (cond
