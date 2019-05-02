@@ -380,7 +380,8 @@ nested.
 
 @deftogether[(
 @defform[(for*/list (for-clause ...) body-or-break ... body)]
-@defform[(for*/lists (id ... maybe-result) (for-clause ...) body-or-break ... body)]
+@defform[(for*/lists (id ... maybe-result) (for-clause ...) 
+           body-or-break ... body)]
 @defform[(for*/vector maybe-length (for-clause ...) body-or-break ... body)]
 @defform[(for*/hash (for-clause ...) body-or-break ... body)]
 @defform[(for*/hasheq (for-clause ...) body-or-break ... body)]
