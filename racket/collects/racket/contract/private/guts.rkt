@@ -327,8 +327,6 @@
              xs))
     ctc))
 
-;; coerce-contract/f : any -> (or/c #f contract?)
-;; returns #f if the argument could not be coerced to a contract
 (define-values (name-default name-default?)
   (let ()
     (struct name-default ())
@@ -370,6 +368,8 @@
   (set! integer-in-0f 0f)
   (set! integer-in-1f 1f))
 
+;; coerce-contract/f : any -> (or/c #f contract?)
+;; returns #f if the argument could not be coerced to a contract
 (define (coerce-contract/f x [name name-default])
   (cond
     [(coerce-simple-value name x) => values]
