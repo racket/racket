@@ -217,11 +217,12 @@
 ;; A specialized version of append that will immediately return if either
 ;; argument is empty
 (define (fast-append l1 l2)
-  (cond
-    [(null? l2) l1]
-    [(null? l1) l2]
-    [else
-     (cons (car l1) (fast-append (cdr l1) l2))]))
+  (if (null? l2)
+    l1
+    (let fast-append ((l1 l1))
+      (if (null? l1)
+        l2
+        (cons (car l1) (fast-append (cdr l1)))))))
 
 ;; Assuming that merging is symmetric, ie old-can-merge? iff new-can-merge?
 ;; This is true of the current c-c implementation, but if it ever changes
