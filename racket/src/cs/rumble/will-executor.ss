@@ -14,16 +14,17 @@
 (define-thread-local the-stubborn-will-stacks (make-weak-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
-  (fields guardian will-stacks (mutable ready) notify))
+  (fields guardian will-stacks (mutable ready) notify stubborn?))
 
 (define (make-will-executor notify)
-  (create-will-executor the-will-guardian the-will-stacks '() notify))
+  (create-will-executor the-will-guardian the-will-stacks '() notify #f))
 
 ;; A "stubborn" will executor corresponds to an ordered guardian. It
 ;; doesn't need to make any guarantees about order for multiple
 ;; registrations, so use a fresh guardian each time.
+;; A stubborn executor is treated a little specially in `will-register`.
 (define (make-stubborn-will-executor notify)
-  (create-will-executor the-stubborn-will-guardian the-stubborn-will-stacks '() notify))
+  (create-will-executor the-stubborn-will-guardian the-stubborn-will-stacks '() notify #t))
 
 (define/who (will-register executor v proc)
   (check who will-executor? executor)
@@ -34,8 +35,11 @@
         ;; unreachable, then we can drop the finalizer procedure. That
         ;; pattern prevents unbreakable cycles by an untrusted process
         ;; that has no access to a will executor that outlives the
-        ;; process.
-        [e+proc (ephemeron-cons executor proc)])
+        ;; process. But stubborn will executors persist as long as
+        ;; a will is registered.
+        [e+proc (if (will-executor-stubborn? executor)
+                    (cons executor proc)
+                    (ephemeron-cons executor proc))])
     (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
     (when (null? l)
       ((will-executor-guardian executor) v)))
