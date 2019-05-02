@@ -1,11 +1,11 @@
 
 (define (nonnegative-fixnum? n) (and (fixnum? n) (fx>= n 0)))
 
-(define (exact-integer? n) (and (integer? n) (exact? n)))
+(define (exact-integer? n) (or (fixnum? n) (bignum? n)))
 (define (exact-nonnegative-integer? n) (and (exact-integer? n) (>= n 0)))
 (define (exact-positive-integer? n) (and (exact-integer? n) (> n 0)))
 (define (inexact-real? n) (and (real? n) (inexact? n)))
-(define (byte? n) (and (exact-integer? n) (>= n 0) (<= n 255)))
+(define (byte? n) (and (fixnum? n) (fx>= n 0) (fx<= n 255)))
 
 (define (double-flonum? x) (flonum? x))
 (define (single-flonum? x) #f)

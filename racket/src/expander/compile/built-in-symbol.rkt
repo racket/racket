@@ -82,4 +82,15 @@
                register-struct-predicate!
                register-struct-field-accessor!
                register-struct-field-mutator!
-               raise-binding-result-arity-error))))
+               raise-binding-result-arity-error
+
+               ptr-ref/int8 ptr-set!/int8
+               ptr-ref/uint8 ptr-set!/uint8
+               ptr-ref/int16 ptr-set!/int16
+               ptr-ref/uint16 ptr-set!/uint16
+               ptr-ref/int32 ptr-set!/int32
+               ptr-ref/uint32 ptr-set!/uint32
+               ptr-ref/int64 ptr-set!/int64
+               ptr-ref/uint64 ptr-set!/uint64
+               ptr-ref/double ptr-set!/double
+               ptr-ref/float ptr-set!/float))))

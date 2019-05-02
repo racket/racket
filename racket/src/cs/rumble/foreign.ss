@@ -936,6 +936,63 @@
                    offset
                    v)]))
 
+(define-syntax-rule (define-fast-ptr-ops ref set _type ok-v? bytes-ref bytes-set foreign-type type-bits)
+  (begin
+    (define (ref p offset abs?)
+      (let ([simple-p (if (bytevector? p)
+                          p
+                          (and (authentic-cpointer? p)
+                               (let ([m (cpointer-memory p)])
+                                 (and (or (bytevector? m)
+                                          (exact-integer? m))
+                                      m))))])
+        (cond
+         [(and simple-p
+               (fixnum? offset)
+               (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1)))))
+          (if (bytevector? simple-p)
+              (bytes-ref simple-p (if abs? offset (fxsrl offset type-bits)))
+              (foreign-ref 'foreign-type simple-p (if abs? offset (fxsll offset type-bits))))]
+         [else
+          (if abs?
+              (ptr-ref p _type 'abs offset)
+              (ptr-ref p _type offset))])))
+    (define (set p offset v abs?)
+      (let ([simple-p (if (bytevector? p)
+                          p
+                          (and (authentic-cpointer? p)
+                               (let ([m (cpointer-memory p)])
+                                 (and (or (bytevector? m)
+                                          (exact-integer? m))
+                                      m))))])
+        (cond
+         [(and simple-p
+               (fixnum? offset)
+               (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1))))
+               (ok-v? v))
+          (if (bytevector? simple-p)
+              (bytes-set simple-p (if abs? offset (fxsrl offset type-bits)) v)
+              (foreign-set! 'foreign-type simple-p (if abs? offset (fxsll offset type-bits)) v))]
+         [else
+          (if abs?
+              (ptr-set! p _type 'abs offset v)
+              (ptr-set! p _type offset v))])))))
+
+(define (fixnum-in-range? lo hi) (lambda (v) (and (fixnum? v) (fx>= v lo) (fx>= v hi))))
+(define (in-range? lo hi) (lambda (v) (and (exact-integer? v) (fx>= v lo) (fx>= v hi))))
+
+;; Schemify optimizes `(ptr-ref p _uint16 offset v)` to `(ptr-set!/uint16 p (fxlshift offset 1) v #f)`, etc.
+(define-fast-ptr-ops ptr-ref/int8 ptr-set!/int8 _int8 (fixnum-in-range? -128 127) bytevector-s8-ref bytevector-s8-set! integer-8 0)
+(define-fast-ptr-ops ptr-ref/uint8 ptr-set!/uint8 _uint8 byte? bytevector-u8-ref bytevector-u8-set! unsigned-8 0)
+(define-fast-ptr-ops ptr-ref/int16 ptr-set!/int16 _int16 (fixnum-in-range? -32768 32767) bytevector-s16-native-ref bytevector-s16-native-set! integer-16 1)
+(define-fast-ptr-ops ptr-ref/uint16 ptr-set!/uint16 _uint16 (fixnum-in-range? 0 65535) bytevector-u16-native-ref bytevector-u16-native-set! unsigned-16 1)
+(define-fast-ptr-ops ptr-ref/int32 ptr-set!/int32 _int32 (in-range? -2147483648 2147483647) bytevector-s32-native-ref bytevector-s32-native-set! integer-32 2)
+(define-fast-ptr-ops ptr-ref/uint32 ptr-set!/uint32 _uint32 (in-range? 0 4294967296) bytevector-u32-native-ref bytevector-u32-native-set! unsigned-32 2)
+(define-fast-ptr-ops ptr-ref/int64 ptr-set!/int64 _int64 (in-range? -9223372036854775808 9223372036854775807) bytevector-s64-native-ref bytevector-s64-native-set! integer-64 3)
+(define-fast-ptr-ops ptr-ref/uint64 ptr-set!/uint64 _uint64 (in-range? 0 18446744073709551616) bytevector-u64-native-ref bytevector-u64-native-set! unsigned-64 3)
+(define-fast-ptr-ops ptr-ref/double ptr-set!/double _double flonum? bytevector-ieee-double-native-ref bytevector-ieee-double-native-set! double 3)
+(define-fast-ptr-ops ptr-ref/float ptr-set!/float _float flonum? bytevector-ieee-single-native-ref bytevector-ieee-single-native-set! float 3)
+
 (define ptr-size-in-bytes (foreign-sizeof 'void*))
 (define log-ptr-size-in-bytes (- (integer-length ptr-size-in-bytes) 1))
 

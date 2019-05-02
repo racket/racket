@@ -622,6 +622,17 @@
           set-make-async-callback-poll-wakeup! ; not exported to Racket
           set-foreign-eval!               ; not exported to Racket
 
+          ptr-ref/int8 ptr-set!/int8      ; not exported to Racket
+          ptr-ref/uint8 ptr-set!/uint8    ; not exported to Racket
+          ptr-ref/int16 ptr-set!/int16    ; not exported to Racket
+          ptr-ref/uint16 ptr-set!/uint16  ; not exported to Racket
+          ptr-ref/int32 ptr-set!/int32    ; not exported to Racket
+          ptr-ref/uint32 ptr-set!/uint32  ; not exported to Racket
+          ptr-ref/int64 ptr-set!/int64    ; not exported to Racket
+          ptr-ref/uint64 ptr-set!/uint64  ; not exported to Racket
+          ptr-ref/double ptr-set!/double  ; not exported to Racket
+          ptr-ref/float ptr-set!/float    ; not exported to Racket
+
           unsafe-unbox
           unsafe-unbox*
           unsafe-set-box!

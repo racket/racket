@@ -19,7 +19,8 @@
          "infer-known.rkt"
          "inline.rkt"
          "letrec.rkt"
-         "infer-name.rkt")
+         "infer-name.rkt"
+         "ptr-ref-set.rkt")
 
 (provide schemify-linklet
          schemify-body)
@@ -770,6 +771,13 @@
                       [u-rator (unwrap rator)])
                   (define-values (k im) (find-known+import u-rator prim-knowns knowns imports mutated))
                   (cond
+                    [(or (and (eq? rator 'ptr-ref) (inline-ptr-ref args))
+                         (and (eq? rator 'ptr-set!) (inline-ptr-set args)))
+                     => (lambda (e)
+                          (left-to-right/app (car e)
+                                             (cdr e)
+                                             #t for-cify?
+                                             prim-knowns knowns imports mutated))]
                     [(and (not for-cify?)
                           (known-field-accessor? k)
                           (inline-field-access k s-rator im args))
@@ -812,6 +820,10 @@
                              ;; need to handle it here before generating a
                              ;; reference to the renamed identifier
                              (known-literal-expr k)]
+                            [(and (known-copy? k)
+                                  (hash-ref prim-knowns (known-copy-id k) #f))
+                             ;; Directly reference primitive
+                             (known-copy-id k)]
                             [else
                              (import-id im)])
                           ;; Will be boxed, but won't be undefined (because the
