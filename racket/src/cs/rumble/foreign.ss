@@ -951,8 +951,12 @@
                (fixnum? offset)
                (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1)))))
           (if (bytevector? simple-p)
-              (bytes-ref simple-p (if abs? offset (fxsrl offset type-bits)))
-              (foreign-ref 'foreign-type simple-p (if abs? offset (fxsll offset type-bits))))]
+              (bytes-ref simple-p (if abs? offset (fxsll offset type-bits)))
+              (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
+                              (if (cpointer+offset? p)
+                                  (+ offset (cpointer+offset-offset p))
+                                  offset))])
+                (foreign-ref 'foreign-type simple-p offset)))]
          [else
           (if abs?
               (ptr-ref p _type 'abs offset)
@@ -971,8 +975,12 @@
                (or (not abs?) (fx= 0 (fxand offset (fx- (fxsll 1 type-bits) 1))))
                (ok-v? v))
           (if (bytevector? simple-p)
-              (bytes-set simple-p (if abs? offset (fxsrl offset type-bits)) v)
-              (foreign-set! 'foreign-type simple-p (if abs? offset (fxsll offset type-bits)) v))]
+              (bytes-set simple-p (if abs? offset (fxsll offset type-bits)) v)
+              (let ([offset (let ([offset (if abs? offset (fxsll offset type-bits))])
+                              (if (cpointer+offset? p)
+                                  (+ offset (cpointer+offset-offset p))
+                                  offset))])
+                (foreign-set! 'foreign-type simple-p offset v)))]
          [else
           (if abs?
               (ptr-set! p _type 'abs offset v)
@@ -991,7 +999,7 @@
 (define-fast-ptr-ops ptr-ref/int64 ptr-set!/int64 _int64 (in-range? -9223372036854775808 9223372036854775807) bytevector-s64-native-ref bytevector-s64-native-set! integer-64 3)
 (define-fast-ptr-ops ptr-ref/uint64 ptr-set!/uint64 _uint64 (in-range? 0 18446744073709551616) bytevector-u64-native-ref bytevector-u64-native-set! unsigned-64 3)
 (define-fast-ptr-ops ptr-ref/double ptr-set!/double _double flonum? bytevector-ieee-double-native-ref bytevector-ieee-double-native-set! double 3)
-(define-fast-ptr-ops ptr-ref/float ptr-set!/float _float flonum? bytevector-ieee-single-native-ref bytevector-ieee-single-native-set! float 3)
+(define-fast-ptr-ops ptr-ref/float ptr-set!/float _float flonum? bytevector-ieee-single-native-ref bytevector-ieee-single-native-set! float 2)
 
 (define ptr-size-in-bytes (foreign-sizeof 'void*))
 (define log-ptr-size-in-bytes (- (integer-length ptr-size-in-bytes) 1))
@@ -1485,7 +1493,8 @@
            :contract "(listof ctype?)"
            in-types)
     (check who ctype? out-type)
-    ((ffi-call/callable #t in-types out-type abi save-errno blocking? #f #f) p)]))
+    (check who string? :or-false lock-name)
+    ((ffi-call/callable #t in-types out-type abi save-errno lock-name blocking? #f #f) p)]))
 
 (define/who ffi-call-maker
   (case-lambda
@@ -1506,7 +1515,8 @@
            :contract "(listof ctype?)"
            in-types)
     (check who ctype? out-type)
-    (ffi-call/callable #t in-types out-type abi save-errno blocking? #f #f)]))
+    (check who string? :or-false lock-name)
+    (ffi-call/callable #t in-types out-type abi save-errno lock-name blocking? #f #f)]))
 
 ;; For sanity checking of callbacks during a blocking callout:
 (define-virtual-register currently-blocking? #f)
@@ -1519,7 +1529,9 @@
     (#%$keep-live v) ...
     result))
 
-(define (ffi-call/callable call? in-types out-type abi save-errno blocking? atomic? async-apply)
+(define call-locks (make-hasheq))
+
+(define (ffi-call/callable call? in-types out-type abi save-errno lock-name blocking? atomic? async-apply)
   (let* ([conv (case abi
                  [(stdcall) '__stdcall]
                  [(sysv) '__cdecl]
@@ -1602,13 +1614,19 @@
          [gen-proc (car gen-proc+ret-maker+arg-makers)]
          [ret-maker (cadr gen-proc+ret-maker+arg-makers)]
          [arg-makers (cddr gen-proc+ret-maker+arg-makers)]
-         [async-callback-queue (and (procedure? async-apply) (current-async-callback-queue))])
+         [async-callback-queue (and (procedure? async-apply) (current-async-callback-queue))]
+         [lock (and lock-name
+                    (or (hash-ref call-locks (string->symbol lock-name) #f)
+                        (let ([lock (make-mutex)])
+                          (hash-set! call-locks (string->symbol lock-name) lock)
+                          lock)))])
     (cond
      [call?
       (cond
        [(and (not ret-id)
              (not blocking?)
              (not save-errno)
+             (not lock)
              (#%andmap (lambda (in-type)
                          (case (ctype-host-rep in-type)
                            [(scheme-object struct union) #f]
@@ -1702,6 +1720,7 @@
                       [r (let ([ret-ptr (and ret-id
                                              ;; result is a struct type; need to allocate space for it
                                              (make-bytevector ret-size))])
+                           (when lock (mutex-acquire lock))
                            (with-interrupts-disabled
                             (when blocking? (currently-blocking? #t))
                             (retain
@@ -1720,6 +1739,7 @@
                                                             (maker (cpointer-address arg))]
                                                            [else arg])))
                                                      args in-types arg-makers)))])
+                               (when lock (mutex-release lock))
                                (when blocking? (currently-blocking? #f))
                                (case save-errno
                                  [(posix) (thread-cell-set! errno-cell (get-errno))]
@@ -1933,7 +1953,7 @@
            :contract "(listof ctype?)"
            in-types)
     (check who ctype? out-type)
-    (let ([make-code (ffi-call/callable #f in-types out-type abi #f #f (and atomic? #t) async-apply)])
+    (let ([make-code (ffi-call/callable #f in-types out-type abi #f #f #f (and atomic? #t) async-apply)])
       (lambda (proc)
         (check 'make-ffi-callback procedure? proc)
         (let* ([code (make-code proc)]
