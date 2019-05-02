@@ -69,7 +69,7 @@
    (lambda ()
      (send fd-input-port this on-close)
      (fd-close fd fd-refcount)
-     (unsafe-custodian-unregister fd custodian-reference)
+     (unsafe-custodian-unregister this custodian-reference)
      (close-peek-buffer))]
 
   [file-position
@@ -252,7 +252,7 @@
        (plumber-flush-handle-remove! flush-handle)
        (set! bstr #f)
        (fd-close fd fd-refcount)
-       (unsafe-custodian-unregister fd custodian-reference)))]
+       (unsafe-custodian-unregister this custodian-reference)))]
 
   ;; in atomic mode
   [file-position
