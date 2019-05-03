@@ -706,7 +706,8 @@
             (define lock-zo-name (if (cross-multi-compile? roots)
                                      ;; Make sure we use a file path for the lock that is consistent
                                      ;; with being in a phase of compiling for the current machine:
-                                     (path-add-extension (get-compilation-path path->mode roots path) #".zo")
+                                     (path-add-extension (get-compilation-path path->mode roots path #:for-lock? #t)
+                                                         #".zo")
                                      zo-name))
             ;; Called when `tryng-sha1?` is #f and this process (or some process)
             ;; needs to compile, recompile, or touch:
