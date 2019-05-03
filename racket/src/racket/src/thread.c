@@ -127,6 +127,8 @@ READ_ONLY static Scheme_Object *initial_inspector;
 
 THREAD_LOCAL_DECL(static Scheme_Plumber *initial_plumber);
 
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *stubborn_will_executors_with_pending = NULL);
+
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
 #ifndef MZ_PRECISE_GC
@@ -8676,6 +8678,16 @@ static void activate_will(void *o, void *data)
       w->first = a;
     w->last = a;
     scheme_post_sema(w->sema);
+
+    if (w->is_stubborn) {
+      /* Ensure that a stubborn will executor stays live in this place
+         as long as there are wills to execute. */
+      if (!stubborn_will_executors_with_pending) {
+        REGISTER_SO(stubborn_will_executors_with_pending);
+        stubborn_will_executors_with_pending = scheme_make_hash_table(SCHEME_hash_ptr);
+      }
+      scheme_hash_set(stubborn_will_executors_with_pending, (Scheme_Object *)w, scheme_true);
+    }
   }
 }
 
@@ -8686,8 +8698,11 @@ static Scheme_Object *do_next_will(WillExecutor *w)
 
   a = w->first;
   w->first = a->next;
-  if (!w->first)
+  if (!w->first) {
     w->last = NULL;
+    if (w->is_stubborn)
+      scheme_hash_set(stubborn_will_executors_with_pending, (Scheme_Object *)w, NULL);
+  }
   
   o[0] = a->o;
   a->o = NULL;

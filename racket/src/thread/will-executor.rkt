@@ -32,6 +32,9 @@
 (define (make-will-executor)
   (do-make-will-executor host:make-will-executor))
 
+;; The returned wrapper will executor isn't necessarily retained when
+;; there are pending wills, but the underlying one is retained, and
+;; that implies that finalized values won't get lost
 (define (make-stubborn-will-executor)
   (do-make-will-executor host:make-stubborn-will-executor))
 

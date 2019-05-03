@@ -13,6 +13,8 @@
 (define-thread-local the-will-stacks (make-weak-eq-hashtable))
 (define-thread-local the-stubborn-will-stacks (make-weak-eq-hashtable))
 
+(define-thread-local stubborn-will-executors-with-pending (make-eq-hashtable))
+
 (define-record-type (will-executor create-will-executor will-executor?)
   (fields guardian will-stacks (mutable ready) notify stubborn?))
 
@@ -56,6 +58,9 @@
     (cond
      [(pair? l)
       (will-executor-ready-set! executor (cdr l))
+      (when (and (will-executor-stubborn? executor)
+                 (null? (cdr l)))
+        (hashtable-delete! stubborn-will-executors-with-pending executor))
       (enable-interrupts)
       (car l)]
      [else
@@ -89,7 +94,11 @@
                   (hashtable-set! will-stacks v l)
                   (guardian v)])
                 ((will-executor-notify e))
-                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))]))))
+                (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
+                (when (will-executor-stubborn? e)
+                  ;; Ensure that a stubborn will executor stays live
+                  ;; in this place as long as there are wills to execute
+                  (hashtable-set! stubborn-will-executors-with-pending e #t))]))))
         (loop)))))
 
 (define (poll-will-executors)
