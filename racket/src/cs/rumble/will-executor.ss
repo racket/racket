@@ -16,7 +16,7 @@
 (define-thread-local late-will-executors-with-pending (make-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
-  (fields guardian will-stacks (mutable ready) notify late?))
+  (fields guardian will-stacks (mutable ready) notify keep?))
 
 (define (make-will-executor notify)
   (create-will-executor the-will-guardian the-will-stacks '() notify #f))
@@ -25,8 +25,11 @@
 ;; doesn't need to make any guarantees about order for multiple
 ;; registrations, so use a fresh guardian each time.
 ;; A late executor is treated a little specially in `will-register`.
-(define (make-late-will-executor notify)
-  (create-will-executor the-late-will-guardian the-late-will-stacks '() notify #t))
+(define make-late-will-executor
+  (case-lambda
+   [(notify) (make-late-will-executor notify #t)]
+   [(notify keep?)
+    (create-will-executor the-late-will-guardian the-late-will-stacks '() notify keep?)]))
 
 (define/who (will-register executor v proc)
   (check who will-executor? executor)
@@ -39,7 +42,7 @@
         ;; that has no access to a will executor that outlives the
         ;; process. But late will executors persist as long as
         ;; a will is registered.
-        [e+proc (if (will-executor-late? executor)
+        [e+proc (if (will-executor-keep? executor)
                     (cons executor proc)
                     (ephemeron-cons executor proc))])
     (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
@@ -58,7 +61,7 @@
     (cond
      [(pair? l)
       (will-executor-ready-set! executor (cdr l))
-      (when (and (will-executor-late? executor)
+      (when (and (will-executor-keep? executor)
                  (null? (cdr l)))
         (hashtable-delete! late-will-executors-with-pending executor))
       (enable-interrupts)
@@ -95,7 +98,7 @@
                   (guardian v)])
                 ((will-executor-notify e))
                 (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
-                (when (will-executor-late? e)
+                (when (will-executor-keep? e)
                   ;; Ensure that a late will executor stays live
                   ;; in this place as long as there are wills to execute
                   (hashtable-set! late-will-executors-with-pending e #t))]))))

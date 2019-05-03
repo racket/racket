@@ -102,7 +102,7 @@
      [(custodian-shut-down? cust) #f]
      [else
       (define we (and (not weak?)
-                      (host:make-late-will-executor void)))
+                      (host:make-late-will-executor void #f)))
       (hash-set! (custodian-children cust)
                  obj
                  (cond
