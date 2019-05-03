@@ -83,7 +83,8 @@
       (correlated-span v)
       (for/fold ([ht #f]) ([k (in-list '(inferred-name
                                          undefined-error-name
-                                         method-arity-error))])
+                                         method-arity-error
+                                         compiler-hint:cross-module-inline))])
         (define p (correlated-property v k))
         (if p
             (hash-set (or ht '#hasheq()) k p)
