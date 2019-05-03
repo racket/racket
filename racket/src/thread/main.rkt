@@ -122,7 +122,7 @@
          custodian-shut-down?
 
          make-will-executor
-         make-stubborn-will-executor
+         make-late-will-executor
          will-executor?
          will-register
          will-try-execute

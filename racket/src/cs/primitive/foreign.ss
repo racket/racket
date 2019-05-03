@@ -62,7 +62,7 @@
   [make-late-weak-box (known-procedure 2)]
   [make-late-weak-hasheq (known-procedure 1)]
   [make-sized-byte-string (known-procedure 4)]
-  [make-stubborn-will-executor (known-procedure 1)]
+  [make-late-will-executor (known-procedure 1)]
   [make-union-type (known-procedure -2)]
   [malloc (known-procedure 62)]
   [malloc-immobile-cell (known-procedure 2)]

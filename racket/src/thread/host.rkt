@@ -44,7 +44,7 @@
 
         [poll-will-executors host:poll-will-executors]
         [make-will-executor host:make-will-executor]
-        [make-stubborn-will-executor host:make-stubborn-will-executor]
+        [make-late-will-executor host:make-late-will-executor]
         [will-executor? host:will-executor?]
         [will-register host:will-register]
         [will-try-execute host:will-try-execute]

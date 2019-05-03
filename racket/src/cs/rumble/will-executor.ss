@@ -3,7 +3,7 @@
 ;; for when a will becomes ready
 
 (define-thread-local the-will-guardian (make-guardian))
-(define-thread-local the-stubborn-will-guardian (make-guardian #t))
+(define-thread-local the-late-will-guardian (make-guardian #t))
 
 ;; Guardian callbacks are called fifo, but will executors are called
 ;; lifo. The `will-stacks` tables map a finalized value to a list
@@ -11,22 +11,22 @@
 ;; executor with a will function (so that the function is not retained
 ;; if the will executor is dropped)
 (define-thread-local the-will-stacks (make-weak-eq-hashtable))
-(define-thread-local the-stubborn-will-stacks (make-weak-eq-hashtable))
+(define-thread-local the-late-will-stacks (make-weak-eq-hashtable))
 
-(define-thread-local stubborn-will-executors-with-pending (make-eq-hashtable))
+(define-thread-local late-will-executors-with-pending (make-eq-hashtable))
 
 (define-record-type (will-executor create-will-executor will-executor?)
-  (fields guardian will-stacks (mutable ready) notify stubborn?))
+  (fields guardian will-stacks (mutable ready) notify late?))
 
 (define (make-will-executor notify)
   (create-will-executor the-will-guardian the-will-stacks '() notify #f))
 
-;; A "stubborn" will executor corresponds to an ordered guardian. It
+;; A "late" will executor corresponds to an ordered guardian. It
 ;; doesn't need to make any guarantees about order for multiple
 ;; registrations, so use a fresh guardian each time.
-;; A stubborn executor is treated a little specially in `will-register`.
-(define (make-stubborn-will-executor notify)
-  (create-will-executor the-stubborn-will-guardian the-stubborn-will-stacks '() notify #t))
+;; A late executor is treated a little specially in `will-register`.
+(define (make-late-will-executor notify)
+  (create-will-executor the-late-will-guardian the-late-will-stacks '() notify #t))
 
 (define/who (will-register executor v proc)
   (check who will-executor? executor)
@@ -37,9 +37,9 @@
         ;; unreachable, then we can drop the finalizer procedure. That
         ;; pattern prevents unbreakable cycles by an untrusted process
         ;; that has no access to a will executor that outlives the
-        ;; process. But stubborn will executors persist as long as
+        ;; process. But late will executors persist as long as
         ;; a will is registered.
-        [e+proc (if (will-executor-stubborn? executor)
+        [e+proc (if (will-executor-late? executor)
                     (cons executor proc)
                     (ephemeron-cons executor proc))])
     (hashtable-set! (will-executor-will-stacks executor) v (cons e+proc l))
@@ -58,9 +58,9 @@
     (cond
      [(pair? l)
       (will-executor-ready-set! executor (cdr l))
-      (when (and (will-executor-stubborn? executor)
+      (when (and (will-executor-late? executor)
                  (null? (cdr l)))
-        (hashtable-delete! stubborn-will-executors-with-pending executor))
+        (hashtable-delete! late-will-executors-with-pending executor))
       (enable-interrupts)
       (car l)]
      [else
@@ -95,12 +95,12 @@
                   (guardian v)])
                 ((will-executor-notify e))
                 (will-executor-ready-set! e (cons (cons proc v) (will-executor-ready e)))
-                (when (will-executor-stubborn? e)
-                  ;; Ensure that a stubborn will executor stays live
+                (when (will-executor-late? e)
+                  ;; Ensure that a late will executor stays live
                   ;; in this place as long as there are wills to execute
-                  (hashtable-set! stubborn-will-executors-with-pending e #t))]))))
+                  (hashtable-set! late-will-executors-with-pending e #t))]))))
         (loop)))))
 
 (define (poll-will-executors)
   (poll-guardian the-will-guardian the-will-stacks)
-  (poll-guardian the-stubborn-will-guardian the-stubborn-will-stacks))
+  (poll-guardian the-late-will-guardian the-late-will-stacks))

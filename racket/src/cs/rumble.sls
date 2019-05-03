@@ -476,7 +476,7 @@
           ;; not the same as Racket will executors:
           (rename
            [make-will-executor rumble:make-will-executor]
-           [make-stubborn-will-executor rumble:make-stubborn-will-executor]
+           [make-late-will-executor rumble:make-late-will-executor]
            [will-executor? rumble:will-executor?]
            [will-register rumble:will-register]
            [will-try-execute rumble:will-try-execute])

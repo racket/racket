@@ -127,7 +127,7 @@ READ_ONLY static Scheme_Object *initial_inspector;
 
 THREAD_LOCAL_DECL(static Scheme_Plumber *initial_plumber);
 
-THREAD_LOCAL_DECL(static Scheme_Hash_Table *stubborn_will_executors_with_pending = NULL);
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *late_will_executors_with_pending = NULL);
 
 THREAD_LOCAL_DECL(Scheme_Config *initial_config);
 
@@ -8647,7 +8647,7 @@ typedef struct WillExecutor {
   Scheme_Object so;
   Scheme_Object *sema;
   ActiveWill *first, *last;
-  int is_stubborn;
+  int is_late;
 } WillExecutor;
 
 static void activate_will(void *o, void *data) 
@@ -8679,14 +8679,14 @@ static void activate_will(void *o, void *data)
     w->last = a;
     scheme_post_sema(w->sema);
 
-    if (w->is_stubborn) {
-      /* Ensure that a stubborn will executor stays live in this place
+    if (w->is_late) {
+      /* Ensure that a late will executor stays live in this place
          as long as there are wills to execute. */
-      if (!stubborn_will_executors_with_pending) {
-        REGISTER_SO(stubborn_will_executors_with_pending);
-        stubborn_will_executors_with_pending = scheme_make_hash_table(SCHEME_hash_ptr);
+      if (!late_will_executors_with_pending) {
+        REGISTER_SO(late_will_executors_with_pending);
+        late_will_executors_with_pending = scheme_make_hash_table(SCHEME_hash_ptr);
       }
-      scheme_hash_set(stubborn_will_executors_with_pending, (Scheme_Object *)w, scheme_true);
+      scheme_hash_set(late_will_executors_with_pending, (Scheme_Object *)w, scheme_true);
     }
   }
 }
@@ -8700,8 +8700,8 @@ static Scheme_Object *do_next_will(WillExecutor *w)
   w->first = a->next;
   if (!w->first) {
     w->last = NULL;
-    if (w->is_stubborn)
-      scheme_hash_set(stubborn_will_executors_with_pending, (Scheme_Object *)w, NULL);
+    if (w->is_late)
+      scheme_hash_set(late_will_executors_with_pending, (Scheme_Object *)w, NULL);
   }
   
   o[0] = a->o;
@@ -8722,17 +8722,17 @@ static Scheme_Object *make_will_executor(int argc, Scheme_Object **argv)
   w->first = NULL;
   w->last = NULL;
   w->sema = sema;
-  w->is_stubborn = 0;
+  w->is_late = 0;
 
   return (Scheme_Object *)w;
 }
 
-Scheme_Object *scheme_make_stubborn_will_executor()
+Scheme_Object *scheme_make_late_will_executor()
 {
   WillExecutor *w;
 
   w = (WillExecutor *)make_will_executor(0, NULL);
-  w->is_stubborn = 1;
+  w->is_late = 1;
 
   return (Scheme_Object *)w;
 }
@@ -8752,7 +8752,7 @@ static Scheme_Object *register_will(int argc, Scheme_Object **argv)
     scheme_wrong_contract("will-register", "will-executor?", 0, argc, argv);
   scheme_check_proc_arity("will-register", 1, 2, argc, argv);
 
-  if (((WillExecutor *)argv[0])->is_stubborn) {
+  if (((WillExecutor *)argv[0])->is_late) {
     e = scheme_make_pair(argv[0], argv[2]);
     scheme_add_finalizer(argv[1], activate_will, e);
   } else {

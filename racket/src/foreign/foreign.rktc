@@ -3660,9 +3660,9 @@ static void save_errno_values(int kind)
 
 /*****************************************************************************/
 
-/* (make-stubborn-will-executor) -> #<will-executor> */
-@cdefine[make-stubborn-will-executor 0 #:kind immed]{
-  return scheme_make_stubborn_will_executor();
+/* (make-late-will-executor) -> #<will-executor> */
+@cdefine[make-late-will-executor 0 #:kind immed]{
+  return scheme_make_late_will_executor();
 }
 
 /* (make-late-weak-box val) -> #<weak-box> */
@@ -3830,15 +3830,15 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
-static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+static Scheme_Object *foreign_make_late_will_executor(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_stubborn_will_executor();
+  return scheme_make_late_will_executor();
 }
 
 @(define (lookup name)
   (if (member (cadr name) '("compiler_sizeof"
                             "make_ctype" 
-                            "make_stubborn_will_executor"))
+                            "make_late_will_executor"))
       name
       'unimplemented))
 

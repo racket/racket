@@ -2062,8 +2062,8 @@
   ;; We bind `killer-executor' as a location variable, instead of a module
   ;; variable, so that the loop for `killer-thread' doesn't have a namespace
   ;; (via a prefix) in its continuation:
-  (let ([killer-executor (make-stubborn-will-executor)])
-    ;; The "stubborn" kind of will executor (for `killer-executor') is
+  (let ([killer-executor (make-late-will-executor)])
+    ;; The "late" kind of will executor (for `killer-executor') is
     ;; provided by '#%foreign, and it doesn't get GC'ed if any
     ;; finalizers are attached to it (while the normal kind can get
     ;; GCed even if a thread that is otherwise inaccessible is blocked

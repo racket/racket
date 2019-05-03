@@ -4743,11 +4743,11 @@ static Scheme_Object *foreign_lookup_errno(int argc, Scheme_Object *argv[])
 
 /*****************************************************************************/
 
-/* (make-stubborn-will-executor) -> #<will-executor> */
-#define MYNAME "make-stubborn-will-executor"
-static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+/* (make-late-will-executor) -> #<will-executor> */
+#define MYNAME "make-late-will-executor"
+static Scheme_Object *foreign_make_late_will_executor(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_stubborn_will_executor();
+  return scheme_make_late_will_executor();
 }
 #undef MYNAME
 
@@ -4988,8 +4988,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
     scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), env);
   scheme_addto_prim_instance("lookup-errno",
     scheme_make_immed_prim(foreign_lookup_errno, "lookup-errno", 1, 1), env);
-  scheme_addto_prim_instance("make-stubborn-will-executor",
-    scheme_make_immed_prim(foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), env);
+  scheme_addto_prim_instance("make-late-will-executor",
+    scheme_make_immed_prim(foreign_make_late_will_executor, "make-late-will-executor", 0, 0), env);
   scheme_addto_prim_instance("make-late-weak-box",
     scheme_make_immed_prim(foreign_make_late_weak_box, "make-late-weak-box", 1, 1), env);
   scheme_addto_prim_instance("make-late-weak-hasheq",
@@ -5246,9 +5246,9 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object **argv)
   return scheme_false;
 }
 
-static Scheme_Object *foreign_make_stubborn_will_executor(int argc, Scheme_Object *argv[])
+static Scheme_Object *foreign_make_late_will_executor(int argc, Scheme_Object *argv[])
 {
-  return scheme_make_stubborn_will_executor();
+  return scheme_make_late_will_executor();
 }
 
 void scheme_init_foreign(Scheme_Env *env)
@@ -5353,8 +5353,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), env);
   scheme_addto_primitive_instance("lookup-errno",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), env);
-  scheme_addto_primitive_instance("make-stubborn-will-executor",
-   scheme_make_immed_prim((Scheme_Prim *)foreign_make_stubborn_will_executor, "make-stubborn-will-executor", 0, 0), env);
+  scheme_addto_primitive_instance("make-late-will-executor",
+   scheme_make_immed_prim((Scheme_Prim *)foreign_make_late_will_executor, "make-late-will-executor", 0, 0), env);
   scheme_addto_primitive_instance("make-late-weak-box",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "make-late-weak-box", 1, 1), env);
   scheme_addto_primitive_instance("make-late-weak-hasheq",

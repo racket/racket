@@ -380,7 +380,7 @@ Registers a finalizer procedure @racket[finalizer-proc] with the given
 @racket[obj], which can be any Racket (GC-able) object. The finalizer
 is registered with a ``late'' @tech[#:doc reference.scrbl]{will
 executor} that makes wills ready for a value only after all
-@tech[#:doc reference.scrbl]{weak box}es referencing the value have
+weak references (such as in a @tech[#:doc reference.scrbl]{weak box}) for the value have
 been cleared, which implies that the value is unreachable and no
 normal @tech[#:doc reference.scrbl]{will executor} has a will ready
 for the value. The finalizer is invoked when the will for @racket[obj]

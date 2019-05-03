@@ -1142,7 +1142,7 @@ MZ_EXTERN Scheme_Object *scheme_make_ephemeron(Scheme_Object *key, Scheme_Object
 MZ_EXTERN Scheme_Object *scheme_ephemeron_value(Scheme_Object *o);
 MZ_EXTERN Scheme_Object *scheme_ephemeron_key(Scheme_Object *o);
 
-MZ_EXTERN Scheme_Object *scheme_make_stubborn_will_executor();
+MZ_EXTERN Scheme_Object *scheme_make_late_will_executor();
 
 MZ_EXTERN Scheme_Object *scheme_load(const char *file);
 MZ_EXTERN Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env);

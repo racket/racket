@@ -256,7 +256,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Config *initial_config_;
   struct Scheme_Thread *swap_target_;
   struct Scheme_Object *scheduled_kills_;
-  struct Scheme_Hash_Table *stubborn_will_executors_with_pending_;
+  struct Scheme_Hash_Table *late_will_executors_with_pending_;
   int do_atomic_;
   int missed_context_switch_;
   int all_breaks_disabled_;
@@ -641,7 +641,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define initial_config XOA (scheme_get_thread_local_variables()->initial_config_)
 #define swap_target XOA (scheme_get_thread_local_variables()->swap_target_)
 #define scheduled_kills XOA (scheme_get_thread_local_variables()->scheduled_kills_)
-#define stubborn_will_executors_with_pending XOA (scheme_get_thread_local_variables()->stubborn_will_executors_with_pending_)
+#define late_will_executors_with_pending XOA (scheme_get_thread_local_variables()->late_will_executors_with_pending_)
 #define do_atomic XOA (scheme_get_thread_local_variables()->do_atomic_)
 #define missed_context_switch XOA (scheme_get_thread_local_variables()->missed_context_switch_)
 #define all_breaks_disabled XOA (scheme_get_thread_local_variables()->all_breaks_disabled_)
