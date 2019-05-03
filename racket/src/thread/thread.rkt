@@ -13,6 +13,7 @@
          "atomic.rkt"
          "schedule-info.rkt"
          "custodian.rkt"
+         "custodian-object.rkt"
          "exit.rkt")
 
 (provide (rename-out [make-thread thread])
@@ -215,7 +216,9 @@
     t))
 
 (define (unsafe-thread-at-root proc)
-  (do-make-thread 'unsafe-thread-at-root proc #:at-root? #t))
+  (do-make-thread 'unsafe-thread-at-root proc
+                  #:at-root? #t
+                  #:custodian root-custodian))
 
 ;; ----------------------------------------
 ;; Thread status
