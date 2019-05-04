@@ -1,6 +1,7 @@
 #lang racket/base
 (require "custodian-object.rkt"
          "place-object.rkt"
+         "place-local.rkt"
          "check.rkt"
          "atomic.rkt"
          "host.rkt"
@@ -39,7 +40,8 @@
 (module+ scheduling
   (provide do-custodian-shutdown-all
            set-root-custodian!
-           create-custodian))
+           create-custodian
+           poll-custodian-will-executor))
 
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
@@ -57,10 +59,12 @@
 
 ;; Reporting registration in a custodian through this indirection
 ;; enables GCing custodians that aren't directly referenced, merging
-;; the managed objects into the parent, although that posisbility is
-;; not currently implemented
-(struct custodian-reference (c)
+;; the managed objects into the parent. To support multiple moves,
+;; `c` can be another reference
+(struct custodian-reference ([c #:mutable])
   #:authentic)
+
+(define-place-local custodian-will-executor (host:make-late-will-executor void #f))
 
 (define/who current-custodian
   (make-parameter root-custodian
@@ -71,11 +75,12 @@
 ;; To initialize a new place:
 (define (set-root-custodian! c)
   (set! root-custodian c)
-  (current-custodian c))
+  (current-custodian c)
+  (set! custodian-will-executor (host:make-late-will-executor void #f)))
 
 (define/who (make-custodian [parent (current-custodian)])
   (check who custodian? parent)
-  (define c (create-custodian))
+  (define c (create-custodian parent))
   (set-custodian-place! c (custodian-place parent))
   (define cref (do-custodian-register parent c
                                       ;; Retain children procs as long as proc for `c`
@@ -83,9 +88,11 @@
                                         (lambda (c)
                                           (reference-sink children)
                                           (do-custodian-shutdown-all c)))
-                                      #f #f #t))
+                                      #:at-exit? #t
+                                      #:gc-root? #t))
   (set-custodian-parent-reference! c cref)
   (unless cref (raise-custodian-is-shut-down who parent))
+  (host:will-register custodian-will-executor c merge-custodian-into-parent)
   c)
 
 (define (unsafe-make-custodian-at-root)
@@ -93,10 +100,13 @@
 
 ;; The given `callback` will be run in atomic mode.
 ;; Unless `weak?` is true, the given `obj` is registered with an ordered
-;; finalizer, so don't supply an `obj` that is exposed to safe code
-;; that might see `obj` after finalization through a weak reference
-;; (and detect that `obj` is thereafter retained strongly).
-(define (do-custodian-register cust obj callback at-exit? weak? gc-root?)
+;; finalizer; in that case, if `obj` is exposed to safe code, it can
+;; have its own finalizers, but weak boxes or hashtable references will
+;; not be cleared until the value is explicitly shut down.
+(define (do-custodian-register cust obj callback
+                               #:at-exit? [at-exit? #f]
+                               #:weak? [weak? #f]
+                               #:gc-root? [gc-root? #f])
   (atomically
    (cond
      [(custodian-shut-down? cust) #f]
@@ -110,9 +120,10 @@
                    [at-exit? (at-exit-callback callback we)]
                    [else (willed-callback callback we)]))
       (when we
-        ;; Registering with a will executor that we never poll has the
-        ;; effect of turning a weak reference into a strong one when
-        ;; there are no other references:
+        ;; Registering with a will executor that we retain but never
+        ;; poll has the effect of turning a semi-weak reference
+        ;; (allows other finalizers, but doesn't clear weak boxes)
+        ;; into a strong one when there are no other references:
         (host:will-register we obj void))
       (when gc-root?
         (host:disable-interrupts)
@@ -120,21 +131,24 @@
           (set-custodian-gc-roots! cust (make-weak-hasheq)))
         (hash-set! (custodian-gc-roots cust) obj #t)
         (host:enable-interrupts))
-      (custodian-reference cust)])))
+      (or (custodian-self-reference cust)
+          (let ([cref (custodian-reference cust)])
+            (set-custodian-self-reference! cust cref)
+            cref))])))
 
 (define (unsafe-custodian-register cust obj callback at-exit? weak?)
-  (do-custodian-register cust obj callback at-exit? weak? #f))
+  (do-custodian-register cust obj callback #:at-exit? at-exit? #:weak? weak?))
 
 (define (custodian-register-thread cust obj callback)
-  (do-custodian-register cust obj callback #f #t #t))
+  (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))
 
 (define (custodian-register-place cust obj callback)
-  (do-custodian-register cust obj callback #f #t #t))
+  (do-custodian-register cust obj callback #:weak? #t #:gc-root? #t))
 
 (define (unsafe-custodian-unregister obj cref)
   (when cref
     (atomically
-     (define c (custodian-reference-c cref))
+     (define c (custodian-reference->custodian cref))
      (unless (custodian-shut-down? c)
        (hash-remove! (custodian-children c) obj))
      (host:disable-interrupts)
@@ -143,6 +157,37 @@
        (hash-remove! gc-roots obj))
      (host:enable-interrupts))
     (void)))
+
+;; Called by scheduler (so atomic) when `c` is unreachable
+(define (merge-custodian-into-parent c)
+  (unless (custodian-shut-down? c)
+    (define p-cref (custodian-parent-reference c))
+    (define parent (custodian-reference->custodian p-cref))
+    (define gc-roots (custodian-gc-roots c))
+    (unsafe-custodian-unregister c p-cref)
+    (for ([(child callback) (in-hash (custodian-children c))])
+      (define gc-root? (and gc-roots (hash-ref gc-roots child #f) #t))
+      (cond
+        [(willed-callback? callback)
+         (do-custodian-register parent child (willed-callback-proc callback)
+                                #:at-exit? (at-exit-callback? callback)
+                                #:gc-root? gc-root?)]
+        [else
+         (do-custodian-register parent child callback
+                                #:gc-root? gc-root?)]))
+    (define self-ref (custodian-self-reference c))
+    (when self-ref
+      (set-custodian-reference-c! self-ref (custodian-self-reference parent)))
+    (hash-clear! (custodian-children c))
+    (when gc-roots (hash-clear! gc-roots))))
+  
+;; Called in scheduler thread:
+(define (poll-custodian-will-executor)
+  (cond
+    [(host:will-try-execute custodian-will-executor)
+     => (lambda (p)
+          ((car p) (cdr p))
+          (poll-custodian-will-executor))]))
 
 ;; Hook for thread scheduling:
 (define post-shutdown-action void)
@@ -219,7 +264,10 @@
     (hash-clear! (custodian-children c))
     (let ([sema (custodian-shutdown-sema c)])
       (when sema
-        (semaphore-post-all sema)))))
+        (semaphore-post-all sema)))
+    (define p-cref (custodian-parent-reference c))
+    (when p-cref
+      (unsafe-custodian-unregister c p-cref))))
 
 (define (custodian-get-shutdown-sema c)
   (atomically
@@ -232,19 +280,29 @@
 
 (define (custodian-subordinate? c super-c)
   (let loop ([p-cref (custodian-parent-reference c)])
-    (define p (and p-cref (custodian-reference-c p-cref)))
+    (define p (and p-cref (custodian-reference->custodian p-cref)))
     (cond
       [(eq? p super-c) #t]
       [(not p) #f]
       [else (loop (custodian-parent-reference p))])))
 
 (define (custodian-manages-reference? c cref)
-  (define ref-c (custodian-reference-c cref))
+  (define ref-c (custodian-reference->custodian cref))
   (or (eq? c ref-c)
       (custodian-subordinate? ref-c c)))
 
 (define (custodian-reference->custodian cref)
-  (custodian-reference-c cref))
+  (define c (custodian-reference-c cref))
+  (cond
+    [(custodian-reference? c)
+     (define next-c (custodian-reference-c c))
+     (cond
+       [(custodian-reference? next-c)
+        ;; shrink the chain
+        (set-custodian-reference-c! cref next-c)
+        (custodian-reference->custodian cref)]
+       [else next-c])]
+    [else c]))
 
 (define/who (custodian-managed-list c super-c)
   (check who custodian? c)
@@ -288,7 +346,7 @@
 (define/who (make-custodian-box c v)
   (check who custodian? c)
   (define b (custodian-box v (custodian-get-shutdown-sema c)))
-  (unless (unsafe-custodian-register c b (lambda (b) (set-custodian-box-v! b #f)) #f #t)
+  (unless (do-custodian-register c b (lambda (b) (set-custodian-box-v! b #f)) #:weak? #t #:gc-root? #t)
     (raise-custodian-is-shut-down who c))
   b)
   

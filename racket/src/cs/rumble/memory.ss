@@ -286,6 +286,10 @@
      #%procedure?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
+    [(eq? '<ffi-lib> (car args))
+     ffi-lib?]
+    [(eq? '<will-executor> (car args))
+     will-executor?]
     [(eq? 'metacontinuation-frame (car args))
      metacontinuation-frame?]
     [(symbol? (car args))

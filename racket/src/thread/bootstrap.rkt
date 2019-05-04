@@ -1,7 +1,7 @@
 #lang racket/base
 (require '#%linklet
          (only-in '#%foreign
-                  make-stubborn-will-executor)
+                  make-late-will-executor)
          "../common/queue.rkt")
 
 ;; Simulate engines by using the host system's threads.
@@ -122,8 +122,8 @@
 (define (make-will-executor/notify notify)
   (do-make-will-executor/notify make-will-executor notify))
 
-(define (make-stubborn-will-executor/notify notify)
-  (do-make-will-executor/notify make-stubborn-will-executor notify))
+(define (make-late-will-executor/notify notify [keep? #t])
+  (do-make-will-executor/notify make-late-will-executor notify))
 
 (define (will-register/notify we/n v proc)
   (will-register (will-executor/notify-we we/n)
@@ -239,7 +239,7 @@
                   'continuation-marks continuation-marks ; doesn't work on engines
                   'poll-will-executors poll-will-executors
                   'make-will-executor make-will-executor/notify
-                  'make-stubborn-will-executor make-stubborn-will-executor/notify
+                  'make-late-will-executor make-late-will-executor/notify
                   'will-executor? will-executor/notify?
                   'will-register will-register/notify
                   'will-try-execute will-try-execute/notify

@@ -60,6 +60,7 @@
                           (host:poll-async-callbacks)
                           pending-callbacks))
     (host:poll-will-executors)
+    (poll-custodian-will-executor)
     (check-external-events 'fast)
     (call-pre-poll-external-callbacks)
     (check-place-activity)

@@ -43,7 +43,7 @@
   (when (eq? initial-place current-place)
     ;; needed by custodian GC callback for memory limits:
     (atomically (ensure-wakeup-handle!)))
-  (define orig-cust (create-custodian))
+  (define orig-cust (create-custodian #f))
   (define lock (host:make-mutex))
   (define started (host:make-condition))
   (define-values (place-pch child-pch) (place-channel))

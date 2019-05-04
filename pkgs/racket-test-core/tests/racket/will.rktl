@@ -125,9 +125,9 @@
                  c)])
     ;; Each custodian must be charged at least 100000 bytes:
     (collect-garbage)
-    (test #t andmap (lambda (c)
-                      ((current-memory-use c) . >= . 100000))
-          c)))
+    (test #t andmap (lambda (v)
+                      (v . >= . 100000))
+          (map current-memory-use c))))
 
 (let ()
   (define c1 (make-custodian (current-custodian)))
@@ -145,6 +145,25 @@
       (test #t andmap (lambda (b) (number? (custodian-box-value b))) l)
       (custodian-shutdown-all c)
       (test #f ormap (lambda (b) (number? (custodian-box-value b))) l))))
+
+;; Check chain of unreachable custodians:
+(let ()
+  (define start-c (make-custodian))
+  (define wbs+cbs
+    (let loop ([i 20] [parent start-c])
+      (if (zero? i)
+          null
+          (let ([c (make-custodian parent)])
+            (cons (cons (make-weak-box c)
+                        (make-custodian-box c 'on))
+                  (loop (sub1 i) c))))))
+  (collect-garbage)
+  (test #t < 10 (for/sum ([wb+cb (in-list wbs+cbs)])
+                  (if (weak-box-value (car wb+cb)) 1 0)))
+  (custodian-shutdown-all start-c)
+  (test #t andmap
+        (lambda (wb+cb) (not (custodian-box-value (cdr wb+cb))))
+        wbs+cbs))
 
 ;; check synchronization again:
 (let ()
