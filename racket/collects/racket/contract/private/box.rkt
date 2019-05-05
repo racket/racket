@@ -39,7 +39,7 @@
                                 val '(expected "an immutable box" given: "~e") val))])]
        [(#f)
         (cond
-          [(immutable? val) #F]
+          [(not (immutable? val)) #f]
           [else
            (λ (neg-party)
              (raise-blame-error blame #:missing-party neg-party

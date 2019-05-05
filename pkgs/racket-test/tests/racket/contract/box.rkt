@@ -173,4 +173,16 @@
                      (box (list values))
                      'pos 
                      'neg)])
-      ((car (unbox f)) 3))))
+      ((car (unbox f)) 3)))
+
+  (test/no-error
+   '(contract (box/c any/c #:immutable #f) (box 1) 'pos 'neg))
+
+  (test/spec-passed/result
+   'box/c-immutable-f2
+   '(unbox (contract (box/c any/c #:immutable #f) (box 1) 'pos 'neg))
+   1)
+
+  (test/pos-blame
+   'box/c-immutable-t
+   '(contract (box/c any/c #:immutable #f) (box-immutable 1) 'pos 'neg)))
