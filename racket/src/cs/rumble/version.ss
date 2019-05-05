@@ -22,4 +22,4 @@
                (loop 0)]))]))))))
 
 (define (version) (extract-version-string))
-(define (banner) (string-append "Welcome to Racket " (version) "\n"))
+(define (banner) (string-append "Welcome to Racket v" (version) " [cs].\n"))

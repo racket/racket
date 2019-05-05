@@ -760,7 +760,7 @@
           (apply orig args)))))
 
    (when version?
-     (printf "Welcome to Racket v~a [cs].\n" (version)))
+     (display (banner)))
    (call-in-main-thread
     (lambda ()
       (initialize-place!)
