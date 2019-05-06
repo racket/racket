@@ -434,7 +434,8 @@
    [(#\#)
     (define next (fx+ 1 start))
     (parse-case
-     s next end radix => i
+     ;; use `10` instead of `radix`, because we don't want a hex conversion
+     s next end 10 => i
      [(eof)
       (fail convert-mode "no character after `#` indicator in `~.a`" s)]
      [(#\e #\E #\i #\I)
