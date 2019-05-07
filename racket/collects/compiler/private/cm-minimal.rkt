@@ -161,7 +161,13 @@
 (define (get-compilation-path path->mode roots path #:for-lock? [for-lock? #f])
   (let-values ([(dir name) (get-compilation-dir+name path
                                                      #:modes (list (path->mode path))
-                                                     #:roots roots
+                                                     #:roots (if for-lock?
+                                                                 ;; When taking a lock, we need to consistently
+                                                                 ;; use the main destination (where we'll write)
+                                                                 ;; and not find a ".zo" file that exists in an
+                                                                 ;; ealier root:
+                                                                 (list (car roots))
+                                                                 roots)
                                                      ;; In cross-multi mode, we need to default to the
                                                      ;; ".zo" file that is written first, otherwise we
                                                      ;; may pick the first root where there's no ".dep"
