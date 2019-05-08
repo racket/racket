@@ -49,14 +49,15 @@ PLT_SETUP_OPTIONS =
 SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 CPUS = 
+MAXLOAD = "-1.0"
 
 in-place:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-in-place PKGS="$(PKGS)" ; \
-         else $(MAKE) cpus-in-place CPUS="$(CPUS)" PKGS="$(PKGS)" ; fi
+         else $(MAKE) cpus-in-place CPUS="$(CPUS)" MAXLOAD="$(MAXLOAD)" PKGS="$(PKGS)" ; fi
 
 cpus-in-place:
-	$(MAKE) -j $(CPUS) plain-in-place JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
+	$(MAKE) -j $(CPUS) --load-average=$(MAXLOAD) plain-in-place JOB_OPTIONS="-j $(CPUS) --load-average=$(MAXLOAD)" PKGS="$(PKGS)"
 
 # Explicitly propagate variables for non-GNU `make's:
 LIBSETUP = -N raco -l- raco setup
@@ -117,10 +118,10 @@ win32-in-place-after-base:
 as-is:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-as-is PKGS="$(PKGS)" ; \
-         else $(MAKE) cpus-as-is CPUS="$(CPUS)" PKGS="$(PKGS)" ; fi
+         else $(MAKE) cpus-as-is CPUS="$(CPUS)" MAXLOAD="$(MAXLOAD)" PKGS="$(PKGS)" ; fi
 
 cpus-as-is:
-	$(MAKE) -j $(CPUS) plain-as-is JOB_OPTIONS="-j $(CPUS)" PKGS="$(PKGS)"
+	$(MAKE) -j $(CPUS) --load-average=$(MAXLOAD) plain-as-is JOB_OPTIONS="-j $(CPUS) --load-average=$(MAXLOAD)" PKGS="$(PKGS)"
 
 plain-as-is:
 	$(MAKE) base
@@ -146,7 +147,7 @@ unix-style:
          else $(MAKE) cpus-unix-style ; fi
 
 cpus-unix-style:
-	$(MAKE) -j $(CPUS) plain-unix-style JOB_OPTIONS="-j $(CPUS)"
+	$(MAKE) -j $(CPUS) --load-average=$(MAXLOAD) plain-unix-style JOB_OPTIONS="-j $(CPUS) --load-average=$(MAXLOAD)"
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
@@ -193,10 +194,10 @@ WIN32_BUILD_LEVEL = 3m
 base:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-base ; \
-         else $(MAKE) cpus-base CPUS="$(CPUS)" ; fi
+         else $(MAKE) cpus-base CPUS="$(CPUS)" MAXLOAD="$(MAXLOAD)"; fi
 
 cpus-base:
-	$(MAKE) -j $(CPUS) plain-base JOB_OPTIONS="-j $(CPUS)"
+	$(MAKE) -j $(CPUS) --load-average=$(MAXLOAD) plain-base JOB_OPTIONS="-j $(CPUS) --load-average=$(MAXLOAD)"
 
 plain-base:
 	$(MAKE) base-config
@@ -282,7 +283,7 @@ WIN32_CS_SETUP_TARGET = win32-in-place-after-base
 cs:
 	if [ "$(CPUS)" = "" ] ; \
          then $(MAKE) plain-cs ; \
-         else $(MAKE) cpus-cs CPUS="$(CPUS)" ; fi
+         else $(MAKE) cpus-cs CPUS="$(CPUS)" MAXLOAD="$(MAXLOAD)" ; fi
 
 plain-cs:
 	if [ "$(SCHEME_SRC)" = "" ] ; \
@@ -292,7 +293,7 @@ plain-cs:
          else $(MAKE) cs-only RACKET="$(RACKET)" ; fi
 
 cpus-cs:
-	$(MAKE) -j $(CPUS) plain-cs JOB_OPTIONS="-j $(CPUS)"
+	$(MAKE) -j $(CPUS) --load-average=$(MAXLOAD) plain-cs JOB_OPTIONS="-j $(CPUS) --load-average=$(MAXLOAD)"
 
 cs-in-place:
 	$(MAKE) cs

@@ -163,6 +163,11 @@ makefile and the `raco setup` part, use
 which recurs with `make -j <n> JOB_OPTIONS="-j <n>"`. Setting `CPUS`
 also works with `make unix-style`.
 
+You can also pass MAXLOAD which translates to the --load-average argument
+of make. To use 8 cpus but keeping the load average below 12, use
+
+ make CPUS=8 MAXLOAD=12
+
 Use `make as-is` (or `nmake win32-as-is`) to perform the same build
 actions as `make in-place`, but without consulting any package
 catalogs or package sources to install or update packages. In other
