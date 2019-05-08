@@ -16,7 +16,6 @@ prepare-cache:llvm:
   tags:
     - linux
     - x86_64
-    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   script:
@@ -32,8 +31,10 @@ prepare-cache:llvm:
     - mkdir build
     - cd build
     - cmake -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DZ3_INCLUDE_DIR=$INSTALL_DIR/include/ -DCMAKE_BUILD_TYPE=MinSizeRel ../llvm/
-    - make -j5
-    - make -j5 install
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - make -j$((cpus + 1)) -l$cpus
+    - make -j$((cpus + 1)) -l$cpus install
   cache:
     key: llvm-8x-HEAD
     paths:
@@ -50,7 +51,6 @@ scan-build:racket:
   tags:
     - linux
     - x86_64
-    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -59,7 +59,9 @@ scan-build:racket:
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
-    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' 
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' 
   dependencies:
     - prepare-cache:llvm
   artifacts:
@@ -72,7 +74,6 @@ scan-build:racketcs:
   tags:
     - linux
     - x86_64
-    - shared-cache
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install
   before_script:
@@ -81,7 +82,9 @@ scan-build:racketcs:
   script:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
-    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make PKGS="" CPUS=5 CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' cs
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' cs
   dependencies:
     - prepare-cache:llvm
   artifacts:
@@ -193,8 +196,10 @@ prepare-cache:qemu:
     - mkdir qemu-build
     - cd qemu-build
     - ../qemu-3.1.0/configure --static --disable-kvm --disable-xen --disable-spice --target-list='i386-linux-user aarch64-linux-user arm-linux-user mips-linux-user mipsel-linux-user mips64el-linux-user s390x-linux-user ppc64le-linux-user riscv64-linux-user' --prefix=$INSTALL_DIR
-    - make -j5
-    - make -j5 install
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - make -j$((cpus + 1)) --load-average=$cpus
+    - make -j$((cpus + 1)) --load-average=$cpus install
   cache:
     key: qemu-3.1.0
     paths:
@@ -218,7 +223,9 @@ prepare-cache:qemu:
     - export PATH=$INSTALL_DIR/bin:$PATH
     - apt-get update
   script:
-    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
   dependencies:
     - prepare-cache:qemu
 
@@ -226,7 +233,6 @@ test:native:x86_64:
   extends: .preparearch
   variables:
     ARCH: "x86_64"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:native:armv7l:
@@ -234,7 +240,6 @@ test:native:armv7l:
   allow_failure: true
   variables:
     ARCH: "armv7l"
-    JOBS: 5
     INSTALL_DIR: $CI_PROJECT_DIR/install
   tags:
     - armv7l
@@ -247,7 +252,6 @@ test:emulation:arm64:
     - schedules
   variables:
     ARCH: "arm64"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:armel:
@@ -257,7 +261,6 @@ test:emulation:armel:
     - schedules
   variables:
     ARCH: "armel"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:armhf:
@@ -267,7 +270,6 @@ test:emulation:armhf:
     - schedules
   variables:
     ARCH: "armhf"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:i386:
@@ -277,7 +279,6 @@ test:emulation:i386:
     - schedules
   variables:
     ARCH: "i386"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
     
 test:emulation:mips:
@@ -287,7 +288,6 @@ test:emulation:mips:
     - schedules
   variables:
     ARCH: "mips"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
   
 test:emulation:mipsel:
@@ -297,7 +297,6 @@ test:emulation:mipsel:
     - schedules
   variables:
     ARCH: "mipsel"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:mips64el:
@@ -307,7 +306,6 @@ test:emulation:mips64el:
     - schedules
   variables:
     ARCH: "mips64el"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
     
 test:emulation:s390x:
@@ -317,7 +315,6 @@ test:emulation:s390x:
     - schedules
   variables:
     ARCH: "s390x"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:ppc64el:
@@ -327,7 +324,6 @@ test:emulation:ppc64el:
     - schedules
   variables:
     ARCH: "ppc64el"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 .preparearch:cs:
@@ -341,7 +337,9 @@ test:emulation:ppc64el:
     - export PATH=$INSTALL_DIR:$PATH
     - apt-get update
   script:
-    - .gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
   dependencies:
     - prepare-cache:qemu
     
@@ -350,7 +348,6 @@ test:native:x86_64:cs:
   allow_failure: true
   variables:
     ARCH: "x86_64"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:i386:cs:
@@ -360,6 +357,5 @@ test:emulation:i386:cs:
     - schedules
   variables:
     ARCH: "i386"
-    JOBS: 6
     INSTALL_DIR: $CI_PROJECT_DIR/install
 

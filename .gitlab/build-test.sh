@@ -22,6 +22,7 @@ function usage () {
     echo "${MSG}"
     echo
     echo "Usage: ./build-test.sh [--jobs <count>]"
+    echo "                       [--maxload <value>]"
     echo "                       [--single-thread]"
     echo "                       [--with-arch <arch>]"
     echo "                       [--with-debian <debian>]"
@@ -37,6 +38,7 @@ function usage () {
 DEBIAN=
 DEBIAN_MIRROR=
 JOBS=
+MAXLOAD=
 RACKET_CONFIGURE_ARGS=
 ARCH="$(uname -m)"
 BUILD_DIR=${CI_PROJECT_DIR}
@@ -56,6 +58,10 @@ until
 	    ;;
 	--single-thread)
 	    JOBS=1
+	    ;;
+	--maxload)
+	    shift
+	    MAXLOAD=$1
 	    ;;
 	--with-arch)
 	    shift
@@ -154,6 +160,7 @@ function setup_chroot {
     mkdir "${CHROOT_DIR}"
     debootstrap --foreign --no-check-gpg --include=fakeroot,build-essential \
 		--arch="${ARCH}" "${DEBIAN}" "${CHROOT_DIR}" "${DEBIAN_MIRROR}"
+    setup_binfmts
     cp ${QEMU_PATH}/bin/qemu-${QEMU_ARCH} "${CHROOT_DIR}"/usr/bin/qemu-${QEMU_ARCH}-static
     chroot "${CHROOT_DIR}" ./debootstrap/debootstrap --second-stage
     sbuild-createchroot --arch="${ARCH}" --foreign --setup-only \
@@ -176,10 +183,46 @@ function setup_chroot {
     # Call ourselves again which will cause tests to run
     echo "Recursively calling script"
     if [ ${MAKE_TARGET} = "cs" ]; then
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --enable-cs"
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --enable-cs"
     else
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR}"
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR}"
     fi
+}
+
+function setup_binfmts {
+    case ${QEMU_ARCH} in
+	"x86_64")
+	    # nothing to be done
+	    ;;
+	"aarch64")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00" --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+	    ;;
+	"arm")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x28\x00" --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+	    ;;
+	"i386")
+	    # nothing to be done
+	    ;;
+	"mips")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x01\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08" --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
+	    ;;
+	"mipsel")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08\x00" --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xfe\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+	    ;;
+	"mips64el")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x08" --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xfe\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
+	    ;;
+	"s390x")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x16" --mask "\xff\xff\xff\xff\xff\xff\xff\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
+	    ;;
+	"ppc64el")
+	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00" --mask "\xff\xff\xff\xff\xff\xff\xff\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
+	    ;;
+	*)
+	    echo "Unknown QEMU architecture ${QEMU_ARCH}"
+	    exit 1
+	    ;;
+    esac
 }
 
 # Information about environment
@@ -187,6 +230,7 @@ echo "Environment information"
 echo "======================="
 echo "              Machine : $(uname -m)"
 echo "                 Jobs : ${JOBS}"
+echo "             Max Load : ${MAXLOAD}"
 echo "          Target Arch : ${ARCH}"
 echo "          chroot Path : ${CHROOT_DIR}"
 echo "           Build Path : ${BUILD_DIR}"
@@ -211,7 +255,7 @@ fi
 echo "Compiling"
 echo "Environment: $(uname -a)"
 
-annotate-output make CPUS=${JOBS} \
+annotate-output make --load-average=${MAXLOAD} CPUS=${JOBS} \
 		PKGS="racket-test db-test unstable-flonum-lib net-test" \
 		CONFIGURE_ARGS_qq="${RACKET_CONFIGURE_ARGS}" \
 		${MAKE_TARGET}
