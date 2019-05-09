@@ -223,6 +223,8 @@
                                         pai enpfn val)))
 
 
+(define-for-syntax current-unprotected-submodule-name (make-parameter #f))
+
 ;; tl-code-for-one-id/new-name : syntax syntax syntax (union syntax #f) -> (values syntax syntax)
 ;; given the syntax for an identifier and a contract,
 ;; builds a begin expression for the entire contract and provide
@@ -261,6 +263,11 @@
                                                                     'provide/contract
                                                                     pos-module-source
                                                                     #f)
+                             #,@(let ([upe (current-unprotected-submodule-name)])
+                                  (if upe
+                                      (list #`(module+ #,upe
+                                                (provide (rename-out [#,id external-name]))))
+                                      (list)))
                              #,@(if provide?
                                     (list #`(provide (rename-out [#,id-rename external-name])))
                                     null)))
@@ -1108,7 +1115,19 @@
                                       mangle-for-maker?
                                       provide?))
 
-       (define p/c-clauses (syntax->list (syntax (p/c-ele ...))))
+       (define-values (p/c-clauses unprotected-submodule-name)
+         (syntax-case (syntax (p/c-ele ...)) ()
+           [(#:unprotected-submodule modname . more)
+            (identifier? #'modname)
+            (values (syntax->list #'more) (syntax-e #'modname))]
+           [(#:unprotected-submodule x . more)
+            (raise-syntax-error who
+                                "expected a module name to follow #:unprotected-submodule"
+                                provide-stx
+                                (if (pair? (syntax-e #'more))
+                                    (car (syntax-e #'more))
+                                    #f))]
+           [_ (values (syntax->list (syntax (p/c-ele ...))) #f)]))
        (define struct-id-mapping (make-free-identifier-mapping))
        (define (add-struct-clause-to-struct-id-mapping a parent flds/stx)
          (define flds (syntax->list flds/stx))
@@ -1141,26 +1160,26 @@
                 struct-id-mapping
                 selector-id
                 (id-for-one-id #f #f selector-id))))))
-
-       (cond
-         [just-check-errors?
-          (code-for-each-clause p/c-clauses)
-          (signal-dup-syntax-error)]
-         [else
-          (for ([clause (in-list p/c-clauses)])
-            (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-              [(struct a ((fld ctc) ...) options ...)
-               (identifier? #'a)
-               (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
-              [(struct (a b) ((fld ctc) ...) options ...)
-               (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
-              [_ (void)]))
-          (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)]
-                        [pos-module-source-id pos-module-source-id])
-            (syntax
-             (begin
-               (define pos-module-source-id (quote-module-name))
-               bodies ...)))]))]))
+       (parameterize ([current-unprotected-submodule-name unprotected-submodule-name])
+         (cond
+           [just-check-errors?
+            (code-for-each-clause p/c-clauses)
+            (signal-dup-syntax-error)]
+           [else
+            (for ([clause (in-list p/c-clauses)])
+              (syntax-case* clause (struct) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
+                [(struct a ((fld ctc) ...) options ...)
+                 (identifier? #'a)
+                 (add-struct-clause-to-struct-id-mapping #'a #f #'(fld ...))]
+                [(struct (a b) ((fld ctc) ...) options ...)
+                 (add-struct-clause-to-struct-id-mapping #'a #'b #'(fld ...))]
+                [_ (void)]))
+            (with-syntax ([(bodies ...) (code-for-each-clause p/c-clauses)]
+                          [pos-module-source-id pos-module-source-id])
+              (syntax
+               (begin
+                 (define pos-module-source-id (quote-module-name))
+                 bodies ...)))])))]))
 
 
 (define-for-syntax (provide/contract-for-whom stx who)

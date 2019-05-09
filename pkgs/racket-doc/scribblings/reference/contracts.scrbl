@@ -1784,8 +1784,11 @@ earlier fields.}}
 
 @defform/subs[
 #:literals (struct rename)
-(contract-out p/c-item ...)
-([p/c-item
+(contract-out unprotected-submodule contract-out-item ...)
+([unprotected-submodule
+  (code:line)
+  (code:line #:unprotected-submodule submodule-name)]
+ [contract-out-item
   (struct id/super ((id contract-expr) ...)
     struct-option)
   (rename orig-id id contract-expr)
@@ -1859,6 +1862,8 @@ Specifically, the symbol @indexed-racket['provide/contract-original-contract]
 is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
+
+@history[#:changed "7.3.0.3" @list{Added @racket[#:unprotected-submodule].}]
 }
 
 @defform[(recontract-out id ...)]{
@@ -1895,9 +1900,9 @@ the export.
    the private module.                              
 }
 
-@defform[(provide/contract p/c-item ...)]{
+@defform[(provide/contract unprotected-submodule contract-out-item ...)]{
 
-A legacy shorthand for @racket[(provide (contract-out p/c-item ...))],
+A legacy shorthand for @racket[(provide (contract-out unprotected-submodule contract-out-item ...))],
 except that a @racket[_contract-expr] within @racket[provide/contract]
 is evaluated at the position of the @racket[provide/contract] form
 instead of at the end of the enclosing module.}

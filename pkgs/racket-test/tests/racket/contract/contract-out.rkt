@@ -1242,6 +1242,42 @@
                (require 'provide/contract67-a racket/contract/base)
                (provide (contract-out (struct stream ([x any/c] [y any/c]))))))))
 
+  (test/spec-passed/result
+   'provide/contract68
+   '(let ()
+      (eval '(module provide/contract68-a racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule unsafe
+                         [f (-> integer? (listof integer?))]))
+               (define (f x) (list x))))
+
+      (eval '(module provide/contract68-b racket/base
+               (require (submod 'provide/contract68-a unsafe))
+               (define answer (f #f))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract68-b 'answer)))
+   '(#f))
+
+  (test/spec-passed/result
+   'provide/contract69
+   '(let ()
+      (eval '(module provide/contract69-a racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         #:unprotected-submodule no-contract
+                         (struct s ([x integer?]))))
+               (struct s (x))))
+
+      (eval '(module provide/contract69-b racket/base
+               (require (submod 'provide/contract69-a no-contract))
+               (define answer (s-x (s #f)))
+               (provide answer)))
+
+      (eval '(dynamic-require ''provide/contract69-b 'answer)))
+   '#f)
+
   (contract-error-test
    'provide/contract-struct-out
    #'(begin
