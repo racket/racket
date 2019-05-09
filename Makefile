@@ -629,6 +629,9 @@ SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 # To configure package installations on the server:
 SERVER_PKG_INSTALL_OPTIONS =
 
+# To configure package installations for the installer:
+PKG_INSTALL_OPTIONS =
+
 # Catch problems due to malformed distribution-build packages
 RECOMPILE_OPTIONS = --recompile-only
 
@@ -642,7 +645,7 @@ X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 SOURCE_USER_AUTO_q = --catalog build/catalog-copy $(USER_AUTO_OPTIONS) $(SERVER_PKG_INSTALL_OPTIONS)
 REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
-REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS) $(RECOMPILE_OPTIONS)
+REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS) $(PKG_INSTALL_OPTIONS) $(RECOMPILE_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 BUNDLE_RACO_FLAGS = -G bundle/racket/etc -X bundle/racket/collects -C -A bundle/user -l raco
