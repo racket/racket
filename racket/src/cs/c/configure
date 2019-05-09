@@ -643,6 +643,7 @@ NOT_MINGW
 MINGW
 NOT_OSX
 OSX
+SETUP_BOOT_MODE
 TT_CROSS_MODE
 T_CROSS_MODE
 CROSS_MODE
@@ -2814,6 +2815,7 @@ FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
 RUN_RACKET='$(RUN_THIS_RACKET)'
+SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
@@ -4135,6 +4137,7 @@ fi
 
 if test "${enable_racket}" != "" ; then
   RACKET="${enable_racket}"
+  SETUP_BOOT_MODE=--chain
 fi
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
@@ -4932,6 +4935,7 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 

@@ -125,6 +125,7 @@ FRAMEWORK_PREFIX='@executable_path/../lib/'
 
 RACKET='$(DEFAULT_RACKET)'
 RUN_RACKET='$(RUN_THIS_RACKET)'
+SETUP_BOOT_MODE=--boot
 
 INSTALL_SETUP_FLAGS=
 INSTALL_SETUP_RACKET_FLAGS=
@@ -387,6 +388,7 @@ fi
 
 if test "${enable_racket}" != "" ; then
   RACKET="${enable_racket}"
+  SETUP_BOOT_MODE=--chain
 fi
 
 SCHEME_CONFIG_ARGS="--machine=${MACH} --disable-x11 ${disable_curses_arg} ${extra_scheme_config_args}"
@@ -609,6 +611,7 @@ AC_SUBST(DIFF_MACH)
 AC_SUBST(CROSS_MODE)
 AC_SUBST(T_CROSS_MODE)
 AC_SUBST(TT_CROSS_MODE)
+AC_SUBST(SETUP_BOOT_MODE)
 AC_SUBST(OSX)
 AC_SUBST(NOT_OSX)
 AC_SUBST(MINGW)

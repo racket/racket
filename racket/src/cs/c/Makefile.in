@@ -60,7 +60,7 @@ cs:
 	$(MAKE) gracketcs
 	$(MAKE) starter
 
-SETUP_BOOT_MODE = --chain
+SETUP_BOOT_MODE = @SETUP_BOOT_MODE@
 SETUP_COMMON_BOOT = -l- setup $(SETUP_BOOT_MODE) $(srcdir)/../../setup-go.rkt $(builddir)/compiled
 
 ABS_BOOT = $(SETUP_COMMON_BOOT) ignored $(builddir)/ignored.d
