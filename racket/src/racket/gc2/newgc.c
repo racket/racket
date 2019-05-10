@@ -768,8 +768,9 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 #endif
 
   newgc->mmu = mmu_create(newgc);
-  
-  newgc->generations_available = 1;
+
+  newgc->generations_available = USE_GC_GENS;
+
   newgc->last_full_mem_use = INITIAL_FULL_MEMORY_USE;
   newgc->new_btc_mark = 1;
 
