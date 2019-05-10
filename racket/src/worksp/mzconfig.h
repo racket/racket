@@ -46,4 +46,6 @@
 /* Enable single-precision floats: */
 #define USE_SINGLE_FLOATS
 
+#define USE_GC_GENS
+
 #endif
