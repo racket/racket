@@ -2338,9 +2338,10 @@ static Scheme_Object **apply_guards(Scheme_Struct_Type *stype, int argc, Scheme_
                                       "calling guard procedure");
             return NULL;
           }
-          if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES))
-            memcpy(guard_argv, scheme_multiple_array, gcount * sizeof(Scheme_Object *));
-          else
+          if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)) {
+            if (gcount)
+              memcpy(guard_argv, scheme_multiple_array, gcount * sizeof(Scheme_Object *));
+          } else
             guard_argv[0] = v;
           guard_argv[gcount] = guard_argv[argc];
         }
