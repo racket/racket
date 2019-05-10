@@ -45,7 +45,7 @@ AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket to build;
 
 m4_include(../ac/path_arg.m4)
 
-AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subpath])
+m4_include(../ac/natipkg_arg.m4)
 
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
@@ -179,7 +179,7 @@ show_explicitly_enabled "${enable_csdefault}" "CS will be default"
 
 show_explicitly_disabled "${enable_docs}" "Documentation build"
 show_explicitly_enabled "${enable_usersetup}" "User-specific setup on install"
-show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+m4_include(../ac/natipkg_show.m4)
 
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_enabled "${enable_shared}" "Shared libraries"

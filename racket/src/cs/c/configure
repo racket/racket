@@ -772,6 +772,7 @@ enable_racket
 enable_scheme
 enable_mach
 enable_target
+enable_natipkg
 enable_sdk
 enable_xonx
 enable_macprefix
@@ -1409,6 +1410,7 @@ Optional Features:
   --enable-scheme=<path>  Chez Scheme build directory at <path>
   --enable-mach=<mach>    Use Chez Scheme machine type <mach>
   --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>
+  --enable-natipkg        add "-natipkg" to library subpath
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
@@ -2364,6 +2366,12 @@ if test "${enable_target+set}" = set; then :
   enableval=$enable_target;
 fi
 
+# Check whether --enable-natipkg was given.
+if test "${enable_natipkg+set}" = set; then :
+  enableval=$enable_natipkg;
+fi
+
+
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
   enableval=$enable_sdk;
@@ -2510,6 +2518,8 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
+show_explicitly_enabled "${enable_natipkg}" "Adding \"-natipkg\" suffix to library subpath"
+
 
 if test "${enable_csonly}" = "yes" ; then
   enable_csdefault=yes
@@ -4296,6 +4306,12 @@ $as_echo "$set_strip_lib" >&6; }
   fi
 fi
 
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+fi
 
 ############## Makefile includes ################
 

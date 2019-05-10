@@ -22,6 +22,7 @@ AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to bui
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
 AC_ARG_ENABLE(mach,       [  --enable-mach=<mach>    Use Chez Scheme machine type <mach>])
 AC_ARG_ENABLE(target,     [  --enable-target=<mach>  Cross-build for Chez Scheme machine type <mach>])
+m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
@@ -63,6 +64,7 @@ show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
 show_explicitly_set "${enable_mach}" "machine type"
 show_explicitly_set "${enable_target}" "cross-build machine type"
+m4_include(../ac/natipkg_show.m4)
 
 if test "${enable_csonly}" = "yes" ; then
   enable_csdefault=yes
@@ -406,6 +408,12 @@ fi
 ############## Strip tool ################
 
 m4_include(../ac/strip.m4)
+
+############## natipkg ################
+
+if test "${enable_natipkg}" = "yes" ; then
+  CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
+fi
 
 ############## Makefile includes ################
 
