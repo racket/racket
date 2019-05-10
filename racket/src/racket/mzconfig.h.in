@@ -92,4 +92,7 @@ typedef unsigned long uintptr_t;
 /* Library subpath */
 #undef SPLS_SUFFIX
 
+/* Use Generations with the GC */
+#undef USE_GC_GENS
+
 #endif

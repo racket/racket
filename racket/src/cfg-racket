@@ -828,6 +828,7 @@ enable_csdefault
 enable_cgcdefault
 enable_sgc
 enable_sgcdebug
+enable_generations
 enable_backtrace
 enable_cify
 enable_pthread
@@ -1487,6 +1488,7 @@ Optional Features:
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
   --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
   --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)
+  --enable-generations    3m: support generational GC (enabled by default)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-cify           compile startup code to C instead of bytecode
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
@@ -2802,6 +2804,13 @@ if test "${enable_sgcdebug+set}" = set; then :
   enableval=$enable_sgcdebug;
 fi
 
+# Check whether --enable-generations was given.
+if test "${enable_generations+set}" = set; then :
+  enableval=$enable_generations;
+else
+  enable_generations=yes
+fi
+
 # Check whether --enable-backtrace was given.
 if test "${enable_backtrace+set}" = set; then :
   enableval=$enable_backtrace;
@@ -3204,6 +3213,7 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
+show_explicitly_disabled "${enable_generations}" "3m generational GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 show_explicitly_enabled "${enable_cify}" "Startup compiled to C"
 show_explicitly_disabled "${enable_cify}" "Startup compiled to C"
@@ -5059,6 +5069,16 @@ fi
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
+fi
+
+if test "${enable_generations}" = "yes" ; then
+
+$as_echo "#define USE_GC_GENS 1" >>confdefs.h
+
+else
+
+$as_echo "#define USE_GC_GENS 0" >>confdefs.h
+
 fi
 
 ############## Strip tool ################

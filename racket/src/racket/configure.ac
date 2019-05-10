@@ -60,9 +60,10 @@ AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
-AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
+AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
+AC_ARG_ENABLE(backtrace,  [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
-AC_ARG_ENABLE(cify, [  --enable-cify           compile startup code to C instead of bytecode])
+AC_ARG_ENABLE(cify,       [  --enable-cify           compile startup code to C instead of bytecode])
 
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
@@ -204,6 +205,7 @@ show_explicitly_disabled "${enable_futures}" Futures
 
 show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
+show_explicitly_disabled "${enable_generations}" "3m generational GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
 show_explicitly_enabled "${enable_cify}" "Startup compiled to C"
 show_explicitly_disabled "${enable_cify}" "Startup compiled to C"
@@ -785,6 +787,12 @@ fi
 if test "${enable_sgc}" = "yes" ; then
   GCDIR=sgc
   OPTIONS="$OPTIONS -DUSE_SENORA_GC"
+fi
+
+if test "${enable_generations}" = "yes" ; then
+  AC_DEFINE(USE_GC_GENS, 1,[GC Generations])
+else
+  AC_DEFINE(USE_GC_GENS, 0,[GC Generations])
 fi
 
 ############## Strip tool ################
