@@ -72,7 +72,7 @@
          ((null? (cddr parms))         (if term gen-prc2*     gen-prc2 ))
          ((symbol? (cddr parms)) (if term gen-prc3/rest* gen-prc3/rest))
          ((null? (cdddr parms))      (if term gen-prc3*       gen-prc3 ))
-         (else (error                       "too many parameters")))
+         (else (error 'prc "too many parameters")))
    body))
 
 (define (app vals glo term)
@@ -85,7 +85,7 @@
                           (if term gen-ap2*               gen-ap2)))
             ((4) (if glo (if term gen-ap3-glo* gen-ap3-glo)
                           (if term gen-ap3*               gen-ap3)))
-            (else (error "too many arguments")))
+            (else (error 'app "too many arguments")))
          vals))
 
 ;- -- code generation procedures for non-terminal evaluations ---
