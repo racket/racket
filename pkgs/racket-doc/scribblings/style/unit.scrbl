@@ -545,6 +545,18 @@ in the outer module that re-exports the desired pieces of functionality.}
 
 ]
 
+@margin-note*{We will soon supply a Racket documentation chapter that
+explains the basics of our understanding of ``safety'' and link to it.}
+@;
+@bold{Note} Splitting contracted functionality into two modules in this way
+render the code in the @tt{no-contract} @bold{unsafe}. The creator of the
+original code might have assumed certain constraints on some function's
+arguments, and the contracts checked these constraints. While the
+documentation of the @tt{no-contract} submodule is likely to state these
+constraints, it is left to the client to check them.  If the client code
+doesn't check the constraints and the arguments don't satisfy them, the
+code in the @tt{no-contract} submodule may go wrong in various ways. 
+
 @compare[
 @;%
 @(begin

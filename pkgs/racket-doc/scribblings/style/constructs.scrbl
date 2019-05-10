@@ -319,7 +319,7 @@ racket
  efficiency; using @racket[in-list] to restrict the @tt{good} example to
  the same range of data as the @tt{bad} one speeds up the former.
 
- @bold{Note}: @racket[for] traversals of user-defined sequences tend to be
+ @bold{Note} @racket[for] traversals of user-defined sequences tend to be
  slow. If performance matters in these cases, you may wish to fall back on
  your own traversal functions.
 
