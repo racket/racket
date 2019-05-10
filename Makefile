@@ -757,9 +757,12 @@ origin-collects:
 	$(USER_RACKET) -l distro-build/pack-collects
 
 # Now that we've built packages from local sources, create "built"
-# versions of the packages from the installation into "build/user":
+# versions of the packages from the installation into "build/user";
+# set `PACK_BUILT_OPTIONS` `--mode <mode>` to force all packages to
+# a specific mode, but the default infers `built` or `binary`
+PACK_BUILT_OPTIONS =
 built-catalog:
-	$(USER_RACKET) -l distro-build/pack-built build/pkgs.rktd
+	$(USER_RACKET) -l- distro-build/pack-built $(PACK_BUILT_OPTIONS) build/pkgs.rktd
 
 # Run a catalog server to provide pre-built packages, as well
 # as the copy of the server's "collects" tree:
