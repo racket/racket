@@ -230,7 +230,7 @@ prepare-cache:qemu:
     - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
   dependencies:
     - prepare-cache:qemu
-
+    
 test:native:x86_64:
   extends: .preparearch
   variables:
@@ -246,7 +246,8 @@ test:native:armv7l:
   tags:
     - armv7l
     - linux
-    
+
+# Emulation targets
 test:emulation:arm64:
   extends: .preparearch
   allow_failure: true
@@ -328,6 +329,86 @@ test:emulation:ppc64el:
     ARCH: "ppc64el"
     INSTALL_DIR: $CI_PROJECT_DIR/install
 
+# Emulation targets with --disable-generations
+
+.preparearch:nogenerations:
+  image: ubuntu:18.04
+  stage: test
+  only:
+    - schedules
+  tags:
+    - x86_64
+    - privileged
+    - linux
+  before_script:
+    - ls -la
+    - find $INSTALL_DIR -type f
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - apt-get update
+  script:
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR --with-configure-args '--disable-generations'
+  dependencies:
+    - prepare-cache:qemu
+
+test:emulation:nogenerations:arm64:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "arm64"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:nogenerations:armel:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "armel"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:nogenerations:armhf:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "armhf"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+    
+test:emulation:nogenerations:mips:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "mips"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+  
+test:emulation:nogenerations:mipsel:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "mipsel"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:nogenerations:mips64el:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "mips64el"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+    
+test:emulation:nogenerations:s390x:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "s390x"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+test:emulation:nogenerations:ppc64el:
+  extends: .preparearch:nogenerations
+  allow_failure: true
+  variables:
+    ARCH: "ppc64el"
+    INSTALL_DIR: $CI_PROJECT_DIR/install
+
+# CS
 .preparearch:cs:
   image: ubuntu:18.04
   stage: test

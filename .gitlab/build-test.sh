@@ -183,9 +183,9 @@ function setup_chroot {
     # Call ourselves again which will cause tests to run
     echo "Recursively calling script"
     if [ ${MAKE_TARGET} = "cs" ]; then
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --enable-cs"
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --with-configure-args \"${RACKET_CONFIGURE_ARGS}\"" --enable-cs
     else
-	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR}"
+	chroot "${CHROOT_DIR}" bash -c "cd ${BUILD_DIR} && ./.gitlab/build-test.sh --maxload ${MAXLOAD} --jobs ${JOBS} --with-arch ${ARCH} --with-project-path ${BUILD_DIR} --with-configure-args \"${RACKET_CONFIGURE_ARGS}\""
     fi
 }
 
@@ -215,7 +215,7 @@ function setup_binfmts {
 	"s390x")
 	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x02\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x16" --mask "\xff\xff\xff\xff\xff\xff\xff\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff"
 	    ;;
-	"ppc64el")
+	"ppc64le")
 	    update-binfmts --install qemu-${QEMU_ARCH} /usr/bin/qemu-${QEMU_ARCH}-static --magic "\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x15\x00" --mask "\xff\xff\xff\xff\xff\xff\xff\xfc\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\x00"
 	    ;;
 	*)
