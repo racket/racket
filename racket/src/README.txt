@@ -62,7 +62,7 @@ To build Racket-on-Chez on Unix variants or Mac OS:
  * ... by itself: supply `--enable-csonly` to `configure`.
  
    The generated Racket-on-Chez executables will *not* have a "cs"
-   suffix. Unlike `--emable-csdefault`, you must specify an existing
+   suffix. Unlike `--enable-csdefault`, you must specify an existing
    Racket using `--enable-racket=...`.
 
 Chez Scheme is included in a Racket source distribution and
