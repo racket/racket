@@ -302,5 +302,5 @@ SRC_MAKEFILES = $(srcdir)/Makefile.in $(srcdir)/racket/Makefile.in \
 reconfigure:
 	$(MAKE) Makefile
 
-Makefile: $(srcdir)/configure $(SRC_MAKEFILES)
+Makefile: $(srcdir)/configure $(srcdir)/cfg-racket $(srcdir)/cfg-cs $(SRC_MAKEFILES)
 	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

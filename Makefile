@@ -241,7 +241,7 @@ native-for-cross:
 	cd racket/src/build/cross; $(MAKE) reconfigure MORE_CONFIGURE_ARGS="$(MORE_CROSS_CONFIGURE_ARGS)"
 	cd racket/src/build/cross/racket; $(MAKE)
 
-racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
+racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-racket racket/src/Makefile.in
 	cd racket/src/build/cross; ../../configure $(MORE_CROSS_CONFIGURE_ARGS)
 
 # ------------------------------------------------------------
@@ -473,7 +473,7 @@ native-cs-for-cross-finish:
 	cd racket/src/build/cross/cs/c; $(MAKE) reconfigure
 	cd racket/src/build/cross/cs/c; $(MAKE)
 
-racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
+racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/cfg-racket racket/src/cs/c/Makefile.in
 	cd racket/src/build/cross/cs/c; ../../../../cs/c/configure --enable-csdefault
 
 # ------------------------------------------------------------
