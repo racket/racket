@@ -24,6 +24,7 @@
 /* Configuration of the nursery (a.k.a. generation 0) */
 #define GEN0_INITIAL_SIZE (4 * 1024 * 1024)
 #define GEN0_SIZE_FACTOR 0.5
+#define GEN0_SIZE_FACTOR_NO_GEN 0.75
 #define GEN0_SIZE_ADDITION (512 * 1024)
 #define GEN0_MAX_SIZE (32 * 1024 * 1024)
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
@@ -2034,10 +2035,14 @@ inline static void reset_nursery(NewGC *gc)
 {
   uintptr_t new_gen0_size;
 
-  new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
-  if ((new_gen0_size > GEN0_MAX_SIZE)
-      || (gc->memory_in_use > GEN0_MAX_SIZE)) /* => overflow */
-    new_gen0_size = GEN0_MAX_SIZE;
+  if (gc->generations_available) {
+    new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
+    if ((new_gen0_size > GEN0_MAX_SIZE)
+        || (gc->memory_in_use > GEN0_MAX_SIZE)) /* => overflow */
+      new_gen0_size = GEN0_MAX_SIZE;
+  } else {
+    new_gen0_size = NUM((GEN0_SIZE_FACTOR_NO_GEN * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
+  }
 
   if (gc->started_incremental
       && (new_gen0_size > (GEN0_MAX_SIZE / GEN0_INCREMENTAL_MAX_DIVISOR)))
@@ -5547,7 +5552,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
   if (!postmaster_and_place_gc(gc))
     do_incremental = 0;
   
-  if (do_incremental)
+  if (do_incremental && gc->generations_available)
     gc->started_incremental = 1;
 
   if (gc->incremental_requested)
