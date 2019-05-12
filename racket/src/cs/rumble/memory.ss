@@ -416,7 +416,7 @@
        save]
       [(ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void)
        ((foreign-procedure proc (void* void* void* int int int int int int int int int) void)
-        (ptr 0) (ptr 2) (ptr 2)
+        (ptr 0) (ptr 1) (ptr 2)
         (val 3) (val 4) (val 5) (val 6)
         (val 7) (val 8) (val 9) (val 10) (val 11))
        save]
