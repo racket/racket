@@ -130,11 +130,11 @@
                (find-key (cdr sort-by-ratio/names)))))
 
   (define ((ratio-geo-mean wrt-times) times)
-    (define sq-ratios
+    (define ratios
       (for/list ([(k v) (in-hash times)])
-        (expt (/ v (hash-ref wrt-times k)) 2)))
+        (/ v (hash-ref wrt-times k))))
     (hash '|geometric mean|
-          (sqrt (/ (apply + sq-ratios) (length sq-ratios)))))
+          (expt (apply * ratios) (/ (length ratios)))))
 
   (define (plot timess
                 #:key->pict [key->pict (lambda (k) #f)])
@@ -151,6 +151,7 @@
                   (mini-bar-plot names
                                  (map (ratio-geo-mean (hash-ref med-timess geo-mean-impl))
                                       timess)
+                                 #:prefix "x"
                                  #:decimal-places 2
                                  #:colors colors
                                  #:key->pict (lambda (s) ((current-t) (format "~a" s))))
