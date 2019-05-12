@@ -1703,7 +1703,12 @@
              (cpointer->name proc-p))))]
        [else
         (lambda (to-wrap)
-          (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)])
+          (let* ([proc-p (unwrap-cpointer 'ffi-call to-wrap)]
+                 #;
+                 [name (and (ffi-obj? proc-p) (let ([n (cpointer/ffi-obj-name proc-p)])
+                                                (if (bytes? n)
+                                                    (utf8->string n)
+                                                    n)))])
             (do-procedure-reduce-arity-mask
              (lambda orig-args
                (let* ([args (map (lambda (orig-arg in-type)

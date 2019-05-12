@@ -41,6 +41,8 @@
       ;; or might return a listener
       (call-with-resolved-address
        hostname port-no
+       #:family family
+       #:passive? #t
        ;; in atomic mode
        (lambda (addr)
          (cond
