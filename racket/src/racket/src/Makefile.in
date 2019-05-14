@@ -334,8 +334,7 @@ JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/arm/fp-vfp.h $(srcdir)/lightning/arm/fp-swf.h \
         $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 
-salloc.@LTO@: $(COMMON_HEADERS) $(RKTIOHEADERS) \
-            $(srcdir)/../gc/gc.h $(srcdir)/mzmark_salloc.inc
+salloc.@LTO@: $(COMMON_HEADERS) $(RKTIOHEADERS) $(srcdir)/mzmark_salloc.inc
 bignum.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/stypes.h    
 bool.@LTO@: $(COMMON_HEADERS) \
@@ -350,7 +349,7 @@ complex.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/stypes.h    
 dynext.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/stypes.h $(srcdir)/schemef.h \
-         $(srcdir)/schvers.h $(srcdir)/../gc/gc.h
+         $(srcdir)/schvers.h
 env.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark_env.inc
 error.@LTO@: $(COMMON_HEADERS) \

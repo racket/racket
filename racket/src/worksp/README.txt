@@ -147,8 +147,8 @@ To build GRacketCGC, build the GRacket solution:
 
 The build processes for RacketCGC and GRacketCGC automatically builds
 
-  libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
-               racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+  sgc        - makes racket\lib\libmzgcxxxxxxx.dll and
+               racket\src\worksp\sgc\Release\libmzgcxxxxxxx.lib
 
   libracket  - makes racket\lib\libracketxxxxxxx.dll and
                racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib
@@ -220,19 +220,6 @@ After building MzCOMCGC, you can build the 3m variant by
   3. Build (in Visual Studio).
 
 The result is "..\..\lib\MzCOM.exe".
-
-SenoraGC versus the Boehm GC
-----------------------------
-
-The "Release" and "Debug" solution configurations use SenoraGC (SGC),
-while the "AltGCRelease" and "AltGCDebug" configurations use the
-variant of the Boehm GC that is included with Racket.
-
-In project files, "SRelease" and "SDebug" (as used by the "Release"
-and "Debug" solution configurations) build against SGC, while
-"BRelease" and "BDebug" (as used by the "AltGCRelease" and
-"AltGCDebug" solution configurations) build against the Boehm GC.
-
 
 ========================================================================
  Versioning

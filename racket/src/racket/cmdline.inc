@@ -726,10 +726,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
-#ifdef GC_THINKS_ITS_A_DLL_BUT_ISNT
-  DllMain(NULL, DLL_PROCESS_ATTACH, NULL);
-#endif
-
   prog = argv[0];
   argv++;
   --argc;

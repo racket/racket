@@ -19,7 +19,6 @@ static const char *projects[] = { "gracket/gracket.vcxproj",
                                   "librktio/librktio.vcxproj",
                                   "mrstart/mrstart.vcxproj",
                                   "racket/racket.vcxproj",
-                                  "libmzgc/libmzgc.vcxproj",
                                   "mzcom/mzcom.vcxproj",
                                   "sgc/sgc.vcxproj",
                                   NULL };

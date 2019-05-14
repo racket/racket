@@ -657,7 +657,6 @@ info_TEXINFOS = doc/libffi.texi
 # friends when we are called from the top level Makefile.
 AM_MAKEFLAGS = \
 	'AR_FLAGS=$(AR_FLAGS)' \
-	'CC_FOR_BUILD=$(CC_FOR_BUILD)' \
 	'CFLAGS=$(CFLAGS)' \
 	'CXXFLAGS=$(CXXFLAGS)' \
 	'CFLAGS_FOR_BUILD=$(CFLAGS_FOR_BUILD)' \

@@ -18,12 +18,6 @@
 # Note: we use CPPFLAGS for configure-time testing only because
 # it used to include C++ flags that we didn't want for Racket.
 # hence PREFLAGS, which is initialized to the original CPPFLAGS.
-#
-# CC_FOR_BUILD is used for the Boehm GC build. In contrast to some
-# other build processes, CC_FOR_BUILD needs to be consistent with CC
-# in terms of its platform selection, and so it receives CFLAGS,
-# PREFLAGS, and COMPFLAGS, too. If that doesn't work out, use
-# `--enable-sgc', instead.
 
 AC_INIT([Racket])
 AC_CONFIG_SRCDIR(racket/src/bignum.c)
@@ -57,9 +51,8 @@ AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled 
 m4_include(../ac/sdk_arg.m4)
 
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
-AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
-AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
-AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
+AC_ARG_ENABLE(sgc,        [  --enable-sgc            obsolte; Senora GC is always enabled])
+AC_ARG_ENABLE(sgcdebug,   [  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
 AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
 AC_ARG_ENABLE(backtrace,  [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
@@ -205,7 +198,6 @@ show_explicitly_disabled "${enable_places}" Places
 show_explicitly_enabled "${enable_futures}" Futures
 show_explicitly_disabled "${enable_futures}" Futures
 
-show_explicitly_disabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
 show_explicitly_disabled "${enable_generations}" "3m generational GC"
 show_explicitly_enabled "${enable_backtrace}" "3m GC backtraces" "Note that this mode is not intended for normal Racket use"
@@ -257,7 +249,7 @@ m4_include(../ac/crossany.m4)
 OPTIONS=
 
 # GC Directory
-GCDIR=gc
+GCDIR=sgc
 
 MZBINTARGET=normal-bin
 MZINSTALLTARGET=unix-install
@@ -346,7 +338,6 @@ if test "${enable_oskit}" = "yes" ; then
   PREFLAGS="-nostdinc -I${OSKHOME}/include/oskit -I${OSKHOME}/include/oskit/freebsd "
   PREFLAGS="$PREFLAGS -I${OSKHOME}/include/oskit/c -I${OSKHOME}/include -I/usr/include"
 
-  GCDIR=sgc
   OPTIONS="-DOSKIT -DUSE_SENORA_GC -DSGC_AUTO_ROOTS=0"
 
   if test "${enable_smalloskit}" = "yes" ; then
@@ -522,11 +513,6 @@ fi
 
 if test "${enable_jitframe}" = "yes" ; then
   MZOPTIONS="$MZOPTIONS -DMZ_PROLOG_CREATE_FULL_STACK_FRAME"
-fi
-
-ORIG_CC_FOR_BUILD="${CC_FOR_BUILD}"
-if test "$CC_FOR_BUILD" = "" ; then 
-  CC_FOR_BUILD="$CC"
 fi
 
 if test "${enable_shared}" = "yes" ; then
@@ -764,7 +750,6 @@ case "$host_os" in
     fi
     ;;
   nto-qnx*)
-    enable_sgc=yes
     use_flag_pthread=no
     LIBS="$LIBS -lsocket -Wl,--export-dynamic"
     ;;
@@ -810,14 +795,10 @@ fi
 ############## SGC ################
 
 if test "${enable_sgcdebug}" = "yes" ; then
-  enable_sgc=yes
   OPTIONS="$OPTIONS -DSGC_STD_DEBUGGING=1"
 fi
 
-if test "${enable_sgc}" = "yes" ; then
-  GCDIR=sgc
-  OPTIONS="$OPTIONS -DUSE_SENORA_GC"
-fi
+OPTIONS="$OPTIONS -DUSE_SENORA_GC"
 
 if test "${enable_generations}" = "yes" ; then
   AC_DEFINE(USE_GC_GENS, 1,[GC Generations])
@@ -898,24 +879,6 @@ if test "${check_for_mprotect}" = "yes" ; then
   AC_MSG_RESULT($use_mprotect)
   if test "${use_mprotect}" = "yes" ; then
      AC_DEFINE(HAVE_MMAP_MPROTECT,1,[Have mmap and mprotect])
-  fi
-
-  if test "${use_mprotect}" = "yes" && test "${enable_sgc}" != "yes" ; then
-    [ msg="mprotect with PROT_EXEC" ]
-    AC_MSG_CHECKING($msg)
-    AC_LINK_IFELSE([AC_LANG_SOURCE([
-       #include <sys/mman.h>
-       #include <fcntl.h>
-       int main() {
-        void *p;
-        p = mmap(0, 2 << 16, PROT_READ | PROT_WRITE, MAP_PRIVATE, open("/dev/zero", O_RDWR), 0);
-        if (mprotect(p, 2 << 16, PROT_READ | PROT_WRITE | PROT_EXEC)) return 1;
-        return 0;
-       }])], can_mprotect_exec=yes, can_mprotect_exec=no)
-    AC_MSG_RESULT($can_mprotect_exec)
-    if test "${can_mprotect_exec}" = "no" ; then
-      echo "Senora GC is required due to mprotect() failure"
-    fi
   fi
 fi
 
@@ -1459,7 +1422,6 @@ AC_SUBST(STATIC_AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
-AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
 AC_SUBST(POST_LINKER)
@@ -1557,8 +1519,7 @@ mk_needed_dir()
 makefiles="Makefile
            racket/Makefile
              racket/src/Makefile racket/dynsrc/Makefile
-             racket/gc/Makefile racket/sgc/Makefile
-             racket/gc2/Makefile"
+             racket/sgc/Makefile racket/gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then

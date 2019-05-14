@@ -116,8 +116,8 @@ both:
 	$(MAKE) cgc-core
 	$(MAKE) 3m
 
-racketlib: 
-	$(MAKE) g-c 
+racketlib:
+	$(MAKE) g-c
 	$(MAKE) @FOREIGNTARGET@
 	$(MAKE) mzlibrary 
 
@@ -133,7 +133,7 @@ oe:
 	cd dynsrc; $(MAKE) oe
 
 g-c:
-	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@ 
+	cd @GCDIR@; $(MAKE) ../libmzgc.@LIBSFX@
 
 exports:
 	cd src; $(MAKE) mzheaders
@@ -361,7 +361,6 @@ clean@NOT_OSX@:
 	/bin/rm -f include/macosxpre
 	/bin/rm -f include/macosxpre.p
 	/bin/rm -f $(CSTARTUPDEST)
-	cd gc; $(MAKE) clean
 	cd gc2; $(MAKE) clean
 	cd sgc; $(MAKE) clean
 	cd src; $(MAKE) clean

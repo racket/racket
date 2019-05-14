@@ -464,15 +464,6 @@ SHARED_OK static Scheme_Custodian_Extractor *extractors;
 #define LONGJMP(p) scheme_longjmpup(&p->jmpup_buf)
 #define RESETJMP(p) scheme_reset_jmpup_buf(&p->jmpup_buf)
 
-#ifdef WIN32_THREADS
-/* Only set up for Boehm GC that thinks it's a DLL: */
-# define GC_THINKS_ITS_A_DLL_BUT_ISNT
-
-# ifdef GC_THINKS_ITS_A_DLL_BUT_ISNT
-extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
-# endif
-#endif
-
 #ifndef MZ_PRECISE_GC
 # define scheme_thread_hop_type scheme_thread_type
 #endif

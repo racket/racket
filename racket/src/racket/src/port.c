@@ -554,7 +554,8 @@ void scheme_add_fd_eventmask(void *fds, int mask)
    the Boehm GC if they move virtual pages around while its marking. So we
    remember each created thread and suspend it during GC.
 
-   This work is not necessary if GC_use_registered_statics is set. */
+   TODO: We don't have Boehm GC anymore - it might be a good time to understand
+   if this is still required. */
 
 #ifndef MZ_PRECISE_GC
 
