@@ -258,6 +258,25 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
 
   r = scheme_bin_div(c, d);
 
+  /* If r goes to infinity, try computing a different way to avoid overflow: */
+  if (SCHEME_FLOATP(r)) {
+    double v = SCHEME_FLOAT_VAL(r);
+    if (MZ_IS_POS_INFINITY(v) || MZ_IS_NEG_INFINITY(v)) {
+      /* From Chez Scheme: a+bi / c+di => (ac+bd)/(cc+dd) + ((bc-ad)/(cc+dd))i
+         This calculuation does not work as well for complex numbers with
+         large parts, such as `(/ 1e+300+1e+300i 4e+300+4e+300i)`, but it
+         works better for small parts, as in `(/ 0.0+0.0i 1+1e-320i)`. */
+      cm = scheme_bin_plus(scheme_bin_mult(c, c),
+                           scheme_bin_mult(d, d));
+      return scheme_make_complex(scheme_bin_div(scheme_bin_plus(scheme_bin_mult(a, c),
+                                                                scheme_bin_mult(b, d)),
+                                                cm),
+                                 scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, c),
+                                                                 scheme_bin_mult(a, d)),
+                                                cm));
+    }
+  }
+
   den = scheme_bin_plus(d, scheme_bin_mult(c, r));
 
   if (swap)

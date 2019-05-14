@@ -837,6 +837,7 @@
 (test 0.2+0.4i / 1.0-2.0i)
 (test 0.4-0.2i / 2.0+1.0i)
 (test 0.4+0.2i / 2.0-1.0i)
+(test 0.0+0.0i / 0.0+0.0i 1+1e-320i)
 
 (test 3 / 1 1/3)
 (test -3 / 1 -1/3)
@@ -1915,6 +1916,8 @@
 (test +nan.0+nan.0i expt -0.5 -inf.0)
 (test +nan.0+nan.0i expt -1.5 +inf.0)
 (test +nan.0+nan.0i expt -1.5 -inf.0)
+
+(test 1.0-9.9998886718268e-321i expt 1+1.0e-320i -1)
 
 (err/rt-test (expt 0 -1) exn:fail:contract:divide-by-zero?)
 (err/rt-test (expt 0 -1.0) exn:fail:contract:divide-by-zero?)
