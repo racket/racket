@@ -57,9 +57,8 @@ AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled 
 m4_include(../ac/sdk_arg.m4)
 
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
-AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
-AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
-AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
+AC_ARG_ENABLE(sgc,        [  --enable-sgc            use Senora GC (enabled by default)], , enable_sgc=yes)
+AC_ARG_ENABLE(sgcdebug,   [  --enable-sgcdebug       use Senora GC for debugging (expensive; CGC only)])
 AC_ARG_ENABLE(generations,[  --enable-generations    3m: support generational GC (enabled by default)], , enable_generations=yes)
 AC_ARG_ENABLE(backtrace,  [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
@@ -257,7 +256,7 @@ m4_include(../ac/crossany.m4)
 OPTIONS=
 
 # GC Directory
-GCDIR=gc
+GCDIR=sgc
 
 MZBINTARGET=normal-bin
 MZINSTALLTARGET=unix-install
@@ -346,7 +345,6 @@ if test "${enable_oskit}" = "yes" ; then
   PREFLAGS="-nostdinc -I${OSKHOME}/include/oskit -I${OSKHOME}/include/oskit/freebsd "
   PREFLAGS="$PREFLAGS -I${OSKHOME}/include/oskit/c -I${OSKHOME}/include -I/usr/include"
 
-  GCDIR=sgc
   OPTIONS="-DOSKIT -DUSE_SENORA_GC -DSGC_AUTO_ROOTS=0"
 
   if test "${enable_smalloskit}" = "yes" ; then
@@ -815,10 +813,7 @@ if test "${enable_sgcdebug}" = "yes" ; then
   OPTIONS="$OPTIONS -DSGC_STD_DEBUGGING=1"
 fi
 
-if test "${enable_sgc}" = "yes" ; then
-  GCDIR=sgc
-  OPTIONS="$OPTIONS -DUSE_SENORA_GC"
-fi
+OPTIONS="$OPTIONS -DUSE_SENORA_GC"
 
 if test "${enable_generations}" = "yes" ; then
   AC_DEFINE(USE_GC_GENS, 1,[GC Generations])
@@ -1555,8 +1550,7 @@ mk_needed_dir()
 makefiles="Makefile
            racket/Makefile
              racket/src/Makefile racket/dynsrc/Makefile
-             racket/gc/Makefile racket/sgc/Makefile
-             racket/gc2/Makefile"
+             racket/sgc/Makefile racket/gc2/Makefile"
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
