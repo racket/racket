@@ -101,6 +101,11 @@
                      (or (check-union-find ctx a b)
                          (let ([ctx (deeper-context ctx)])
                            (equal? (or a2 a) (or b2 b) ctx)))]
+                    [(and (not (eq? mode 'equal?))
+                          (extract-impersonator-of mode b))
+                     ;; Second argument is an impersonator, so
+                     ;; `impersonator-of?` or `chaperone-of?` fails
+                     #f]
                     [else
                      ;; No `prop:impersonator-of`, so check for
                      ;; `prop:equal+hash` or transparency

@@ -129,15 +129,19 @@ proceeds by comparing @racket[_v1] and @racket[_v2] recursively (as with
 Indicates whether @racket[v1] can be considered equivalent modulo
 chaperones to @racket[v2].
 
-For values that include no chaperones, @racket[v1] and @racket[v2] can
-be considered chaperones of each other if they are @racket[equal?],
-except that mutable vectors, boxes, strings, byte strings, and mutable
-structures within @racket[v1] and @racket[v2] must be @racket[eq?].
+For values that include no chaperones or other impersonators,
+@racket[v1] and @racket[v2] can be considered chaperones of each other
+if they are @racket[equal?], except that corresponding mutable
+vectors, boxes, strings, byte strings, and mutable structures within
+@racket[v1] and @racket[v2] must be @racket[eq?].
 
-Otherwise, chaperones within @racket[v2] must be intact within
-@racket[v1] analogous to way that @racket[impersonator-of?] requires
-that impersonators are preserved, except that @racket[prop:impersonator-of]
-has no analog for @racket[chaperone-of?].}
+Otherwise, chaperones and other impersonators within @racket[v2] must
+be intact within @racket[v1] analogous to way that
+@racket[impersonator-of?] requires that impersonators are preserved.
+Furthermore, @racket[v1] must not have any non-chaperone impersonators
+whose corresponding value in @racket[v2] is not the same impersonator.
+Note that @racket[chaperone-of?] implies @racket[impersonator-of?],
+but not vice-versa.}
 
 
 @defproc[(impersonator-ephemeron [v any/c]) ephemeron?]{

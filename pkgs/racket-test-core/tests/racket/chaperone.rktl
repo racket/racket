@@ -2680,6 +2680,8 @@
     (test #t impersonator-of? (make-a #f 2) a1)
     (test #t chaperone-of? (make-a #f 2) a1)
     (test #t impersonator-of? (make-a a1 3) a1)
+    (test #f impersonator-of? a1 (make-a a1 2))
+    (test #f chaperone-of? a1 (make-a a1 2))
     (test #t impersonator-of? (make-a-more a1 3 8) a1)
     (test #f chaperone-of? (make-a a1 3) a1)
     (test #t equal? (make-a a1 3) a1)
