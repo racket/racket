@@ -42,8 +42,7 @@
                          (let ([ctx (deeper-context ctx)])
                            (equal? a2 b ctx)))]
                  [else #f]))]
-             [(and (eq? mode 'chaperone-of?)
-                   (chaperone? b))
+             [(eq? mode 'chaperone-of?)
               ;; `a` does not include `b`, so give up
               #f]
              [else

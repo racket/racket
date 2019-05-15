@@ -196,6 +196,15 @@
    (test (void) vector-set! b2 1 'fine)
    (test 'fine vector-ref b 1)))
 
+;; impersonator-of does not imply chaperone-of
+(let ()
+  (define vec1 (vector 1 2 3))
+  (define vec2 (impersonate-vector vec1 (lambda (v i x) x) (lambda (v i x) x)))
+  (test #t impersonator-of? vec2 vec1)
+  (test #f chaperone-of? vec2 vec1)
+  (test #f impersonator-of? vec1 vec2)
+  (test #f chaperone-of? vec1 vec2))
+
 ;; test chaperone-of checks in a chaperone:
 (let ([b (vector 0)])
   (let ([b2 (chaperone-vector b 
