@@ -25,6 +25,7 @@ AC_ARG_ENABLE(target,     [  --enable-target=<mach>  Cross-build for Chez Scheme
 m4_include(../ac/natipkg_arg.m4)
 m4_include(../ac/sdk_arg.m4)
 m4_include(../ac/strip_arg.m4)
+m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(csdefault,  [  --enable-csdefault      use CS as default build])
 AC_ARG_ENABLE(csonly,     [  --enable-csonly         build CS only])
 AC_ARG_ENABLE(parent,     [  --enable-parent         Create "../Makefile" (internal use)])
@@ -414,6 +415,10 @@ m4_include(../ac/strip.m4)
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
 fi
+
+############## ubsan ################
+
+m4_include(../ac/ubsan.m4)
 
 ############## Makefile includes ################
 
