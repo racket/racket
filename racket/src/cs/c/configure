@@ -780,6 +780,7 @@ enable_libfw
 enable_userfw
 enable_mac64
 enable_noopt
+enable_ubsan
 enable_csdefault
 enable_csonly
 enable_parent
@@ -1422,6 +1423,7 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-strip          strip debug on install (usually enabled by default)
+  --enable-ubsan          compile with -fsanitize=undefined)
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)
@@ -2436,6 +2438,12 @@ STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 strip_needs_dash_s=no
+
+# Check whether --enable-ubsan was given.
+if test "${enable_ubsan+set}" = set; then :
+  enableval=$enable_ubsan;
+fi
+
 
 # Check whether --enable-csdefault was given.
 if test "${enable_csdefault+set}" = set; then :
@@ -4312,6 +4320,17 @@ fi
 if test "${enable_natipkg}" = "yes" ; then
   CONFIGURE_RACKET_SO_COMPILE="${CONFIGURE_RACKET_SO_COMPILE} env PLT_CS_SLSP_SUFFIX=-natipkg"
 fi
+
+############## ubsan ################
+
+if test "${enable_ubsan}" = "yes" ; then
+   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
+   CFLAGS="$CFLAGS $UBSAN"
+   CPPFLAGS="$CPPFLAGS $UBSAN"
+   PREFLAGS="$PREFLAGS $UBSAN"
+   LDFLAGS="$LDFLAGS $UBSAN"
+fi
+
 
 ############## Makefile includes ################
 
