@@ -4,6 +4,7 @@
          racket/generic
          racket/contract/base
          racket/contract/combinator
+         racket/function
          racket/generator
          (rename-in "private/for.rkt"
                     [stream-ref stream-get-generics])
@@ -335,17 +336,13 @@
     (define ((make-for/stream derived-stx) stx)
       (syntax-case stx ()
         [(_ clauses . body)
-         (begin
-           (when (null? (syntax->list #'body))
-             (raise-syntax-error (syntax-e #'derived-stx)
-                                 "missing body expression after sequence bindings"
-                                 stx #'body))
-           (with-syntax ([((pre-body ...) body*) (split-for-body stx #'body)])
-             #`(sequence->stream
-                (in-generator
-                 (#,derived-stx #,stx () clauses
-                  pre-body ...
-                  (yield (let () . body*))
-                  (values))))))]))
-    (values (make-for/stream #'for/fold/derived)
-            (make-for/stream #'for*/fold/derived))))
+         (with-syntax ([((pre-body ...) (post-body ...)) (split-for-body stx #'body)])
+           (quasisyntax/loc stx
+             (#,derived-stx #,stx
+                            ([get-rest empty-stream]
+                             #:delay-with thunk)
+               clauses
+               pre-body ...
+               (stream-cons (let () post-body ...) (get-rest)))))]))
+    (values (make-for/stream #'for/foldr/derived)
+            (make-for/stream #'for*/foldr/derived))))

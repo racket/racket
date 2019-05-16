@@ -945,5 +945,142 @@
   (check for/list values andmap))
 
 ;; ----------------------------------------
+;; `for/foldr`
+
+(test '(0 1 2 3 4)
+      'for/foldr-one-seq
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)])
+        (cons x lst)))
+(test '((0 5) (1 6) (2 7) (3 8) (4 9))
+      'for/foldr-two-seqs
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)]
+                  [y (in-range 5 10)])
+        (cons (list x y) lst)))
+(test '((0 5 10) (1 6 11) (2 7 12) (3 8 13) (4 9 14))
+      'for/foldr-three-seqs
+      (for/foldr ([lst '()])
+                 ([x (in-range 5)]
+                  [y (in-range 5 10)]
+                  [z (in-range 10 15)])
+        (cons (list x y z) lst)))
+
+(test '(0 1 2)
+      'for*/foldr-one-seq
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)])
+        (cons x lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2) (2 3) (2 4))
+      'for*/foldr-two-seqs
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))])
+        (cons (list x y) lst)))
+
+(test '((0 0) (0 1) (0 2) (2 2) (2 3) (2 4))
+      'for/foldr-guard
+      (for/foldr ([lst '()])
+                 ([x (in-range 3)]
+                  #:unless (= x 1)
+                  [y (in-range x (+ x 3))])
+        (cons (list x y) lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2))
+      'for*/foldr-break
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))]
+                   #:break (and (= x 2) (= y 3)))
+        (cons (list x y) lst)))
+(test '((0 0) (0 1) (0 2) (1 1) (1 2) (1 3) (2 2) (2 3))
+      'for*/foldr-final
+      (for*/foldr ([lst '()])
+                  ([x (in-range 3)]
+                   [y (in-range x (+ x 3))]
+                   #:final (and (= x 2) (= y 3)))
+        (cons (list x y) lst)))
+
+(test '(408 . 20400)
+      'for/foldr-two-accs
+      (for/foldr ([a 1] [b 1] #:result (cons a b))
+                 ([n (in-range 5)])
+        (values b (* a (+ b n)))))
+
+(test #t 'for/foldr-delay-init
+      (for/foldr ([acc (error "never gets here")] #:delay)
+                 ([v (in-value #t)])
+        v))
+
+(test '(0 1 4 9 16)
+      'for/foldr-stream-finite
+      (stream->list
+       (for/foldr ([s empty-stream] #:delay)
+                  ([v (in-range 5)])
+         (stream-cons (sqr v) (force s)))))
+(test '(0 1 4 9 16)
+      'for/foldr-stream-infinite
+      (stream->list
+       (stream-take
+        (for/foldr ([s (error "never gets here")] #:delay)
+                   ([v (in-naturals)])
+          (stream-cons (sqr v) (force s)))
+        5)))
+
+(test '(0 1 4 9 16)
+      'for/foldr-stream-finite/thunk
+      (stream->list
+       (for/foldr ([s empty-stream] #:delay-with thunk)
+                  ([v (in-range 5)])
+         (stream-cons (sqr v) (s)))))
+(test '(0 1 4 9 16)
+      'for/foldr-stream-infinite/thunk
+      (stream->list
+       (stream-take
+        (for/foldr ([s (error "never gets here")] #:delay-with thunk)
+                   ([v (in-naturals)])
+          (stream-cons (sqr v) (s)))
+        5)))
+
+(test '(4 9 16 4 9 16 4 9 16 4)
+      'for/foldr-stream-circular
+      (letrec ([s (for/foldr ([s s] #:delay)
+                             ([v (in-range 2 5)])
+                    (stream-cons (sqr v) (force s)))])
+        (stream->list (stream-take s 10))))
+(test '(0 1 1 2 3 5 8 13 21 34)
+      'for/foldr-stream-self-iter
+      (letrec ([fibs (stream* 0 1 (for/foldr ([more (error "never gets here")] #:delay)
+                                             ([a (in-stream fibs)]
+                                              [b (in-stream (stream-rest fibs))])
+                                    (stream-cons (+ a b) (force more))))])
+        (stream->list (stream-take fibs 10))))
+
+(test '(0 -1 2 -3 0 1 -2 3 0 -1)
+      'for/foldr-stream-twist
+      (letrec-values ([(s1 s2) (for/foldr ([s1 s2] [s2 s1] #:delay)
+                                          ([n (in-range 4)])
+                                 (values (stream-cons n (force s2))
+                                         (stream-cons (- n) (force s1))))])
+        (stream->list (stream-take s1 10))))
+(test '(0 -1 2 -3 0 1 -2 3 0 -1)
+      'for/foldr-stream-twist/thunk
+      (letrec-values ([(s1 s2)
+                       (for/foldr ([s1 s2] [s2 s1] #:delay-with thunk #:delay-as get-next)
+                                  ([n (in-range 4)])
+                         (define next (delay (get-next)))
+                         (values (stream-cons n (let-values ([(s1 s2) (force next)]) s2))
+                                 (stream-cons (- n) (let-values ([(s1 s2) (force next)]) s1))))])
+        (stream->list (stream-take s1 10))))
+
+;; `#:delay` applies inside `#:result`
+(let ()
+  (define evaluated? #f)
+  (define result (for/foldr ([acc (set! evaluated? #t)] #:result acc #:delay) ()
+                   (force acc)))
+  (test #f 'for/foldr-result-delay-1 evaluated?)
+  (test (void) 'for/foldr-result-delay-2 (force result))
+  (test #t 'for/foldr-result-delay-3 evaluated?))
+
+;; ----------------------------------------
 
 (report-errs)

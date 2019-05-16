@@ -8,6 +8,7 @@
              "reverse.rkt"
              "sort.rkt"
              "performance-hint.rkt"
+             "promise.rkt"
              '#%unsafe
              '#%flfxnum
              (for-syntax '#%kernel
@@ -19,6 +20,7 @@
                          "stxcase-scheme.rkt"))
 
   (#%provide for/fold for*/fold
+             for/foldr for*/foldr
              for for*
              for/list for*/list
              for/vector for*/vector
@@ -34,6 +36,7 @@
              for/hasheqv for*/hasheqv
 
              for/fold/derived for*/fold/derived
+             for/foldr/derived for*/foldr/derived
              (for-syntax split-for-body)
              (for-syntax (rename expand-clause expand-for-clause))
 
@@ -1431,9 +1434,33 @@
       [(_ x) x]
       [(_ x ...) (values x ...)]))
   
-  (define-syntax-rule (inner-recur/fold (fold-var ...) (let () expr ...) next-k)
-    (let-values ([(fold-var ...) (let () expr ...)])
+  (define-syntax-rule (inner-recur/fold (fold-var ...) [expr ...] next-k)
+    (let-values ([(fold-var ...) (let-values () expr ...)])
       next-k))
+
+  (define-for-syntax ((make-inner-recur/foldr/strict fold-vars) stx)
+    (syntax-case stx ()
+      [(_ () [expr ...] next-k)
+       #`(let-values ([#,(map syntax-local-introduce fold-vars) next-k])
+           expr ...)]))
+
+  (define-for-syntax ((make-inner-recur/foldr/lazy fold-vars delayed-id delayer-id) stx)
+    (syntax-case stx ()
+      [(_ () [expr ...] next-k)
+       (with-syntax ([(fold-var ...) (map syntax-local-introduce fold-vars)]
+                     [delayed-id (syntax-local-introduce delayed-id)]
+                     [delayer-id delayer-id])
+         #`(let*-values
+               ([(delayed-id) (delayer-id #,(syntax-protect #'next-k))]
+                #,@(cond
+                     [(= (length fold-vars) 1)
+                      #`([(fold-var ...) delayed-id])]
+                     [(delayer? (syntax-local-value #'delayer-id (lambda () #f)))
+                      #`([(fold-var) (delayer-id (let-values ([(fold-var ...) (force delayed-id)])
+                                                   fold-var))]
+                         ...)]
+                     [else #'()]))
+             expr ...))]))
   
   (define-syntax (push-under-break stx)
     (syntax-case stx ()
@@ -1443,7 +1470,7 @@
           [(null? l) 
            ;; No #:break form
            (syntax-protect
-            #'(inner-recur fold-vars (let-values () expr ...) (if final?-id break-k next-k)))]
+            #'(inner-recur fold-vars [expr ...] (if final?-id break-k next-k)))]
           [(eq? '#:break (syntax-e (car l)))
            ;; Found a #:break form
            (syntax-protect
@@ -1489,34 +1516,36 @@
                         [inner-binding ...]
                         pre-guard
                         post-guard
-                        [loop-arg ...]) ...) (reverse (syntax->list #'binds))])
+                        [loop-arg ...]) ...)
+                      (reverse (syntax->list #'binds))])
          (syntax-protect
           (quasisyntax/loc #'orig-stx
             (let-values (outer-binding ... ...)
               outer-check ...
               #,(quasisyntax/loc #'orig-stx
                   (let for-loop ([fold-var fold-init] ...
-                                                      loop-binding ... ...)
+                                 loop-binding ... ...)
                     (if (and pos-guard ...)
                         (let-values (inner-binding ... ...)
                           (if (and pre-guard ...)
                               #,(if (syntax-e #'inner-recur)
                                     ;; The general non-nested-loop approach:
-                                    #'(let ([post-guard-var (lambda (fold-var ...) (and post-guard ...))])
+                                    #'(let ()
+                                        (define (next-k-proc fold-var ...)
+                                          (if (and post-guard ...)
+                                              (for-loop fold-var ... loop-arg ... ...)
+                                              next-k))
                                         (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                                           ([fold-var fold-var] ...)
-                                                           (if (post-guard-var fold-var ...)
-                                                               (for-loop fold-var ... loop-arg ... ...)
-                                                               next-k)
-                                                           break-k final?-id
-                                                           rest expr1 . body))
+                                          ([fold-var fold-var] ...)
+                                          (next-k-proc fold-var ...) break-k final?-id
+                                          rest expr1 . body))
                                     ;; The specialized nested-loop approach, which is
                                     ;; slightly faster when it works:
                                     #'(let-values ([(fold-var ...)
                                                     (for/foldX/derived [orig-stx inner-recur nested? #f ()]
-                                                                       ([fold-var fold-var] ...)
-                                                                       next-k break-k final?-id
-                                                                       rest expr1 . body)])
+                                                      ([fold-var fold-var] ...)
+                                                      next-k break-k final?-id
+                                                      rest expr1 . body)])
                                         (if (and post-guard ... (not final?-id))
                                             (for-loop fold-var ... loop-arg ... ...)
                                             next-k)))
@@ -1572,12 +1601,9 @@
       [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id ([id rhs] . rest) . body)
        (identifier? #'id)
        (syntax-protect
-        #'(for/foldX/derived [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id
+        #'(for/foldX/derived [orig-stx inner-recur nested? #f binds]
+                             fold-bind next-k break-k final?-id
                              ([(id) rhs] . rest) . body))]
-      ;; If we get here in single-value mode, then it's a bad clause:
-      [(_ [orig-stx inner-recur #f #f nested? #f binds] fold-bind next-k break-k final?-id (clause . rest) . body)
-       (raise-syntax-error
-        #f "bad sequence binding clause" #'orig-stx #'clause)]
       ;; Expand one multi-value clause, and push it into the results to emit:
       [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
@@ -1593,7 +1619,7 @@
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
-  (define-syntax (for/foldX/derived/final stx)
+  (define-syntax (for/fold/derived/final stx)
     (syntax-case stx ()
       [(_ [orig-stx nested?] fold-bind done-k (clause ...) expr ...)
        ;; If there's a `#:break` or `#:final`, then we need to use the
@@ -1607,53 +1633,116 @@
        (syntax-protect
         #'(for/foldX/derived [orig-stx #f nested? #f ()] fold-bind done-k done-k #f . rest))]))
 
-  (define-syntax (for/fold/derived stx)
-    (syntax-case stx ()
-      [(_ orig-stx ([fold-var finid-init] ... #:result result-expr) . rest)
-       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
-       (syntax-protect
-        (syntax/loc #'orig-stx
-          (let-values ([(fold-var ...) (for/foldX/derived/final [orig-stx #f]
-                                         ([fold-var finid-init] ...)
-                                         (values* fold-var ...)
-                                         . rest)])
-            result-expr)))]
-      [(_ orig-stx ([fold-var finid-init] ...) . rest)
-       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
-       (syntax-protect
-        (syntax/loc #'orig-stx
-          (for/foldX/derived/final [orig-stx #f]
-            ([fold-var finid-init] ...)
-            (values* fold-var ...)
-            . rest)))]
-      [(_ orig-stx (bindings ...) . rst)
-       (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
-      [(_ orig-stx . rst)
-       (raise-syntax-error #f "bad syntax" #'orig-stx)]))
+  (define-syntaxes (for/fold/derived for*/fold/derived for/foldr/derived for*/foldr/derived)
+    (let ()
+      (define (parse-bindings+options stx orig-stx right?)
+        (let loop ([stx stx]
+                   [parsed-any-opts? #f]
+                   [bindings '()]
+                   [result-expr #f]
+                   [delay? #f]
+                   [delayed-id #f]
+                   [delayer-id #f])
+          (syntax-case stx ()
+            [()
+             (let ([delay? (or delay? delayed-id delayer-id)])
+               (values (reverse bindings)
+                       result-expr
+                       delay?
+                       (or delayed-id #'delayed)
+                       (or delayer-id #'delay)))]
+            [([fold-var fold-init] . rest)
+             (not parsed-any-opts?)
+             (loop #'rest #f (cons #'[fold-var fold-init] bindings)
+                   result-expr delay? delayed-id delayer-id)]
+            [(#:result expr . rest)
+             (not (keyword? (syntax-e #'expr)))
+             (if result-expr
+                 (raise-syntax-error #f "duplicate #:result option" orig-stx #'kw)
+                 (loop #'rest #t bindings #'expr delay? delayed-id delayer-id))]
+            [(#:result . rest)
+             (raise-syntax-error #f "expected expression for #:result option" orig-stx #'rest)]
+            [(kw . rest)
+             (and right? (eq? (syntax-e #'kw) '#:delay))
+             (if delay?
+                 (raise-syntax-error #f "duplicate #:delay option" orig-stx #'kw)
+                 (loop #'rest #t bindings result-expr #t delayed-id delayer-id))]
+            [(#:delay-as id . rest)
+             (and right? (identifier? #'id))
+             (if delayed-id
+                 (raise-syntax-error #f "duplicate #:delay-as option" orig-stx #'id)
+                 (loop #'rest #t bindings result-expr delay? #'id delayer-id))]
+            [(#:delay-as . rest)
+             right?
+             (raise-syntax-error #f "expected identifier for #:delay-as option" orig-stx #'rest)]
+            [(#:delay-with id . rest)
+             (and right? (identifier? #'id))
+             (if delayer-id
+                 (raise-syntax-error #f "duplicate #:delay-with option" orig-stx #'id)
+                 (loop #'rest #t bindings result-expr delay? delayed-id #'id))]
+            [(#:delay-with . rest)
+             right?
+             (raise-syntax-error #f "expected identifier for #:delay-with option" orig-stx #'rest)]
+            [_
+             (raise-syntax-error #f
+                                 (if parsed-any-opts?
+                                     "invalid accumulator option(s)"
+                                     "invalid accumulator binding clause(s)")
+                                 orig-stx
+                                 stx)])))
 
-  (define-syntax (for*/fold/derived stx)
-    (syntax-case stx ()
-      [(_ orig-stx ([fold-var finid-init] ... #:result result-expr) . rest)
-       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
-       (syntax-protect
-        (syntax/loc #'orig-stx
-          (let-values ([(fold-var ...) (for/foldX/derived/final [orig-stx #t]
-                                         ([fold-var finid-init] ...)
-                                         (values* fold-var ...)
-                                         . rest)])
-            result-expr)))]
-      [(_ orig-stx ([fold-var finid-init] ...) . rest)
-       (check-identifier-bindings #'orig-stx #'(fold-var ...) "accumulator" #t)
-       (syntax-protect
-        (syntax/loc #'orig-stx
-          (for/foldX/derived/final [orig-stx #t]
-            ([fold-var finid-init] ...)
-            (values* fold-var ...)
-            . rest)))]
-      [(_ orig-stx (bindings ...) . rst)
-       (raise-syntax-error #f "invalid accumulator binding clause(s)" #'orig-stx #'(bindings ...))]
-      [(_ orig-stx . rst)
-       (raise-syntax-error #f "bad syntax" #'orig-stx)]))
+      (define ((make for*? right?) stx)
+        (syntax-case stx ()
+          [(_ orig-stx bindings+options . rest)
+           (let ()
+             (define-values (bindings result-expr delay? delayed-id delayer-id)
+               (parse-bindings+options #'bindings+options #'orig-stx right?))
+             (with-syntax ([([fold-var fold-init] ...) bindings]
+                           [delayed-id delayed-id]
+                           [delayer-id delayer-id])
+               (check-identifier-bindings #'orig-stx #`(fold-var ... delayed-id) "accumulator" (void))
+               (syntax-protect
+                (cond
+                  [right?
+                   (define loop-stx
+                     (quasisyntax/loc #'orig-stx
+                       (for/foldX/derived [orig-stx inner-recur/foldr #,for*? #f ()]
+                         ()
+                         (done-k-proc)
+                         (done-k-proc)
+                         #f
+                         . rest)))
+                   (quasisyntax/loc #'orig-stx
+                     (let ()
+                       (define (done-k-proc) (#%expression (values* fold-init ...)))
+                       (define-syntax inner-recur/foldr
+                         #,(if delay?
+                               #'(make-inner-recur/foldr/lazy
+                                  (list (quote-syntax fold-var) ...)
+                                  (quote-syntax delayed-id)
+                                  (quote-syntax delayer-id))
+                               #'(make-inner-recur/foldr/strict
+                                  (list (quote-syntax fold-var) ...))))
+                       #,(if result-expr
+                             ;; Make sure `fold-var`s in `result-expr` are also delayed, if relevant
+                             #`(inner-recur/foldr () [#,result-expr] #,loop-stx)
+                             loop-stx)))]
+                  [else
+                   (define loop-stx
+                     (quasisyntax/loc #'orig-stx
+                       (for/fold/derived/final [orig-stx #,for*?]
+                         ([fold-var fold-init] ...)
+                         (values* fold-var ...)
+                         . rest)))
+                   (if result-expr
+                       (quasisyntax/loc #'orig-stx
+                         (let-values ([(fold-var ...) #,loop-stx])
+                           #,result-expr))
+                       loop-stx)]))))]
+          [(_ orig-stx . rst)
+           (raise-syntax-error #f "bad syntax" #'orig-stx)]))
+
+      (values (make #f #f) (make #t #f) (make #f #t) (make #t #t))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
@@ -1738,14 +1827,17 @@
          (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine)
          (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine))]))
 
-  (define-syntax (for/fold stx)
-    (syntax-case stx ()
-      [(_ . rest) (syntax-protect
-                   (quasisyntax/loc stx (for/fold/derived #,stx . rest)))]))
-  (define-syntax (for*/fold stx)
-    (syntax-case stx ()
-      [(_ . rest) (syntax-protect
-                   (quasisyntax/loc stx (for*/fold/derived #,stx . rest)))]))
+  (define-syntaxes (for/fold for*/fold for/foldr for*/foldr)
+    (let ()
+      (define ((make f/f/d-id) stx)
+        (syntax-case stx ()
+          [(_ . rest)
+           (syntax-protect (quasisyntax/loc stx
+                             (#,f/f/d-id #,stx . rest)))]))
+      (values (make #'for/fold/derived)
+              (make #'for*/fold/derived)
+              (make #'for/foldr/derived)
+              (make #'for*/foldr/derived))))
 
   (define-for-variants (for for*)
     ()

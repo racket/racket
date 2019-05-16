@@ -1,26 +1,29 @@
 #lang racket/base
 (require "private/promise.rkt" (for-syntax racket/base))
-(provide delay lazy force promise? promise-forced? promise-running?)
+(provide delay lazy force promise? promise-forced? promise-running? promise/name?
+         (rename-out [delay/name* delay/name]
+                     [delay/strict* delay/strict]
+                     [delay/sync* delay/sync]
+                     [delay/thread* delay/thread]
+                     [delay/idle* delay/idle]))
 
 ;; ----------------------------------------------------------------------------
 ;; More delay-like values, with different ways of deferring computations
 
 (define-struct (promise/name promise) ()
   #:property prop:force (λ(p) ((pref p))))
-(provide (rename-out [delay/name* delay/name]) promise/name?)
 (define delay/name make-promise/name)
-(define-syntax (delay/name* stx) (make-delayer stx #'delay/name '()))
+(define-syntax delay/name* (delayer #'delay/name '()))
 
 ;; mostly to implement srfi-45's `eager'
 (define-struct (promise/strict promise) ()
   #:property prop:force (λ(p) (reify-result (pref p)))) ; never a thunk
-(provide (rename-out [delay/strict* delay/strict]))
 (define (delay/strict thunk)
   ;; could use `reify-result' here to capture exceptions too, or just create a
   ;; promise and immediately force it, but no point since if there's an
   ;; exception then the promise value is never used.
   (make-promise/strict (call-with-values thunk list)))
-(define-syntax (delay/strict* stx) (make-delayer stx #'delay/strict '()))
+(define-syntax delay/strict* (delayer #'delay/strict '()))
 
 ;; utility struct
 (define-struct (running-thread running) (thread))
@@ -82,13 +85,12 @@
   (λ(p) (define v (pref p))
         (wrap-evt (if (syncinfo? v) (syncinfo-done-evt v) always-evt) void)))
 
-(provide (rename-out [delay/sync* delay/sync]))
 (define (delay/sync thunk)
   (define done-sema (make-semaphore 0))
   (make-promise/sync (make-syncinfo thunk
                                     (semaphore-peek-evt done-sema) done-sema
                                     (make-semaphore 1))))
-(define-syntax (delay/sync* stx) (make-delayer stx #'delay/sync '()))
+(define-syntax delay/sync* (delayer #'delay/sync '()))
 
 ;; threaded promises
 
@@ -110,7 +112,6 @@
         (wrap-evt (if (running? v) (running-thread-thread v) always-evt)
                   void)))
 
-(provide (rename-out [delay/thread* delay/thread]))
 (define (delay/thread thunk group)
   (unless (or (not group)
               (thread-group? group))
@@ -135,8 +136,7 @@
   (semaphore-post initialized-sema)
   p)
 (define-syntax delay/thread*
-  (let ([kwds (list (cons '#:group #'(make-thread-group)))])
-    (λ(stx) (make-delayer stx #'delay/thread kwds))))
+  (delayer #'delay/thread (list (cons '#:group #'(make-thread-group)))))
 
 (define-struct (promise/idle promise/thread) ()
   #:property prop:force
@@ -152,7 +152,6 @@
              (pref p))
            v))))
 
-(provide (rename-out [delay/idle* delay/idle]))
 (define (delay/idle thunk wait-for work-while tick use*)
   (unless (evt? wait-for)
     (raise-argument-error 'delay/idle "evt?" wait-for))
@@ -211,8 +210,7 @@
                                (or (object-name thunk) 'idle-thread))))
   p)
 (define-syntax delay/idle*
-  (let ([kwds (list (cons '#:wait-for   #'(system-idle-evt))
-                    (cons '#:work-while #'(system-idle-evt))
-                    (cons '#:tick       #'0.2)
-                    (cons '#:use        #'0.12))])
-    (λ(stx) (make-delayer stx #'delay/idle kwds))))
+  (delayer #'delay/idle (list (cons '#:wait-for   #'(system-idle-evt))
+                              (cons '#:work-while #'(system-idle-evt))
+                              (cons '#:tick       #'0.2)
+                              (cons '#:use        #'0.12))))

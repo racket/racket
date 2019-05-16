@@ -3,15 +3,22 @@
            "more-scheme.rkt"
            "define.rkt"
            (rename "define-struct.rkt" define-struct define-struct*)
-           (for-syntax '#%kernel "stxcase-scheme.rkt" "name.rkt")
+           (for-syntax '#%kernel
+                       "small-scheme.rkt"
+                       "define.rkt"
+                       "struct.rkt"
+                       "stxcase-scheme.rkt"
+                       "name.rkt")
            '#%unsafe)
 (#%provide force promise? promise-forced? promise-running?
+           (rename lazy* lazy)
+           (rename delay* delay)
            ;; provided to create extensions
            (struct promise ()) (protect pref pset!) prop:force reify-result
            promise-forcer
            promise-printer
            (struct running ()) (struct reraise ())
-           (for-syntax make-delayer))
+           (for-syntax delayer delayer?))
 
 ;; This module implements "lazy" (composable) promises and a `force'
 ;; that is iterated through them.
@@ -197,59 +204,64 @@
 
 ;; template for all delay-like constructs
 ;; (with simple keyword matching: keywords is an alist with default exprs)
-(define-for-syntax (make-delayer stx maker keywords)
-  ;; no `cond', `and', `or', `let', `define', etc here
-  (letrec-values
-      ([(exprs+kwds)
-        (lambda (stxs exprs kwds)
-          (if (null? stxs)
-            (values (reverse exprs) (reverse kwds))
-            (if (not (keyword? (syntax-e (car stxs))))
-              (exprs+kwds (cdr stxs) (cons (car stxs) exprs) kwds)
-              (if (if (pair? (cdr stxs))
-                    (if (assq (syntax-e (car stxs)) keywords)
-                      (not (assq (syntax-e (car stxs)) kwds))
-                      #f)
-                    #f)
-                (exprs+kwds (cddr stxs) exprs
-                            (cons (cons (syntax-e (car stxs)) (cadr stxs))
-                                  kwds))
-                (values #f #f)))))]
-       [(stxs) (syntax->list stx)]
-       [(exprs kwds) (exprs+kwds (if stxs (cdr stxs) '()) '() '())]
-       [(kwd-args) (if kwds
-                     (map (lambda (k)
-                            (let-values ([(x) (assq (car k) kwds)])
-                              (if x (cdr x) (cdr k))))
-                          keywords)
-                     #f)]
-       ;; some strange bug with `syntax-local-expand-expression' makes this not
-       ;; work well with identifiers, so turn the name into a symbol to work
-       ;; around this for now
-       [(name0) (syntax-local-infer-name stx)]
-       [(name) (if (syntax? name0) (syntax-e name0) name0)]
-       [(unwind-promise) 
-        (lambda (stx unwind-recur)
-          (syntax-case stx ()
-            [(#%plain-lambda () body) (unwind-recur #'body)]))])
-    (syntax-case stx ()
-      [_ (pair? exprs) ; throw a syntax error if anything is wrong
-         (with-syntax ([(expr ...) exprs]
-                       [(kwd-arg ...) kwd-args])
-           (with-syntax ([proc 
-                          (stepper-syntax-property
-                           (syntax-property
-                            (syntax/loc stx (lambda () expr ...))
-                            'inferred-name name)
-                           'stepper-hint unwind-promise)]
-                         [make maker])
-             (syntax/loc stx (make proc kwd-arg ...))))])))
+(begin-for-syntax
+  (struct delayer (maker keywords)
+    #:property prop:procedure
+    (lambda (self stx)
+      (define keywords (delayer-keywords self))
+
+      (define (parse-exprs+kwds stxs)
+        (let loop ([stxs stxs]
+                   [exprs '()]
+                   [kwds '()])
+          (syntax-case stxs ()
+            [()
+             (values (reverse exprs) (reverse kwds))]
+            [(expr . rest)
+             (not (keyword? (syntax-e #'expr)))
+             (loop #'rest (cons #'expr exprs) kwds)]
+            [(kw-stx expr . rest)
+             (not (keyword? (syntax-e #'expr)))
+             (let ([kw (syntax-e #'kw-stx)])
+               (cond
+                 [(not (assq kw keywords))
+                  (raise-syntax-error #f "unrecognized option" stx #'kw-stx)]
+                 [(assq kw kwds)
+                  (raise-syntax-error #f "duplicate option" stx #'kw-stx)]
+                 [else
+                  (loop #'rest exprs (cons (cons kw #'expr) kwds))]))]
+            [(kw-stx . rest)
+             (raise-syntax-error #f "missing argument for option" stx #'kw-stx)]
+            [_
+             (raise-syntax-error #f "bad syntax" stx stxs)])))
+
+      (define (unwind-promise stx unwind-recur)
+        (syntax-case stx ()
+          [(#%plain-lambda () body) (unwind-recur #'body)]))
+
+      (syntax-case stx ()
+        [(_ . exprs+kwds)
+         (let ()
+           (define-values (exprs kwds) (parse-exprs+kwds #'exprs+kwds))
+           (with-syntax ([(expr ...) exprs]
+                         [(kwd-arg ...) (map (lambda (k)
+                                               (cond
+                                                 [(assq (car k) kwds) => cdr]
+                                                 [else (cdr k)]))
+                                             keywords)])
+             (with-syntax ([proc 
+                            (stepper-syntax-property
+                             (syntax-property
+                              (syntax/loc stx (lambda () expr ...))
+                              'inferred-name (syntax-local-infer-name stx))
+                             'stepper-hint unwind-promise)]
+                           [make (delayer-maker self)])
+               (syntax-protect (syntax/loc stx (make proc kwd-arg ...))))))]))))
 
 ;; Creates a composable promise
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
-(#%provide (rename lazy* lazy))
 (define lazy make-composable-promise)
-(define-syntax (lazy* stx) (syntax-protect (make-delayer stx #'lazy '())))
+(define-syntax lazy* (delayer #'lazy '()))
 
 ;; Creates a (generic) promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
@@ -259,9 +271,8 @@
 ;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
 ;; (This is not needed with a lazy language (see the above URL for details),
 ;; but provided for regular delay/force uses.)
-(#%provide (rename delay* delay))
 (define delay make-promise)
-(define-syntax (delay* stx) (syntax-protect (make-delayer stx #'delay '())))
+(define-syntax delay* (delayer #'delay '()))
 
 ;; For simplicity and efficiency this code uses thunks in promise values for
 ;; exceptions: this way, we don't need to tag exception values in some special
