@@ -694,4 +694,12 @@
    #'(eval '(->* [#:a any/c] [#:a any/c] void?))
    (λ (x) (and (exn:fail:syntax? x) (regexp-match #rx"->[*]: duplicate keyword" (exn-message x)))))
 
+  (test/neg-blame
+   'header.1
+   #:header-of-message "contract violation"
+   '((contract (-> integer? integer?) (λ (x) #f) 'pos 'neg) #f))
+  (test/pos-blame
+   'header.2
+   #:header-of-message "broke its own contract"
+   '((contract (-> integer? integer?) (λ (x) #f) 'pos 'neg) 11))
   )
