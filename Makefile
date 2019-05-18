@@ -136,6 +136,7 @@ win32-as-is:
 PREFIX = 
 
 CONFIG_PREFIX_ARGS = --prefix="$(PREFIX)" --enable-macprefix
+UNIXSTYLE_CONFIG_qq = MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(CONFIG_PREFIX_ARGS)" CONFIG_IN_PLACE_ARGS=""
 UNIX_CATALOG = build/local/catalog
 UNIX_RACO_ARGS = $(JOB_OPTIONS) --catalog $(UNIX_CATALOG) --auto -i
 UNIX_BASE_ARGS = SELF_FLAGS_qq="" SKIP_DESTDIR_FIX="skip"
@@ -150,7 +151,7 @@ cpus-unix-style:
 
 plain-unix-style:
 	if [ "$(PREFIX)" = "" ] ; then $(MAKE) error-need-prefix ; fi
-	$(MAKE) base MORE_CONFIGURE_ARGS="$(MORE_CONFIGURE_ARGS) $(CONFIG_PREFIX_ARGS)" $(UNIX_BASE_ARGS)
+	$(MAKE) base $(UNIXSTYLE_CONFIG_qq) $(UNIX_BASE_ARGS)
 	$(MAKE) set-src-catalog
 	$(MAKE) local-catalog
 	"$(DESTDIR)$(PREFIX)/bin/raco" pkg install $(UNIX_RACO_ARGS) $(REQUIRED_PKGS) $(PKGS)
@@ -227,10 +228,11 @@ win32-remove-setup-dlls:
 	IF EXIST racket\lib\ssleay32.dll cmd /c del racket\lib\ssleay32.dll
 
 SRC_MAKEFILE_CONFIG = configure
+CONFIG_IN_PLACE_ARGS = --enable-origtree
 
 racket/src/build/Makefile: racket/src/$(SRC_MAKEFILE_CONFIG) racket/src/Makefile.in
 	mkdir -p racket/src/build
-	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	cd racket/src/build; ../$(SRC_MAKEFILE_CONFIG) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 
 MORE_CROSS_CONFIGURE_ARGS =
 
@@ -360,11 +362,11 @@ nothing-after-base:
 
 racket/src/build/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in racket/src/cfg-cs
 	mkdir -p cd racket/src/build/cs/c
-	cd racket/src/build/cs/c; ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	cd racket/src/build/cs/c; ../../../cs/c/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 	$(MAKE) $(CS_CONFIG_TARGET)
 
 run-cfg-cs:
-	cd racket/src/build; ../cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+	cd racket/src/build; ../cfg-cs $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS) $(CONFIG_IN_PLACE_ARGS)
 
 no-cfg-cs:
 	echo done

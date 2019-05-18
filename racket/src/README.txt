@@ -169,8 +169,10 @@ Detailed instructions:
     current directory, "[here]" is possibly unnecessary, or possibly
     just "./", depending on your shell and PATH setting.
 
-    If the `--prefix` flag is omitted, the executables are built for
-    an in-place installation (i.e., the parent of the directory
+    If the `--prefix` flag is omitted and if directories like `bindir`
+    and `libdir` appear to be the default paths or the
+    `--enable-origtree` flag is specified, then executables are built
+    for an in-place installation (i.e., the parent of the directory
     containing this README will be used directly). Unless
     `--enable-shared` is used, the "racket" directory can be moved
     later; most system administrators would recommend that you use
