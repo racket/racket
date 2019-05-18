@@ -2333,12 +2333,9 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	      name = SCHEME_STRUCT_NAME_SYM(obj);
             }
 
-            s = scheme_symbol_name_and_size(name, (uintptr_t *)&l, 
-                                            (pp->print_struct
-                                             ? SCHEME_SNF_FOR_TS
-                                             : (pp->can_read_pipe_quote 
-                                                ? SCHEME_SNF_PIPE_QUOTE
-                                                : SCHEME_SNF_NO_PIPE_QUOTE)));
+            s = scheme_symbol_val(name);
+            l = SCHEME_SYM_LEN(name);
+
             print_utf8_string(pp, s, 0, l);
 	    PRINTADDRESS(pp, obj);
 	    print_utf8_string(pp, ">", 0, 1);

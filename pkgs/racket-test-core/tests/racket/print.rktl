@@ -144,6 +144,12 @@
 
   (ptest "'(#<procedure:add1>)" (list add1))
   (ptest "'#(#<procedure:add1>)" (vector add1))
+  (ptest "#<procedure:add1>" add1)
+  (ptest "#<procedure:x->y>" (procedure-rename add1 'x->y))
+  (ptest "#<procedure:#x,y>" (procedure-rename add1 '|#x,y|))
+  (let ()
+    (struct a (x))
+    (ptest "#<procedure:a->x>" (procedure-rename a-x 'a->x)))
 
   (ptest "(arity-at-least 1)" (arity-at-least 1))
 
