@@ -279,6 +279,12 @@ A @litchar{#} in an @nunterm{inexact} number is the same as
 @litchar{0}, but @litchar{#} can be used to suggest
 that the digit's actual value is unknown.
 
+All letters in a number representation are parsed case-insensitively,
+independent of the @racket[read-case-sensitive] parameter. For
+example, @litchar{#I#D+InF.F+3I} is parsed the same as
+@litchar{#i#d+inf.f+3i}. In the grammar below, each literal lowercase
+letter stands for both itself and its uppercase form.
+
 @BNF[(list @nunterm{number} @BNF-alt[@nunterm{exact}
                                      @nunterm{inexact}])
      (list @nunterm{exact} @BNF-alt[@nunterm{exact-rational}
