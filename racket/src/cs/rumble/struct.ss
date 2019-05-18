@@ -488,7 +488,7 @@
                                (record? (impersonator-val v) rtd))))
                     (string->symbol (string-append (symbol->string name) "?")))])
          (register-struct-constructor! ctr)
-         (register-struct-constructor! pred)
+         (register-struct-predicate! pred)
          (values rtd
                  ctr
                  pred
