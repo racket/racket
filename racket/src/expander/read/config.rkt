@@ -31,7 +31,7 @@
                       * pos
                       * indentations  ; stack of `indentation` records
                       * keep-comment? ; make main dispatch return on comment
-                      parameter-override ; mash of parameter -> value
+                      parameter-override ; hash of parameter -> value
                       parameter-cache   ; hash of parameter -> value
                       st)) ; other shared mutable state
 
@@ -99,7 +99,9 @@
                 [keep-comment? keep-comment?]
                 [st (if local-graph?
                         (read-config-state #f #f)
-                        (read-config-st config))]))
+                        (read-config-st config))]
+                [parameter-override #hasheq()]
+                [parameter-cache (make-hasheq)]))
 
 (define (port+config->srcloc in config
                              #:end-pos [given-end-pos #f])

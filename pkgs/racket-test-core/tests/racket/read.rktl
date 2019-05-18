@@ -1444,6 +1444,37 @@
                     (read-syntax 'm (open-input-string "#lang reader 'provides-a-reader-to-check-phase"))))])
     (anything)))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([read-case-sensitive #t])
+  (define (myread [in (current-input-port)])
+    (parameterize-read
+     (lambda () (read in))))
+
+  (define (parameterize-read do-read)
+    (parameterize ([current-readtable (make-a-readtable (current-readtable))])
+      (do-read)))
+  
+  (define (make-a-readtable base)
+    (make-readtable base
+                    #\! 'dispatch-macro read-directive
+                    #f  'non-terminating-macro (reparameterize-read base)))
+
+  (define (reparameterize-read base)
+    (case-lambda
+      [(c in)                  (read/recursive in c base)]
+      [(c in src line col pos) (read-syntax/recursive src in c base)]))
+  
+  (define (read-directive c in src line col pos)
+    (read-case-sensitive #f)
+    (make-special-comment #f))
+
+  ;; Parameter change takes effect for recursive read:
+  (test 'abc myread (open-input-string "#!ABC"))
+  ;; Change also sticks:
+  (test 'abc myread (open-input-string "ABC")))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; readtable has `report-errs`:
