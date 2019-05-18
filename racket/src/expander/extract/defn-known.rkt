@@ -1,5 +1,6 @@
 #lang racket/base
-(require racket/match
+(require racket/list
+         racket/match
          "../run/status.rkt"
          "../compile/side-effect.rkt"
          "../compile/known.rkt")
@@ -37,10 +38,12 @@
                                             (struct-shape-num-parent-fields shape))]
                                         [else (struct-shape-num-fields shape)]))))))]
    ;; Recognize structure-property declaration
-   [(and (= 3 (length syms)) (simple-property? rhs))
-    (hash-set! seen-defns (list-ref syms 0) (known-property))
-    (hash-set! seen-defns (list-ref syms 1) (known-function 1 #t))
-    (hash-set! seen-defns (list-ref syms 2) (known-function 1 #t))]))
+   [(expr-known-property rhs)
+    => (lambda (vals)
+         (when (= (length syms) (length vals))
+           (for ([sym (in-list syms)]
+                 [val (in-list vals)])
+             (hash-set! seen-defns sym val))))]))
 
 (define (lambda-arity e)
   (match e
@@ -139,8 +142,45 @@
                                         'mutator)))))]
       [_ #f])))
 
-;; checks for properties without guards
-(define (simple-property? e)
+;; checks for properties without guards or with guards for procedures of a known arity
+(define (expr-known-property e)
   (match e
-    [`(make-struct-type-property ,_) #t]
+    [`(make-struct-type-property ,name)
+     (expr-known-property `(make-struct-type-property ,name #f))]
+    [`(make-struct-type-property ,name ,guard)
+     (expr-known-property `(make-struct-type-property ,name ,guard '()))]
+    [`(make-struct-type-property ,name ,guard ,supers)
+     (expr-known-property `(make-struct-type-property ,name ,guard ,supers #f))]
+    [`(make-struct-type-property ,_ ,guard ,(or ''() 'null) ,_)
+     (define prop (cond
+                    [(not guard)
+                     (known-property)]
+                    [(property-function-guard-arity guard)
+                     => known-property-of-function]
+                    [else #f]))
+     (and prop (list prop
+                     (known-function 1 #t)
+                     (known-function 1 #f)))]
+    [`(let-values ([(,xs ...) ,mstp])
+        (values ,vs ...))
+     (define vals (expr-known-property mstp))
+     (and vals
+          (= (length xs) (length vals))
+          (for/and ([v (in-list vs)])
+            (memq v xs))
+          (for/list ([v (in-list vs)])
+            (list-ref vals (index-of xs v eq?))))]
+    [_ #f]))
+
+(define (property-function-guard-arity e)
+  (match e
+    [`(lambda (,v ,_)
+        (begin
+          (if (if (procedure? ,v)
+                  (procedure-arity-includes? ,v ,(? exact-nonnegative-integer? arity))
+                  #f)
+              (void)
+              ,_)
+          ,v))
+     arity]
     [_ #f]))

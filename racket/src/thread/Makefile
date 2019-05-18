@@ -12,6 +12,9 @@ thread-src:
 # a direct use of the primitive name:
 DIRECT = ++direct pthread
 
+# Make sure that the flattened form doesn't use `error`:
+DISALLOW = ++disallow error
+
 # Enable the sanity check for global state (to be avoided in
 # favor of place-local state), but declare some initialized-once
 # global state to be ok:
@@ -20,7 +23,15 @@ GLOBALS = --no-global \
           ++global-ok sync-on-channel \
           ++global-ok post-shutdown-action \
           ++global-ok get-subprocesses-time \
-          ++global-ok force-atomic-timeout-callback
+          ++global-ok force-atomic-timeout-callback \
+          ++global-ok pre-poll-callbacks \
+          ++global-ok queued-shutdowns \
+          ++global-ok place-ensure-wakeup! \
+          ++global-ok place-wakeup-initial \
+          ++global-ok place-wakeup \
+          ++global-ok compute-memory-sizes \
+          ++global-ok check-place-activity \
+          ++global-ok make-place-ports+fds
 
 GENERATE_ARGS = -t main.rkt --submod main \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \
@@ -28,7 +39,7 @@ GENERATE_ARGS = -t main.rkt --submod main \
                 --depends $(BUILDDIR)compiled/thread-dep.rktd \
                 --makefile-depends $(DEPENDSDIR)compiled/thread.rktl $(BUILDDIR)compiled/thread.d \
                 -c $(BUILDDIR)compiled/cache-src \
-                -k ../.. -s -x $(DIRECT) $(GLOBAL) \
+                -k ../.. -s -x $(DIRECT) $(DISALLOW) $(GLOBALS) \
                 -o $(BUILDDIR)compiled/thread.rktl
 
 # This target can be used with a `RACKET` that builds via `-l- setup --chain ...`

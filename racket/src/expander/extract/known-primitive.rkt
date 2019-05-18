@@ -25,4 +25,9 @@
   (hash-set! seen-defns 'procedure-arity (known-function-of-satisfying '(procedure)))
   (hash-set! seen-defns 'procedure-arity-mask (known-function-of-satisfying '(procedure)))
   (hash-set! seen-defns 'object-name (known-function 1 #t)) ; assuming no `prop:object-name`
-  (hash-set! seen-defns 'procedure-rename (known-function-of-satisfying '(procedure symbol))))
+  (hash-set! seen-defns 'procedure-rename (known-function-of-satisfying '(procedure symbol)))
+  (hash-set! seen-defns 'prop:custom-write (known-property-of-function 3))
+  (hash-set! seen-defns 'prop:method-arity-error (known-property))
+  (hash-set! seen-defns 'prop:incomplete-arity (known-property))
+  (hash-set! seen-defns 'prop:impersonator-of (known-property-of-function 1))
+  (hash-set! seen-defns 'prop:arity-string (known-property-of-function 1)))
