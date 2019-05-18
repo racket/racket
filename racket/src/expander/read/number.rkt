@@ -403,7 +403,8 @@
   (cond
     [(eqv? (string-ref s start) #\#)
      (trim-number s (fx+ 2 start) end)]
-    [(eqv? (string-ref s (fx- end 1)) #\i)
+    [(let ([c (string-ref s (fx- end 1))])
+       (or (eqv? c #\i) (eqv? c #\I)))
      (trim-number s start (fx- end 1))]
     [else (substring s start end)]))
 
@@ -519,7 +520,7 @@
     (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
    [(#\@)
     (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
-   [(#\i)
+   [(#\i #\I)
     (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
    [else
     (bad-digit c s state)]))
@@ -564,7 +565,7 @@
     (maybe (get-n)
            (lambda (n)
              (read-polar sgn n s (fx+ 1 start) end radix state)))]
-   [(#\i)
+   [(#\i #\I)
     (maybe (get-n)
            (lambda (n)
              (finish-imaginary sgn n s (fx+ 1 start) end state)))]
@@ -595,7 +596,7 @@
     (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
    [(#\@)
     (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
-   [(#\i)
+   [(#\i #\I)
     (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
    [else
     (bad-digit c s state)]))
@@ -612,7 +613,7 @@
     (read-signed-exponent sgn sgn-n exp sgn2 #f s (fx+ 1 start) end radix state)]
    [(#\. #\# #\/ #\e #\E #\d #\D #\l #\L #\f #\F #\s #\S #\t #\T)
     (bad-misplaced c s state)]
-   [(#\i)
+   [(#\i #\I)
     (if (state-has-first-half? state)
         (fail state "empty exponent `~.a`" s)
         (bad-misplaced "i" s state))]
@@ -645,7 +646,7 @@
     (maybe (get-n)
            (lambda (n)
              (read-polar sgn n s (fx+ 1 start) end radix state)))]
-   [(#\i)
+   [(#\i #\I)
     (maybe (get-n)
            (lambda (n)
              (finish-imaginary sgn n s (fx+ 1 start) end state)))]
@@ -658,7 +659,7 @@
    s start end
    [[(#\f #\F)
      (#\.)
-     (#\0 #\f #\t)]
+     (#\0 #\f #\t #\F #\T)]
     (define n (if (negative? sgn) -inf.0 +inf.0))
     (define new-state (set-exactness-by-char state (string-ref s (fx+ start 2))
                                              #:override? #t))
@@ -669,7 +670,7 @@
       (read-imag c2 sgn n (if (eqv? c2 #\+) +1 -1) s (fx+ 4 start) end radix new-state)]
      [(#\@)
       (read-polar sgn n s (fx+ 4 start) end radix new-state)]
-     [(#\i)
+     [(#\i #\I)
       (finish-imaginary sgn n s (fx+ 4 start) end new-state)]
      [else
       (bad-digit c s state)])]
@@ -683,7 +684,7 @@
    [[(#\a #\A)
      (#\n #\N)
      (#\.)
-     (#\0 #\f #\t)]
+     (#\0 #\f #\t #\F #\T)]
     (define n +nan.0)
     (define new-state (set-exactness-by-char state (string-ref s (fx+ start 3))
                                              #:override? #t))
@@ -694,7 +695,7 @@
       (read-imag c2 1 n (if (eqv? c2 #\+) +1 -1) s (fx+ 5 start) end radix new-state)]
      [(#\@)
       (read-polar 1 n s (fx+ 5 start) end radix new-state)]
-     [(#\i)
+     [(#\i #\I)
       (finish-imaginary +1 n s (fx+ 5 start) end new-state)]
      [else
       (bad-digit c s state)])]
@@ -734,7 +735,7 @@
     (maybe (get-n)
            (lambda (n)
              (read-polar sgn n s (fx+ 1 start) end radix state)))]
-   [(#\i)
+   [(#\i #\I)
     (maybe (get-n)
            (lambda (n)
              (finish-imaginary sgn n s (fx+ 1 start) end state)))]
@@ -759,7 +760,7 @@
     (read-imag c sgn (get-n) (if (eqv? c #\+) +1 -1) s (fx+ 1 start) end radix state)]
    [(#\@)
     (read-polar sgn (get-n) s (fx+ 1 start) end radix state)]
-   [(#\i)
+   [(#\i #\I)
     (finish-imaginary sgn (get-n) s (fx+ 1 start) end state)]
    [else
     (bad-digit c s state)]))

@@ -269,23 +269,24 @@
     (let* ([pair (car l)]
            [v (car pair)]
            [s (cadr pair)])
-      (cond
-       [(memq v '(X DBZ NOE))
-        (err/rt-test (readstr s) exn:fail:read?)
-        (test #f string->number s)
-        (test #t string? (string->number s 10 'read))]
-       [v 
-        (test v readstr s)
-        (test (if (symbol? v) #f v) string->number s)
-        (test (if (symbol? v) #f v) string->number s 10 'read)]
-       [else 
-        (test (string->symbol s) readstr s)
-        (test #f string->number s)
-        (test #f string->number s 10 'read)
-        (unless (regexp-match "#" s)
-          (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
-          (test #f string->number (string-append "#d" s))
-          (test #t string? (string->number (string-append "#d" s) 10 'read)))]))
+      (for ([s (in-list (list s (string-upcase s)))])
+        (cond
+          [(memq v '(X DBZ NOE))
+           (err/rt-test (readstr s) exn:fail:read?)
+           (test #f string->number s)
+           (test #t string? (string->number s 10 'read))]
+          [v 
+           (test v readstr s)
+           (test (if (symbol? v) #f v) string->number s)
+           (test (if (symbol? v) #f v) string->number s 10 'read)]
+          [else 
+           (test (string->symbol s) readstr s)
+           (test #f string->number s)
+           (test #f string->number s 10 'read)
+           (unless (regexp-match "#" s)
+             (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
+             (test #f string->number (string-append "#d" s))
+             (test #t string? (string->number (string-append "#d" s) 10 'read)))])))
     (loop (cdr l))))
 
 (define (make-exn:fail:read:eof?/span start span)
