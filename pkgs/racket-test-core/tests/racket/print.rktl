@@ -396,5 +396,56 @@
   (try (box 7) #:ok? #f))
 
 ;; ----------------------------------------
+;; Test print parameters
+
+(let ()
+  (define (test-print/all x wri dis prn prx pr1)
+    (define (in-string f v)
+      (let ([o (open-output-bytes)])
+        (f v o)
+        (get-output-string o)))
+    (define (print/not-expr v [o (current-output-port)])
+      (parameterize ([print-as-expression #f])
+        (print v o)))
+    (define (print/depth-1 v [o (current-output-port)])
+      (print v o 1))
+    (test wri in-string write x)
+    (test dis in-string display x)
+    (test prn in-string print/not-expr x)
+    (test prx in-string print x)
+    (test pr1 in-string print/depth-1 x))
+
+  (define-syntax (for*/parameterize stx)
+    (syntax-case stx ()
+      [(_ ([p cl] rest ...) body ...)
+       #'(for ([v cl])
+           (parameterize ([p v])
+             (for*/parameterize (rest ...) body ...)))]
+      [(_ () body ...)
+       #'(let () body ...)]))
+
+  (for*/parameterize ([print-pair-curly-braces (in-list '(#t #f))]
+                      [print-mpair-curly-braces (in-list '(#t #f))])
+    (parameterize ([print-mpair-curly-braces #t])
+      (test-print/all (mcons 1 2)
+                      "{1 . 2}" "{1 . 2}" "{1 . 2}" "(mcons 1 2)" "{1 . 2}")
+      (test-print/all (mcons 1 (mcons 2 3))
+                      "{1 2 . 3}" "{1 2 . 3}" "{1 2 . 3}" "(mcons 1 (mcons 2 3))" "{1 2 . 3}")
+      (test-print/all (mcons 1 '())
+                      "{1}" "{1}" "{1}" "(mcons 1 '())" "{1}")
+      (test-print/all (mcons 1 (mcons 2 '()))
+                      "{1 2}" "{1 2}" "{1 2}" "(mcons 1 (mcons 2 '()))" "{1 2}"))
+    (parameterize ([print-mpair-curly-braces #f])
+      (test-print/all (mcons 1 2)
+                      "(1 . 2)" "(1 . 2)" "(1 . 2)" "(mcons 1 2)" "(1 . 2)")
+      (test-print/all (mcons 1 (mcons 2 3))
+                      "(1 2 . 3)" "(1 2 . 3)" "(1 2 . 3)" "(mcons 1 (mcons 2 3))" "(1 2 . 3)")
+      (test-print/all (mcons 1 '())
+                      "(1)" "(1)" "(1)" "(mcons 1 '())" "(1)")
+      (test-print/all (mcons 1 (mcons 2 '()))
+                      "(1 2)" "(1 2)" "(1 2)" "(mcons 1 (mcons 2 '()))" "(1 2)"))
+    (void)))
+
+;; ----------------------------------------
 
 (report-errs)
