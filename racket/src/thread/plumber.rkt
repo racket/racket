@@ -43,10 +43,14 @@
   (plumber-flush-all/wrap p (lambda (proc h) (proc h))))
 
 (define (plumber-flush-all/wrap p app)
-  (for ([(h proc) (in-hash (plumber-callbacks p))])
-    (app proc h))
-  (for ([(h proc) (in-hash (plumber-weak-callbacks p))])
-    (app proc h)))
+  ;; Spec requires getting all callbacks before running any
+  (define procs+hs
+    (for*/list ([cbs (in-list (list (plumber-callbacks p)
+                                    (plumber-weak-callbacks p)))]
+                [(h proc) (in-hash cbs)])
+      (cons proc h)))
+  (for ([proc+h (in-list procs+hs)])
+    (app (car proc+h) (cdr proc+h))))
 
 (define/who (plumber-flush-handle-remove! h)
   (check who plumber-flush-handle? h)
