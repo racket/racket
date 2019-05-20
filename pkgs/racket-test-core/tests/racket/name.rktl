@@ -124,6 +124,9 @@
   (test (string->symbol "CP")
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) make-CP)"))))
+  (test (string->symbol "mk-CP")
+	object-name
+	(eval (read (open-input-string "(let () (struct CP (a) #:constructor-name mk-CP) mk-CP)"))))
   (test (string->symbol "CP?")
 	object-name
 	(eval (read (open-input-string "(let () (define-struct CP (a)) CP?)"))))

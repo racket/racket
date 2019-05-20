@@ -64,12 +64,25 @@
                                                       ,@(schemify-body schemify knowns (struct-type-info-rest sti))))))
            (define ,make-s ,(let ([ctr `(record-constructor
                                          (make-record-constructor-descriptor ,struct:s #f #f))])
-                              (if (struct-type-info-pure-constructor? sti)
-                                  ctr
-                                  `(struct-type-constructor-add-guards ,ctr ,struct:s ',(struct-type-info-name sti)))))
+                              (define ctr-expr
+                                (if (struct-type-info-pure-constructor? sti)
+                                    ctr
+                                    `(struct-type-constructor-add-guards ,ctr ,struct:s ',(struct-type-info-name sti))))
+                              (define name-expr (struct-type-info-constructor-name-expr sti))
+                              (match name-expr
+                                [`#f
+                                 (wrap-property-set ctr-expr 'inferred-name (struct-type-info-name sti))]
+                                [`',sym
+                                 (if (symbol? sym)
+                                     (wrap-property-set ctr-expr 'inferred-name sym)
+                                     `(procedure-rename ,ctr-expr ,name-expr))]
+                                [`,_
+                                 `(procedure-rename ,ctr-expr ,name-expr)])))
            (define ,raw-s? (record-predicate ,struct:s))
            ,@(if can-impersonate?
-                 `((define ,s? (lambda (v) (if (,raw-s? v) #t ($value (if (impersonator? v) (,raw-s? (impersonator-val v)) #f))))))
+                 `((define ,s? ,(name-procedure
+                                 "" (struct-type-info-name sti) "" '|| "?"
+                                 `(lambda (v) (if (,raw-s? v) #t ($value (if (impersonator? v) (,raw-s? (impersonator-val v)) #f)))))))
                  null)
            ,@(for/list ([acc/mut (in-list acc/muts)]
                         [make-acc/mut (in-list make-acc/muts)])
@@ -81,10 +94,12 @@
                       `(begin
                          ,raw-def
                          (define ,acc/mut
-                           (lambda (s) (if (,raw-s? s)
-                                           (,raw-acc/mut s)
-                                           ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s
-                                                                    ',(struct-type-info-name sti) ',field-name))))))
+                           ,(name-procedure
+                             "" (struct-type-info-name sti) "-" field-name ""
+                             `(lambda (s) (if (,raw-s? s)
+                                              (,raw-acc/mut s)
+                                              ($value (impersonate-ref ,raw-acc/mut ,struct:s ,pos s
+                                                                       ',(struct-type-info-name sti) ',field-name)))))))
                       raw-def)]
                  [`(make-struct-field-mutator ,(? (lambda (v) (wrap-eq? v -set!))) ,pos ',field-name)
                   (define raw-def `(define ,raw-acc/mut (record-mutator ,struct:s ,pos)))
@@ -94,10 +109,12 @@
                       `(begin
                          ,raw-def
                          (define ,acc/mut
-                           (lambda (s v) (if (,raw-s? s)
-                                             (,raw-acc/mut s v)
-                                             ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v
-                                                                       ',(struct-type-info-name sti) ',field-name))))))
+                           ,(name-procedure
+                             "set-" (struct-type-info-name sti) "-" field-name "!"
+                             `(lambda (s v) (if (,raw-s? s)
+                                                (,raw-acc/mut s v)
+                                                ($value (impersonate-set! ,raw-acc/mut ,struct:s ,pos ,abs-pos s v
+                                                                          ',(struct-type-info-name sti) ',field-name)))))))
                       raw-def)]
                  [`,_ (error "oops")]))
            (define ,(gensym)
@@ -161,3 +178,13 @@
 (define (schemify-body schemify knowns l)
   (for/list ([e (in-list l)])
     (schemify e knowns)))
+
+(define (name-procedure pre st sep fld post proc-expr)
+  (wrap-property-set proc-expr
+                     'inferred-name
+                     (string->symbol
+                      (string-append pre
+                                     (symbol->string st)
+                                     sep
+                                     (symbol->string fld)
+                                     post))))
