@@ -1007,6 +1007,29 @@
     (compile-eval m2-expr)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; disabling module constants
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (err/rt-test (eval '(module m racket/base (define x 2) (provide x)))
+               exn:fail:contract:variable?))
+
+(parameterize ([current-namespace (make-base-namespace)]
+               [compile-enforce-module-constants #f])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (eval '(module m racket/base (define x 2) (provide x)))
+  (test 2 eval 'x))
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(module m racket/base (define x 1) (provide x)))
+  (eval '(require 'm))
+  (parameterize ([compile-enforce-module-constants #f])
+    (err/rt-test (eval '(module m racket/base (define x 2) (provide x)))
+                 exn:fail:contract:variable?)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check JIT treatement of seemingly constant imports
 
 (let ()

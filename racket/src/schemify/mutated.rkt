@@ -21,7 +21,7 @@
 ;; definition of an identifier, because that will abort the enclosing
 ;; linklet.
 
-(define (mutated-in-body l exports prim-knowns knowns imports unsafe-mode?)
+(define (mutated-in-body l exports prim-knowns knowns imports unsafe-mode? enforce-constant?)
   ;; Find all `set!`ed variables, and also record all bindings
   ;; that might be used too early
   (define mutated (make-hasheq))
@@ -35,7 +35,11 @@
     (match form
       [`(define-values (,ids ...) ,rhs)
        (for ([id (in-list ids)])
-         (hash-set! mutated (unwrap id) 'not-ready))]
+         (hash-set! mutated (unwrap id) (if enforce-constant?
+                                            'not-ready
+                                            ;; If constants should not be enforced, then
+                                            ;; treat all variable as mutated:
+                                            'set!ed)))]
       [`,_ (void)]))
   ;; Walk through the body:
   (for/fold ([prev-knowns knowns]) ([form (in-list l)])

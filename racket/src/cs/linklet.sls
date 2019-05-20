@@ -507,6 +507,8 @@
                                  (let ([m  (|#%app| current-compile-target-machine)])
                                    (and (not (eq? m (machine-type)))
                                         m))))
+      (define enforce-constant? (|#%app| compile-enforce-module-constants))
+      (define inline? (not (|#%app| compile-context-preservation-enabled)))
       (performance-region
        'schemify
        (define jitify-mode?
@@ -523,6 +525,8 @@
                            jitify-mode?
                            (|#%app| compile-allow-set!-undefined)
                            #f ;; safe mode
+                           enforce-constant?
+                           inline?
                            (not use-prompt?)
                            prim-knowns
                            ;; Callback to get a specific linklet for a

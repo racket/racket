@@ -73,7 +73,7 @@
 ;; linklet imports, where #t to means that a value is expected, and #f
 ;; means that a variable (which boxes a value) is expected.
 (define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
-                          unsafe-mode? no-prompt?
+                          unsafe-mode? enforce-constant? allow-inline? no-prompt?
                           prim-knowns get-import-knowns import-keys)
   (define (im-int-id id) (unwrap (if (pair? id) (cadr id) id)))
   (define (im-ext-id id) (unwrap (if (pair? id) (car id) id)))
@@ -132,7 +132,8 @@
      ;; Schemify the body, collecting information about defined names:
      (define-values (new-body defn-info mutated)
        (schemify-body* bodys/constants-lifted prim-knowns imports exports
-                       for-jitify? allow-set!-undefined? add-import! #f unsafe-mode? no-prompt?))
+                       for-jitify? allow-set!-undefined? add-import! #f
+                       unsafe-mode? enforce-constant? allow-inline? no-prompt?))
      (define all-grps (append grps (reverse new-grps)))
      (values
       ;; Build `lambda` with schemified body:
@@ -184,16 +185,16 @@
   (define-values (new-body defn-info mutated)
     (schemify-body* l prim-knowns imports exports
                     #f #f (lambda (im ext-id index) #f)
-                    for-cify? unsafe-mode? no-prompt?))
+                    for-cify? unsafe-mode? #t #t no-prompt?))
   new-body)
 
 (define (schemify-body* l prim-knowns imports exports
                         for-jitify? allow-set!-undefined? add-import!
-                        for-cify? unsafe-mode? no-prompt?)
+                        for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt?)
   ;; Various conversion steps need information about mutated variables,
   ;; where "mutated" here includes visible implicit mutation, such as
   ;; a variable that might be used before it is defined:
-  (define mutated (mutated-in-body l exports prim-knowns (hasheq) imports unsafe-mode?))
+  (define mutated (mutated-in-body l exports prim-knowns (hasheq) imports unsafe-mode? enforce-constant?))
   ;; Make another pass to gather known-binding information:
   (define knowns
     (for/fold ([knowns (hasheq)]) ([form (in-list l)])
@@ -242,7 +243,7 @@
                                      allow-set!-undefined?
                                      add-import!
                                      for-cify? for-jitify?
-                                     unsafe-mode? no-prompt?))
+                                     unsafe-mode? allow-inline? no-prompt?))
         ;; For the case that the right-hand side won't capture a
         ;; continuation or return multiple times, we can generate a
         ;; simple definition:
@@ -378,7 +379,7 @@
 ;; Schemify `let-values` to `let`, etc., and
 ;; reorganize struct bindings.
 (define (schemify v prim-knowns knowns mutated imports exports allow-set!-undefined? add-import!
-                  for-cify? for-jitify? unsafe-mode? no-prompt?)
+                  for-cify? for-jitify? unsafe-mode? allow-inline? no-prompt?)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [v v])
     (define (schemify v)
       (define s-v
@@ -628,7 +629,8 @@
                 [`,_ #f]))
             (define (inline-rator)
               (define u-rator (unwrap rator))
-              (and (symbol? u-rator)
+              (and allow-inline?
+                   (symbol? u-rator)
                    (let-values ([(k im) (find-known+import u-rator prim-knowns knowns imports mutated)])
                      (and (known-procedure/can-inline? k)
                           (left-left-lambda-convert
