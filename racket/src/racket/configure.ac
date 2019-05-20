@@ -78,7 +78,7 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 m4_include(../ac/strip_arg.m4)
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
-AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
+m4_include(../ac/ubsan_arg.m4)
 AC_ARG_ENABLE(jitframe,[  --enable-jitframe       x86_64: use frame pointer for internal calls])
 
 m4_include(../ac/crossany_arg.m4)
@@ -1289,13 +1289,7 @@ fi
 
 ############## ubsan ################
 
-if test "${enable_ubsan}" = "yes" ; then
-   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
-   CFLAGS="$CFLAGS $UBSAN"
-   CPPFLAGS="$CPPFLAGS $UBSAN"
-   PREFLAGS="$PREFLAGS $UBSAN"
-   LDFLAGS="$LDFLAGS $UBSAN"
-fi
+m4_include(../ac/ubsan.m4)
 
 ############## usersetup ################
 

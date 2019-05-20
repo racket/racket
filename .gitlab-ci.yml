@@ -129,6 +129,7 @@ test:ubsan:
   after_script:
     - grep 'runtime error' logs/*.log > runtime-errors.log
   artifacts:
+    when: always
     paths:
       - logs/
       - runtime-errors.log
@@ -161,6 +162,7 @@ test:ubsan:cs:
   after_script:
     - grep 'runtime error' cs-logs/*.log > runtime-errors.log
   artifacts:
+    when: always
     paths:
       - cs-logs/
       - runtime-errors.log
