@@ -1855,6 +1855,12 @@ the values they accept and ensure that the exported functions are treated
 parametrically. See @racket[new-∃/c] and @racket[new-∀/c] for details
 on how the clauses hide the values.
 
+If @racket[#:unprotected-submodule] appears, the identifier
+that follows it is used as the name of a submodule that
+@racket[contract-out] generates. The submodule exports all
+of the names in the @racket[contract-out], but without
+contracts.
+
 The implementation of @racket[contract-out] uses
 @racket[syntax-property] to attach properties to the code it generates
 that records the syntax of the contracts in the fully expanded program.
