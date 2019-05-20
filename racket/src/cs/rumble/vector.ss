@@ -208,8 +208,8 @@
            (let* ([o-next (impersonator-next o)]
                   [val (loop o-next)]
                   [new-val (if (vector*-chaperone? o)
-                               ((vector-chaperone-ref o) orig o-next idx val)
-                               ((vector-chaperone-ref o) o-next idx val))])
+                               (|#%app| (vector-chaperone-ref o) orig o-next idx val)
+                               (|#%app| (vector-chaperone-ref o) o-next idx val))])
              (unless (chaperone-of? new-val val)
                (raise-arguments-error 'vector-ref
                                       "chaperone produced a result that is not a chaperone of the original result"
@@ -220,8 +220,8 @@
            (let* ([o-next (impersonator-next o)]
                   [val (loop o-next)])
              (if (vector*-impersonator? o)
-                 ((vector-impersonator-ref o) orig o-next idx val)
-                 ((vector-impersonator-ref o) o-next idx val)))]
+                 (|#%app| (vector-impersonator-ref o) orig o-next idx val)
+                 (|#%app| (vector-impersonator-ref o) o-next idx val)))]
           [(vector-unsafe-impersonator? o)
            (vector-ref (vector-unsafe-impersonator-vec o)  idx)]
           [(vector-unsafe-chaperone? o)
@@ -267,19 +267,19 @@
            (cond
             [(vector-chaperone? o)
              (let ([new-val (if (vector*-chaperone? o)
-                                ((vector-chaperone-set o) orig next idx val)
-                                ((vector-chaperone-set o) next idx val))])
+                                (|#%app| (vector-chaperone-set o) orig next idx val)
+                                (|#%app| (vector-chaperone-set o) next idx val))])
                (unless (chaperone-of? new-val val)
                  (raise-arguments-error 'vector-set!
                                         "chaperone produced a result that is not a chaperone of the original result"
                                         "chaperone result" new-val
                                         "original result" val))
-               (loop next val))]
+               (loop next new-val))]
             [(vector-impersonator? o)
              (loop next
                    (if (vector*-impersonator? o)
-                       ((vector-impersonator-set o) orig next idx val)
-                       ((vector-impersonator-set o) next idx val)))]
+                       (|#%app| (vector-impersonator-set o) orig next idx val)
+                       (|#%app| (vector-impersonator-set o) next idx val)))]
             [(vector-unsafe-impersonator? o)
              (#2%vector-set! (vector-unsafe-impersonator-vec o) idx val)]
             [(vector-unsafe-chaperone? o)

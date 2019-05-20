@@ -91,7 +91,7 @@
           [(#%box? o) (#%unbox o)]
           [(box-chaperone? o)
            (let* ([val (loop (impersonator-next o))]
-                  [new-val ((box-chaperone-ref o) o val)])
+                  [new-val (|#%app| (box-chaperone-ref o) o val)])
              (unless (chaperone-of? new-val val)
                (raise-arguments-error 'unbox
                                       "chaperone produced a result that is not a chaperone of the original result"
@@ -120,13 +120,13 @@
          (let ([next (impersonator-next o)])
            (cond
             [(box-chaperone? o)
-             (let ([new-val ((box-chaperone-set o) next val)])
+             (let ([new-val (|#%app| (box-chaperone-set o) next val)])
                (unless (chaperone-of? new-val val)
                  (raise-arguments-error 'set-box!
                                         "chaperone produced a result that is not a chaperone of the original result"
                                         "chaperone result" new-val
                                         "original result" val))
-               (loop next val))]
+               (loop next new-val))]
             [(box-impersonator? o)
              (loop next ((box-impersonator-set o) next val))]
             [else (loop next val)]))]))])))

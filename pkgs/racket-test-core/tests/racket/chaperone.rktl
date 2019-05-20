@@ -149,6 +149,28 @@
     (test #f unbox b)
     (test #f unbox b2)))
 
+;; check that `set-box!` uses the result of chaperone/impersonator
+(as-chaperone-or-impersonator
+ ([chaperone-box impersonate-box])
+ (let ([b (box (vector 1))])
+   (let ([b2 (chaperone-box b 
+                            (lambda (b v) v)
+                            (lambda (b v)
+                              (chaperone-vector
+                               v
+                               (lambda (b i v) (if (eq? v 'ok)
+                                                   v
+                                                   (error "oops")))
+                               (lambda (b i v) #f))))])
+     (test (void) 'ok-vector-set! (set-box! b2 (vector 8)))
+     (let ([inner (unbox b2)])
+       (test 'oops 'bad-vector-ref-from-box
+             (with-handlers ([exn:fail? (lambda (exn) 'oops)])
+               (vector-ref inner 0))))
+     (test (void) 'ok-set-box! (set-box! b2 (vector 'ok)))
+     (let ([inner (unbox b2)])
+       (test 'ok 'ok-vector-ref-from-box (vector-ref inner 0))))))
+
 ;; ----------------------------------------
 
 (test #t chaperone?/impersonator (chaperone-vector (vector 1 2 3) (lambda (b i v) v) (lambda (b i v) v)))
@@ -216,6 +238,28 @@
     (test (void) 'ok-vector-set! (vector-set! b2 0 #f))
     (test #f vector-ref b2 0)
     (err/rt-test (vector-set! b2 0 0))))
+
+;; check that `vector-set!` uses the result of chaperone/impersonator
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector])
+ (let ([b (vector (vector 1))])
+   (let ([b2 (chaperone-vector b 
+                               (lambda (b i v) v)
+                               (lambda (b i v)
+                                 (chaperone-vector
+                                  v
+                                  (lambda (b i v) (if (eq? v 'ok)
+                                                      v
+                                                      (error "oops")))
+                                  (lambda (b i v) #f))))])
+     (test (void) 'ok-vector-set! (vector-set! b2 0 (vector 8)))
+     (let ([inner (vector-ref b2 0)])
+       (test 'oops 'bad-vector-ref
+             (with-handlers ([exn:fail? (lambda (exn) 'oops)])
+               (vector-ref inner 0))))
+     (test (void) 'ok-vector-set! (vector-set! b2 0 (vector 'ok)))
+     (let ([inner (vector-ref b2 0)])
+       (test 'ok 'ok-vector-ref (vector-ref inner 0))))))
 
 ;; no impersonator-of checks in a impersonator:
 (let ([b (vector 0)])

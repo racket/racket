@@ -1064,7 +1064,7 @@
   (impersonate-hash-ref/set 'hash-ref #f
                             (lambda (ht k v) (hash-ref ht k none))
                             (lambda (procs ht k none-v)
-                              ((hash-procs-ref procs) ht k))
+                              (|#%app| (hash-procs-ref procs) ht k))
                             hash-procs-ref
                             ht k none))
 
@@ -1072,7 +1072,7 @@
   (impersonate-hash-ref/set 'hash-set! #t
                             hash-set!
                             (lambda (procs ht k v)
-                              ((hash-procs-set procs) ht k v))
+                              (|#%app| (hash-procs-set procs) ht k v))
                             hash-procs-set
                             ht k v))
 
@@ -1080,7 +1080,7 @@
   (impersonate-hash-ref/set 'hash-set #t
                             hash-set
                             (lambda (procs ht k v)
-                              ((hash-procs-set procs) ht k v))
+                              (|#%app| (hash-procs-set procs) ht k v))
                             hash-procs-set
                             ht k v))
 
@@ -1088,7 +1088,7 @@
   (impersonate-hash-ref/set 'hash-remove! #t
                             (lambda (ht k false-v) (hash-remove! ht k))
                             (lambda (procs ht k false-v)
-                              (values ((hash-procs-remove procs) ht k) #f))
+                              (values (|#%app| (hash-procs-remove procs) ht k) #f))
                             hash-procs-remove
                             ht k #f))
 
@@ -1096,7 +1096,7 @@
   (impersonate-hash-ref/set 'hash-remove #t
                             (lambda (ht k false-v) (hash-remove ht k))
                             (lambda (procs ht k false-v)
-                              (values ((hash-procs-remove procs) ht k) #f))
+                              (values (|#%app| (hash-procs-remove procs) ht k) #f))
                             hash-procs-remove
                             ht k #f))
 
@@ -1172,7 +1172,7 @@
 (define (extend-get-k who get-k procs next-ht chaperone?)
   (lambda (k)
     (let* ([k (get-k k)]
-           [new-k ((hash-procs-equal-key procs) next-ht k)])
+           [new-k (|#%app| (hash-procs-equal-key procs) next-ht k)])
       (unless (or (not chaperone?) (chaperone-of? new-k k))
         (raise-chaperone-error who "key" new-k k))
       new-k)))
@@ -1189,7 +1189,7 @@
         (let ([clear (hash-procs-clear procs)])
           (cond
            [clear
-            (clear next-ht)
+            (|#%app| clear next-ht)
             (if mutable?
                 (loop next-ht)
                 (let ([r (loop next-ht)])
@@ -1268,12 +1268,12 @@
      [(hash-impersonator? ht)
       (let ([procs (hash-impersonator-procs ht)]
             [ht (impersonator-next ht)])
-        ((hash-procs-key procs) ht (loop ht)))]
+        (|#%app| (hash-procs-key procs) ht (loop ht)))]
      [(hash-chaperone? ht)
       (let ([procs (hash-chaperone-procs ht)]
             [ht (impersonator-next ht)])
         (let* ([k (loop ht)]
-               [new-k ((hash-procs-key procs) ht k)])
+               [new-k (|#%app| (hash-procs-key procs) ht k)])
           (unless (chaperone-of? new-k k)
             (raise-chaperone-error who "key" new-k k))
           new-k))]
