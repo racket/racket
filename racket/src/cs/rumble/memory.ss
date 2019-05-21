@@ -346,25 +346,28 @@
 
 ;; ----------------------------------------
 
-;; List of (cons <pre> <post>), currently suported
+;; Weak table of (cons <pre> <post>) keys, currently suported
 ;; only in the original host thread of the original place
-(define collect-callbacks '())
+(define collect-callbacks (make-weak-eq-hashtable))
 
 (define (unsafe-add-collect-callbacks pre post)
   (when (in-original-host-thread?)
     (let ([p (cons pre post)])
       (with-interrupts-disabled
-       (set! collect-callbacks (cons p collect-callbacks)))
+       (hashtable-set! collect-callbacks p #t))
       p)))
 
 (define (unsafe-remove-collect-callbacks p)
   (when (in-original-host-thread?)
     (with-interrupts-disabled
-     (set! collect-callbacks (#%remq p collect-callbacks)))))
+     (hashtable-delete! collect-callbacks p))))
 
+;; Called during collection in a thread with all others stopped; currently
+;; we run callbacks only if the main thread gets to perform the GC, which
+;; is often enough to be useful for flashing a GC icon
 (define (run-collect-callbacks sel)
   (when (in-original-host-thread?)
-    (let loop ([l collect-callbacks])
+    (let loop ([l (vector->list (hashtable-keys collect-callbacks))])
       (unless (null? l)
         (let ([v (sel (car l))])
           (let loop ([i 0] [save #f])
