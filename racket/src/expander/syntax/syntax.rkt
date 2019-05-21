@@ -3,9 +3,11 @@
          "../compile/serialize-state.rkt"
          "../common/set.rkt"
          "../common/inline.rkt"
+         "../namespace/inspector.rkt"
          "preserved.rkt"
          "tamper.rkt"
-         "datum-map.rkt")
+         "datum-map.rkt"
+         "weaker-inspector.rkt")
 
 (provide
  (struct-out syntax) ; includes `syntax?`
@@ -188,6 +190,7 @@
   (cond
    [(syntax? s) s]
    [else
+    (define insp (if (syntax? s) 'not-needed (current-module-code-inspector)))
     (define (wrap content)
       (syntax content
               (if stx-c
@@ -204,8 +207,9 @@
                   empty-mpi-shifts)
               (and stx-l (syntax-srcloc stx-l))
               empty-props
-              (and stx-c
-                   (syntax-inspector stx-c))))
+              (and insp
+                   stx-c
+                   (weaker-inspector insp (syntax-inspector stx-c)))))
     (define result-s
       (non-syntax-map s
                       (lambda (tail? x) (if tail? x (wrap x)))

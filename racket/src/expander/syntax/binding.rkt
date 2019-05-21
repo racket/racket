@@ -302,7 +302,7 @@
                                       #:non-source? non-source?))]))
 
 (define (syntax-set-inspector s insp)
-  ;; This inspector merging is also implemented via propagations in "syntax.rkt"
+  ;; This inspector merging is also implemented via propagations in "scope.rkt"
   (struct-copy syntax s
                [inspector (or (syntax-inspector s)
                               insp)]
