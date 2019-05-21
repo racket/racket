@@ -155,6 +155,9 @@ in the outer module that re-exports the desired pieces of functionality.}
 
 ]
 
+The @racket[contract-out] facility accommodates this strategy via its
+@racket[#:unprotected-submodule] functionality.  
+
 @margin-note*{We will soon supply a Reference section in the Evaluation Model chapter that
 explains the basics of our understanding of ``safety'' and link to it.}
 @;
@@ -291,6 +294,43 @@ the left one requires just @tt{fast} and the right one the submodule called
 @tt{no-contract}. Hence the left module imports, say, @racket[human] with
 contracts; the right one imports the same function without contract and
 thus doesn't have to pay the performance penalty.
+
+Here is a concise way of implementing the same strategy via
+@racket[contract-out]: 
+
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file
+ @tt{modern}
+ racket
+
+ (define state? ...)
+ (define action? ...)
+ (define strategy/c
+   (-> state? action?))
+
+ (provide
+   (contract-out
+     #:unprotected-submodule no-contract
+     ;; people's strategy
+     (human strategy/c)
+
+     ;; tree traversal
+     (ai strategy/c)))
+
+ (code:comment #, @1/2-line[])
+ (code:comment #, @t{implementation})
+
+ (define (general p) ... )
+
+ (define human
+   (general create-gui))
+
+ (define ai
+   (general traversal))))
+
+
 
 In some cases, the presence of contracts prevents a module from being used
 in a context where contracts aren't available, say, for @rkt/base[] or the
