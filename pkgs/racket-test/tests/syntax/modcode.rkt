@@ -5,7 +5,12 @@
 (define file.rkt (build-path dir "file.rkt"))
 (define file.ss (build-path dir "file.ss"))
 
-(define compiled-dir (build-path dir "compiled"))
+(define compiled-subdir (let ([l (use-compiled-file-paths)])
+                          (if (pair? l)
+                              (car l)
+                              "compiled")))
+
+(define compiled-dir (build-path dir compiled-subdir))
 (make-directory* compiled-dir)
 
 (define (test expect proc . args)
@@ -17,7 +22,7 @@
   (printf "trying ~s\n" (list file.sfx src? zo? so?))
   (define file.zo
     (let-values ([(base name dir?) (split-path file.sfx)])
-      (build-path base "compiled" (path-add-suffix name #".zo"))))
+      (build-path base compiled-subdir (path-add-suffix name #".zo"))))
   (define file.rkt (path-replace-suffix file.sfx #".rkt"))
   (define file.so (path-replace-suffix file.sfx #".so"))
   (when (file-exists? file.ss) (delete-file file.ss))
