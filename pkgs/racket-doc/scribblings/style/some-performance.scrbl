@@ -295,9 +295,11 @@ the left one requires just @tt{fast} and the right one the submodule called
 contracts; the right one imports the same function without contract and
 thus doesn't have to pay the performance penalty.
 
-Here is a concise way of implementing the same strategy via
-@racket[contract-out]: 
+There is a concise way of implementing the same strategy via
+@racket[contract-out] but it currently retains some dependency on the
+contract system. Compare the following two pieces of code: 
 
+@compare[
 @;%
 @(begin
 #reader scribble/comment-reader
@@ -324,13 +326,67 @@ Here is a concise way of implementing the same strategy via
 
  (define (general p) ... )
 
- (define human
+ (define human 
    (general create-gui))
 
  (define ai
-   (general traversal))))
+   (general traversal)))
+)
 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file 
+ @tt{try-again}
+ racket
 
+ (define state? zero?)
+ (define action? integer?)
+ (define strategy/c (-> state? action?))
+
+ (provide
+  (contract-out
+   #:unprotected-submodule no-contract
+   ;; people's strategy
+   (human strategy/c)
+
+   ;; tree traversal
+   (ai strategy/c)))
+
+ (define (general p) pi)
+
+ (define (human x)
+   (general 'create-gui))
+
+ (define (ai x)
+   (general 'traversal))
+))
+@;%
+ ]
+
+Use the following two pieces of code to compare the semantics of
+@racket[#:unprotected-submodule] with the manual approach to masking
+contracts: 
+@compare[
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file 
+ @tt{plain}
+ (require (submod "." server)) 
+ (human 0)
+))
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file 
+ @tt{no-contract}
+ (require (submod "." server no-contract)) 
+ (human 0)
+))
+@;%
+]
+As these example demonstrate, this generative approach to a
+@tt{no-contract} submodule retains some dependence on contracts, which the
+manual approach can eliminate completely. 
 
 In some cases, the presence of contracts prevents a module from being used
 in a context where contracts aren't available, say, for @rkt/base[] or the
