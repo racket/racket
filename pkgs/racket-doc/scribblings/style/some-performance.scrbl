@@ -152,55 +152,56 @@ functionality and exports some of it to the surrounding module}
 
 @item{a @racket[provide] specification with a @racket[contract-out] clause
 in the outer module that re-exports the desired pieces of functionality.}
-
 ]
-
-The @racket[contract-out] facility accommodates this strategy via its
-@racket[#:unprotected-submodule] functionality.  
+This section explains three strategies for three different situations and
+levels of implementation complexity. 
 
 @margin-note*{We will soon supply a Reference section in the Evaluation Model chapter that
 explains the basics of our understanding of ``safety'' and link to it.}
-@;
-@bold{Note} Splitting contracted functionality into two modules in this way
-renders the code in the @tt{no-contract} @bold{unsafe}. The creator of the
-original code might have assumed certain constraints on some function's
-arguments, and the contracts checked these constraints. While the
-documentation of the @tt{no-contract} submodule is likely to state these
-constraints, it is left to the client to check them.  If the client code
-doesn't check the constraints and the arguments don't satisfy them, the
-code in the @tt{no-contract} submodule may go wrong in various ways. 
+@; 
+@bold{Warning} Splitting contracted functionality into two modules in
+this way renders the code in the @tt{no-contract} @bold{unsafe}. The
+creator of the original code might have assumed certain constraints on some
+function's arguments, and the contracts checked these constraints. While
+the documentation of the @tt{no-contract} submodule is likely to state
+these constraints, it is left to the client to check them.  If the client
+code doesn't check the constraints and the arguments don't satisfy them,
+the code in the @tt{no-contract} submodule may go wrong in various ways.
+
+The @emph{first} and simplest way to create a @tt{no-contract} submodule is to use
+the @racket[#:unprotected-submodule] functionality of @racket[contract-out].
 
 @compare[
 @;%
 @(begin
 #reader scribble/comment-reader
 (racketmod0 #:file
- @tt{correct}
+ @tt{good}
  racket
 
- (define state? ...)
- (define action? ...)
+ (define state? zero?)
+ (define action? odd?)
  (define strategy/c
    (-> state? action?))
 
  (provide
    (contract-out
-     ;; people's strategy
      (human strategy/c)
-
-     ;; tree traversal
      (ai strategy/c)))
+
+
 
  (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
- (define (general p) ... )
+ (define (general p)
+   (lambda (_) pi))
 
- (define human
-   (general create-gui))
+ (define (human x)
+   ((general 'gui) x))
 
- (define ai
-   (general traversal))))
+ (define (ai x)
+   ((general 'tra) x))))
 
 @(begin
 #reader scribble/comment-reader
@@ -208,55 +209,45 @@ code in the @tt{no-contract} submodule may go wrong in various ways.
  @tt{fast}
  racket 
 
- (define state? ...)
- (define action? ...)
+ (define state? zero?)
+ (define action? odd?)
  (define strategy/c
    (-> state? action?))
 
  (provide
    (contract-out
-     ;; people's strategy
+     (code:hilite #:unprotected-submodule) (code:hilite no-contract)
      (human strategy/c)
-
-     ;; tree traversal
      (ai strategy/c)))
 
  (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
- (module no-contract racket 
-  (provide
-    human
-    ai)
-  
-  (define (general p) ... )
+  (define (general s)
+    (lambda (_) pi))
 
-  (define human
-    (general create-gui))
+  (define (human x)
+    ((general 'gui) x))
   
-  (define ai
-    (general traversal)))
-
- (require 'no-contract)))
+  (define (ai x)
+    ((general 'tra) x))))
 ]
 
-The example labeled @tt{correct} illustrates what the module might look
+The example labeled @tt{good} illustrates what the module might look
 like originally. Every exported function comes with a contract, and the
 definitions of these functions can be found below the @racket[provide]
-specification in the module body. By comparison, the @tt{fast} module on
-the right encapsulates the definitions in a submodule called
-@tt{no-contract}; the @racket[provide] in this submodule exports the exact
-same identifiers as the @tt{correct} module on the left.  The main module
-@racket[require]s the submodule immediately, making the identifiers
-available in the outer scope so that the contracted @code{provide} can
-re-export them. 
+specification in the module body. The @tt{fast} module on the right
+requests the creation of a submodule named @tt{no-contract}, which exports
+the same identifiers as the original module but without contracts. 
 
+Once the submodule exists, using the library with or without contracts is
+straightforward:
 @compare[
 @;%
 @(begin
 #reader scribble/comment-reader
 (racketmod0 #:file
- @tt{needs-correctness}
+ @tt{needs-goodness}
  racket
 
  (require coll/fast)
@@ -264,10 +255,11 @@ re-export them.
  human
  ;; comes with contracts 
  ;; as if we had required 
- ;; coll/correct 
+ ;; coll/good 
 
- (define state1 ...)
- (define state2 (human state1))))
+ (define state1 0)
+ (define state2 
+   (human state1))))
 
 @(begin
 #reader scribble/comment-reader
@@ -277,123 +269,162 @@ re-export them.
 
  (require 
   (submod 
-    coll/fast no-contract))
+    coll/fast 
+    no-contract))
 
  human
- ;; comes without contracts 
+ ;; comes without
+ ;; a contract
 
  (define state* 
-   (build-list ...))
+   (build-list 0 1))
  (define action*
    (map human state*))))
 ]
+Both modules @racket[require] the @tt{fast} module, but the left one goes
+through the contracted @racket[provide] while and the right one uses the
+@tt{no-contract} submodule. Hence the left module imports, say,
+@racket[human] with contracts; the right one imports the same function
+without contract and thus doesn't have to pay the performance penalty.
 
-Once the submodule exists, using the library with or without contracts is
-straightforward. Both modules from above @racket[require] @tt{fast}, but
-the left one requires just @tt{fast} and the right one the submodule called
-@tt{no-contract}. Hence the left module imports, say, @racket[human] with
-contracts; the right one imports the same function without contract and
-thus doesn't have to pay the performance penalty.
+Notice, however, that when you run these two client modules---assuming you
+have installed @tt{fast} in some collection @tt{coll} appropriately---the
+left one raises an contract error while the right one binds
+@racket[action*] to 
 
-There is a concise way of implementing the same strategy via
-@racket[contract-out] but it currently retains some dependency on the
-contract system. Compare the following two pieces of code: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketresult
+'(3.141592653589793 3.141592653589793)
+))
+@;%
 
+The @tt{no-contract} submodule generated by this first, easy approach
+depends on @racketmodname[#, 'racket/contract] at both compile and run time. 
+Here is a variant of the above module that demonstrates this point: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketmod0 #:file 
+ @tt{problems-with-unprotected-submodule}
+ racket
+
+(define state? zero?)
+(define action? odd?)
+(define strategy/c (-> state? action?))
+
+(provide
+ (contract-out
+  #:unprotected-submodule no-contract
+  (human strategy/c)
+  (ai strategy/c)))
+
+(define (general p) pi)
+
+(define human (general 'gui))
+
+(define ai (general 'tra))))
+@;%
+Even though the @racket[contract-out] specification seems to remove the
+contracts, requiring the @tt{no-contract} still raises a contract error: 
+@;%
+@(begin
+#reader scribble/comment-reader
+(racketblock
+(require (submod "." server no-contract))
+))
+@;%
+@bold{Explanation} The @racket[require] runs the body of the main module,
+and doing so checks the first-order properties of the exported values---and
+because @racket[human] is not a function, this evaluation raises a contract
+error. 
+
+The @emph{second} way to create a @tt{no-contract} submodule requires
+systematic work from the developer and eliminates the run-time dependency
+on @racketmodname[#, 'racket/contract]. Here are the two modules from
+above, with the right one derived manually from the one on the left: 
 @compare[
 @;%
 @(begin
 #reader scribble/comment-reader
 (racketmod0 #:file
- @tt{modern}
+ @tt{good}
  racket
 
- (define state? ...)
- (define action? ...)
+ (define state? zero?)
+ (define action? odd?)
  (define strategy/c
    (-> state? action?))
 
  (provide
    (contract-out
-     #:unprotected-submodule no-contract
-     ;; people's strategy
      (human strategy/c)
-
-     ;; tree traversal
      (ai strategy/c)))
 
  (code:comment #, @1/2-line[])
  (code:comment #, @t{implementation})
 
- (define (general p) ... )
-
- (define human 
-   (general create-gui))
-
- (define ai
-   (general traversal)))
-)
-
-@;%
-@(begin
-#reader scribble/comment-reader
-(racketmod0 #:file 
- @tt{try-again}
- racket
-
- (define state? zero?)
- (define action? integer?)
- (define strategy/c (-> state? action?))
-
- (provide
-  (contract-out
-   #:unprotected-submodule no-contract
-   ;; people's strategy
-   (human strategy/c)
-
-   ;; tree traversal
-   (ai strategy/c)))
-
- (define (general p) pi)
+ (define (general p)
+   (lambda (_) pi))
 
  (define (human x)
-   (general 'create-gui))
+   ((general 'gui) x))
 
  (define (ai x)
-   (general 'traversal))
-))
-@;%
- ]
+   ((general 'tra) x))))
 
-Use the following two pieces of code to compare the semantics of
-@racket[#:unprotected-submodule] with the manual approach to masking
-contracts: 
-@compare[
 @(begin
 #reader scribble/comment-reader
-(racketmod0 #:file 
- @tt{plain}
- (require (submod "." server)) 
- (human 0)
+(racketmod0 #:file
+ @tt{fast}
+ racket 
+
+ (define state? zero?)
+ (define action? odd?)
+ (define strategy/c
+   (-> state? action?))
+
+ (provide
+   (contract-out
+     (human strategy/c)
+     (ai strategy/c)))
+
+ (code:comment #, @1/2-line[])
+ (code:comment #, @t{implementation})
+
+ (module no-contract racket 
+   (provide 
+     human 
+     ai)
+
+   (define (general s)
+     (lambda (_) pi))
+
+   (define (human x)
+     ((general 'gui) x))
+
+   (define (ai x)
+     ((general 'tra) x)))
+
+ (require 'no-contract)
 ))
-@(begin
-#reader scribble/comment-reader
-(racketmod0 #:file 
- @tt{no-contract}
- (require (submod "." server no-contract)) 
- (human 0)
-))
-@;%
 ]
-As these example demonstrate, this generative approach to a
-@tt{no-contract} submodule retains some dependence on contracts, which the
-manual approach can eliminate completely. 
+Here the @tt{fast} module on the right encapsulates the
+definitions in a submodule called @tt{no-contract}; the @racket[provide] in
+this submodule exports the exact same identifiers as the @tt{good} module
+on the left.  The main module @racket[require]s the submodule immediately,
+making the identifiers available in the outer scope so that the contracted
+@code{provide} can re-export them.
 
-In some cases, the presence of contracts prevents a module from being used
-in a context where contracts aren't available, say, for @rkt/base[] or the
-contracts library itself. Again, you may wish you had the same library
-without contracts. For these cases, we recommend a different strategy than
-the submodule one. Assuming the library is located at @tt{a/b/c}, we
+The @emph{third} and last way to create a @tt{no-contract} submodule is
+useful when the presence of contracts prevents a module from being used in
+a context where contracts aren't available at all. One example is
+@rkt/base[]; another is the contracts library itself. Again, you may wish
+you had the same library without contracts. For these cases, we recommend a
+file-based strategy one. Assuming the library is located at @tt{a/b/c}, we
 recommend 
+
 @itemlist[#:style 'ordered
 
 @item{creating a @tt{private/} sub-directory with the file  @tt{a/b/private/c-no-ctc.rkt},}
