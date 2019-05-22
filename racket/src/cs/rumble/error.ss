@@ -323,7 +323,7 @@
    [(null? args) ""]
    [else
     (apply string-append
-           "\n  arguments...: "
+           "\n  arguments...:"
            (let loop ([args args])
              (cond
               [(null? args) '()]
