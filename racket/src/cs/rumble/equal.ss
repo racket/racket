@@ -12,17 +12,19 @@
             ;; For immutable hashes, it's ok for the two objects to not be eq,
             ;; as long as the interpositions are the same and the underlying
             ;; values are `{impersonator,chaperone}-of?`:
-            (and (eq? (hash-impersonator-procs a)
-                      (hash-impersonator-procs b))
-                 (loop (impersonator-next a)
-                       (impersonator-next b)))]
+            (if (eq? (hash-impersonator-procs a)
+                     (hash-impersonator-procs b))
+                (loop (impersonator-next a)
+                      (impersonator-next b))
+                (loop (impersonator-next a) b))]
            [(and (hash-chaperone? a)
                  (hash-chaperone? b))
             ;; Same as above
-            (and (eq? (hash-chaperone-procs a)
-                      (hash-chaperone-procs b))
-                 (loop (impersonator-next a)
-                       (impersonator-next b)))]
+            (if (eq? (hash-chaperone-procs a)
+                     (hash-chaperone-procs b))
+                (loop (impersonator-next a)
+                      (impersonator-next b))
+                (loop (impersonator-next a) b))]
            [(and (props-impersonator? b)
                  (not (eq? mode 'chaperone-of?)))
             (loop a (impersonator-next b))]

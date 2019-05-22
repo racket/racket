@@ -2123,6 +2123,38 @@
      (test #f chaperone-of? (hash-set h3 2 sub1) h3)))
  (list #hash() #hasheq() #hasheqv()))
 
+;; Make sure that multiple chaperone/impersonator layers
+;; are allowed by `chaperone-of?` and `impersonator-of?`
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-of? impersonator-of?])
+ (define ht (make-hash))
+
+ (define (chaperone ht)
+   (chaperone-hash
+    ht
+    (lambda (ht k) (values k (lambda (hc k v) v)))
+    (lambda (ht k v)
+      (values (chaperone-hash
+               k
+               (lambda (ht k) (values k (lambda (hc k v) v)))
+               (lambda (ht k v) (values k v))
+               (lambda (ht k) k)
+               (lambda (ht k) k))
+              v))
+    (lambda (ht k) k)
+    (lambda (ht k) k)))
+
+ (define ht0 (chaperone ht))
+ (define ht1 (chaperone ht0))
+
+ (test #t chaperone-of? ht1 ht)
+ (test #t chaperone-of? ht1 ht0)
+ (test #f chaperone-of? ht ht1)
+ (test #f chaperone-of? ht0 ht1)
+ (hash-set! ht1 (make-hash '((a . b))) 'ok)
+ (test 'ok hash-ref ht1 (make-hash '((a . b)))))
+
 ;; ----------------------------------------
 
 (as-chaperone-or-impersonator
