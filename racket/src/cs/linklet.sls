@@ -843,7 +843,7 @@
                        (identify-module var))]
        [else
         (string-append (symbol->string (variable-source-name var))
-                       ": undefined;\n cannot reference undefined identifier"
+                       ": undefined;\n cannot reference an identifier before its definition"
                        (identify-module var))])
       (current-continuation-marks)
       (variable-name var))))
