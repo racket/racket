@@ -192,6 +192,7 @@ See the scribble documentation on the planet/resolver module.
          racket/path
          racket/file
          racket/date
+         racket/list
 
          net/url
          net/head
@@ -632,7 +633,14 @@ See the scribble documentation on the planet/resolver module.
                       pkg-name
                       (current-time))
               (parameterize ([msfh (manager-skip-file-handler)]
-                             [use-compiled-file-paths (list (string->path "compiled"))])
+                             ;; Hack to avoid DrRacket's configuration. This will not work
+                             ;; right in situtations where `use-compiled-file-paths` is
+                             ;; adjusted for other purposes, such as `racket -MCR` mode
+                             ;; used for building platform-indepdent bytecode.
+                             [use-compiled-file-paths (let ([l (use-compiled-file-paths)])
+                                                        (if (pair? l)
+                                                            (list (last l))
+                                                            (list (string->path "compiled"))))])
                 (ipp #f the-dir (list owner pkg-name extra-path maj min))
                 (unless was-nested?
                   (planet-terse-log 'docs-build pkg-string)
