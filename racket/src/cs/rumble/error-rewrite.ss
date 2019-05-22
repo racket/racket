@@ -63,6 +63,9 @@
              "~a: undefined;\n cannot reference an identifier before its definition"
              "\n  alert: compiler pass failed to add more specific guard!")
             irritants)]
+   [(and (equal? str "undefined for ~s")
+         (equal? irritants '(0)))
+    (values "division by zero" null)]
    [else
     (let ([str (string-copy str)]
           [len (string-length str)])
