@@ -9,16 +9,26 @@
    {X+1}.0; Z>=900 means working towards X.{Y+1}, and X.Y.Z as an
    alpha release.
 
-   (The string and the separate X/Y/Z/W numbers must be updated
-   consistently.)
+   Note that the version number in the "base" package's "info.rkt"
+   needs to be updated separately.
 */
-
-#define MZSCHEME_VERSION "7.3.0.4"
 
 #define MZSCHEME_VERSION_X 7
 #define MZSCHEME_VERSION_Y 3
 #define MZSCHEME_VERSION_Z 0
 #define MZSCHEME_VERSION_W 4
+
+/* A level of indirection makes `#` work as needed: */
+#define AS_a_STR_HELPER(x) #x
+#define AS_a_STR(x) AS_a_STR_HELPER(x)
+
+#if MZSCHEME_VERSION_W != 0
+# define MZSCHEME_VERSION AS_a_STR(MZSCHEME_VERSION_X) "." AS_a_STR(MZSCHEME_VERSION_Y) "." AS_a_STR(MZSCHEME_VERSION_Z) "." AS_a_STR(MZSCHEME_VERSION_W)
+#elif MZSCHEME_VERSION_Z != 0
+# define MZSCHEME_VERSION AS_a_STR(MZSCHEME_VERSION_X) "." AS_a_STR(MZSCHEME_VERSION_Y) "." AS_a_STR(MZSCHEME_VERSION_Z)
+#else
+# define MZSCHEME_VERSION AS_a_STR(MZSCHEME_VERSION_X) "." AS_a_STR(MZSCHEME_VERSION_Y)
+#endif
 
 #define MZSCHEME_VERSION_MAJOR ((MZSCHEME_VERSION_X * 100) + MZSCHEME_VERSION_Y)
 #define MZSCHEME_VERSION_MINOR ((MZSCHEME_VERSION_Z * 1000) + MZSCHEME_VERSION_W)
