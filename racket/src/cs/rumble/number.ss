@@ -248,7 +248,7 @@
                                                   (endianness big)
                                                   (endianness little)))]
       [else
-       (raise-arguments-error 'floating-point-bytes->real
+       (raise-arguments-error who
                               "length is not 4 or 8 bytes"
                               "length" (- end start))])]
    [(bstr)
