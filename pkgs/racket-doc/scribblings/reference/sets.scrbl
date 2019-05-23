@@ -739,7 +739,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(impersonate-hash-set [st (or/c mutable-set? weak-set?)]
+@defproc[(impersonate-hash-set [st (or/c set-mutable? set-weak?)]
                                [inject-proc (or/c #f (-> set? any/c any/c))]
                                [add-proc (or/c #f (-> set? any/c any/c))]
                                [shrink-proc (or/c #f (-> set? any/c any/c))]
@@ -748,7 +748,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                                [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
-         (and/c (or/c mutable-set? weak-set?) impersonator?)]{
+         (and/c (or/c set-mutable? set-weak?) impersonator?)]{
  Impersonates @racket[st], redirecting various set operations via the given procedures.
 
  The @racket[inject-proc] procedure
@@ -792,7 +792,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
  override impersonator property values of @racket[st].
 }
 
-@defproc[(chaperone-hash-set [st (or/c set? mutable-set? weak-set?)]
+@defproc[(chaperone-hash-set [st (or/c set? set-mutable? set-weak?)]
                              [inject-proc (or/c #f (-> set? any/c any/c))]
                              [add-proc (or/c #f (-> set? any/c any/c))]
                              [shrink-proc (or/c #f (-> set? any/c any/c))]
@@ -801,7 +801,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                              [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
-         (and/c (or/c set? mutable-set? weak-set?) chaperone?)]{
+         (and/c (or/c set? set-mutable? set-weak?) chaperone?)]{
  Chaperones @racket[st]. Like @racket[impersonate-hash-set] but with
  the constraints that the results of the @racket[inject-proc],
  @racket[add-proc], @racket[shrink-proc], @racket[extract-proc], and
