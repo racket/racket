@@ -33,11 +33,24 @@
        [(absolute-path? collects-path)
         ;; This happens only under Windows; add a drive
         ;;  specification to make the path complete
-        (let ([exec (path->complete-path
-                     (find-executable-path (find-system-path 'exec-file))
-                     (find-system-path 'orig-dir))])
+        (let ([exec (call-in-original-directory
+                     (lambda ()
+                       (path->complete-path
+                        (find-executable-path (find-system-path 'exec-file))
+                        (find-system-path 'orig-dir))))])
           (let-values ([(base name dir?) (split-path exec)])
             (simplify-path (path->complete-path collects-path base))))]
        [else
-        (let ([p (find-executable-path (find-system-path 'exec-file) collects-path #t)])
-          (and p (simplify-path p)))]))))
+        (let ([p (call-in-original-directory
+                  (lambda ()
+                    (find-executable-path (find-system-path 'exec-file) collects-path #t)))])
+          (and p (simplify-path p)))])))
+
+  (define-values (call-in-original-directory)
+    (lambda (thunk)
+      (with-continuation-mark
+        parameterization-key
+        (extend-parameterization (continuation-mark-set-first #f parameterization-key)
+                                 current-directory
+                                 (find-system-path 'orig-dir))
+        (thunk)))))
