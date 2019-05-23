@@ -53,7 +53,7 @@ hierarchy:
 
 @itemlist[
 
-@item{@racket[library/kernel], the bare minimal conceievable for the
+@item{@racket[library/kernel], the bare minimal conceivable for the
 library to be usable;}
 
 @item{@racket[library/base], a basic set of functionality.}
