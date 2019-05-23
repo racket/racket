@@ -17,6 +17,7 @@ AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared 
 AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 AC_ARG_ENABLE(compress,   [  --enable-compress       compress compiled code (enabled by default)])
+AC_ARG_ENABLE(compressboot, [  --enable-compressboot   compress boot files])
 m4_include(../ac/path_arg.m4)
 AC_ARG_ENABLE(racket,     [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 AC_ARG_ENABLE(scheme,     [  --enable-scheme=<path>  Chez Scheme build directory at <path>])
@@ -60,6 +61,7 @@ show_explicitly_set()
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
+show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
@@ -121,6 +123,7 @@ MINGW="not_mingw"
 NOT_MINGW=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+BOOT_COMPRESS_COMP=""
 ELF_COMP=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
@@ -401,6 +404,10 @@ if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
 fi
 
+if test "${enable_compressboot}" = "yes" ; then
+  BOOT_COMPRESS_COMP="--compress"
+fi
+
 DIFF_MACH=skip
 if test "${MACH}" != "${TARGET_MACH}" ; then
   DIFF_MACH=
@@ -631,6 +638,7 @@ AC_SUBST(MINGW)
 AC_SUBST(NOT_MINGW)
 AC_SUBST(CONFIGURE_RACKET_SO_COMPILE)
 AC_SUBST(COMPRESS_COMP)
+AC_SUBST(BOOT_COMPRESS_COMP)
 AC_SUBST(ELF_COMP)
 AC_SUBST(SCHEME_SRC)
 AC_SUBST(MAKE_BUILD_SCHEME)

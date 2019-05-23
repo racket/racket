@@ -185,7 +185,7 @@ XPATCH =
 XPATCHcross = --xpatch $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch
 
 racket.boot: racket.so
-	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
+	$(SCHEME) --script $(srcdir)/convert-to-boot.ss @BOOT_COMPRESS_COMP@ $(XPATCH@CROSS_MODE@) racket.so racket.boot $(TARGET_MACH)
 
 @INCLUDEDEP@ compiled/expander.d
 @INCLUDEDEP@ compiled/thread.d
@@ -200,10 +200,10 @@ racket.boot: racket.so
 EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
 racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
 
 gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 
 BOOT_OBJS = boot.o $(SCHEME_TARGET_INC)/kernel.o rktio/librktio.a
 
@@ -214,13 +214,13 @@ raw_gracketcs: grmain.o boot.o $(BOOT_OBJS)
 	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
 
 petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot petite-v.boot
 
 scheme-v.boot: $(SCHEME_TARGET_INC)/scheme.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot scheme-v.boot petite
 
 racket-v.boot: racket.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot racket-v.boot petite scheme
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot racket-v.boot petite scheme
 
 # ----------------------------------------
 # Mac OS
@@ -254,10 +254,10 @@ $(RKTFW): $(BOOT_OBJS) $(BOOT_FILES)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_CS/Racket Racket.framework/Racket
 	mkdir -p Racket.framework/Versions/$(FWVERSION)_CS/boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
-	$(SCHEME) --script $(srcdir)/to-vfasl.ss @COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
-	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot $(FW_BOOT_DEST)/petite.boot
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/scheme.boot $(FW_BOOT_DEST)/scheme.boot petite
+	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ racket.boot $(FW_BOOT_DEST)/racket.boot petite scheme
+	$(BOOTSTRAP_RACKET) $(srcdir)/adjust-compress.rkt @BOOT_COMPRESS_COMP@ $(FW_BOOT_DEST)/petite.boot $(FW_BOOT_DEST)/scheme.boot $(FW_BOOT_DEST)/racket.boot
 
 # ----------------------------------------
 # MinGW
@@ -273,7 +273,7 @@ EXE_DESTS = ++exe raw_racketcs.exe RacketCS.exe ++exe raw_gracketcs.exe GRacketC
 V_BOOTS = petite-v.boot scheme-v.boot racket-v.boot
 
 RacketCS.exe GRacketCS.exe $(RKT_DLL): raw_libracketcs.dll raw_gracketcs.exe raw_racketcs.exe $(EMBED_DEPS) $(V_BOOTS)
-	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @COMPRESS_COMP@ $(EXE_DESTS) raw_libracketcs.dll $(RKT_DLL) $(V_BOOTS)
+	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt --target $(TARGET_MACH) @BOOT_COMPRESS_COMP@ $(EXE_DESTS) raw_libracketcs.dll $(RKT_DLL) $(V_BOOTS)
 
 raw_racketcs.exe: main.o MemoryModule.o rres.o
 	$(CC) $(CFLAGS) -o raw_racketcs.exe main.o MemoryModule.o rres.o $(LDFLAGS)

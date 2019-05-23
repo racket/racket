@@ -637,6 +637,7 @@ SCHEME_CONFIG_ARGS
 MAKE_BUILD_SCHEME
 SCHEME_SRC
 ELF_COMP
+BOOT_COMPRESS_COMP
 COMPRESS_COMP
 CONFIGURE_RACKET_SO_COMPILE
 NOT_MINGW
@@ -764,6 +765,7 @@ enable_standalone
 enable_pthread
 enable_iconv
 enable_compress
+enable_compressboot
 enable_origtree
 enable_pkgscope
 enable_docs
@@ -1403,6 +1405,7 @@ Optional Features:
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
   --enable-compress       compress compiled code (enabled by default)
+  --enable-compressboot   compress boot files
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
@@ -2323,6 +2326,11 @@ if test "${enable_compress+set}" = set; then :
   enableval=$enable_compress;
 fi
 
+# Check whether --enable-compressboot was given.
+if test "${enable_compressboot+set}" = set; then :
+  enableval=$enable_compressboot;
+fi
+
 
 # Check whether --enable-origtree was given.
 if test "${enable_origtree+set}" = set; then :
@@ -2521,6 +2529,7 @@ show_explicitly_set()
 show_explicitly_enabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_disabled "${enable_compress}" "Compressed code"
+show_explicitly_enabled "${enable_compressboot}" "Compressed boot files"
 show_explicitly_enabled "${enable_xonx}" "Unix style"
 show_explicitly_set "${enable_racket}" "Racket"
 show_explicitly_set "${enable_scheme}" "Chez Scheme build directory"
@@ -2828,6 +2837,7 @@ MINGW="not_mingw"
 NOT_MINGW=""
 CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
+BOOT_COMPRESS_COMP=""
 ELF_COMP=""
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
@@ -4167,6 +4177,10 @@ if test "${enable_compress}" != "no" ; then
   COMPRESS_COMP="--compress"
 fi
 
+if test "${enable_compressboot}" = "yes" ; then
+  BOOT_COMPRESS_COMP="--compress"
+fi
+
 DIFF_MACH=skip
 if test "${MACH}" != "${TARGET_MACH}" ; then
   DIFF_MACH=
@@ -4972,6 +4986,7 @@ SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} WINDRES="'"'"${WINDRES}"'"'
 ############## final output ################
 
 CPPFLAGS="$CPPFLAGS $PREFLAGS"
+
 
 
 
