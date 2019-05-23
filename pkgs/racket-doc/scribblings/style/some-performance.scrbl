@@ -431,19 +431,19 @@ recommend a file-based strategy one. Assuming the library is located at
 
 @itemlist[#:style 'ordered
 
-@item{creating a @tt{private/} sub-directory with the file  @tt{a/b/private/c-no-ctc.rkt},}
+@item{creating a @tt{c/} sub-directory with the file @tt{no-contract.rkt},}
 
-@item{placing the functionality into @tt{c-no-ctc.rkt},}
+@item{placing the functionality into @tt{no-contract.rkt},}
 
-@item{importing it into @tt{a/b/c.rkt}, and}
+@item{adding @racket[(require "c/no-contract.rkt")] to @tt{c.rkt}, and}
 
-@item{exporting it from there with contracts.}
+@item{exporting the functionality from there with contracts.}
 
 ]
 
 Once this arrangement is set up, a client module in a special context
 @rkt/base[] or for @racketmodname[#, 'racket/contract] can use @racket[(require
-a/b/private/c-no-ctc)]. In a regular module, though, it would suffice
+a/b/c/no-contract)]. In a regular module, though, it would suffice
 to write @racket[(require a/b/c)] and doing so would import contracted
 identifiers. 
 
