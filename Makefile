@@ -475,7 +475,7 @@ native-cs-for-cross-finish:
 	cd racket/src/build/cross/cs/c; $(MAKE) reconfigure
 	cd racket/src/build/cross/cs/c; $(MAKE)
 
-racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/cfg-racket racket/src/cs/c/Makefile.in
+racket/src/build/cross/cs/c/Makefile: racket/src/cs/c/configure racket/src/cs/c/Makefile.in
 	cd racket/src/build/cross/cs/c; ../../../../cs/c/configure --enable-csdefault
 
 # ------------------------------------------------------------
