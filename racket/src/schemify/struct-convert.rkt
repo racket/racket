@@ -24,9 +24,25 @@
      (define sti (and (wrap-eq? struct: struct:2)
                       (wrap-eq? make make2)
                       (wrap-eq? ?1 ?2)
+                      (for/and ([acc/mut (in-list acc/muts)]
+                                [make-acc/mut (in-list make-acc/muts)])
+                        (match make-acc/mut
+                          [`(make-struct-field-accessor ,ref-id ,pos ',field-name)
+                           (and (wrap-eq? ref-id -ref)
+                                (symbol? field-name)
+                                (exact-nonnegative-integer? pos))]
+                          [`(make-struct-field-mutator ,set-id ,pos ',field-name)
+                           (and (wrap-eq? set-id -set!)
+                                (symbol? field-name)
+                                (exact-nonnegative-integer? pos))]
+                          [`,_ #f]))
                       (make-struct-type-info mk prim-knowns knowns imports mutated)))
      (cond
        [(and sti
+             ;; make sure all accessor/mutator positions are in range:
+             (for/and ([make-acc/mut (in-list make-acc/muts)])
+               (match make-acc/mut
+                 [`(,_ ,_ ,pos ,_) (pos . < . (struct-type-info-immediate-field-count sti))]))
              ;; make sure `struct:` isn't used too early, since we're
              ;; reordering it's definition with respect to some arguments
              ;; of `make-struct-type`:

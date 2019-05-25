@@ -401,7 +401,9 @@
                      (lookup-defn defns (correlated-e (list-ref l 1))))))
   (and (known-struct-op? a)
        (eq? (known-struct-op-type a) type)
-       ((field-count-expr-to-field-count (list-ref l 2)) . < . (known-struct-op-field-count a))
+       (let ([c (field-count-expr-to-field-count (list-ref l 2))])
+         (and c
+              (c . < . (known-struct-op-field-count a))))
        (or (= (length l) 3) (quoted? symbol? (list-ref l 3)))))
 
 ;; ----------------------------------------

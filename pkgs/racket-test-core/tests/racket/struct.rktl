@@ -1293,5 +1293,48 @@
   (test 8 procedure-arity a))
 
 ;; ----------------------------------------
+;; Make sure that non-typical `make-sytruct-type` patterns are
+;; not transformed incorrectly by the compiler
+
+(test '(1 2) 'not-acc/ref
+      (let-values ([(struct:s make-s s? a b)
+                    (let-values ([(struct:s make s? -ref -set!) (make-struct-type 's #f 3 0 #f)])
+                      (values struct:s
+                              make
+                              s?
+                              1
+                              2))])
+        (list a b)))
+
+(define-syntax (try-failing-extra stx)
+  (syntax-case stx ()
+    [(_ expr rx)
+     (with-syntax ([expr (syntax-local-introduce #'expr)])
+       #'(err/rt-test (let-values ([(struct:s make-s s? bad)
+                                    (let-values ([(struct:s make s? -ref -set!) (make-struct-type 's #f 3 0 #f)])
+                                      (values struct:s
+                                              make
+                                              s?
+                                              expr))])
+                        bad-ref)
+                      exn:fail:contract?
+                      rx))]))
+
+(try-failing-extra (make-struct-field-accessor -ref 3 'name)
+                   #rx"index too large")
+(try-failing-extra (make-struct-field-mutator -set! 3 'name)
+                   #rx"index too large")
+
+(try-failing-extra (make-struct-field-accessor -ref -1 'name)
+                   #rx"make-struct-field-accessor: contract violation")
+(try-failing-extra (make-struct-field-mutator -set! -1 'name)
+                   #rx"make-struct-field-mutator: contract violation")
+
+(try-failing-extra (make-struct-field-accessor -set! 0 'name)
+                   #rx"make-struct-field-accessor: contract violation")
+(try-failing-extra (make-struct-field-mutator -ref 0 'name)
+                   #rx"make-struct-field-mutator: contract violation")
+
+;; ----------------------------------------
 
 (report-errs)
