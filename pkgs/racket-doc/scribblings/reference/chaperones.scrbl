@@ -1116,7 +1116,7 @@ Creates a new @tech{impersonator property} and returns three values:
        have a value for the property (i.e. if the corresponding impersonator
        property predicate returns @racket[#f]), then a second optional argument
        to the selector determines its response: the @exnraise[exn:fail:contract]
-       is if a second argument is not provided, the second argument is tail-called
+       if a second argument is not provided, the second argument is tail-called
        with zero arguments if it is a procedure, and the second argument is returned
        otherwise.}
 
