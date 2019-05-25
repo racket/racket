@@ -260,9 +260,9 @@ each element in the sequence.
   
   If @racket[start] is less than
   @racket[stop] and @racket[step] is negative, then the
-  @exnraise[exn:fail:contract:mismatch].  Similarly, if @racket[start]
+  @exnraise[exn:fail:contract].  Similarly, if @racket[start]
   is more than @racket[stop] and @racket[step] is positive, then the
-  @exnraise[exn:fail:contract:mismatch].
+  @exnraise[exn:fail:contract].
 
   @speed[in-vector "vector"]
 
