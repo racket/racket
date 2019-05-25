@@ -149,6 +149,12 @@
                      'path->main-lib-relative
                      'main-lib-relative->path))
 
+  ;; For checking and debugging memory leaks; set `PLT_SETUP_DMS_ARGS`
+  ;; to an S-expression list and use `-j 1` to run a non-parallel setup:
+  (define post-collection-dms-args
+    (let ([v (getenv "PLT_SETUP_DMS_ARGS")])
+      (and v (read (open-input-string v)))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                   Errors                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1087,6 +1093,9 @@
                                   #:managed-compile-zo caching-managed-compile-zo
                                   #:skip-path (and (avoid-main-installation) main-collects-dir)
                                   #:skip-doc-sources? (not make-docs?))))))
+    (when post-collection-dms-args
+      (collect-garbage)
+      (apply dump-memory-stats post-collection-dms-args))
     (if (eq? 0 gcs)
         0
         (begin (collect-garbage) (sub1 gcs))))

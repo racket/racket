@@ -112,7 +112,7 @@
      [(custodian-shut-down? cust) #f]
      [else
       (define we (and (not weak?)
-                      (host:make-late-will-executor void #f)))
+                      (host:make-will-executor void)))
       (hash-set! (custodian-children cust)
                  obj
                  (cond
@@ -123,7 +123,9 @@
         ;; Registering with a will executor that we retain but never
         ;; poll has the effect of turning a semi-weak reference
         ;; (allows other finalizers, but doesn't clear weak boxes)
-        ;; into a strong one when there are no other references:
+        ;; into a strong one when there are no other references;
+        ;; we're assuming that no wills were previously registered
+        ;; so that this one is last on the stack of wills:
         (host:will-register we obj void))
       (when gc-root?
         (host:disable-interrupts)

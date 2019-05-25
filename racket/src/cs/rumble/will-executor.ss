@@ -9,7 +9,7 @@
 ;; lifo. The `will-stacks` tables map a finalized value to a list
 ;; of finalizers, where each finalizer is an ephemeron pairing a will
 ;; executor with a will function (so that the function is not retained
-;; if the will executor is dropped)
+;; if the will executor is dropped).
 (define-thread-local the-will-stacks (make-weak-eq-hashtable))
 (define-thread-local the-late-will-stacks (make-weak-eq-hashtable))
 
@@ -36,7 +36,7 @@
   (check who (procedure-arity-includes/c 1) proc)
   (disable-interrupts)
   (let ([l (hashtable-ref (will-executor-will-stacks executor) v '())]
-        ;; By using an ephemeron pair, if the excutor becomes
+        ;; By using an ephemeron pair, if the executor becomes
         ;; unreachable, then we can drop the finalizer procedure. That
         ;; pattern prevents unbreakable cycles by an untrusted process
         ;; that has no access to a will executor that outlives the
@@ -79,7 +79,8 @@
     (let ([v (guardian)])
       (when v
         (let we-loop ([l (hashtable-ref will-stacks v '())])
-          (when (pair? l)
+          (cond
+           [(pair? l)
             (let* ([e+proc (car l)]
                    [e (car e+proc)]
                    [proc (cdr e+proc)]
@@ -101,7 +102,9 @@
                 (when (will-executor-keep? e)
                   ;; Ensure that a late will executor stays live
                   ;; in this place as long as there are wills to execute
-                  (hashtable-set! late-will-executors-with-pending e #t))]))))
+                  (hashtable-set! late-will-executors-with-pending e #t))]))]
+           [else
+            (hashtable-delete! will-stacks v)]))
         (loop)))))
 
 (define (poll-will-executors)

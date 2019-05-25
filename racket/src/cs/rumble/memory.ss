@@ -293,12 +293,11 @@
     [(eq? 'metacontinuation-frame (car args))
      metacontinuation-frame?]
     [(symbol? (car args))
-     #f
-     ;; This is disaterously slow, so don't try it:
-     #;
-     (let ([type (car args)])
+     (let ([name (car args)])
        (lambda (o)
-         (eq? ((inspect/object o) 'type) type)))]
+         (and (#%record? o)
+              (let ([rtd (#%record-rtd o)])
+                (eq? name (#%record-type-name rtd))))))]
     [else #f])
    ;; 'new mode for backtrace?
    (and (pair? args)
