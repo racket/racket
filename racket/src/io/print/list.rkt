@@ -13,6 +13,15 @@
     (and (eq? mode PRINT-MODE/UNQUOTED)
          (not alt-list-constructor)
          (not (uninterrupted-list? v graph))))
+  (define curly? (cond
+                   [(eq? mode PRINT-MODE/UNQUOTED)
+                    (and (not unquoted-pairs?)
+                         alt-list-constructor
+                         (eq? (string-ref alt-list-constructor 0) #\{))]
+                   [alt-list-prefix
+                    (eq? (string-ref alt-list-prefix 0) #\{)]
+                   [else
+                    (config-get config print-pair-curly-braces)]))
   (define (abbreviation v)
     (and (eq? mode PRINT-MODE/QUOTED)
          (pair? v)
@@ -51,15 +60,15 @@
                  (cond
                    [(null? v) max-length]
                    [else (write-string/max " " o max-length)]))]
-              [else (write-string/max (or alt-list-prefix "(") o max-length)])])
+              [else (write-string/max (or alt-list-prefix (if curly? "{" "(")) o max-length)])])
        (let loop ([v v] [max-length max-length])
          (cond
            [(eq? max-length 'full) 'full]
-           [(null? v) (write-string/max ")" o max-length)]
+           [(null? v) (write-string/max (if curly? "}" ")") o max-length)]
            [(and (null? (cdr v))
                  (not unquoted-pairs?))
             (let ([max-length (p who (car v) mode o max-length graph config)])
-              (write-string/max ")" o max-length))]
+              (write-string/max (if curly? "}" ")") o max-length))]
            [(and (pair? (cdr v))
                  (or (not graph) (non-graph? (hash-ref graph (cdr v) #f)))
                  (not (abbreviation (cdr v))))
@@ -75,7 +84,7 @@
                                    (write-string/max " " o max-length)
                                    (write-string/max " . " o max-length))]
                    [max-length (p who (cdr v) mode o max-length graph config)])
-              (write-string/max ")" o max-length))])))]))
+              (write-string/max (if curly? "}" ")") o max-length))])))]))
 
 (define (uninterrupted-list? v graph)
   (and (list? v)
