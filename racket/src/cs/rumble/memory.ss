@@ -286,6 +286,14 @@
      #%procedure?]
     [(eq? 'ephemeron (car args))
      ephemeron-pair?]
+    [(eq? 'bignum (car args))
+     bignum?]
+    [(eq? 'keyword (car args))
+     keyword?]
+    [(eq? 'string (car args))
+     string?]
+    [(eq? 'symbol (car args))
+     symbol?]
     [(eq? '<ffi-lib> (car args))
      ffi-lib?]
     [(eq? '<will-executor> (car args))

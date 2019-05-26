@@ -571,7 +571,7 @@
     (record-type-uid
      (prefab-key+count->rtd (cons prefab-key total*-count)))))
 
-;; A weak, `equal?`-based hash table that maps (cons prefab-key
+;; An emphemeron-weak, `equal?`-based hash table that maps (cons prefab-key
 ;; total-field-count) to rtd. We'll create a table without a lock, and
 ;; we'll use it for all places, which means that we need to use a
 ;; global lock to access the table. Compute a hash code outside the
@@ -581,7 +581,10 @@
 ;; Call with lock:
 (define (prefab-ref prefab-key+count code)
   (and prefabs
-       (weak-hash-ref prefabs prefab-key+count #f code equal?)))
+       (let ([e (weak-hash-ref prefabs prefab-key+count #f code equal?)])
+         (and e
+              (not (eq? (car e) #!bwp))
+              (cdr e)))))
 
 (define (prefab-key+count->rtd prefab-key+count)
   (let ([code (equal-hash-code prefab-key+count)])
@@ -615,7 +618,7 @@
           [else
            (putprop uid 'prefab-key+count prefab-key+count)
            (unless prefabs (set! prefabs (make-weak-hash-with-lock #f)))
-           (weak-hash-set! prefabs prefab-key+count rtd code equal?)
+           (weak-hash-set! prefabs prefab-key+count (ephemeron-cons prefab-key+count rtd) code equal?)
            (unless parent-rtd
              (record-type-equal-procedure rtd default-struct-equal?)
              (record-type-hash-procedure rtd default-struct-hash))
