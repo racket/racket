@@ -39,13 +39,13 @@ element is @racket[a] and second element is @racket[d].}
 @tech{mutable pair} @racket[p].}
 
 
-@defproc[(set-mcar! [p mpair?] [v any/v]) 
+@defproc[(set-mcar! [p mpair?] [v any/c]) 
          void?]{
 
 Changes the @tech{mutable pair} @racket[p] so that its first element is
 @racket[v].}
 
-@defproc[(set-mcdr! [p mpair?] [v any/v]) 
+@defproc[(set-mcdr! [p mpair?] [v any/c]) 
          void?]{
 
 Changes the @tech{mutable pair} @racket[p] so that its second element is
