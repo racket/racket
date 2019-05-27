@@ -25,17 +25,19 @@
 
 (define (streamify-in cin in ready-for-break)
   (if (and cin (not (file-stream-port? cin)))
-    (thread (lambda ()
-              (dynamic-wind
-                void
-                (lambda ()
-                  (with-handlers ([exn:break? void])
-                    (ready-for-break #t)
-                    (copy-port cin in)
-                    (ready-for-break #f)))
-                (lambda () (close-output-port in)))
-              (ready-for-break #t)))
-    in))
+      (parameterize-break #f
+        (thread (lambda ()
+                  (dynamic-wind
+                   void
+                   (lambda ()
+                     (with-handlers ([exn:break? void])
+                       (parameterize-break #t
+                         (ready-for-break #t)
+                         (copy-port cin in)
+                         (ready-for-break #f))))
+                   (lambda () (close-output-port in)))
+                  (ready-for-break #t))))
+      in))
 
 (define (streamify-out cout out)
   (if (and cout 

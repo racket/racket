@@ -195,7 +195,8 @@
         (when it
           ;; stop piping output to subprocess
           (semaphore-wait it-ready)
-          (break-thread it))
+          (break-thread it)
+          (thread-wait it))
         ;; wait for other pipes to run dry:
         (when (thread? ot) (thread-wait ot))
         (when (thread? et) (thread-wait et))
