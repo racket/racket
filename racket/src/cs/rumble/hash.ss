@@ -950,11 +950,11 @@
 (define (prune-table! t)
   (let ([ht (weak-equal-hash-keys-ht t)])
     (let-values ([(new-ht count)
-                  (let loop ([ht ht]
+                  (let loop ([new-ht empty-hasheqv]
                              [i (intmap-iterate-first ht)]
                              [count 0])
                     (cond
-                     [(not i) (values ht count)]
+                     [(not i) (values new-ht count)]
                      [else
                       (let-values ([(key l) (intmap-iterate-key+value ht i #f)])
                         (let ([l (let loop ([l l])
@@ -963,8 +963,8 @@
                                     [(bwp-object? (car l)) (loop (cdr l))]
                                     [else (weak/fl-cons (car l) (loop (cdr l)))]))])
                           (loop (if (null? l)
-                                    ht
-                                    (hash-set ht key l))
+                                    new-ht
+                                    (intmap-set new-ht key l))
                                 (intmap-iterate-next ht i)
                                 (+ count (length l)))))]))])
       (set-weak-equal-hash-keys-ht! t new-ht)
@@ -972,18 +972,15 @@
       (set-weak-equal-hash-prune-at! t (max 128 (* 2 count))))))
 
 ;; ----------------------------------------
+;; When `eq?`ness of flonums is not preserved by
+;; the GC, then we need special handling for flonums.
+;; But the GC now does preserve `eq?`ness.
 
 (define (weak/fl-cons key d)
-  ;; Special case for flonums, which are never retained in weak pairs,
-  ;; but we want to treat them like fixnums and other immediates:
-  (if (flonum? key)
-      (cons key d)
-      (weak-cons key d)))
+  (weak-cons key d))
 
 (define (ephemeron/fl-cons key d)
-  (if (flonum? key)
-      (cons key d)
-      (ephemeron-cons key d)))
+  (ephemeron-cons key d))
 
 ;; ----------------------------------------
 
