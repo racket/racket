@@ -93,7 +93,8 @@
                          'free-immobile-cell free-immobile-cell
                          'immobile-cell-ref (lambda (ib) (ptr-ref ib _racket))
                          'immobile-cell->address (lambda (b) b)
-                         'address->immobile-cell (lambda (b) b)))
+                         'address->immobile-cell (lambda (b) b)
+                         'set-fs-change-properties! void))
 
 (primitive-table '#%thread
                  (hasheq 'thread thread

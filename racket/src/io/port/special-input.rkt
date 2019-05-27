@@ -47,7 +47,7 @@
                                   in source-name skip-k
                                   special-wrap))]
       [else
-       (extract-special-value (peek-byte-via-bytes in skip-k #:progress-evt progress-evt)
+       (extract-special-value (peek-byte-via-bytes who in skip-k #:progress-evt progress-evt)
                               in source-name skip-k
                               special-wrap)])))
 

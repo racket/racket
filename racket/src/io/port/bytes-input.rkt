@@ -56,7 +56,7 @@
   (maybe-flush-stdout in)
   (let ([in (->core-input-port in)])
     (define bstr (make-bytes amt))
-    (define v (do-read-bytes! 'read-bytes in bstr 0 amt))
+    (define v (do-read-bytes! who in bstr 0 amt))
     (if (exact-integer? v)
         (if (= v amt)
             bstr
@@ -132,7 +132,7 @@
   (maybe-flush-stdout in)
   (let ([in (->core-input-port in)])
     (define bstr (make-bytes amt))
-    (define v (do-peek-bytes! 'read-bytes in bstr 0 amt skip-k))
+    (define v (do-peek-bytes! who in bstr 0 amt skip-k))
     (if (exact-integer? v)
         (if (= v amt)
             bstr
