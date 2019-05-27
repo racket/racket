@@ -7,8 +7,6 @@
           begin0
           $value
 
-          letrec*/names
-
           dynamic-wind
           call-with-current-continuation
           call-with-composable-continuation
@@ -723,7 +721,6 @@
   (include "rumble/virtual-register.ss")
   (include "rumble/layout.ss")
   (include "rumble/begin0.ss")
-  (include "rumble/letrec.ss")
   (include "rumble/syntax-rule.ss")
   (include "rumble/value.ss")
   (include "rumble/lock.ss")

@@ -10,21 +10,6 @@
                  [(and (eq? a (car v))
                        (eq? d (cdr v)))
                   (values v v)]
-                 [(and (eq? stripped-a 'letrec*)
-                       (pair? (cdr v)))
-                  (let ([names (let loop ([clauses (cadr v)])
-                                 (cond
-                                  [(null? clauses) '()]
-                                  [else
-                                   (let ([id (caar clauses)])
-                                     (cons (or (and (correlated? id)
-                                                    (correlated-property id 'undefined-error-name))
-                                               (if (correlated? id)
-                                                   (correlated-e id)
-                                                   id))
-                                           (loop (cdr clauses))))]))])
-                    (values (list* 'letrec*/names names d)
-                            (list* 'letrec*/names names stripped-d)))]
                  [else (values (cons a d)
                                (cons stripped-a stripped-d))]))]
    [(correlated? v) (let-values ([(e stripped-e) (correlated->annotation* (correlated-e v))])

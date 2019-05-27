@@ -150,7 +150,7 @@
     [`,_ #f]))
 
 (define (struct-convert-local form #:letrec? [letrec? #f]
-                              prim-knowns knowns imports mutated
+                              prim-knowns knowns imports mutated simples
                               schemify
                               #:unsafe-mode? unsafe-mode?)
   (match form
@@ -164,7 +164,7 @@
           (match new-seq
             [`(begin . ,new-seq)
              (define-values (new-knowns info)
-               (find-definitions defn prim-knowns knowns imports mutated unsafe-mode?
+               (find-definitions defn prim-knowns knowns imports mutated simples unsafe-mode?
                                  #:optimize? #f))
              (cond
                [letrec?

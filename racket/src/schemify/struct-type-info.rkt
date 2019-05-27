@@ -87,7 +87,7 @@
 ;; Check whether `e` has the shape of a property list that uses only
 ;; properties where the property doesn't have a guard or won't invoke
 ;; a guarded procedure
-(define (pure-properties-list? e prim-knowns knowns imports mutated)
+(define (pure-properties-list? e prim-knowns knowns imports mutated simples)
   (match e
     [`(list (cons ,props ,vals) ...)
      (for/and ([prop (in-list props)]
@@ -96,7 +96,7 @@
          (and (symbol? u-prop)
               (or (known-struct-type-property/immediate-guard?
                    (find-known u-prop prim-knowns knowns imports mutated)))
-              (simple? val prim-knowns knowns imports mutated))))]
+              (simple? val prim-knowns knowns imports mutated simples))))]
     [`null #t]
     [`'() #t]
     [`,_ #f]))

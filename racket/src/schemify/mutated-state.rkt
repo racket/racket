@@ -5,11 +5,17 @@
 ;;
 ;;  * 'set!ed - the identifier is `set!`ed
 ;;
+;;  * 'set!ed-too-early - the identifier is `set!`ed potentially
+;;                        before it is initialized
+;;
+;;  * 'implicitly-set!ed - the `letrec`-bound identifier maybe be
+;;                         implicitly `set!`ed via `call/cc`
+;;
 ;;  * 'too-early - the identifier may be referenced before it is
 ;;                 defined
 ;;
 ;;  * 'too-early/ready - a variant of 'too-early where the variable
-;;                 is now definitely ready
+;;                 is now definitely ready, used only for top levels
 ;;
 ;;  * 'not-ready - the identifier's value is not yet ready, so a
 ;;                 reference transitions to 'too-early
@@ -24,16 +30,24 @@
 ;;
 ;;  * #f (not mapped) - defined and never `set!`ed
 ;;
-;; By the end of the `mutated-in-body` pass, only 'set!ed, 'too-early,
-;; 'not-ready (for exported but not defined) and #f are possible for
-;; identifiers that are reachable by evaluation.
+;; By the end of the `mutated-in-body` pass, only 'set!ed,
+;; 'set!ed-too-early, 'implicitly-set!ed, 'too-early,
+;; 'too-early/ready, 'not-ready (for exported but not defined) and #f
+;; are possible for identifiers that are reachable by evaluation.
 
-(provide delayed-mutated-state?
+(provide too-early
+         delayed-mutated-state?
          simple-mutated-state?
          not-ready-mutated-state?
          too-early-mutated-state?
+         too-early-mutated-state-name
+         needs-letrec-convert-mutated-state?
          via-variable-mutated-state?
-         set!ed-mutated-state?)
+         set!ed-mutated-state?
+         state->set!ed-state)
+
+;; Used for `letrec` bindings to record a name:
+(struct too-early (name set!ed?))
 
 (define (delayed-mutated-state? v) (procedure? v))
 
@@ -46,18 +60,44 @@
   (eq? v 'not-ready))
 
 (define (too-early-mutated-state? v)
-  (eq? v 'too-early))
+  (or (eq? v 'too-early)
+      (eq? v 'set!ed-too-early)
+      (too-early? v)))
 
-;; When referecing an exported identifier, we need to consistently go
+(define (too-early-mutated-state-name v default-sym)
+  (if (too-early? v)
+      (too-early-name v)
+      default-sym))
+
+(define (needs-letrec-convert-mutated-state? v)
+  (or (too-early? v)
+      (eq? v 'too-early)
+      (eq? v 'too-early/ready)
+      (eq? v 'implicitly-set!ed)))
+
+;; When referencing an exported identifier, we need to consistently go
 ;; through a `variable` record when it can be `set!`ed or is not yet
 ;; ready (as indicated by 'too-early, which is changed to 'too-eary/ready
 ;; as the variable becomes ready)
 (define (via-variable-mutated-state? v)
   (or (eq? v 'set!ed)
       (eq? v 'undefined)
-      (eq? v 'too-early)))
+      (eq? v 'too-early)
+      (eq? v 'set!ed-too-early)))
 
 ;; At the end of a linklet, known-value information is reliable unless
-;; the identifier is mutated
+;; the identifier is explicitly mutated
 (define (set!ed-mutated-state? v)
-  (eq? v 'set!ed))
+  (or (eq? v 'set!ed)
+      (eq? v 'set!ed-too-early)
+      (and (too-early? v)
+           (too-early-set!ed? v))))
+
+(define (state->set!ed-state v)
+  (cond
+    [(too-early? v)
+     (struct-copy too-early v [set!ed? #t])]
+    [(eq? v 'not-ready) 'set!ed-too-early]
+    [(too-early-mutated-state? v) 'set!ed-too-early]
+    [(eq? v 'implicitly-set!ed) v]
+    [else 'set!ed]))

@@ -16,7 +16,7 @@
 ;; For definitions, it's useful to infer `a-known-constant` to reflect
 ;; that the variable will get a value without referencing anything
 ;; too early.
-(define (infer-known rhs defn rec? id knowns prim-knowns imports mutated unsafe-mode?
+(define (infer-known rhs defn rec? id knowns prim-knowns imports mutated simples unsafe-mode?
                      #:optimize-inline? [optimize-inline? #f])
   (cond
     [(lambda? rhs)
@@ -62,7 +62,7 @@
     [(pthread-parameter? rhs prim-knowns knowns mutated)
      (known-procedure 3)]
     [(and defn
-          (simple? rhs prim-knowns knowns imports mutated))
+          (simple? rhs prim-knowns knowns imports mutated simples))
      a-known-constant]
     [else #f]))
   
