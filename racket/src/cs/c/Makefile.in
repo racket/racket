@@ -233,7 +233,7 @@ racketcs@OSX@: main.o $(RKTFW)
 	$(CC) $(CFLAGS) -o racketcs main.o -F. -framework Racket $(LDFLAGS)
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_CS/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_CS/Racket" racketcs
 
-GRACKET_BIN = GRacketCS.app/Contents/MacOS/GracketCS
+GRACKET_BIN = GRacketCS.app/Contents/MacOS/GRacketCS
 
 gracketcs@OSX@:
 	$(MAKE) $(GRACKET_BIN)
