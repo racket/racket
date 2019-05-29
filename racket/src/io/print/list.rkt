@@ -13,15 +13,9 @@
     (and (eq? mode PRINT-MODE/UNQUOTED)
          (not alt-list-constructor)
          (not (uninterrupted-list? v graph))))
-  (define curly? (cond
-                   [(eq? mode PRINT-MODE/UNQUOTED)
-                    (and (not unquoted-pairs?)
-                         alt-list-constructor
-                         (eq? (string-ref alt-list-constructor 0) #\{))]
-                   [alt-list-prefix
-                    (eq? (string-ref alt-list-prefix 0) #\{)]
-                   [else
-                    (config-get config print-pair-curly-braces)]))
+  (define curly? (and (not (eq? mode PRINT-MODE/UNQUOTED))
+                      (not alt-list-prefix)
+                      (config-get config print-pair-curly-braces)))
   (define (abbreviation v)
     (and (eq? mode PRINT-MODE/QUOTED)
          (pair? v)
