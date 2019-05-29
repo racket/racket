@@ -2296,7 +2296,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           if (notdisplay == 3) {
             vec = scheme_vector_to_list(vec);
             vec = scheme_make_pair(scheme_object_name(obj), SCHEME_CDR(vec));
-            print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, !pp->print_pair_curly, 1);
+            print_pair(vec, notdisplay, compact, ht, mt, pp, scheme_pair_type, 1, 1);
           } else {
             if (SCHEME_TRUEP(prefab))
               SCHEME_VEC_ELS(vec)[0] = prefab;

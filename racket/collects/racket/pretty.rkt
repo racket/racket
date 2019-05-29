@@ -854,10 +854,11 @@
            #f #f
            (lambda ()
              (let* ([qd (to-quoted out qd obj)]
-                    [pair (if (and qd (zero? qd))
+                    [unquoted? (and qd (zero? qd))]
+                    [pair (if unquoted?
                               (convert-pair obj)
                               obj)])
-               (wr-expr pair depth pair? car cdr pair-open pair-close qd))))]
+               (wr-expr pair depth pair? car cdr (if unquoted? "(" pair-open) (if unquoted? ")" pair-close) qd))))]
          [(mpair? obj) 
           (check-expr-found
            obj pport #t
@@ -865,7 +866,7 @@
            (lambda ()
              (if (and qd (zero? qd))
                  (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                          depth pair? car cdr pair-open pair-close qd)
+                          depth pair? car cdr "(" ")" qd)
                  (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
          [(null? obj)
           (let ([qd (to-quoted out qd obj)])
@@ -1089,17 +1090,18 @@
                       (cond
                        [(pair? obj) 
                         (let* ([qd (to-quoted out qd obj)]
-                               [pair (if (and qd (zero? qd))
+                               [unquoted? (and qd (zero? qd))]
+                               [pair (if unquoted?
                                          (convert-pair obj)
                                          obj)])
                           (pp-pair pair extra depth 
-                                   pair? car cdr pair-open pair-close
+                                   pair? car cdr (if unquoted? "(" pair-open) (if unquoted? ")" pair-close)
                                    qd))]
                        [(mpair? obj)
                         (if (and qd (zero? qd))
                             (pp-pair (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                                     extra depth 
-                                     pair? car cdr pair-open pair-close
+                                     extra depth
+                                     pair? car cdr "(" ")"
                                      qd)
                             (pp-pair obj extra depth 
                                      mpair? mcar mcdr mpair-open mpair-close
@@ -1219,11 +1221,12 @@
                 (let ((proc (style head expr apair? acar acdr)))
                   (if proc
                       (let* ([qd (to-quoted out qd expr)]
-                             [pair (if (and qd (zero? qd))
+                             [unquote? (and qd (zero? qd))]
+                             [pair (if unquote?
                                        (cons (make-unquoted 'list) obj)
                                        obj)])
                         (proc expr extra depth
-                              apair? acar acdr open close
+                              apair? acar acdr (if unquote? "(" open) (if unquote? ")" close)
                               qd))
                       (if (and #f
                                ;; Why this special case? Currently disabled.

@@ -315,10 +315,9 @@
      (cond
        [(eq? mode PRINT-MODE/UNQUOTED)
         (define l (vector->list (struct->vector v)))
-        (define curly? (config-get config print-pair-curly-braces))
         (define alt-list-constructor
           ;; strip "struct:" from the first element of `l`:
-          (string-append (if curly? "{" "(") (substring (symbol->string (car l)) 7)))
+          (string-append "(" (substring (symbol->string (car l)) 7)))
         (print-list p who (cdr l) mode o max-length graph config #f alt-list-constructor)]
        [(prefab-struct-key v)
         => (lambda (key)
