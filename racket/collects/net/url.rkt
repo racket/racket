@@ -29,6 +29,12 @@
                                 "https"
                                 "git"))
 
+;; Like `string->url`, but returns #f for an error, intended for use
+;; with pattern matching.
+(define (string->url* str)
+  (with-handlers ([url-exception? (lambda (exn) #f)])
+    (string->url str)))
+
 ;; env->c-p-s-entries: (listof (listof string)) -> (listof (list string string num))
 ;;
 ;; "http" protocol is proxied by http proxy
@@ -41,11 +47,11 @@
     (match (getenv envvar)
       [#f #f]
       ["" null]
-      [(app string->url
+      [(app string->url*
             (url (and proxying-scheme "http") #f (? string? host) (? integer? port)
                  _ (list) (list) #f))
        (list (list proxied-scheme host port))]
-      [(app string->url
+      [(app string->url*
             (url (and proxying-scheme "http") _ (? string? host) (? integer? port)
                  _ _ _ _))
        (log-net/url-warning "~s contains somewhat invalid proxy URL format" envvar)
