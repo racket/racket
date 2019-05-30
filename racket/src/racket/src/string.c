@@ -664,7 +664,7 @@ scheme_init_string (Scheme_Startup_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_AD_HOC_OPT);
   scheme_addto_prim_instance("bytes->immutable-bytes", p, env);
 
-  p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 4);
+  p = scheme_make_immed_prim(byte_string_utf8_index, "bytes-utf-8-index", 2, 5);
   /* Incorrect, since the result can be #f:
      SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM); */
   scheme_addto_prim_instance("bytes-utf-8-index", p, env);
