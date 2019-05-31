@@ -431,7 +431,7 @@ m4_include(../ac/ubsan.m4)
 
 if test "$INCLUDEDEP" = "#" ; then
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
-  if test "$is_gmake" = "" ; then
+  if test "$is_gmake" != "" ; then
      INCLUDEDEP="-include"
   fi
 fi
