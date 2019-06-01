@@ -100,7 +100,7 @@ the value of the corresponding @racket[_expr].
 (define p1 (posn 1 2))
 (define p2 (struct-copy posn p1 [x 3]))
 (list (posn-x p2) (posn-y p2))
-(list (posn-x p1) (posn-x p2))
+(list (posn-x p1) (posn-y p1))
 ]
 
 
