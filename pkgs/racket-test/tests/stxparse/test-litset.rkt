@@ -124,3 +124,14 @@
     (check-equal? (kernel? #'define-values 4) #f)
     (check-equal? (kernel? #'foo) #f)
     (void)))
+
+;; Litsets with `...`
+
+(let ()
+  (define-literal-set lits #:phase 0 ([ooo ...]))
+  (test-case "litset, `...` ok"
+    (syntax-parse (quote-syntax ...) #:literal-sets (lits)
+      [ooo (void)]))
+  (tcerr "litset, `...` fails"
+    (syntax-parse #'ooo #:literal-sets (lits)
+      [ooo (void)])))
