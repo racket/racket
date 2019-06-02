@@ -5,7 +5,7 @@
 
 (require racket/extflonum racket/random racket/list)
 
-(define has-single-flonum? (not (eq? 'chez-scheme (system-type 'vm))))
+(define has-single-flonum? (single-flonum-available?))
 (define has-exact-zero-inexact-complex? (not (eq? 'chez-scheme (system-type 'vm))))
 
 (test #f number? 'a)
@@ -82,8 +82,10 @@
 (test #f single-flonum? 1.2)
 (test #t flonum? 1.2e3)
 (test #f single-flonum? 1.2e3)
-(test (not has-single-flonum?) flonum? 1.2f3)
-(test has-single-flonum? single-flonum? 1.2f3)
+#reader "maybe-single.rkt"
+(begin
+  (test (not has-single-flonum?) flonum? 1.2f3)
+  (test has-single-flonum? single-flonum? 1.2f3))
 
 (test #t complex? -4.242154731064108e-5-6.865001427422244e-5i)
 (test #f exact? -4.242154731064108e-5-6.865001427422244e-5i)
@@ -122,32 +124,40 @@
 (test #t real? +inf.f)
 (test #f rational? +inf.f)
 (test #f integer? +inf.f)
-(test (not has-single-flonum?) flonum? +inf.f)
-(test has-single-flonum? single-flonum? +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test (not has-single-flonum?) flonum? +inf.f)
+  (test has-single-flonum? single-flonum? +inf.f))
 
 (test #t number? -inf.f)
 (test #t complex? -inf.f)
 (test #t real? -inf.f)
 (test #f rational? -inf.f)
 (test #f integer? -inf.f)
-(test (not has-single-flonum?) flonum? -inf.f)
-(test has-single-flonum? single-flonum? -inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test (not has-single-flonum?) flonum? -inf.f)
+  (test has-single-flonum? single-flonum? -inf.f))
 
 (test #t number? +nan.f)
 (test #t complex? +nan.f)
 (test #t real? +nan.f)
 (test #f rational? +nan.f)
 (test #f integer? +nan.f)
-(test (not has-single-flonum?) flonum? +nan.f)
-(test has-single-flonum? single-flonum? +nan.f)
+#reader "maybe-single.rkt"
+(begin
+  (test (not has-single-flonum?) flonum? +nan.f)
+  (test has-single-flonum? single-flonum? +nan.f))
 
 (test #t number? -nan.f)
 (test #t complex? -nan.f)
 (test #t real? -nan.f)
 (test #f rational? -nan.f)
 (test #f integer? -nan.f)
-(test (not has-single-flonum?) flonum? -nan.f)
-(test has-single-flonum? single-flonum? -nan.f)
+#reader "maybe-single.rkt"
+(begin
+  (test (not has-single-flonum?) flonum? -nan.f)
+  (test has-single-flonum? single-flonum? -nan.f))
 
 (arity-test inexact? 1 1)
 (arity-test number? 1 1)
@@ -166,16 +176,18 @@
 (test "+nan.0" number->string +nan.0)
 (test "+nan.0" number->string +nan.0)
 
-(test (if has-single-flonum? "+inf.f" "+inf.0") number->string +inf.f)
-(test (if has-single-flonum? "-inf.f" "-inf.0") number->string -inf.f)
-(test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
-(test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
-(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f0)
-(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f1)
-(test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f17)
-(test (if has-single-flonum? "13.25f0" "13.25") number->string 13.25f0)
-(test (if has-single-flonum? "13.25f0" "13.25") number->string 1.325f1)
-(test (if has-single-flonum? "-4.25f0" "-4.25") number->string -4.25f0)
+#reader "maybe-single.rkt"
+(begin
+  (test (if has-single-flonum? "+inf.f" "+inf.0") number->string +inf.f)
+  (test (if has-single-flonum? "-inf.f" "-inf.0") number->string -inf.f)
+  (test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
+  (test (if has-single-flonum? "+nan.f" "+nan.0") number->string +nan.f)
+  (test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f0)
+  (test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f1)
+  (test (if has-single-flonum? "0.0f0" "0.0") number->string 0.0f17)
+  (test (if has-single-flonum? "13.25f0" "13.25") number->string 13.25f0)
+  (test (if has-single-flonum? "13.25f0" "13.25") number->string 1.325f1)
+  (test (if has-single-flonum? "-4.25f0" "-4.25") number->string -4.25f0))
 
 (map (lambda (n)
        ;; test that fresh strings are generated:
@@ -584,8 +596,10 @@
 (test +inf.f expt -4.0f0 (expt 2 5000))
 (test -inf.f expt -4.0f0 (add1 (expt 2 5000)))
 ;; exponent large enough to overflow singles, but not doubles
-(test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
-(test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308))))
+#reader "maybe-single.rkt"
+(when has-single-flonum?
+  (test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
+  (test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308)))))
 
 (define (inf-non-real? x)
   (and (not (real? x))
@@ -726,27 +740,37 @@
 (err/rt-test (inexact->exact -inf.0))
 (err/rt-test (inexact->exact +nan.0))
 
+#reader "maybe-single.rkt"
 (when has-single-flonum?
   (err/rt-test (inexact->exact +inf.f) (lambda (exn) (regexp-match? #rx"[+]inf[.]f" (exn-message exn))))
   (err/rt-test (inexact->exact -inf.f) (lambda (exn) (regexp-match? #rx"[-]inf[.]f" (exn-message exn))))
   (err/rt-test (inexact->exact +nan.f) (lambda (exn) (regexp-match? #rx"[+]nan[.]f" (exn-message exn)))))
 
-(test 2.0f0 real->single-flonum 2)
-(test 2.25f0 real->single-flonum 2.25)
-(test 2.25f0 real->single-flonum 2.25f0)
-(test 2.0 real->double-flonum 2)
-(test 2.25 real->double-flonum 2.25)
-(test 2.25 real->double-flonum 2.25f0)
+#reader "maybe-single.rkt"
+(when has-single-flonum?
+  (test 2.0f0 real->single-flonum 2)
+  (test 2.25f0 real->single-flonum 2.25)
+  (test 2.25f0 real->single-flonum 2.25f0)
+  (test 2.0 real->double-flonum 2)
+  (test 2.25 real->double-flonum 2.25)
+  (test 2.25 real->double-flonum 2.25f0))
 
 ;; to make sure they work when jitted
 (define (r->s-f x) (real->single-flonum x))
 (define (r->d-f x) (real->double-flonum x))
-(test 2.0f0 r->s-f 2)
-(test 2.25f0 r->s-f 2.25)
-(test 2.25f0 r->s-f 2.25f0)
-(test 2.0 r->d-f 2)
-(test 2.25 r->d-f 2.25)
-(test 2.25 r->d-f 2.25f0)
+#reader "maybe-single.rkt"
+(when has-single-flonum?
+  (test 2.0f0 r->s-f 2)
+  (test 2.25f0 r->s-f 2.25)
+  (test 2.25f0 r->s-f 2.25f0)
+  (test 2.0 r->d-f 2)
+  (test 2.25 r->d-f 2.25)
+  (test 2.25 r->d-f 2.25f0))
+
+(unless has-single-flonum?
+  (err/rt-test (real->single-flonum 1.0) exn:fail:unsupported?)
+  (err/rt-test (real->single-flonum +inf.0) exn:fail:unsupported?)
+  (err/rt-test (real->single-flonum +nan.0) exn:fail:unsupported?))
 
 (err/rt-test (* 'a 0))
 (err/rt-test (+ 'a 0))
@@ -2137,7 +2161,8 @@
                  (list +inf.0 +inf.0 (* 1/4 +pi))
                  (list -inf.0 +inf.0 (* 1/4 -pi)))])
     (test (caddr a) atan (car a) (cadr a))
-    (test (real->single-flonum (caddr a)) atan (real->single-flonum (car a)) (real->single-flonum (cadr a)))))
+    (when has-single-flonum?
+      (test (real->single-flonum (caddr a)) atan (real->single-flonum (car a)) (real->single-flonum (cadr a))))))
 
 (test 1 exp 0)
 (test 1.0 exp 0.0)
@@ -2451,7 +2476,7 @@
 (test #f inexact? (string->number "#e4@5"))
 (test #f inexact? (string->number "#e4.0@5.0"))
 
-(arity-test string->number 1 4)
+(arity-test string->number 1 5)
 (arity-test number->string 1 2)
 
 (err/rt-test (number->string 'a))
@@ -2975,6 +3000,7 @@
 (test (expt 2 256) inexact->exact 1.157920892373162d+77)
 (test 115792089237316195423570985008687907853269984665640564039457584007913129639936 inexact->exact 1.157920892373162d+77)
 
+#reader "maybe-single.rkt"
 (when has-single-flonum?
   (test 521335/89202980794122492566142873090593446023921664 inexact->exact 5.844367f-39)
   (test 5.844367f-39 real->single-flonum (inexact->exact 5.844367f-39))
@@ -3250,6 +3276,7 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check single-flonum coercisons:
 
+#reader "maybe-single.rkt"
 (define ((check-single-flonum #:real-only? [real-only? #f]
                               #:integer-only? [integer-only? #f]
                               #:two-arg-real-only? [two-arg-real-only? real-only?]
@@ -3457,7 +3484,8 @@
 
 (check #e100000000000000.0 #e100000000000000.1 exact->inexact inexact->exact >=)
 (check #e100000000000000.0 #e100000000000000.1 real->double-flonum inexact->exact >=)
-(check #e1000000.0 #e1000000.1 real->single-flonum inexact->exact >=)
+(when has-single-flonum?
+  (check #e1000000.0 #e1000000.1 real->single-flonum inexact->exact >=))
 (when (extflonum-available?)
   (check #e1000000000000000000.0 #e1000000000000000000.1 real->extfl extfl->exact extfl>=))
 

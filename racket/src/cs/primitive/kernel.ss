@@ -764,6 +764,7 @@
   [simplify-path (known-procedure 6)]
   [sin (known-procedure 2)]
   [single-flonum? (known-procedure/pure 2)]
+  [single-flonum-available? (known-procedure/pure 1)]
   [sleep (known-procedure 3)]
   [split-path (known-procedure 2)]
   [sqrt (known-procedure 2)]

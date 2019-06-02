@@ -23,7 +23,9 @@
          order-of-magnitude)
 
 (define pi   (atan 0 -1))
-(define pi.f (atan 0.0f0 -1.0f0))
+(define pi.f (if (single-flonum-available?)
+                 (atan (real->single-flonum 0.0) (real->single-flonum -1.0))
+                 pi))
 
 (begin-encourage-inline
 
@@ -39,9 +41,9 @@
           [(double-flonum? x) (cond [(unsafe-fl> x 0.0)  1.0]
                                     [(unsafe-fl< x 0.0) -1.0]
                                     [else               +nan.0])]
-          [(single-flonum? x) (cond [(> x 0.0f0)  1.0f0]
-                                    [(< x 0.0f0) -1.0f0]
-                                    [else        +nan.f])]
+          [(single-flonum? x) (cond [(> x 0.0f0) (real->single-flonum 1.0)]
+                                    [(< x 0.0f0) (real->single-flonum -1.0)]
+                                    [else        (real->single-flonum +nan.0)])]
           [else               (if (> x 0) 1 -1)]))
 
   ;; complex conjugate
@@ -61,7 +63,7 @@
 
   (define (cosh z)
     (unless (number? z) (raise-argument-error 'cosh "number?" z))
-    (cond [(and (real? z) (= z 0)) (if (single-flonum? z) 1.0f0 1.0)]
+    (cond [(and (real? z) (= z 0)) (if (single-flonum? z) (real->single-flonum 1.0) 1.0)]
           [else                    (/ (+ (exp z) (exp (- z))) 2)]))
 
   (define (tanh z)
@@ -85,19 +87,19 @@
                          (+ (* (+ (* (+ g q2) g) q1) g) q0)))
                     (+ z (* z R))]
                    [(z . < . 19.06154746539849600897D+00) (- 1 (/ 2 (+ 1 (exp (* 2 z)))))]
-                   [(z . >= . 19.06154746539849600897D+00) (if (single-flonum? z) 1.0f0 1.0)]
+                   [(z . >= . 19.06154746539849600897D+00) (if (single-flonum? z) (real->single-flonum 1.0) 1.0)]
                    [else          z]))]  ; +nan.0 or +nan.f
           [else (- 1 (/ 2 (+ 1 (exp (* 2 z)))))]))
 
   ;; angle conversion
   (define (degrees->radians x)
     (unless (real? x) (raise-argument-error 'degrees->radians "real?" x))
-    (cond [(single-flonum? x) (* x (/ pi.f 180f0))]
+    (cond [(single-flonum? x) (* x (/ pi.f (real->single-flonum 180.0)))]
           [else               (* x (/ pi 180.0))]))
 
   (define (radians->degrees x)
     (unless (real? x) (raise-argument-error 'radians->degrees "real?" x))
-    (cond [(single-flonum? x) (* x (/ 180f0 pi.f))]
+    (cond [(single-flonum? x) (* x (/ (real->single-flonum 180.0) pi.f))]
           [else               (* x (/ 180.0 pi))]))
 
   ;; inexact->exact composed with round, floor, ceiling, truncate

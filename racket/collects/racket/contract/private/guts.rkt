@@ -437,7 +437,7 @@
                                x)
                            name))]
     [(char? x) (make-char-in/c x x)]
-    [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
+    [(or (bytes? x) (string? x) (and (real? x) (nan? x)))
      (make-equal-contract x (if (name-default? name) x name))]
     [(number? x)
      (make-=-contract x (if (name-default? name) x name))]
@@ -659,21 +659,17 @@
          [(zero? v)
           ;; zero has a whole bunch of different numbers that
           ;; it could be, so just pick one of them at random
-          (λ ()
-            (oneof '(0
-                     -0.0 0.0 0.0f0 -0.0f0
-                     0.0+0.0i 0.0f0+0.0f0i 0+0.0i 0.0+0i)))]
+          (λ () (oneof all-zeros))]
          [else
           (λ ()
             (case (random 10)
               [(0)
-               (define inf/nan '(+inf.0 -inf.0 +inf.f -inf.f +nan.0 +nan.f))
                ;; try the inexact/exact variant (if there is one)
                (cond
                  [(exact? v)
                   (define iv (exact->inexact v))
                   (if (= iv v) iv v)]
-                 [(and (inexact? v) (not (memv v inf/nan)))
+                 [(and (inexact? v) (not (infinite? v)) (not (nan? v)))
                   (define ev (inexact->exact v))
                   (if (= ev v) ev v)]
                  [else v])]

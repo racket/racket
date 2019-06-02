@@ -16,6 +16,7 @@
                          [read-accept-bar-quote #t]
                          [read-accept-graph #t]
                          [read-decimal-as-inexact #t]
+                         [read-single-flonum #f]
                          [read-cdot #f]
                          [read-accept-dot #t]
                          [read-accept-infix-dot #t]

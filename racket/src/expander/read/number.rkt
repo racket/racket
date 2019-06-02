@@ -23,7 +23,10 @@
                             [convert-mode 'number-or-false]
                             [decimal-mode (if (read-decimal-as-inexact)
                                               'decimal-as-inexact
-                                              'decimal-as-exact)])
+                                              'decimal-as-exact)]
+                            [single-mode (if (read-single-flonum)
+                                             'single
+                                             'double)])
   (check who string? s)
   (check who (lambda (p) (and (exact-integer? radix)
                               (<= 2 radix 16)))
@@ -35,20 +38,26 @@
          convert-mode)
   (check who (lambda (p) (or (eq? p 'decimal-as-inexact)
                              (eq? p 'decimal-as-exact)))
-         #:contract "(or/c 'decimal-as-inexact decimal-as-exact)"
+         #:contract "(or/c 'decimal-as-inexact 'decimal-as-exact)"
          decimal-mode)
-  (unchecked-string->number s radix convert-mode decimal-mode))
+  (check who (lambda (p) (or (eq? p 'single)
+                             (eq? p 'double)))
+         #:contract "(or/c 'single 'double)"
+         single-mode)
+  (unchecked-string->number s radix convert-mode decimal-mode single-mode))
 
-(define (unchecked-string->number s radix convert-mode decimal-mode)
+(define (unchecked-string->number s radix convert-mode decimal-mode single-mode)
   (do-string->number s 0 (string-length s)
                      radix #:radix-set? #f
                      decimal-mode
-                     convert-mode))
+                     convert-mode
+                     single-mode))
 
 ;; ----------------------------------------
 
 (struct parse-state (exactness        ; see below
                      convert-mode     ; 'number-or-false, 'read, or 'must-read
+                     can-single?      ; whether 3.4f0 reads as single-flonum or not
                      fst              ; rect-prefix, polar-prefix, '+/- if started with sign, or #f
                      other-exactness) ; exactness to use for the imag part or saved real part
   #:authentic)
@@ -69,8 +78,8 @@
 ;;   - 'extflonum->inexact  ; => was 'inexact and found "t"
 ;;   - 'extflonum->exact    ; => was 'exact and found "t"
 
-(define (init-state exactness convert-mode fst)
-  (parse-state exactness convert-mode fst exactness))
+(define (init-state exactness convert-mode single-mode fst)
+  (parse-state exactness convert-mode (eq? single-mode 'single) fst exactness))
 
 (define (state-has-first-half? state)
   (define fst (parse-state-fst state))
@@ -85,11 +94,13 @@
 (define (state-first-half state)
   (init-state (parse-state-other-exactness state)
               (parse-state-convert-mode state)
+              (if (parse-state-can-single? state) 'single 'double)
               #f))
 
 (define (state-second-half state)
   (init-state (parse-state-exactness state)
               (parse-state-convert-mode state)
+              (if (parse-state-can-single? state) 'single 'double)
               #f))
 
 ;; ----------------------------------------
@@ -265,7 +276,15 @@
        [(single)
         (maybe (force-lazy-inexact sgn/z n state s)
                (lambda (r)
-                 (real->single-flonum r)))]
+                 (if (parse-state-can-single? state)
+                     (if (single-flonum-available?)
+                         (real->single-flonum r)
+                         (raise (exn:fail:unsupported
+                                 (string-append
+                                  "read: single-flonums are not supported on this platform\n"
+                                  "  conversion from: " (number->string r))
+                                 (current-continuation-marks))))
+                     (exact->inexact r))))]
        [(exact)
         (case n
           [(+inf.0 -inf.0 +nan.0)
@@ -425,13 +444,14 @@
 (define (do-string->number s start end
                            radix #:radix-set? radix-set?
                            exactness ; 'inexact, 'exact, 'decimal-as-inexact, or 'decimal-as-exact
-                           convert-mode)
+                           convert-mode
+                           single-mode)
   (parse-case
    s start end radix => c
    [(eof)
     (fail convert-mode "no digits")]
    [(digit)
-    (read-integer 1 c s (fx+ 1 start) end radix (init-state exactness convert-mode #f))]
+    (read-integer 1 c s (fx+ 1 start) end radix (init-state exactness convert-mode single-mode #f))]
    [(#\#)
     (define next (fx+ 1 start))
     (parse-case
@@ -447,7 +467,8 @@
          (do-string->number s (fx+ 1 next) end
                             radix #:radix-set? radix-set?
                             (if (or (char=? i #\e) (char=? i #\E)) 'exact 'inexact)
-                            (if (eq? convert-mode 'read) 'must-read convert-mode))])]
+                            (if (eq? convert-mode 'read) 'must-read convert-mode)
+                            single-mode)])]
      [(#\b #\B #\o #\O #\d #\D #\x #\X)
       (cond
         [radix-set?
@@ -462,17 +483,20 @@
          (do-string->number s (fx+ 1 next) end
                             radix #:radix-set? #t
                             exactness
-                            (if (eq? convert-mode 'read) 'must-read convert-mode))])]
+                            (if (eq? convert-mode 'read) 'must-read convert-mode)
+                            single-mode)])]
      [else
       ;; The reader always complains about a bad leading `#`
       (fail (if (eq? convert-mode 'read) 'must-read convert-mode)
             "bad `#` indicator `~a` at `~.a`" i (substring s start end))])]
    [(#\+)
-    (read-signed 1 s (fx+ 1 start) end radix (init-state exactness convert-mode '+/-))]
+    (read-signed 1 s (fx+ 1 start) end radix (init-state exactness convert-mode single-mode '+/-))]
    [(#\-)
-    (read-signed -1 s (fx+ 1 start) end radix (init-state exactness convert-mode '+/-))]
+    (read-signed -1 s (fx+ 1 start) end radix (init-state exactness convert-mode single-mode '+/-))]
    [(#\.)
-    (read-decimal 1 #f 0 s (fx+ 1 start) end radix (set-exactness (init-state exactness convert-mode #f) 'approx))]
+    (read-decimal 1 #f 0 s (fx+ 1 start) end radix (set-exactness
+                                                    (init-state exactness convert-mode single-mode #f)
+                                                    'approx))]
    [else
     (bad-digit c s convert-mode)]))
 

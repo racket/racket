@@ -263,31 +263,61 @@
 (err/rt-test (readstr "#\"\u0100\"") exn:fail:read?)
 (err/rt-test (readstr "#\"\u03BB\"") exn:fail:read?)
 
+(define (check-all-numbers number-table)
+  (let loop ([l number-table])
+    (unless (null? l)
+      (let* ([pair (car l)]
+             [v (car pair)]
+             [s (cadr pair)])
+        (for ([s (in-list (list s (string-upcase s)))])
+          (cond
+            [(memq v '(X DBZ NOE))
+             (err/rt-test (readstr s) exn:fail:read?)
+             (test #f string->number s)
+             (test #t string? (string->number s 10 'read))]
+            [v 
+             (test v readstr s)
+             (test (if (symbol? v) #f v) string->number s)
+             (test (if (symbol? v) #f v) string->number s 10 'read)]
+            [else 
+             (test (string->symbol s) readstr s)
+             (test #f string->number s)
+             (test #f string->number s 10 'read)
+             (unless (regexp-match "#" s)
+               (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
+               (test #f string->number (string-append "#d" s))
+               (test #t string? (string->number (string-append "#d" s) 10 'read)))])))
+      (loop (cdr l)))))
+
 (load-relative "numstrs.rktl")
-(let loop ([l number-table])
-  (unless (null? l)
-    (let* ([pair (car l)]
-           [v (car pair)]
-           [s (cadr pair)])
-      (for ([s (in-list (list s (string-upcase s)))])
-        (cond
-          [(memq v '(X DBZ NOE))
-           (err/rt-test (readstr s) exn:fail:read?)
-           (test #f string->number s)
-           (test #t string? (string->number s 10 'read))]
-          [v 
-           (test v readstr s)
-           (test (if (symbol? v) #f v) string->number s)
-           (test (if (symbol? v) #f v) string->number s 10 'read)]
-          [else 
-           (test (string->symbol s) readstr s)
-           (test #f string->number s)
-           (test #f string->number s 10 'read)
-           (unless (regexp-match "#" s)
-             (err/rt-test (readstr (string-append "#d" s)) exn:fail:read?)
-             (test #f string->number (string-append "#d" s))
-             (test #t string? (string->number (string-append "#d" s) 10 'read)))])))
-    (loop (cdr l))))
+(check-all-numbers number-table)
+
+;; single-flonums disabled by default
+(check-all-numbers '((10.0 "1f1")
+                     (10.0 "#i1f1")))
+
+(when (single-flonum-available?)
+  (parameterize ([read-single-flonum #t])
+    (define def (call-with-input-file*
+                 (build-path (or (current-load-relative-directory)
+                                 (current-directory))
+                             "numstrs.rktl")
+                 (lambda (i) (read i))))
+    (check-all-numbers (eval (caddr def)))))
+
+(unless (single-flonum-available?)
+  (parameterize ([read-single-flonum #t])
+    (err/rt-test (read (open-input-string "3.4f5"))
+                 exn:fail:unsupported?)))
+
+(test 5 string->number "5" 10 'number-or-false)
+(test 5 string->number "5.0" 10 'number-or-false 'decimal-as-exact)
+(test 5.0 string->number "5.0" 10 'number-or-false 'decimal-as-inexact)
+(test 5.0 string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'double)
+(if (single-flonum-available?)
+    (test (real->single-flonum 5.0) string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'single)
+    (err/rt-test (string->number "5.0f0" 10 'number-or-false 'decimal-as-inexact 'single)
+                 exn:fail:unsupported?))
 
 (define (make-exn:fail:read:eof?/span start span)
   (lambda (exn)

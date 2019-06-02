@@ -10,13 +10,15 @@
 (define (double-flonum? x) (flonum? x))
 (define (single-flonum? x) #f)
 
+(define (single-flonum-available?) #f)
+
 (define/who (real->double-flonum x)
   (check who real? x)
   (exact->inexact x))
 
 (define/who (real->single-flonum x)
   (check who real? x)
-  (exact->inexact x))
+  (raise-unsupported-error who))
 
 (define arithmetic-shift #2%bitwise-arithmetic-shift)
 

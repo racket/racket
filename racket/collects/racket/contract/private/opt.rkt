@@ -82,10 +82,14 @@
       [(and (pair? konst) (eq? (car konst) 'quote))
        (values #`(eq? #,konst #,v)
                "eq?")]
-      [(or (boolean? konst) (char? konst) (null? konst))
+      [(or (boolean? konst) (null? konst))
        (values #`(eq? #,konst #,v)
                "eq?")]
-      [(or (string? konst) (bytes? konst) (equal? konst +nan.0) (equal? konst +nan.f))
+      [(or (char? konst) (equal? konst +nan.0) (and (single-flonum-available?)
+                                                    (equal? konst (real->single-flonum +nan.0))))
+       (values #`(eqv? #,konst #,v)
+               "eqv?")]
+      [(or (string? konst) (bytes? konst))
        (values #`(equal? #,konst #,v)
                "equal?")]
       [(number? konst)

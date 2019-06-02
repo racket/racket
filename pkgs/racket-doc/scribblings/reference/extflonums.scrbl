@@ -7,7 +7,7 @@
 @defmodule[racket/extflonum]
 
 An @deftech{extflonum} is an extended-precision (80-bit)
-floating-point number. extflonum arithmetic is supported on
+floating-point number. Extflonum arithmetic is supported on
 platforms with extended-precision hardware and where the
 extflonum implementation does not conflict with normal
 double-precision arithmetic (i.e., on x86 and x86_64 platforms when

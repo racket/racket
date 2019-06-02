@@ -203,6 +203,8 @@ static Scheme_Object *extfl_set (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exact_to_extfl(int argc, Scheme_Object *argv[]);
 #endif
 
+static Scheme_Object *single_flonum_available_p(int argc, Scheme_Object *argv[]);
+
 /* globals */
 READ_ONLY Scheme_Object *scheme_unsafe_fxnot_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxand_proc;
@@ -739,6 +741,9 @@ scheme_init_number (Scheme_Startup_Env *env)
   p = scheme_make_folding_prim(scheme_inexact_to_exact, "inexact->exact", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_addto_prim_instance("inexact->exact", p, env);
+
+  p = scheme_make_folding_prim(single_flonum_available_p, "single-flonum-available?", 0, 0, 1);
+  scheme_addto_prim_instance("single-flonum-available?", p, env);
 }
 
 void scheme_init_flfxnum_number(Scheme_Startup_Env *env)
@@ -2125,6 +2130,16 @@ real_to_long_double_flonum (int argc, Scheme_Object *argv[])
   ESCAPED_BEFORE_HERE;
 #endif
 }
+
+static Scheme_Object *single_flonum_available_p(int argc, Scheme_Object *argv[])
+{
+#ifdef MZ_USE_SINGLE_FLOATS
+  return scheme_true;
+#else
+  return scheme_false;
+#endif
+}
+
 
 int scheme_is_exact(const Scheme_Object *n)
 {

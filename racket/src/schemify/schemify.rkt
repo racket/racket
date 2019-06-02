@@ -620,6 +620,9 @@
                                   (list (schemify generator) (schemify receiver))
                                   #t for-cify?
                                   prim-knowns knowns imports mutated simples)])]
+           [`(single-flonum-available?)
+            ;; Fold to a boolean to allow earlier simplification
+            for-cify?]
            [`((letrec-values ,binds ,rator) ,rands ...)
             (schemify `(letrec-values ,binds (,rator . ,rands)))]
            [`(,rator ,exps ...)

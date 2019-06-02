@@ -57,7 +57,7 @@
 
 (define (single=? x y)
   (cond
-    [(eq? 'chez-scheme (system-type 'vm))
+    [(not (single-flonum-available?))
      (double=? x y)]
     [else
      (and (single-flonum? y)
@@ -70,7 +70,8 @@
 
 (test #t single=? #e3.141592653589793238462643383279502884197169399 pi.f)
 (test #t double=? #e3.141592653589793238462643383279502884197169399 pi)
-(test pi.f real->single-flonum pi)
+(when (single-flonum-available?)
+  (test pi.f real->single-flonum pi))
 
 ;; =========================================================================
 ;; nan?
@@ -265,12 +266,14 @@
 (test 0 sinh 0)
 (test #t double=? sinh+1 (sinh 1))
 
-(test +nan.f sinh +nan.f)
-(test -inf.f sinh -inf.f)
-(test #t single=? sinh-1 (sinh -1.0f0))
-(test 0.0f0 sinh 0.0f0)
-(test #t single=? sinh+1 (sinh 1.0f0))
-(test +inf.f sinh +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test +nan.f sinh +nan.f)
+  (test -inf.f sinh -inf.f)
+  (test #t single=? sinh-1 (sinh -1.0f0))
+  (test 0.0f0 sinh 0.0f0)
+  (test #t single=? sinh+1 (sinh 1.0f0))
+  (test +inf.f sinh +inf.f))
 
 (test +nan.0 sinh +nan.0)
 (test -inf.0 sinh -inf.0)
@@ -293,13 +296,15 @@
 (test 1.0 cosh 0)
 (test #t double=? cosh+1 (cosh 1))
 
-(test +nan.f cosh +nan.f)
-(test +inf.f cosh -inf.f)
-(test #t single=? cosh+1 (cosh -1.0f0))
-(test 1.0f0 cosh -0.0f0)
-(test 1.0f0 cosh 0.0f0)
-(test #t single=? cosh+1 (cosh 1.0f0))
-(test +inf.f cosh +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test +nan.f cosh +nan.f)
+  (test +inf.f cosh -inf.f)
+  (test #t single=? cosh+1 (cosh -1.0f0))
+  (test 1.0f0 cosh -0.0f0)
+  (test 1.0f0 cosh 0.0f0)
+  (test #t single=? cosh+1 (cosh 1.0f0))
+  (test +inf.f cosh +inf.f))
 
 (test +nan.0 cosh +nan.0)
 (test +inf.0 cosh -inf.0)
@@ -325,15 +330,17 @@
 (test #t double=? tanh+1 (tanh 1))
 (test 1.0 tanh 20)
 
-(test +nan.f tanh +nan.f)
-(test -1.0f0 tanh -inf.f)
-(test -1.0f0 tanh -20.0f0)
-(test #t single=? tanh-1 (tanh -1.0f0))
-(test -0.0f0 tanh -0.0f0)
-(test 0.0f0 tanh 0.0f0)
-(test #t single=? tanh+1 (tanh 1.0f0))
-(test 1.0f0 tanh 20.0f0)
-(test 1.0f0 tanh +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test +nan.f tanh +nan.f)
+  (test -1.0f0 tanh -inf.f)
+  (test -1.0f0 tanh -20.0f0)
+  (test #t single=? tanh-1 (tanh -1.0f0))
+  (test -0.0f0 tanh -0.0f0)
+  (test 0.0f0 tanh 0.0f0)
+  (test #t single=? tanh+1 (tanh 1.0f0))
+  (test 1.0f0 tanh 20.0f0)
+  (test 1.0f0 tanh +inf.f))
 
 (test +nan.0 tanh +nan.0)
 (test -1.0 tanh -inf.0)
@@ -358,15 +365,17 @@
 (test #t double=? (* 1/2 pi) (degrees->radians 90))
 (test #t double=? pi (degrees->radians 180))
 
-(test +nan.f degrees->radians +nan.f)
-(test -inf.f degrees->radians -inf.f)
-(test #t single=? (- pi) (degrees->radians -180.0f0))
-(test #t single=? (* -1/2 pi) (degrees->radians -90.0f0))
-(test -0.0f0 degrees->radians -0.0f0)
-(test 0.0f0 degrees->radians 0.0f0)
-(test #t single=? (* 1/2 pi) (degrees->radians 90.0f0))
-(test #t single=? pi (degrees->radians 180.0f0))
-(test +inf.f degrees->radians +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test +nan.f degrees->radians +nan.f)
+  (test -inf.f degrees->radians -inf.f)
+  (test #t single=? (- pi) (degrees->radians -180.0f0))
+  (test #t single=? (* -1/2 pi) (degrees->radians -90.0f0))
+  (test -0.0f0 degrees->radians -0.0f0)
+  (test 0.0f0 degrees->radians 0.0f0)
+  (test #t single=? (* 1/2 pi) (degrees->radians 90.0f0))
+  (test #t single=? pi (degrees->radians 180.0f0))
+  (test +inf.f degrees->radians +inf.f))
 
 (test +nan.0 degrees->radians +nan.0)
 (test -inf.0 degrees->radians -inf.0)
@@ -385,15 +394,17 @@
 
 (test 0 radians->degrees 0)
 
-(test +nan.f radians->degrees +nan.f)
-(test -inf.f radians->degrees -inf.f)
-(test #t single=? -180 (radians->degrees (- pi.f)))
-(test #t single=? -90 (radians->degrees (* -1/2 pi.f)))
-(test -0.0f0 radians->degrees -0.0f0)
-(test 0.0f0 radians->degrees 0.0f0)
-(test #t single=? 90 (radians->degrees (* 1/2 pi.f)))
-(test #t single=? 180 (radians->degrees pi.f))
-(test +inf.f radians->degrees +inf.f)
+#reader "maybe-single.rkt"
+(begin
+  (test +nan.f radians->degrees +nan.f)
+  (test -inf.f radians->degrees -inf.f)
+  (test #t single=? -180 (radians->degrees (- pi.f)))
+  (test #t single=? -90 (radians->degrees (* -1/2 pi.f)))
+  (test -0.0f0 radians->degrees -0.0f0)
+  (test 0.0f0 radians->degrees 0.0f0)
+  (test #t single=? 90 (radians->degrees (* 1/2 pi.f)))
+  (test #t single=? 180 (radians->degrees pi.f))
+  (test +inf.f radians->degrees +inf.f))
 
 (test +nan.0 radians->degrees +nan.0)
 (test -inf.0 radians->degrees -inf.0)
@@ -415,13 +426,15 @@
 (test 0 exact-round #e0.5)
 (test 2 exact-round #e1.5)
 
-(err/rt-test (exact-round +nan.f))
-(err/rt-test (exact-round -inf.f))
-(test -2 exact-round -1.5f0)
-(test 0 exact-round -0.5f0)
-(test 0 exact-round 0.5f0)
-(test 2 exact-round 1.5f0)
-(err/rt-test (exact-round +inf.f))
+#reader "maybe-single.rkt"
+(begin
+  (err/rt-test (exact-round +nan.f))
+  (err/rt-test (exact-round -inf.f))
+  (test -2 exact-round -1.5f0)
+  (test 0 exact-round -0.5f0)
+  (test 0 exact-round 0.5f0)
+  (test 2 exact-round 1.5f0)
+  (err/rt-test (exact-round +inf.f)))
 
 (err/rt-test (exact-round +nan.0))
 (err/rt-test (exact-round -inf.0))
@@ -443,13 +456,15 @@
 (test 0 exact-floor #e0.5)
 (test 1 exact-floor #e1.5)
 
-(err/rt-test (exact-floor +nan.f))
-(err/rt-test (exact-floor -inf.f))
-(test -2 exact-floor -1.5f0)
-(test -1 exact-floor -0.5f0)
-(test 0 exact-floor 0.5f0)
-(test 1 exact-floor 1.5f0)
-(err/rt-test (exact-floor +inf.f))
+#reader "maybe-single.rkt"
+(begin
+  (err/rt-test (exact-floor +nan.f))
+  (err/rt-test (exact-floor -inf.f))
+  (test -2 exact-floor -1.5f0)
+  (test -1 exact-floor -0.5f0)
+  (test 0 exact-floor 0.5f0)
+  (test 1 exact-floor 1.5f0)
+  (err/rt-test (exact-floor +inf.f)))
 
 (err/rt-test (exact-floor +nan.0))
 (err/rt-test (exact-floor -inf.0))
@@ -471,13 +486,15 @@
 (test 1 exact-ceiling #e0.5)
 (test 2 exact-ceiling #e1.5)
 
-(err/rt-test (exact-ceiling +nan.f))
-(err/rt-test (exact-ceiling -inf.f))
-(test -1 exact-ceiling -1.5f0)
-(test 0 exact-ceiling -0.5f0)
-(test 1 exact-ceiling 0.5f0)
-(test 2 exact-ceiling 1.5f0)
-(err/rt-test (exact-ceiling +inf.f))
+#reader "maybe-single.rkt"
+(begin
+  (err/rt-test (exact-ceiling +nan.f))
+  (err/rt-test (exact-ceiling -inf.f))
+  (test -1 exact-ceiling -1.5f0)
+  (test 0 exact-ceiling -0.5f0)
+  (test 1 exact-ceiling 0.5f0)
+  (test 2 exact-ceiling 1.5f0)
+  (err/rt-test (exact-ceiling +inf.f)))
 
 (err/rt-test (exact-ceiling +nan.0))
 (err/rt-test (exact-ceiling -inf.0))
@@ -499,13 +516,15 @@
 (test 0 exact-truncate #e0.5)
 (test 1 exact-truncate #e1.5)
 
-(err/rt-test (exact-truncate +nan.f))
-(err/rt-test (exact-truncate -inf.f))
-(test -1 exact-truncate -1.5f0)
-(test 0 exact-truncate -0.5f0)
-(test 0 exact-truncate 0.5f0)
-(test 1 exact-truncate 1.5f0)
-(err/rt-test (exact-truncate +inf.f))
+#reader "maybe-single.rkt"
+(begin
+  (err/rt-test (exact-truncate +nan.f))
+  (err/rt-test (exact-truncate -inf.f))
+  (test -1 exact-truncate -1.5f0)
+  (test 0 exact-truncate -0.5f0)
+  (test 0 exact-truncate 0.5f0)
+  (test 1 exact-truncate 1.5f0)
+  (err/rt-test (exact-truncate +inf.f)))
 
 (err/rt-test (exact-truncate +nan.0))
 (err/rt-test (exact-truncate -inf.0))

@@ -406,6 +406,7 @@
                           [read-square-bracket-as-paren #t]
                           [read-curly-brace-as-paren #t]
                           [read-decimal-as-inexact #t]
+                          [read-single-flonum (single-flonum-available?)] ;; not the default!
                           [read-accept-dot #t]
                           [read-accept-infix-dot #t]
                           [read-accept-quasiquote #t]

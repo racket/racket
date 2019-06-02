@@ -371,6 +371,7 @@
           byte?
           double-flonum?
           single-flonum?
+          single-flonum-available?
           real->double-flonum
           real->single-flonum
           arithmetic-shift

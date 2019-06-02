@@ -16,7 +16,8 @@
   ;; real predicates
   (define (nan? x)
     (unless (real? x) (raise-argument-error 'nan? "real?" x))
-    (or (eqv? x +nan.0) (eqv? x +nan.f)))
+    (or (eqv? x +nan.0) (and (single-flonum-available?)
+                             (eqv? x (real->single-flonum +nan.0)))))
 
   (define (infinite? x)
     (unless (real? x) (raise-argument-error 'infinite? "real?" x))

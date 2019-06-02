@@ -48,6 +48,7 @@
     (check-parameter read-accept-box config)
     (check-parameter read-accept-bar-quote config)
     (check-parameter read-decimal-as-inexact config)
+    (check-parameter read-single-flonum config)
     (check-parameter read-accept-dot config)
     (check-parameter read-accept-infix-dot config)
     (check-parameter read-accept-quasiquote config)
