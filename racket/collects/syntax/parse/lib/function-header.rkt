@@ -1,7 +1,6 @@
 #lang racket/base
 
 (require "../../parse.rkt"
-         "../experimental/template.rkt"
          racket/dict)
 
 (provide function-header formal formals)
@@ -9,8 +8,7 @@
 (define-syntax-class function-header
   (pattern ((~or header:function-header name:id) . args:formals)
            #:attr params
-           (template ((?@ . (?? header.params ()))
-                      . args.params))))
+           #'((~@ . (~? header.params ())) . args.params)))
 
 (define-syntax-class formals
   #:attributes (params)

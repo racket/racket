@@ -8,6 +8,9 @@
           "parse-common.rkt"
           (for-label racket/base racket/contract racket/syntax syntax/kerncase))
 
+@(define the-eval (make-sp-eval))
+@(the-eval `(require syntax/parse/lib/function-header))
+
 @title{Library Syntax Classes and Literal Sets}
 
 @section{Syntax Classes}
@@ -218,7 +221,7 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
 @defmodule[syntax/parse/lib/function-header]
 
 @defstxclass[function-header]{
- Matches a the formals found in function headers. Including
+ Matches the formals found in function headers. Including
  keyword and rest arguments.}
 @defstxclass[formal]{
  Matches a single formal that can be used in a function
@@ -226,3 +229,19 @@ Note that the literal-set uses the names @racket[#%plain-lambda] and
 @defstxclass[formals]{
  Matches a list of formals that would be used in a function
  header.}
+
+@interaction[#:eval the-eval
+(syntax-parse #'(define ((foo x) y) 1)
+  [(_ header:function-header body ...+) #'(header header.params)])
+(syntax-parse #'(lambda xs xs)
+  [(_ fmls:formals body ...+) #'(fmls fmls.params)])
+(syntax-parse #'(lambda (x y #:kw [kw 42] . xs) xs)
+  [(_ fmls:formals body ...+) #'(fmls fmls.params)])
+(syntax-parse #'(lambda (x) x)
+  [(_ (fml:formal) body ...+) #'(fml
+                                 fml.name
+                                 (~? fml.kw #f)
+                                 (~? fml.default #f))])
+(syntax-parse #'(lambda (#:kw [kw 42]) kw)
+  [(_ (fml:formal) body ...+) #'(fml fml.name fml.kw fml.default)])
+]
