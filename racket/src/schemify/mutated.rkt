@@ -246,7 +246,7 @@
                     (define u-id (unwrap id))
                     (define state (hash-ref mutated u-id #f))
                     (when (and (too-early-mutated-state? state)
-                               (not set!ed-mutated-state? state))
+                               (not (set!ed-mutated-state? state)))
                       (hash-set! mutated u-id 'too-early/ready)))
                   (loop (wrap-cdr mut-l))]
                  [else mut-l])]
