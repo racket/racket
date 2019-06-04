@@ -991,11 +991,11 @@
          [(eqv? e +inf.0) "scheme_inf_object"]
          [(eqv? e -inf.0) "scheme_minus_inf_object"]
          [(eqv? e +nan.0) "scheme_nan_object"]
-         [(and (sinfle-flonum-available?) (eqv? e (real->single-flonum +inf.0)))
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum +inf.0)))
           "scheme_single_inf_object"]
-         [(and (sinfle-flonum-available?) (eqv? e (real->single-flonum -inf.0)))
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum -inf.0)))
           "scheme_single_minus_inf_object"]
-         [(and (sinfle-flonum-available?) (eqv? e (real->single-flonum +nan.0)))
+         [(and (single-flonum-available?) (eqv? e (real->single-flonum +nan.0)))
           "scheme_single_nan_object"]
          [else
           (format "scheme_make_double(~a)" e)])]
