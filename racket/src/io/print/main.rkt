@@ -127,8 +127,7 @@
           (void))))
 
 (define/who (newline [o (current-output-port)])
-  (check who output-port? o)
-  (unsafe-write-bytes 'newline #"\n" o)
+  (unsafe-write-bytes 'newline #"\n" (->core-output-port o who))
   (void))
 
 ;; ----------------------------------------

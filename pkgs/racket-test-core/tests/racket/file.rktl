@@ -1218,6 +1218,17 @@
     (test (void) close-output-port p)
     (test 10 values l)))
 
+(let ()
+  (define-struct myport (port)
+    #:property prop:output-port 0)
+  (define o (open-output-string))
+
+  (define out (make-myport o))
+  (test (void) newline out)
+  (test "\n" get-output-string o)
+
+  (err/rt-test (newline 9)))
+
 ; --------------------------------------------------
 
 (load "tmp1")
