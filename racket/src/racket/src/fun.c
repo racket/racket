@@ -996,14 +996,59 @@ int scheme_intern_prim_opt_flags(int flags)
 /*                            prompt helpers                              */
 /*========================================================================*/
 
-static void initialize_prompt(Scheme_Thread *p, Scheme_Prompt *prompt, void *stack_boundary)
+static void initialize_prompt(Scheme_Thread *p, Scheme_Prompt *prompt, void *stack_boundary, int is_barrier)
 {
-  prompt->is_barrier = 0;
+  prompt->is_barrier = is_barrier;
   prompt->stack_boundary = stack_boundary;
-  prompt->runstack_boundary_start = MZ_RUNSTACK_START;
+  if (is_barrier) {
+    /* Avoid leak in case barrier is retained longer than the rest of the stack */
+    Scheme_Object *ref;
+    ref = scheme_make_weak_box((Scheme_Object *)MZ_RUNSTACK_START);
+    prompt->u.runstack_boundary_start_ref = ref;
+    prompt->weak_boundary = 1;
+  } else
+    prompt->u.runstack_boundary_start = MZ_RUNSTACK_START;
   prompt->runstack_boundary_offset = (MZ_RUNSTACK - MZ_RUNSTACK_START);
   prompt->mark_boundary = MZ_CONT_MARK_STACK;
   prompt->boundary_mark_pos = MZ_CONT_MARK_POS;
+}
+
+Scheme_Object **scheme_prompt_runstack_boundary_start(Scheme_Prompt *p)
+{
+  if (p->weak_boundary)
+    return (Scheme_Object **)(SCHEME_BOX_VAL(p->u.runstack_boundary_start_ref));
+  else
+    return p->u.runstack_boundary_start;
+}
+
+static void init_prompt_id(Scheme_Prompt *prompt)
+{
+  Scheme_Object *id;
+
+  if (!prompt->id) {
+    id = scheme_make_pair(scheme_false, scheme_false);
+    prompt->id = id;
+  }
+}
+
+Scheme_Prompt *make_weak_prompt(Scheme_Prompt *p)
+{
+  Scheme_Prompt *p2;
+  Scheme_Object *ref;
+
+  if (p->weak_boundary)
+    return p;
+
+  init_prompt_id(p);
+
+  p2 = MALLOC_ONE_TAGGED(Scheme_Prompt);
+  memcpy(p2, p, sizeof(Scheme_Prompt));
+
+  ref = scheme_make_weak_box((Scheme_Object *)p2->u.runstack_boundary_start);
+  p2->u.runstack_boundary_start_ref = ref;
+  p2->weak_boundary = 1;
+
+  return p2;
 }
 
 /*========================================================================*/
@@ -1193,11 +1238,7 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread)
   
   if (eb) {
     prompt = allocate_prompt(&available_prompt);
-    initialize_prompt(p, prompt, PROMPT_STACK(prompt));
-      
-    if (!new_thread) {
-      prompt->is_barrier = 1;
-    }
+    initialize_prompt(p, prompt, PROMPT_STACK(prompt), !new_thread);
   }
 
 #ifdef MZ_PRECISE_GC
@@ -4589,7 +4630,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
       size += MAX_CALL_CC_ARG_COUNT;
     else
       size += shared_amt;
-  } else if (effective_prompt && (effective_prompt->runstack_boundary_start == runstack_start)) {
+  } else if (effective_prompt && (scheme_prompt_runstack_boundary_start(effective_prompt) == runstack_start)) {
     /* Copy only up to the prompt */
     size = effective_prompt->runstack_boundary_offset - (runstack XFORM_OK_MINUS runstack_start);
   } else {
@@ -4604,7 +4645,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
   memcpy(saved->runstack_start, runstack, size * sizeof(Scheme_Object *));
   saved->runstack_offset = (runstack XFORM_OK_MINUS runstack_start);
 
-  if (!effective_prompt || (effective_prompt->runstack_boundary_start != runstack_start)) {
+  if (!effective_prompt || (scheme_prompt_runstack_boundary_start(effective_prompt) != runstack_start)) {
 
     /* Copy saved runstacks: */
     if (share_from) {
@@ -4630,7 +4671,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
       isaved->prev = ss;
       isaved = ss;
 
-      if (effective_prompt && (effective_prompt->runstack_boundary_start == csaved->runstack_start)) {
+      if (effective_prompt && (scheme_prompt_runstack_boundary_start(effective_prompt) == csaved->runstack_start)) {
 	size = effective_prompt->runstack_boundary_offset - csaved->runstack_offset;
 	done = 1;
       } else {
@@ -5071,16 +5112,16 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
         saved = clone_runstack_copied(cnaya->runstack_copied, 
                                       cnaya->runstack_start,
                                       cnaya->runstack_saved, 
-                                      prompt->runstack_boundary_start,
+                                      scheme_prompt_runstack_boundary_start(prompt),
                                       prompt->runstack_boundary_offset);
         cnaya->runstack_copied = saved;
 
         /* Prune unneeded buffers */
-        if (prompt->runstack_boundary_start == cnaya->runstack_start)
+        if (scheme_prompt_runstack_boundary_start(prompt) == cnaya->runstack_start)
           saved = NULL;
         else
           saved = clone_runstack_saved(cnaya->runstack_saved, 
-                                       prompt->runstack_boundary_start,
+                                       scheme_prompt_runstack_boundary_start(prompt),
                                        NULL);
         cnaya->runstack_saved = saved;
 
@@ -5383,16 +5424,12 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
     cont->meta_continuation = NULL;
   } else if (prompt) {
     Scheme_Meta_Continuation *mc;
-    Scheme_Object *id;
     mc = clone_meta_cont(p->meta_continuation, pt, -1, prompt_cont, prompt, NULL, composable);
     cont->meta_continuation = mc;
     if (!prompt_cont) {
       /* Remember the prompt id, so we can maybe take a shortcut on 
          invocation. (The shortcut only works within a meta-continuation.) */
-      if (!prompt->id) {
-        id = scheme_make_pair(scheme_false, scheme_false);
-        prompt->id = id;
-      }
+      init_prompt_id(prompt);
       cont->prompt_id = prompt->id;
     }
     cont->has_prompt_dw = 1;
@@ -5475,11 +5512,11 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
          (Note that this is different than runstack_copied; 
           runstack_saved keeps the shared runstack buffers, 
           not the content.) */
-      if (SAME_OBJ(prompt->runstack_boundary_start, MZ_RUNSTACK_START))
+      if (scheme_prompt_runstack_boundary_start(prompt) == MZ_RUNSTACK_START)
         saved = NULL;
       else
         saved = clone_runstack_saved(cont->runstack_saved, 
-                                     prompt->runstack_boundary_start,
+                                     scheme_prompt_runstack_boundary_start(prompt),
                                      NULL);
       cont->runstack_saved = saved;
     }
@@ -5629,11 +5666,11 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     /* In shortcut mode, we need to preserve saved runstacks
        that were pruned when capturing the continuation. */
     Scheme_Saved_Stack *rs;
-    if (shortcut_prompt->runstack_boundary_start == MZ_RUNSTACK_START)
+    if (scheme_prompt_runstack_boundary_start(shortcut_prompt) == MZ_RUNSTACK_START)
       rs = p->runstack_saved;
     else {
       rs = p->runstack_saved;
-      while (rs && (rs->runstack_start != shortcut_prompt->runstack_boundary_start)) {
+      while (rs && (rs->runstack_start != scheme_prompt_runstack_boundary_start(shortcut_prompt))) {
         rs = rs->prev;
       }
       if (rs)
@@ -5762,10 +5799,10 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
           actual = actual->prev;
       }
       if (actual) {
-        meta_prompt->runstack_boundary_start = actual->runstack_start;
+        meta_prompt->u.runstack_boundary_start = actual->runstack_start;
         meta_prompt->runstack_boundary_offset = actual->runstack_offset + saved->runstack_size;
       } else {
-        meta_prompt->runstack_boundary_start = MZ_RUNSTACK_START;
+        meta_prompt->u.runstack_boundary_start = MZ_RUNSTACK_START;
         meta_prompt->runstack_boundary_offset = (MZ_RUNSTACK - MZ_RUNSTACK_START) + saved->runstack_size + delta;
         MZ_ASSERT(meta_prompt->runstack_boundary_offset <= scheme_current_thread->runstack_size);
       }
@@ -5934,6 +5971,13 @@ internal_call_cc (int argc, Scheme_Object *argv[])
                      prompt_tag);
     return NULL;
   }
+
+  /* This prompt is likely to be on the C stack when we capture it for
+     the continuation, but we only want to retain the prompt's
+     runstack. Convert it to one that has the same ID but holds the
+     runstack weakly. */
+  if (prompt)
+    prompt = make_weak_prompt(prompt);
 
   barrier_prompt = scheme_get_barrier_prompt(&barrier_cont, &barrier_pos);
 
@@ -6736,7 +6780,7 @@ static void restore_from_prompt(Scheme_Prompt *prompt)
 {
   Scheme_Thread *p = scheme_current_thread;
 
-  while (MZ_RUNSTACK_START != prompt->runstack_boundary_start) {
+  while (MZ_RUNSTACK_START != scheme_prompt_runstack_boundary_start(prompt)) {
     MZ_RUNSTACK_START = p->runstack_saved->runstack_start;
     p->runstack_saved = p->runstack_saved->prev;
   }
@@ -7029,7 +7073,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
 
     ASSERT_SUSPEND_BREAK_ZERO();
 
-    initialize_prompt(p, prompt, NULL);
+    initialize_prompt(p, prompt, NULL, 0);
 
     if (p->overflow) {
       ensure_overflow_id(p->overflow);

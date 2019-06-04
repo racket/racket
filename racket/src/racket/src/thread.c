@@ -2740,7 +2740,7 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
 #ifdef MZ_PRECISE_GC
   intptr_t sz;
   void **p;
-  sz = sizeof(Scheme_Object*) * (len + 5);
+  sz = sizeof(Scheme_Object*) * (len + RUNSTACK_HEADER_FIELDS);
   p = (void **)GC_malloc_tagged_allow_interior(sz);
   *(Scheme_Type *)(void *)p = scheme_rt_runstack;
   ((intptr_t *)(void *)p)[1] = gcBYTES_TO_WORDS(sz);
@@ -2748,7 +2748,7 @@ Scheme_Object **scheme_alloc_runstack(intptr_t len)
   ((intptr_t *)(void *)p)[3] = len;
 # define MZ_RUNSTACK_OVERFLOW_CANARY 0xFF77FF77
   ((intptr_t *)(void *)p)[4] = MZ_RUNSTACK_OVERFLOW_CANARY;
-  return (Scheme_Object **)(p + 5);
+  return (Scheme_Object **)(p + RUNSTACK_HEADER_FIELDS);
 #else
   return (Scheme_Object **)scheme_malloc_allow_interior(sizeof(Scheme_Object*) * len);
 #endif
@@ -9093,7 +9093,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       Scheme_Object **rs_start;
 
       /* If there's a meta-prompt, we can also zero out past the unused part */
-      if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == p->runstack_start)) {
+      if (p->meta_prompt && (scheme_prompt_runstack_boundary_start(p->meta_prompt) == p->runstack_start)) {
         rs_end = p->meta_prompt->runstack_boundary_offset;
       } else {
         rs_end = p->runstack_size;
@@ -9115,7 +9115,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
       for (saved = p->runstack_saved; saved; saved = saved->prev) {
 	RUNSTACK_TUNE( size += saved->runstack_size; );
 
-        if (p->meta_prompt && (p->meta_prompt->runstack_boundary_start == saved->runstack_start)) {
+        if (p->meta_prompt && (scheme_prompt_runstack_boundary_start(p->meta_prompt) == saved->runstack_start)) {
           rs_end = p->meta_prompt->runstack_boundary_offset;
         } else {
           rs_end = saved->runstack_size;

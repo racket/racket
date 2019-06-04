@@ -736,6 +736,10 @@ THREAD_LOCAL_DECL(extern MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 # define MZ_CONT_MARK_POS (scheme_current_thread->cont_mark_pos)
 #endif
 
+#ifdef MZ_PRECISE_GC
+# define RUNSTACK_HEADER_FIELDS 5
+#endif
+
 THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
@@ -1977,18 +1981,23 @@ typedef struct Scheme_Meta_Continuation {
 
 typedef struct Scheme_Prompt {
   Scheme_Object so;
-  char is_barrier, has_chaperone;
+  char is_barrier, has_chaperone, weak_boundary;
   Scheme_Object *tag;
   Scheme_Object *id;                  /* created as needed; allows direct-jump optimization for cont app */
   void *stack_boundary;               /* where to stop copying the C stack */
   void *boundary_overflow_id;         /* indicates the C stack segment */
   MZ_MARK_STACK_TYPE mark_boundary;   /* where to stop copying cont marks */
   MZ_MARK_POS_TYPE boundary_mark_pos; /* mark position of prompt */
-  Scheme_Object **runstack_boundary_start; /* which stack has runstack_boundary */
+  union {
+    Scheme_Object **runstack_boundary_start;    /* which stack has runstack_boundary */
+    Scheme_Object *runstack_boundary_start_ref; /* weak-ref variant, used when `weak_boundary` */
+  } u;
   intptr_t runstack_boundary_offset;      /* where to stop copying the Scheme stack */
   mz_jmp_buf *prompt_buf;             /* to jump directly to the prompt */
   intptr_t runstack_size;                 /* needed for restore */
 } Scheme_Prompt;
+
+XFORM_NONGCING Scheme_Object **scheme_prompt_runstack_boundary_start(Scheme_Prompt *p);
 
 /* Compiler helper: */
 #define ESCAPED_BEFORE_HERE  return NULL
