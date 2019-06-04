@@ -574,7 +574,7 @@
    --top--
    (when (custodian-memory-accounting-available?)
      (t --top--
-        (parameterize ([sandbox-eval-limits '(10 5)]
+        (parameterize ([sandbox-eval-limits '(100 5)]
                        [sandbox-memory-limit 100])
           (make-base-evaluator!))
         --eval--
