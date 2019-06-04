@@ -5499,7 +5499,7 @@ static Scheme_Object *fold_fixnum_bitwise_shift(int argc, Scheme_Object *argv[])
 #define UNSAFE_FX(name, op, fold, type, no_args)             \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
-   intptr_t v;                                               \
+   type v;                                                   \
    int i;                                                    \
    if (!argc) return no_args;                                \
    if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
