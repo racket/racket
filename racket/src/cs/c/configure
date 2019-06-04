@@ -1426,7 +1426,7 @@ Optional Features:
   --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks
   --enable-mac64          allow 64-bit Mac OS build (enabled by default)
   --enable-strip          strip debug on install (usually enabled by default)
-  --enable-ubsan          compile with -fsanitize=undefined)
+  --enable-ubsan          compile with -fsanitize=undefined
   --enable-csdefault      use CS as default build
   --enable-csonly         build CS only
   --enable-parent         Create "../Makefile" (internal use)

@@ -1499,7 +1499,7 @@ Optional Features:
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
-  --enable-ubsan          compile with -fsanitize=undefined)
+  --enable-ubsan          compile with -fsanitize=undefined
   --enable-jitframe       x86_64: use frame pointer for internal calls
   --enable-crossany       Record own cross target as machine-independent
 
