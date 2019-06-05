@@ -32,7 +32,7 @@
       #'(defproc #:kind "syntax class" datum @#,tech{syntax class} . pre-flows)])
    (define-syntax-parser defattribute
      [(_ name:id . pre-flows)
-      #'(subdefthing #:kind "attribute" #:link-target? #f name
+      #'(defsubthing #:kind "attribute" #:link-target? #f name
         . pre-flows)]))
 
 @defstxclass[expr]{
