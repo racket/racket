@@ -263,7 +263,7 @@ or exponent (but no explicit exactness tag). See
 @defboolparam[read-single-flonum on?]{
 
 A @tech{parameter} that controls parsing input numbers that have a
-@litchar{f}, @litchar{S}, @litchar{s}, or @litchar{S} precision
+@litchar{f}, @litchar{F}, @litchar{s}, or @litchar{S} precision
 character. See @secref["parse-number"] for more information.
 
 @history[#:added "7.3.0.5"]}
