@@ -145,6 +145,10 @@ variant patterns and their immediate @racket[#:with] clauses. Patterns
 occurring within subexpressions of the syntax class (for example, on
 the right-hand side of a @racket[#:fail-when] clause) are not
 affected.
+}
+
+@specsubform[(code:line #:local-conventions (convention-rule ...))]
+@specsubform[(code:line #:disable-colon-notation)]{
 
 These options have the same meaning as in @racket[syntax-parse].
 }
@@ -236,16 +240,17 @@ specifying side conditions. The grammar for pattern directives
 follows:
 
 @racketgrammar[pattern-directive
-               (code:line #:declare pattern-id stxclass maybe-role)
+               (code:line #:declare pvar-id stxclass maybe-role)
                (code:line #:post action-pattern)
                (code:line #:and action-pattern)
-               (code:line #:with syntax-pattern expr)
+               (code:line #:with syntax-pattern stx-expr)
                (code:line #:attr attr-arity-decl expr)
                (code:line #:fail-when condition-expr message-expr)
                (code:line #:fail-unless condition-expr message-expr)
                (code:line #:when condition-expr)
                (code:line #:do [def-or-expr ...])
-               (code:line #:undo [def-or-expr ...])]
+               (code:line #:undo [def-or-expr ...])
+               (code:line #:cut)]
 
 @sub-kw-form[[#:declare pvar-id stxclass maybe-role]
              #:grammar
