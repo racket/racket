@@ -777,7 +777,9 @@ follows from the @racket[define-runtime-path] syntactic form:
        determined by preserving the original expression as a syntax
        object, extracting its source module path at run time (again
        using @racket[syntax-source-module]), and then resolving the
-       resulting module path index.}
+       resulting module path index. Note that @racket[syntax-source-module]
+       is based on a syntax object's @tech{lexical information}, not its
+       source location.}
 
  @item{If the expression has no source module, the
        @racket[syntax-source] location associated with the form is

@@ -104,7 +104,11 @@ can be inferred from its lexical context.  If
 @racket[source?] is @racket[#f], then result is a module path index or
 symbol (see @secref["modpathidx"]) or a @tech{resolved module path}; if @racket[source?] is true, the
 result is a path or symbol corresponding to the loaded module's
-source in the sense of @racket[current-module-declare-source].}
+source in the sense of @racket[current-module-declare-source].
+
+Note that @racket[syntax-source-module] does @emph{not} consult the
+source location of @racket[stx]. The result is based on the
+@tech{lexical information} of @racket[stx].}
 
 
 @defproc[(syntax-e [stx syntax?]) any]{
