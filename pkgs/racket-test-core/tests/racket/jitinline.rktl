@@ -1198,5 +1198,69 @@
   (err/rt-test (f)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to that used to fail because the inlined form of
+;; `unsafe-make-flrectangular` was missing a runstack sync
+
+(let ()
+  (define *iteration-limit* 50)
+
+  (define (sqr x) (* x x))
+
+  (define (mandel c)
+    (define op
+      (let ()
+        (define (mandel-iter unboxed-real-6 unboxed-imag-7 i)
+          (let-values (((z) 'check-syntax-binding))
+            (if (let ((or-part (>= i *iteration-limit*)))
+                  (if or-part
+                      or-part
+                      (fl>
+                       (let ([r (flabs unboxed-real-6)])
+                         (let ([i (flabs unboxed-imag-7)])
+                           (if (zero? i)
+                               r
+                               (if (fl< i r)
+                                   (let ([q (fl/ i r)])
+                                     (fl* r (flsqrt (fl+ '1.0 (fl* q q)))))
+                                   (let ([q (fl/ r i)])
+                                     (fl* i (flsqrt (fl+ '1.0 (fl* q q)))))))))
+                       2.0)))
+                i
+                (let ([g8 c])
+                  (let-values (((unboxed-real-9) (flreal-part g8)))
+                    (let-values (((unboxed-imag-10) (flimag-part g8)))
+                      (let-values (((g11) (sqr (unsafe-make-flrectangular
+                                                unboxed-real-6
+                                                unboxed-imag-7))))
+                        (let-values (((unboxed-real-12) (flreal-part g11)))
+                          (let-values (((unboxed-imag-13) (flimag-part g11)))
+                            (let-values (((unboxed-real-14) (fl+ (real->double-flonum
+                                                                  unboxed-real-9)
+                                                                 unboxed-real-12)))
+                              (let-values (((unboxed-imag-15) (fl+
+                                                               (real->double-flonum
+                                                                unboxed-imag-10)
+                                                               unboxed-imag-13)))
+                                (let-values (((boxed-binding16) (+ i '1)))
+                                  (mandel-iter
+                                   unboxed-real-14
+                                   unboxed-imag-15
+                                   boxed-binding16)))))))))))))
+        mandel-iter))
+    (op 0.0 0.0 0))
+
+  (define (brot xs ys)
+    (for*/list ([y (in-list ys)]
+                [x (in-list xs)])
+      (mandel (unsafe-make-flrectangular x y))))
+
+  (define (make-ticks min max resolution)
+    (for/list ([v (in-range min max (/ (fl- max min) resolution))])
+      v))
+
+  (void (brot (make-ticks '-1.5 '0.5 '300)
+              (make-ticks '-1.0 '1.0 '300))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
