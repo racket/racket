@@ -5054,7 +5054,12 @@ if test "${enable_cgcdefault}" ; then
    MAIN_VARIANT=cgc
 fi
 MAIN_MAKE_TARGET="${MAIN_VARIANT}"
-CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+
+if test "${enable_racket}" = "" ; then
+  CS_BOOTSTRAP_HELP="${MAIN_VARIANT}"
+else
+  CS_BOOTSTRAP_HELP="no-${MAIN_VARIANT}"
+fi
 
 if test "${enable_csdefault}" ; then
    MMM_INSTALLED=3m

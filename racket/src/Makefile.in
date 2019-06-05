@@ -134,9 +134,11 @@ install-common-first:
         esac
 	mkdir -p $(ALLDIRINFO)
 
+MIDDLE_POST_COLLECTS = install-@MAKE_GRACKET@-post-collects
+
 install-common-middle:
 	$(MAKE) @MAKE_COPYTREE@-run
-	$(MAKE) install-@MAKE_GRACKET@-post-collects
+	$(MAKE) $(MIDDLE_POST_COLLECTS)
 	$(MAKE) lib-finish
 
 install-common-last:
@@ -259,7 +261,7 @@ CS_SETUP_INSTALL_TARGET = setup-install
 install-cs-common:
 	$(MAKE) install-common-first
 	cd cs/c; $(MAKE) plain-install
-	$(MAKE) install-common-middle
+	$(MAKE) install-common-middle MIDDLE_POST_COLLECTS=install-no-post-collects
 	cd cs/c; $(MAKE) $(CS_SETUP_INSTALL_TARGET)
 	$(MAKE) install-common-last
 
