@@ -610,6 +610,17 @@
 (test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
            '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
 
+(test-comp '(lambda (z) (fl+ z z))
+           '(lambda (z) (real->double-flonum (fl+ z z))))
+(test-comp '(lambda (z) (fl+ z z))
+           '(lambda (z) (exact->inexact (fl+ z z))))
+(test-comp '(lambda (z) (real->double-flonum z))
+           '(lambda (z) (real->double-flonum (real->double-flonum z))))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+           '(lambda (z) (real->double-flonum (fx+ z z))))
+(test-comp '(lambda (z) (unsafe-fx->fl (fx+ z z)))
+           '(lambda (z) (exact->inexact (fx+ z z))))
+
 ; Test that the optimizer infers correctly the type of all the arguments
 ; and the type of the return value. Use #f in case the type is unknown.
 (define (test-arg-types proc/args? val? 

@@ -591,6 +591,7 @@ extern Scheme_Object *scheme_unsafe_fxand_proc;
 extern Scheme_Object *scheme_unsafe_fxior_proc;
 extern Scheme_Object *scheme_unsafe_fxxor_proc;
 extern Scheme_Object *scheme_unsafe_fxrshift_proc;
+extern Scheme_Object *scheme_unsafe_fx_to_fl_proc;
 extern Scheme_Object *scheme_unsafe_pure_proc;
 
 extern Scheme_Object *scheme_string_p_proc;

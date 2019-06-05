@@ -211,6 +211,7 @@ READ_ONLY Scheme_Object *scheme_unsafe_fxand_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxior_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxxor_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxrshift_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_to_fl_proc;
 
 READ_ONLY double scheme_infinity_val;
 READ_ONLY double scheme_minus_infinity_val;
@@ -536,6 +537,8 @@ scheme_init_number (Scheme_Startup_Env *env)
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  flags |= (SCHEME_PRIM_PRODUCES_FLONUM
+            | SCHEME_PRIM_AD_HOC_OPT);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
   scheme_addto_prim_instance("real->double-flonum", p, env);
 
@@ -735,6 +738,7 @@ scheme_init_number (Scheme_Startup_Env *env)
     flags = SCHEME_PRIM_IS_UNARY_INLINED;
   else
     flags = SCHEME_PRIM_SOMETIMES_INLINED;
+  flags |= SCHEME_PRIM_AD_HOC_OPT;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
   scheme_addto_prim_instance("exact->inexact", p, env);
 
@@ -1370,6 +1374,8 @@ void scheme_init_unsafe_number(Scheme_Startup_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FLONUM);
   scheme_addto_prim_instance("unsafe-fx->fl", p, env);
+  REGISTER_SO(scheme_unsafe_fx_to_fl_proc);
+  scheme_unsafe_fx_to_fl_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fl_to_fx, "unsafe-fl->fx", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED

@@ -4586,7 +4586,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         && !strcmp(SCHEME_SYM_VAL(rand), "vm")) {
       /* For the expander's benefit, optimize `(system-type 'vm)` to `'racket`
          to effectively select backend details statically. */
-      return scheme_intern_symbol("racket");
+      return replace_tail_inside(scheme_intern_symbol("racket"), inside, app->rand);
     }
 
     {
@@ -4630,6 +4630,16 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         check_known(info, app_o, rator, rand, "keyword->string", scheme_keyword_p_proc, scheme_true, info->unsafe_mode);
 
         check_known(info, app_o, rator, rand, "char->integer", scheme_char_p_proc, scheme_unsafe_char_to_integer_proc, info->unsafe_mode);
+
+        if (IS_NAMED_PRIM(rator, "real->double-flonum")
+            || IS_NAMED_PRIM(rator, "exact->inexact")) {
+          Scheme_Object *pred;
+          pred = expr_implies_predicate(rand, info);
+          if (predicate_implies(pred, scheme_flonum_p_proc))
+            return replace_tail_inside(rand, inside, rand);
+          else if (predicate_implies(pred, scheme_fixnum_p_proc))
+            reset_rator(app_o, scheme_unsafe_fx_to_fl_proc);
+        }
       }
       
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
