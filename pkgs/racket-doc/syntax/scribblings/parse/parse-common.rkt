@@ -104,9 +104,13 @@
               (racket id)
               #|(superscript (symbol->string 'suffix)) ...|# )]))
 
+(define-syntax-rule (subdefthing . xs)
+  (nested #:style "leftindent" (defthing . xs)))
+
 (provide defhere
          ref
-         def)
+         def
+         subdefthing)
 
 ;; ----
 
