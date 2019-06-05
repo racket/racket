@@ -81,10 +81,12 @@
  (syntax-parse #'(f a b c)
    [a:function-header
     (s= a '(f a b c ))
-    (s= a.params '(a b c))]))
+    (s= a.params '(a b c))
+    (s= a.name 'f)]))
 
 (test-case "function header: curried"
  (syntax-parse #'((f doing) currying)
    [a:function-header
     (s= a '((f doing) currying))
-    (s= a.params '(doing currying))]))
+    (s= a.params '(doing currying))
+    (s= a.name 'f)]))

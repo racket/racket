@@ -6,9 +6,10 @@
 (provide function-header formal formals)
 
 (define-syntax-class function-header
-  (pattern ((~or header:function-header name:id) . args:formals)
-           #:attr params
-           #'((~@ . (~? header.params ())) . args.params)))
+  #:attributes (name params)
+  (pattern ((~or header:function-header name*:id) . args:formals)
+           #:attr params #'((~@ . (~? header.params ())) . args.params)
+           #:attr name   #'(~? header.name name*)))
 
 (define-syntax-class formals
   #:attributes (params)
