@@ -278,29 +278,29 @@
 (define (do-peek-string! who in str start end skip #:special-ok? [special-ok? #f])
   (do-read-string! who in str start end #:skip skip #:just-peek? #t #:special-ok? special-ok?))
 
+;; `in` must be a core port
 (define (peek-a-char who in skip-k #:special-ok? [special-ok? #f])
-  (let ([in (->core-input-port in)])
-    (define b (peek-a-byte who in skip-k #:special-ok? special-ok?))
-    (cond
-      [(and b
-            (or (eof-object? b)
-	    	(and (byte? b)
-                     (b . < . 128))
-                (procedure? b)))
-       ;; Shortcut workedx
-       (if (fixnum? b) (integer->char b) b)]
-      [else
-       ;; General mode
-       (define bstr (make-string 1))
-       (define v (do-peek-string! who in bstr 0 1 skip-k #:special-ok? special-ok?))
-       (if (eq? v 1)
-           (string-ref bstr 0)
-           v)])))
+  (define b (peek-a-byte who in skip-k #:special-ok? special-ok?))
+  (cond
+    [(and b
+          (or (eof-object? b)
+              (and (byte? b)
+                   (b . < . 128))
+              (procedure? b)))
+     ;; Shortcut worked
+     (if (fixnum? b) (integer->char b) b)]
+    [else
+     ;; General mode
+     (define bstr (make-string 1))
+     (define v (do-peek-string! who in bstr 0 1 skip-k #:special-ok? special-ok?))
+     (if (eq? v 1)
+         (string-ref bstr 0)
+         v)]))
 
 (define/who (peek-char [in (current-input-port)] [skip-k 0])
-  (check who input-port? in)
-  (check who exact-nonnegative-integer? skip-k)
-  (peek-a-char who in skip-k #:special-ok? #f))
+  (let ([in (->core-input-port in who)])
+    (check who exact-nonnegative-integer? skip-k)
+    (peek-a-char who in skip-k #:special-ok? #f)))
   
 (define/who (peek-string amt skip-k [in (current-input-port)])
   (check who exact-nonnegative-integer? amt)

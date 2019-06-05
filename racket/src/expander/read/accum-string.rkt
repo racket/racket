@@ -16,7 +16,8 @@
          accum-string-abandon!)
 
 (struct accum-string ([pos #:mutable]
-                      [str #:mutable]))
+                      [str #:mutable])
+  #:authentic)
 
 (define (accum-string-init! config)
   (define st (read-config-st config))
