@@ -498,8 +498,10 @@ static void add_group_signal_fd(rktio_signal_handle_t *signal_fd)
     signal_fd_count = (signal_fd_count + 4) * 2;
     a = malloc(sizeof(Group_Signal_FD) * signal_fd_count);
     memset(a, 0, sizeof(Group_Signal_FD) * signal_fd_count);
-    memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
-    if (signal_fds) free(signal_fds);
+    if (signal_fds) {
+      memcpy(a, signal_fds, sizeof(Group_Signal_FD) * count);
+      free(signal_fds);
+    }
     signal_fds = a;
   }
 
