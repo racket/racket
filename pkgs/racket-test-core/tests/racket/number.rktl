@@ -739,9 +739,9 @@
 (err/rt-test (inexact->exact +inf.0))
 (err/rt-test (inexact->exact -inf.0))
 (err/rt-test (inexact->exact +nan.0))
-(err/rt-test (begin (inexact->exact +inf.0) 'not-an-error))
-(err/rt-test (begin (inexact->exact -inf.0) 'not-an-error))
-(err/rt-test (begin (inexact->exact +nan.0) 'not-an-error))
+#;(err/rt-test (begin (inexact->exact +inf.0) 'not-an-error))
+#;(err/rt-test (begin (inexact->exact -inf.0) 'not-an-error))
+#;(err/rt-test (begin (inexact->exact +nan.0) 'not-an-error))
 
 #reader "maybe-single.rkt"
 (when has-single-flonum?
