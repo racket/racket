@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/fasl))
+@(require "mz.rkt" (for-label racket/fasl racket/serialize))
 
 @(define fasl-eval (make-base-eval))
 @examples[#:hidden #:eval fasl-eval (require racket/fasl)]
