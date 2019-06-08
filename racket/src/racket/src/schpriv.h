@@ -77,50 +77,50 @@
 /* indicates that a primitive call can be dropped, but it allocates,
    so it's not as reorderable as it might be otherwise: */
 #define SCHEME_PRIM_IS_OMITABLE_ALLOCATION (1 << 5)
+#define SCHEME_PRIM_IS_ARITY_0_OMITABLE_ALLOCATION (1 << 6)
+#define SCHEME_PRIM_IS_EVEN_ARITY_OMITABLE_ALLOCATION (1 << 7)
 /* indicates that a primitive call will produce the same results for the same
    inputs; note that UNSAFE_FUNCTIONAL is stronger than UNSAFE_OMITABLE: */
-#define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL   (1 << 6)
+#define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL   (1 << 8)
 /* the SCHEME_PRIMT_WANTS_... flags indicate a primitive that
    expects certain kinds of arguments and can encourage unboxing: */
-#define SCHEME_PRIM_WANTS_FLONUM_FIRST     (1 << 7)
-#define SCHEME_PRIM_WANTS_FLONUM_SECOND    (1 << 8)
-#define SCHEME_PRIM_WANTS_FLONUM_THIRD     (1 << 9)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST  (1 << 10)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND (1 << 11)
-#define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD  (1 << 12)
+#define SCHEME_PRIM_WANTS_FLONUM_FIRST     (1 << 9)
+#define SCHEME_PRIM_WANTS_FLONUM_SECOND    (1 << 10)
+#define SCHEME_PRIM_WANTS_FLONUM_THIRD     (1 << 11)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST  (1 << 12)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND (1 << 13)
+#define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD  (1 << 14)
 /* indicates an unsafe operation that does not allocate: */
-#define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE  (1 << 13)
+#define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE  (1 << 15)
 /* indicates a primitive that always raises an exception or
    otherwise escapes from the current continuation: */
-#define SCHEME_PRIM_ALWAYS_ESCAPES         (1 << 14)
+#define SCHEME_PRIM_ALWAYS_ESCAPES         (1 << 16)
 /* indicates a primitive that is JIT-inlined on some platforms,
    but not the current one: */
-#define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 15)
+#define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 17)
 /* indicates a primitive that produces a real or number (or
    errors): */
-#define SCHEME_PRIM_PRODUCES_REAL          (1 << 16)
-#define SCHEME_PRIM_PRODUCES_NUMBER        (1 << 17)
+#define SCHEME_PRIM_PRODUCES_REAL          (1 << 18)
+#define SCHEME_PRIM_PRODUCES_NUMBER        (1 << 19)
 /* indicates a primitive that requires certain argument types (all the
    same type): */
-#define SCHEME_PRIM_WANTS_REAL             (1 << 18)
-#define SCHEME_PRIM_WANTS_NUMBER           (1 << 19)
+#define SCHEME_PRIM_WANTS_REAL             (1 << 20)
+#define SCHEME_PRIM_WANTS_NUMBER           (1 << 21)
 /* indicates a primitive that always succeed when given
    arguments of the expected type: */
-#define SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS (1 << 20)
+#define SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS (1 << 22)
 /* indicates a primitive that produces a real number when
    given real-number arguments: */
-#define SCHEME_PRIM_CLOSED_ON_REALS        (1 << 21)
+#define SCHEME_PRIM_CLOSED_ON_REALS        (1 << 23)
 /* indicates the presence of an ad-hoc optimization
    in one of the application optimization passes */
-#define SCHEME_PRIM_AD_HOC_OPT             (1 << 22)
+#define SCHEME_PRIM_AD_HOC_OPT             (1 << 24)
 /* a primitive that produces a booeal or errors: */
-#define SCHEME_PRIM_PRODUCES_BOOL          (1 << 23)
+#define SCHEME_PRIM_PRODUCES_BOOL          (1 << 25)
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           24
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           26
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
-
-#define SCHEME_PRIM_IS_OMITABLE_ANY (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION | SCHEME_PRIM_IS_UNSAFE_OMITABLE)
 
 #define SCHEME_PRIM_PRODUCES_FLONUM (SCHEME_LOCAL_TYPE_FLONUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_PRODUCES_FIXNUM (SCHEME_LOCAL_TYPE_FIXNUM << SCHEME_PRIM_OPT_TYPE_SHIFT)
@@ -3061,7 +3061,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
 
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
-int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+XFORM_NONGCING int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
+XFORM_NONGCING int scheme_is_omitable_primitive(Scheme_Object *rator, int num_args);
 
 typedef struct {
   int uses_super;

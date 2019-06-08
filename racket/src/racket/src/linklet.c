@@ -295,9 +295,10 @@ static Scheme_Object *primitive_in_category_p(int argc, Scheme_Object **argv)
     else if (SAME_OBJ(cat, folding_symbol))
       r = (opt >= SCHEME_PRIM_OPT_FOLDING);
     else if (SAME_OBJ(cat, omitable_symbol))
-      r = (SCHEME_PRIM_PROC_OPT_FLAGS(v) & (SCHEME_PRIM_IS_OMITABLE_ANY
-                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
-                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE));
+      r = (SCHEME_PRIM_PROC_OPT_FLAGS(v) & (SCHEME_PRIM_IS_OMITABLE
+                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION
+                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL));
     else
       r = 0;
   } else

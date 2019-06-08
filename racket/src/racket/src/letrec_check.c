@@ -411,10 +411,9 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
   return o;
 }
 
-static int is_effect_free_prim(Scheme_Object *rator)
+static int is_effect_free_prim(Scheme_Object *rator, int argc)
 {
-  if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE_ANY))
+  if (SCHEME_PRIMP(rator) && scheme_is_omitable_primitive(rator, argc))
     return 1;
 
   return 0;
@@ -431,7 +430,7 @@ static Scheme_Object *letrec_check_application(Scheme_Object *o, Letrec_Check_Fr
   /* we'll have to check the rator and all the arguments */
   n = 1 + app->num_args;
 
-  if (is_effect_free_prim(app->args[0])) {
+  if (is_effect_free_prim(app->args[0], app->num_args)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */
@@ -453,7 +452,7 @@ static Scheme_Object *letrec_check_application2(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App2_Rec *)o;
     
-  if (is_effect_free_prim(app->rator)) {
+  if (is_effect_free_prim(app->rator, 1)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */
@@ -475,7 +474,7 @@ static Scheme_Object *letrec_check_application3(Scheme_Object *o, Letrec_Check_F
 
   app = (Scheme_App3_Rec *)o;
 
-  if (is_effect_free_prim(app->rator)) {
+  if (is_effect_free_prim(app->rator, 2)) {
     /* an immediate prim cannot call anything among its arguments */
   } else {
     /* argument might get applied */

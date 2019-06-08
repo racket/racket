@@ -3291,6 +3291,45 @@
                        'UNEXPECTED!))
            #f)
 
+(let ()
+  (define (check-empty-allocation hash-sym)
+    (test-comp `(lambda () (,hash-sym) 5)
+               '(lambda () 5))
+    (test-comp `(lambda (x) (,hash-sym x) 5) ; x may not have the right shape
+               '(lambda (x) 5)
+               #f))
+  (check-empty-allocation 'hash)
+  (check-empty-allocation 'hasheqv)
+  (check-empty-allocation 'hasheq)
+  (check-empty-allocation 'make-hash)
+  (check-empty-allocation 'make-hasheqv)
+  (check-empty-allocation 'make-hasheq)
+  (check-empty-allocation 'make-weak-hash)
+  (check-empty-allocation 'make-weak-hasheqv)
+  (check-empty-allocation 'make-weak-hasheq)
+  (check-empty-allocation 'make-immutable-hash)
+  (check-empty-allocation 'make-immutable-hasheqv)
+  (check-empty-allocation 'make-immutable-hasheq)
+
+  (test-comp `(lambda (x y) (hash x y) 5) ; can trigger equal callbacks
+             '(lambda () 5)
+             #f)
+  (test-comp `(lambda (x y) (hasheqv x y) 5)
+             '(lambda (x y) 5))
+  (test-comp `(lambda (x y) (hasheq x y) 5)
+             '(lambda (x y) 5))
+
+  ;; Wrong arity
+  (test-comp `(lambda (x y) (hash x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x) (hasheqv x) 5)
+             '(lambda (x) 5)
+             #f)
+  (test-comp `(lambda (x) (hasheq x) 5)
+             '(lambda (x) 5)
+             #f))
+
 ;; Check elimination of ignored structure predicate
 ;; and constructor applications:
 

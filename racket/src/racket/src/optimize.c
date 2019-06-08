@@ -120,7 +120,7 @@ static int lambda_has_top_level(Scheme_Lambda *lam);
 
 static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b);
 
-static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
+XFORM_NONGCING static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 
 static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel);
 
@@ -357,7 +357,8 @@ int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args
    Return 2 => true, and results are a constant when arguments are constants. */
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE_ANY | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && ((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_NONMUTATING)
+          || scheme_is_omitable_primitive(rator, num_args))
       && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
       && ((expected_vals < 0)
@@ -370,6 +371,24 @@ int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args
   } else
     return 0;
 }
+
+int scheme_is_omitable_primitive(Scheme_Object *rator, int num_args)
+{
+  if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE
+                                           | SCHEME_PRIM_IS_OMITABLE_ALLOCATION
+                                           | SCHEME_PRIM_IS_UNSAFE_OMITABLE))
+    return 1;
+
+  if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_ARITY_0_OMITABLE_ALLOCATION)
+    return (num_args == 0);
+
+  if ((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_EVEN_ARITY_OMITABLE_ALLOCATION))
+    return !(num_args & 0x1);
+
+  return 0;
+}
+
+int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
 
 static Scheme_Object *get_defn_shape(Optimize_Info *info, Scheme_IR_Toplevel *var)
 {
@@ -3127,31 +3146,34 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
   return optimize_expr(orig_rator, info, context);
 }
 
-static int is_nonmutating_nondependant_primitive(Scheme_Object *rator, int n)
+XFORM_NONGCING static int is_primitive_allocating(Scheme_Object *rator, int argc)
+{
+  if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE_ALLOCATION
+                                           | SCHEME_PRIM_IS_ARITY_0_OMITABLE_ALLOCATION
+                                           | SCHEME_PRIM_IS_EVEN_ARITY_OMITABLE_ALLOCATION))
+    return scheme_is_omitable_primitive(rator, argc);
+
+  return 0;
+}
+
+XFORM_NONGCING static int is_nonmutating_nondependant_primitive(Scheme_Object *rator, int argc)
 /* Does not include SCHEME_PRIM_IS_UNSAFE_OMITABLE, because those can
    depend on earlier tests (explicit or implicit) for whether the
    unsafe operation is defined */
 {
   if (SCHEME_PRIMP(rator)
-      && ((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
+      && (((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_IS_OMITABLE)
+           || is_primitive_allocating(rator, argc))
           && !(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_UNSAFE_OMITABLE))
-          && !((SAME_OBJ(scheme_values_proc, rator) && (n != 1))))
-      && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
-      && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
+          && !((SAME_OBJ(scheme_values_proc, rator) && (argc != 1))))
+      && (argc >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (argc <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
 
   return 0;
 }
 
-static int is_primitive_allocating(Scheme_Object *rator, int n)
-{
-  if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
-    return 1;
-
-  return 0;
-}
-
-static int is_noncapturing_primitive(Scheme_Object *rator, int n)
+XFORM_NONGCING static int is_noncapturing_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)) {
     int opt, t;
@@ -3174,7 +3196,7 @@ static int is_noncapturing_primitive(Scheme_Object *rator, int n)
   return 0;
 }
 
-static int is_nonsaving_primitive(Scheme_Object *rator, int n)
+XFORM_NONGCING static int is_nonsaving_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)) {
     int opt;
@@ -3188,7 +3210,7 @@ static int is_nonsaving_primitive(Scheme_Object *rator, int n)
   return 0;
 }
 
-static int is_always_escaping_primitive(Scheme_Object *rator)
+XFORM_NONGCING static int is_always_escaping_primitive(Scheme_Object *rator)
 {
   if (SCHEME_PRIMP(rator)
       && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_ALWAYS_ESCAPES)) {
@@ -3199,7 +3221,7 @@ static int is_always_escaping_primitive(Scheme_Object *rator)
 
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
-static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
+XFORM_NONGCING static int wants_local_type_arguments(Scheme_Object *rator, int argpos)
 {
   if (SCHEME_PRIMP(rator)) {
     int flags;
