@@ -3330,6 +3330,35 @@
              '(lambda (x) 5)
              #f))
 
+(let ()
+  ;; Although these are unsafe operations, they are obliged to
+  ;; raise an exception if the iteration value used to be
+  ;; ok and has become not ok due to a mutation (possibly
+  ;; by the GC to drop a weakly held key)
+  (define (check-keep-iterate op-name)
+    (test-comp `(lambda (ht i) (,op-name ht i) 5)
+               `(lambda (ht i) 5)
+               #f))
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-next)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-next)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-key)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-key)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-value)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-value)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-key+value)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-key+value)
+  (check-keep-iterate 'unsafe-mutable-hash-iterate-pair)
+  (check-keep-iterate 'unsafe-weak-hash-iterate-pair)
+
+  (define (check-discard-iterate op-name)
+    (test-comp `(lambda (ht i) (,op-name ht i) 5)
+               `(lambda (ht i) 5)))
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-next)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-key)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-value)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-key+value)
+  (check-discard-iterate 'unsafe-immutable-hash-iterate-pair))
+
 ;; Check elimination of ignored structure predicate
 ;; and constructor applications:
 
