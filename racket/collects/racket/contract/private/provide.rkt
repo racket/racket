@@ -3,7 +3,8 @@
 (provide provide/contract
          provide/contract-for-contract-out
          define-module-boundary-contract
-         (protect-out (for-syntax true-provide/contract
+         (protect-out (for-syntax build-definition-of-plus-one-acceptor ;; used in test suite
+                                  true-provide/contract
                                   ;make-provide/contract-transformer
                                   provide/contract-info?
                                   provide/contract-info-contract-id
@@ -318,25 +319,16 @@
                                                         contract-error-name
                                                         pos-module-source
                                                         context-limit)
-  (define-values (arrow? the-valid-app-shapes)
-    (syntax-case ctrct (-> ->* ->i)
-      [(-> . _) 
-       (not (->-arity-check-only->? ctrct))
-       (values #t (->-valid-app-shapes ctrct))]
-      [(->* . _)
-       (cond
-         [(->*-arity-check-only->? ctrct) (values #f #f)]
-         [else
-          (define shapes (->*-valid-app-shapes ctrct))
-          (if shapes
-              (values #t shapes)
-              (values #f #f))])]
-      [(->i . _) (values #t (->i-valid-app-shapes ctrct))]
-      [_ (values #f #f)]))
   (with-syntax ([id id]
                 [(partially-applied-id extra-neg-party-argument-fn contract-id blame-id) 
                  (generate-temporaries (list 'idX 'idY 'idZ 'idB))]
                 [ctrct ctrct])
+    (define-values (arrow? definition-of-plus-one-acceptor the-valid-app-shapes)
+      (build-definition-of-plus-one-acceptor #'ctrct
+                                             #'id
+                                             #'extra-neg-party-argument-fn
+                                             #'contract-id
+                                             #'blame-id))
     (syntax-local-lift-module-end-declaration
      #`(begin 
          (define-values (partially-applied-id blame-id)
@@ -347,9 +339,7 @@
                            #,srcloc-expr
                            #,context-limit))
          #,@(if arrow?
-                (list #`(define extra-neg-party-argument-fn 
-                          (wrapped-extra-arg-arrow-extra-neg-party-argument
-                           partially-applied-id)))
+                (list definition-of-plus-one-acceptor)
                 (list))))
 
     #`(begin
@@ -375,6 +365,42 @@
                    #f #f
                    (quote-syntax partially-applied-id)
                    (quote-syntax blame-id)))))))
+
+(define-for-syntax (build-definition-of-plus-one-acceptor ctrct
+                                                          id
+                                                          extra-neg-party-argument-fn
+                                                          contract-id
+                                                          blame-id)
+  (define-values (arrow? the-valid-app-shapes
+                         build-plus-one-acceptor
+                         plus-one-arity-function-code)
+    (syntax-case ctrct (-> ->* ->i)
+      [(-> . _) 
+       (not (->-arity-check-only->? ctrct))
+       (let ()
+         (define-values (valid-app-shapes plus-one-arity-function-code)
+           (->-valid-app-shapes ctrct))
+         (values #t
+                 valid-app-shapes
+                 #'build->*-plus-one-acceptor
+                 plus-one-arity-function-code))]
+      [(->* . _)
+       (cond
+         [(->*-arity-check-only->? ctrct) (values #f #f #f #f)]
+         [else
+          (define-values (shapes plus-one-arity-function-code)
+            (->*-valid-app-shapes ctrct))
+          (if shapes
+              (values #t shapes #'build->*-plus-one-acceptor plus-one-arity-function-code)
+              (values #f #f #f #f))
+          ])]
+      [_ (values #f #f #f #f)]))
+  (values arrow?
+          #`(define #,extra-neg-party-argument-fn
+              (#,build-plus-one-acceptor (#,plus-one-arity-function-code #,id)
+                                         #,blame-id
+                                         #,contract-id))
+          the-valid-app-shapes))
 
 (define-syntax (define-module-boundary-contract stx)
   (cond

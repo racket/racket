@@ -64,7 +64,6 @@
          collapsible-contract-continuation-mark-key
          with-collapsible-contract-continuation-mark
          
-         (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
          (rename-out [contract-custom-write-property-proc custom-write-property-proc])
 
@@ -447,9 +446,6 @@
 (define the-known-good-contracts
   (let-syntax ([m (λ (x) #`(list #,@(known-good-contracts)))])
     (m)))
-
-(struct wrapped-extra-arg-arrow (real-func extra-neg-party-argument)
-  #:property prop:procedure 0)
 
 (define-syntax (define/final-prop stx)
   (syntax-case stx ()

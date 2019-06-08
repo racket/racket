@@ -34,8 +34,7 @@
  matches-arity-exactly?
  keywords-match
  bad-number-of-results
- (for-syntax check-tail-contract
-             parse-leftover->*)
+ (for-syntax check-tail-contract)
  tail-marks-match?
  values/drop
  arity-checking-wrapper
