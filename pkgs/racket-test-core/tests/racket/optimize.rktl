@@ -4039,6 +4039,13 @@
   (check-number-op-unary 'sub1)
   (check-number-op-unary 'abs))
 
+;; `abs` wants and produces reals, not arbitrary numbers:
+(test-comp '(lambda (x) (when (number? x) (abs x)) 5)
+           '(lambda (x) 5)
+           #f)
+(test-comp '(lambda (x) (real? (abs x)))
+           '(lambda (x) (abs x) #t))
+
 (test-comp '(lambda () (-) (void))
            '(lambda () (void))
            #f)
