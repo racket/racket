@@ -74,7 +74,7 @@ RACKET=...` to set the command for `racket`.
 The use of development mode is described in more detail further below.
 
 Development mode currently doesn't work on Windows, because the
-makefile makes too many Unix-ish assuptions.
+makefile makes too many Unix-ish assumptions.
 
 Build Mode
 ----------
