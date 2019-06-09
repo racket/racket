@@ -1403,6 +1403,7 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
 {
   Scheme_Object **_parent_identity = (Scheme_Object **)((void **)data)[0];
   int *_nonfail_constr = (int *)((void **)data)[1];
+  int *_prefab = (int *)((void **)data)[2];
 
   if (mode == OK_CONSTANT_SHAPE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
@@ -1413,6 +1414,8 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
           *_parent_identity = SCHEME_PROC_SHAPE_IDENTITY(v);
         if (_nonfail_constr)
           *_nonfail_constr = SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
+        if (_prefab)
+          *_prefab = SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_PREFAB;
         return field_count + 1;
       }
     }
@@ -1422,6 +1425,8 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT) {
         if (_nonfail_constr)
           *_nonfail_constr = k & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
+        if (_prefab)
+          *_prefab = k & STRUCT_PROC_SHAPE_PREFAB;
         return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
       }
     }
@@ -1431,6 +1436,8 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
         && (k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT) {
       if (_nonfail_constr)
         *_nonfail_constr = k & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
+      if (_prefab)
+        *_prefab = k & STRUCT_PROC_SHAPE_PREFAB;
       return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
     }
   } else if (mode == OK_CONSTANT_VARIANT) {
@@ -1444,6 +1451,8 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
         if (mode == STRUCT_PROC_SHAPE_STRUCT) {
           if (_nonfail_constr)
             *_nonfail_constr = SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_NONFAIL_CONSTR;
+          if (_prefab)
+            *_prefab = SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_PREFAB;
           return field_count + 1;
         }
       }
@@ -1454,6 +1463,8 @@ static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
       if (st->num_slots == st->num_islots) {
         if (_nonfail_constr)
           *_nonfail_constr = st->nonfail_constructor;
+        if (_prefab)
+          *_prefab = !!st->prefab_key;
         return st->num_slots + 1;
       }
     }
@@ -1468,13 +1479,15 @@ static int is_constant_super(Scheme_Object *arg,
                              Scheme_Object **runstack, int rs_delta,
                              Scheme_Linklet *enclosing_linklet,
                              Scheme_Object **_parent_identity,
-                             int *_nonfail_constr)
+                             int *_nonfail_constr,
+                             int *_prefab)
 /* Does `arg` produce another structure type (which can serve as a supertype)? */
 {
-  void *data[2];
+  void *data[3];
 
   data[0] = _parent_identity;
   data[1] = _nonfail_constr;
+  data[2] = _prefab;
   
   return is_ok_value(ok_constant_super_value, data,
                      arg,
@@ -1486,7 +1499,7 @@ static int is_constant_super(Scheme_Object *arg,
 
 static int ok_constant_property_without_guard(void *data, Scheme_Object *v, int mode)
 {
-  intptr_t k = 0;
+  intptr_t k = -1; 
 
   if (mode == OK_CONSTANT_SHAPE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_prop_proc_shape_type)) {
@@ -1629,7 +1642,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
 
       if ((app->num_args >= 4) && (app->num_args <= 11)
           && SAME_OBJ(scheme_make_struct_type_proc, app->args[0])) {
-        int super_count_plus_one, super_nonfail_constr = 1;
+        int super_count_plus_one, super_nonfail_constr = 1, super_prefab = 1;
 
         if (_parent_identity)
           *_parent_identity = scheme_null;
@@ -1638,7 +1651,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                                    info, top_level_table, runstack,
                                                    rs_delta + app->num_args,
                                                    enclosing_linklet, _parent_identity,
-                                                   &super_nonfail_constr);
+                                                   &super_nonfail_constr,
+                                                   &super_prefab);
         else
           super_count_plus_one = 0;
 
@@ -1673,7 +1687,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             && ((app->num_args < 7)
                 /* inspector: */
                 || SCHEME_FALSEP(app->args[7])
-                || (SCHEME_SYMBOLP(app->args[7])
+                || (super_prefab
+                    && SCHEME_SYMBOLP(app->args[7])
                     && !strcmp("prefab", SCHEME_SYM_VAL(app->args[7]))
                     && !SCHEME_SYM_WEIRDP(app->args[7]))
                 || is_inspector_call(app->args[7]))
@@ -1722,6 +1737,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
               _stinfo->authentic = authentic;
             _stinfo->nonfail_constructor = (super_nonfail_constr
                                             && ((app->num_args < 10) || SCHEME_FALSEP(app->args[10])));
+            _stinfo->prefab = ((app->num_args > 7)
+                               && SCHEME_SYMBOLP(app->args[7]));
             _stinfo->num_gets = 1;
             _stinfo->num_sets = 1;
           }
@@ -1807,7 +1824,8 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
                                                Scheme_Linklet *enclosing_linklet,
                                                int fuel)
 /* Reports whether `app` is a call to `make-struct-type-property` to
-   produce a propert with no guard. */
+   produce a property. The `flag` argument can indicate further that the
+   expression must always succeed without raising an exception. */
 {
   int resolved = (flags & CHECK_STRUCT_TYPE_RESOLVED);
 
@@ -1828,7 +1846,9 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
     if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)) {
       if (SCHEME_SYMBOLP(app->rand1)
           && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
-              || SCHEME_LAMBDAP(app->rand2))
+              || SCHEME_FALSEP(app->rand2)
+              || (SCHEME_LAMBDAP(app->rand2)
+                  && (((Scheme_Lambda *)app->rand2)->num_params == 2)))
           && (scheme_omittable_expr(app->rator, 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))) {
         if (_has_guard) *_has_guard = 1;
         return 1;
@@ -1851,6 +1871,7 @@ intptr_t scheme_get_struct_proc_shape(int k, Simple_Struct_Type_Info *stinfo)
       return (STRUCT_PROC_SHAPE_STRUCT
               | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)
               | (stinfo->nonfail_constructor ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR : 0)
+              | (stinfo->prefab ? STRUCT_PROC_SHAPE_PREFAB : 0)
               | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT));
     else
       return STRUCT_PROC_SHAPE_OTHER;

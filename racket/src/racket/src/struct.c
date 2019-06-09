@@ -3423,6 +3423,10 @@ intptr_t scheme_get_or_check_structure_shape(Scheme_Object *e, Scheme_Object *ex
                 | ((st->nonfail_constructor
                     && (!expected || (v & STRUCT_PROC_SHAPE_NONFAIL_CONSTR)))
                    ? STRUCT_PROC_SHAPE_NONFAIL_CONSTR
+                   : 0)
+                | ((st->prefab_key
+                    && (!expected || (v & STRUCT_PROC_SHAPE_PREFAB)))
+                   ? STRUCT_PROC_SHAPE_PREFAB
                    : 0));
   } else if (!SCHEME_PRIMP(e)) {
     want_v = -1;

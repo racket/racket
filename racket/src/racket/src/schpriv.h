@@ -3073,6 +3073,7 @@ typedef struct {
   int indexed_ops; /* do selectors have the index built in (as opposed to taking an index argument)? */
   int authentic; /* conservatively 0 is ok */
   int nonfail_constructor;
+  int prefab;
   int num_gets, num_sets;
   int setter_fields; /* if indexed, bitmap for first 32 fields to indicate which have setters */
 } Simple_Struct_Type_Info;
@@ -3110,7 +3111,8 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 #define STRUCT_PROC_SHAPE_MASK    0xF
 #define STRUCT_PROC_SHAPE_AUTHENTIC       0x10
 #define STRUCT_PROC_SHAPE_NONFAIL_CONSTR  0x20
-#define STRUCT_PROC_SHAPE_SHIFT   6
+#define STRUCT_PROC_SHAPE_PREFAB  0x40
+#define STRUCT_PROC_SHAPE_SHIFT   7
 
 typedef struct Scheme_Struct_Proc_Shape {
   Scheme_Object so;

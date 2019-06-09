@@ -3714,7 +3714,18 @@
              (make-struct-type-property 'a)
              10)
            '(lambda ()
-             10))
+              10))
+
+(test-comp '(lambda ()
+              (make-struct-type-property 'a (lambda () 'was-wrong-arity))
+              5)
+           '(lambda () 5)
+           #f)
+(test-comp '(lambda ()
+              (make-struct-type-property 'a (lambda (x) 'was-wrong-arity))
+              5)
+           '(lambda () 5)
+           #f)
 
 (test-comp '(module m racket/base
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
@@ -3777,6 +3788,13 @@
              (define (g y) (list y)))
            #f)
 
+(test-comp '(lambda ()
+              ;; The built-in `prop:object-name` property has a guard:
+              (make-struct-type 'bad #f 2 0 #f (list (cons prop:object-name 'bad-spec)))
+              5)
+           '(lambda () 5)
+           #f)
+
 (module struct-type-property-a racket/base
   (provide prop:a)
   (define-values (prop:a a? a-ref) (make-struct-type-property 'a)))
@@ -3806,6 +3824,26 @@
              (define (f x) (list (list x) g))
              (struct b () #:property prop:a 'a)
              (define (g y) (list y)))
+           #f)
+
+(test-comp '(module m racket/base
+              (struct posn (x y) #:prefab)
+              (let ()
+                ;; Should be able to tell that `struct:posn` is prefab
+                (make-struct-type 'also-posn struct:posn 2 0 #f null 'prefab)
+                (void))
+              (posn 1 2))
+           '(module m racket/base
+              (struct posn (x y) #:prefab)
+              (let ()
+                (void))
+              (posn 1 2)))
+
+(test-comp '(lambda ()
+              ;; `struct:date` is not prefab
+              (make-struct-type 'bad struct:date 2 0 #f null 'prefab)
+              5)
+           '(lambda () 5)
            #f)
 
 ;; A function with a required optional argument creates a pattern like
