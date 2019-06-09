@@ -36,7 +36,6 @@
                         #:to-correlated-linklet? [to-correlated-linklet? #f]
                         #:modules-being-compiled [modules-being-compiled (make-hasheq)]
                         #:need-compiled-submodule-rename? [need-compiled-submodule-rename? #t])
-
   (define full-module-name (let ([parent-full-name (compile-context-full-module-name cctx)]
                                  [name (syntax-e (parsed-module-name-id p))])
                              (if parent-full-name

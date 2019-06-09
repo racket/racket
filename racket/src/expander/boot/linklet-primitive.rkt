@@ -1,6 +1,6 @@
 #lang racket/base
 (require "../host/linklet.rkt"
-         "../compile/linklet.rkt"
+         "../compile/linklet-api.rkt"
          "../common/reflect-hash.rkt"
          "../run/linklet-operation.rkt")
 

@@ -13,12 +13,16 @@
          "namespace/namespace.rkt"
          "common/module-path.rkt"
          "eval/module-read.rkt"
+         "compile/linklet-api.rkt"
          "boot/kernel.rkt"
          "run/cache.rkt"
          "boot/runtime-primitive.rkt"
          "host/linklet.rkt"
          "run/status.rkt"
          "run/submodule.rkt"
+         (only-in "run/linklet.rkt"
+                  linklet-as-s-expr?
+                  linklet-as-s-expr)
          "host/correlate.rkt"
          "extract/main.rkt"
          (only-in "run/linklet.rkt" linklet-compile-to-s-expr))
@@ -299,7 +303,9 @@
 
 (define (apply-to-module proc mod-path)
   (define path (resolved-module-path-name
-                (resolve-module-path mod-path #f)))
+                (module-path-index-resolve
+                 (module-path-index-join mod-path #f)
+                 #f)))
   (define-values (dir file dir?) (split-path path))
   (parameterize ([current-load-relative-directory dir])
     (proc (call-with-input-file*
@@ -312,13 +318,26 @@
                     (read-syntax (object-name i) i)
                     path))))))))
 
+(define (extract-linklets l)
+  (cond
+    [(linklet-bundle? l)
+     (for/hasheq ([(k v) (in-hash (linklet-bundle->hash l))])
+       (values k (extract-linklets v)))]
+    [(linklet-directory? l)
+     (for/hasheq ([(k v) (in-hash (linklet-directory->hash l))])
+       (values k (extract-linklets v)))]
+    [(linklet-as-s-expr? l) (linklet-as-s-expr l)]
+    [else l]))
+
 (cond
  [expand?
   (pretty-write (syntax->datum (apply-to-module expand startup-module)))]
  [linklets?
   (pretty-write (correlated->datum
                  (datum->correlated
-                  (apply-to-module compile startup-module) #f)))]
+                  (extract-linklets
+                   (apply-to-module compile startup-module))
+                  #f)))]
  [else
   ;; Load and run the requested module
   (parameterize ([current-command-line-arguments (list->vector args)])

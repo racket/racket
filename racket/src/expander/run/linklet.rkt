@@ -42,15 +42,20 @@
 ;; Helpers for "extract.rkt"
 (provide linklet-compile-to-s-expr  ; a parameter; whether to "compile" to a source form
          linklet-as-s-expr?
+         linklet-as-s-expr
 
          s-expr-linklet-importss+localss
          s-expr-linklet-exports+locals
          s-expr-linklet-body)
 
-(struct linklet (compiled-proc  ; takes self instance plus instance arguments to run the linklet body
-                 importss       ; list [length is 1 less than proc arity] of list of symbols
-                 exports)       ; list of symbols
-        #:prefab)
+(struct linklet () #:prefab)
+
+(struct source-linklet linklet (src) #:prefab)
+
+(struct compiled-linklet linklet (compiled-proc  ; takes self instance plus instance arguments to run the linklet body
+                                  importss       ; list [length is 1 less than proc arity] of list of symbols
+                                  exports)       ; list of symbols
+  #:prefab)
 
 (struct instance (name        ; for debugging, typically a module name + phase
                   data        ; any value (e.g., a namespace)
@@ -312,7 +317,7 @@
   (define l
     (cond
       [(linklet-compile-to-s-expr)
-       (marshal (correlated->datum/lambda-name c))]
+       (source-linklet (marshal (correlated->datum/lambda-name c)))]
       [else
        (define plain-c (desugar-linklet c))
        (parameterize ([current-namespace cu-namespace]
@@ -320,9 +325,9 @@
                       [current-compile orig-compile])
          ;; Use a vector to list the exported variables
          ;; with the compiled bytecode
-         (linklet (compile plain-c)
-                  (marshal (extract-import-variables-from-expression c #:pairs? #f))
-                  (marshal (extract-export-variables-from-expression c #:pairs? #f))))]))
+         (compiled-linklet (compile plain-c)
+                           (marshal (extract-import-variables-from-expression c #:pairs? #f))
+                           (marshal (extract-export-variables-from-expression c #:pairs? #f))))]))
   (if import-keys
       (values l import-keys) ; no imports added or removed
       l))
@@ -339,7 +344,7 @@
   c)
 
 (define (linklet-virtual-machine-bytes)
-  #"source")
+  #"exp")
 
 (define (write-linklet-bundle-hash ld in)
   (write ld in))
@@ -352,19 +357,25 @@
   (parameterize ([current-namespace cu-namespace]
                  [current-eval orig-eval]
                  [current-compile orig-compile])
-    (if (linklet? cl)
-        ;; Normal mode: compiled to struct
-        (eval (linklet-compiled-proc cl))
-        ;; Assume previously "compiled" to source:
-        (or (hash-ref eval-cache cl #f)
-            (let ([proc (eval (desugar-linklet (unmarshal cl)))])
-              (hash-set! eval-cache cl proc)
-              proc)))))
+    (cond
+      [(compiled-linklet? cl)
+       ;; Normal mode: compiled to struct
+       (eval (compiled-linklet-compiled-proc cl))]
+      [(source-linklet? cl)
+       ;; Previously "compiled" to source:
+       (or (hash-ref eval-cache cl #f)
+           (let ([proc (eval (desugar-linklet (unmarshal (source-linklet-src cl))))])
+             (hash-set! eval-cache cl proc)
+             proc))]
+      [else (error 'eval-linklet "unrecognized: ~s" cl)])))
 (define eval-cache (make-weak-hasheq))
 
 ;; Check whether we previously compiled a linket to source
 (define (linklet-as-s-expr? cl)
-  (not (linklet? cl)))
+  (source-linklet? cl))
+
+(define (linklet-as-s-expr cl)
+  (source-linklet-src cl))
 
 ;; Instantiate
 (define (instantiate-linklet linklet import-instances [target-instance #f] [use-prompt? #t])
@@ -381,27 +392,32 @@
 ;; ----------------------------------------
 
 (define (linklet-import-variables linklet)
-  (if (linklet? linklet)
+  (if (compiled-linklet? linklet)
       ;; Compiled to a prefab that includes metadata
-      (linklet-importss linklet)
+      (compiled-linklet-importss linklet)
       ;; Previously "compiled" to source
-      (extract-import-variables-from-expression linklet #:pairs? #f)))
+      (extract-import-variables-from-expression (source-linklet-src linklet) #:pairs? #f)))
 
 (define (linklet-export-variables linklet)
-  (if (linklet? linklet)
+  (if (compiled-linklet? linklet)
       ;; Compiled to a prefab that includes metadata
-      (linklet-exports linklet)
+      (compiled-linklet-exports linklet)
       ;; Previously "compiled" to source
-      (extract-export-variables-from-expression linklet #:pairs? #f)))
+      (extract-export-variables-from-expression (source-linklet-src linklet) #:pairs? #f)))
 
 (define (s-expr-linklet-importss+localss linklet)
-  (extract-import-variables-from-expression linklet #:pairs? #t))
+  (extract-import-variables-from-expression (->s-expr linklet) #:pairs? #t))
 
 (define (s-expr-linklet-exports+locals linklet)
-  (extract-export-variables-from-expression linklet #:pairs? #t))
+  (extract-export-variables-from-expression (->s-expr linklet) #:pairs? #t))
 
 (define (s-expr-linklet-body linklet)
-  (unmarshal (list-tail linklet 3)))
+  (unmarshal (list-tail (->s-expr linklet) 3)))
+
+(define (->s-expr l)
+  (if (linklet-as-s-expr? l)
+      (linklet-as-s-expr l)
+      l))
 
 ;; ----------------------------------------
 
