@@ -202,7 +202,7 @@
                         o)]
           [(single-flonum? v)
            (write-byte fasl-single-flonum-type o)
-           (write-bytes (if (eqv? v +nan.f)
+           (write-bytes (if (eqv? v (real->single-flonum +nan.0))
                             ;; use a canonical NaN (0 mantissa)
                             #"\0\0\300\177"
                             (real->floating-point-bytes v 4 #f))

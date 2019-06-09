@@ -42,8 +42,12 @@
 (for ([i (in-list immutables)])
   (test i fasl->s-exp (s-exp->fasl i)))
 
-(test 46f0 fasl->s-exp (s-exp->fasl 46f0))
-(test (vector #t 46f0) fasl->s-exp (s-exp->fasl (vector #t 46f0)))
+(when (single-flonum-available?)
+  (let ([n46f0 (real->single-flonum 46.0)])
+    (test n46f0 fasl->s-exp (s-exp->fasl n46f0))
+    (test (vector #t n46f0) fasl->s-exp (s-exp->fasl (vector #t n46f0))))
+  (let ([nan (real->single-flonum +nan.0)])
+    (test #t eqv? nan (fasl->s-exp (s-exp->fasl nan)))))
 
 (test "4.5t0" format "~a" (fasl->s-exp (s-exp->fasl 4.5t0)))
 
