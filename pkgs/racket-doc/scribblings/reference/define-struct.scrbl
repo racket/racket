@@ -158,9 +158,9 @@ The @racket[#:prefab] option obtains a @techlink{prefab} (pre-defined,
 globally shared) structure type, as opposed to creating a new
 structure type. Such a structure type is inherently transparent and
 cannot have a guard or properties, so using @racket[#:prefab] with
-@racket[#:transparent], @racket[#:inspector], @racket[#:guard], or
-@racket[#:property] is a syntax error. If a supertype is specified, it
-must also be a @tech{prefab} structure type.
+@racket[#:transparent], @racket[#:inspector], @racket[#:guard],
+@racket[#:property], @racket[#:authentic], or @racket[#:methods] is a syntax error.
+If a supertype is specified, it must also be a @tech{prefab} structure type.
 
 @examples[#:eval posn-eval
   (struct prefab-point (x y) #:prefab)
