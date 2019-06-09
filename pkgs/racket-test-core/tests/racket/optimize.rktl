@@ -4609,7 +4609,7 @@
   (f)
   (define i 9)
   (set! i 10))
-(err/rt-test (dynamic-require ''bad-order #f))
+(err/rt-test/once (dynamic-require ''bad-order #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

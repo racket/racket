@@ -2359,11 +2359,11 @@
     ;; turns into a reference to an undefined variable.
     x))
 
-(err/rt-test (begin
-               (eval '(require 'module-compiles-but-does-not-visit))
-               ;; triggers visit:
-               (eval #t))
-             exn:fail:contract:variable?)
+(err/rt-test/once (begin
+                    (eval '(require 'module-compiles-but-does-not-visit))
+                    ;; triggers visit:
+                    (eval #t))
+                  exn:fail:contract:variable?)
 
 ;; ----------------------------------------
 ;; Make sure a reasonable exceptoion happens when `local-expand`
@@ -2380,13 +2380,13 @@
      'module-begin
      '())))
 
-(err/rt-test (begin
-               (eval '(require 'module-also-compiles-but-does-not-visit))
-               ;; triggers visit:
-               (eval #t))
-             (lambda (exn)
-               (and (exn:fail:syntax? exn) ; the error is from `#%plain-module-begin`
-                    (regexp-match? #rx"not currently transforming a module" (exn-message exn)))))
+(err/rt-test/once (begin
+                    (eval '(require 'module-also-compiles-but-does-not-visit))
+                    ;; triggers visit:
+                    (eval #t))
+                  (lambda (exn)
+                    (and (exn:fail:syntax? exn) ; the error is from `#%plain-module-begin`
+                         (regexp-match? #rx"not currently transforming a module" (exn-message exn)))))
 
 ;; ----------------------------------------
 ;; Make sure `syntax-local-bind-syntaxes` binds installs `free-identifier=?`

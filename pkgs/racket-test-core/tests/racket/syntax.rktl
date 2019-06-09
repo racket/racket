@@ -119,8 +119,8 @@
 (module check-wrong-arity-many-arguments racket/base
     ((lambda (a b c d e f g h i j k l m n o p q r s t u v w x y)
        1)))
-(err/rt-test (dynamic-require ''check-wrong-arity-many-arguments #f)
-             exn:fail:contract:arity?)
+(err/rt-test/once (dynamic-require ''check-wrong-arity-many-arguments #f)
+                  exn:fail:contract:arity?)
 
 (err/rt-test (letrec ([not-ready not-ready]) 5)
              (lambda (exn)

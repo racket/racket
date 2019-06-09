@@ -2342,7 +2342,7 @@
       (test 2 length (hash-keys cht)) ; can extract keys without hashing or comparing
       (test 'vec2 hash-ref ht key)
       (test 'vec7 hash-ref ht key7)
-      (err/rt-test (hash-ref cht (vector 1 2) #f) one-exn?))))
+      (err/rt-test/once (hash-ref cht (vector 1 2) #f) one-exn?))))
 
 ;; ----------------------------------------
 ;; Make sure chaperoned hash tables use a lock
@@ -2719,10 +2719,10 @@
 (err/rt-test (chaperone-channel 5 (lambda (c) (values c values)) (lambda (c v) v)))
 (let ([ch (make-channel)])
   (thread (lambda () (channel-put ch 3.14)))
-  (err/rt-test (channel-get (impersonate-channel ch (lambda (c) c) (lambda (c v) v)))))
+  (err/rt-test/once (channel-get (impersonate-channel ch (lambda (c) c) (lambda (c v) v)))))
 (let ([ch (make-channel)])
   (thread (lambda () (channel-put ch 3.14)))
-  (err/rt-test (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
+  (err/rt-test/once (channel-get (chaperone-channel ch (lambda (c) (values c (lambda (x) 2.71))) (lambda (c v) v)))))
 
 ;; ----------------------------------------
 

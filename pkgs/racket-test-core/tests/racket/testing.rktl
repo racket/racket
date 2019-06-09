@@ -224,6 +224,8 @@ transcript.
   (begin
     (do-err/rt-test e . rest)
     (do-err/rt-test (let () e 'not-an-error) . rest)))
+(define-syntax-rule (err/rt-test/once e . rest)
+  (do-err/rt-test e . rest))
 (define-syntax do-err/rt-test
   (lambda (stx)
     (syntax-case stx ()
@@ -237,7 +239,7 @@ transcript.
             (and (exn? exn)
                  (regexp-match? msg-rx (exn-message exn)))))]
       [(_ e)
-       #'(err/rt-test e exn:application:type?)])))
+       #'(do-err/rt-test e exn:application:type?)])))
 
 (define no-extra-if-tests? #f)
 

@@ -1501,7 +1501,7 @@
               (lambda ()
                 (exit-k (lambda () 'hi)))
               p1)))])
-    (err/rt-test
+    (err/rt-test/once
      (go (lambda (esc) (esc 'middle)))
      exn:fail:contract:continuation?)
     (test '(post post) values output)
@@ -1509,7 +1509,7 @@
                  (lambda ()
                    ((call-with-composable-continuation
                      (lambda (k) (lambda () k))))))])
-      (err/rt-test
+      (err/rt-test/once
        (go (lambda (esc)
              (meta
               (lambda () (esc 'ok)))))
