@@ -13,6 +13,7 @@
 # include <netdb.h>
 # include <sys/socket.h>
 # include <sys/types.h>
+# include <sys/time.h>
 # include <fcntl.h>
 # include <errno.h>
 # define TCP_SOCKSENDBUF_SIZE 32768
