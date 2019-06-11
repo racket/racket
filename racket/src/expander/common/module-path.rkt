@@ -2,6 +2,7 @@
 (require racket/private/place-local
          ffi/unsafe/atomic
          "../compile/serialize-property.rkt"
+         "../common/performance.rkt"
          "contract.rkt"
          "parse-module-path.rkt"
          "intern.rkt")
@@ -200,13 +201,15 @@
 (define/who (module-path-index-resolve mpi [load? #f])
   (check who module-path-index? mpi)
   (or (module-path-index-resolved mpi)
-      (let ([mod-name ((current-module-name-resolver)
-                       (module-path-index-path mpi)
-                       (module-path-index-resolve/maybe
-                        (module-path-index-base mpi)
-                        load?)
-                       #f
-                       load?)])
+      (let ([mod-name (performance-region
+                       ['eval 'resolver]
+                       ((current-module-name-resolver)
+                        (module-path-index-path mpi)
+                        (module-path-index-resolve/maybe
+                         (module-path-index-base mpi)
+                         load?)
+                        #f
+                        load?))])
         (unless (resolved-module-path? mod-name)
           (raise-arguments-error 'module-path-index-resolve
                                  "current module name resolver's result is not a resolved module path"
