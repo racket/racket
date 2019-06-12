@@ -1,6 +1,17 @@
 #lang racket/base
 (require racket/system
+         racket/cmdline
 	 (for-label "../../racket/gc2/xform-mod.rkt"))
+
+(define suffix "")
+
+(command-line
+ #:once-each
+ [("--build-level") level "Specify a suffix-determining build level"
+                    (unless (equal? level "all")
+                      (set! suffix level))]
+ #:args ()
+ (void))
 
 (define (system- s)
   (eprintf "~a\n" s)
@@ -275,7 +286,7 @@
 (c-compile "../../racket/src/mzsj86.c" "xsrc/mzsj86.obj" '() mz-inc)
 
 (define dll "../../../lib/libracket3mxxxxxxx.dll")
-(define exe "../../../Racket.exe")
+(define exe (format "../../../Racket~a.exe" suffix))
 
 (define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib")
 
@@ -368,7 +379,8 @@
           null
           exe
           "")
-(system- "mt.exe -manifest ../racket/racket.manifest -outputresource:../../../Racket.exe;1")
+(system- (format "mt.exe -manifest ../racket/racket.manifest -outputresource:~a;1"
+                 exe))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -393,14 +405,17 @@
 
 (check-rc "gracket.res" "../gracket/gracket.rc" "../gracket/gracket.ico")
 
+(define gui-exe (format "../../../lib/GRacket~a.exe" suffix))
+
 (link-exe (list
            "gracket.res"
            "xsrc/grmain.obj"
 	   (find-build-file "racket" "MemoryModule.obj"))
           '("advapi32.lib")
-          "../../../lib/GRacket.exe"
+          gui-exe
           " /subsystem:windows")
-(system- "mt.exe -manifest ../gracket/gracket.manifest -outputresource:../../../lib/GRacket.exe;1")
+(system- (format "mt.exe -manifest ../gracket/gracket.manifest -outputresource:~a;1"
+                 gui-exe))
 
 (system- (format "~a /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj"
 		 cl.exe))
@@ -418,5 +433,6 @@
 (copy-file/diff "mzdyn3m.exp" "../../../lib/msvc/mzdyn3m.exp")
 (copy-file/diff "mzdyn3m.obj" "../../../lib/msvc/mzdyn3m.obj")
 
-(parameterize ([current-command-line-arguments (vector "../../../lib/system.rktd")])
-  (dynamic-require "../../racket/mksystem.rkt" #f))
+(when (equal? suffix "")
+  (parameterize ([current-command-line-arguments (vector "../../../lib/system.rktd")])
+    (dynamic-require "../../racket/mksystem.rkt" #f)))

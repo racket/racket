@@ -30,7 +30,7 @@ if errorlevel 1 exit /B 1
 if errorlevel 1 exit /B 1
 msbuild racket%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
 
-if not defined BUILD_LEVEL set BUILD_LEVEL="3m"
+if not defined BUILD_LEVEL set BUILD_LEVEL="all"
 if "%BUILD_LEVEL%"=="cgc" goto doneBuilding
 
 cd ..\gracket
@@ -42,9 +42,11 @@ REM  Assumes that Racket is started in a subdirectory of here:
 set BOOT_SETUP=-W "info@compiler/cm error" -l- setup --boot ../../setup-go.rkt ../compiled
 
 cd gc2
-..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt
+..\..\..\racketcgc -G ..\%BUILD_CONFIG% %BOOT_SETUP% make.none ../compiled/make.dep make.rkt --build-level %BUILD_LEVEL%
 if errorlevel 1 exit /B 1
 cd ..
+
+if "%BUILD_LEVEL%"=="3m" goto doneBuilding
 
 cd mzstart
 msbuild mzstart%PLTSLNVER%.sln /p:Configuration=Release /p:Platform=%BUILDMODE%
