@@ -11,7 +11,7 @@
 
 (define libssl-load-fail-reason #f)
 
-;; We need to declare because they might be distributed with PLT Scheme
+;; We need to declare because they might be distributed with Racket
 ;; in which case they should get bundled with stand-alone executables:
 (define-runtime-path libssl-so
   #:runtime?-id runtime?

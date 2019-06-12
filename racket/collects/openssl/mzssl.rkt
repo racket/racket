@@ -94,6 +94,8 @@ TO DO:
    (c-> ssl-client-context?)]
   [ssl-make-server-context
    (->* () (protocol-symbol/c) ssl-server-context?)]
+  [ssl-server-context-use-server-cipher-preference!
+   (c-> ssl-server-context? void?)]
   [ssl-server-context-enable-dhe!
    (->* (ssl-server-context?) (path-string?) void?)]
   [ssl-server-context-enable-ecdhe!
@@ -152,6 +154,10 @@ TO DO:
    (c-> ssl-port? (or/c bytes? #f))]
   [ssl-peer-issuer-name
    (c-> ssl-port? (or/c bytes? #f))]
+  [ssl-get-cipher-name
+    (c-> ssl-port? string?)]
+  [ssl-get-cipher-version
+    (c-> ssl-port? string?)]
   [ports->ssl-ports
    (->* [input-port?
          output-port?]
@@ -223,6 +229,7 @@ TO DO:
 (define-cpointer-type _SSL_METHOD*)
 (define-cpointer-type _SSL_CTX*)
 (define-cpointer-type _SSL*)
+(define-cpointer-type _SSL_CIPHER*)
 (define-cpointer-type _X509_NAME*)
 (define-cpointer-type _X509_NAME_ENTRY*)
 (define-cpointer-type _X509*)
@@ -310,6 +317,10 @@ TO DO:
 (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
 (define-ssl SSL_ctrl (_fun _SSL* _int _long _pointer -> _long))
 (define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
+(define-ssl SSL_get_current_cipher (_fun _SSL* -> _SSL_CIPHER*))
+
+(define-ssl SSL_CIPHER_get_name (_fun _SSL_CIPHER* -> _string))
+(define-ssl SSL_CIPHER_get_version (_fun _SSL_CIPHER* -> _string))
 
 (define-crypto X509_free (_fun _X509* -> _void)
   #:wrap (deallocator))
@@ -460,6 +471,8 @@ TO DO:
 
 (define SSL_OP_SINGLE_ECDH_USE #x00080000)
 (define SSL_OP_SINGLE_DH_USE #x00100000)
+
+(define SSL_OP_CIPHER_SERVER_PREFERENCE #x00400000)
 
 (define TLSEXT_NAMETYPE_host_name 0)
 
@@ -708,6 +721,12 @@ TO DO:
 
 (define (ssl-seal-context! mzctx)
   (set-ssl-context-sealed?! mzctx #t))
+
+(define (ssl-server-context-use-server-cipher-preference! context)
+  (define ctx
+    (extract-ctx 'ssl-server-context-use-server-cipher-preference! #t context))
+  (SSL_CTX_set_options ctx SSL_OP_CIPHER_SERVER_PREFERENCE)
+  (void))
 
 (define (ssl-server-context-enable-ecdhe! context [name 'secp521r1])
   (define (symbol->nid name)
@@ -1534,6 +1553,21 @@ TO DO:
       (close-output-port p)]
      [else
       (close-input-port p)])))
+
+;; ssl-get-cipher-name : ssl-port -> string
+(define (ssl-get-cipher-name p)
+  (SSL_CIPHER_get_name
+   (ssl-port->cipher 'ssl-get-cipher-name p)))
+
+;; ssl-get-cipher-version : ssl-port -> string
+(define (ssl-get-cipher-version p)
+  (SSL_CIPHER_get_version
+   (ssl-port->cipher 'ssl-get-cipher-version p)))
+
+;; ssl-port->cipher : symbol ssl-port -> _SSL_CIPHER*
+(define (ssl-port->cipher who p)
+  (let-values ([(mzssl _input?) (lookup who p)])
+    (SSL_get_current_cipher (mzssl-ssl mzssl))))
 
 (define (ssl-peer-verified? p)
   (let-values ([(mzssl input?) (lookup 'ssl-peer-verified? p)])
