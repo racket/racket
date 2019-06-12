@@ -1214,26 +1214,7 @@ Conventions:
                        [(alt-expr ...)
                         (for/list ([alt (in-list eh-alts)])
                           (with-syntax ([repc-expr
-                                         ;; repc structs are prefab; recreate using prefab
-                                         ;; quasiquote exprs to avoid moving constructors
-                                         ;; to residual module
-                                         (syntax-case (eh-alternative-repc alt) ()
-                                           [#f
-                                            #''#f]
-                                           [#s(rep:once n u o)
-                                            #'`#s(rep:once ,(quote-syntax n)
-                                                           ,(quote-syntax u)
-                                                           ,(quote-syntax o))]
-                                           [#s(rep:optional n o d)
-                                            #'`#s(rep:optional ,(quote-syntax n)
-                                                               ,(quote-syntax o)
-                                                               ,(quote-syntax d))]
-                                           [#s(rep:bounds min max n u o)
-                                            #'`#s(rep:bounds ,(quote min)
-                                                             ,(quote max)
-                                                             ,(quote-syntax n)
-                                                             ,(quote-syntax u)
-                                                             ,(quote-syntax o))])]
+                                         (datum->expression (eh-alternative-repc alt))]
                                         [attrs-expr
                                          #`(quote #,(eh-alternative-attrs alt))]
                                         [parser-expr
