@@ -189,7 +189,7 @@ INSTALL_SETUP_ARGS = $(SELF_FLAGS_qq) $(PLT_SETUP_OPTIONS_qq) SETUP_MACHINE_FLAG
 
 BASE_INSTALL_TARGET = plain-base-install
 
-WIN32_BUILD_LEVEL = 3m
+WIN32_BUILD_LEVEL = all
 
 base:
 	if [ "$(CPUS)" = "" ] ; \
