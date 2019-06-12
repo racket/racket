@@ -653,6 +653,36 @@
 
 ;; ----------------------------------------
 
+(define (try-prefix)
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++named-lib"
+           "basic:"
+           "racket/base"
+           "++named-file"
+           "mine:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37b.rkt"))
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt")))
+  (try-exe (mk-dest #f) "'(b mine:embed-me37b)\n'(a #%mzc:embed-me37)\n" #f)
+  
+  (system+ raco
+           "exe"
+           "-o" (path->string (mk-dest #f))
+           "++named-lib"
+           "basic:"
+           "racket/base"
+           "++named-file"
+           "mine:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37b.rkt"))
+           "++named-file"
+           "main:"
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt"))
+           (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me37.rkt")))
+  (try-exe (mk-dest #f) "'(b mine:embed-me37b)\n'(a main:embed-me37)\n" #f))
+
+;; ----------------------------------------
+
 (define (try-source)
   (define (try-one file submod start result)
     (define mred? #f)
@@ -757,6 +787,7 @@
 (try-gracket)
 (try-reader)
 (try-lang)
+(try-prefix)
 (try-planet)
 (try-*sl)
 (try-source)

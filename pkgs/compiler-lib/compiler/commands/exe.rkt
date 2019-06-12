@@ -16,7 +16,7 @@
 
 (define exe-output (make-parameter #f))
 (define exe-embedded-flags (make-parameter '("-U" "--")))
-(define exe-embedded-libraries (make-parameter null))
+(define exe-embedded-modules (make-parameter null))
 (define exe-embedded-languages (make-parameter null))
 (define exe-aux (make-parameter null))
 (define exe-embedded-config-path (make-parameter "etc"))
@@ -64,15 +64,22 @@
    [("--cs") "Generate using CS variant"
     (variant 'cs)]
    #:multi
+   [("++lib") lib "Embed <lib> in executable"
+    (exe-embedded-modules (append (exe-embedded-modules)
+                                  (list `(#t (lib ,lib)))))]
+   [("++lang") lang "Embed support for `#lang <lang>` in executable"
+    (exe-embedded-languages (append (exe-embedded-languages) (list lang)))]
+   [("++named-lib") prefix lib "Embed <lib> with name using <prefix>"
+    (exe-embedded-modules (append (exe-embedded-modules)
+                                  (list `(,(string->symbol prefix) (lib ,lib)))))]
+   [("++named-file") prefix file "Embed <file> with name using <prefix>"
+    (exe-embedded-modules (append (exe-embedded-modules)
+                                  (list `(,(string->symbol prefix) (file ,file)))))]
    [("++aux") aux-file "Extra executable info (based on <aux-file> suffix)"
     (let ([auxes (extract-aux-from-path (path->complete-path aux-file))])
       (when (null? auxes)
         (printf " warning: no recognized information from ~s\n" aux-file))
       (exe-aux (append auxes (exe-aux))))]
-   [("++lib") lib "Embed <lib> in executable"
-    (exe-embedded-libraries (append (exe-embedded-libraries) (list lib)))]
-   [("++lang") lang "Embed support for `#lang <lang>` in executable"
-    (exe-embedded-languages (append (exe-embedded-languages) (list lang)))]
    [("++exf") flag "Add flag to embed in executable"
     (exe-embedded-flags (append (exe-embedded-flags) (list flag)))]
    [("--exf") flag "Remove flag to embed in executable"
@@ -123,8 +130,17 @@
        dest
        (exe-aux)))]
    [else
+    (define main-prefix
+      ;; Check for a specified prefix, but fall back to '#%mzc:
+      (let loop ([mods (exe-embedded-modules)])
+        (cond
+          [(null? mods) '#%mzc:]
+          [(equal? `(file ,source-file) (cadar mods)) (caar mods)]
+          [else (loop (cdr mods))])))
     (define mod-sym (string->symbol
-                     (format "#%mzc:~a"
+                     (format "~a~a"
+                             main-prefix
+                             ;; Get base file name:
                              (let-values ([(base name dir?)
                                            (split-path source-file)])
                                (path->bytes (path-replace-suffix name #""))))))
@@ -133,10 +149,9 @@
      #:mred? (gui)
      #:variant (variant)
      #:verbose? (very-verbose)
-     #:modules (cons `(#%mzc: (file ,source-file) (main configure-runtime))
+     #:modules (cons `(,main-prefix (file ,source-file) (main configure-runtime))
                      (append
-                      (map (lambda (l) `(#t (lib ,l)))
-                           (exe-embedded-libraries))
+                      (exe-embedded-modules)
                       (map (lambda (mod) `(#t ,mod))
                            (languages->libraries
                             (exe-embedded-languages)
