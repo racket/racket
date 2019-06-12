@@ -98,6 +98,36 @@ static char *get_self_path(char *exec_file)
 # undef USE_GENERIC_GET_SELF_PATH
 #endif
 
+#if defined(__FreeBSD__)
+# include <sys/sysctl.h>
+# include <errno.h>
+static char *get_self_path(char *exec_file)
+{
+  int mib[4];
+  char *s;
+  size_t len;
+  int r;
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PATHNAME;
+  mib[3] = -1;
+
+  r = sysctl(mib, 4, NULL, &len, NULL, 0);
+  if (r < 0) {
+      fprintf(stderr, "failed to get self (%d)\n", errno);
+      exit(1);
+  }
+  s = malloc(len);
+  r = sysctl(mib, 4, s, &len, NULL, 0);
+  if (r < 0) {
+      fprintf(stderr, "failed to get self (%d)\n", errno);
+      exit(1);
+  }
+  return s;
+}
+# undef USE_GENERIC_GET_SELF_PATH
+#endif
 
 #ifdef ELF_FIND_BOOT_SECTION
 # include <elf.h>
