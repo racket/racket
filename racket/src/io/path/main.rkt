@@ -91,14 +91,15 @@
   (check-path-bytes who bstr)
   (do-bytes->path-element bstr convention who bstr))
 
-(define (path-element-clean p)
+(define (path-element-clean p #:try-quick? [try-quick? #f])
   (cond
    [(path? p)
     (define bstr (path-bytes p))
     (define convention (path-convention p))
     (and
      ;; Quick pre-check: any separators that are not at the end?
-     (or (not (eq? convention 'unix))
+     (or (not try-quick?)
+         (not (eq? convention 'unix))
          (not (for/or ([c (in-bytes bstr 0 (let loop ([end (bytes-length bstr)])
                                              (cond
                                                [(zero? end) 0]
@@ -115,7 +116,7 @@
    [else #f]))
 
 (define (path-element? p)
-  (and (path-element-clean p) #t))
+  (and (path-element-clean p #:try-quick? #t) #t))
 
 (define (do-bytes->path-element bstr convention who orig-arg)
   (define (bad-element)
