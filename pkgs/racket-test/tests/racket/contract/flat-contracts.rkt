@@ -107,10 +107,9 @@
   (test-flat-contract #e1 #i1.0 'x #:skip-predicate-checks? #t)
   (test-flat-contract +nan.0 +nan.0 +inf.0 #:skip-predicate-checks? #t)
   (test-flat-contract +inf.0 +inf.0 +nan.0 #:skip-predicate-checks? #t)
-  #reader tests/racket/maybe-single
   (when (single-flonum-available?)
-    (test-flat-contract +nan.0 +nan.0 +nan.f #:skip-predicate-checks? #t)
-    (test-flat-contract +nan.f +nan.f +nan.0 #:skip-predicate-checks? #t))
+    (test-flat-contract +nan.0 +nan.0 (real->single-flonum +nan.0) #:skip-predicate-checks? #t)
+    (test-flat-contract (real->single-flonum +nan.0) (real->single-flonum +nan.0) +nan.0 #:skip-predicate-checks? #t))
   (test-flat-contract #rx".x." "axq" "x" #:skip-predicate-checks? #t)
   (test-flat-contract #rx#".x." #"axq" #"x" #:skip-predicate-checks? #t)
   (test-flat-contract #rx".x." #"axq" #"x" #:skip-predicate-checks? #t)
