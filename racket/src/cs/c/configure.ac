@@ -183,9 +183,16 @@ case "$host_os" in
     ;;
   *freebsd*)
     MACH_OS=fb
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    # Can't strip until ELF lookup added to startup
+    enable_strip=no
     ;;
   openbsd*)
     MACH_OS=ob
+    LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
+    LDFLAGS="{$LDFLAGS} -Wl,-zwxneeded"
+    # Can't strip until ELF lookup added to startup
+    enable_strip=no
     ;;
   bitrig*)
     ;;
@@ -193,6 +200,9 @@ case "$host_os" in
     ;;
   netbsd*)
     MACH_OS=nb
+    LIBS="${LIBS} /usr/lib/i18n/libiconv_std.a -lm -lpthread"
+    # Can't strip until ELF lookup added to startup
+    enable_strip=no
     ;;
   irix*)
     ;;
