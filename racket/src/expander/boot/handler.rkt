@@ -194,25 +194,28 @@
              reg
              (make-ephemeron reg v)))
 
-;; weak map from `lib' path + current-library-paths to symbols:
-;;  We'd like to use a weak `equal?'-based hash table here,
-;;  but that's not kill-safe. Instead, we use a non-thread-safe
-;;  custom hash table; a race could lose cache entries, but
-;;  that's ok.
-(define CACHE-N 512)
-(define-place-local -path-cache (make-vector CACHE-N #f)) 
-(define (path-cache-get p)
-  (let* ([i (modulo (abs (equal-hash-code p)) CACHE-N)]
-         [w (vector-ref -path-cache i)]
-         [l (and w (weak-box-value w))])
-    (and l
-         (let ([a (assoc p l)])
-           (and a (cdr a))))))
-(define (path-cache-set! p v)
-  (let* ([i (modulo (abs (equal-hash-code p)) CACHE-N)]
-         [w (vector-ref -path-cache i)]
-         [l (and w (weak-box-value w))])
-    (vector-set! -path-cache i (make-weak-box (cons (cons p v) (or l null))))))
+;; Weak map from a module registries to a cache that maps module
+;; references to resolved-module information. The idea behind mapping
+;; from a registry is that changes made to the collection mapping
+;; (e.g., by installing a package) reliably take effect when changing
+;; namespaces, so using the same namespace may not see the change.
+;; Also, we only cache on successful loads, so changing the mapping
+;; for that namespace probably doesn't make sense, anyway, for
+;; anything that was successfully loaded.
+(define-place-local path-caches (make-weak-hasheq))
+
+(define (path-cache-get p reg)
+  (define cache (hash-ref path-caches reg #hash()))
+  (hash-ref cache p #f))
+  
+(define (path-cache-set! p reg v)
+  (define current-cache (hash-ref path-caches reg #hash()))
+  ;; Limit cache memory use by flushing the whole thing when it
+  ;; reaches a maximum size:
+  (define cache (if (= (hash-count current-cache) 1024)
+                    #hash()
+                    current-cache))
+  (hash-set! path-caches reg (hash-set cache p v)))
 
 (define -loading-filename (gensym))
 (define -loading-prompt-tag (make-continuation-prompt-tag 'module-loading))
@@ -459,7 +462,7 @@
                  ;; collection
                  (cond
                    [(symbol? s)
-                    (or (path-cache-get (cons s (get-reg)))
+                    (or (path-cache-get s (get-reg))
                         (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                           (let* ([f-file (if (null? cols)
                                              "main.rkt"
@@ -478,7 +481,7 @@
                                            #t))))]
                    [(string? s)
                     (let* ([dir (get-dir)])
-                      (or (path-cache-get (cons s dir))
+                      (or (path-cache-get (cons s dir) #f)
                           (let-values ([(cols file) (split-relative-string s #f)])
                             (if (null? cols)
                                 (build-path dir (ss->rkt file))
@@ -498,7 +501,7 @@
                                                      s
                                                      (path->complete-path s (get-dir)))))]
                    [(eq? (car s) 'lib)
-                    (or (path-cache-get (cons s (get-reg)))
+                    (or (path-cache-get s (get-reg))
                         (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
                                       [(old-style?) (if (null? (cddr s))
                                                         (and (null? cols)
@@ -650,7 +653,10 @@
                                    (eq? (car s) 'lib))))
                  (path-cache-set! (if (string? s)
                                       (cons s (get-dir))
-                                      (cons s (get-reg)))
+                                      s)
+                                  (if (string? s)
+                                      #f
+                                      (get-reg))
                                   (vector filename
                                           normal-filename
                                           name
@@ -687,7 +693,7 @@
 
 (define (boot)
   (set! -module-hash-table-table (make-weak-hasheq))
-  (set! -path-cache (make-vector CACHE-N #f))
+  (set! path-caches (make-weak-hasheq))
   (seal)
   (current-module-name-resolver standard-module-name-resolver)
   (current-load/use-compiled default-load/use-compiled)
