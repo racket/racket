@@ -77,9 +77,9 @@ instead of its original filesystem-based name. The module-name
 resolver is configured in the embedding executable to map
 collection-based module paths to the embedded symbolic name, but no
 such mapping is created for filesystem paths. By default, a module's
-symbolic name is generated in an unspecified but quasi-deterministic
+symbolic name is generated in an unspecified but deterministic
 way where the name starts with @as-index{@litchar{#%embedded:}},
-except that the main module is prefixd with @litchar{#%mzc:}. The
+except that the main module is prefixed with @litchar{#%mzc:}. The
 relative lack of specification for module names can be be a problem
 form language constructs that are sensitive to a module names, such as
 serialization. To take more control over a module's symbolic name, use
@@ -250,7 +250,9 @@ The @exec{raco exe} command accepts the following command-line flags:
                                     @racketidfont{declare-preserve-for-embedding}.}
          #:changed "6.90.0.23" @elem{Added @DFlag{embed-dlls}.}
          #:changed "7.0.0.17" @elem{Added @DPFlag{lang}.}
-         #:changed "7.3.0.6" @elem{Added @DPFlag{named-lib} and @DPFlag{named-file}.}]
+         #:changed "7.3.0.6" @elem{Added @DPFlag{named-lib} and @DPFlag{named-file},
+                                   and changed generation of symbolic names for embedded
+                                   modules to make it deterministic.}]
 
 @; ----------------------------------------------------------------------
 
