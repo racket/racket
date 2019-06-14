@@ -3392,7 +3392,7 @@ void scheme_rktio_error(const char *name, const char *what);
 
 void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
-void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
+NORETURN void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 
 char *scheme_make_srcloc_string(Scheme_Object *stx, intptr_t *len);
 

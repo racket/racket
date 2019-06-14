@@ -252,11 +252,25 @@ extern "C"
 {
 #endif
 
-#if defined(MZ_DECLARE_NORETURN) && defined(__GNUC__)
-#define NORETURN __attribute__((__noreturn__))
+#if !defined(NORETURN)
+#if defined(__GNUC__) || defined(__clang__)
+#define NORETURN __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define NORETURN __declspec(noreturn)
 #else
 #define NORETURN
-#endif
+#endif /* defined(__GNUC__) || defined(__clang__) */
+#endif /* !defined(NORETURN) */
+
+#if !defined(UNREACHABLE)
+#if defined(__GNUC__) || defined(__clang__)
+#define UNREACHABLE __builtin_unreachable()
+#elif defined(_MSC_VER)
+#define UNREACHABLE __assume(0)
+#else
+#define UNREACHABLE
+#endif /* defined(__GNUC__) || defined(__clang__) */
+#endif /* !defined(NORETURN) */
 
 /* Allowed by all configurations, currently: */
 #define MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
@@ -1670,7 +1684,7 @@ MZ_EXTERN Scheme_Object *scheme_eval_waiting;
 #endif
 
 #ifdef MZ_USE_JIT
-MZ_EXTERN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
+MZ_EXTERN NORETURN void scheme_jit_longjmp(mz_jit_jmp_buf b, int v);
 MZ_EXTERN void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b);
 # define scheme_jit_setjmp(b) (scheme_jit_setjmp_prepare(b), scheme_call_mz_setjmp((b)->jb))
 #else
