@@ -933,7 +933,7 @@ Scheme_Object *(*scheme_make_late_weak_box)(Scheme_Object *v);
 Scheme_Object *(*scheme_make_ephemeron)(Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_ephemeron_value)(Scheme_Object *o);
 Scheme_Object *(*scheme_ephemeron_key)(Scheme_Object *o);
-Scheme_Object *(*scheme_make_stubborn_will_executor)();
+Scheme_Object *(*scheme_make_late_will_executor)();
 Scheme_Object *(*scheme_load)(const char *file);
 Scheme_Object *(*scheme_load_extension)(const char *filename, Scheme_Env *env);
 void (*scheme_register_extension_global)(void *ptr, intptr_t size);
