@@ -56,7 +56,8 @@
 
 ;; A Guide (G) is one of:
 ;; - (list 't-resyntax Expr Expr G)
-;; - (list 't-const Expr)     ;; constant
+;; - (list 't-quote Datum)    ;; constant, but not null
+;; - (list 't-quote-syntax Syntax)
 ;; - (list 't-var Id)         ;; trusted pattern variable
 ;; - (list 't-list G ...)
 ;; - (list 't-list* G ... G)
@@ -115,22 +116,81 @@
     (make-struct-type 'syntax-metafunction #f 1 0 #f null (current-inspector)))
   (define (metafunction-var mf) (metafunction-ref mf 0))
 
-  (define (ht-guide? x)
-    (if (and (pair? x) (eq? (car x) 'h-t)) #t #f))
-  (define (ht-guide-t x)
-    (if (and (pair? x) (eq? (car x) 'h-t)) (cadr x) #f))
+  (define (guide-is? x tag) (and (pair? x) (eq? (car x) tag)))
 
-  (define (const-guide? x) (or (and (pair? x) (eq? (car x) 't-const)) (equal? x '(t-list))))
-  (define (const-guide-v x)
-    (if (eq? (car x) 't-list)
-        null
-        (let ([e (cadr x)])
-          (if (eq? (car e) 'syntax-e) (syntax-e (cadr (cadr e))) (cadr e)))))
+  (define (ht-guide? x) (guide-is? x 'h-t))
+  (define (ht-guide-t x) (cadr x))
+
+  (define (quote-guide? x) (guide-is? x 't-quote))
+  (define (quote-guide-v x) (cadr x))
+  (define (quote-syntax-guide? x) (guide-is? x 't-quote-syntax))
+  (define (quote-syntax-guide-v x) (cadr x))
+
+  (define (null-guide? x) (and (guide-is? x 't-list) (null? (cdr x))))
+
+  (define (datum-guide? x) (or (quote-guide? x) (null-guide? x)))
+  (define (datum-guide-v x) (if (null-guide? x) null (quote-guide-v x)))
+
+  (define (list-guide? x) (guide-is? x 't-list))
+  (define (list-guide-vs x) (cdr x))
+
+  (define (list*-guide? x) (guide-is? x 't-list*))
+  (define (list*-guide-vs x) (cdr x))
+
+  (define (struct-guide? x) (guide-is? x 't-struct))
+  (define (struct-guide-key x) (cadr (cadr x)))
+  (define (struct-guide-v x) (caddr x))
+
+  (define (vector-guide? x) (guide-is? x 't-vector))
+  (define (vector-guide-v x) (cadr x))
+
+  (define (box-guide? x) (guide-is? x 't-box))
+  (define (box-guide-v x) (cadr x))
+
+  (define (append-guide gh gt)
+    (cond [(ht-guide? gh) (cons-guide (ht-guide-t gh) gt)]
+          [(null-guide? gt) gh]
+          [else `(t-append ,gh ,gt)]))
 
   (define (cons-guide g1 g2)
-    (cond [(eq? (car g2) 't-list) (list* 't-list g1 (cdr g2))]
-          [(eq? (car g2) 't-list*) (list* 't-list* g1 (cdr g2))]
+    (cond [(and (datum-guide? g1) (datum-guide? g2))
+           `(t-quote ,(cons (datum-guide-v g1) (datum-guide-v g2)))]
+          [(list-guide? g2) (list* 't-list g1 (list-guide-vs g2))]
+          [(list*-guide? g2) (list* 't-list* g1 (list*-guide-vs g2))]
           [else (list 't-list* g1 g2)]))
+
+  (define (const-stx-guide? x)
+    (cond [(quote-guide? x) #t]
+          [(quote-syntax-guide? x) #t]
+          [(list-guide? x) (andmap const-stx-guide? (list-guide-vs x))]
+          [(list*-guide? x) (andmap const-stx-guide? (list*-guide-vs x))]
+          [(struct-guide? x) (const-stx-guide? (struct-guide-v x))]
+          [(vector-guide? x) (const-stx-guide? (vector-guide-v x))]
+          [(box-guide? x) (const-stx-guide? (box-guide-v x))]
+          [else #f]))
+  (define (const-stx-guide-v x)
+    (cond [(quote-guide? x) (quote-guide-v x)]
+          [(quote-syntax-guide? x) (quote-syntax-guide-v x)]
+          [(list-guide? x) (map const-stx-guide-v (list-guide-vs x))]
+          [(list*-guide? x) (apply list* (map const-stx-guide-v (list*-guide-vs x)))]
+          [(struct-guide? x)
+           (apply make-prefab-struct (struct-guide-key x) (const-stx-guide-v (struct-guide-v x)))]
+          [(vector-guide? x) (list->vector (const-stx-guide-v (vector-guide-v x)))]
+          [(box-guide? x) (box (const-stx-guide-v (box-guide-v x)))]
+          [else (error 'const-stx-guide-v "bad guide: ~e" x)]))
+
+  (define (dots-guide hguide frame head at-stx)
+    (let ([cons? (ht-guide? hguide)]
+          [hguide (if (ht-guide? hguide) (ht-guide-t hguide) hguide)]
+          [env (dotsframe-env frame)])
+      (cond [(and (guide-is? hguide 't-var) (= (length env) 1)
+                  (eq? (cadr hguide) (caar env)))
+             ;; (x ...), where x is trusted
+             (cond [cons? `(t-var ,(cdar env))]
+                   [else `(apply append (t-var ,(cdar env)))])]
+            [else
+             `(t-dots ,cons? ,hguide ,(map car env) ,(map cdr env)
+                      (quote ,head) (quote-syntax ,at-stx))])))
 
   ;; A Depth is (Listof MapFrame)
 
@@ -201,9 +261,7 @@
             [(parse-form t (quote-syntax ...) 1)
              => (lambda (t)
                   (disappeared! (car t))
-                  (define guide (parse-t (cadr t) depth #t))
-                  ;; Preserve t-escaped so that (t-escaped (t-const _)) != (t-const _)
-                  `(t-escaped ,guide))]
+                  (parse-t (cadr t) depth #t))]
             [(parse-form t (quote-syntax ~?) 2)
              => (lambda (t)
                   (disappeared! (car t))
@@ -242,32 +300,10 @@
                    (unless (dotsframe-has-any-vars? frame)
                      (wrong-syntax head "no pattern variables before ellipsis in template"))
                    (wrong-syntax (dotsframe-ellipsis-id frame) "too many ellipses in template"))
-                 (loop (cdr frames)
-                       (let ([cons? (ht-guide? hguide)]
-                             [hguide (if (ht-guide? hguide) (ht-guide-t hguide) hguide)]
-                             [env (dotsframe-env frame)])
-                         ;; FIXME: optimize (x ...) case where x is trusted!
-                         `(t-dots ,cons? ,hguide ,(map car env) ,(map cdr env)
-                                  (quote ,head) (quote-syntax ,at-stx))))]
+                 (loop (cdr frames) (dots-guide hguide frame head at-stx))]
                 [else hguide])))
       (define tguide (parse-t tail depth esc?))
-      (cond [(equal? tguide `(t-list)) (resyntax t hguide)]
-            [else (resyntax t `(t-append ,hguide ,tguide))]))
-
-    ;; parse-t-pair/normal : Stx Nat Boolean -> ...
-    ;; t is a normal stx pair
-    (define (parse-t-pair/normal t depth esc?)
-      (define hguide (parse-h (stx-car t) depth esc?))
-      (define tguide (parse-t (stx-cdr t) depth esc?))
-      (resyntax t
-                (if (ht-guide? hguide)
-                    (let ([hguide (ht-guide-t hguide)])
-                      (if (and (const-guide? hguide) (const-guide? tguide))
-                          (const-guide t)
-                          (cons-guide hguide tguide)))
-                    (if (equal? tguide '(t-list))
-                        hguide
-                        `(t-append ,hguide ,tguide)))))
+      (resyntax t (append-guide hguide tguide)))
 
     ;; parse-t-nonpair : Syntax Nat Boolean -> ...
     ;; PRE: t is not a stxpair
@@ -285,18 +321,15 @@
                    [else (const-guide t)])]
             [(vector? td)
              (define guide (parse-t (vector->list td) depth esc?))
-             (cond [(const-guide? guide) (const-guide t)]
-                   [else (resyntax t `(t-vector ,guide))])]
+             (resyntax t `(t-vector ,guide))]
             [(prefab-struct-key td)
              => (lambda (key)
-                  (define guide
-                    (let ([elems (cdr (vector->list (struct->vector td)))])
-                      (parse-t elems depth esc?)))
-                  (cond [(const-guide? guide) (const-guide t)]
-                        [else (resyntax t `(t-struct (quote ,key) ,guide))]))]
+                  (define elems (cdr (vector->list (struct->vector td))))
+                  (define guide (parse-t elems depth esc?))
+                  (resyntax t `(t-struct (quote ,key) ,guide)))]
             [(box? td)
              (define guide (parse-t (unbox td) depth esc?))
-             (if (const-guide? guide) (const-guide t) (resyntax t `(t-box ,guide)))]
+             (resyntax t `(t-box ,guide))]
             [else (const-guide t)]))
 
     ;; parse-h : Syntax Depth Boolean -> HeadGuide
@@ -335,7 +368,7 @@
                 [else `(t-var ,var)]))
         (define (make-src-ref var id)
           (cond [check `(#%expression (,check ,var 1 #f (quote-syntax ,id)))]
-                [else `(#%expression ,var)]))
+                [else var]))
         (frames-seen-pvar! depth0)
         (make-ref
          (let dloop ([depth depth0] [pvar-depth pvar-depth]) ;; ... -> Identifier
@@ -379,11 +412,12 @@
                #f])))
 
     ;; resyntax : Stx Guide -> Guide
-    (define (resyntax t0 g)
-      (if (and stx? (syntax? t0))
-          (cond [(const-guide? g) (const-guide t0)]
-                [else (optimize-resyntax t0 g)])
-          g))
+    (define (resyntax t g)
+      (cond [(not (and stx? (syntax? t))) g]
+            [(const-stx-guide? g)
+             `(t-quote-syntax ,(datum->syntax t (const-stx-guide-v g) t t))]
+            [#t (optimize-resyntax t g)]
+            [else `(t-resyntax #f (quote-syntax ,(datum->syntax t 'STX t t)) ,g)]))
 
     ;; optimize-resyntax : Syntax Guide -> Guide
     (define (optimize-resyntax t0 g)
@@ -398,8 +432,8 @@
                (loop-g (car gs) i rt rs re)]
               [else
                (define g0 (car gs))
-               (cond [(const-guide? g0)
-                      (let ([const (const-guide-v g0)])
+               (cond [(quote-syntax-guide? g0)
+                      (let ([const (quote-syntax-guide-v g0)])
                         (loop-gs list*? (cdr gs) (add1 i) (cons const rt) rs re))]
                      [(eq? (car g0) 't-subst) ;; (t-subst LOC STX <substs>)
                       (let ([subt (cadr (list-ref g0 2))] ;; extract from (quote-syntax _)
@@ -409,13 +443,15 @@
                      [else (loop-gs list*? (cdr gs) (add1 i) (cons HOLE rt)
                                     (cons i rs) (cons g0 re))])]))
       (define (loop-g g i rt rs re)
-        (cond [(eq? (car g) 't-list) (loop-gs #f (cdr g) i rt rs re)]
-              [(eq? (car g) 't-list*) (loop-gs #t (cdr g) i rt rs re)]
-              [(eq? (car g) 't-append)
+        (cond [(list-guide? g)
+               (loop-gs #f (list-guide-vs g) i rt rs re)]
+              [(list*-guide? g)
+               (loop-gs #t (list*-guide-vs g) i rt rs re)]
+              [(guide-is? g 't-append)
                (loop-g (caddr g) (add1 i) (cons HOLE rt)
                        (list* i 'append rs) (cons (cadr g) re))]
-              [(eq? (car g) 't-const)
-               (let ([const (const-guide-v g)])
+              [(eq? (car g) 't-quote-syntax)
+               (let ([const (quote-syntax-guide-v g)])
                  (finish i (cons const rt) rs re))]
               [else (finish i (cons HOLE rt) (list* i 'tail rs) (cons g re))]))
       (define-values (npairs substs exprs t*) (loop-g g 0 null null null))
@@ -434,10 +470,9 @@
 
     ;; const-guide : Any -> Guide
     (define (const-guide x)
-      (cond [(null? x) `(t-list)]
-            [(not stx?) `(t-const (quote ,x))]
-            [(syntax? x) `(t-const (quote-syntax ,x))]
-            [else `(t-const (syntax-e (quote-syntax ,(datum->syntax #f x))))]))
+      (cond [(and stx? (syntax? x)) `(t-quote-syntax ,x)]
+            [(null? x) `(t-list)]
+            [else `(t-quote , x)]))
 
     (let ([guide (parse-t t null #f)])
       (values guide disappeared-uses)))
@@ -493,16 +528,14 @@
   (define (relocate-guide ctx g0 loc-id)
     (define (loop g)
       (define gtag (car g))
-      (cond [(eq? gtag 't-resyntax)
+      (cond [(guide-is? g 't-resyntax)
              `(t-resyntax ,loc-id . ,(cddr g))]
-            [(eq? gtag 't-const)
+            [(quote-syntax-guide? g)
              `(t-relocate ,g ,loc-id)]
-            [(eq? gtag 't-subst)
+            [(guide-is? g 't-subst)
              `(t-subst ,loc-id . ,(cddr g))]
             ;; ----
-            [(eq? gtag 't-escaped)
-             `(t-escaped ,(loop (cadr g)))]
-            [(eq? gtag 't-orelse)
+            [(guide-is? g 't-orelse)
              `(t-orelse ,(loop (cadr g)) ,(loop (caddr g)))]
             ;; ----
             ;; Nothing else should be relocated
@@ -516,11 +549,7 @@
     (define-values (pre-guide disappeared-uses)
       (parse-template ctx tstx stx?))
     (define guide (if loc-id (relocate-guide ctx pre-guide loc-id) pre-guide))
-    (define pre-code
-      (if (const-guide? guide)
-          (if stx? `(quote-syntax ,tstx) `(quote ,tstx))
-          guide))
-    (define code (syntax-arm (datum->syntax here-stx pre-code ctx)))
+    (define code (syntax-arm (datum->syntax here-stx guide ctx)))
     (syntax-property code 'disappeared-use (map syntax-local-introduce disappeared-uses)))
   )
 
@@ -584,7 +613,8 @@
                      `(t-orelse* (lambda () ,(cadr s)) (lambda () ,(caddr s)))))
     (values orelse-transformer orelse-transformer)))
 
-(#%require (rename '#%kernel t-const    #%expression)
+(#%require (rename '#%kernel t-quote    quote)
+           (rename '#%kernel t-quote-syntax quote-syntax)
            (rename '#%kernel t-var      #%expression)
            (rename '#%kernel t-check-var #%expression)
            ;; (rename '#%kernel t-append   append)
