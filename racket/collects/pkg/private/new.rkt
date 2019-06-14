@@ -66,9 +66,11 @@
       (displayln "Generating LICENSE-APACHE and LICENSE-MIT files. You are free to change the license.")
       (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
+<<name>> 
+
 MIT License
 
-Copyright (c) <<year>> <<name>> <<user>>
+Copyright (c) <<year>> <<user>>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
