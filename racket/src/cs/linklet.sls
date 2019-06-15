@@ -472,15 +472,7 @@
   (define (linklet-pack-exports-info! l)
     (let ([info (linklet-exports-info l)])
       (when (hash? info)
-        (let ([new-info
-               (cond
-                [(zero? (hash-count info)) #f]
-                [else
-                 (let-values ([(o get) (open-bytevector-output-port)])
-                   ;; convert to a hashtable so the fasled form is compact and
-                   ;; doesn't have hash codes:
-                   (fasl-write* (hash->eq-hashtable (hash-copy info)) o)
-                   (get))])])
+        (let ([new-info (->fasl info)])
           (linklet-exports-info-set! l new-info)))))
 
   (define (linklet-unpack-exports-info! l)
@@ -489,8 +481,7 @@
         (let ([new-info
                (cond
                 [(not info) (hasheq)]
-                [else
-                 (eq-hashtable->hash (fasl-read (open-bytevector-input-port info)))])])
+                [else (fasl-> info)])])
           (linklet-exports-info-set! l new-info)))))
 
   (define compile-linklet

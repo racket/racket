@@ -14,14 +14,18 @@
           known-procedure
           known-procedure/pure
           known-procedure/succeeds
-          a-known-constant)
+          a-known-constant
+          ->fasl
+          fasl->)
   (import (except (chezpart)
                   datum->syntax)
           (rename (rumble)
                   [correlated? rumble:correlated?]
                   [correlated-e rumble:correlated-e]
                   [correlated-property rumble:correlated-property]
+                  [correlated-property-symbol-keys rumble:correlated-property-symbol-keys]
                   [datum->correlated rumble:datum->correlated]
+                  [correlated->datum rumble:correlated->datum]
                   [correlated-source rumble:correlated-source]
                   [correlated-line rumble:correlated-line]
                   [correlated-column rumble:correlated-column]
@@ -40,7 +44,9 @@
        (hash 'syntax? rumble:correlated?
              'syntax-e rumble:correlated-e
              'syntax-property rumble:correlated-property
+             'syntax-property-symbol-keys rumble:correlated-property-symbol-keys
              'datum->syntax rumble:datum->correlated
+             'syntax->datum rumble:correlated->datum
              'syntax-source rumble:correlated-source
              'syntax-line rumble:correlated-line
              'syntax-column rumble:correlated-column

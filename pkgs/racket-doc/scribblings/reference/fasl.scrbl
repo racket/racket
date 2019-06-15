@@ -27,10 +27,11 @@ output port or returning the byte string otherwise. The
 
 The @racket[v] argument must be a value that could be @racket[quote]d
 as a literal---that is, a value without syntax objects for which
-@racket[(compile `(quote ,v))]
-would work and be @racket[read]able after @racket[write]. The
-byte string produced by @racket[s-exp->fasl] does not use the same
-format as compiled code, however.
+@racket[(compile `(quote ,v))] would work and be @racket[read]able
+after @racket[write]---or it can include @tech{correlated
+objects} mixed with those values. The byte string produced by
+@racket[s-exp->fasl] does not use the same format as compiled code,
+however.
 
 Like @racket[(compile `(quote ,v))], @racket[s-exp->fasl] does not
 preserve graph structure, support cycles, or handle non-@tech{prefab}
@@ -67,7 +68,8 @@ fasl
 
 @history[#:changed "6.90.0.21" @elem{Made @racket[s-exp->fasl] format version-independent
                                      and added the @racket[#:keep-mutable?]
-                                     and @racket[#:datum-intern?] arguments.}]}
+                                     and @racket[#:datum-intern?] arguments.}
+         #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}]}
 
 @; ----------------------------------------------------------------------
 
