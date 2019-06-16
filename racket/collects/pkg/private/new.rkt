@@ -222,9 +222,8 @@ EOS
 ;; To view documentation:
 ;;   $ raco docs <<name>>
 ;;
-;; For your convenience, we have included a LICENSE.txt file, which links to
-;; the GNU Lesser General Public License.
-;; If you would prefer to use a different license, replace LICENSE.txt with the
+;; For your convenience, we have included LICENSE-MIT and LICENSE-APACHE files.
+;; If you would prefer to use a different license, replace those files with the
 ;; desired license.
 ;;
 ;; Some users like to add a `private/` directory, place auxiliary files there,
