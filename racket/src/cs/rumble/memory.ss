@@ -69,6 +69,7 @@
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  (current-memory-bytes) (real-time) (cpu-time)))
+      (update-eq-hash-code-table-size!)
       (poll-foreign-guardian)
       (run-collect-callbacks cdr)
       (when (and reachable-size-increments-callback
