@@ -1117,6 +1117,30 @@
   
   (syntax-test #'(struct-copy t (t 1 2 3) [a #:parent p 11])))
 
+(module test-struct-rename racket/base
+  (provide (rename-out [point point2d]))
+  (struct point (x y) #:transparent))
+
+(let ()
+  (local-require 'test-struct-rename)
+  (test (point2d 3 2) 'struct-copy1 (struct-copy point2d (point2d 1 2) [x 3])))
+
+(module test-struct-parent racket/base
+  (provide a)
+  (struct a (b-c) #:transparent))
+
+(let ()
+  (local-require 'test-struct-parent)
+  (struct a-b a (c) #:transparent)
+
+  (test (a-b 10 2) 'struct-copy1 (struct-copy a-b (a-b 1 2) [b-c #:parent a 10]))
+  (test (a-b 1 10) 'struct-copy2 (struct-copy a-b (a-b 1 2) [c 10])))
+
+(let ()
+  (local-require 'test-struct-parent)
+  (struct a-b a (d) #:transparent)
+  (syntax-test #'(struct-copy a-b (a-b 1 2) [c 10])))
+
 (test #t prefab-key? 'apple)
 (test #f prefab-key? '#(apple))
 (test #t prefab-key? '(apple 4))
