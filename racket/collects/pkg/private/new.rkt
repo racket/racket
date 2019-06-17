@@ -62,20 +62,51 @@
     (make-directory name)
     (parameterize ([current-directory name])
 
-      ;; LICENSE.txt
-      (with-output-to-file "LICENSE.txt"
+      ;; LICENSE files
+      (displayln "Generating LICENSE-APACHE and LICENSE-MIT files. You are free to change the license.")
+      (with-output-to-file "LICENSE-MIT"
         (lambda () (expand/display #<<EOS
-<<name>>
+<<name>> 
+
+MIT License
+
 Copyright (c) <<year>> <<user>>
 
-This package is distributed under the GNU Lesser General Public
-License (LGPL).  This means that you can link <<name>> into proprietary
-applications, provided you follow the rules stated in the LGPL.  You
-can also modify this package; if you distribute a modified version,
-you must distribute it under the terms of the LGPL, which in
-particular means that you must release the source code for the
-modified software.  See http://www.gnu.org/copyleft/lesser.html
-for more information.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+EOS
+)))
+      (with-output-to-file "LICENSE-APACHE"
+        (lambda () (expand/display #<<EOS
+Copyright <<year>> <<user>>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
 EOS
 )))
@@ -191,9 +222,8 @@ EOS
 ;; To view documentation:
 ;;   $ raco docs <<name>>
 ;;
-;; For your convenience, we have included a LICENSE.txt file, which links to
-;; the GNU Lesser General Public License.
-;; If you would prefer to use a different license, replace LICENSE.txt with the
+;; For your convenience, we have included LICENSE-MIT and LICENSE-APACHE files.
+;; If you would prefer to use a different license, replace those files with the
 ;; desired license.
 ;;
 ;; Some users like to add a `private/` directory, place auxiliary files there,
