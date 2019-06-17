@@ -177,6 +177,11 @@
                [(_ rator rand ...)
                 (with-syntax ([n-args (length #'(rand ...))])
                   #'((extract-procedure rator n-args) rand ...))])))
+    (eval '(define-syntax-rule (extract-procedure f n-args)
+             (let ([tmp f])
+               (if (#%procedure? tmp)
+                   tmp
+                   (slow-extract-procedure tmp n-args)))))
     (eval '(define-syntax (|#%name| stx)
              (syntax-case stx ()
                [(_ name val) #`(let ([name val]) name)])))

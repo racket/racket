@@ -3,7 +3,6 @@
 ;; can be used in a linklet:
 
 (define-primitive-table internal-table
-  [extract-procedure (known-constant)]
   [set-ctl-c-handler! (known-constant)]
   [impersonator-val (known-constant)]
   [impersonate-ref (known-constant)]

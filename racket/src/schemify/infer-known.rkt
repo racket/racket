@@ -5,6 +5,7 @@
          "import.rkt"
          "simple.rkt"
          "pthread-parameter.rkt"
+         "constructed-procedure.rkt"
          "literal.rkt"
          "inline.rkt"
          "mutated-state.rkt"
@@ -61,6 +62,8 @@
        [else (known-copy rhs)])]
     [(pthread-parameter? rhs prim-knowns knowns mutated)
      (known-procedure 3)]
+    [(constructed-procedure-arity-mask rhs)
+     => (lambda (m) (known-procedure m))]
     [(and defn
           (simple? rhs prim-knowns knowns imports mutated simples))
      a-known-constant]
