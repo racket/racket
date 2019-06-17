@@ -352,9 +352,7 @@ for a suggestion on setting `PLT_ZO_PATH`.
 When you change "rumble" or other layers, you can continue to use
 Racket modules that were previously compiled to ".zo" form... usually,
 but inlining optimizations and similar compiler choices can break
-compatibility. Set `compile-as-independent?` to #t in "expander.sls"
-to make compiled Racket modules reliably compatible with changes to
-the layers here (at the expense of some performance).
+compatibility.
 
 FFI Differences
 ---------------
@@ -476,23 +474,6 @@ configuration:
    Effectiveness: Can mean a 10-20% improvement in loading
    `racket/base` from source. Since the implementation is in pretty
    good shape, `UNSAFE_COMP` is enabled by default.
-
- * `compile-as-independent?` is #f in "expander.sls" --- currently set
-   to #f by default. See "Development Mode" above for more
-   information.
-
-   Effectiveness: Without also enabling `UNSAFE_COMP`, setting
-   `compile-as-independent?` to #f slows down tasks like loading
-   `racket/base` from source, but substantially improves programs
-   where the Chez Scheme optimizer needs to recognize uses of
-   primitives (e.g., microbenchmarks). Combining with `UNSAFE_COMP`
-   speeds up loading `racket/base` from source, too.
-
-   The combination of `UNSAFE_COMP` and `compile-as-independent?`
-   enables inlining of unsafe function bodies. For example,
-   `variable-ref/no-check` inlines as lots of code in safe mode and
-   little code in unsafe mode; lots of code doesn't run more slowly,
-   but it compiles more slowly.
 
  * `DEBUG_COMP` not enabled --- or, if you enable it, run `make
    strip`.

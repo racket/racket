@@ -54,7 +54,6 @@
                        [else (fx+ 1 (loop (cdr argss)))]))])
            (#2%apply #2%apply (extract-procedure proc len) argss)))]))
 
-;; See copy in "expander.sls"
 (define-syntax (|#%app| stx)
   (syntax-case stx ()
     [(_ rator rand ...)

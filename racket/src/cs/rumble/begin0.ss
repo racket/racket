@@ -1,5 +1,4 @@
 
-;; See copy in "expander.sls"
 (define-syntax begin0
   (syntax-rules (void)
     [(_ expr0) expr0]

@@ -887,7 +887,6 @@
    [(elem+cache? a) (extract-mark-from-frame* (elem+cache-elem a) key default-v wrapper)]
    [else default-v]))
 
-;; See copy in "expander.sls"
 (define-syntax with-continuation-mark
   (syntax-rules ()
     [(_ key val body)
