@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.rkt"
           racket/class
-          (for-syntax racket/base racket/serialize racket/trait))
+          (for-syntax racket/base racket/serialize racket/trait)
+          (for-label racket/serialize))
 
 @(begin
 
