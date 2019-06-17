@@ -1188,7 +1188,11 @@ results.
 
 @defproc[(make-cstruct-type [types (non-empty-listof ctype?)]
                             [abi (or/c #f 'default 'stdcall 'sysv) #f]
-                            [alignment (or/c #f 1 2 4 8 16) #f]) 
+                            [alignment (or/c #f 1 2 4 8 16) #f]
+                            [malloc-mode (one-of/c 'raw 'atomic 'nonatomic 'tagged
+                                                    'atomic-interior 'interior
+                                                    'stubborn 'uncollectable 'eternal)
+                                         'atomic])
          ctype?]{
 
 The primitive type constructor for creating new C struct types.  These
@@ -1202,14 +1206,22 @@ known according to the given list of @racket[types] list.
 If @racket[alignment] is @racket[#f], then the natural alignment of
 each type in @racket[types] is used for its alignment within the
 struct type. Otherwise, @racket[alignment] is used for all struct type
-members.}
+members.
+
+The @racket[malloc-mode] argument is used when an instance of the type
+is allocated to represent the result of a function call. This
+allocation mode is @emph{not} used for an argument to a
+@tech{callback}, because temporary space allocated on the C stack
+(possibly by the calling convention) is used in that case.
+
+@history[#:changed "7.3.0.8" @elem{Added the @racket[malloc-mode] argument.}]}
 
 
 @defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
                        [#:malloc-mode malloc-mode
                                       (one-of/c 'raw 'atomic 'nonatomic 'tagged
-                                                 'atomic-interior 'interior
-                                                 'stubborn 'uncollectable 'eternal)
+                                                'atomic-interior 'interior
+                                                'stubborn 'uncollectable 'eternal)
                                       'atomic]
                        [type ctype?] ...+)
          ctype?]{
@@ -1369,7 +1381,9 @@ addition for the new fields.  This adjustment of the constructor is,
 again, in analogy to using a supertype with @racket[define-struct].
 
 Structs are allocated using @racket[malloc] with the result of
-@racket[malloc-mode-expr],  which default to @racket['atomic].
+@racket[malloc-mode-expr],  which defaults to @racket['atomic].
+(This allocation mode does not apply to arguments of a @tech{callback};
+see also @racket[define-cstruct-type].)
 The default allocation of @racket['atomic] means that the
 garbage collector ignores the content of a struct; thus, struct fields can hold
 only non-pointer values, pointers to memory outside the GC's control,
@@ -1642,7 +1656,8 @@ and from an underlying C array.}
 
 The primitive type constructor for creating new C union types. Like C
 struct types, union types are new primitive types with no conversion
-functions associated. Unions are always treated like structs.
+functions associated. Unions are always treated like structs with
+@racket['atomic] allocation mode.
 
 @examples[#:eval ffi-eval
 (make-union-type (_list-struct _int _int)

@@ -298,7 +298,8 @@
   (parent ctype)
   (fields get-decls
           size
-          alignment))
+          alignment
+          malloc-mode))
 
 (define/who (make-ctype type racket-to-c c-to-racket)
   (check who ctype? type)
@@ -313,7 +314,8 @@
                            c-to-racket
                            (compound-ctype-get-decls type)
                            (compound-ctype-size type)
-                           (compound-ctype-alignment type))]
+                           (compound-ctype-alignment type)
+                           (compound-ctype-malloc-mode type))]
    [else
     (create-ctype (ctype-host-rep type)
                   (ctype-our-rep type)
@@ -510,9 +512,10 @@
 
 (define make-cstruct-type
   (case-lambda
-   [(types) (make-cstruct-type types #f #f)]
-   [(types abi) (make-cstruct-type types abi #f)]
-   [(types abi alignment)
+   [(types) (make-cstruct-type types #f #f 'atomic)]
+   [(types abi) (make-cstruct-type types abi #f 'atomic)]
+   [(types abi alignment) (make-cstruct-type types abi alignment 'atomic)]
+   [(types abi alignment malloc-mode)
     (let ([make-decls
            (escapes-ok
              (lambda (id next!-id)
@@ -530,7 +533,8 @@
                                (lambda (c) (memory->cpointer c))
                                make-decls
                                size
-                               alignment)))]))
+                               alignment
+                               malloc-mode)))]))
 
 (define/who (make-union-type . types)
   (for-each (lambda (type) (check who ctype? type))
@@ -553,7 +557,8 @@
                            (lambda (c) (memory->cpointer c))
                            make-decls
                            size
-                           alignment)))
+                           alignment
+                           'atomic)))
 
 (define/who (make-array-type type count)
   (check who ctype? type)
@@ -577,7 +582,8 @@
                            (lambda (c) (memory->cpointer c))
                            make-decls
                            size
-                           alignment)))
+                           alignment
+                           #f)))
 
 (define (compiler-sizeof sl)
   (let ([rest (lambda (sl) (if (pair? sl) (cdr sl) '()))])
@@ -1570,6 +1576,7 @@
                         ((compound-ctype-get-decls out-type) ret-id next!-id)
                         '())]
          [ret-size (and ret-id (ctype-sizeof out-type))]
+         [ret-malloc-mode (and ret-id (compound-ctype-malloc-mode out-type))]
          [gen-proc+ret-maker+arg-makers
           (let ([expr `(let ()
                          ,@decls
@@ -1724,7 +1731,7 @@
                                  orig-args in-types)]
                       [r (let ([ret-ptr (and ret-id
                                              ;; result is a struct type; need to allocate space for it
-                                             (make-bytevector ret-size))])
+                                             (normalized-malloc ret-size ret-malloc-mode))])
                            (when lock (mutex-acquire lock))
                            (with-interrupts-disabled
                             (when blocking? (currently-blocking? #t))
@@ -1733,7 +1740,7 @@
                              (let ([r (#%apply (gen-proc (cpointer-address proc-p))
                                                (append
                                                 (if ret-ptr
-                                                    (list (ret-maker (memory-address ret-ptr)))
+                                                    (list (ret-maker (cpointer-address ret-ptr)))
                                                     '())
                                                 (map (lambda (arg in-type maker)
                                                        (let ([host-rep (array-rep-to-pointer-rep
@@ -1750,8 +1757,7 @@
                                  [(posix) (thread-cell-set! errno-cell (get-errno))]
                                  [(windows) (thread-cell-set! errno-cell (get-last-error))])
                                (cond
-                                [ret-ptr
-                                 (make-cpointer ret-ptr #f)]
+                                [ret-ptr ret-ptr]
                                 [(eq? (ctype-our-rep out-type) 'gcpointer)
                                  (addr->gcpointer-memory r)]
                                 [else r])))))])
@@ -1780,6 +1786,9 @@
                                                    [arg (c->s type
                                                               (case (ctype-host-rep type)
                                                                 [(struct union)
+                                                                 ;; Like old Racket, refer to argument on stack:
+                                                                 (make-cpointer (ftype-pointer-address arg) #f)
+                                                                 #;
                                                                  (let* ([size (compound-ctype-size type)]
                                                                         [addr (ftype-pointer-address arg)]
                                                                         [bstr (make-bytevector size)])

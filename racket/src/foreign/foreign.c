@@ -85,6 +85,20 @@
 
 #include "ffi.h"
 
+typedef void *(*Scheme_Malloc_Proc)(size_t);
+static Scheme_Malloc_Proc mode_to_allocator(const char *who, Scheme_Object *mode);
+
+static Scheme_Object *nonatomic_sym;
+static Scheme_Object *atomic_sym;
+static Scheme_Object *stubborn_sym;
+static Scheme_Object *uncollectable_sym;
+static Scheme_Object *eternal_sym;
+static Scheme_Object *interior_sym;
+static Scheme_Object *atomic_interior_sym;
+static Scheme_Object *raw_sym;
+static Scheme_Object *tagged_sym;
+static Scheme_Object *fail_ok_sym;
+
 #ifndef MZ_PRECISE_GC
 # define XFORM_OK_PLUS +
 # define GC_CAN_IGNORE /* empty */
@@ -921,8 +935,8 @@ XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
  * struct types).  If it is a user type then basetype will be another ctype,
  * otherwise,
  * - if it's a primitive type, then basetype will be a symbol naming that type
- * - if it's a struct, then basetype will be the list of ctypes that
- *   made this struct
+ * - if it's a struct or union, then basetype will be the list of ctypes that
+ *   made this struct, prefixed with a symbol if the allocation mode is not 'atomic
  * scheme_to_c will have the &ffi_type pointer, and c_to_scheme will have an
  * integer (a label value) for non-struct type.  (Note that the
  * integer is not really needed, since it is possible to identify the
@@ -982,9 +996,15 @@ static ffi_type ffi_type_gcpointer;
 #define MYNAME "ctype-basetype"
 static Scheme_Object *foreign_ctype_basetype(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *r;
   if (!SCHEME_CTYPEP(argv[0]))
     scheme_wrong_contract(MYNAME, "ctype?", 0, argc, argv);
-  return CTYPE_BASETYPE(argv[0]);
+  r = CTYPE_BASETYPE(argv[0]);
+  if (SCHEME_PAIRP(r) && SCHEME_SYMBOLP(SCHEME_CAR(r))) {
+    /* strip allocation mode for struct/union */
+    r = SCHEME_CDR(r);
+  }
+  return r;
 }
 #undef MYNAME
 
@@ -1166,7 +1186,7 @@ static void wrong_void(const char *who, Scheme_Object *list_element, int specifi
                           NULL);
 }
 
-/* (make-cstruct-type types [abi alignment]) -> ctype */
+/* (make-cstruct-type types [abi alignment malloc-mode]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
  * pointer value.  Marshaling to lists or whatever should be done in Racket. */
@@ -1182,7 +1202,8 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   ffi_cif cif;
   int i, nargs, with_alignment;
   ffi_abi abi;
-  nargs = scheme_proper_list_length(argv[0]);
+  Scheme_Object *fields = argv[0];
+  nargs = scheme_proper_list_length(fields);
   if (nargs <= 0) scheme_wrong_contract(MYNAME, "(non-empty-listof ctype?)", 0, argc, argv);
   abi = GET_ABI(MYNAME,1);
   if (argc > 2) {
@@ -1196,9 +1217,16 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
       with_alignment = SCHEME_INT_VAL(argv[2]);
     } else
       with_alignment = 0;
+    if (argc > 3) {
+      if (!SAME_OBJ(argv[3], atomic_sym)) {
+        (void)mode_to_allocator(MYNAME, argv[3]);
+        fields = scheme_make_pair(argv[3], fields);
+      }
+    }
   } else
     with_alignment = 0;
-  /* allocate the type elements */
+
+    /* allocate the type elements */
   elements = malloc((nargs+1) * sizeof(ffi_type*));
   elements[nargs] = NULL;
   for (i=0, p=argv[0]; i<nargs; i++, p=SCHEME_CDR(p)) {
@@ -1216,6 +1244,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
         elements[i]->alignment = with_alignment;
     }
   }
+
   /* allocate the new libffi type object */
   libffi_type = malloc(sizeof(ffi_type));
   libffi_type->size      = 0;
@@ -1228,7 +1257,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   type = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   type->so.type = ctype_tag;
-  type->basetype = (argv[0]);
+  type->basetype = (fields);
   type->scheme_to_c = ((Scheme_Object*)libffi_type);
   type->c_to_scheme = ((Scheme_Object*)FOREIGN_struct);
   if (with_alignment)
@@ -2579,16 +2608,42 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
 /*****************************************************************************/
 /* Pointer type user functions */
 
-static Scheme_Object *nonatomic_sym;
-static Scheme_Object *atomic_sym;
-static Scheme_Object *stubborn_sym;
-static Scheme_Object *uncollectable_sym;
-static Scheme_Object *eternal_sym;
-static Scheme_Object *interior_sym;
-static Scheme_Object *atomic_interior_sym;
-static Scheme_Object *raw_sym;
-static Scheme_Object *tagged_sym;
-static Scheme_Object *fail_ok_sym;
+static Scheme_Malloc_Proc mode_to_allocator(const char *who, Scheme_Object *mode)
+{
+  Scheme_Malloc_Proc mf;
+
+  if (SAME_OBJ(mode, nonatomic_sym))          mf = scheme_malloc;
+  else if (SAME_OBJ(mode, atomic_sym))        mf = scheme_malloc_atomic;
+  else if (SAME_OBJ(mode, stubborn_sym))      mf = scheme_malloc_stubborn;
+  else if (SAME_OBJ(mode, eternal_sym))       mf = scheme_malloc_eternal;
+  else if (SAME_OBJ(mode, uncollectable_sym)) mf = scheme_malloc_uncollectable;
+  else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_allow_interior;
+  else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
+  else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
+  else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
+  else {
+    scheme_signal_error("%s: bad allocation mode: %V", who, mode);
+    return NULL; /* hush the compiler */
+  }
+
+  return mf;
+}
+
+static Scheme_Malloc_Proc ctype_allocator(Scheme_Object *type)
+{
+  Scheme_Object *mode;
+
+  mode = CTYPE_BASETYPE(type);
+  if (!SCHEME_PAIRP(mode))
+    mode = atomic_sym;
+  else {
+    mode = SCHEME_CAR(mode);
+    if (!SCHEME_SYMBOLP(mode))
+      mode = atomic_sym;
+  }
+
+  return mode_to_allocator("_struct", mode);
+}
 
 /* (malloc num type cpointer mode) -> pointer */
 /* The arguments for this function are:
@@ -2612,7 +2667,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   void *from = NULL, *res = NULL;
   intptr_t foff = 0;
   Scheme_Object *mode = NULL, *a, *base = NULL;
-  void *(*mf)(size_t);
+  Scheme_Malloc_Proc mf;
   for (i=0; i<argc; i++) {
     a = argv[i];
     a = unwrap_cpointer_property(argv[i]);
@@ -2660,19 +2715,8 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   if (mode == NULL)
     mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_gcpointer)
       ? scheme_malloc : scheme_malloc_atomic;
-  else if (SAME_OBJ(mode, nonatomic_sym))     mf = scheme_malloc;
-  else if (SAME_OBJ(mode, atomic_sym))        mf = scheme_malloc_atomic;
-  else if (SAME_OBJ(mode, stubborn_sym))      mf = scheme_malloc_stubborn;
-  else if (SAME_OBJ(mode, eternal_sym))       mf = scheme_malloc_eternal;
-  else if (SAME_OBJ(mode, uncollectable_sym)) mf = scheme_malloc_uncollectable;
-  else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_allow_interior;
-  else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
-  else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
-  else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
-  else {
-    scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
-    return NULL; /* hush the compiler */
-  }
+  else
+    mf = mode_to_allocator(MYNAME, mode);
   res = scheme_malloc_fail_ok(mf,size);
   if (failok && (res == NULL)) scheme_signal_error("malloc: out of memory");
 
@@ -3586,7 +3630,11 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
       || (CTYPE_PRIMLABEL(base) == FOREIGN_union)) {
     /* need to have p be a pointer that is invisible to the GC */
     p = malloc(CTYPE_PRIMTYPE(base)->size);
-    newp = scheme_malloc_atomic(CTYPE_PRIMTYPE(base)->size);
+    {
+      Scheme_Malloc_Proc mf;
+      mf = ctype_allocator(base);
+      newp = mf(CTYPE_PRIMTYPE(base)->size);
+    }
   } else {
     p = &oval;
     newp = NULL;
@@ -4807,12 +4855,6 @@ void scheme_init_foreign_globals()
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
 # endif /* MZ_PRECISE_GC */
   scheme_set_type_printer(scheme_ctype_type, ctype_printer);
-  MZ_REGISTER_STATIC(default_sym);
-  default_sym = scheme_intern_symbol("default");
-  MZ_REGISTER_STATIC(stdcall_sym);
-  stdcall_sym = scheme_intern_symbol("stdcall");
-  MZ_REGISTER_STATIC(sysv_sym);
-  sysv_sym = scheme_intern_symbol("sysv");
   MZ_REGISTER_STATIC(nonatomic_sym);
   nonatomic_sym = scheme_intern_symbol("nonatomic");
   MZ_REGISTER_STATIC(atomic_sym);
@@ -4833,6 +4875,12 @@ void scheme_init_foreign_globals()
   tagged_sym = scheme_intern_symbol("tagged");
   MZ_REGISTER_STATIC(fail_ok_sym);
   fail_ok_sym = scheme_intern_symbol("fail-ok");
+  MZ_REGISTER_STATIC(default_sym);
+  default_sym = scheme_intern_symbol("default");
+  MZ_REGISTER_STATIC(stdcall_sym);
+  stdcall_sym = scheme_intern_symbol("stdcall");
+  MZ_REGISTER_STATIC(sysv_sym);
+  sysv_sym = scheme_intern_symbol("sysv");
   MZ_REGISTER_STATIC(abs_sym);
   abs_sym = scheme_intern_symbol("abs");
 
@@ -4915,7 +4963,7 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
   scheme_addto_prim_instance("make-ctype",
     scheme_make_noncm_prim(foreign_make_ctype, "make-ctype", 3, 3), env);
   scheme_addto_prim_instance("make-cstruct-type",
-    scheme_make_noncm_prim(foreign_make_cstruct_type, "make-cstruct-type", 1, 3), env);
+    scheme_make_noncm_prim(foreign_make_cstruct_type, "make-cstruct-type", 1, 4), env);
   scheme_addto_prim_instance("make-array-type",
     scheme_make_noncm_prim(foreign_make_array_type, "make-array-type", 2, 2), env);
   scheme_addto_prim_instance("make-union-type",
@@ -5280,7 +5328,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_addto_primitive_instance("make-ctype",
    scheme_make_noncm_prim((Scheme_Prim *)foreign_make_ctype, "make-ctype", 3, 3), env);
   scheme_addto_primitive_instance("make-cstruct-type",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 3), env);
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-cstruct-type", 1, 4), env);
   scheme_addto_primitive_instance("make-array-type",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "make-array-type", 2, 2), env);
   scheme_addto_primitive_instance("make-union-type",

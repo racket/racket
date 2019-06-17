@@ -1545,7 +1545,7 @@
                        #:malloc-mode [malloc-mode 'atomic]
                        type . types)
   (let* ([types   (cons type types)]
-         [stype   (make-cstruct-type types #f alignment)]
+         [stype   (make-cstruct-type types #f alignment malloc-mode)]
          [offsets (compute-offsets types alignment (map (lambda (x) #f) types))]
          [len     (length types)])
     (make-ctype stype
@@ -1725,7 +1725,7 @@
             (define all-tags (cons ^TYPE-tag super-tags))
             (define _TYPE
               ;; c->scheme adjusts all tags
-              (let* ([cst (make-cstruct-type types #f alignment-v)]
+              (let* ([cst (make-cstruct-type types #f alignment-v malloc-mode)]
                      [t (_cpointer ^TYPE-tag cst)]
                      [c->s (ctype-c->scheme t)])
                 (wrap-TYPE-type

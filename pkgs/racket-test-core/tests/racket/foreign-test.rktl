@@ -307,6 +307,17 @@
     (t 1212       'charint_to_int (_fun _charint -> _int)     '(12 1200))
     (t '(123 123) 'int_to_charint (_fun _int -> _charint)     123)
     (t '(255 1)   'charint_swap   (_fun _charint -> _charint) '(1 255)))
+  ;; Make sure allocation mode is used for function result
+  (let ()
+    (define-cstruct _charint ([b _byte]
+                              [i _int])
+      #:malloc-mode 'atomic-interior)
+    (define v ((ffi 'int_to_charint (_fun _int -> _charint)) 77))
+    (define addr (cast v _pointer _intptr))
+    (test 77 charint-b v)
+    (test 77 charint-b v)
+    (collect-garbage)
+    (test #t eqv? (cast v _pointer _intptr) addr))
   ;; ---
   ;; test sending a callback for C to hold, preventing the callback from GCing
   (let ([with-keeper
