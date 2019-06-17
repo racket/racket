@@ -101,6 +101,21 @@
                                             "result" v
                                             "byte-string length" (- end start))])]
                  [(eof-object? v) eof]
+                 [(semaphore? v)
+                  ;; A semaphore is treated as a special case, making
+                  ;; it equivalent to an evt that returns 0
+                  (cond
+                    [zero-ok?
+                     ;; Poll:
+                     (cond
+                       [(semaphore-try-wait? v)
+                        (loop in extra-count-ins)]
+                       [else 0])]
+                    [else
+                     (if enable-break?
+                         (semaphore-wait/enable-break v)
+                         (semaphore-wait v))
+                     (loop in extra-count-ins)])]
                  [(evt? v)
                   ;; If `zero-ok?`, we should at least poll the event
                   (define timeout (if zero-ok? (lambda () 0) #f))
@@ -186,6 +201,14 @@
                                             "result" v
                                             "byte-string length" (- end start))])]
                  [(eof-object? v) eof]
+                 [(semaphore? v)
+                  (cond
+                    [zero-ok? 0]
+                    [else
+                     (if enable-break?
+                         (semaphore-wait/enable-break v)
+                         (semaphore-wait v))
+                     (loop in)])]
                  [(evt? v)
                   (cond
                     [zero-ok? 0]

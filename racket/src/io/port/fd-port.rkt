@@ -61,8 +61,8 @@
         (end-atomic)
         (send fd-input-port this raise-read-error n)]
        [(eqv? n RKTIO_READ_EOF) eof]
-       [(eqv? n 0) (wrap-evt (fd-evt fd RKTIO_POLL_READ this)
-                             (lambda (v) 0))]
+       [(eqv? n 0) (or (fd-semaphore-update! fd 'read)
+                       (fd-evt fd RKTIO_POLL_READ this))]
        [else n]))]
 
   [close
@@ -379,6 +379,9 @@
 
 ;; ----------------------------------------
 
+;; The ready value for an `fd-evt` is 0, so it can be used directly
+;; for an input port
+
 (struct fd-evt (fd mode [closed #:mutable])
   #:property
   prop:evt
@@ -388,7 +391,7 @@
    (lambda (fde ctx)
      (cond
        [(core-port-closed? (fd-evt-closed fde))
-        (values (list fde) #f)]
+        (values '(0) #f)]
        [else
         (define mode (fd-evt-mode fde))
         (define ready?
@@ -401,7 +404,7 @@
                       RKTIO_POLL_READY))))
         (cond
           [ready?
-           (values (list fde) #f)]
+           (values '(0) #f)]
           ;; If the called is going to block (i.e., not just polling), then
           ;; try to get a semaphore to represent the file descriptor, because
           ;; that can be more scalable (especially for lots of TCP sockets)
@@ -411,7 +414,7 @@
                                           'read
                                           'write)))
            => (lambda (s) ; got a semaphore
-                (values #f (wrap-evt s (lambda (s) fde))))]
+                (values #f (wrap-evt s (lambda (s) 0))))]
           [else
            ;; If `sched-info` in `poll-ctx` is not #f, then we can register this file
            ;; descriptor so that if no thread is able to make progress,
