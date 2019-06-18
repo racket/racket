@@ -43,6 +43,9 @@
            create-custodian
            poll-custodian-will-executor))
 
+(module+ for-future
+  (provide set-custodian-futures-sync!))
+
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
 (struct custodian-box ([v #:mutable] sema)
@@ -259,6 +262,8 @@
 (define (do-custodian-shutdown-all c)
   (unless (custodian-shut-down? c)
     (set-custodian-shut-down?! c #t)
+    (when (custodian-sync-futures? c)
+      (futures-sync-for-custodian-shutdown))
     (for ([(child callback) (in-hash (custodian-children c))])
       (if (procedure-arity-includes? callback 2)
           (callback child c)
@@ -361,6 +366,13 @@
 (define (raise-custodian-is-shut-down who c)
   (raise-arguments-error who "the custodian has been shut down"
                          "custodian" c))
+
+;; ----------------------------------------
+
+(define futures-sync-for-custodian-shutdown (lambda () (void)))
+
+(define (set-custodian-futures-sync! proc)
+  (set! futures-sync-for-custodian-shutdown proc))
 
 ;; ----------------------------------------
 

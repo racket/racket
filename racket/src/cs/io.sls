@@ -478,4 +478,6 @@
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args)))
   (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ptr->address)
   (set-make-async-callback-poll-wakeup! unsafe-make-signal-received)
-  (set-get-machine-info! get-machine-info))
+  (set-get-machine-info! get-machine-info)
+  (set-processor-count! (1/processor-count))
+  (install-future-logging-procs! logging-future-events? log-future-event))

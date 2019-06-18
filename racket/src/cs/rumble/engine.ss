@@ -24,7 +24,7 @@
 (define (set-engine-exit-handler! proc)
   (set! engine-exit proc))
 
-(define (make-engine thunk prompt-tag init-break-enabled-cell empty-config?)
+(define (make-engine thunk prompt-tag abort-handler init-break-enabled-cell empty-config?)
   (let ([paramz (if empty-config?
                     empty-parameterization
                     (current-parameterization))])
@@ -44,7 +44,8 @@
                                                 (with-continuation-mark
                                                     parameterization-key paramz
                                                   (|#%app| thunk)))
-                                              prompt-tag))
+                                              prompt-tag
+                                              abort-handler))
                            engine-return))))
                    (if empty-config?
                        (make-empty-thread-cell-values)

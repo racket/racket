@@ -224,7 +224,9 @@
     (for-each
      (lambda (table)
        (hash-for-each table (lambda (k v) (hash-set! primitives k v))))
-     tables))
+     tables)
+    ;; prropagate table to the rumble layer
+    (install-primitives-table! primitives))
   
   (define (outer-eval s paths format)
     (if (eq? format 'interpret)

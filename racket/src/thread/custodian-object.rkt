@@ -15,8 +15,9 @@
                    [place #:mutable]      ; place containing the custodian
                    [memory-use #:mutable] ; set after a major GC
                    [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts
-                   [memory-limits #:mutable] ; list of (cons limit cust)
-                   [immediate-limit #:mutable]) ; limit on immediate allocation
+                   [memory-limits #:mutable]   ; list of (cons limit cust)
+                   [immediate-limit #:mutable] ; limit on immediate allocation
+                   [sync-futures? #:mutable])  ; whether a sync witht future threads is needed on shutdown
   #:authentic)
 
 (define (create-custodian parent)
@@ -30,7 +31,8 @@
              0      ; memory use
              #f     ; GC roots
              null   ; memory limits
-             #f))   ; immediate limit
+             #f     ; immediate limit
+             #f))   ; sync-futures?
 
 (define initial-place-root-custodian (create-custodian #f))
 

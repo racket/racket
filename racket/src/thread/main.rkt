@@ -28,6 +28,7 @@
          "place.rkt"
          "place-message.rkt"
          "future.rkt"
+         "future-logging.rkt"
          "fsemaphore.rkt"
          "os-thread.rkt")
 
@@ -188,11 +189,12 @@
          would-be-future
          current-future
          future-block
-         future-wait
          current-future-prompt
          reset-future-logs-for-tracing!
          mark-future-trace-end!
-
+         set-processor-count!
+         install-future-logging-procs!
+         
          fsemaphore?
          make-fsemaphore
          fsemaphore-post

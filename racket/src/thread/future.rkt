@@ -1,100 +1,163 @@
 #lang racket/base
-
-(require "place-local.rkt"
+(require "config.rkt"
+         "place-local.rkt"
          "check.rkt"
          "internal-error.rkt"
          "host.rkt"
-         "atomic.rkt"
          "parameter.rkt"
-         "../common/queue.rkt"
+         "atomic.rkt"
+         "custodian-object.rkt"
          "thread.rkt"
-         "lock.rkt")
+         (submod "thread.rkt" for-future)
+         (submod "custodian.rkt" for-future)
+         "sync.rkt"
+         "evt.rkt"
+         "future-object.rkt"
+         "future-id.rkt"
+         "future-lock.rkt"
+         "future-logging.rkt")
 
 (provide init-future-place!
          futures-enabled?
-         current-future
          future
          future?
          would-be-future
          touch
          future-block
-         future-wait
          current-future-prompt
-         future:condition-broadcast
-         future:condition-signal
-         future:condition-wait
-         future:make-condition
-         signal-future
+         currently-running-future
          reset-future-logs-for-tracing!
-         mark-future-trace-end!)
+         mark-future-trace-end!
+         set-processor-count!)
 
-(define place-main-thread-id (make-pthread-parameter 0))
+(module+ for-place
+  (provide set-place-future-procs!
+           kill-future-scheduler))
+
+(module+ for-fsemaphore
+  (provide future*-lock
+           set-future*-state!
+           future-suspend
+           future-notify-dependent))
 
 (define (init-future-place!)
-  (place-main-thread-id (get-pthread-id)))
+  (void))
 
-;; not sure of order here...
-(define (get-caller)
-  (cond
-    [(current-future)
-     (current-future)]
-    [(not (= (place-main-thread-id) (get-pthread-id)))
-     (get-pthread-id)]
-    [else
-     (current-thread)]))
+(define (futures-enabled?)
+  (threaded?))
 
+;; ----------------------------------------
 
-;; ---------------------------- futures ----------------------------------
+(struct future-evt (future)
+  #:property prop:evt (poller (lambda (fe poll-ctx)
+                                (define f (future-evt-future fe))
+                                (lock-acquire (future*-lock f))
+                                (define s (future*-state f))
+                                (lock-release (future*-lock f))
+                                (cond
+                                  [(or (eq? s 'running)
+                                       (eq? s 'fsema))
+                                   (values #f fe)]
+                                  [else (values '(#t) #f)]))))
 
+(define (create-future thunk cust would-be?)
+  (define id (get-next-id))
+  (log-future 'create #:data id)
+  (future* id
+           (make-lock)             ; lock
+           cust
+           would-be?
+           thunk
+           #f          ; prev
+           #f          ; next
+           #f          ; results
+           #f          ; state
+           #hasheq())) ; dependents
 
-(define ID (box 1))
+(define (future? v)
+  (future*? v))
 
-(define get-next-id
-  (lambda ()
-    (let ([id (unbox ID)])
-      (if (box-cas! ID id (+ 1 id))
-          id
-          (get-next-id)))))
-
-(define futures-enabled? threaded?)
-
-(struct future* (id cond lock prompt
-                    would-be? [thunk #:mutable] [engine #:mutable] 
-                    [cont #:mutable] [result #:mutable] [done? #:mutable]  
-                    [blocked? #:mutable][resumed? #:mutable] 
-                    [cond-wait? #:mutable]))
-
-(define (create-future would-be-future?)
-  (future* (get-next-id) ;; id
-           (future:make-condition) ;; cond
-           (make-lock) ;; lock
-           (make-continuation-prompt-tag 'future) ;; prompt
-           would-be-future? ;; would-be?
-           #f   ;; thunk
-           #f   ;; engine
-           #f   ;; cont
-           #f   ;; result
-           #f   ;; done?
-           #f   ;; blocked?
-           #f   ;; resumed?
-           #f)) ;; cond-wait?
-
-(define future? future*?)
-
-(define current-future (make-pthread-parameter #f))
+(define future-scheduler-prompt-tag (make-continuation-prompt-tag 'future-scheduler))
+(define future-start-prompt-tag (make-continuation-prompt-tag 'future-star))
 
 (define (current-future-prompt)
   (if (current-future)
-      (future*-prompt (current-future))
-      (internal-error "Not running in a future.")))
+      future-scheduler-prompt-tag
+      (internal-error "not running in a future")))
 
-(define (thunk-wrapper f thunk)
-  (lambda ()
-    (let ([result (thunk)])
-      (with-lock ((future*-lock f) (current-future))
-        (set-future*-result! f result)
-        (set-future*-done?! f #t)
-        (future:condition-broadcast (future*-cond f))))))
+;; called with lock on f held;
+;; in a non-main pthread, caller is responsible for logging 'end-work
+(define (run-future f #:was-blocked? [was-blocked? #f])
+  (set-future*-state! f 'running)
+  (define thunk (future*-thunk f))
+  (set-future*-thunk! f #f)
+  (lock-release (future*-lock f))
+  (when was-blocked?
+    (when (logging-futures?)
+      (log-future 'block (future*-id f) #:prim-name (continuation-current-primitive
+                                                     thunk
+                                                     '(unsafe-start-atomic)))
+      (log-future 'result (future*-id f))))
+  (unless (eq? (future*-would-be? f) 'blocked)
+    (log-future 'start-work (future*-id f)))
+  (define (finish! results state)
+    (start-future-uninterrupted)
+    (lock-acquire (future*-lock f))
+    (set-future*-results! f results)
+    (set-future*-state! f state)
+    (define deps (future*-dependents f))
+    (set-future*-dependents! f #hasheq())
+    (lock-release (future*-lock f))
+    ;; stay in uninterrupted mode here, because we need to make sure
+    ;; that dependents get rescheduled
+    (future-notify-dependents deps)
+    (end-future-uninterrupted)
+    (log-future 'complete (future*-id f)))
+  (cond
+    [(current-future)
+     ;; An attempt to escape will cause the future to block, so
+     ;; we only need to handle success
+     (call-with-values (lambda ()
+                         (call-with-continuation-prompt
+                          thunk
+                          future-start-prompt-tag
+                          (lambda args (void))))
+                       (lambda results
+                         (finish! results 'done)))]
+    [(eq? (future*-would-be? f) #t)
+     ;; Similar to `(current-future)` case, but retries
+     ;; excplitily if the future blocks
+     (call-with-values (lambda ()
+                         (call-with-continuation-prompt
+                          (lambda ()
+                            (current-future f)
+                            (begin0
+                              (thunk)
+                              (current-future #f)))
+                          future-start-prompt-tag
+                          (lambda args
+                            ;; Blocked as a would-be future; `(current-future)` has been
+                            ;; reset to #f, and we can retry immediately
+                            (set-future*-would-be?! f 'blocked)
+                            (touch f))))
+                       (lambda results
+                         (when (eq? (future*-state f) 'running)
+                           (finish! results 'done)
+                           (log-future 'end-work (future*-id f)))))]
+    [else
+     ;; No need for the future prompt tag
+     (dynamic-wind
+      (lambda () (void))
+      (lambda ()
+        (with-continuation-mark
+         currently-running-future-key f
+         (call-with-values thunk
+                           (lambda results
+                             (finish! results 'done)))))
+      (lambda ()
+        (unless (eq? (future*-state f) 'done)
+          (finish! #f 'aborted))
+        (log-future 'end-work (future*-id f))))]))
 
 (define/who (future thunk)
   (check who (procedure-arity-includes/c 0) thunk)
@@ -102,311 +165,419 @@
     [(not (futures-enabled?))
      (would-be-future thunk)]
     [else
-     (let ([f (create-future #f)])
-       (set-future*-engine! f (make-engine (thunk-wrapper f thunk) (future*-prompt f) #f #t))
-       (schedule-future f)
-       f)]))
+     (define me-f (current-future))
+     (define cust (future-custodian me-f))
+     (define f (create-future thunk cust #f))
+     (when cust
+       (unless me-f
+         (maybe-start-scheduler)
+         (set-custodian-sync-futures?! cust #t))
+       (schedule-future! f))
+     f]))
 
 (define/who (would-be-future thunk)
   (check who (procedure-arity-includes/c 0) thunk)
-  (let ([f (create-future #t)])
-    (set-future*-thunk! f (thunk-wrapper f thunk))
-    f))
+  (ensure-place-wakeup-handle)
+  (create-future thunk (future-custodian (current-future)) #t))
+
+(define (future-custodian me-f)
+  (if me-f
+      (future*-custodian me-f)
+      (thread-representative-custodian (current-thread/in-atomic))))
+
+;; When two futures interact, we may need to adjust both;
+;; to keep locks ordered, take lock of future with the
+;; lower ID, first; beware that the two futures make be
+;; the same (in which case we're headed for a circular
+;; dependency)
+(define (lock-acquire-both f)
+  (define me-f (current-future))
+  (cond
+    [(or (not me-f)
+         (eq? me-f f))
+     (lock-acquire (future*-lock f))]
+    [((future*-id me-f) . < . (future*-id f))
+     (lock-acquire (future*-lock me-f))
+     (lock-acquire (future*-lock f))]
+    [else
+     (lock-acquire (future*-lock f))
+     (lock-acquire (future*-lock me-f))]))
+
+(define (lock-release-both f)
+  (lock-release-current)
+  (lock-release (future*-lock f)))
+
+(define (lock-release-current)
+  (define me-f (current-future))
+  (when me-f
+    (lock-release (future*-lock me-f))))
 
 (define/who (touch f)
   (check who future*? f)
+  (lock-acquire-both f)
+  (define s (future*-state f))
   (cond
-    [(future*-done? f)
-     (future*-result f)]
-    [(future*-would-be? f)
-     ((future*-thunk f))
-     (future*-result f)]
-    [(lock-acquire (future*-lock f) (get-caller) #f) ;; got lock
-     (when (or (and (not (future*-blocked? f)) (not (future*-done? f)))
-               (and (future*-blocked? f) (not (future*-cont f))))
-       (future:condition-wait (future*-cond f) (future*-lock f)))
-     (future-awoken f)]
+    [(eq? s 'done)
+     (lock-release-both f)
+     (apply values (future*-results f))]
+    [(eq? s 'aborted)
+     (lock-release-both f)
+     (raise (exn:fail "touch: future previously aborted"
+                      (current-continuation-marks)))]
+    [(eq? s 'blocked)
+     (cond
+       [(current-future)
+        ;; Can't run a blocked future in a future pthread
+        (dependent-on-future f)]
+       [else
+        ;; Lock on f is held (and no current future to lock)
+        (run-future f #:was-blocked? #t)
+        (apply values (future*-results f))])]
+    [(eq? s #f)
+     (cond
+       [(current-future)
+        ;; Need to wait on `f`, so deschedule current one;
+        ;; we may pick `f` next the queue (or maybe later)
+        (dependent-on-future f)]
+       [(future*-would-be? f) ; => not scheduled
+        (lock-release-current)
+        ;; Lock on f is held
+        (run-future f)
+        (apply values (future*-results f))]
+       [else
+        ;; Give up locks in hope of geting `f` off the
+        ;; schedule queue
+        (lock-release (future*-lock f))
+        (cond
+          [(try-deschedule-future? f)
+           ;; lock on `f` is held...
+           (run-future f)
+           (apply values (future*-results f))]
+          [else
+           ;; Contention, so try again
+           (touch f)])])]
+    [(eq? s 'running)
+     (cond
+       [(current-future)
+        ;; Stop working on this one until `f` is done
+        (dependent-on-future f)]
+       [else
+        ;; Have to wait until it's not running anywhere
+        (set-future*-dependents! f (hash-set (future*-dependents f) 'place #t))
+        (lock-release (future*-lock f))
+        (log-future 'touch-pause (future*-id f))
+        (sync (future-evt f))
+        (log-future 'touch-resume (future*-id f))
+        (touch f)])]
+    [(future? s)
+     (cond
+       [(current-future)
+        ;; Waiting on `s` on, so give up on the current future for now
+        (dependent-on-future f)]
+       [else
+        ;; Maybe we can start running `s` to get `f` moving...
+        (lock-release (future*-lock f))
+        (touch s)
+        (touch f)])]
+    [(box? s) ; => dependent on fsemaphore
+     (cond
+       [(current-future)
+        ;; Lots to wait on, so give up on the current future for now
+        (dependent-on-future f)]
+       [else
+        ;; Wait until fsemaphore post succeeds for the future, then try again.
+        (lock-release (future*-lock f))
+        (log-future 'touch-pause (future*-id f))
+        (sync (future-evt f))
+        (log-future 'touch-resume (future*-id f))
+        (touch f)])]
     [else
-     (touch f)]))
+     (lock-release (future*-lock f))
+     (internal-error "unrecognized future state")]))
 
-(define (future-awoken f)
-  (cond
-    [(future*-done? f) ;; someone else ran continuation
-     (lock-release (future*-lock f) (get-caller))
-     (future*-result f)]
-    [(future*-blocked? f) ;; we need to run continuation
-     (set-future*-blocked?! f #f)
-     (set-future*-resumed?! f #t)
-     (lock-release (future*-lock f) (get-caller))
-     ((future*-cont f) '())
-     (future*-result f)]
-    [else
-     (internal-error "Awoken but future is neither blocked nor done.")]))
+;; called in a futurre pthread;
+;; called with lock held for both `f` and the current future
+(define (dependent-on-future f)
+  ;; in a future pthread, so set up a dependency and on `f` and
+  ;; bail out, so the current future pthread can do other things;
+  ;; note that `me-f` might be the same as `f`, in which case we'll
+  ;; create a circular dependency
+  (define me-f (current-future))
+  (set-future*-dependents! f (hash-set (future*-dependents f) me-f #t))
+  (set-future*-state! me-f f)
+  (on-transition-to-unfinished)
+  (unless (eq? me-f f)
+    (lock-release (future*-lock f)))
+  ;; almost the same as being blocked, but when `f` completes,
+  ;; it will reschedule `me-f`
+  (future-suspend f)
+  ;; on return from `future-suspend`, no locks are held
+  (touch f))
 
-;; called from chez layer.
+;; called in a future pthread;
+;; can be called from Rumble layer
 (define (future-block)
-  (define f (current-future))
-  (when (and f (not (future*-blocked? f)) (not (future*-resumed? f)))
-    (with-lock ((future*-lock f) f)
-      (set-future*-blocked?! f #t))
-    (engine-block)))
+  (define me-f (current-future))
+  (unless (future*-would-be? me-f)
+    (log-future 'block (future*-id me-f)))
+  (lock-acquire (future*-lock me-f))
+  (set-future*-state! me-f 'blocked)
+  (on-transition-to-unfinished)
+  (future-suspend))
 
-;; called from chez layer.
-;; this should never be called from outside a future.
-(define (future-wait)
-  (define f (current-future))
-  (with-lock ((future*-lock f) f)
-    (future:condition-wait (future*-cond f) (future*-lock f))))
+;; called with lock held on the current future
+(define (future-suspend [touching-f #f])
+  (define me-f (current-future))
+  (call-with-composable-continuation
+   (lambda (k)
+     (set-future*-thunk! me-f k)
+     (lock-release (future*-lock me-f))
+     (when touching-f
+       (log-future 'touch (future*-id me-f) #:data (future*-id touching-f)))
+     (unless (future*-would-be? me-f)
+       (log-future 'suspend (future*-id me-f)))
+     (cond
+       [(future*-would-be? me-f)
+        (current-future #f)
+        (abort-current-continuation future-start-prompt-tag (void))]
+       [else
+        (abort-current-continuation future-scheduler-prompt-tag (void))]))
+   future-start-prompt-tag))
 
-;; futures and conditions
+;; ----------------------------------------
 
-(define (wait-future f m)
-  (with-lock ((future*-lock f) f)
-    (set-future*-cond-wait?! f #t))
-  (lock-release m (get-caller))
-  (engine-block))
+(define pthread-count 1)
 
-(define (awaken-future f)
-  (with-lock ((future*-lock f) (get-caller))
-    (set-future*-cond-wait?! f #f)))
+;; Called by io layer
+(define (set-processor-count! n)
+  (set! pthread-count n))
 
-;; --------------------------- conditions ------------------------------------
+(define-place-local the-scheduler #f)
 
-(struct future-condition* (queue lock))
+(struct scheduler ([workers #:mutable]
+                   [futures-head #:mutable]
+                   [futures-tail #:mutable]
+                   mutex   ; guards futures chain; see "future-lock.rkt" for discipline
+                   cond)   ; signaled when chain goes from empty to non-empty
+  #:authentic)
 
-(define (future:make-condition)
-  (future-condition* (make-queue) (make-lock)))
+(struct worker (id
+                [die? #:mutable]
+                sync-state) ; box used to sync shutdowns: 'idle, 'running, or 'pending
+  #:authentic)
 
-(define (future:condition-wait c m)
-  (define caller (get-caller))
-  (if (own-lock? m caller)
-      (begin
-        (with-lock ((future-condition*-lock c) caller)
-          (queue-add! (future-condition*-queue c) caller))
-        (if (future? caller)
-            (wait-future caller m)
-            (thread-condition-wait (lambda () (lock-release m caller))))
-        (lock-acquire m (get-caller))) ;; reaquire lock
-      (internal-error "Caller does not hold lock\n")))
+(define (make-worker id)
+  (worker id
+          #f  ; die?
+          (box 'idle)))
 
-(define (signal-future f)
-  (future:condition-signal (future*-cond f)))
-
-(define (future:condition-signal c)
-  (with-lock ((future-condition*-lock c) (get-caller))
-    (let ([waitees (future-condition*-queue c)])
-      (unless (queue-empty? waitees)
-        (let ([waitee (queue-remove! waitees)])
-          (if (future? waitee)
-              (awaken-future waitee)
-              (thread-condition-awaken waitee)))))))
-
-(define (future:condition-broadcast c)
-  (with-lock ((future-condition*-lock c) (get-caller))
-    (define waitees '())
-    (queue-remove-all! (future-condition*-queue c)
-                       (lambda (e)
-                         (set! waitees (cons e waitees))))
-    (let loop ([q waitees])
-      (unless (null? q)
-        (let ([waitee (car q)])
-          (if (future? waitee)
-              (awaken-future waitee)
-              (thread-condition-awaken waitee))
-          (loop (cdr q)))))))
-
-;; ------------------------------------- future scheduler ----------------------------------------
-
-(define THREAD-COUNT 2)
-(define TICKS 1000000000)
-
-(define-place-local global-scheduler #f)
-(define (scheduler-running?)
-  (not (not global-scheduler)))
-
-(struct worker (id lock mutex cond
-                   [queue #:mutable] [idle? #:mutable] 
-                   [pthread #:mutable #:auto] [die? #:mutable #:auto])
-  #:auto-value #f)
-
-(struct scheduler ([workers #:mutable #:auto])
-  #:auto-value #f)
-
-;; I think this atomically is sufficient to guarantee scheduler is only created once.
+;; called in a Racket thread
 (define (maybe-start-scheduler)
   (atomically
-   (unless global-scheduler
-     (set! global-scheduler (scheduler))
-     (let ([workers (create-workers)])
-       (set-scheduler-workers! global-scheduler workers)
-       (start-workers workers)))))
+   (unless the-scheduler
+     (ensure-place-wakeup-handle)
+     (set! the-scheduler (scheduler '()
+                                    #f  ; futures-head
+                                    #f  ; futures-tail
+                                    (host:make-mutex)
+                                    (host:make-condition)))
+     (define workers
+       (for/list ([id (in-range 1 (add1 pthread-count))])
+         (define w (make-worker id))
+         (start-worker w)
+         w))
+     (set-scheduler-workers! the-scheduler workers))))
 
-(define (kill-scheduler)
-  (when global-scheduler 
-    (for-each (lambda (w)
-                (with-lock ((worker-lock w) (get-caller))
-                  (set-worker-die?! w #t)))
-              (scheduler-workers global-scheduler))))
+;; called in atomic mode
+(define (kill-future-scheduler)
+  (when the-scheduler
+    (define s the-scheduler)
+    (host:mutex-acquire (scheduler-mutex s))
+    (for ([w (in-list (scheduler-workers s))])
+      (set-worker-die?! w #t))
+    (host:condition-signal (scheduler-cond s))
+    (host:mutex-release (scheduler-mutex s))
+    (futures-sync-for-shutdown)))
 
-(define (create-workers)
-  (let loop ([id 1])
+;; called in any pthread
+;; called maybe holding an fsemaphore lock, but nothing else
+(define (schedule-future! f #:front? [front? #f])
+  (define s the-scheduler)
+  (host:mutex-acquire (scheduler-mutex s))
+  (define old (if front?
+                  (scheduler-futures-head s)
+                  (scheduler-futures-tail s)))
+  (cond
+    [(not old)
+     (set-scheduler-futures-head! s f)
+     (set-scheduler-futures-tail! s f)
+     (host:condition-signal (scheduler-cond s))]
+    [front?
+     (set-future*-next! f old)
+     (set-future*-prev! old f)
+     (set-scheduler-futures-head! s f)]
+    [else
+     (set-future*-prev! f old)
+     (set-future*-next! old f)
+     (set-scheduler-futures-tail! s f)])
+  (host:mutex-release (scheduler-mutex s)))
+
+;; called with queue lock held
+(define (deschedule-future f)
+  (define s the-scheduler)
+  (cond
+    [(or (future*-prev f)
+         (future*-next f))
+     (if (future*-prev f)
+         (set-future*-next! (future*-prev f) (future*-next f))
+         (set-scheduler-futures-head! s (future*-next f)))
+     (if (future*-next f)
+         (set-future*-prev! (future*-next f) (future*-prev f))
+         (set-scheduler-futures-tail! s (future*-prev f)))
+     (set-future*-prev! f #f)
+     (set-future*-next! f #f)]
+    [(eq? f (scheduler-futures-head s))
+     (set-scheduler-futures-head! s #f)
+     (set-scheduler-futures-tail! s #f)]
+    [else
+     (internal-error "future is not in queue")]))
+
+;; called with no locks held; if successful,
+;; returns with lock held on f
+(define (try-deschedule-future? f)
+  (define s the-scheduler)
+  (host:mutex-acquire (scheduler-mutex s))
+  (define ok?
     (cond
-      [(< id (+ 1 THREAD-COUNT))
-       (cons (worker id (make-lock) (host:make-mutex) (host:make-condition) (make-queue) #t)
-             (loop (+ id 1)))]
+      [(and (not (future*-prev f))
+            (not (future*-next f))
+            (not (eq? f (scheduler-futures-head s))))
+       ;; Was descheduled by someone else already, or maybe
+       ;; hasn't yet made it back into the schedule after a
+       ;; dependency triggered `future-notify-dependent`
+       #f]
       [else
-       '()])))
+       (deschedule-future f)
+       (lock-acquire (future*-lock f))
+       #t]))
+  (host:mutex-release (scheduler-mutex s))
+  ok?)
 
-;; When a new thread is forked it inherits the values of thread parameters from its creator
-;; So, if current-atomic is set for the main thread and then new threads are forked, those new
-;; threads current-atomic will be set and then never unset because they will not run code that
-;; unsets it.
-(define (start-workers workers)
-  (for-each (lambda (w)
-              (set-worker-pthread! w (fork-pthread (lambda ()
-                                                     (current-atomic 0)
-                                                     (current-thread #f)
-                                                     (current-engine-state #f)
-                                                     (current-future #f)
-                                                     ((worker-scheduler-func w))))))
-            workers))
-
-(define (schedule-future f)
-  (maybe-start-scheduler)
-
-  (let ([w (pick-worker)])
-    (with-lock ((worker-lock w) (get-caller))
-      (host:mutex-acquire (worker-mutex w))
-      (queue-add! (worker-queue w) f)
-      (host:condition-signal (worker-cond w))
-      (host:mutex-release (worker-mutex w)))))
-
-(define (pick-worker)
-  (define workers (scheduler-workers global-scheduler))
-  (let loop ([workers* (cdr workers)]
-             [best (car workers)])
+;; called in any pthread
+;; called maybe holding an fsemaphore lock, but nothing else
+(define (future-notify-dependents deps)
+  (for ([f (in-hash-keys deps)])
     (cond
-      [(or (null? workers*)
-           (queue-empty? (worker-queue best)))
-       best]
-      [(< (queue-length (worker-queue (car workers*)))
-          (queue-length (worker-queue best)))
-       (loop (cdr workers*)
-             (car workers*))]
-      [else
-       (loop (cdr workers*)
-             best)])))
+      [(eq? f 'place) (wakeup-this-place)]
+      [else (future-notify-dependent f)])))
 
-(define (wait-for-work w)
-  (define m (worker-mutex w))
-  (let try ()
-    (cond
-      [(not (queue-empty? (worker-queue w))) ;; got work in meantime
-       (void)]
-      [(host:mutex-acquire m #f) ;; cannot acquire lock while worker is being given work.
-       (host:condition-wait (worker-cond w) m)
-       (host:mutex-release m)]
-      [else ;; try to get lock again.
-       (try)])))
+;; called in any pthread
+;; called maybe holding an fsemaphore lock, but nothing else
+(define (future-notify-dependent f)
+  (with-lock (future*-lock f)
+    (set-future*-state! f #f))
+  (on-transition-to-unfinished)
+  (if (future*-would-be? f)
+      (wakeup-this-place)
+      (schedule-future! f #:front? #t)))
 
-(define (worker-scheduler-func worker)
-  (lambda ()
-    
-    (define (loop)
-      (lock-acquire (worker-lock worker) (get-pthread-id)) ;; block
-      (cond
-        [(worker-die? worker) ;; worker was killed
-         (lock-release (worker-lock worker) (get-pthread-id))]
-        [(queue-empty? (worker-queue worker)) ;; have lock. no work
-         (lock-release (worker-lock worker) (get-pthread-id))
-         (cond
-	   [(steal-work worker)  
-	    (do-work)]
-	   [else  
-	    (wait-for-work worker)])
-         (loop)]
-        [else  
-         (do-work)
-         (loop)]))
-    
-    (define (complete ticks args)
-      (void))
-    
-    (define (expire future worker)
-      (lambda (new-eng timeout?)
-        (set-future*-engine! future new-eng)
-        (cond
-          [(positive? (current-atomic))
-           ((future*-engine future) TICKS (prefix future) complete (expire future worker))]
-          [(future*-resumed? future) ;; run to completion
-           ((future*-engine future) TICKS void complete (expire future worker))]
-          [(not (future*-cont future)) ;; don't want to reschedule future with a saved continuation
-           (with-lock ((worker-lock worker) (get-caller))
-             (host:mutex-acquire (worker-mutex worker))
-             (queue-add! (worker-queue worker) future)
-             (host:mutex-release (worker-mutex worker)))]
-          [else
-           (with-lock ((future*-lock future) (get-caller))
-             (future:condition-signal (future*-cond future)))])))
-    
-    (define (prefix f)
-      (lambda ()
-        (when (future*-blocked? f)
-            (call-with-composable-continuation
-             (lambda (k)
-               (with-lock ((future*-lock f) (current-future))
-                 (set-future*-cont! f k))
-               (engine-block))
-             (future*-prompt f)))))
+;; ----------------------------------------
 
-    
-    ;; need to have lock here.
-    (define (do-work)
-      (let ([work (queue-remove! (worker-queue worker))])
-        (cond
-          [(future*-cond-wait? work)
-           (queue-add! (worker-queue worker) work)
-           (lock-release (worker-lock worker) (get-pthread-id))] ;; put back on queue
-          [else
-           (lock-release (worker-lock worker) (get-pthread-id))
-           (current-future work)
-           ((future*-engine work) TICKS (prefix work) complete (expire work worker)) ;; call engine.
-           (current-future #f)])))
-    
-    (loop)))
+(define (start-worker w)
+  (define s the-scheduler)
+  (fork-pthread
+   (lambda ()
+     (current-future 'worker)
+     (host:mutex-acquire (scheduler-mutex s))
+     (let loop ()
+       (or (box-cas! (worker-sync-state w) 'idle 'running)
+           (box-cas! (worker-sync-state w) 'pending 'running))
+       (cond
+         [(worker-die? w) ; worker was killed
+          (host:mutex-release (scheduler-mutex s))
+          (box-cas! (worker-sync-state w) 'running 'idle)]
+         [(scheduler-futures-head s)
+          => (lambda (f)
+               (deschedule-future f)
+               (host:mutex-release (scheduler-mutex s))
+               (lock-acquire (future*-lock f))
+               ;; lock is held on f; run the future
+               (maybe-run-future-in-worker f w)
+               ;; look for more work
+               (host:mutex-acquire (scheduler-mutex s))
+               (loop))]
+         [else
+          ;; wait for work
+          (or (box-cas! (worker-sync-state w) 'pending 'idle)
+              (box-cas! (worker-sync-state w) 'running 'idle))
+          (host:condition-wait (scheduler-cond s) (scheduler-mutex s))
+          (loop)])))))
 
-(define (order-workers w1 w2)
-    (cond
-     [(< (worker-id w1) (worker-id w2))
-      (values w1 w2)]
-     [else
-      (values w2 w1)]))
+;; called with lock on f
+(define (maybe-run-future-in-worker f w)
+  ;; Don't start the future if the custodian is shut down,
+  ;; because we may have transitioned from 'pending to
+  ;; 'running without an intervening check
+  (cond
+    [(custodian-shut-down? (future*-custodian f))
+     (set-future*-state! f 'blocked)
+     (on-transition-to-unfinished)
+     (lock-release (future*-lock f))]
+    [else
+     (run-future-in-worker f w)]))
 
-  ;; Acquire lock of peer with smallest id # first.
-  ;; worker is attempting to steal work from peers
-  (define (steal-work worker)
-    (let loop ([q (scheduler-workers global-scheduler)])
-      (cond
-       [(null? q) #f] ;; failed to steal work.
-       [(not (eq? (worker-id worker) (worker-id (car q)))) ;; not ourselves
-	(let*-values ([(peer) (car q)]
-		      [(w1 w2) (order-workers worker peer)]) ;; order them.
-	  (lock-acquire (worker-lock w1) (get-pthread-id))
-	  (lock-acquire (worker-lock w2) (get-pthread-id))
-	  (cond
-	   [(> (queue-length (worker-queue peer)) 2) ;; going to steal. Should likely made this # higher.
-	    (do ([i (floor (/ (queue-length (worker-queue peer)) 2)) (- i 1)])
-		[(zero? i) (void)]
-	      (let ([work (queue-remove-end! (worker-queue peer))])
-		(queue-add! (worker-queue worker) work)))
-	    
-	    (lock-release (worker-lock peer) (get-pthread-id)) ;; don't want to release our own lock.
-	    #t] ;; stole work
-	   [else ;; try a different peer
-	    (lock-release (worker-lock worker) (get-pthread-id))
-	    (lock-release (worker-lock peer) (get-pthread-id))
-	    (loop (cdr q))]))]
-       [else (loop (cdr q))])))
+(define (run-future-in-worker f w)
+  (current-future f)
+  ;; If we didn't need to check custodians, could be just
+  ;;   (call-with-continuation-prompt
+  ;;     (lambda () (run-future f))
+  ;;     future-scheduler-prompt-tag
+  ;;     void)
+  ;; But use an engine so we can periodically check that the future is
+  ;; still supposed to run.
+  ;; We take advantage of `current-atomic`, which would otherwise
+  ;; be unused, to disable interruptions.
+  (define e (make-engine (lambda () (run-future f))
+                         future-scheduler-prompt-tag
+                         void
+                         break-enabled-default-cell
+                         #t))
+  (let loop ([e e])
+    (e TICKS
+       (lambda ()
+         ;; Check that the future should still run
+         (when (and (custodian-shut-down? (future*-custodian f))
+                    (zero? (current-atomic)))
+           (lock-acquire (future*-lock f))
+           (set-future*-state! f #f)
+           (on-transition-to-unfinished)
+           (future-suspend)))
+       (lambda (leftover-ticks result)
+         ;; Done --- completed or suspend (e.g., blocked)
+         (void))
+       (lambda (e timeout?)
+         (loop e))))
+  (log-future 'end-work (future*-id f))
+  (current-future 'worker))
+
+;; in atomic mode
+(define (futures-sync-for-shutdown)
+  ;; Make sure any futures that are running in a future pthread
+  ;; have had a chance to notice a custodian shutdown or a
+  ;; future-scheduler shutdown.
+  ;;
+  ;; Move each 'running worker into the 'pending state:
+  (for ([w (in-list (scheduler-workers the-scheduler))])
+    (box-cas! (worker-sync-state w) 'running 'pending))
+  ;; A worker that transitions from 'pending to 'running or 'idle
+  ;; is guaranteed to not run a future chose custodian is
+  ;; shutdown or run any future if the worker is terminated
+  (for ([w (in-list (scheduler-workers the-scheduler))])
+    (define bx (worker-sync-state w))
+    (let loop ()
+      (when (box-cas! bx 'pending 'pending)
+        (host:sleep 0.001) ; not much alternative to spinning
+        (loop)))))
 
 ;; ----------------------------------------
 
@@ -415,3 +586,25 @@
 
 (define (mark-future-trace-end!)
   (void))
+
+;; ----------------------------------------
+
+;; When a future changes from a state where the main thread may be
+;; waiting for it, then make sure there's a wakeup signal
+(define (on-transition-to-unfinished)
+  (define me-f (current-future))
+  (when (and me-f
+             (not (future*-would-be? me-f)))
+    (wakeup-this-place)))
+
+(define wakeup-this-place (lambda () (void)))
+(define ensure-place-wakeup-handle (lambda () (void)))
+
+(define (set-place-future-procs! wakeup ensure)
+  (set! wakeup-this-place wakeup)
+  (set! ensure-place-wakeup-handle ensure))
+
+;; tell "atomic.rkt" layer how to block:
+(void (set-future-block! future-block))
+
+(void (set-custodian-futures-sync! futures-sync-for-shutdown))

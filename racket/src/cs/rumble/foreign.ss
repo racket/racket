@@ -1850,8 +1850,8 @@
   (cond
    [(eqv? (place-thread-category) PLACE-MAIN-THREAD)
     ;; In the main thread of a place. We must have gotten here by a
-      ;; foreign call that called back, so interrupts are currently
-      ;; disabled.
+    ;; foreign call that called back, so interrupts are currently
+    ;; disabled.
     (cond
      [(not atomic?)
       ;; reenable interrupts
@@ -1876,7 +1876,7 @@
            [q async-callback-queue]
            [m (async-callback-queue-lock q)]
            [need-interrupts?
-            ;; If we created this therad by `fork-pthread`, we must
+            ;; If we created this thread by `fork-pthread`, we must
             ;; have gotten here by a foreign call, so interrupts are
             ;; currently disabled
             (eqv? (place-thread-category) PLACE-KNOWN-THREAD)])

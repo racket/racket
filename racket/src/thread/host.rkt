@@ -93,4 +93,6 @@
         [make-mutex host:make-mutex]
         [mutex-acquire host:mutex-acquire]
         [mutex-release host:mutex-release]
-        threaded?)
+        threaded?
+
+        continuation-current-primitive)

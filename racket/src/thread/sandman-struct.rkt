@@ -29,14 +29,6 @@
                  do-merge-timeout   ; <ext-event-set> <wake-up-date-as-msecs> -> <ext-event-set>
                  do-extract-timeout ; <ext-event-set> -> <wake-up-date-as-msecs>
 
-                 do-condition-wait  ; set a thread to wait on a condition
-
-                 do-condition-poll  ; reschedule awoken threads
-
-                 do-any-waiters?    ; -> boolean
-
-                 lock
-
                  #;...) ; sandman implementations can add more methods
                  
   #:prefab)

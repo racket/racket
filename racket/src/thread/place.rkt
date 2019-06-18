@@ -17,6 +17,7 @@
          "semaphore.rkt"
          "evt.rkt"
          "sandman.rkt"
+         (submod "future.rkt" for-place)
          "place-message.rkt")
 
 (provide dynamic-place
@@ -121,6 +122,7 @@
        (do-custodian-shutdown-all orig-cust)
        (for ([proc (in-list (place-post-shutdown new-place))])
          (proc))
+       (kill-future-scheduler)
        (host:mutex-acquire lock)
        (set-place-result! new-place result)
        (host:mutex-release lock)
@@ -440,3 +442,10 @@
        ;; in atomic mode
        (lambda (pl)
          (wakeup-waiting pl))))
+
+(void (set-place-future-procs!
+       (lambda ()
+         (place-has-activity! current-place))
+       ;; in atomic mode
+       (lambda ()
+         (ensure-wakeup-handle!))))

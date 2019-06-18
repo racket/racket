@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/match
+         "../common/set.rkt"
          "../run/status.rkt"
          "../compile/side-effect.rkt"
          "../compile/known.rkt")
@@ -8,11 +9,15 @@
 
 (struct struct-shape (num-fields num-parent-fields op-types))
 
-(define (add-defn-known! seen-defns syms rhs)
+(define (add-defn-known! seen-defns all-mutated-vars syms rhs)
   (for ([s (in-list syms)])
     (unless (hash-ref seen-defns s #f)
       (hash-set! seen-defns s (known-defined))))
-  (cond 
+  (cond
+   [(for/or ([s (in-list syms)])
+      (set-member? all-mutated-vars s))
+    ;; Don't record anything more specific for a mutated definition
+    (void)]
    ;; Recognize known-arity `lambda` and `case-lambda`
    [(and (= 1 (length syms)) (lambda-arity rhs))
     =>

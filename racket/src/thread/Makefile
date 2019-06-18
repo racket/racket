@@ -31,7 +31,14 @@ GLOBALS = --no-global \
           ++global-ok place-wakeup \
           ++global-ok compute-memory-sizes \
           ++global-ok check-place-activity \
-          ++global-ok make-place-ports+fds
+          ++global-ok make-place-ports+fds \
+          ++global-ok future-block-for-atomic \
+          ++global-ok pthread-count \
+          ++global-ok wakeup-this-place \
+          ++global-ok ensure-place-wakeup-handle \
+          ++global-ok futures-sync-for-custodian-shutdown \
+          ++global-ok logging-future-events? \
+          ++global-ok log-future-event
 
 GENERATE_ARGS = -t main.rkt --submod main \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \

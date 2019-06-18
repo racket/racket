@@ -433,11 +433,11 @@
 
 (define engine-tag (default-continuation-prompt-tag))
 
-(define e (make-engine (lambda () 'done) engine-tag #f #f))
+(define e (make-engine (lambda () 'done) engine-tag #f #f #f))
 (check (cdr (e 100 void list vector))
        '(done))
 
-(define e-forever (make-engine (lambda () (let loop () (loop))) engine-tag #f #f))
+(define e-forever (make-engine (lambda () (let loop () (loop))) engine-tag #f #f #f))
 (check (vector? (e-forever 10 void list vector))
        #t)
 
@@ -450,7 +450,7 @@
                                [else
                                 (engine-block)
                                 (loop (sub1 n))])))
-                          engine-tag
+                          engine-tag #f
                           #f #f))
 (check (let ([started 0])
          (let loop ([e e-10] [n 0])
@@ -475,7 +475,7 @@
                                      (lambda () (set! pre (add1 pre)))
                                      (lambda () (loop (sub1 n)))
                                      (lambda () (set! post (add1 post))))])))
-                              engine-tag
+                              engine-tag #f
                               #f #f)])
     (check (let loop ([e e-10/dw] [n 0])
              (e 200
@@ -497,10 +497,10 @@
     (thread-cell-set! pt (add1 p-old))
     (list u-old
           p-old
-          (make-engine gen engine-tag #f #f)
+          (make-engine gen engine-tag #f #f #f)
           (thread-cell-ref ut)
           (thread-cell-ref pt)))
-  (define l1 ((make-engine gen engine-tag #f #f)
+  (define l1 ((make-engine gen engine-tag #f #f #f)
               100
               void
               (lambda (remain l) l)
@@ -526,7 +526,7 @@
 (check (procedure? my-param) #t)
 (let ([e (with-continuation-mark parameterization-key
              (extend-parameterization (continuation-mark-set-first #f parameterization-key) my-param 'set)
-           (make-engine (lambda () (|#%app| my-param)) engine-tag #f #f))])
+           (make-engine (lambda () (|#%app| my-param)) engine-tag #f #f #f))])
   (check (|#%app| my-param) 'init)
   (check (e 1000 void (lambda (remain v) v) (lambda (e timeout?) (error 'engine "oops"))) 'set))
 
@@ -622,7 +622,7 @@
                                           (loop (sub1 n)))))
                                   (lambda ()
                                     (set! post (add1 post))))))))
-                          engine-tag
+                          engine-tag #f
                           #f #f))
 
 (check (let ([prefixes 0])

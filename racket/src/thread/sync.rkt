@@ -7,6 +7,7 @@
          "channel.rkt"
          (submod "channel.rkt" for-sync)
          "thread.rkt"
+         "parameter.rkt"
          (only-in (submod "thread.rkt" scheduling)
                   thread-descheduled?)
          "schedule-info.rkt"
@@ -149,7 +150,7 @@
         (thread-pop-suspend+resume-callbacks!)
         (thread-pop-kill-callback!)
         (when local-break-cell
-          (thread-remove-ignored-break-cell! (current-thread) local-break-cell))
+          (thread-remove-ignored-break-cell! (current-thread/in-atomic) local-break-cell))
         ;; On escape, post nacks, etc.:
         (syncing-abandon! s)))))
   
@@ -587,7 +588,7 @@
         ;; don't suspend after all
         void]
        [else
-        (define t (current-thread))
+        (define t (current-thread/in-atomic))
         (set-syncing-wakeup!
          s
          (lambda ()

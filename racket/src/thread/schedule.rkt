@@ -1,5 +1,6 @@
 #lang racket/base
-(require "place-local.rkt"
+(require "config.rkt"
+         "place-local.rkt"
          "place-object.rkt"
          "atomic.rkt"
          "host.rkt"
@@ -14,7 +15,8 @@
          "future.rkt"
          "custodian.rkt"
          (submod "custodian.rkt" scheduling)
-         "pre-poll.rkt")
+         "pre-poll.rkt"
+         "future-logging.rkt")
 
 ;; Many scheduler details are implemented in "thread.rkt", but this
 ;; module handles the thread selection, thread swapping, and
@@ -25,8 +27,6 @@
          set-atomic-timeout-callback!
          set-check-place-activity!
          thread-swap-count)
-
-(define TICKS 100000)
 
 ;; Initializes the thread system:
 (define (call-in-main-thread thunk)
@@ -64,6 +64,7 @@
   (call-pre-poll-external-callbacks)
   (check-place-activity)
   (check-queued-custodian-shutdown)
+  (flush-future-log)
   (when (and (null? callbacks)
              (all-threads-poll-done?)
              (waiting-on-external-or-idle?))
@@ -83,7 +84,8 @@
   (define e (thread-engine t))
   (set-thread-engine! t 'running)
   (set-thread-sched-info! t #f)
-  (current-thread t)
+  (current-future (thread-future t))
+  (current-thread/in-atomic t)
   (set-place-current-thread! current-place t)
   (set! thread-swap-count (add1 thread-swap-count))
   (run-callbacks-in-engine
@@ -101,8 +103,10 @@
         (lambda args
           (start-implicit-atomic-mode)
           (accum-cpu-time! t #t)
-          (current-thread #f)
+          (set-thread-future! t #f)
+          (current-thread/in-atomic #f)
           (set-place-current-thread! current-place #f)
+          (current-future #f)
           (unless (zero? (current-atomic))
             (internal-error "terminated in atomic mode!"))
           (thread-dead! t)
@@ -115,7 +119,9 @@
           (cond
             [(zero? (current-atomic))
              (accum-cpu-time! t timeout?)
-             (current-thread #f)
+             (set-thread-future! t (current-future))
+             (current-thread/in-atomic #f)
+             (current-future #f)
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
@@ -137,7 +143,6 @@
                      #:custodian #f)
      (select-thread! callbacks)]
     [(and (not (sandman-any-sleepers?))
-          (not (sandman-any-waiters?))
           (not (any-idle-waiters?)))
     ;; all threads done or blocked
     (cond
@@ -161,10 +166,6 @@
                 (lambda (t)
                   (thread-reschedule! t)
                   (set! did? #t)))
-  (sandman-condition-poll mode
-                          (lambda (t)
-                            (thread-reschedule! t)
-                            (set! did? #t)))
   (when did?
     (thread-did-work!))
   did?)

@@ -1,14 +1,14 @@
-;; Futures API
+;; We need a little support for futures, because they interact with
+;; continuation operations that may need to block the future.
 
-(define future? (lambda (f) #f))
-(define current-future (lambda () #f))
-(define block (lambda () (void)))
+(define-syntax (current-future stx)
+  (syntax-case stx ()
+    [(_) (with-syntax ([pos current-future-virtual-register])
+           #'(virtual-register pos))]))
+
+(define block-future (lambda () (void)))
 (define current-future-prompt (lambda () (void)))
-(define future-wait (lambda () (void)))
 
-(define (set-future-callbacks! _future? _current-future _block wait cfp)
-  (set! future? _future?)
-  (set! current-future _current-future)
-  (set! block _block)
-  (set! future-wait wait)
-  (set! current-future-prompt cfp))
+(define (set-future-callbacks! block current-prompt)
+  (set! block-future block)
+  (set! current-future-prompt current-prompt))

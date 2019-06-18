@@ -156,24 +156,26 @@
            [else (loop (cdr mc))])))))
 
 (define/who (maybe-future-barricade tag)
-  (when (future? (current-future)) ;; running in a future
-    (check who continuation-prompt-tag? tag)
+  (when (current-future)
     (let ([fp (strip-impersonator (current-future-prompt))]
           [tag (strip-impersonator tag)])
       (cond
+       [(eq? fp tag)
+        ;; shortcut: boundary is the future prompt
+        (void)]
        [(eq? tag the-root-continuation-prompt-tag)
-        (block)]
+        (block-future)]
        [else
         (let loop ([mc (current-metacontinuation)])
           (cond
            [(null? mc)
             ;; Won't happen normally, since every thread starts with a explicit prompt
-            (block)]
+            (block-future)]
            [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
             (void)]
            [(eq? (metacontinuation-frame-tag (car mc)) fp)
             ;; tag must be above future prompt
-            (block)]
+            (block-future)]
            [else
             (loop (cdr mc))]))]))))
 
@@ -1031,7 +1033,7 @@
     [(marks key none-v orig-prompt-tag)
      (check who continuation-mark-set? :or-false marks)
      (check who continuation-prompt-tag? orig-prompt-tag)
-     (maybe-future-barricade orig-prompt-tag)
+     (unless marks (maybe-future-barricade orig-prompt-tag))
      (let ([prompt-tag (strip-impersonator orig-prompt-tag)])
        (let-values ([(key wrapper) (extract-continuation-mark-key-and-wrapper 'continuation-mark-set-first key)])
          (let* ([v0 (if marks

@@ -13,7 +13,7 @@
 (provide register-place-symbol!
          set-io-place-init!)
 
-(define (make-engine thunk prompt-tag init-break-enabled-cell empty-config?)
+(define (make-engine thunk prompt-tag abort-handler init-break-enabled-cell empty-config?)
   (define ready-s (make-semaphore))
   (define s (make-semaphore))
   (define prefix void)
@@ -280,7 +280,8 @@
                                           (error "current-engine state: not ready"))
                   'make-mutex (lambda () (make-semaphore 1))
                   'mutex-acquire (lambda (s) (semaphore-wait s))
-                  'mutex-release (lambda (s) (semaphore-post s))))
+                  'mutex-release (lambda (s) (semaphore-post s))
+                  'continuation-current-primitive (lambda (k) #f)))
 
 ;; add dummy definitions that implement pthreads and conditions etc.
 ;; dummy definitions that error

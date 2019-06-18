@@ -2,6 +2,7 @@
 (require "check.rkt"
          "atomic.rkt"
          "host.rkt"
+         "parameter.rkt"
          "thread.rkt"
          (except-in (submod "thread.rkt" scheduling)
                     thread
@@ -58,7 +59,7 @@
              (engine-block)))))
       #:custodian cust)))
   (atomically
-   (set-thread-forward-break-to! (current-thread) t))
+   (set-thread-forward-break-to! (current-thread/in-atomic) t))
   (semaphore-post ready-sema) ; let the nested thread run
 
   ;; Wait for the nested thread to complete -- and any thread nested
@@ -76,7 +77,7 @@
   ;; killed or aborted to the original continuation
   
   (atomically
-   (set-thread-forward-break-to! (current-thread) #f))
+   (set-thread-forward-break-to! (current-thread/in-atomic) #f))
 
   ;; Propagate any leftover break, but give a propagated
   ;; exception priority over a break exception:

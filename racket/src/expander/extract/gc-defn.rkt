@@ -104,6 +104,7 @@
              (for ([sym (in-list (defn-syms defn))])
                (hash-set! seen-defns sym (known-defined)))
              (add-defn-known! seen-defns
+                              (seteq)
                               (defn-syms defn)
                               (defn-rhs defn)))))
         (for ([sym (in-list (defn-syms defn))])

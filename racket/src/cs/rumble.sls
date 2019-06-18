@@ -697,7 +697,14 @@
           mutex-acquire
           mutex-release
           threaded?
-          set-future-callbacks!)
+          set-future-callbacks!
+          install-primitives-table!
+          continuation-current-primitive
+
+          ;; compile-time use in "thread.sls"
+          current-atomic-virtual-register
+          end-atomic-virtual-register
+          current-future-virtual-register)
   (import (rename (chezpart)
                   [define define/no-lift])
 	  (rename (only (chezscheme) sleep)

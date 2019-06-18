@@ -139,7 +139,7 @@
           (set-semaphore-count! s (sub1 c))
           void]
          [else
-          (define w (current-thread))
+          (define w (current-thread/in-atomic))
           (define n (queue-add! s w))
           (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
           (waiter-suspend!
