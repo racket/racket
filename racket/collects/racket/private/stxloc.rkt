@@ -56,4 +56,4 @@
               #'id))])))
 
   (#%provide syntax/loc quote-syntax/prune syntax-case* syntax-case datum-case
-             ... _ ~? ~@))
+             ... _ ~? ~@ ~indexed))
