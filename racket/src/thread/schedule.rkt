@@ -33,7 +33,7 @@
   (make-initial-thread (lambda ()
                          (set-place-host-roots! initial-place (host:current-place-roots))
                          (thunk)))
-  (select-thread!))
+  (select-thread! 0))
 
 ;; Initializes the thread system in a new place:
 (define (call-in-another-main-thread c thunk)
@@ -54,13 +54,13 @@
   (set! skipped-time-accums 0)
   (set! thread-swap-count 0))
  
-(define (select-thread! [pending-callbacks null])
+(define (select-thread! in-leftover-ticks [pending-callbacks null])
   (define callbacks (if (null? pending-callbacks)
                         (host:poll-async-callbacks)
                         pending-callbacks))
   (host:poll-will-executors)
   (poll-custodian-will-executor)
-  (check-external-events 'fast)
+  (define leftover-ticks (maybe-check-external-events in-leftover-ticks))
   (call-pre-poll-external-callbacks)
   (check-place-activity)
   (check-queued-custodian-shutdown)
@@ -76,11 +76,11 @@
     (cond
       [(not child) (none-k callbacks)]
       [(thread? child)
-       (swap-in-thread child callbacks)]
+       (swap-in-thread child leftover-ticks callbacks)]
       [else
        (loop child callbacks (lambda (pending-callbacks) (loop g none-k pending-callbacks)))])))
 
-(define (swap-in-thread t callbacks)
+(define (swap-in-thread t leftover-ticks callbacks)
   (define e (thread-engine t))
   (set-thread-engine! t 'running)
   (set-thread-sched-info! t #f)
@@ -100,7 +100,7 @@
           (when atomic-timeout-callback
             (when (positive? (current-atomic))
               (atomic-timeout-callback #f))))
-        (lambda args
+        (lambda (remaining-ticks . args)
           (start-implicit-atomic-mode)
           (accum-cpu-time! t #t)
           (set-thread-future! t #f)
@@ -113,19 +113,20 @@
           (when (eq? root-thread t)
             (force-exit 0))
           (thread-did-work!)
-          (select-thread!))
-        (lambda (e timeout?)
+          (select-thread! (- leftover-ticks (- TICKS remaining-ticks))))
+        (lambda (e remaining-ticks)
           (start-implicit-atomic-mode)
           (cond
             [(zero? (current-atomic))
-             (accum-cpu-time! t timeout?)
+             (define new-leftover-ticks (- leftover-ticks (- TICKS remaining-ticks)))
+             (accum-cpu-time! t (new-leftover-ticks . <= . 0))
              (set-thread-future! t (current-future))
              (current-thread/in-atomic #f)
              (current-future #f)
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
-             (select-thread!)]
+             (select-thread! new-leftover-ticks)]
             [else
              ;; Swap out when the atomic region ends and at a point
              ;; where host-system interrupts are not disabled (i.e.,
@@ -141,7 +142,7 @@
      (do-make-thread 'scheduler-make-thread
                      void
                      #:custodian #f)
-     (select-thread! callbacks)]
+     (select-thread! 0 callbacks)]
     [(and (not (sandman-any-sleepers?))
           (not (any-idle-waiters?)))
     ;; all threads done or blocked
@@ -151,12 +152,21 @@
        ;; blocked, but it's not going to become unblocked;
        ;; sleep forever or until a signal changes things
        (process-sleep)
-       (select-thread!)]
+       (select-thread! 0)]
       [else
        (void)])]
    [else
     ;; try again, which should lead to `process-sleep`
-    (select-thread!)]))
+    (select-thread! 0)]))
+
+;; Limit frequency of polling for external events, even
+;; in 'fast mode (because it's not that fast)
+(define (maybe-check-external-events leftover-ticks)
+  (cond
+    [(leftover-ticks . > . 0) leftover-ticks]
+    [else
+     (check-external-events 'fast)
+     TICKS]))
 
 ;; Check for threads that have been suspended until a particular time,
 ;; etc., as registered with the sandman
@@ -187,7 +197,7 @@
           (engine-block))
         (lambda args
           (internal-error "thread ended while it should run callbacks atomically"))
-        (lambda (e timeout?)
+        (lambda (e remaining)
           (start-implicit-atomic-mode)
           (if done?
               (k e)

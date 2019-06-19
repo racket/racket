@@ -86,7 +86,10 @@
    [(timeout?)
     (assert-not-in-uninterrupted)
     (timer-interrupt-handler void)
-    (let ([es (current-engine-state)])
+    (let ([es (current-engine-state)]
+          [remain-ticks (if timeout?
+                            0
+                            (set-timer 0))])
       (unless es
         (error 'engine-block "not currently running an engine"))
       (reset-handler (engine-state-reset-handler es))
@@ -105,7 +108,7 @@
               (lambda (prefix) prefix) ; returns `prefix` to the above "(("
               (engine-state-thread-cell-values es)
               (engine-state-init-break-enabled-cell es))
-             timeout?))))))]
+             remain-ticks))))))]
    [() (engine-block #f)]))
 
 (define (engine-block/timeout)
