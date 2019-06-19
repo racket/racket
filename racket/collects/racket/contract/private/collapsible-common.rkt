@@ -183,7 +183,11 @@
                  ([flat (in-list flats)]
                   [i (in-naturals)])
          (cond
-           [(or (flat-contract-struct? flat) (chaperone-contract-struct? flat))
+           [(or (flat-contract-struct? flat)
+                (trusted-contract-struct? flat))
+            ;; Drop contracts that (1) do not change their behavior and (2) are
+            ;; between other eq? contracts. (Trusted chaperones and
+            ;; impersonators definitely don't change themselves.)
             (cond
               [(hash-ref seen flat #f)
                (define maybe-index (hash-ref maybe-drop flat #f))

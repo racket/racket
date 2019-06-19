@@ -887,9 +887,30 @@
    '(3 2 1))
 
   (test/spec-passed/result
-   'calculate-drops-2
+   'calculate-drops:trusted-chaperone
+   '(let* ([ctc1 (coerce-contract/f (box/c symbol?))]
+           [ctcs (list ctc1 ctc1 ctc1 ctc1 ctc1)])
+      (calculate-drops ctcs))
+   '(3 2 1))
+
+  (test/spec-passed/result
+   'calculate-drops:trusted-impersonator
    '(let* ([ctc1 (coerce-contract/f (object/c))]
            [ctcs (list ctc1 ctc1 ctc1 ctc1 ctc1)])
+      (calculate-drops ctcs))
+   '(3 2 1))
+
+  (test/spec-passed/result
+   'calculate-drops:untrusted-chaperone
+   '(let* ([ctc1 (coerce-contract/f (make-chaperone-contract))]
+           [ctcs (list ctc1 ctc1 ctc1)])
+      (calculate-drops ctcs))
+   '())
+
+  (test/spec-passed/result
+   'calculate-drops:untrusted-impersonator
+   '(let* ([ctc1 (coerce-contract/f (make-contract))]
+           [ctcs (list ctc1 ctc1 ctc1)])
       (calculate-drops ctcs))
    '())
 
@@ -918,7 +939,7 @@
            [c4 (coerce-contract/f (object/c))]
            [ctcs (list c1 c2 c3 c4 c4 c2 c3 c1 c3 c2 c4 c1 c4)])
       (calculate-drops ctcs))
-   '(7 5 6))
+   '(10 7 4 5 6))
 
   (test/spec-passed/result
    'calculate-drops-6
