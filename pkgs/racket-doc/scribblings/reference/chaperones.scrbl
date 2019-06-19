@@ -488,7 +488,7 @@ applicable and if @racket[clear-proc] is not @racket[#f]) operations. When
 table, the result is an impersonator with the same redirecting procedures. 
 In addition, operations like
 @racket[hash-iterate-key] or @racket[hash-map], which extract
-keys from the table, use @racket[key-proc] to filter keys extracted
+keys from the table, use @racket[key-proc] to replace keys extracted
 from the table. Operations like @racket[hash-iterate-value] or
 @racket[hash-values] implicitly use @racket[hash-ref] and
 therefore redirect through @racket[ref-proc].
@@ -509,7 +509,7 @@ key and value are used with @racket[hash-set!] or @racket[hash-set] on
 the original @racket[hash] to install the value.
 
 The @racket[remove-proc] must accept @racket[hash] and a key passed to
-@racket[hash-remove!] or @racket[hash-remove]; it must produce the a
+@racket[hash-remove!] or @racket[hash-remove]; it must produce a
 replacement for the key, which is used with @racket[hash-remove!] or
 @racket[hash-remove] on the original @racket[hash] to remove any
 mapping using the (impersonator-replaced) key.
