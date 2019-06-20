@@ -6,8 +6,34 @@
      (if barrier?
          (call-with-continuation-barrier
           (lambda ()
-            (chez:raise v)))
-         (chez:raise v))]))
+            (do-raise v)))
+         (do-raise v))]))
+
+(define (do-raise v)
+  (let ([hs (continuation-mark-set->list (current-continuation-marks/no-trace)
+                                         exception-handler-key
+                                         the-root-continuation-prompt-tag)]
+        [init-v (condition->exn v)])
+    (let ([call-with-nested-handler
+           (lambda (thunk)
+             (call-with-exception-handler
+              (make-nested-exception-handler "exception handler" init-v)
+              (lambda ()
+                (call-with-break-disabled thunk))))])
+      (let loop ([hs hs] [v init-v])
+        (cond
+         [(null? hs)
+          (call-with-nested-handler
+           (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
+          ;; Use `nested-exception-handler` if the uncaught-exception
+          ;; handler doesn't escape:
+          ((make-nested-exception-handler #f v) #f)]
+         [else
+          (let ([h (car hs)]
+                [hs (cdr hs)])
+            (let ([new-v (call-with-nested-handler
+                          (lambda () (|#%app| h v)))])
+              (loop hs new-v)))])))))
 
 ;; ----------------------------------------
 
@@ -762,31 +788,7 @@
       [(and (warning? v)
             (not (non-continuable-violation? v)))
        (log-system-message 'warning (exn->string exn))]
-      [else
-       (let ([hs (continuation-mark-set->list (current-continuation-marks/no-trace)
-                                              exception-handler-key
-                                              the-root-continuation-prompt-tag)]
-             [init-v (condition->exn v)])
-         (let ([call-with-nested-handler
-                (lambda (thunk)
-                  (call-with-exception-handler
-                   (make-nested-exception-handler "exception handler" init-v)
-                   (lambda ()
-                     (call-with-break-disabled thunk))))])
-           (let loop ([hs hs] [v init-v])
-             (cond
-              [(null? hs)
-               (call-with-nested-handler
-                (lambda () (|#%app| (|#%app| uncaught-exception-handler) v)))
-               ;; Use `nested-exception-handler` if the uncaught-exception
-               ;; handler doesn't escape:
-               ((make-nested-exception-handler #f v) #f)]
-              [else
-               (let ([h (car hs)]
-                     [hs (cdr hs)])
-                 (let ([new-v (call-with-nested-handler
-                               (lambda () (|#%app| h v)))])
-                   (loop hs new-v)))]))))]))))
+      [else (do-raise v)]))))
 
 (define (make-nested-exception-handler what old-exn)
   (lambda (exn)
