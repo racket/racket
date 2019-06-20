@@ -101,13 +101,14 @@
 
 (define-virtual-register current-metacontinuation '())
 
-(define-record metacontinuation-frame (tag          ; continuation prompt tag or #f
-                                       resume-k     ; delivers values to the prompt, also keeps mark stack as attachments
-                                       winders      ; `dynamic-wind` winders
-                                       mark-splice  ; extra part of mark stack to restore
-                                       mark-chain   ; #f or a cached list of mark-chain-frame or elem+cache
-                                       traces       ; #f or a cached list of traces
-                                       cc-guard))   ; for impersonated tag, initially #f
+(define-record metacontinuation-frame (tag           ; continuation prompt tag or #f
+                                       resume-k      ; delivers values to the prompt, also keeps mark stack as attachments
+                                       winders       ; `dynamic-wind` winders
+                                       mark-splice   ; extra part of mark stack to restore
+                                       mark-chain    ; #f or a cached list of mark-chain-frame or elem+cache
+                                       traces        ; #f or a cached list of traces
+                                       cc-guard      ; for impersonated tag, initially #f
+                                       avail-cache)) ; cache for `continuation-pompt-available?`
 
 ;; Messages to `resume-k[/no-wind]`:
 (define-record aborting (args))
@@ -141,19 +142,46 @@
 ;; thunks:
 (define break-enabled-key (gensym 'break-enabled))
 
-;; FIXME: add caching to avoid full traversal
 (define/who (continuation-prompt-available? tag)
   (check who continuation-prompt-tag? tag)
+  (maybe-future-barricade tag)
   (let ([tag (strip-impersonator tag)])
     (or (eq? tag the-default-continuation-prompt-tag)
         (eq? tag the-root-continuation-prompt-tag)
-        (let loop ([mc (current-metacontinuation)])
-          (cond
-           [(null? mc)
-            (eq? tag the-default-continuation-prompt-tag)]
-           [(eq? tag (strip-impersonator (metacontinuation-frame-tag (car mc))))
-            #t]
-           [else (loop (cdr mc))])))))
+        ;; Looks through metacontinuation cache, but cache a search result
+        ;; half-way up if the chain is deep enough
+        (let ([mc (current-metacontinuation)])
+          (let loop ([mc mc] [slow-mc mc] [slow-step? #f] [steps 0])
+            (cond
+             [(null? mc)
+              (cache-prompt-available-conclusion tag #f slow-mc steps)]
+             [else
+              (let ([mf (car mc)])
+                (cond
+                 [(eq? tag (strip-impersonator (metacontinuation-frame-tag mf)))
+                  (cache-prompt-available-conclusion tag #t slow-mc steps)]
+                 [else
+                  (let* ([avail-cache (metacontinuation-frame-avail-cache mf)]
+                         [avail (and avail-cache (eq-hashtable-ref avail-cache tag #f))])
+                    (cond
+                     [avail
+                      (cache-prompt-available-conclusion tag (eq? avail 'yes) slow-mc steps)]
+                     [else
+                      (loop (cdr mc)
+                            (if slow-step? (cdr slow-mc) slow-mc)
+                            (not slow-step?)
+                            (add1 steps))]))]))]))))))
+
+(define (cache-prompt-available-conclusion tag avail? slow-mc steps)
+  (when (> steps 32)
+    ;; cache conclusion halfway
+    (let* ([mf (car slow-mc)]
+           [avail-cache (or (metacontinuation-frame-avail-cache mf)
+                            (let ([ht (make-weak-eq-hashtable)])
+                              (set-metacontinuation-frame-avail-cache! mf ht)
+                              ht))])
+      (eq-hashtable-set! avail-cache tag (if avail? 'yes 'no))))
+  avail?)
 
 (define/who (maybe-future-barricade tag)
   (when (current-future)
@@ -269,6 +297,7 @@
                                                                               (current-mark-splice)
                                                                               #f
                                                                               #f
+                                                                              #f
                                                                               #f)])
                                          (current-winders '())
                                          (current-mark-splice new-splice)
@@ -304,7 +333,8 @@
                                mark-splice
                                #f
                                #f
-                               (metacontinuation-frame-cc-guard current-mf)))
+                               (metacontinuation-frame-cc-guard current-mf)
+                               #f))
 
 (define (metacontinuation-frame-update-cc-guard current-mf cc-guard)
   ;; Ok to keep caches, since the cc-guard doesn't affect them
@@ -314,7 +344,8 @@
                                (metacontinuation-frame-mark-splice current-mf)
                                (metacontinuation-frame-mark-chain current-mf)
                                (metacontinuation-frame-traces current-mf)
-                               cc-guard))
+                               cc-guard
+                               (metacontinuation-frame-avail-cache current-mf)))
  
 ;; ----------------------------------------
 
@@ -415,7 +446,7 @@
           (current-winders)
           (current-mark-stack)
           (current-mark-splice)
-          (extract-metacontinuation 'call-with-current-continuation (strip-impersonator tag) #t)
+          (extract-metacontinuation who (strip-impersonator tag) #t)
           tag))))]))
 
 (define/who call-with-composable-continuation
