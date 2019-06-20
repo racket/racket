@@ -33,7 +33,7 @@
   (make-initial-thread (lambda ()
                          (set-place-host-roots! initial-place (host:current-place-roots))
                          (thunk)))
-  (select-thread! 0))
+  (poll-and-select-thread! 0))
 
 ;; Initializes the thread system in a new place:
 (define (call-in-another-main-thread c thunk)
@@ -54,31 +54,50 @@
   (set! skipped-time-accums 0)
   (set! thread-swap-count 0))
  
-(define (select-thread! in-leftover-ticks [pending-callbacks null])
+(define (poll-and-select-thread! leftover-ticks [pending-callbacks null])
   (define callbacks (if (null? pending-callbacks)
                         (host:poll-async-callbacks)
                         pending-callbacks))
+  ;; Perform any expensive polls (such as ones that consult the OS)
+  ;; only after ticks have been used up:
+  (define poll-now? (leftover-ticks . <= . 0))
   (host:poll-will-executors)
   (poll-custodian-will-executor)
-  (define leftover-ticks (maybe-check-external-events in-leftover-ticks))
+  (when poll-now?
+    (check-external-events))
   (call-pre-poll-external-callbacks)
   (check-place-activity)
   (check-queued-custodian-shutdown)
   (flush-future-log)
-  (when (and (null? callbacks)
-             (all-threads-poll-done?)
-             (waiting-on-external-or-idle?))
-    (or (check-external-events 'slow)
-        (try-post-idle)
-        (process-sleep)))
-  (let loop ([g root-thread-group] [pending-callbacks pending-callbacks] [none-k maybe-done])
+  (cond
+    [(and (null? callbacks)
+          (all-threads-poll-done?))
+     ;; May need to sleep
+     (cond
+       [(and (not poll-now?)
+             (check-external-events))
+        ;; Retry and reset counter for checking external events
+        (poll-and-select-thread! TICKS callbacks)]
+       [(try-post-idle)
+        ;; Enabled a thread that was waiting for idle
+        (select-thread! leftover-ticks callbacks)]
+       [else
+        (process-sleep)
+        ;; Retry, checking right away for external events
+        (poll-and-select-thread! 0 callbacks)])]
+    [else
+     ;; Looks like some thread can work now
+     (select-thread! (if poll-now? TICKS leftover-ticks) callbacks)]))
+
+(define (select-thread! leftover-ticks callbacks)
+  (let loop ([g root-thread-group] [callbacks callbacks] [none-k maybe-done])
     (define child (thread-group-next! g))
     (cond
       [(not child) (none-k callbacks)]
       [(thread? child)
        (swap-in-thread child leftover-ticks callbacks)]
       [else
-       (loop child callbacks (lambda (pending-callbacks) (loop g none-k pending-callbacks)))])))
+       (loop child callbacks (lambda (callbacks) (loop g none-k callbacks)))])))
 
 (define (swap-in-thread t leftover-ticks callbacks)
   (define e (thread-engine t))
@@ -113,7 +132,7 @@
           (when (eq? root-thread t)
             (force-exit 0))
           (thread-did-work!)
-          (select-thread! (- leftover-ticks (- TICKS remaining-ticks))))
+          (poll-and-select-thread! (- leftover-ticks (- TICKS remaining-ticks))))
         (lambda (e remaining-ticks)
           (start-implicit-atomic-mode)
           (cond
@@ -126,7 +145,7 @@
              (set-place-current-thread! current-place #f)
              (unless (eq? (thread-engine t) 'done)
                (set-thread-engine! t e))
-             (select-thread! new-leftover-ticks)]
+             (poll-and-select-thread! new-leftover-ticks)]
             [else
              ;; Swap out when the atomic region ends and at a point
              ;; where host-system interrupts are not disabled (i.e.,
@@ -142,7 +161,7 @@
      (do-make-thread 'scheduler-make-thread
                      void
                      #:custodian #f)
-     (select-thread! 0 callbacks)]
+     (poll-and-select-thread! 0 callbacks)]
     [(and (not (sandman-any-sleepers?))
           (not (any-idle-waiters?)))
     ;; all threads done or blocked
@@ -152,28 +171,18 @@
        ;; blocked, but it's not going to become unblocked;
        ;; sleep forever or until a signal changes things
        (process-sleep)
-       (select-thread! 0)]
+       (poll-and-select-thread! 0)]
       [else
        (void)])]
    [else
     ;; try again, which should lead to `process-sleep`
-    (select-thread! 0)]))
-
-;; Limit frequency of polling for external events, even
-;; in 'fast mode (because it's not that fast)
-(define (maybe-check-external-events leftover-ticks)
-  (cond
-    [(leftover-ticks . > . 0) leftover-ticks]
-    [else
-     (check-external-events 'fast)
-     TICKS]))
+    (poll-and-select-thread! 0)]))
 
 ;; Check for threads that have been suspended until a particular time,
 ;; etc., as registered with the sandman
-(define (check-external-events mode)
+(define (check-external-events)
   (define did? #f)
-  (sandman-poll mode
-                (lambda (t)
+  (sandman-poll (lambda (t)
                   (when t
                     (thread-reschedule! t))
                   (set! did? #t)))
@@ -218,11 +227,6 @@
 (define (all-threads-poll-done?)
   (= (hash-count poll-done-threads)
      num-threads-in-groups))
-
-(define (waiting-on-external-or-idle?)
-  (or (positive? num-threads-in-groups)
-      (sandman-any-sleepers?)
-      (any-idle-waiters?)))
 
 ;; Stop using the CPU for a while
 (define (process-sleep)

@@ -88,7 +88,7 @@
        (rktio_poll_set_forget rktio ps))
      
      ;; poll
-     (lambda (mode wakeup)
+     (lambda (wakeup)
        (let check-signals ()
          (define v (rktio_poll_os_signal rktio))
          (unless (eqv? v RKTIO_OS_SIGNAL_NONE)
@@ -100,7 +100,7 @@
            (check-signals)))
        (when (fd-semaphore-poll-ready?)
          (wakeup #f))
-       ((sandman-do-poll timeout-sandman) mode wakeup))
+       ((sandman-do-poll timeout-sandman) wakeup))
 
      ;; get-wakeup
      (lambda ()

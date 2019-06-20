@@ -64,8 +64,8 @@
 ;; The `thread-wakeup` callback can be called with #f
 ;; to indicate that a thread was potentially woken up
 ;; some other way, such as by a semaphore post
-(define (sandman-poll mode thread-wakeup)
-  ((sandman-do-poll the-sandman) mode thread-wakeup))
+(define (sandman-poll thread-wakeup)
+  ((sandman-do-poll the-sandman) thread-wakeup))
 
 ;; in atomic mode
 (define (sandman-sleep exts)
@@ -111,8 +111,7 @@
      (host:sleep (max 0.0 (/ (- (or timeout-at (distant-future)) (current-inexact-milliseconds)) 1000.0))))
 
    ;; poll
-   (lambda (mode wakeup)
-     ;; This check is fast, so do it in all modes
+   (lambda (wakeup)
      (unless (tree-empty? sleeping-threads)
        (define-values (timeout-at threads) (tree-min sleeping-threads))
        (when (timeout-at . <= . (current-inexact-milliseconds))
