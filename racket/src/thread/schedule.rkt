@@ -174,7 +174,8 @@
   (define did? #f)
   (sandman-poll mode
                 (lambda (t)
-                  (thread-reschedule! t)
+                  (when t
+                    (thread-reschedule! t))
                   (set! did? #t)))
   (when did?
     (thread-did-work!))

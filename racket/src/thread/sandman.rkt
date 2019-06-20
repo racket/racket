@@ -61,6 +61,9 @@
   ((sandman-do-remove-thread! the-sandman) th h))
 
 ;; in atomic mode
+;; The `thread-wakeup` callback can be called with #f
+;; to indicate that a thread was potentially woken up
+;; some other way, such as by a semaphore post
 (define (sandman-poll mode thread-wakeup)
   ((sandman-do-poll the-sandman) mode thread-wakeup))
 

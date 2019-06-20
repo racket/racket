@@ -97,7 +97,8 @@
                                         [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
                                         [else 'break]))
            (check-signals)))
-       (fd-semaphore-poll-ready)
+       (when (fd-semaphore-poll-ready?)
+         (wakeup #f))
        ((sandman-do-poll timeout-sandman) mode wakeup))
 
      ;; get-wakeup

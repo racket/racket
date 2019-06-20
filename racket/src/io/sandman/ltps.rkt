@@ -8,7 +8,7 @@
          shared-ltps-place-init!
 
          fd-semaphore-update!
-         fd-semaphore-poll-ready)
+         fd-semaphore-poll-ready?)
 
 (define (make-ltps)
   (define ltps (rktio_ltps_open rktio))
@@ -63,18 +63,18 @@
            s])])]))
 
 ;; in atomic mode
-(define (fd-semaphore-poll-ready)
+(define (fd-semaphore-poll-ready?)
   (unless (eq? shared-ltps rktio_NULL)
     (rktio_ltps_poll rktio shared-ltps)
-    (let loop ()
+    (let loop ([did? #f])
       (define h (rktio_ltps_get_signaled_handle rktio shared-ltps))
       (cond
         [(rktio-error? h)
          ;; Could log an error that isn't RKTIO_ERROR_LTPS_NOT_FOUND
-         (void)]
+         did?]
         [else
          (define ib (address->immobile-cell (rktio_ltps_handle_get_data rktio h)))
          (semaphore-post-all (immobile-cell-ref ib))
          (free-immobile-cell ib)
          (rktio_free h)
-         (loop)]))))
+         (loop #t)]))))
