@@ -1043,3 +1043,14 @@
       (syntax-parse #'#f
         [_:indirect-bad #t]
         [_ #f])))))
+
+;; from turnstile, action pattern in ~seq (6/2019)
+(let ()
+  ;; The regression required the following circumstances:
+  ;; - the action pattern must be able to fail, so subsequent pattern gets an ORD frame
+  ;; - the ~seq cannot be inlined away, like (a (~seq b c) d) => (a b c d), so use ~or
+  (convert-syntax-error
+   (syntax-parse #'(m 1 2 3)
+     [(_ (~or (~seq a b c (~parse (d e f) #'(a b c)))
+              (~seq x:id ...)))
+      (void)])))

@@ -1392,6 +1392,10 @@
       [(pat:action ap sp) (pat:action ap (loop sp))]
       [(pat:head hp tp) (pat:head hp (loop tp))]
       [(pat:dots hs tp) (pat:dots hs (loop tp))]
+      [(pat:ord sp group index)
+       ;; This is awkward, but it is needed to pop the ORD progress frame on success.
+       (define sp* (list-pattern-replace-end sp (pat:seq-end)))
+       (pat:head (hpat:ord (hpat:seq sp*) group index) endp)]
       [(pat:pair hp tp) (pat:pair hp (loop tp))])))
 
 ;; ----------------------------------------
