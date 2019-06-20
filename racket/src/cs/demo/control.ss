@@ -627,7 +627,7 @@
 
 (check (let ([prefixes 0])
          (let loop ([e e-sw] [i 0])
-           (e 110
+           (e 100
               (lambda () (set! prefixes (add1 prefixes)))
               (lambda (remain v) (list (> i 2)
                                        (= prefixes (add1 i))

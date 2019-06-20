@@ -222,6 +222,7 @@
        tag
        (or handler (make-default-abort-handler tag)))
       #f ; not a tail call
+      #t ; delimit
       (lambda ()
         (end-uninterrupted 'prompt)
         ;; Finally, apply the given function:
@@ -232,7 +233,7 @@
     (check 'default-continuation-prompt-handler (procedure-arity-includes/c 0) abort-thunk)
     (call-with-continuation-prompt abort-thunk tag #f)))
 
-(define (resume-metacontinuation results)
+(define (resume-metacontinuation delimited? results)
   ;; pop a metacontinuation frame
   (cond
    [(null? (current-metacontinuation)) (engine-return)]
@@ -241,7 +242,9 @@
     (let ([mf (car (current-metacontinuation))])
       (pop-metacontinuation-frame)
       ;; resume
-      ((metacontinuation-frame-resume-k mf) results))]))
+      (if delimited?
+          ((metacontinuation-frame-resume-k mf) results)
+          results))]))
 
 (define (pop-metacontinuation-frame)
   (let ([mf (car (current-metacontinuation))])
@@ -249,7 +252,7 @@
     (current-winders (metacontinuation-frame-winders mf))
     (current-mark-splice (metacontinuation-frame-mark-splice mf))))
 
-(define (call-in-empty-metacontinuation-frame tag handler tail? proc)
+(define (call-in-empty-metacontinuation-frame tag handler tail? delimit? proc)
   ;; Call `proc` in an empty metacontinuation frame, reifying the
   ;; current metacontinuation as needed (i.e., if non-empty) as a new
   ;; frame on `*metacontinuations*`; if the tag is #f and the
@@ -277,13 +280,14 @@
               ;; between `from-k` and `resume-k`:
               (current-mark-stack (continuation-next-attachments from-k)))
             (let ([r ; a list of results, or a non-list for special handling
-                   (call/cc
+                   (call/cc ; <- could use `call/1cc` if not `delimit?`
                     (lambda (resume-k)
-                      ;; the `call/cc` to get `k` created a new stack
-                      ;; segment; By dropping the link from the current
-                      ;; segment to the return context referenced by `k`,
-                      ;; we actually delimit the current continuation:
-                      (#%$current-stack-link #%$null-continuation)
+                      (when delimit?
+                        ;; the `call/cc` to get `k` created a new stack
+                        ;; segment; by dropping the link from the current
+                        ;; segment to the return context referenced by `k`,
+                        ;; we actually delimit the current continuation:
+                        (#%$current-stack-link #%$null-continuation))
                       (current-mark-stack '())
                       (let-values ([results
                                     ;; mark the "empty" continuation frame
@@ -311,6 +315,7 @@
                           ;; Continue normally; the metacontinuation could be different
                           ;; than when we captured this metafunction frame, though:
                           (resume-metacontinuation
+                           delimit?
                            ;; Apply the cc-guard, if any, outside of the prompt:
                            (lambda () (apply cc-guard results)))))))])
               (cond
@@ -415,6 +420,7 @@
    the-barrier-prompt-tag ; <- recognized as a barrier by continuation capture or call
    #f
    #f ; not a tail call
+   #f ; no need to delimit
    (lambda ()
      (end-uninterrupted 'barrier)
      (|#%app| p))))
@@ -496,6 +502,7 @@
      the-compose-prompt-tag
      fail-abort-to-delimit-continuation
      #t ; a tail call
+     #f ; no need to delimit
      (lambda ()
        ;; The current metacontinuation frame has an
        ;; empty continuation, so we can "replace" that
@@ -1798,6 +1805,7 @@
      #f
      fail-abort-to-delimit-continuation
      #f ; don't try to shift continuation marks
+     #t ; delimit
      (lambda ()
        (let ([now-saved (make-saved-metacontinuation
                          (current-metacontinuation)
