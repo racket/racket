@@ -96,6 +96,7 @@
                                         [(eqv? v RKTIO_OS_SIGNAL_HUP) 'hang-up]
                                         [(eqv? v RKTIO_OS_SIGNAL_TERM) 'terminate]
                                         [else 'break]))
+           (wakeup #f)
            (check-signals)))
        (when (fd-semaphore-poll-ready?)
          (wakeup #f))
