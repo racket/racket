@@ -39,7 +39,7 @@
 
 (define/who (filesystem-change-evt p [fail #f])
   (check who path-string? p)
-  (check who (procedure-arity-includes/c 0) fail)
+  (check who (procedure-arity-includes/c 0) #:or-false fail)
   (define fn (->host p who '(exists)))
   (start-atomic)
   (define file-rfc (rktio_fs_change rktio fn shared-ltps))
