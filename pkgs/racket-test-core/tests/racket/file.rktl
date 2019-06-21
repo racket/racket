@@ -1556,6 +1556,12 @@
   (check "f1" "f2" #t known-file-supported?)
   (check "f1d" "f2d" #f known-supported?)
 
+  (let ([no-file (build-path dir "no-such-file-here")])
+    (test 'no filesystem-change-evt no-file (lambda () 'no))
+    (err/rt-test (filesystem-change-evt no-file) (lambda (x)
+                                                   (or (exn:fail:filesystem? x)
+                                                       (exn:fail:unsupported? x)))))
+
   (delete-directory/files dir))
 
 ;;----------------------------------------------------------------------

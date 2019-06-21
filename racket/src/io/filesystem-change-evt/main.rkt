@@ -37,10 +37,7 @@
 (define (filesystem-change-evt? v)
   (fs-change-evt? v))
 
-(define/who (filesystem-change-evt p [fail (lambda ()
-                                             (raise (exn:fail:unsupported
-                                                     "filesystem-change-evt: unsupported"
-                                                     (current-continuation-marks))))])
+(define/who (filesystem-change-evt p [fail #f])
   (check who path-string? p)
   (check who (procedure-arity-includes/c 0) fail)
   (define fn (->host p who '(exists)))
@@ -66,8 +63,11 @@
     [(rktio-error? rfc)
      (end-atomic)
      (cond
+       [fail (fail)]
        [(racket-error? rfc RKTIO_ERROR_UNSUPPORTED)
-        (fail)]
+        (raise (exn:fail:unsupported
+                "filesystem-change-evt: unsupported"
+                (current-continuation-marks)))]
        [else
         (raise-filesystem-error who rfc (format "error generating event\n  path: ~a"
                                                 (host-> fn)))])]

@@ -4350,13 +4350,18 @@ static Scheme_Object *set_port_next_location(int argc, Scheme_Object *argv[])
 static Scheme_Object *filesystem_change_evt(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *e;
+  int raise_errs = 1;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("filesystem-change-evt", "path-string?", 0, argc, argv);
-  if (argc > 1)
-    scheme_check_proc_arity("filesystem-change-evt", 0, 1, argc, argv);
+  if (argc > 1) {
+    if (!SCHEME_FALSEP(argv[1])) {
+      scheme_check_proc_arity2("filesystem-change-evt", 0, 1, argc, argv, 1);
+      raise_errs = 0;
+    }
+  }
 
-  e = scheme_filesystem_change_evt(argv[0], 0, (argc < 2));
+  e = scheme_filesystem_change_evt(argv[0], 0, raise_errs);
 
   if (!e)
     return _scheme_tail_apply(argv[1], 0, NULL);
