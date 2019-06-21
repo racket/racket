@@ -343,4 +343,14 @@
 
 ;; ----------------------------------------
 
+(test -inf.0 fllog 0.0)
+(test -inf.0 fllog -0.0)
+(test +nan.0 fllog -1.0)
+(test +nan.0 log (fllog -1.0))
+
+(test -0.0 flsqrt -0.0)
+(test +nan.0 log (flsqrt -1.0))
+
+;; ----------------------------------------
+
 (report-errs)

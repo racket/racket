@@ -171,6 +171,9 @@
 (err/rt-test (exact? 'a))
 (err/rt-test (inexact? 'a))
 
+(test "1.0" number->string 1.0)
+(test "1.5e+100" number->string 1.5e+100)
+(test "1.5e-100" number->string 1.5e-100)
 (test "+inf.0" number->string +inf.0)
 (test "-inf.0" number->string -inf.0)
 (test "+nan.0" number->string +nan.0)
@@ -1526,6 +1529,7 @@
 (test -2.0 round -2.5)
 (test 4.0 round 3.5)
 (test -4.0 round -3.5)
+(test -0.0 round -0.5)
 
 (define (test-zero-ident f)
   (test 0.0 f 0.0)
@@ -1786,6 +1790,7 @@
 (test +1i sqrt -1)
 (test +2/3i sqrt -4/9)
 (test +1.0i sqrt -1.0)
+(test -0.0 sqrt -0.0)
 (test 1+1i sqrt +2i)
 (test 2+1i sqrt 3+4i)
 (test 2.0+0.0i sqrt 4+0.0i)
@@ -2297,11 +2302,12 @@
 (test 3142.-3688.i z-round (* 1000 (acos -20)))
 
 (define (cs2 c) (+ (* (cos c) (cos c)) (* (sin c) (sin c))))
-(test 0.0 round (* 1000 (imag-part (cs2 2+3i))))
+(define (a-round v) (abs (round v)))
+(test 0.0 a-round (* 1000 (imag-part (cs2 2+3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 2+3i))))
-(test 0.0 round (* 1000 (imag-part (cs2 -2+3i))))
+(test 0.0 a-round (* 1000 (imag-part (cs2 -2+3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 -2+3i))))
-(test 0.0 round (* 1000 (imag-part (cs2 2-3i))))
+(test 0.0 a-round (* 1000 (imag-part (cs2 2-3i))))
 (test 1000.0 round (* 1000 (real-part (cs2 2-3i))))
 
 (test #t positive? (real-part (sqrt (- 1 (* 2+3i 2+3i)))))
