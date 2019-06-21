@@ -101,8 +101,9 @@ items then send the results to the main thread.
               (match (thread-receive)
                 [(list oper1 oper2 result-thread)
                  (thread-send result-thread
-                              (format "~a + ~a = ~a"
+                              (format "~a ~a ~a = ~a"
                                       oper1
+                                      (object-name operation)
                                       oper2
                                       (operation oper1 oper2)))
                  (loop)])))))
