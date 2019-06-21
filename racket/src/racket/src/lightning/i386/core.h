@@ -504,7 +504,7 @@ static const int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_negr_l(d, rs)	jit_opi_((d), (rs), NEGQr(d), (XORQrr((d), (d)), SUBQrr((rs), (d))) )
 
 #define jit_movr_i(d, rs)	((void)((rs) == (d) ? 0 : MOVLrr((rs), (d))))
-#define jit_movi_i(d, is)	((is) ? MOVLir((is), (d)) : XORLrr ((d), (d)) )
+#define jit_movi_i(d, is)	(((is) != 0) ? MOVLir((is), (d)) : XORLrr ((d), (d)) )
 #define jit_movr_l(d, rs)	((void)((rs) == (d) ? 0 : MOVQrr((rs), (d))))
 #define jit_movi_l(d, is)	((is) \
                                  ? (_u32P((intptr_t)(is)) \
