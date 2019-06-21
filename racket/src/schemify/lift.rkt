@@ -527,7 +527,7 @@
            [(indirected? info)
             (reannotate v (if (indirected-check? info)
                               `(set-box!/check-undefined ,id ,(convert rhs) ',id)
-                              `(set-box! ,id ,(convert rhs))))]
+                              `(unsafe-set-box*! ,id ,(convert rhs))))]
            [else
             (reannotate v `(set! ,id ,(convert rhs)))])]
         [`(#%variable-reference . ,_)
@@ -590,7 +590,7 @@
            (define new-rhs (convert-lifted-calls-in-expr rhs lifts frees empties))
            (cond
              [(indirected? (hash-ref lifts (unwrap id) #f))
-              `[,(gensym) (set-box! ,id ,new-rhs)]]
+              `[,(gensym) (unsafe-set-box*! ,id ,new-rhs)]]
              [else `[,id ,new-rhs]])))
        (define new-bindings
          (if (null? bindings)
