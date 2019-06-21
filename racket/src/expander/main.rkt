@@ -36,7 +36,8 @@
          (only-in "syntax/cache.rkt" cache-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
-         (only-in "common/performance.rkt" performance-place-init!))
+         (only-in "common/performance.rkt" performance-place-init!)
+         (only-in "eval/shadow-directory.rkt" shadow-directory-place-init!))
 
 ;; All bindings provided by this module must correspond to variables
 ;; (as opposed to syntax). Provided functions must not accept keyword
@@ -211,6 +212,7 @@
   (core-place-init!)
   (module-path-place-init!)
   (module-cache-place-init!)
+  (shadow-directory-place-init!)
   (collection-place-init!)
   (performance-place-init!)
   (namespace-init!))
