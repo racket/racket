@@ -375,6 +375,10 @@
           real->double-flonum
           real->single-flonum
           arithmetic-shift
+          bitwise-ior
+          bitwise-xor
+          bitwise-and
+          bitwise-not
           integer-sqrt
           integer-sqrt/remainder
           integer->integer-bytes

@@ -20,7 +20,56 @@
   (check who real? x)
   (raise-unsupported-error who))
 
-(define arithmetic-shift #2%bitwise-arithmetic-shift)
+(define-syntax (arithmetic-shift stx)
+  (syntax-case stx ()
+    [(_ x-expr n-expr)
+     #'(let ([x x-expr]
+             [n n-expr])
+         (if (and (fixnum? x)
+                  (fixnum? n))
+             ;; Implementation of `$ash` in Chez Scheme; this is
+             ;; a lot of code, but if you're using `arithmetic-shift`,
+             ;; you probably want it:
+             (let ([max-fx-shift (fx- (fixnum-width) 1)])
+               (if (#3%fx< n 0)
+                   (if (#3%fx< n (fx- max-fx-shift))
+                       (#3%fxsra x max-fx-shift)
+                       (#3%fxsra x (#3%fx- n)))
+                   (if (#3%fx> n max-fx-shift)
+                       (#3%bitwise-arithmetic-shift x n)
+                       (let ([m (#3%fxsll x n)])
+                         (if (#3%fx= (#3%fxsra m n) x)
+                             m
+                             (#3%bitwise-arithmetic-shift x n))))))
+             (#2%bitwise-arithmetic-shift x n)))]
+    [(_ expr ...) #'(#2%bitwise-arithmetic-shift expr ...)]
+    [_ #'#2%bitwise-arithmetic-shift]))
+
+(define-syntax-rule (define-bitwise op fxop)
+  (...
+   (define-syntax (op stx)
+     (syntax-case stx ()
+       [(_ a-expr ...)
+        (with-syntax ([(a ...) (generate-temporaries #'(a-expr ...))])
+          #'(let ([a a-expr] ...)
+              (if (and (fixnum? a) ...)
+                  (#3%fxop a ...)
+                  (#2%op a ...))))]
+       [_ #'#2%op]))))
+
+(define-bitwise bitwise-ior fxior)
+(define-bitwise bitwise-xor fxxor)
+(define-bitwise bitwise-and fxand)
+
+(define-syntax (bitwise-not stx)
+  (syntax-case stx ()
+    [(_ expr)
+     #'(let ([x expr])
+         (if (fixnum? x)
+             (#3%fxnot x)
+             (#2%bitwise-not x)))]
+    [(_ expr ...) #'(#2%bitwise-not expr ...)]
+    [_ #'#2%bitwise-not]))
 
 (define/who (integer-sqrt n)
   (check who integer? n)
