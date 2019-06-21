@@ -159,10 +159,8 @@ if test "$AR" = '' ; then
   fi
 fi
 if test "$ARFLAGS" = '' ; then 
-  ARFLAGS=ruv
+  ARFLAGS=rc
 fi
-
-LD="${ac_tool_prefix}ld"
 
 WINDRES=windres
 
@@ -190,7 +188,7 @@ case "$host_os" in
   openbsd*)
     MACH_OS=ob
     LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
-    LDFLAGS="{$LDFLAGS} -Wl,-zwxneeded"
+    LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     # Can't strip until ELF lookup added to startup
     enable_strip=no
     ;;
@@ -604,7 +602,6 @@ done
 
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
-SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LD="'"'"${LD}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR="'"'"${AR}"'"'
 SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} ARFLAGS="'"'"${ARFLAGS}"'"'

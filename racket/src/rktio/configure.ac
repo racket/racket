@@ -47,7 +47,7 @@ if test "$AR" = '' ; then
   fi
 fi
 if test "$ARFLAGS" = '' ; then 
-  ARFLAGS=ruv
+  ARFLAGS=rc
 fi
 
 AC_CHECK_LIB(m, fmod)

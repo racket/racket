@@ -16,7 +16,6 @@ SCHEME_TARGET_INC = $(SCHEME_SRC)/$(TARGET_MACH)/boot/$(TARGET_MACH)
 CC = @CC@
 BASE_CFLAGS = @CFLAGS@ @CPPFLAGS@
 CFLAGS = $(BASE_CFLAGS) -I$(SCHEME_TARGET_INC) -I$(srcdir)/../../rktio -Irktio -I.
-LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 AR = @AR@
@@ -141,7 +140,7 @@ scheme-make-copy:
 	if [ ! -d "$(SCHEME_SRC)" ] ; then cp -r $(srcdir)/../../ChezScheme "$(SCHEME_SRC)" ; fi
 	$(MAKE) scheme-make-finish
 
-SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LD="$(LD)" LDFLAGS="$(LDFLAGS)" \
+SCHEME_CONFIG_VARS = CC="$(CC)" CFLAGS="$(BASE_CFLAGS)" LDFLAGS="$(LDFLAGS)" \
                      AR="$(AR)" ARFLAGS="$(ARFLAGS)" RANLIB="$(RANLIB)" \
                      WINDRES="$(WINDRES)"
 
@@ -205,7 +204,11 @@ racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.
 gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 
-BOOT_OBJS = boot.o $(SCHEME_TARGET_INC)/kernel.o rktio/librktio.a
+SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a \
+              $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a \
+              $(SCHEME_TARGET_INC)/../../zlib/libz.a
+
+BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
 
 raw_racketcs: main.o boot.o $(BOOT_OBJS)
 	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)

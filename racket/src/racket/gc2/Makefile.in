@@ -18,7 +18,6 @@ mainsrcdir = @srcdir@/../..
 CC = @CC@
 CPP = @CPP@
 CXX = @CXX@
-NICEAR = $(mainsrcdir)/utils/nicear
 AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
@@ -584,8 +583,7 @@ EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRK
 EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL)
 
 ../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
-	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
-	$(RANLIB) ../libracket3m.@LIBSFX@
+	$(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 
 ../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@ $(LIBRKTIO_FOR_LIB)
 	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ $(LIBRKTIO_UP_FOR_LIB) @LDFLAGS@ $(LIBS)
