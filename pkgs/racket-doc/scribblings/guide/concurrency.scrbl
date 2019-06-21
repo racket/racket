@@ -103,7 +103,7 @@ items then send the results to the main thread.
                  (thread-send result-thread
                               (format "~a ~a ~a = ~a"
                                       oper1
-                                      (if (equal? operation +) '+ '-)
+                                      (object-name operation)
                                       oper2
                                       (operation oper1 oper2)))
                  (loop)])))))
