@@ -250,8 +250,9 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/cfg-racket rack
 # Racket-on-Chez build
 
 # If `RACKETCS_SUFFIX` is set to the empty string, the Racket-on-Chez
-# is build as `racket` instead of `racketcs`. Also, if `RACKET`
-# is not set, then `--enable-csdefault` is added to 
+# is build as `racket` instead of `racketcs`; also, if `RACKET`
+# is not set, then `--enable-csdefault` is added to configure
+# arguments
 RACKETCS_SUFFIX = cs
 
 # If `RACKET` is not set, then we bootstrap by first building the
@@ -267,6 +268,9 @@ SCHEME_SRC =
 DEFAULT_SCHEME_SRC = racket/src/build/ChezScheme
 MAKE_BUILD_SCHEME = checkout
 
+# Set `CHEZ_SCHEME_REPO` to change the repo that can be cloned
+# for Chez Scheme, and add `-b <branch>` to `GIT_CLONE_ARGS_qq`
+# to clone a particular branch from that repo
 CHEZ_SCHEME_REPO = https://github.com/racket/ChezScheme
 GIT_CLONE_ARGS_qq = -q --depth 1
 
@@ -303,7 +307,7 @@ cs-base:
 	$(MAKE) cs CS_SETUP_TARGET=nothing-after-base
 
 cs-as-is:
-	$(MAKE) cs CS_SETUP_TARGET=in-place-setup
+	$(MAKE) cs CS_SETUP_TARGET=in-place-setup MAKE_BUILD_SCHEME=finish
 
 CS_CONFIG_TARGET = no-cfg-cs
 
