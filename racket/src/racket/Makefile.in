@@ -203,6 +203,7 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(LIBRKTIO_FOR_LIB) $(SPECIALIZINGOBJECTS)
 	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO_FOR_LIB) @LDFLAGS@ @LIBS@
+	@POST_LINKER@ racket@CGC@
 
 mzcom@CGC@@NOT_MINGW@:
 	$(NOOP)

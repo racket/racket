@@ -200,9 +200,11 @@ EMBED_DEPS = $(srcdir)/embed-boot.rkt
 
 racketcs@NOT_OSX@@NOT_MINGW@: raw_racketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_racketcs racketcs petite-v.boot scheme-v.boot racket-v.boot
+	@POST_LINKER@ racketcs
 
 gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-v.boot $(EMBED_DEPS)
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
+	@POST_LINKER@ gracketcs
 
 SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a \
               $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a \
@@ -212,9 +214,11 @@ BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
 
 raw_racketcs: main.o boot.o $(BOOT_OBJS)
 	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+	@POST_LINKER@ raw_racketcs
 
 raw_gracketcs: grmain.o boot.o $(BOOT_OBJS)
 	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
+	@POST_LINKER@ raw_gracketcs
 
 petite-v.boot: $(SCHEME_TARGET_INC)/petite.boot
 	$(SCHEME) --script $(srcdir)/to-vfasl.ss @BOOT_COMPRESS_COMP@ @TT_CROSS_MODE@ $(SCHEME_TARGET_INC)/petite.boot petite-v.boot

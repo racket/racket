@@ -691,6 +691,7 @@ x_libraries
 x_includes
 DYN_CFLAGS
 PLAIN_CC
+POST_LINKER
 MZLINKER
 REZ
 CC_FOR_BUILD
@@ -3366,6 +3367,8 @@ LIBRACKET_DEP=""
 EXE_SUFFIX=
 SO_SUFFIX=.so
 
+POST_LINKER="echo"
+
 MMM=3m
 MMM_INSTALLED=
 MMM_CAP_INSTALLED=
@@ -4803,6 +4806,7 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -6894,6 +6898,7 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

@@ -284,6 +284,8 @@ LIBRACKET_DEP=""
 EXE_SUFFIX=
 SO_SUFFIX=.so
 
+POST_LINKER="echo"
+
 MMM=3m
 MMM_INSTALLED=
 MMM_CAP_INSTALLED=
@@ -574,6 +576,7 @@ case "$host_os" in
     ;;
   netbsd*)
     LIBS="$LIBS -rdynamic"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     enable_cgcdefault="yes"
@@ -1437,6 +1440,7 @@ AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
+AC_SUBST(POST_LINKER)
 AC_SUBST(PLAIN_CC)
 AC_SUBST(DYN_CFLAGS)
 

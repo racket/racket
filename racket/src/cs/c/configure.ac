@@ -125,6 +125,7 @@ CONFIGURE_RACKET_SO_COMPILE=""
 COMPRESS_COMP=""
 BOOT_COMPRESS_COMP=""
 ELF_COMP=""
+POST_LINKER="echo"
 
 FRAMEWORK_INSTALL_DIR='$(libpltdir)'
 FRAMEWORK_PREFIX='@executable_path/../lib/'
@@ -191,8 +192,8 @@ case "$host_os" in
     CFLAGS="${CFLAGS} -I/usr/local/include"
     LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
-    # Can't strip until ELF lookup added to startup
-    enable_strip=no
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
     ;;
   bitrig*)
     ;;
@@ -201,8 +202,9 @@ case "$host_os" in
   netbsd*)
     MACH_OS=nb
     LIBS="${LIBS} /usr/lib/i18n/libiconv_std.a -lm -lpthread"
-    # Can't strip until ELF lookup added to startup
-    enable_strip=no
+    CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
+    ELF_COMP="--expect-elf"
+    POST_LINKER="paxctl +m"
     ;;
   irix*)
     ;;
@@ -629,6 +631,7 @@ AC_SUBST(ICP)
 AC_SUBST(STRIP_DEBUG)
 AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(RKTLINKER)
+AC_SUBST(POST_LINKER)
 AC_SUBST(INCLUDEDEP)
 AC_SUBST(RKTL_PRE)
 AC_SUBST(RKTL_POST)
