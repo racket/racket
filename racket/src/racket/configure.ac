@@ -456,6 +456,7 @@ fi
 if test "$ARFLAGS" = '' ; then 
   ARFLAGS=rc
 fi
+SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} AR_FLAGS="'"'"${ARFLAGS}"'"'
 
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then 
