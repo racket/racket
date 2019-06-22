@@ -206,17 +206,19 @@ gracketcs@NOT_OSX@@NOT_MINGW@: raw_gracketcs petite-v.boot scheme-v.boot racket-
 	$(BOOTSTRAP_RACKET) $(srcdir)/embed-boot.rkt @ELF_COMP@ @BOOT_COMPRESS_COMP@ raw_gracketcs gracketcs petite-v.boot scheme-v.boot racket-v.boot
 	@POST_LINKER@ gracketcs
 
-SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a \
-              $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a \
-              $(SCHEME_TARGET_INC)/../../zlib/libz.a
+OWN_Z_LIB = $(SCHEME_TARGET_INC)/../../zlib/libz.a
+OWN_LZ4_LIB = $(SCHEME_TARGET_INC)/../../lz4/lib/liblz4.a
+SCHEME_LIB_DEPS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB_DEP@ @LZ4_LIB_DEP@
+SCHEME_LIBS = $(SCHEME_TARGET_INC)/libkernel.a @Z_LIB@ @LZ4_LIB@
 
+BOOT_OBJ_DEPS = boot.o $(SCHEME_LIB_DEPS) rktio/librktio.a
 BOOT_OBJS = boot.o $(SCHEME_LIBS) rktio/librktio.a
 
-raw_racketcs: main.o boot.o $(BOOT_OBJS)
+raw_racketcs: main.o boot.o $(BOOT_OBJ_DEPS)
 	$(CC) $(CFLAGS) -o raw_racketcs main.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
 	@POST_LINKER@ raw_racketcs
 
-raw_gracketcs: grmain.o boot.o $(BOOT_OBJS)
+raw_gracketcs: grmain.o boot.o $(BOOT_OBJ_DEPS)
 	$(CC) $(CFLAGS) -o raw_gracketcs grmain.o $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
 	@POST_LINKER@ raw_gracketcs
 
@@ -255,7 +257,7 @@ $(GRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schve
 BOOT_FILES = $(SCHEME_TARGET_INC)/petite.boot $(SCHEME_TARGET_INC)/scheme.boot racket.boot
 FW_BOOT_DEST = Racket.framework/Versions/$(FWVERSION)_CS/boot
 
-$(RKTFW): $(BOOT_OBJS) $(BOOT_FILES)
+$(RKTFW): $(BOOT_OBJ_DEPS) $(BOOT_FILES)
 	mkdir -p  Racket.framework/Versions/$(FWVERSION)_CS
 	@RKTLINKER@ -o $(RKTFW) -dynamiclib -all_load $(BOOT_OBJS) $(LDFLAGS) $(LIBS)
 	rm -f Racket.framework/Racket
@@ -290,7 +292,7 @@ raw_gracketcs.exe: grmain.o MemoryModule.o grres.o
 
 MINGW_LIBS = -lshell32 -luser32 -lole32 -lrpcrt4 -luuid -lws2_32 -ladvapi32
 
-raw_libracketcs.dll: boot.o $(BOOT_OBJS) libres.o
+raw_libracketcs.dll: boot.o $(BOOT_OBJ_DEPS) libres.o
 	$(CC) $(CFLAGS) --shared -o raw_libracketcs.dll $(BOOT_OBJS) libres.o $(LDFLAGS) rktio/librktio.a $(MINGW_LIBS) -static-libgcc $(LIBS)
 
 MemoryModule.o: $(srcdir)/../../start/MemoryModule.c
