@@ -301,8 +301,12 @@ SRC_MAKEFILES = $(srcdir)/Makefile.in $(srcdir)/racket/Makefile.in \
                 $(srcdir)/racket/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
                 $(srcdir)/rktio/Makefile.in $(srcdir)/racket/dynsrc/Makefile.in
 
-reconfigure:
-	$(MAKE) Makefile
+# Only fire the `Makefile` rule explicitly via `reconfigure`
+NO_RECONFIG =
+ON_RECONFIG = no
 
-Makefile: $(srcdir)/configure $(srcdir)/cfg-racket $(srcdir)/cfg-cs $(SRC_MAKEFILES)
+reconfigure:
+	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
+
+Makefile$(ON_RECONFIG): $(srcdir)/configure $(srcdir)/cfg-racket $(srcdir)/cfg-cs $(SRC_MAKEFILES)
 	$(srcdir)/configure $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)

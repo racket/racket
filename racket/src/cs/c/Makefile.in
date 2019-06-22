@@ -463,8 +463,15 @@ COMP_SUBDIR_CONFIGURE_ARGS=@COMP_SUBDIR_CONFIGURE_ARGS@
 CONFIGURE_SRCS = $(srcdir)/configure $(srcdir)/Makefile.in \
                  $(srcdir)/../../rktio/Makefile.in $(srcdir)/../../rktio/configure
 
-reconfigure:
-	$(MAKE) Makefile
+# Only fire the `Makefile` rule explicitly via `reconfigure`
+NO_RECONFIG =
+ON_RECONFIG = no
 
-Makefile: $(CONFIGURE_SRCS)
+reconfigure:
+	$(MAKE) Makefile NO_RECONFIG=no ON_RECONFIG=
+
+Makefile$(ON_RECONFIG): $(CONFIGURE_SRCS)
 	$(srcdir)/configure $(COMP_SUBDIR_CONFIGURE_ARGS) $(CONFIGURE_ARGS_qq) $(MORE_CONFIGURE_ARGS)
+
+Makefile$(NO_RECONFIG):
+	$(NOOP)
