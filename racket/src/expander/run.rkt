@@ -6,7 +6,9 @@
                   [eval host:eval]
                   [namespace-require host:namespace-require]
                   [current-library-collection-paths host:current-library-collection-paths]
-                  [current-library-collection-links host:current-library-collection-links])
+                  [current-library-collection-links host:current-library-collection-links]
+                  [current-namespace host:current-namespace]
+                  [make-base-namespace host:make-base-namespace])
          compiler/depend
          "common/set.rkt"
          "main.rkt"
@@ -220,7 +222,10 @@
     (host:current-library-collection-paths l))
   (let ([l (list #f
                  (build-path checkout-directory "share" "links.rktd"))])
-    (host:current-library-collection-links l)))
+    (host:current-library-collection-links l))
+  ;; Need to start with a fresh namespace when we adjust the
+  ;; collection and links paths; otherwise, caching can interfere
+  (host:current-namespace (host:make-base-namespace)))
 
 (current-library-collection-paths (host:current-library-collection-paths))
 (current-library-collection-links (host:current-library-collection-links))
