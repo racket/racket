@@ -181,12 +181,14 @@ case "$host_os" in
     ;;
   *freebsd*)
     MACH_OS=fb
+    CFLAGS="${CFLAGS} -I/usr/local/include"
     LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
     CPPFLAGS="${CPPFLAGS} -DELF_FIND_BOOT_SECTION"
     ELF_COMP="--expect-elf"
     ;;
   openbsd*)
     MACH_OS=ob
+    CFLAGS="${CFLAGS} -I/usr/local/include"
     LIBS="${LIBS} -L/usr/local/lib -liconv -lm -lpthread -lossp-uuid"
     LDFLAGS="${LDFLAGS} -Wl,-zwxneeded"
     # Can't strip until ELF lookup added to startup
