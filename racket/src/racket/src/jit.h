@@ -31,6 +31,9 @@
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Waddress"
+#if __GNUC__ >= 6
+# pragma GCC diagnostic ignored "-Wtautological-compare"
+#endif
 #ifdef __clang__
 #  ifdef MZ_PRECISE_GC
 #   pragma clang diagnostic ignored "-Wtautological-compare"

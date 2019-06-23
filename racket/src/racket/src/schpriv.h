@@ -2170,11 +2170,13 @@ typedef struct {
 #ifdef MZ_PRECISE_GC
 # define SCHEME_BIGPOS(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x1)
 # define SCHEME_SET_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = ((v) | SCHEME_BIGINLINE(b))
+# define SCHEME_INIT_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = (v)
 # define SCHEME_BIGINLINE(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x2)
 # define SCHEME_SET_BIGINLINE(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) |= (0x2 | SCHEME_BIGPOS(b))
 #else
 # define SCHEME_BIGPOS(b) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso)
 # define SCHEME_SET_BIGPOS(b, v) SCHEME_BIGPOS(b) = v
+# define SCHEME_INIT_BIGPOS(b, v) SCHEME_SET_BIGPOS(b, v)
 #endif
 
 #define SCHEME_BIGLEN(b) (((Scheme_Bignum *)b)->len)
