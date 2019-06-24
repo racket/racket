@@ -744,8 +744,6 @@
                                         prim-knowns knowns imports mutated simples)])))]
            [`,_
             (let ([u-v (unwrap v)])
-              (when (eq? u-v 'ensure-place-wakeup-handle)
-                (log-error "here"))
               (cond
                 [(not (symbol? u-v))
                  v]
