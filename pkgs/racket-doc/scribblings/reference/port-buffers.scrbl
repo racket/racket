@@ -99,11 +99,16 @@ called with a position argument on such a @tech{file-stream port}, the
 @exnraise[exn:fail:filesystem].
 
 When @racket[file-position] sets the position @racket[pos] beyond the
-current size of an output file or (byte) string, the file/string is enlarged
-to size @racket[pos] and the new region is filled with @racket[0]
-bytes.  If @racket[pos] is beyond the end of an input file or (byte) string,
-then reading thereafter returns @racket[eof] without changing the
-port's position.
+current size of an output file or (byte) string, the file/string is
+enlarged to size @racket[pos] and the new region is filled with
+@racket[0] bytes; in the case of a file. In the case of a file output
+port, the file might not be enlarged until more data is written to the
+file; in that case, beware that writing to a file opened in
+@racket['append] mode on Unix and Mac OS will reset the file pointer
+to the end of a file @emph{before} each write, which defeats file
+enlargement via @racket[file-position]. If @racket[pos] is beyond the
+end of an input file or (byte) string, then reading thereafter returns
+@racket[eof] without changing the port's position.
 
 When changing the file position for an output port, the port is first
 flushed if its buffer is not empty. Similarly, setting the position
