@@ -67,7 +67,9 @@
     (check-external-events))
   (call-pre-poll-external-callbacks)
   (check-place-activity)
-  (check-queued-custodian-shutdown)
+  (when (check-queued-custodian-shutdown)
+    (when (thread-dead? root-thread)
+      (force-exit 0)))
   (flush-future-log)
   (cond
     [(and (null? callbacks)

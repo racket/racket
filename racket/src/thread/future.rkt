@@ -1,6 +1,7 @@
 #lang racket/base
 (require "config.rkt"
          "place-local.rkt"
+         "place-object.rkt"
          "check.rkt"
          "internal-error.rkt"
          "host.rkt"
@@ -352,8 +353,6 @@
 (define (set-processor-count! n)
   (set! pthread-count n))
 
-(define-place-local the-scheduler #f)
-
 (struct scheduler ([workers #:mutable]
                    [futures-head #:mutable]
                    [futures-tail #:mutable]
@@ -362,47 +361,58 @@
   #:authentic)
 
 (struct worker (id
+                [pthread #:mutable]
+                current-future-box ; reports current future (for access external to pthread)
                 [die? #:mutable]
                 sync-state) ; box used to sync shutdowns: 'idle, 'running, or 'pending
   #:authentic)
 
+(define current-scheduler
+  (case-lambda
+    [() (place-future-scheduler current-place)]
+    [(s) (set-place-future-scheduler! current-place s)]))
+
 (define (make-worker id)
   (worker id
-          #f  ; die?
+          #f         ; pthread
+          (box #f)   ; current-future-box
+          #f         ; die?
           (box 'idle)))
 
 ;; called in a Racket thread
 (define (maybe-start-scheduler)
   (atomically
-   (unless the-scheduler
+   (unless (current-scheduler)
      (ensure-place-wakeup-handle)
-     (set! the-scheduler (scheduler '()
-                                    #f  ; futures-head
-                                    #f  ; futures-tail
-                                    (host:make-mutex)
-                                    (host:make-condition)))
+     (define s (scheduler '()
+                          #f  ; futures-head
+                          #f  ; futures-tail
+                          (host:make-mutex)
+                          (host:make-condition)))
+     (current-scheduler s)
      (define workers
        (for/list ([id (in-range 1 (add1 pthread-count))])
          (define w (make-worker id))
          (start-worker w)
          w))
-     (set-scheduler-workers! the-scheduler workers))))
+     (set-scheduler-workers! s workers))))
 
 ;; called in atomic mode
 (define (kill-future-scheduler)
-  (when the-scheduler
-    (define s the-scheduler)
+  (define s (current-scheduler))
+  (when s
     (host:mutex-acquire (scheduler-mutex s))
     (for ([w (in-list (scheduler-workers s))])
       (set-worker-die?! w #t))
     (host:condition-signal (scheduler-cond s))
     (host:mutex-release (scheduler-mutex s))
-    (futures-sync-for-shutdown)))
+    (futures-sync-for-shutdown)
+    (current-scheduler #f)))
 
 ;; called in any pthread
 ;; called maybe holding an fsemaphore lock, but nothing else
 (define (schedule-future! f #:front? [front? #f])
-  (define s the-scheduler)
+  (define s (current-scheduler))
   (host:mutex-acquire (scheduler-mutex s))
   (define old (if front?
                   (scheduler-futures-head s)
@@ -424,7 +434,7 @@
 
 ;; called with queue lock held
 (define (deschedule-future f)
-  (define s the-scheduler)
+  (define s (current-scheduler))
   (cond
     [(or (future*-prev f)
          (future*-next f))
@@ -445,7 +455,7 @@
 ;; called with no locks held; if successful,
 ;; returns with lock held on f
 (define (try-deschedule-future? f)
-  (define s the-scheduler)
+  (define s (current-scheduler))
   (host:mutex-acquire (scheduler-mutex s))
   (define ok?
     (cond
@@ -484,34 +494,36 @@
 ;; ----------------------------------------
 
 (define (start-worker w)
-  (define s the-scheduler)
-  (fork-pthread
-   (lambda ()
-     (current-future 'worker)
-     (host:mutex-acquire (scheduler-mutex s))
-     (let loop ()
-       (or (box-cas! (worker-sync-state w) 'idle 'running)
-           (box-cas! (worker-sync-state w) 'pending 'running))
-       (cond
-         [(worker-die? w) ; worker was killed
-          (host:mutex-release (scheduler-mutex s))
-          (box-cas! (worker-sync-state w) 'running 'idle)]
-         [(scheduler-futures-head s)
-          => (lambda (f)
-               (deschedule-future f)
-               (host:mutex-release (scheduler-mutex s))
-               (lock-acquire (future*-lock f))
-               ;; lock is held on f; run the future
-               (maybe-run-future-in-worker f w)
-               ;; look for more work
-               (host:mutex-acquire (scheduler-mutex s))
-               (loop))]
-         [else
-          ;; wait for work
-          (or (box-cas! (worker-sync-state w) 'pending 'idle)
-              (box-cas! (worker-sync-state w) 'running 'idle))
-          (host:condition-wait (scheduler-cond s) (scheduler-mutex s))
-          (loop)])))))
+  (define s (current-scheduler))
+  (define th
+    (fork-pthread
+     (lambda ()
+       (current-future 'worker)
+       (host:mutex-acquire (scheduler-mutex s))
+       (let loop ()
+         (or (box-cas! (worker-sync-state w) 'idle 'running)
+             (box-cas! (worker-sync-state w) 'pending 'running))
+         (cond
+           [(worker-die? w) ; worker was killed
+            (host:mutex-release (scheduler-mutex s))
+            (box-cas! (worker-sync-state w) 'running 'idle)]
+           [(scheduler-futures-head s)
+            => (lambda (f)
+                 (deschedule-future f)
+                 (host:mutex-release (scheduler-mutex s))
+                 (lock-acquire (future*-lock f))
+                 ;; lock is held on f; run the future
+                 (maybe-run-future-in-worker f w)
+                 ;; look for more work
+                 (host:mutex-acquire (scheduler-mutex s))
+                 (loop))]
+           [else
+            ;; wait for work
+            (or (box-cas! (worker-sync-state w) 'pending 'idle)
+                (box-cas! (worker-sync-state w) 'running 'idle))
+            (host:condition-wait (scheduler-cond s) (scheduler-mutex s))
+            (loop)])))))
+  (set-worker-pthread! w th))
 
 ;; called with lock on f
 (define (maybe-run-future-in-worker f w)
@@ -528,6 +540,7 @@
 
 (define (run-future-in-worker f w)
   (current-future f)
+  (set-box! (worker-current-future-box w) f)
   ;; If we didn't need to check custodians, could be just
   ;;   (call-with-continuation-prompt
   ;;     (lambda () (run-future f))
@@ -558,7 +571,8 @@
        (lambda (e timeout?)
          (loop e))))
   (log-future 'end-work (future*-id f))
-  (current-future 'worker))
+  (current-future 'worker)
+  (set-box! (worker-current-future-box w) #f))
 
 ;; in atomic mode
 (define (futures-sync-for-shutdown)
@@ -567,17 +581,30 @@
   ;; future-scheduler shutdown.
   ;;
   ;; Move each 'running worker into the 'pending state:
-  (for ([w (in-list (scheduler-workers the-scheduler))])
+  (for ([w (in-list (scheduler-workers (current-scheduler)))])
     (box-cas! (worker-sync-state w) 'running 'pending))
   ;; A worker that transitions from 'pending to 'running or 'idle
   ;; is guaranteed to not run a future chose custodian is
   ;; shutdown or run any future if the worker is terminated
-  (for ([w (in-list (scheduler-workers the-scheduler))])
+  (for ([w (in-list (scheduler-workers (current-scheduler)))])
     (define bx (worker-sync-state w))
     (let loop ()
       (when (box-cas! bx 'pending 'pending)
         (host:sleep 0.001) ; not much alternative to spinning
         (loop)))))
+
+;; ----------------------------------------
+
+;; called in a GCing pthread with all other pthreads stopped
+(define (scheduler-add-thread-custodian-mapping! s ht)
+  (when s
+    (for ([w (in-list (scheduler-workers s))])
+      (define f (unbox (worker-current-future-box w)))
+      (when f
+        (define c (future*-custodian f))
+        (when c
+          (hash-set! ht c (cons (worker-pthread w)
+                                (hash-ref ht c null))))))))
 
 ;; ----------------------------------------
 
@@ -607,4 +634,6 @@
 ;; tell "atomic.rkt" layer how to block:
 (void (set-future-block! future-block))
 
-(void (set-custodian-futures-sync! futures-sync-for-shutdown))
+;; tell "custodian.rkt" how to sync and map pthreads to custodians:
+(void (set-custodian-future-callbacks! futures-sync-for-shutdown
+                                       scheduler-add-thread-custodian-mapping!))

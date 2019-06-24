@@ -74,7 +74,12 @@
       (run-collect-callbacks cdr)
       (when (and reachable-size-increments-callback
                  (fx= gen (collect-maximum-generation)))
-        (reachable-size-increments-callback compute-size-increments)))))
+        (reachable-size-increments-callback compute-size-increments))
+      (when (and (= gen (collect-maximum-generation))
+                 (current-engine-state))
+        ;; This `set-timer` doesn't necessarily penalize the right thread,
+        ;; but it's likely to penalize a thread that is allocating quickly:
+        (set-timer 1)))))
 
 (define collect-garbage
   (case-lambda

@@ -71,6 +71,7 @@
            do-make-thread
            root-thread
            thread-running?
+           thread-dead?
            thread-dead!
            thread-did-work!
            

@@ -37,8 +37,10 @@ GLOBALS = --no-global \
           ++global-ok wakeup-this-place \
           ++global-ok ensure-place-wakeup-handle \
           ++global-ok futures-sync-for-custodian-shutdown \
-          ++global-ok logging-future-events? \
+          ++global-ok 'future-scheduler-add-thread-custodian-mapping!' \
+          ++global-ok 'logging-future-events?' \
           ++global-ok log-future-event
+
 
 GENERATE_ARGS = -t main.rkt --submod main \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \

@@ -87,7 +87,7 @@
      [(thread-dead? t)
       (apply complete 0 results)]
      [else
-      (expire go timeout?)]))
+      (expire go (if timeout? 0 10))]))
   go)
 
 (define (engine-block)

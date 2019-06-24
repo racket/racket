@@ -8,7 +8,8 @@
          "evt.rkt"
          "semaphore.rkt"
          "parameter.rkt"
-         "sink.rkt")
+         "sink.rkt"
+         "exit.rkt")
 
 (provide current-custodian
          make-custodian
@@ -44,7 +45,7 @@
            poll-custodian-will-executor))
 
 (module+ for-future
-  (provide set-custodian-futures-sync!))
+  (provide set-custodian-future-callbacks!))
 
 ;; For `(struct custodian ...)`, see "custodian-object.rkt"
 
@@ -228,24 +229,27 @@
 
 ;; Called in atomic mode by the scheduler
 (define (check-queued-custodian-shutdown)
-  (unless (null? queued-shutdowns)
-    (host:disable-interrupts)
-    (host:mutex-acquire memory-limit-lock)
-    (define queued queued-shutdowns)
-    (set! queued-shutdowns
-          ;; Keep only custodians owned by other places
-          (for/list ([c (in-list queued)]
-                     #:unless (custodian-this-place? c))
-            (when (eq? (custodian-need-shutdown c) 'needed)
-              ;; Make sure custodian's place is polling for shutdowns:
-              (set-custodian-need-shutdown! c 'neeed/sent-wakeup)
-              (place-wakeup (custodian-place c)))
-            c))
-    (host:mutex-release memory-limit-lock)    
-    (host:enable-interrupts)
-    (for ([c (in-list queued)]
-          #:when (custodian-this-place? c))
-      (do-custodian-shutdown-all c))))
+  (cond
+    [(null? queued-shutdowns) #f]
+    [else
+     (host:disable-interrupts)
+     (host:mutex-acquire memory-limit-lock)
+     (define queued queued-shutdowns)
+     (set! queued-shutdowns
+           ;; Keep only custodians owned by other places
+           (for/list ([c (in-list queued)]
+                      #:unless (custodian-this-place? c))
+             (when (eq? (custodian-need-shutdown c) 'needed)
+               ;; Make sure custodian's place is polling for shutdowns:
+               (set-custodian-need-shutdown! c 'neeed/sent-wakeup)
+               (place-wakeup (custodian-place c)))
+             c))
+     (host:mutex-release memory-limit-lock)    
+     (host:enable-interrupts)
+     (for ([c (in-list queued)]
+           #:when (custodian-this-place? c))
+       (do-custodian-shutdown-all c))
+     #t]))
 
 (define place-ensure-wakeup! (lambda () #f)) ; call before enabling shutdowns
 (define place-wakeup-initial void)
@@ -370,9 +374,11 @@
 ;; ----------------------------------------
 
 (define futures-sync-for-custodian-shutdown (lambda () (void)))
+(define future-scheduler-add-thread-custodian-mapping! (lambda (s ht) (void)))
 
-(define (set-custodian-futures-sync! proc)
-  (set! futures-sync-for-custodian-shutdown proc))
+(define (set-custodian-future-callbacks! sync-shutdown add-custodian-mapping)
+  (set! futures-sync-for-custodian-shutdown sync-shutdown)
+  (set! future-scheduler-add-thread-custodian-mapping! add-custodian-mapping))
 
 ;; ----------------------------------------
 
@@ -390,6 +396,12 @@
          (unless (zero? compute-memory-sizes)
            (host:call-with-current-place-continuation
             (lambda (starting-k)
+              ;; A place may have future pthreads, and each ptherad may
+              ;; be running a future that becomes to a particular custodian;
+              ;; build up a custodian-to-pthtread mapping in this table:
+              (define custodian-future-threads (make-hasheq))
+              (future-scheduler-add-thread-custodian-mapping! (place-future-scheduler initial-place)
+                                                              custodian-future-threads)
               ;; Get roots, which are threads and custodians, for all distinct accounting domains
               (define-values (roots custs) ; parallel lists: root and custodian to charge for the root
                 (let c-loop ([c initial-place-root-custodian] [pl initial-place] [accum-roots null] [accum-custs null])
@@ -422,6 +434,8 @@
                       [(place? (car roots))
                        (define pl (car roots))
                        (define c (place-custodian pl))
+                       (future-scheduler-add-thread-custodian-mapping! (place-future-scheduler pl)
+                                                                       custodian-future-threads)
                        (define-values (new-roots new-custs) (c-loop c pl accum-roots accum-custs))
                        (loop (cdr roots) local-accum-roots new-roots new-custs)]
                       [else
@@ -445,9 +459,11 @@
               (define any-limits?
                 (let c-loop ([c root-custodian])
                   (define gc-roots (custodian-gc-roots c))
-                  (define roots (if gc-roots
-                                    (hash-keys gc-roots)
-                                    null))
+                  (define roots (append
+                                 (hash-ref custodian-future-threads c null)
+                                 (if gc-roots
+                                     (hash-keys gc-roots)
+                                     null)))
                   (define any-limits?
                     (for/fold ([any-limits? #f]) ([root (in-list roots)]
                                                   #:when (custodian? root))
