@@ -18,6 +18,9 @@
          "future-lock.rkt"
          "future-logging.rkt")
 
+;; See "README.txt" for some general information about this
+;; implementation of futures.
+
 (provide init-future-place!
          futures-enabled?
          future
