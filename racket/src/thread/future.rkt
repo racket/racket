@@ -612,10 +612,11 @@
 ;; ----------------------------------------
 
 (define (reset-future-logs-for-tracing!)
-  (void))
+  (atomically
+   (flush-future-log)))
 
 (define (mark-future-trace-end!)
-  (void))
+  (log-future 'stop-trace #f))
 
 ;; ----------------------------------------
 

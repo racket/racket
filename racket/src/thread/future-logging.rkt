@@ -33,16 +33,15 @@
      (flush-future-log)
      (define id (or future-id
                     (let ([f (currently-running-future)])
-                      (if f
-                          (future*-id f)
-                          -1))))
+                      (and f
+                           (future*-id f)))))
      (log-future-event* (future-event id 0 action (current-inexact-milliseconds) prim-name data))]))
 
 ;; maybe in atomic mode and only in main pthread
 (define (logging-futures?)
   (logging-future-events?))
 
-;; maybe in atomic mode and only in main pthread
+;; in atomic mode and only in main pthread
 (define (flush-future-log)
   (define new-events events)
   (unless (null? new-events)
@@ -55,7 +54,10 @@
   (define proc-id (future-event-proc-id e))
   (define action (future-event-action e))
   (define msg (string-append "id "
-                             (number->string (future-event-future-id e))
+                             (let ([id (future-event-future-id e)])
+                               (if id
+                                   (number->string (future-event-future-id e))
+                                   "-1"))
                              ", process "
                              (number->string proc-id)
                              ": "
