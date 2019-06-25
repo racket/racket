@@ -144,7 +144,7 @@
 ;; like `log-level?*`
 (define (log-message* logger level topic message data prefix? in-interrupt?)
   (define msg #f)
-  (when ((logger-max-wanted-level logger) . level>=? . level)
+  (when ((logger-max-wanted-level* logger) . level>=? . level)
     (let loop ([logger logger])
       (for ([r (in-list (logger-receivers logger))])
         (when ((filters-level-for-topic (log-receiver-filters r) topic) . level>=? . level)
