@@ -20,25 +20,14 @@ DISALLOW = ++disallow error
 # global state to be ok:
 GLOBALS = --no-global \
           ++global-ok the-sandman \
-          ++global-ok sync-on-channel \
           ++global-ok post-shutdown-action \
           ++global-ok get-subprocesses-time \
-          ++global-ok force-atomic-timeout-callback \
           ++global-ok pre-poll-callbacks \
           ++global-ok queued-shutdowns \
-          ++global-ok place-ensure-wakeup! \
-          ++global-ok place-wakeup-initial \
-          ++global-ok place-wakeup \
           ++global-ok compute-memory-sizes \
-          ++global-ok check-place-activity \
           ++global-ok make-place-ports+fds \
-          ++global-ok future-block-for-atomic \
           ++global-ok pthread-count \
-          ++global-ok wakeup-this-place \
-          ++global-ok ensure-place-wakeup-handle \
-          ++global-ok futures-sync-for-custodian-shutdown \
-          ++global-ok 'future-scheduler-add-thread-custodian-mapping!' \
-          ++global-ok 'logging-future-events?' \
+          ++global-ok "logging-future-events?" \
           ++global-ok log-future-event
 
 
