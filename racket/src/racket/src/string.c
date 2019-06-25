@@ -2030,6 +2030,10 @@ int scheme_any_string_has_null(Scheme_Object *o)
 /* Environment Variables                                               */
 /***********************************************************************/
 
+/* A `scheme_environment_variables_type` record wraps a hash table
+   that maps normalized keys to (cons <key> <val>), where the key
+   in the pair preserves its original case. */
+
 #define SCHEME_ENVVARS_TABLE(ev) ((Scheme_Hash_Tree *)SCHEME_PTR_VAL(ev))
 
 Scheme_Object *scheme_make_environment_variables(Scheme_Hash_Tree *ht)
@@ -2146,13 +2150,13 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   } else {
     bs = normalize_env_case(bs);
     val = scheme_hash_tree_get(ht, bs);
-    return val ? val : scheme_false;
+    return val ? SCHEME_CDR(val) : scheme_false;
   }
 }
 
 static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *varbs, *valbs, *ev;
+  Scheme_Object *varbs, *valbs, *norm_varbs, *ev;
   Scheme_Hash_Tree *ht;
   char *var;
   char *val;
@@ -2177,14 +2181,20 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
   ht = SCHEME_ENVVARS_TABLE(ev);
 
   if (ht) {
-    varbs = normalize_env_case(varbs);
+    norm_varbs = normalize_env_case(varbs);
 
     if (SCHEME_FALSEP(valbs)) {
-      ht = scheme_hash_tree_set(ht, varbs, NULL);
+      ht = scheme_hash_tree_set(ht, norm_varbs, NULL);
     } else {
-      varbs = byte_string_to_immutable(1, &varbs);
+      if (SAME_OBJ(varbs, norm_varbs)) {
+        varbs = byte_string_to_immutable(1, &varbs);
+        norm_varbs = varbs;
+      } else {
+        varbs = byte_string_to_immutable(1, &varbs);
+        norm_varbs = byte_string_to_immutable(1, &norm_varbs);
+      }
       valbs = byte_string_to_immutable(1, &valbs);
-      ht = scheme_hash_tree_set(ht, varbs, valbs);
+      ht = scheme_hash_tree_set(ht, norm_varbs, scheme_make_pair(varbs, valbs));
     }
 
     SCHEME_PTR_VAL(ev) = (Scheme_Object *)ht;
@@ -2230,14 +2240,16 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
   {
     intptr_t i;
     rktio_envvars_t *envvars;
-    Scheme_Object *var, *val;
+    Scheme_Object *var, *val, *norm_var;
 
     envvars = rktio_envvars(scheme_rktio);
     for (i = rktio_envvars_count(scheme_rktio, envvars); i--; ) {
       var = scheme_make_immutable_sized_byte_string(rktio_envvars_name_ref(scheme_rktio, envvars, i), -1, 1);
       val = scheme_make_immutable_sized_byte_string(rktio_envvars_value_ref(scheme_rktio, envvars, i), -1, 1);
-      var = normalize_env_case(var);
-      ht = scheme_hash_tree_set(ht, var, val);
+      norm_var = normalize_env_case(var);
+      if (!SAME_OBJ(var, norm_var))
+        norm_var = byte_string_to_immutable(1, &norm_var);
+      ht = scheme_hash_tree_set(ht, norm_var, scheme_make_pair(var, val));
     }
 
     rktio_envvars_free(scheme_rktio, envvars);
@@ -2249,7 +2261,7 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
 static Scheme_Object *env_make(int argc, Scheme_Object *argv[])
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *varbs, *valbs;
+  Scheme_Object *varbs, *valbs, *norm_varbs;
   int i;
 
   ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
@@ -2274,11 +2286,12 @@ static Scheme_Object *env_make(int argc, Scheme_Object *argv[])
             || scheme_byte_string_has_null(valbs)))
       scheme_wrong_contract("make-environment-variables", "(or/c bytes-no-nuls? #f)", i+1, argc, argv);
 
-    varbs = normalize_env_case(varbs);
-
     varbs = byte_string_to_immutable(1, &varbs);
     valbs = byte_string_to_immutable(1, &valbs);
-    ht = scheme_hash_tree_set(ht, varbs, valbs);
+    norm_varbs = normalize_env_case(varbs);
+    if (!SAME_OBJ(varbs, norm_varbs))
+      norm_varbs = byte_string_to_immutable(1, &norm_varbs);
+    ht = scheme_hash_tree_set(ht, norm_varbs, scheme_make_pair(varbs, valbs));
   }
 
   return scheme_make_environment_variables(ht);
@@ -2302,7 +2315,7 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
 
   for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
     scheme_hash_tree_index(ht, i, &key, &val);
-    r = scheme_make_pair(key, r);
+    r = scheme_make_pair(SCHEME_CAR(val), r);
   }
 
   return r;
@@ -2325,8 +2338,8 @@ rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev)
     
     rktio_envvars_set(scheme_rktio,
                       envvars,
-                      SCHEME_BYTE_STR_VAL(key),
-                      SCHEME_BYTE_STR_VAL(val));
+                      SCHEME_BYTE_STR_VAL(SCHEME_CAR(val)),
+                      SCHEME_BYTE_STR_VAL(SCHEME_CDR(val)));
   }
   
   return envvars;

@@ -1405,9 +1405,7 @@
   (test #f environment-variables-ref env #"BANANA")
   (test #f getenv "BANANA")
 
-  (let ([apple (if (eq? 'windows (system-type))
-                   #"apple"
-                   #"APPLE")])
+  (let ([apple #"APPLE"])
     (test apple car (member apple (environment-variables-names env))))
   (test #f member #"BANANA" (environment-variables-names env))
   (test #f member #"banana" (environment-variables-names env)))
@@ -1417,6 +1415,16 @@
                  (current-environment-variables))])
   (env-var-tests))
 (env-var-tests)
+
+;; Partly a test of case-normalization:
+(let* ([e (current-environment-variables)]
+       [e2 (environment-variables-copy e)]
+       [names2 (environment-variables-names e2)])
+  (test (length (environment-variables-names e)) length names2)
+  (for ([k (in-list (environment-variables-names e))])
+    (test #t 'name (and (member k names2) #t))
+    (test (environment-variables-ref e k)
+          environment-variables-ref e2 k)))
 
 (arity-test getenv 1 1)
 (arity-test putenv 2 2)
