@@ -407,7 +407,7 @@
     (host:mutex-acquire (scheduler-mutex s))
     (for ([w (in-list (scheduler-workers s))])
       (set-worker-die?! w #t))
-    (host:condition-signal (scheduler-cond s))
+    (host:condition-broadcast (scheduler-cond s))
     (host:mutex-release (scheduler-mutex s))
     (futures-sync-for-shutdown)
     (current-scheduler #f)))
@@ -423,8 +423,7 @@
   (cond
     [(not old)
      (set-scheduler-futures-head! s f)
-     (set-scheduler-futures-tail! s f)
-     (host:condition-signal (scheduler-cond s))]
+     (set-scheduler-futures-tail! s f)]
     [front?
      (set-future*-next! f old)
      (set-future*-prev! old f)
@@ -433,6 +432,7 @@
      (set-future*-prev! f old)
      (set-future*-next! old f)
      (set-scheduler-futures-tail! s f)])
+  (host:condition-signal (scheduler-cond s))
   (host:mutex-release (scheduler-mutex s)))
 
 ;; called with queue lock held
