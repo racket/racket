@@ -89,11 +89,19 @@ TO DO:
   [ssl-available? boolean?]
   [ssl-load-fail-reason (or/c #f string?)]
   [ssl-make-client-context
-   (->* () (protocol-symbol/c) ssl-client-context?)]
+   (->* ()
+        (protocol-symbol/c
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:certificate-chain (or/c path-string? #f))
+        ssl-client-context?)]
   [ssl-secure-client-context
    (c-> ssl-client-context?)]
   [ssl-make-server-context
-   (->* () (protocol-symbol/c) ssl-server-context?)]
+   (->* ()
+        (protocol-symbol/c
+         #:private-key (or/c (list/c 'pem path-string?) (list/c 'der path-string?) #f)
+         #:certificate-chain (or/c path-string? #f))
+        ssl-server-context?)]
   [ssl-server-context-enable-dhe!
    (->* (ssl-server-context?) (path-string?) void?)]
   [ssl-server-context-enable-ecdhe!
@@ -650,43 +658,56 @@ TO DO:
   (let ([protocols (supported-server-protocols)])
     (and (pair? protocols) (last protocols))))
 
-(define (make-context who protocol-symbol client?)
+(define (make-context who protocol-symbol client? priv-key cert-chain)
   (define ctx (make-raw-context who protocol-symbol client?))
-  ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f))
+  (define mzctx ((if client? make-ssl-client-context make-ssl-server-context) ctx #f #f))
+  (when cert-chain (ssl-load-certificate-chain! mzctx cert-chain))
+  (cond [(and (pair? priv-key) (eq? (car priv-key) 'pem))
+         (ssl-load-private-key! mzctx (cadr priv-key) #f #f)]
+        [(and (pair? priv-key) (eq? (car priv-key) 'der))
+         (ssl-load-private-key! mzctx (cadr priv-key) #f #t)]
+        [else (void)])
+  mzctx)
 
 (define (make-raw-context who protocol-symbol client?)
-  (cond
-   [(and (eq? protocol-symbol 'secure)
-         client?)
-    (ssl-context-ctx (ssl-secure-client-context))]
-   [else
-    (define meth (encrypt->method who protocol-symbol client?))
-    (define ctx
-      (atomically ;; connect SSL_CTX_new to subsequent check-valid (ERR_get_error)
-       (let ([ctx (SSL_CTX_new meth)])
-         (check-valid ctx who "context creation")
-         ctx)))
-    (unless (memq protocol-symbol '(sslv2 sslv3))
-      (SSL_CTX_set_options ctx (bitwise-ior SSL_OP_NO_SSLv2 SSL_OP_NO_SSLv3)))
-    (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
-                                       SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
-    ctx]))
+  (define meth (encrypt->method who protocol-symbol client?))
+  (define ctx
+    (atomically ;; connect SSL_CTX_new to subsequent check-valid (ERR_get_error)
+     (let ([ctx (SSL_CTX_new meth)])
+       (check-valid ctx who "context creation")
+       ctx)))
+  (unless (memq protocol-symbol '(sslv2 sslv3))
+    (SSL_CTX_set_options ctx (bitwise-ior SSL_OP_NO_SSLv2 SSL_OP_NO_SSLv3)))
+  (SSL_CTX_set_mode ctx (bitwise-ior SSL_MODE_ENABLE_PARTIAL_WRITE
+                                     SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+  ctx)
 
 (define (need-ctx-free? context-or-encrypt-method)
   (and (symbol? context-or-encrypt-method)
        (not (eq? context-or-encrypt-method 'secure))))
 
-(define (ssl-make-client-context [protocol-symbol default-encrypt])
-  (make-context 'ssl-make-client-context protocol-symbol #t))
+(define (ssl-make-client-context [protocol-symbol default-encrypt]
+                                 #:private-key [priv-key #f]
+                                 #:certificate-chain [cert-chain #f])
+  (cond [(and (eq? protocol-symbol 'secure) (not priv-key) (not cert-chain))
+         (ssl-secure-client-context)]
+        [else
+         (define ctx (make-context 'ssl-make-client-context protocol-symbol #t priv-key cert-chain))
+         (when (eq? protocol-symbol 'secure) (secure-client-context! ctx))
+         ctx]))
 
-(define (ssl-make-server-context [protocol-symbol default-encrypt])
-  (make-context 'ssl-make-server-context protocol-symbol #f))
+(define (ssl-make-server-context [protocol-symbol default-encrypt]
+                                 #:private-key [priv-key #f]
+                                 #:certificate-chain [cert-chain #f])
+  (make-context 'ssl-make-server-context protocol-symbol #f priv-key cert-chain))
 
 (define (get-context who context-or-encrypt-method client?
                      #:need-unsealed? [need-unsealed? #f])
   (if (ssl-context? context-or-encrypt-method)
       (extract-ctx who need-unsealed? context-or-encrypt-method)
-      (make-raw-context who context-or-encrypt-method client?)))
+      (if (and client? (eq? context-or-encrypt-method 'secure))
+          (ssl-context-ctx (ssl-secure-client-context))
+          (make-raw-context who context-or-encrypt-method client?))))
 
 (define (get-context/listener who ssl-context-or-listener [fail? #t]
                               #:need-unsealed? [need-unsealed? #f])
@@ -943,27 +964,28 @@ TO DO:
 
 ;; ----
 
-(define (ssl-make-secure-client-context sym)
-  (let ([ctx (ssl-make-client-context sym)])
-    ;; Load root certificates
-    (ssl-load-default-verify-sources! ctx)
-    ;; Require verification
-    (ssl-set-verify! ctx #t)
-    (ssl-set-verify-hostname! ctx #t)
-    ;; No weak cipher suites; see discussion, patch at http://bugs.python.org/issue13636
-    (ssl-set-ciphers! ctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
-    ;; Seal context so further changes cannot weaken it
-    (ssl-seal-context! ctx)
-    ctx))
+(define (secure-client-context! ctx)
+  ;; Load root certificates
+  (ssl-load-default-verify-sources! ctx)
+  ;; Require verification
+  (ssl-set-verify! ctx #t)
+  (ssl-set-verify-hostname! ctx #t)
+  ;; No weak cipher suites; see discussion, patch at http://bugs.python.org/issue13636
+  (ssl-set-ciphers! ctx "DEFAULT:!aNULL:!eNULL:!LOW:!EXPORT:!SSLv2")
+  ;; Seal context so further changes cannot weaken it
+  (ssl-seal-context! ctx)
+  (void))
 
 ;; context-cache: (list (weak-box ssl-client-context) (listof path-string) nat) or #f
+;; Cache for (ssl-secure-client-context) and (ssl-make-client-context 'secure) (w/o key, cert).
 (define context-cache #f)
 
 (define (ssl-secure-client-context)
   (let ([locs (ssl-default-verify-sources)])
     (define (reset)
       (let* ([now (current-seconds)]
-             [ctx (ssl-make-secure-client-context default-encrypt)])
+             [ctx (ssl-make-client-context 'auto)])
+        (secure-client-context! ctx)
         (set! context-cache (list (make-weak-box ctx) locs now))
         ctx))
     (let* ([cached context-cache]
@@ -1654,7 +1676,7 @@ TO DO:
                     [protocol-symbol-or-context default-encrypt])
   (let* ([ctx (if (ssl-server-context? protocol-symbol-or-context)
                protocol-symbol-or-context
-               (make-context 'ssl-listen protocol-symbol-or-context #f))]
+               (make-context 'ssl-listen protocol-symbol-or-context #f #f #f))]
         [l (tcp-listen port-k queue-k reuse? hostname-or-#f)]
         [ssl-l (make-ssl-listener l ctx)])
     (register ssl-l ssl-l 'listener)))
