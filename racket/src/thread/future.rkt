@@ -45,7 +45,7 @@
            future-notify-dependent))
 
 (define (init-future-place!)
-  (void))
+  (init-future-logging-place!))
 
 (define (futures-enabled?)
   (threaded?))

@@ -8,12 +8,16 @@
          logging-futures?
          flush-future-log
 
+         init-future-logging-place!
          install-future-logging-procs!)
 
 (struct future-event (future-id proc-id action time prim-name user-data)
   #:prefab)
 
-(define-place-local events null)
+(define-place-local events (box null))
+
+(define (init-future-logging-place!)
+  (set! events (box null)))
 
 ;; called with no future locks held
 (define (log-future action [future-id #f]
@@ -22,13 +26,16 @@
   (cond
     [(current-future)
      => (lambda (me-f)
-          (set! events (cons (future-event (or future-id (future*-id me-f))
-                                           (get-pthread-id)
-                                           action
-                                           (current-inexact-milliseconds)
-                                           prim-name
-                                           data)
-                             events)))]
+          (define e (future-event (or future-id (future*-id me-f))
+                                  (get-pthread-id)
+                                  action
+                                  (current-inexact-milliseconds)
+                                  prim-name
+                                  data))
+          (let loop ()
+            (define old-events (unbox events))
+            (unless (box-cas! events old-events (cons e old-events))
+              (loop))))]
     [(logging-futures?)
      (flush-future-log)
      (define id (or future-id
@@ -43,12 +50,14 @@
 
 ;; in atomic mode and only in main pthread
 (define (flush-future-log)
-  (define new-events events)
+  (define new-events (unbox events))
   (unless (null? new-events)
-    (set! events null)
-    (when (logging-futures?)
-      (for ([e (in-list (reverse new-events))])
-        (log-future-event* e)))))
+    (cond
+      [(box-cas! events new-events null)
+       (when (logging-futures?)
+         (for ([e (in-list (reverse new-events))])
+           (log-future-event* e)))]
+      [else (flush-future-log)])))
 
 (define (log-future-event* e)
   (define proc-id (future-event-proc-id e))
