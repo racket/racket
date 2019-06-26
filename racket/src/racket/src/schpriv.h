@@ -370,9 +370,7 @@ void scheme_init_bool(Scheme_Startup_Env *env);
 void scheme_init_syntax(Scheme_Startup_Env *env);
 void scheme_init_marshal(Scheme_Startup_Env *env);
 void scheme_init_error(Scheme_Startup_Env *env);
-#ifndef NO_SCHEME_EXNS
 void scheme_init_exn(Scheme_Startup_Env *env);
-#endif
 void scheme_init_debug(Scheme_Startup_Env *env);
 void scheme_init_thread(Scheme_Startup_Env *env);
 void scheme_init_unsafe_port(Scheme_Startup_Env *env);
@@ -464,9 +462,7 @@ void scheme_init_port_fun_config(void);
 void scheme_init_resolver_config(void);
 Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *c);
 void scheme_init_error_config(void);
-#ifndef NO_SCHEME_EXNS
 void scheme_init_exn_config(void);
-#endif
 #ifdef WINDOWS_PROCESSES
 void scheme_init_thread_memory(void);
 #endif
