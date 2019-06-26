@@ -278,7 +278,8 @@
         (semaphore-post-all sema)))
     (define p-cref (custodian-parent-reference c))
     (when p-cref
-      (unsafe-custodian-unregister c p-cref))))
+      (unsafe-custodian-unregister c p-cref))
+    (hash-remove! custodians-with-limits c)))
 
 (define (custodian-get-shutdown-sema c)
   (atomically
@@ -348,9 +349,14 @@
      (define old-limit (custodian-immediate-limit limit-cust))
      (when (or (not old-limit) (old-limit . > . need-amt))
        (set-custodian-immediate-limit! limit-cust need-amt)))
+   (hash-set! custodians-with-limits limit-cust #t)
    (host:mutex-acquire memory-limit-lock)
    (set! compute-memory-sizes (max compute-memory-sizes 1))
    (host:mutex-release memory-limit-lock)))
+
+;; Ensures that custodians with memory limits are not treated as
+;; inaccessible and merged:
+(define custodians-with-limits (make-hasheq))
 
 ;; ----------------------------------------
 
@@ -457,7 +463,7 @@
                 (set-custodian-memory-use! c (+ size (custodian-memory-use c))))
               ;; Merge child counts to parents:
               (define any-limits?
-                (let c-loop ([c root-custodian])
+                (let c-loop ([c initial-place-root-custodian])
                   (define gc-roots (custodian-gc-roots c))
                   (define roots (append
                                  (hash-ref custodian-future-threads c null)
@@ -466,14 +472,19 @@
                                      null)))
                   (define any-limits?
                     (for/fold ([any-limits? #f]) ([root (in-list roots)]
-                                                  #:when (custodian? root))
-                      (define root-any-limits? (c-loop root))
-                      (set-custodian-memory-use! c (+ (custodian-memory-use root)
+                                                  #:when (or (custodian? root)
+                                                             (place? root)))
+                      (define next-c (if (custodian? root)
+                                         root
+                                         (place-custodian root)))
+                      (define root-any-limits? (c-loop next-c))
+                      (set-custodian-memory-use! c (+ (custodian-memory-use next-c)
                                                       (custodian-memory-use c)))
                       (or root-any-limits? any-limits?)))
                   (define use (custodian-memory-use c))
+                  (define old-limits (custodian-memory-limits c))
                   (define new-limits
-                    (for/list ([limit (in-list (custodian-memory-limits c))]
+                    (for/list ([limit (in-list old-limits)]
                                #:when (cond
                                         [((car limit) . <= . use)
                                          (queue-custodian-shutdown! (cdr limit))
@@ -481,6 +492,9 @@
                                         [else #t]))
                       limit))
                   (set-custodian-memory-limits! c new-limits)
+                  (when (and (pair? old-limits)
+                             (null? new-limits))
+                    (hash-remove! custodians-with-limits c))
                   (or any-limits? (pair? new-limits))))
               ;; If no limits are installed, decay demand for memory counts:
               (unless any-limits?
@@ -494,7 +508,7 @@
          (unless (custodian? c)
            (raise-argument-error 'current-memory-use "(or/c #f 'cumulative custodian?)" c))
          (cond
-           [(eq? c root-custodian) all]
+           [(eq? c initial-place-root-custodian) all]
            [else
             (when (atomically/no-interrupts
                    (host:mutex-acquire memory-limit-lock)

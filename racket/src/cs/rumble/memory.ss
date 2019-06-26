@@ -135,7 +135,7 @@
   (let-values ([(backtrace-predicate use-prev? max-path-length) (parse-dump-memory-stats-arguments args)])
     (enable-object-counts #t)
     (enable-object-backreferences (and backtrace-predicate #t))
-    (collect (collect-maximum-generation))
+    (collect-garbage)
     (let* ([counts (object-counts)]
            [backreferences (object-backreferences)]
            [extract (lambda (static? cxr)
