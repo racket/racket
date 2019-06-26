@@ -279,9 +279,7 @@ static void init_startup_env(void)
   MZTIMEIT(eval, scheme_init_eval(env));
   MZTIMEIT(struct, scheme_init_struct(env));
   MZTIMEIT(error, scheme_init_error(env));
-#ifndef NO_SCHEME_EXNS
   MZTIMEIT(exn, scheme_init_exn(env));
-#endif
   MZTIMEIT(process, scheme_init_thread(env));
   scheme_init_port_wait();
   scheme_init_inspector();
@@ -478,9 +476,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_port_fun_config();
   scheme_init_error_config();
   scheme_init_logger_config();
-#ifndef NO_SCHEME_EXNS
   scheme_init_exn_config();
-#endif
   scheme_init_error_config();
   scheme_init_place_per_place();
 

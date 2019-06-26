@@ -2708,7 +2708,6 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
     newargs[0] = scheme_make_immutable_sized_utf8_string(str, len);
   }
 
-#ifndef NO_SCHEME_EXNS
   newargs[1] = TMP_CMARK_VALUE;
   do_raise(scheme_make_struct_instance(exn_table[mode].type,
 				       2, newargs),
@@ -2716,12 +2715,6 @@ static Scheme_Object *do_error(const char *who, int mode, int argc, Scheme_Objec
            1);
 
   return scheme_void;
-#else
-  _scheme_apply_multi(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_DISPLAY_HANDLER), 1, newargs);
-
-  return _scheme_tail_apply(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_ESCAPE_HANDLER),
-			    0, NULL);
-#endif
 }
 
 static Scheme_Object *error(int argc, Scheme_Object *argv[])
@@ -4393,7 +4386,6 @@ scheme_raise_exn(int id, ...)
   alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val, &unsupported);
   HIDE_FROM_XFORM(va_end(args));
 
-#ifndef NO_SCHEME_EXNS
   eargs[0] = scheme_make_immutable_sized_utf8_string(buffer, alen);
   eargs[1] = TMP_CMARK_VALUE;
   if (errno_val) {
@@ -4415,12 +4407,7 @@ scheme_raise_exn(int id, ...)
 				       c, eargs),
 	   1,
            1);
-#else
-  call_error(buffer, alen, scheme_false);
-#endif
 }
-
-#ifndef NO_SCHEME_EXNS
 
 static Scheme_Object *
 def_exn_handler(int argc, Scheme_Object *argv[])
@@ -4802,5 +4789,3 @@ void scheme_init_exn_config(void)
 
   scheme_set_root_param(MZCONFIG_INIT_EXN_HANDLER, h);
 }
-
-#endif
