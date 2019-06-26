@@ -607,7 +607,7 @@ glance, this appears to suggest a contract that assigns a
 This contract, however, says that the function must accept @emph{any}
 number of arguments, not a @emph{specific} but
 @emph{undetermined} number. Thus, applying @racket[n-step] to
-@racket[(lambda (x) x)] and @racket[(list 1)] breaks the contract
+@racket[(lambda (x) x)] and @racket[(list 1 2)] breaks the contract
 because the given function accepts only one argument. 
 
  The correct contract uses the @racket[unconstrained-domain->]
