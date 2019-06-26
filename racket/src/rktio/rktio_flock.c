@@ -56,6 +56,7 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
     if (!pipe(ifds)) {
       if (!pipe(ofds)) {
         int pid;
+        int close_len = rktio_close_fds_len();
 
 #ifdef SUBPROCESS_USE_FORK1
         pid = fork1();
@@ -110,7 +111,7 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
 
           rktio_reliably_close(ifds[0]);
           rktio_reliably_close(ofds[1]);
-          rktio_close_fds_after_fork(ifds[1], ofds[0], fd);
+          rktio_close_fds_after_fork(close_len, ifds[1], ofds[0], fd);
    
           fl.l_start = 0;
           fl.l_len = 0;

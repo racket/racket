@@ -1229,6 +1229,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
   void *env;
   rktio_process_t *subproc;
+  int close_after_len;
+  rktio_const_string_t *new_argv;
 #if defined(RKTIO_SYSTEM_WINDOWS)
   intptr_t spawn_status;
 #endif
@@ -1352,6 +1354,18 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     init_sigchld(rktio);
 #endif
 
+    close_after_len = rktio_close_fds_len();
+
+    /* add a NULL terminator */
+    {
+      int i;
+      new_argv = malloc(sizeof(char *) * (argc + 1));
+      for (i = 0; i < argc; i++) {
+        new_argv[i] = argv[i];
+      }
+      new_argv[i] = NULL;
+    }
+
 #if defined(__QNX__)
     pid = vfork();
 #elif defined(SUBPROCESS_USE_FORK1)
@@ -1359,8 +1373,6 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #else
     pid = fork();
 #endif
-
-    
 
     if (pid > 0) {
       /* This is the original process, which needs to manage the 
@@ -1444,6 +1456,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 		  
       if (env)
         free(env);
+      free(new_argv);
 
       return NULL;
 
@@ -1498,7 +1511,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 	  close_non_standard_fd(err_subprocess[0]);
 	}
 
-        rktio_close_fds_after_fork(0, 1, 2);
+        rktio_close_fds_after_fork(close_after_len, 0, 1, 2);
       }
 
       /* Set real CWD: */
@@ -1510,25 +1523,18 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       /* Exec new process */
 
       {
-	int err, i;
-        rktio_const_string_t *new_argv;
-
-        /* add a NULL terminator */
-        new_argv = malloc(sizeof(char *) * (argc + 1));
-        for (i = 0; i < argc; i++) {
-          new_argv[i] = argv[i];
-        }
-        new_argv[i] = NULL;
+	int err;
 
         if (!env)
           env = rktio_get_environ_array();
-        
+
 	err = MSC_IZE(execve)(command, (char **)new_argv, (char **)env);
         if (err)
           err = errno;
 
         if (env)
           free(env);
+        free(new_argv);
 
 	/* If we get here it failed; give up */
 
@@ -1631,11 +1637,12 @@ static void close_non_standard_fd(int fd)
   }
 }
 
-
-void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
+int rktio_close_fds_len()
 {
   int i;
 
+  /* These functions are not async-signal safe, so use them before
+     a fork: */
 # ifdef USE_ULIMIT
   i = ulimit(4, 0);
 # elif defined(__ANDROID__)
@@ -1643,6 +1650,15 @@ void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
 # else
   i = getdtablesize();
 # endif
+
+  return i;
+}
+
+void rktio_close_fds_after_fork(int i, int skip1, int skip2, int skip3)
+{
+  /* incoming `i` should be the result of `rktio_close_fds_len` before
+     a fork */
+
   while (i--) {
     if ((i != skip1) && (i != skip2) && (i != skip3)) {
       rktio_reliably_close(i);
