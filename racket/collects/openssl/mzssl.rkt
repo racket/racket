@@ -308,7 +308,8 @@ TO DO:
 (define-ssl SSL_renegotiate (_fun _SSL* -> _int))
 (define-ssl SSL_renegotiate_pending (_fun _SSL* -> _int))
 (define-ssl SSL_do_handshake (_fun _SSL* -> _int))
-(define-ssl SSL_ctrl (_fun _SSL* _int _long _pointer -> _long))
+(define-ssl SSL_ctrl/bytes (_fun _SSL* _int _long _bytes/nul-terminated -> _long)
+  #:c-id SSL_ctrl)
 (define-ssl SSL_set_SSL_CTX (_fun _SSL* _SSL_CTX* -> _SSL_CTX*))
 
 (define-crypto X509_free (_fun _X509* -> _void)
@@ -1456,8 +1457,8 @@ TO DO:
                        (ssl-context-verify-hostname? context-or-encrypt-method)]
                       [else #f])])
     (when (string? hostname)
-      (SSL_ctrl ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
-		TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
+      (SSL_ctrl/bytes ssl SSL_CTRL_SET_TLSEXT_HOSTNAME
+                      TLSEXT_NAMETYPE_host_name (string->bytes/latin-1 hostname)))
 
     ;; connect/accept:
     (let-values ([(buffer) (make-bytes BUFFER-SIZE)]
