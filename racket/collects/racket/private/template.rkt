@@ -369,6 +369,7 @@
         (define (make-src-ref var id)
           (cond [check `(#%expression (,check ,var 1 #f (quote-syntax ,id)))]
                 [else var]))
+        (disappeared! id)
         (frames-seen-pvar! depth0)
         (make-ref
          (let dloop ([depth depth0] [pvar-depth pvar-depth]) ;; ... -> Identifier
