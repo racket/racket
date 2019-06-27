@@ -14,6 +14,10 @@
 
 (define compiled (car (use-compiled-file-paths)))
 
+(module+ test
+  (module config info
+    (define timeout 180)))
+
 ;; ----------------------------------------
 ;; set up
 

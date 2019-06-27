@@ -5,6 +5,10 @@
          syntax/srcloc
          syntax/strip-context)
 
+(module+ test
+  (module config info
+    (define timeout 180)))
+
 (define blame-parties
   (make-immutable-hash
    (list (let ([stx #'here-syntax])
