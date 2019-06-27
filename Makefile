@@ -46,7 +46,7 @@ PLT_SETUP_OPTIONS =
 
 # Belongs in the "Configuration options" section, but here
 # to accomodate nmake:
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+SRC_CATALOG = "https://download.racket-lang.org/releases/7.3/catalog/"
 
 CPUS = 
 
