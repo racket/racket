@@ -329,6 +329,13 @@
       (check who (lambda (radix) #f)
              :contract "(or/c 2 8 10 16)"
              radix))
+    (when (and (not (eq? radix 10)) (inexact? n))
+      (raise
+       (exn:fail:contract (string-append
+                           "number->string: inexact numbers can only be printed in base 10\n"
+                           "  number: " (number->string n) "\n"
+                           "  requested base: " (number->string radix))
+                          (current-continuation-marks))))
     (do-number->string n radix)]
    [(n)
     (do-number->string n 10)]))
