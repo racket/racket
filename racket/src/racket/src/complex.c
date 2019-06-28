@@ -177,6 +177,24 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
   
 }
 
+static Scheme_Object *simple_complex_divide(Scheme_Object *a, Scheme_Object *b,
+                                            Scheme_Object *c, Scheme_Object *d)
+{
+  Scheme_Object *r, *i, *cm;
+
+  cm = scheme_bin_plus(scheme_bin_mult(c, c),
+                       scheme_bin_mult(d, d));
+
+  r = scheme_bin_div(scheme_bin_plus(scheme_bin_mult(c, a),
+                                     scheme_bin_mult(d, b)),
+                     cm);
+  i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(c, b),
+                                      scheme_bin_mult(d, a)),
+                     cm);
+
+  return scheme_make_complex(r, i);
+}
+
 Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Object *_d)
 { 
   Scheme_Complex *cn = (Scheme_Complex *)_n;
@@ -203,20 +221,8 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
     return scheme_make_complex(r, i);
   }
 
-  if (!SCHEME_FLOATP(c) && !SCHEME_FLOATP(d)) {
-    /* The simple way: */
-    cm = scheme_bin_plus(scheme_bin_mult(c, c), 
-                         scheme_bin_mult(d, d));
-    
-    r = scheme_bin_div(scheme_bin_plus(scheme_bin_mult(c, a),
-                                       scheme_bin_mult(d, b)),
-                       cm);
-    i = scheme_bin_div(scheme_bin_minus(scheme_bin_mult(c, b),
-                                        scheme_bin_mult(d, a)),
-                       cm);
-    
-    return scheme_make_complex(r, i);
-  }
+  if (!SCHEME_FLOATP(a) && !SCHEME_FLOATP(b) && !SCHEME_FLOATP(c) && !SCHEME_FLOATP(d))
+    return simple_complex_divide(a, b, c, d);
 
   if (scheme_is_zero(d)) {
     /* This is like dividing by a real number, except that
@@ -258,22 +264,19 @@ Scheme_Object *scheme_complex_divide(const Scheme_Object *_n, const Scheme_Objec
 
   r = scheme_bin_div(c, d);
 
+  if (!SCHEME_FLOATP(r) && (SCHEME_FLOATP(a) || SCHEME_FLOATP(b))) {
+    aa[0] = r;
+    r = scheme_exact_to_inexact(1, aa);
+  }
+
   /* If r goes to infinity, try computing a different way to avoid overflow: */
   if (SCHEME_FLOATP(r)) {
     double v = SCHEME_FLOAT_VAL(r);
     if (MZ_IS_POS_INFINITY(v) || MZ_IS_NEG_INFINITY(v)) {
-      /* From Chez Scheme: a+bi / c+di => (ac+bd)/(cc+dd) + ((bc-ad)/(cc+dd))i
-         This calculuation does not work as well for complex numbers with
+      /* This calculuation does not work as well for complex numbers with
          large parts, such as `(/ 1e+300+1e+300i 4e+300+4e+300i)`, but it
          works better for small parts, as in `(/ 0.0+0.0i 1+1e-320i)`. */
-      cm = scheme_bin_plus(scheme_bin_mult(c, c),
-                           scheme_bin_mult(d, d));
-      return scheme_make_complex(scheme_bin_div(scheme_bin_plus(scheme_bin_mult(a, c),
-                                                                scheme_bin_mult(b, d)),
-                                                cm),
-                                 scheme_bin_div(scheme_bin_minus(scheme_bin_mult(b, c),
-                                                                 scheme_bin_mult(a, d)),
-                                                cm));
+      return simple_complex_divide(a, b, c, d);
     }
   }
 
