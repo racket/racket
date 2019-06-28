@@ -127,7 +127,9 @@
     (collect-garbage)
     (test #t andmap (lambda (v)
                       (v . >= . 100000))
-          (map current-memory-use c))))
+          (map current-memory-use c))
+    ;; Make sure boxes are retained:
+    (test #t andmap custodian-box? b)))
 
 (let ()
   (define c1 (make-custodian (current-custodian)))
