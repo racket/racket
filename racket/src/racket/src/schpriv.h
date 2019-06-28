@@ -2300,6 +2300,9 @@ Scheme_Object *scheme_complex_multiply(const Scheme_Object *a, const Scheme_Obje
 Scheme_Object *scheme_complex_divide(const Scheme_Object *n, const Scheme_Object *d);
 Scheme_Object *scheme_complex_power(const Scheme_Object *a, const Scheme_Object *b);
 Scheme_Object *scheme_complex_sqrt(const Scheme_Object *a);
+Scheme_Object *scheme_complex_atan(const Scheme_Object *c);
+Scheme_Object *scheme_complex_asin(const Scheme_Object *c);
+Scheme_Object *scheme_complex_acos(const Scheme_Object *c);
 XFORM_NONGCING int scheme_is_complex_exact(const Scheme_Object *o);
 
 /****** Inexacts ******/
@@ -2415,7 +2418,8 @@ extern int scheme_is_nan(double);
 extern double scheme_infinity_val, scheme_minus_infinity_val;
 extern double scheme_floating_point_zero;
 extern double scheme_floating_point_nzero;
-extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
+extern Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_minus_half_pi;
+extern Scheme_Object *scheme_plus_i, *scheme_minus_i;
 extern Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
 #ifdef MZ_LONG_DOUBLE
 extern long_double scheme_long_infinity_val, scheme_long_minus_infinity_val;

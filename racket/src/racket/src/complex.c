@@ -402,3 +402,138 @@ Scheme_Object *scheme_complex_sqrt(const Scheme_Object *o)
 
   return scheme_make_complex(ni, nr);
 }
+
+Scheme_Object *scheme_complex_atan(const Scheme_Object *c)
+{
+  /* From Chez Scheme, which implements the principal expression from Kahan:
+     (log(1+z) - log(1-z))/2
+  */
+# define OMEGA   1.7976931348623157e308
+# define THETA   3.351951982485649e+153  /* = sqrt(OMEGA)/4 */
+# define RHO     2.9833362924800834e-154 /* = 1/THETA */
+# define HALF_PI 1.5707963267948966
+# define IS_NEG(x) (((x) < 0.0) || ((x == 0.0) && scheme_minus_zero_p(x)))
+  double x, y, ay, r, i;
+  int negate;
+
+  /* Get components after multiplication by i */
+  x = -scheme_real_to_double(_scheme_complex_imaginary_part(c));
+  y = scheme_real_to_double(_scheme_complex_real_part(c));
+
+  /* Compute atanh */
+
+  if (x < 0.0) {
+    x = -x;
+    negate = 1;
+  } else {
+    y = -y;
+    negate = 0;
+  }
+
+  ay = fabs(y);
+
+  if ((x > THETA) || (y > THETA)) {
+    /*  RP(1/z) +/- (pi/2)i */
+    if (x > ay)
+      r = 1/(x + ((y/x) * y));
+    else if (x < ay) {
+      r = y/x;
+      r = r/((x * r)+ y);
+    } else
+      r = 1/(x+ay);
+
+    i = (IS_NEG(y) ? HALF_PI : (-HALF_PI));
+  } else if (x == 1.0) {
+    double k = ay + RHO;
+    r = log(sqrt(sqrt((y * y) + 4.0)) / sqrt(k));
+    i = (HALF_PI + atan(k/2.0)) / (IS_NEG(y) ? 2.0 : -2.0);
+  } else {
+    double mx = 1.0 - x;
+    double k = ay + RHO;
+    k = k * k;
+
+    r = log(((4.0 * x) / ((mx * mx) + k)) + 1.0) / 4.0;
+    i = atan2(2.0 * y, (mx * (1.0 + x)) - k) / -2.0;
+  }
+
+  if (negate) {
+    i = -i;
+    r = -r;
+  }
+
+  /* Multiply by -i to get atan */
+  x = i;
+  y = -r;
+  
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(_scheme_complex_real_part(c))
+      || SCHEME_FLTP(_scheme_complex_imaginary_part(c))) {
+    return scheme_make_complex(scheme_make_float(x), scheme_make_float(y));
+  }
+#endif
+
+  return scheme_make_complex(scheme_make_double(x), scheme_make_double(y));
+}
+
+Scheme_Object *scheme_complex_asin_or_acos(const Scheme_Object *z, int get_asin)
+{
+  /* From Chez Scheme, which implements the principal expression from Kahan */
+  Scheme_Object *zp, *zm, *aa[1];
+  double a, b, c, d, r, i;
+
+  aa[0] = scheme_bin_minus(scheme_make_integer(1), z);
+  zm = scheme_sqrt(1, aa);
+  
+  aa[0] = scheme_bin_plus(scheme_make_integer(1), z);
+  zp = scheme_sqrt(1, aa);
+
+  if (SCHEME_COMPLEXP(zm)) {
+    a = scheme_real_to_double(_scheme_complex_real_part(zm));
+    b = scheme_real_to_double(_scheme_complex_imaginary_part(zm));
+  } else {
+    a = scheme_real_to_double(zm);
+    b = 0.0;
+  }
+
+  if (SCHEME_COMPLEXP(zp)) {
+    c = scheme_real_to_double(_scheme_complex_real_part(zp));
+    d = scheme_real_to_double(_scheme_complex_imaginary_part(zp));
+  } else {
+    c = scheme_real_to_double(zp);
+    d = 0.0;
+  }
+
+  if (get_asin) {
+    if (SCHEME_COMPLEXP(z)) {
+      r = scheme_real_to_double(_scheme_complex_real_part(z));
+      r = atan2(r, (a*c)-(b*d));
+    } else {
+      r = scheme_real_to_double((Scheme_Object *)z);
+      r = atan2(r, 0.0); /* void +nan.0 from (a*c)-(b*d) */
+    }
+
+    i = asinh((a*d)-(b*c));
+  } else {
+    r = 2.0 * atan2(a, c);
+    i = asinh((b*c) - (a*d));
+  }
+
+#ifdef MZ_USE_SINGLE_FLOATS
+  if (SCHEME_FLTP(_scheme_complex_real_part(z))
+      || SCHEME_FLTP(_scheme_complex_imaginary_part(z))) {
+    return scheme_make_complex(scheme_make_float(r), scheme_make_float(i));
+  }
+#endif
+
+  return scheme_make_complex(scheme_make_double(r), scheme_make_double(i));
+}
+
+Scheme_Object *scheme_complex_asin(const Scheme_Object *c)
+{
+  return scheme_complex_asin_or_acos(c, 1);
+}
+
+Scheme_Object *scheme_complex_acos(const Scheme_Object *c)
+{
+  return scheme_complex_asin_or_acos(c, 0);
+}

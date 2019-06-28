@@ -2144,8 +2144,54 @@
 (err/rt-test (atan 0 0) exn:fail:contract:divide-by-zero?)
 (err/rt-test (atan 0+i) exn:fail:contract:divide-by-zero?)
 (err/rt-test (atan 0-i) exn:fail:contract:divide-by-zero?)
-(test -inf.0 atan 0+1.0i)
-(test -inf.0 atan 0-1.0i)
+
+(when has-exact-zero-inexact-complex?
+  (test -inf.0 atan 0+1.0i)
+  (test -inf.0 atan 0-1.0i))
+
+(test 79.0+17710.0i z-round (* 100 (atan 0.0+1.0i)))
+(test 79.0-17710.0i z-round (* 100 (atan 0.0-1.0i)))
+(test 157.0+55.0i z-round (* 100 (atan 0.0+2.0i)))
+(test 157.0-55.0i z-round (* 100 (atan 0.0-2.0i)))
+(test -157.0+55.0i z-round (* 100 (atan -0.0+2.0i)))
+(test 134.0-40.0i z-round (* 100 (atan 1.0-2.0i)))
+(test 157.0+0.0i z-round (* 100 (atan 1.0-4e153i)))
+(test 157.0+0.0i z-round (* 100 (atan 1.0+4e153i)))
+(test -2.5e-154 imag-part (atan 1.0-4e153i))
+(test +2.5e-154 imag-part (atan 1.0+4e153i))
+(test 157.0+0.0i z-round (* 100 (atan 5e153+4e153i)))
+(test 125.0 round (* 1e156 (imag-part (atan 5e153+4e153i))))
+(test 157.0+0.0i z-round (* 100 (atan 4e153+4e153i)))
+(test 125.0 round (* 1e156 (imag-part (atan 4e153+4e153i))))
+
+#reader "maybe-single.rkt"
+(when has-single-flonum? 
+  (test 79.0f0+17710.0f0i z-round (* 100 (atan 0.0f0+1.0f0i))))
+
+(test 157.0-inf.0i z-round (* 100 (asin +inf.0)))
+(test -157.0+inf.0i z-round (* 100 (asin -inf.0)))
+(test 0.0+inf.0i z-round (* 100 (acos +inf.0)))
+(test 314.0-inf.0i z-round (* 100 (acos -inf.0)))
+(test 0.0-inf.0i asin -inf.0i)
+(test 157.0+inf.0i z-round (* 100 (acos -inf.0i)))
+
+(test 63.0+231.0i z-round (* 100 (asin 3+4i)))
+(test 63.0+231.0i z-round (* 100 (asin 3.0+4.0i)))
+(test 94.0-231.0i z-round (* 100 (acos 3+4i)))
+(test 94.0-231.0i z-round (* 100 (acos 3.0+4.0i)))
+
+(test 157.0-46300.0i z-round (* 100 (asin 6e200)))
+(test 0.0+46300.0i z-round (* 100 (acos 6e200)))
+
+#reader "maybe-single.rkt"
+(when has-single-flonum? 
+  (test 157.0f0-inf.fi z-round (* 100 (asin +inf.f)))
+  (test -157.0f0+inf.fi z-round (* 100 (asin -inf.f)))
+  (test 0.0f0+inf.fi z-round (* 100 (acos +inf.f)))
+  (test 314.0f0-inf.fi z-round (* 100 (acos -inf.f)))
+  (test 63.0f0+231.0f0i z-round (* 100 (asin 3.0f0+4.0f0i)))
+  (test 94.0f0-231.0f0i z-round (* 100 (acos 3.0f0+4.0f0i))))
+
 (test 1024.0 round (expt 2.0 10.0))
 (test 1024.0 round (expt -2.0 10.0))
 (test -512.0 round (expt -2.0 9.0))
@@ -2250,8 +2296,6 @@
 (test-inf-bad tan)
 (test-inf-bad sin)
 (test-inf-bad cos)
-(test-inf-bad asin)
-(test-inf-bad acos)
 
 (test 11/7 rationalize (inexact->exact (atan +inf.0 1)) 1/100)
 (test -11/7 rationalize (inexact->exact (atan -inf.0 1)) 1/100)
@@ -2303,7 +2347,7 @@
 (test 693.+3142.i z-round (* 1000 (log -2)))
 (test 1571.-1317.i z-round (* 1000 (asin 2)))
 (test -1571.+1317.i z-round (* 1000 (asin -2)))
-(test 0+3688.i z-round (* 1000 (acos 20)))
+(test 0.0+3688.i z-round (* 1000 (acos 20)))
 (test 3142.-3688.i z-round (* 1000 (acos -20)))
 
 (define (cs2 c) (+ (* (cos c) (cos c)) (* (sin c) (sin c))))
