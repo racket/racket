@@ -219,11 +219,15 @@
      mode
      (compile* e)))
 
-  (define primitives (make-hasheq))
+  (define primitives (make-hasheq)) ; hash of sym -> known
+  (define primitive-tables '())     ; list of (cons sym hash)
+
+  ;; Arguments are `(cons <sym> <hash-table>)`
   (define (install-linklet-primitive-tables! . tables)
+    (set! primitive-tables tables)
     (for-each
      (lambda (table)
-       (hash-for-each table (lambda (k v) (hash-set! primitives k v))))
+       (hash-for-each (cdr table) (lambda (k v) (hash-set! primitives k v))))
      tables)
     ;; prropagate table to the rumble layer
     (install-primitives-table! primitives))
@@ -999,7 +1003,7 @@
   ;; --------------------------------------------------
 
   (define-record variable-reference (instance      ; the use-site instance
-                                     var-or-info)) ; the referenced variable, 'constant, 'mutable, #f, or 'primitive
+                                     var-or-info)) ; the referenced variable, 'constant, 'mutable, #f, or primitive name
               
   (define variable-reference->instance
     (case-lambda
@@ -1017,13 +1021,16 @@
             (if (eq? i #!bwp)
                 (variable-reference->instance vr #t)
                 i))]
-         [(eq? v 'primitive)
-          ;; FIXME: We don't have the right primitive instance name
-          ;; ... but '#%kernel is usually right.
-          '|#%kernel|]
-         [else
+         [(or (eq? v 'constant) (eq? v 'mutable))
           ;; Local variable, so same as use-site
-          (variable-reference->instance vr #t)]))]))
+          (variable-reference->instance vr #t)]
+         [else
+          (or (#%ormap (lambda (table)
+                         (and (hash-ref (cdr table) v #f)
+                              (car table)))
+                       primitive-tables)
+              ;; Fallback, just in case
+              '|#%kernel|)]))]))
 
   (define (variable-reference-constant? vr)
     (let ([v (variable-reference-var-or-info vr)])

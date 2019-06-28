@@ -114,18 +114,18 @@
   (eval `(define primitive-table ',primitive-table))
 
   ;; For interpretation of the outer shell of a linklet:
-  (install-linklet-primitive-tables! kernel-table
-                                     unsafe-table
-                                     flfxnum-table
-                                     paramz-table
-                                     extfl-table
-                                     network-table
-                                     futures-table
-                                     place-table
-                                     foreign-table
-                                     linklet-table
-                                     internal-table
-                                     schemify-table)
+  (install-linklet-primitive-tables! (cons '|#%kernel| kernel-table)
+                                     (cons '|#%unsafe| unsafe-table)
+                                     (cons '|#%flfxnum| flfxnum-table)
+                                     (cons '|#%paramz| paramz-table)
+                                     (cons '|#%extfl| extfl-table)
+                                     (cons '|#%network| network-table)
+                                     (cons '|#%futures| futures-table)
+                                     (cons '|#%place| place-table)
+                                     (cons '|#%foreign| foreign-table)
+                                     (cons '|#%linklet| linklet-table)
+                                     (cons 'internal internal-table)
+                                     (cons 'schemify schemify-table))
 
   ;; ----------------------------------------
 

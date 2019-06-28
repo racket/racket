@@ -595,7 +595,7 @@
                   instance-variable-reference
                   ',(cond
                       [(hash-ref mutated u #f) 'mutable]
-                      [(hash-ref prim-knowns u #f) 'primitive]
+                      [(hash-ref prim-knowns u #f) u] ; assuming that `mutable` and `constant` are not primitives
                       [else 'constant])))]
            [`(equal? ,exp1 ,exp2)
             (let ([exp1 (schemify exp1)]
