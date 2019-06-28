@@ -1543,10 +1543,12 @@ TO DO:
 
 (define (ssl-addresses p [port-numbers? #f])
   (let-values ([(mzssl input?) (lookup 'ssl-addresses p)])
-    (tcp-addresses (if (eq? 'listener input?)
-                       (ssl-listener-l mzssl)
-                       (if input? (mzssl-i mzssl) (mzssl-o mzssl)))
-                   port-numbers?)))
+    (define port
+      (if (eq? 'listener input?)
+          (ssl-listener-l mzssl)
+          (if input? (mzssl-i mzssl) (mzssl-o mzssl))))
+    (cond [(tcp-port? port) (tcp-addresses port port-numbers?)]
+          [else (error 'ssl-addresses "not connected to TCP port")])))
 
 (define (ssl-abandon-port p)
   (let-values ([(mzssl input?) (lookup 'ssl-abandon-port p)])

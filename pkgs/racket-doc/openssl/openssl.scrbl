@@ -328,7 +328,8 @@ Analogous to @racket[tcp-abandon-port].}
 
 @defproc[(ssl-addresses [p (or/c ssl-port? ssl-listener?)]
                         [port-numbers? any/c #f])
-         void?]{
+         (or/c (values string? string?)
+               (values string? port-number? string? listen-port-number?))]{
 
 Analogous to @racket[tcp-addresses].}
 
@@ -398,7 +399,7 @@ current platform for server connections.
 @defproc[(ports->ssl-ports
            [input-port input-port?]
 	   [output-port output-port?]
-           [#:mode mode symbol? 'accept]
+           [#:mode mode (or/c 'connect 'accept) 'accept]
 	   [#:context context
                       (or/c ssl-client-context? ssl-server-context?)
                       ((if (eq? mode 'accept)
