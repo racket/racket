@@ -29,7 +29,9 @@ GLOBALS = --no-global \
           ++global-ok make-place-ports+fds \
           ++global-ok pthread-count \
           ++global-ok "logging-future-events?" \
-          ++global-ok log-future-event
+          ++global-ok log-future-event \
+          ++global-ok "logging-place-events?" \
+          ++global-ok log-place-event
 
 
 GENERATE_ARGS = -t main.rkt --submod main \

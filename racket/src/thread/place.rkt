@@ -18,7 +18,8 @@
          "evt.rkt"
          "sandman.rkt"
          (submod "future.rkt" for-place)
-         "place-message.rkt")
+         "place-message.rkt"
+         "place-logging.rkt")
 
 (provide dynamic-place
          place?
@@ -54,7 +55,10 @@
                                 #:place-channel place-pch))
   (set-custodian-place! orig-cust new-place)
   (define done-waiting (place-done-waiting new-place))
-  (define (default-exit v)
+  (define (default-exit v #:explicit? [explicit? #f])
+    (log-place (if explicit?
+                   "exit (via `exit`)"
+                   "exit"))
     (define flush-failed? #f)
     (plumber-flush-all/wrap orig-plumber
                             ;; detect whether there's an error on a flush
@@ -92,11 +96,12 @@
         orig-cust
         (lambda ()
           (set! current-place new-place)
+          (set-place-id! new-place (get-pthread-id))
           (set-place-host-roots! new-place (host:current-place-roots))
           (current-thread-group root-thread-group)
           (current-custodian orig-cust)
           (current-plumber orig-plumber)
-          (exit-handler default-exit)
+          (exit-handler (lambda (v) (default-exit v #:explicit? #t)))
           (current-pseudo-random-generator (make-pseudo-random-generator))
           (current-evt-pseudo-random-generator (make-pseudo-random-generator))
           (define finish
@@ -109,6 +114,7 @@
              (set-place-wakeup-handle! new-place (sandman-get-wakeup-handle))
              (host:condition-signal started) ; place is sufficiently started
              (host:mutex-release lock)
+             (log-place "enter")
              (finish)
              (default-exit 0))
            (default-continuation-prompt-tag)
@@ -134,6 +140,7 @@
   (host:condition-wait started lock)
   (host:mutex-release lock)
   (end-atomic)
+  (log-place "create" #:data (place-id new-place))
   (values new-place parent-in parent-out parent-err))
 
 (define/who (place-break p [kind #f])
@@ -202,6 +209,13 @@
     (for ([s (in-vector vec)])
       (when (thread? s) (thread-wait s)))
     (set-place-pumpers! p #f))
+  (when (place-host-thread p)
+    (when (atomically
+           (and (place-host-thread p)
+                (begin
+                  (set-place-host-thread! p #f)
+                  #t)))
+      (log-place "reap" #:data (place-id p))))
   result)
 
 ;; In atomic mode, callback from custodian:
@@ -372,6 +386,7 @@
                   (pchannel-reader-key pch)
                   (lambda (v)
                     (end-atomic)
+                    (log-place "get message" #:action 'get)
                     (un-message-ize v))
                   (lambda (sema)
                     (end-atomic)
@@ -388,6 +403,7 @@
          in-v
          (lambda ()
            (raise-argument-error who "place-message-allowed?" in-v)))))
+  (log-place "put message" #:action 'put)
   (define pch (unwrap-place-channel in-pch))
   (define out-mq (ephemeron-value (pchannel-out-mq-e pch)))
   (when out-mq

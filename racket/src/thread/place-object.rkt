@@ -19,6 +19,7 @@
                custodian                 ; root custodian
                [custodian-ref #:mutable] ; owning custodian
                [host-thread #:mutable]   ; host thread, needed for memory accounting
+               [id #:mutable]            ; matches id of the host thread
                [host-roots #:mutable]    ; continuation-independent state, needed for memory accounting
                [current-thread #:mutable] ; running Racket thread, needed for accounting
                [post-shutdown #:mutable] ; list of callbacks
@@ -43,6 +44,7 @@
          cust
          #f
          #f                   ; host thread
+         0                    ; id
          #f                   ; host roots
          #f                   ; running thread
          '()                  ; post-shutdown

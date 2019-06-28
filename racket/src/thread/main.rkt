@@ -27,6 +27,7 @@
          "stack-size.rkt"
          "place.rkt"
          "place-message.rkt"
+         "place-logging.rkt"
          "future.rkt"
          "future-logging.rkt"
          "fsemaphore.rkt"
@@ -180,6 +181,7 @@
 
          set-make-place-ports+fds!
          place-pumper-threads
+         install-place-logging-procs!
          unsafe-add-post-custodian-shutdown
 
          futures-enabled?
@@ -194,7 +196,7 @@
          mark-future-trace-end!
          set-processor-count!
          install-future-logging-procs!
-         
+
          fsemaphore?
          make-fsemaphore
          fsemaphore-post

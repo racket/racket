@@ -25,7 +25,9 @@
          add-syslog-log-receiver!
          logger-init!
          logging-future-events?
-         log-future-event)
+         log-future-event
+         logging-place-events?
+         log-place-event)
 
 (define (make-root-logger)
   (create-logger #:topic #f #:parent #f #:propagate-filters 'none))
@@ -67,6 +69,10 @@
 (define (logging-future-events?)
   (atomically/no-interrupts/no-wind
    (log-level?* root-logger 'debug 'future)))
+
+(define (logging-place-events?)
+  (atomically/no-interrupts/no-wind
+   (log-level?* root-logger 'debug 'place)))
 
 ;; In atomic mode with interrupts disabled
 (define/who (log-level?* logger level topic)
@@ -138,6 +144,10 @@
 (define (log-future-event message data)
   (atomically/no-interrupts/no-wind
    (log-message* root-logger 'debug 'future message data #t #f)))
+
+(define (log-place-event message data)
+  (atomically/no-interrupts/no-wind
+   (log-message* root-logger 'debug 'place message data #t #f)))
 
 ;; In atomic mode with interrupts disabled
 ;; Can be called in any host Scheme thread and in interrupt handler,
