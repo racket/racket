@@ -1,15 +1,26 @@
 (load-relative "loadtest.rktl")
 (Section 'fixnum)
-(require scheme/fixnum
-         scheme/unsafe/ops
+(require racket/fixnum
+         racket/unsafe/ops
          "for-util.rkt")
 
-(define 64-bit? (fixnum? (expt 2 33)))
+(define 64-bit? (= (system-type 'word) 64))
 
-(define (fixnum-width) (if 64-bit? 63 31))
-(define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
-(define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
+(define (fixnum-width) (if (eq? 'racket (system-type))
+                           (if 64-bit? 63 31)
+                           (if 64-bit? 61 30)))
+(define (least-fixnum) (- (expt 2 (fixnum-width))))
+(define (greatest-fixnum) (sub1 (expt 2 (fixnum-width))))
 
+(test #t fixnum-for-every-system? 0)
+(test #t fixnum-for-every-system? -100)
+(test #t fixnum-for-every-system? 100)
+(test #t fixnum-for-every-system? (- (expt 2 29)))
+(test #t fixnum-for-every-system? (sub1 (expt 2 29)))
+(test #t fixnum? (- (expt 2 29)))
+(test #t fixnum? (sub1 (expt 2 29)))
+(test #f fixnum-for-every-system? (sub1 (- (expt 2 29))))
+(test #f fixnum-for-every-system? (expt 2 29))
 
 (define unary-table 
   (list (list fxnot unsafe-fxnot)
