@@ -2916,7 +2916,7 @@ static Scheme_Object *complex_atan(Scheme_Object *c)
 #define OVER_ONE_MAG_USES_COMPLEX(d) (d > 1.0) || (d < -1.0)
 
 #ifdef TRIG_ZERO_NEEDS_SIGN_CHECK
-#define MK_SCH_TRIG(SCH_TRIG, c_trig) static double SCH_TRIG(double d) { if (d == 0.0) return d; else return c_trig(d); }
+#define MK_SCH_TRIG(SCH_TRIG, c_trig) XFORM_NONGCING static double SCH_TRIG(double d) { if (d == 0.0) return d; else return c_trig(d); }
 MK_SCH_TRIG(SCH_TAN, tan)
 MK_SCH_TRIG(SCH_SIN, sin)
 MK_SCH_TRIG(SCH_ASIN, asin)
@@ -2924,7 +2924,7 @@ MK_SCH_TRIG(SCH_ASIN, asin)
 #else
 # ifdef SIN_COS_NEED_DEOPTIMIZE
 #  pragma optimize("g", off)
-#  define MK_SCH_TRIG(SCH_TRIG, c_trig) static double SCH_TRIG(double d) { return c_trig(d); }
+#  define MK_SCH_TRIG(SCH_TRIG, c_trig) XFORM_NONGCING static double SCH_TRIG(double d) { return c_trig(d); }
 MK_SCH_TRIG(SCH_SIN, sin)
 MK_SCH_TRIG(SCH_COS, cos)
 MK_SCH_TRIG(SCH_TAN, tan)
@@ -2937,7 +2937,7 @@ MK_SCH_TRIG(SCH_TAN, tan)
 # define SCH_ASIN asin
 #endif
 
-static double SCH_ATAN(double v)
+XFORM_NONGCING static double SCH_ATAN(double v)
 {
 #ifdef TRIG_ZERO_NEEDS_SIGN_CHECK
   if (v == 0.0) {
@@ -2948,7 +2948,7 @@ static double SCH_ATAN(double v)
   return v;
 }
 
-static double SCH_ATAN2(double v, double v2)
+XFORM_NONGCING static double SCH_ATAN2(double v, double v2)
 {
 #ifdef ATAN2_DOESNT_WORK_WITH_INFINITIES
   if (MZ_IS_INFINITY(v) && MZ_IS_INFINITY(v2)) {
@@ -2965,7 +2965,6 @@ static double SCH_ATAN2(double v, double v2)
   return atan2(v, v2);
 }
 
-
 #ifdef LOG_ZERO_ISNT_NEG_INF
 static double SCH_LOG(double d) { if (d == 0.0) return scheme_minus_infinity_val; else return log(d); }
 #else
@@ -2981,6 +2980,7 @@ double scheme_double_acos(double x) { return acos(x); }
 double scheme_double_atan(double x) { return SCH_ATAN(x); }
 double scheme_double_log(double x) { return SCH_LOG(x); }
 double scheme_double_exp(double x) { return exp(x); }
+double scheme_double_atan2(double v, double v2) { return SCH_ATAN2(v, v2); }
 
 #ifdef MZ_LONG_DOUBLE
 long_double scheme_long_double_sin(long_double x) { return long_double_sin(x); }
@@ -3351,7 +3351,7 @@ static Scheme_Object *fixnum_expt(intptr_t x, intptr_t y)
 }
 
 #ifdef ASM_DBLPREC_CONTROL_87
-static double protected_pow(double x, double y)
+XFORM_NONGCING static double protected_pow(double x, double y)
 {
   /* libm's pow() implementation seems to sometimes rely on
      extended precision in pow(), so reset the control
@@ -3390,7 +3390,7 @@ static long_double protected_powl(long_double x, long_double y)
 #  define sch_powl protected_powl
 # endif
 #else
-static double sch_pow(double x, double y)
+XFORM_NONGCING static double sch_pow(double x, double y)
 {
   /* Explciitly handle all cases described by C99 */
   if (x == 1.0)

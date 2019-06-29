@@ -2523,19 +2523,20 @@ intptr_t scheme_rand(Scheme_Random_State *rs);
 
 /***** flonums *****/
 
-double scheme_double_truncate(double x);
-double scheme_double_round(double x);
-double scheme_double_floor(double x);
-double scheme_double_ceiling(double x);
-double scheme_double_sin(double x);
-double scheme_double_cos(double x);
-double scheme_double_tan(double x);
-double scheme_double_asin(double x);
-double scheme_double_acos(double x);
-double scheme_double_atan(double x);
-double scheme_double_log(double x);
-double scheme_double_exp(double x);
-double scheme_double_expt(double x, double y);
+XFORM_NONGCING double scheme_double_truncate(double x);
+XFORM_NONGCING double scheme_double_round(double x);
+XFORM_NONGCING double scheme_double_floor(double x);
+XFORM_NONGCING double scheme_double_ceiling(double x);
+XFORM_NONGCING double scheme_double_sin(double x);
+XFORM_NONGCING double scheme_double_cos(double x);
+XFORM_NONGCING double scheme_double_tan(double x);
+XFORM_NONGCING double scheme_double_asin(double x);
+XFORM_NONGCING double scheme_double_acos(double x);
+XFORM_NONGCING double scheme_double_atan(double x);
+XFORM_NONGCING double scheme_double_atan2(double v, double v2);
+XFORM_NONGCING double scheme_double_log(double x);
+XFORM_NONGCING double scheme_double_exp(double x);
+XFORM_NONGCING double scheme_double_expt(double x, double y);
 
 /***** extflonums *****/
 #ifdef MZ_LONG_DOUBLE

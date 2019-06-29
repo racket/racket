@@ -445,15 +445,15 @@ Scheme_Object *scheme_complex_atan(const Scheme_Object *c)
     i = (IS_NEG(y) ? HALF_PI : (-HALF_PI));
   } else if (x == 1.0) {
     double k = ay + RHO;
-    r = log(sqrt(sqrt((y * y) + 4.0)) / sqrt(k));
-    i = (HALF_PI + atan(k/2.0)) / (IS_NEG(y) ? 2.0 : -2.0);
+    r = scheme_double_log(sqrt(sqrt((y * y) + 4.0)) / sqrt(k));
+    i = (HALF_PI + scheme_double_atan(k/2.0)) / (IS_NEG(y) ? 2.0 : -2.0);
   } else {
     double mx = 1.0 - x;
     double k = ay + RHO;
     k = k * k;
 
-    r = log(((4.0 * x) / ((mx * mx) + k)) + 1.0) / 4.0;
-    i = atan2(2.0 * y, (mx * (1.0 + x)) - k) / -2.0;
+    r = scheme_double_log(((4.0 * x) / ((mx * mx) + k)) + 1.0) / 4.0;
+    i = scheme_double_atan2(2.0 * y, (mx * (1.0 + x)) - k) / -2.0;
   }
 
   if (negate) {
@@ -506,15 +506,15 @@ Scheme_Object *scheme_complex_asin_or_acos(const Scheme_Object *z, int get_asin)
   if (get_asin) {
     if (SCHEME_COMPLEXP(z)) {
       r = scheme_real_to_double(_scheme_complex_real_part(z));
-      r = atan2(r, (a*c)-(b*d));
+      r = scheme_double_atan2(r, (a*c)-(b*d));
     } else {
       r = scheme_real_to_double((Scheme_Object *)z);
-      r = atan2(r, 0.0); /* void +nan.0 from (a*c)-(b*d) */
+      r = scheme_double_atan2(r, 0.0); /* void +nan.0 from (a*c)-(b*d) */
     }
 
     i = asinh((a*d)-(b*c));
   } else {
-    r = 2.0 * atan2(a, c);
+    r = 2.0 * scheme_double_atan2(a, c);
     i = asinh((b*c) - (a*d));
   }
 
