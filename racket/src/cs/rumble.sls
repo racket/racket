@@ -89,6 +89,7 @@
           make-inspector
           make-sibling-inspector
           current-code-inspector
+          root-inspector ; not exported to Racket
 
           struct:exn exn exn? exn-message exn-continuation-marks
           struct:exn:break exn:break exn:break? exn:break-continuation

@@ -33,9 +33,19 @@
 (define (adjust-linklet-laziness linklet)
   (set-linklet-code linklet
                     (linklet-code linklet)
-                    (if (|#%app| read-on-demand-source)
-                        'faslable
-                        'faslable-strict)))
+                    (cond
+                     [(not (eq? root-inspector (|#%app| current-code-inspector)))
+                      ;; Originally, the idea was that bytecode can be loaded in
+                      ;; a non-original code inspector as long as it doesn't refer
+                      ;; to unsafe operation. But increasing use of compilation to
+                      ;; unsafe operations, not to mention compilation to machine
+                      ;; code, means that all "bytecode" is unsafe:
+                      'faslable-unsafe]
+                     [(|#%app| read-on-demand-source)
+                      ;; Remember that the linklet can be lazier:
+                      'faslable]
+                     [else
+                      'faslable-strict])))
 
 (define (decode-linklet-paths linklet)
   (let ([paths (linklet-paths linklet)])

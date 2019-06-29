@@ -436,7 +436,7 @@
     (fields (mutable code) ; the procedure or interpretable form
             paths          ; list of paths; if non-empty, `code` expects them as arguments
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
-            (mutable preparation) ; 'faslable, 'faslable-strict, 'callable, 'lazy, or (cons 'cross <machine>)
+            (mutable preparation) ; 'faslable, 'faslable-strict, 'faslable-unsafe, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
             (mutable exports-info) ; hash(sym -> known) for info about export; see "known.rkt"; unfasl on demand
             name           ; name of the linklet (for debugging purposes)
@@ -654,7 +654,7 @@
       (if import-keys
           (values lnk import-keys)
           lnk)]))
-    
+
   ;; Intended to speed up reuse of a linklet in exchange for not being
   ;; able to serialize anymore
   (define (eval-linklet linklet)
@@ -665,9 +665,14 @@
        (set-linklet-code linklet
                          (eval-from-bytevector (linklet-code linklet) (linklet-paths linklet) (linklet-format linklet))
                          'callable)]
+      [(faslable-unsafe)
+       (raise (|#%app|
+               exn:fail
+               "eval-linklet: cannot use linklet loaded with non-original code inspector"
+               (current-continuation-marks)))]
       [else
        linklet]))
-     
+
   (define instantiate-linklet
     (case-lambda
      [(linklet import-instances)

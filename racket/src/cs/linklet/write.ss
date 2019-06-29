@@ -40,8 +40,9 @@
                              (let ([prep (linklet-preparation v)])
                                (and (pair? prep) (cdr prep)))))))))]))))
 
-;; Before fasl conversion, change 'cross to 'faslable
+;; Before fasl conversion, change 'cross or 'faslable-unsafe to 'faslable
 (define (adjust-cross-perparation l)
-  (if (pair? (linklet-preparation l))
-      (set-linklet-preparation l 'faslable)
-      l))
+  (let ([p (linklet-preparation l)])
+    (if (or (pair? p) (eq? p 'faslable-unsafe))
+        (set-linklet-preparation l 'faslable)
+        l)))
