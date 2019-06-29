@@ -332,12 +332,15 @@
    (let* ([tmp       (make-temporary-file "sandboxtest~a" 'directory)]
           [strpath   (lambda xs (path->string (apply build-path xs)))]
           [racketlib (strpath (path-only (collection-file-path "main.rkt" "racket")))]
+          [compiled (if (null? (use-compiled-file-paths))
+                        "compiled"
+                        (car (use-compiled-file-paths)))]
           [list-lib  (strpath racketlib "list.rkt")]
-          [list-zo   (strpath racketlib "compiled" "list_rkt.zo")]
+          [list-zo   (strpath racketlib compiled "list_rkt.zo")]
           [test-lib  (strpath tmp "sandbox-test.rkt")]
-          [test-zo   (strpath tmp "compiled" "sandbox-test_rkt.zo")]
+          [test-zo   (strpath tmp compiled "sandbox-test_rkt.zo")]
           [test2-lib (strpath tmp "sandbox-test2.rkt")]
-          [test2-zo  (strpath tmp "compiled" "sandbox-test2_rkt.zo")]
+          [test2-zo  (strpath tmp compiled "sandbox-test2_rkt.zo")]
           [test3-file "sandbox-test3.rkt"]
           [test3-lib  (strpath tmp test3-file)]
           [make-module-evaluator/rel (lambda (mod
@@ -442,7 +445,7 @@
         ;; (directory-list tmp) =err> "file access denied"
         --top--
         ;; explicitly allow access to tmp, and write access to a single file
-        (make-directory (build-path tmp "compiled"))
+        (make-directory* (build-path tmp compiled))
         (parameterize ([sandbox-path-permissions
                         `((read ,tmp) (write ,test-zo)
                           ,@(sandbox-path-permissions))])
