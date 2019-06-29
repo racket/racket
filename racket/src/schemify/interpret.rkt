@@ -320,13 +320,22 @@
                ids
                constances
                (compile-list vars env stack-depth stk-i #f))]
-      [`(variable-set! ,dest-id ,e ',constance)
+      [`(variable-set! ,dest-id ,e)
        (define dest-var (hash-ref env (unwrap dest-id)))
        (define new-expr (compile-expr e env stack-depth stk-i #f))
        (vector 'set-variable!
                (stack->pos dest-var stk-i)
                new-expr
-               constance)]
+               #f
+               #f)]
+      [`(variable-set!/define ,dest-id ,e ',constance)
+       (define dest-var (hash-ref env (unwrap dest-id)))
+       (define new-expr (compile-expr e env stack-depth stk-i #f))
+       (vector 'set-variable!
+               (stack->pos dest-var stk-i)
+               new-expr
+               constance
+               #t)]
       [`(variable-ref ,id)
        (define var (hash-ref env (unwrap id)))
        (vector 'ref-variable/checked (stack->pos var stk-i))]
@@ -425,7 +434,7 @@
                            paths        ; unmarshaled paths
                            primitives   ; hash of symbol -> value
                            ;; the implementation of variables:
-                           variable-ref variable-ref/no-check variable-set!
+                           variable-ref variable-ref/no-check variable-set! variable-set!/define
                            ;; to create a procedure with a specific arity mask:
                            make-arity-wrapper-procedure)
   (interp-match
@@ -441,7 +450,7 @@
                               (vector-set! vec i (car paths))
                               (cdr paths)]
                              [else
-                              (vector-set! vec i (interpret-expr b stack primitives void void void void))
+                              (vector-set! vec i (interpret-expr b stack primitives void void void void void))
                               paths]))
                          vec))])
       (lambda args
@@ -454,10 +463,10 @@
         (define post-args-pos (stack-count args-stack))
         (define stack (for/fold ([stack args-stack]) ([i (in-range num-body-vars)])
                         (stack-set stack (+ i post-args-pos) (box unsafe-undefined))))
-        (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set!
+        (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set! variable-set!/define
                         make-arity-wrapper-procedure)))]))
 
-(define (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set!
+(define (interpret-expr b stack primitives variable-ref variable-ref/no-check variable-set! variable-set!/define
                         make-arity-wrapper-procedure)
 
   ;; Returns `result ...` when `tail?` is #t, and
@@ -711,10 +720,12 @@
          (if tail?
              val
              (values new-stack val))]
-        [#(set-variable! ,s ,b ,c)
+        [#(set-variable! ,s ,b ,c ,defn?)
          (define-values (var-stack var) (stack-ref stack s))
          (define-values (val-stack val) (interpret b var-stack))
-         (variable-set! var val c)
+         (if defn?
+             (variable-set!/define var val c)
+             (variable-set! var val))
          (if tail?
              (void)
              (values val-stack (void)))]
@@ -826,7 +837,7 @@
                                                         (list x y (let ([z 2])
                                                                     z)))))
                                          (define-values (one two) (values 100 200))
-                                         (variable-set! two-box two 'constant)
+                                         (variable-set!/define two-box two 'constant)
                                          (letrec ([ok 'ok])
                                            (set! other (call-with-values (lambda () (values 71 (begin0 88 ok)))
                                                          (lambda (v q) (list q v))))
@@ -838,7 +849,7 @@
                                                   (continuation-mark-set-first #f 'x 'no))))))
                                     values))
   (pretty-print b)
-  (define l (interpret-linklet b primitives var-val var-val (lambda (b v c)
-                                                              (set-var-val! b v))
+  (define l (interpret-linklet b null primitives var-val var-val
+                               (lambda (b v) (set-var-val! b v)) (lambda (b v c) (set-var-val! b v))
                                (lambda (proc mask name) proc)))
   (l 'the-x (var #f)))

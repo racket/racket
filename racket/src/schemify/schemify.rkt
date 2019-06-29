@@ -347,7 +347,7 @@
 (define (make-set-variable id exports knowns mutated [extra-variables #f])
   (define int-id (unwrap id))
   (define ex-id (id-to-variable int-id exports knowns mutated extra-variables))
-  `(variable-set! ,ex-id ,id ',(variable-constance int-id knowns mutated)))
+  `(variable-set!/define ,ex-id ,id ',(variable-constance int-id knowns mutated)))
 
 (define (id-to-variable int-id exports knowns mutated extra-variables)
   (export-id
@@ -550,7 +550,7 @@
             (define new-rhs (schemify rhs))
             (cond
               [ex
-               `(,(if allow-set!-undefined? 'variable-set! 'variable-set!/check-undefined) ,(export-id ex) ,new-rhs '#f)]
+               `(,(if allow-set!-undefined? 'variable-set! 'variable-set!/check-undefined) ,(export-id ex) ,new-rhs)]
               [else
                (define state (hash-ref mutated int-id #f))
                (cond

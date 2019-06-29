@@ -53,6 +53,7 @@
           ;; schemify glue:
           make-internal-variable
           variable-set!
+          variable-set!/define
           variable-set!/check-undefined
           variable-ref
           variable-ref/no-check
@@ -234,7 +235,8 @@
   
   (define (outer-eval s paths format)
     (if (eq? format 'interpret)
-        (interpret-linklet s paths primitives variable-ref variable-ref/no-check variable-set!
+        (interpret-linklet s paths primitives variable-ref variable-ref/no-check
+                           variable-set! variable-set!/define
                            make-arity-wrapper-procedure)
         (let ([proc (compile* s)])
           (if (null? paths)
@@ -759,7 +761,7 @@
          (|#%app|
           exn:fail:contract:variable
           (string-append (symbol->string (variable-source-name var))
-                         ": cannot modify constant")
+                         ": cannot modify a constant")
           (current-continuation-marks)
           (variable-name var)))])]
      [else
@@ -767,13 +769,16 @@
       (when constance
         (set-variable-constance! var constance))]))
 
-  (define (variable-set! var val constance)
-    (do-variable-set! var val constance #f))
+  (define (variable-set! var val)
+    (do-variable-set! var val #f #f))
 
-  (define (variable-set!/check-undefined var val constance)
+  (define (variable-set!/define var val constance)
+    (do-variable-set! var val constance #t))
+
+  (define (variable-set!/check-undefined var val)
     (when (eq? (variable-val var) variable-undefined)
       (raise-undefined var #t))
-    (variable-set! var val constance))
+    (variable-set! var val))
 
   (define (variable-ref var)
     (let ([v (variable-val var)])
@@ -976,7 +981,7 @@
                      (let ([var (make-variable variable-undefined k k #f (weak-cons i #f))])
                        (hash-set! (instance-hash i) k var)
                        var))])
-        (variable-set! var v mode))]))
+        (do-variable-set! var v mode #f))]))
 
   (define (instance-unset-variable! i k)
     (unless (instance? i)
@@ -1138,6 +1143,7 @@
     (primitive-table
      variable-set!
      variable-set!/check-undefined
+     variable-set!/define
      variable-ref
      variable-ref/no-check
      make-instance-variable-reference

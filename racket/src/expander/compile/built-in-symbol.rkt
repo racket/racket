@@ -62,6 +62,7 @@
                variable-ref
                variable-ref/no-check
                variable-set!/check-undefined
+               variable-set!/define
                make-instance-variable-reference
                instance-variable-reference
                annotation?
