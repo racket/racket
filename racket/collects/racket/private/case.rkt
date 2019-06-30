@@ -157,7 +157,7 @@
                                          #,exp))]
                           [exp (if (null? (consts-fixnum ks))
                                    exp
-                                   #`(if (fixnum? #;fixnum-for-every-system? v)
+                                   #`(if (fixnum-for-every-system? v)
                                          #,(dispatch-fixnum #'v (consts-fixnum ks))
                                          #,exp))])
                      exp)])
@@ -194,7 +194,7 @@
                             [else
                              (let ([y (syntax->datum (car ys))])
                                (cond [(duplicate? y) (inner f s c o (cdr ys))]
-                                     [(fixnum? #;fixnum-for-every-system? y) (inner (add f y idx) s c o (cdr ys))]
+                                     [(fixnum-for-every-system? y) (inner (add f y idx) s c o (cdr ys))]
                                      [(symbol? y)    (inner f (add s y idx) c o (cdr ys))]
                                      [(keyword? y)   (inner f (add s y idx) c o (cdr ys))]
                                      [(char? y)      (inner f s (add c y idx) o (cdr ys))]
