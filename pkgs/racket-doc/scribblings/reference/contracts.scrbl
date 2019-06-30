@@ -1091,6 +1091,33 @@ This function is a holdover from before @tech{flat contracts} could be used
 directly as predicates. It exists today for backwards compatibility.
 }
 
+@defproc[(property/c [accessor (-> any/c any/c)]
+                     [ctc flat-contract?]
+                     [#:name name any/c (object-name accessor)])
+         flat-contract?]{
+
+Constructs a @tech{flat contract} that checks that the first-order property
+accessed by @racket[accessor] satisfies @racket[ctc]. The resulting contract
+is equivalent to
+
+@racketblock[(lambda (v) (ctc (accessor v)))]
+
+except that more information is included in error messages produced by
+violations of the contract. The @racket[name] argument is used to describe the
+property being checked in error messages.
+
+@examples[#:eval (contract-eval) #:once
+  (define/contract (sum-triple lst)
+    (-> (and/c (listof number?)
+               (property/c length (=/c 3)))
+        number?)
+    (+ (first lst) (second lst) (third lst)))
+  (eval:check (sum-triple '(1 2 3)) 6)
+  (eval:error (sum-triple '(1 2)))]
+
+@history[#:added "7.3.0.11"]
+}
+
 @defproc[(suggest/c [c contract?]
                     [field string?]
                     [message string?]) contract?]{

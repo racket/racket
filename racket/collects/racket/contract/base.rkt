@@ -21,7 +21,8 @@
          "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
-         "private/and.rkt")
+         "private/and.rkt"
+         "private/property.rkt")
 
 (provide
  base->?
@@ -142,6 +143,7 @@
  get/build-late-neg-projection
  get/build-val-first-projection
 
+ property/c
  suggest/c
  struct-guard/c
 
