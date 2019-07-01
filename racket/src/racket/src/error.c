@@ -114,7 +114,7 @@ static Scheme_Object *make_log_reader(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_reader_p(int argc, Scheme_Object *argv[]);
 static int log_reader_get(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
 
-static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug, int barrier);
+static NORETURN void do_raise(Scheme_Object *arg, int need_debug, int barrier);
 static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
 static void update_want_level(Scheme_Logger *logger, Scheme_Object *name);
@@ -4581,7 +4581,7 @@ static void *do_raise_inside_barrier(void)
   return scheme_void;
 }
 
-static Scheme_Object *
+static void
 do_raise(Scheme_Object *arg, int need_debug, int eb)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4607,7 +4607,7 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
     }
     scheme_longjmp (scheme_error_buf, 1);
   }
-  
+
   if (need_debug) {
     Scheme_Object *marks;
     marks = scheme_current_continuation_marks(NULL);
@@ -4617,18 +4617,18 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
   p->ku.k.p1 = arg;
 
   if (eb)
-    return (Scheme_Object *)scheme_top_level_do(do_raise_inside_barrier, 1);
+    scheme_top_level_do(do_raise_inside_barrier, 1);
   else
-    return (Scheme_Object *)do_raise_inside_barrier();
+    do_raise_inside_barrier();
 }
 
-static Scheme_Object *
+static void
 sch_raise(int argc, Scheme_Object *argv[])
 {
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
-    return do_raise(argv[0], 0, 0);
+    do_raise(argv[0], 0, 0);
   else
-    return do_raise(argv[0], 0, 1);
+    do_raise(argv[0], 0, 1);
 }
 
 void scheme_raise(Scheme_Object *exn)
@@ -4775,7 +4775,7 @@ void scheme_init_exn(Scheme_Startup_Env *env)
 			     env);
 
   scheme_addto_prim_instance("raise",
-			     scheme_make_noncm_prim(sch_raise,
+			     scheme_make_noncm_prim((Scheme_Prim *)sch_raise,
                                                     "raise",
                                                     1, 2),
 			     env);
