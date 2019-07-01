@@ -6,6 +6,9 @@ matrix:
     compiler: clang
     env: PATH=./racket/bin:$PATH
   - os: linux
+    compiler: clang
+    env: PATH=./racket/bin:$PATH TARGET="cs"
+  - os: linux
     compiler: gcc
     env: PATH=./racket/bin:$PATH
   - os: linux
@@ -22,13 +25,6 @@ matrix:
     compiler: gcc
     env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places
       --disable-futures --disable-extflonum"
-  - os: linux
-    compiler: clang
-    env: PATH=./racket/bin:$PATH TARGET="cs"
-  allow_failures:
-  - os: linux
-    compiler: clang
-    env: PATH=./racket/bin:$PATH TARGET="cs"
 before_script:
 - git config --global user.email "travis-test@racket-lang.org"
 - git config --global user.name "Travis Tester"
