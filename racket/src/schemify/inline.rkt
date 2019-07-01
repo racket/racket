@@ -37,7 +37,14 @@
      (cond
        [(zero? size) 0]
        [(wrap-pair? v)
-        (loop (wrap-cdr v) (loop (wrap-car v) size))]
+        (cond
+          [(eq? (unwrap (wrap-car v)) 'quote)
+           ;; don't copy quoted values other than symbols
+           (if (symbol? (unwrap (wrap-car (wrap-cdr v))))
+               (sub1 size)
+               0)]
+          [else
+           (loop (wrap-cdr v) (loop (wrap-car v) size))])]
        [else (sub1 size)]))))
 
 ;; ----------------------------------------

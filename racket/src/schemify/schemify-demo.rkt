@@ -14,25 +14,33 @@
       (namespace-require 'racket/unsafe/ops)
       (namespace-require 'racket/flonum)
       (namespace-require 'racket/fixnum))
-    (define primitives
+    (define base-primitives
       (for/hasheq ([s (in-list (namespace-mapped-symbols ns))]
                    #:when (with-handlers ([exn:fail? (lambda (x) #f)])
                             (procedure? (eval s ns))))
         (values s (eval s ns))))
+    (define primitives (let* ([ht base-primitives]
+                              [ht (hash-set ht 'eof eof)]
+                              [ht (hash-set ht 'null null)])
+                         ht))
     (values
      (for/hasheq ([(s v) (in-hash primitives)])
-       (define a (procedure-arity-mask v))
-       (values s (case s
-                   [(+ - * /)
-                    (known-procedure/folding a)]
-                   [(fx+ fxlshift)
-                    (known-procedure/folding/limited a 'fixnum)]
-                   [(expt arithmetic-shift)
-                    (known-procedure/folding/limited a 'expt)]
-                   [(unsafe-fx+)
-                    (known-procedure/pure/folding-unsafe a 'fx+)]
-                   [else
-                    (known-procedure a)])))
+       (cond
+         [(procedure? v)
+          (define a (procedure-arity-mask v))
+          (values s (case s
+                      [(+ - * / integer->char char->integer void)
+                       (known-procedure/folding a)]
+                      [(fx+ fxlshift)
+                       (known-procedure/folding/limited a 'fixnum)]
+                      [(expt arithmetic-shift)
+                       (known-procedure/folding/limited a 'expt)]
+                      [(unsafe-fx+)
+                       (known-procedure/pure/folding-unsafe a 'fx+)]
+                      [else
+                       (known-procedure a)]))]
+         [else
+          (values s (known-literal v))]))
      primitives)))
 
 (define (wrap p)
@@ -60,7 +68,7 @@
 (define-values (schemified importss exports import-keys imports-abis exports-info)
   (schemify-linklet `(linklet 
                       ()
-                      (x y [z ext-z] w)
+                      (x y [z ext-z] w c1 c2)
                        .
                       ,(map
                         wrap
@@ -77,8 +85,13 @@
                                   b
                                   (arithmetic-shift 3 1000)
                                   (fx+ 4 5) (fx+ 4 (expt 2 40)) (fx* (fxlshift 1 20) (fxlshift 1 20))
-                                  (unsafe-fx+ 4 5) (unsafe-fx+ 4 (expt 2 40))))
-                          (define-values (done) (z)))))
+                                  (unsafe-fx+ 4 5) (unsafe-fx+ 4 (expt 2 40))
+                                  (integer->char 48)
+                                  (char->integer '#\1)
+                                  (void (void) eof-object null)))
+                          (define-values (done) (z))
+                          (define-values (call) (lambda () (values 'c1 'c2)))
+                          (define-values (c1 c2) (call)))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
                     #t ; serializable

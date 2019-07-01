@@ -20,7 +20,7 @@
                      (optimize orig-rhs prim-knowns primitives knowns imports mutated)
                      orig-rhs))
      (values
-      (let ([k (infer-known rhs v #t id knowns prim-knowns imports mutated simples unsafe-mode?
+      (let ([k (infer-known rhs v id knowns prim-knowns imports mutated simples unsafe-mode?
                             #:primitives primitives
                             #:optimize-inline? optimize?)])
         (if k

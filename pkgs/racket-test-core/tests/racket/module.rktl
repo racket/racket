@@ -2944,6 +2944,32 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (err/rt-test/once (dynamic-require ''uses-a-in-define-values-before-a-is-defined #f))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that inlining doesn't duplicated a quoted list
+
+(let ([e (compile
+          '(module check-with-inlining-duplicates-by-using-submodules racket/base
+             (provide check)
+
+             (module m racket/base
+               (provide f)
+               (define (f x) '(1 2)))
+
+             (module n racket/base
+               (require (submod ".." m))
+               (provide v)
+               (define v (f 0)))
+
+             (require 'm 'n)
+
+             (define check (eq? (f 0) v))))])
+  (define-values (i o) (make-pipe))
+  (write e o)
+  (close-output-port o)
+  (eval (parameterize ([read-accept-compiled #t])
+          (read i)))
+  (test #t dynamic-require ''check-with-inlining-duplicates-by-using-submodules 'check))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
