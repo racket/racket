@@ -16,8 +16,8 @@
                       (compose f g)))])
   (define ((add-star str) sym)
     (string->symbol (regexp-replace str (symbol->string sym) (string-append str "*"))))
-  (define (test-tri result proc x y z 
-                    #:pre [pre void] 
+  (define (test-tri result proc x y z
+                    #:pre [pre void]
                     #:post [post identity]
                     #:literal-ok? [lit-ok? #t]
                     #:branch? [branch? #f])
@@ -59,8 +59,8 @@
         (test (if result 'yes 'no) (compose post (eval `(lambda (y) (if (,proc ,x y ,z) 'yes 'no)))) y))
       (pre)
       (test (if result 'yes 'no) (compose post (eval `(lambda (x) (if (,proc x ,y ,z) 'yes 'no)))) x)))
-  (define (test-bin result proc x y 
-                    #:pre [pre void] 
+  (define (test-bin result proc x y
+                    #:pre [pre void]
                     #:post [post identity]
                     #:literal-ok? [lit-ok? #t]
                     #:branch? [branch? #f])
@@ -84,7 +84,7 @@
       (pre)
       (test (if result 'yep 'nope) (compose post (eval `(lambda (x) (if (,proc x ,y) 'yep 'nope)))) x)))
   (define (test-un result proc x
-                   #:pre [pre void] 
+                   #:pre [pre void]
                    #:post [post identity]
                    #:branch? [branch? #f])
     (pre)
@@ -131,7 +131,7 @@
   (err/rt-test (unsafe-fx* 0 (error "bad")) exn:fail?) ; not 0
   (err/rt-test (unsafe-fx* (error "bad") 0) exn:fail?) ; not 0
   (test-tri 60 'unsafe-fx* 3 4 5)
-  
+
   (test-bin 3 'unsafe-fxquotient 17 5)
   (test-bin -3 'unsafe-fxquotient 17 -5)
   (test-bin 0 'unsafe-fxquotient 0 -5)
@@ -254,7 +254,7 @@
   (test-bin +nan.0 'unsafe-fl* +inf.0 0.0)
   (test-bin 1.8 'unsafe-fl* 1.0 1.8)
   (test-bin 1.81 'unsafe-fl* 1.81 1.0)
-  
+
   (test-un 0.125 'unsafe-fl/ 8.0)
   (test-bin (exact->inexact 17/5) 'unsafe-fl/ 17.0 5.0)
   (test-bin +inf.0 'unsafe-fl/ 17.0 0.0)
@@ -280,7 +280,7 @@
     (test-bin +nan.t 'unsafe-extfl* +inf.t 0.0t0)
     (test-bin 1.8t0 'unsafe-extfl* 1.0t0 1.8t0)
     (test-bin 1.81t0 'unsafe-extfl* 1.81t0 1.0t0)
-    
+
     (test-bin (real->extfl 17/5) 'unsafe-extfl/ 17.0t0 5.0t0)
     (test-bin +inf.t 'unsafe-extfl/ 17.0t0 0.0t0)
     (test-bin -inf.t 'unsafe-extfl/ -17.0t0 0.0t0)
@@ -479,24 +479,24 @@
     (test-bin 9.5t0 '(lambda (x y) (unsafe-extfl+ (unsafe-extflabs x) y)) -2.0t0 7.5t0)
     (test-tri (unsafe-extfl/ 20.0t0 0.8t0) '(lambda (x y z) (unsafe-extfl/ (unsafe-extfl* x z) y)) 4.0t0 0.8t0 5.0t0)
     (test-tri (unsafe-extfl/ 0.8t0 20.0t0) '(lambda (x y z) (unsafe-extfl/ y (unsafe-extfl* x z))) 4.0t0 0.8t0 5.0t0)
-    
+
     (test-tri #t '(lambda (x y z) (unsafe-extfl< (unsafe-extfl+ x y) z)) 1.2t0 3.4t0 5.0t0)
     (test-tri 'yes '(lambda (x y z) (if (unsafe-extfl< (unsafe-extfl+ x y) z) 'yes 'no)) 1.2t0 3.4t0 5.0t0)
     (test-tri #f '(lambda (x y z) (unsafe-extfl> (unsafe-extfl+ x y) z)) 1.2t0 3.4t0 5.0t0)
     (test-tri 'no '(lambda (x y z) (if (unsafe-extfl> (unsafe-extfl+ x y) z) 'yes 'no)) 1.2t0 3.4t0 5.0t0))
-  
+
   ;; test unboxing interaction with free variables:
-  (test-tri 4.4 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable? 
+  (test-tri 4.4 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable?
                                                   (lambda (exn) (unsafe-fl+ x y))])
                                    (unsafe-fl- (unsafe-fl+ x y) NO-SUCH-VARIABLE)))
             1.1 3.3 5.2)
 
   (when (extflonum-available?)
-    (test-tri 4.4t0 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable? 
+    (test-tri 4.4t0 '(lambda (x y z) (with-handlers ([exn:fail:contract:variable?
                                                       (lambda (exn) (unsafe-extfl+ x y))])
                                        (unsafe-extfl- (unsafe-extfl+ x y) NO-SUCH-VARIABLE)))
               1.1t0 3.3t0 5.2t0))
-  
+
   (let ([r (make-pseudo-random-generator)]
         [seed (random 100000)])
     (define (reset)
@@ -512,12 +512,12 @@
   (test-un 15 'unsafe-mcar (mcons 15 19))
   (test-un 19 'unsafe-mcdr (mcons 15 19))
   (let ([v (mcons 3 7)])
-    (test-bin 8 'unsafe-set-mcar! v 8 
-              #:pre (lambda () (set-mcar! v 0)) 
+    (test-bin 8 'unsafe-set-mcar! v 8
+              #:pre (lambda () (set-mcar! v 0))
               #:post (lambda (x) (mcar v))
               #:literal-ok? #f)
-    (test-bin 9 'unsafe-set-mcdr! v 9 
-              #:pre (lambda () (set-mcdr! v 0)) 
+    (test-bin 9 'unsafe-set-mcdr! v 9
+              #:pre (lambda () (set-mcdr! v 0))
               #:post (lambda (x) (mcdr v))
               #:literal-ok? #f))
   (test-bin 5 'unsafe-list-ref (cons 5 9) 0)
@@ -531,7 +531,7 @@
   (for ([star (list values (add-star "box"))])
     (test-un 3 (star 'unsafe-unbox) #&3)
     (let ([b (box 12)])
-      (test-tri (list (void) 8) 
+      (test-tri (list (void) 8)
                 `(lambda (b i val) (,(star 'unsafe-set-box!) b val))
                 b 0 8
                 #:pre (lambda () (set-box! b 12))
@@ -542,7 +542,7 @@
                                           (lambda (b v) v)))
 
   (let ([b (box 0)]
-        [b2 (box 1)])    
+        [b2 (box 1)])
     ;; success
     (test-tri (list #true 1)
               'unsafe-box*-cas! b 0 1
@@ -574,8 +574,8 @@
     (test-bin 5 (star 'unsafe-vector-ref) #(1 5 7) 1)
     (test-un 3 (star 'unsafe-vector-length) #(1 5 7))
     (let ([v (vector 0 3 7)])
-      (test-tri (list (void) 5) (star 'unsafe-vector-set!) v 2 5 
-                #:pre (lambda () (vector-set! v 2 0)) 
+      (test-tri (list (void) 5) (star 'unsafe-vector-set!) v 2 5
+                #:pre (lambda () (vector-set! v 2 0))
                 #:post (lambda (x) (list x (vector-ref v 2)))
                 #:literal-ok? #f)))
   (test-bin 5 'unsafe-vector-ref (chaperone-vector #(1 5 7)
@@ -590,15 +590,15 @@
   (test-un 3 'unsafe-bytes-length #"157")
   (let ([v (bytes 0 3 7)])
     (test-tri (list (void) 135) 'unsafe-bytes-set! v 2 135
-              #:pre (lambda () (bytes-set! v 2 0)) 
+              #:pre (lambda () (bytes-set! v 2 0))
               #:post (lambda (x) (list x (bytes-ref v 2)))
               #:literal-ok? #f))
 
   (test-bin #\5 'unsafe-string-ref "157" 1)
   (test-un 3 'unsafe-string-length "157")
   (let ([v (string #\0 #\3 #\7)])
-    (test-tri (list (void) #\5) 'unsafe-string-set! v 2 #\5 
-              #:pre (lambda () (string-set! v 2 #\0)) 
+    (test-tri (list (void) #\5) 'unsafe-string-set! v 2 #\5
+              #:pre (lambda () (string-set! v 2 #\0))
               #:post (lambda (x) (list x (string-ref v 2)))
               #:literal-ok? #f))
 
@@ -606,14 +606,14 @@
   (test-un 5 'unsafe-flvector-length (flvector 1.1 2.0 3.1 4.5 5.7))
   (let ([v (flvector 1.0 9.5 18.7)])
     (test-tri (list (void) 27.4) 'unsafe-flvector-set! v 2 27.4
-              #:pre (lambda () (flvector-set! v 2 0.0)) 
+              #:pre (lambda () (flvector-set! v 2 0.0))
               #:post (lambda (x) (list x (flvector-ref v 2)))
               #:literal-ok? #f))
 
   (test-bin 9.5 'unsafe-f64vector-ref (f64vector 1.0 9.5 18.7) 1)
   (let ([v (f64vector 1.0 9.5 18.7)])
     (test-tri (list (void) 27.4) 'unsafe-f64vector-set! v 2 27.4
-              #:pre (lambda () (f64vector-set! v 2 0.0)) 
+              #:pre (lambda () (f64vector-set! v 2 0.0))
               #:post (lambda (x) (list x (f64vector-ref v 2)))
               #:literal-ok? #f))
 
@@ -629,7 +629,7 @@
     (test-bin 9.5t0 'unsafe-f80vector-ref (f80vector 1.0t0 9.5t0 18.7t0) 1)
     (let ([v (f80vector 1.0t0 9.5t0 18.7t0)])
       (test-tri (list (void) 27.4t0) 'unsafe-f80vector-set! v 2 27.4t0
-                #:pre (lambda () (f80vector-set! v 2 0.0t0)) 
+                #:pre (lambda () (f80vector-set! v 2 0.0t0))
                 #:post (lambda (x) (list x (f80vector-ref v 2)))
                 #:literal-ok? #f))
     )
@@ -638,14 +638,14 @@
   (test-un 5 'unsafe-fxvector-length (fxvector 11 20 31 45 57))
   (let ([v (fxvector 10 95 187)])
     (test-tri (list (void) 274) 'unsafe-fxvector-set! v 2 274
-              #:pre (lambda () (fxvector-set! v 2 0)) 
+              #:pre (lambda () (fxvector-set! v 2 0))
               #:post (lambda (x) (list x (fxvector-ref v 2)))
               #:literal-ok? #f))
 
   (test-bin 95 'unsafe-s16vector-ref (s16vector 10 95 187) 1)
   (let ([v (s16vector 10 95 187)])
     (test-tri (list (void) 274) 'unsafe-s16vector-set! v 2 274
-              #:pre (lambda () (s16vector-set! v 2 0)) 
+              #:pre (lambda () (s16vector-set! v 2 0))
               #:post (lambda (x) (list x (s16vector-ref v 2)))
               #:literal-ok? #f))
   (test-bin -32768 'unsafe-s16vector-ref (s16vector 10 -32768 187) 1)
@@ -654,7 +654,7 @@
   (test-bin 95 'unsafe-u16vector-ref (u16vector 10 95 187) 1)
   (let ([v (u16vector 10 95 187)])
     (test-tri (list (void) 274) 'unsafe-u16vector-set! v 2 274
-              #:pre (lambda () (u16vector-set! v 2 0)) 
+              #:pre (lambda () (u16vector-set! v 2 0))
               #:post (lambda (x) (list x (u16vector-ref v 2)))
               #:literal-ok? #f))
   (test-bin 65535 'unsafe-u16vector-ref (u16vector 10 65535 187) 1)
@@ -668,14 +668,14 @@
         (test-bin 'b unsafe-struct-ref (make-posn 'a 'b 'c) 1 #:literal-ok? #f)
         (let ([p (make-posn 100 200 300)])
           (test-tri 500 (star 'unsafe-struct-set!) p 1 500
-                    #:pre (lambda () (set-posn-y! p 0)) 
+                    #:pre (lambda () (set-posn-y! p 0))
                     #:post (lambda (x) (posn-y p))
                     #:literal-ok? #f)))
       (let ([p (chaperone-struct (make-posn 100 200 300)
                                  posn-y (lambda (p v) v)
                                  set-posn-y! (lambda (p v) v))])
         (test-tri 500 'unsafe-struct-set! p 1 500
-                  #:pre (lambda () (set-posn-y! p 0)) 
+                  #:pre (lambda () (set-posn-y! p 0))
                   #:post (lambda (x) (posn-y p))
                   #:literal-ok? #f))
       (let ([p (make-posn 100 200 300)])
@@ -694,17 +694,17 @@
     (define-values (prop:nothing nothing? nothing-ref) (make-struct-type-property 'nothing))
     (try-struct prop:nothing 5)
     (try-struct prop:procedure (lambda (s) 'hi!)))
-    
+
   ;; test unboxing:
   (test-tri 5.4 '(lambda (x y z) (unsafe-fl+ x (unsafe-f64vector-ref y z))) 1.2 (f64vector 1.0 4.2 6.7) 1)
-  (test-tri 3.2 '(lambda (x y z) 
+  (test-tri 3.2 '(lambda (x y z)
                    (unsafe-f64vector-set! y 1 (unsafe-fl+ x z))
                    (unsafe-f64vector-ref y 1))
             1.2 (f64vector 1.0 4.2 6.7) 2.0)
 
   (when (extflonum-available?)
     (test-tri 5.3999999999999999997t0 '(lambda (x y z) (unsafe-extfl+ x (unsafe-f80vector-ref y z))) 1.2t0 (f80vector 1.0t0 4.2t0 6.7t0) 1)
-    (test-tri 3.2t0 '(lambda (x y z) 
+    (test-tri 3.2t0 '(lambda (x y z)
                        (unsafe-f80vector-set! y 1 (unsafe-extfl+ x z))
                        (unsafe-f80vector-ref y 1))
               1.2t0 (f80vector 1.0t0 4.2t0 6.7t0) 2.0t0))
@@ -744,7 +744,7 @@
                            (- n 1))))))])
   (test 500000.0 f 1.0))
 
-(when (extflonum-available?) 
+(when (extflonum-available?)
   (let ([f (lambda (x)
              (let ([x (unsafe-extfl+ x 1.0t0)])
                (let loop ([v 0.0t0][n 10000])
@@ -794,18 +794,18 @@
 
 (let ()
   (define weird #f)
-  (set! weird 
+  (set! weird
         (lambda (get-M)
           (let* ([M  (get-M)]
                  [N1 (unsafe-fl/ M (unsafe-fllog M))])
             (get-M) ; triggers safe-for-space clearing of M
             N1)))
-  
+
   (test 15388.0 floor (* 1000.0 (weird (lambda () 64.0)))))
 
 (when (extflonum-available?)
   (define weird #f)
-  (set! weird 
+  (set! weird
         (lambda (get-M)
           (let* ([M  (get-M)]
                  [N1 (unsafe-extfl/ M (unsafe-extfllog M))])
@@ -834,8 +834,8 @@
     (test #t list? (unsafe-weak-hash-iterate-key ht i))
     (test #t equal? (unsafe-weak-hash-iterate-value ht i) 'val)
     (test #t equal? (cdr (unsafe-weak-hash-iterate-pair ht i)) 'val)
-    (test #t equal? 
-          (call-with-values 
+    (test #t equal?
+          (call-with-values
               (lambda () (unsafe-weak-hash-iterate-key+value ht i)) cons)
           '((1 2 3 4 5 6 7 8 9 10) . val))
     (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
@@ -865,12 +865,12 @@
     (test #t equal? (unsafe-mutable-hash-iterate-key ht i) 'a)
     (test #t equal? (unsafe-mutable-hash-iterate-value ht i) 'b)
     (test #t equal? (unsafe-mutable-hash-iterate-pair ht i) '(a . b))
-    (test #t equal? 
-          (call-with-values 
+    (test #t equal?
+          (call-with-values
               (lambda () (unsafe-mutable-hash-iterate-key+value ht i)) cons)
           '(a . b))
     (test #f unsafe-mutable-hash-iterate-next ht i)
-    
+
     ;; remove element, everything should error (but not segfault)
     (hash-remove! ht 'a)
     (test #t boolean? (unsafe-mutable-hash-iterate-first ht))
@@ -887,14 +887,14 @@
   (let ()
     (define ht (make-weak-hash '((a . b))))
     (define i (unsafe-weak-hash-iterate-first ht))
-    
+
     ;; everything ok
     (test #t number? i)
     (test #t equal? (unsafe-weak-hash-iterate-key ht i) 'a)
     (test #t equal? (unsafe-weak-hash-iterate-value ht i) 'b)
     (test #t equal? (unsafe-weak-hash-iterate-pair ht i) '(a . b))
-    (test #t equal? 
-          (call-with-values 
+    (test #t equal?
+          (call-with-values
               (lambda () (unsafe-weak-hash-iterate-key+value ht i)) cons)
           '(a . b))
     (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
