@@ -1087,11 +1087,7 @@ scheme_signal_error (const char *msg, ...)
     exit(0);
   }
 
-#ifndef SCHEME_NO_EXN
   scheme_raise_exn(MZEXN_FAIL, "%t", buffer, len);
-#else
-  call_error(buffer, len, scheme_false);
-#endif
 }
 
 void scheme_warning(char *msg, ...)
