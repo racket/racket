@@ -733,8 +733,8 @@
           ;; Replacement for non-value return:
           (printf "#define RET_NOTHING { SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]); return; }\n")
           ;; A non-value return inserted at the end of a void-returning function:
-          (printf "#define RET_NOTHING_AT_END RET_NOTHING\n")
-
+          (printf "#define RET_NOTHING_AT_END { SET_GC_VARIABLE_STACK((void **)__gc_var_stack__[0]); }\n")
+          
           ;; Declare a temp variable to hold the return value of the indicated type:
           (printf (if callee-restore?
                       "#define DECL_RET_SAVE(type) type __ret__val__;\n"
