@@ -2934,6 +2934,16 @@ case of module-leve bindings; it doesn't cover local bindings.
   (write re-m2 re-o2)
   (check-vm (get-output-bytes re-o2) (system-type 'vm)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `(define-values (id ...) (values rhs ...))` is not
+;; split if one of the `id`s is referenced early
+
+(module uses-a-in-define-values-before-a-is-defined racket/base
+  (define-values (a b)
+    (values 'a a)))
+
+(err/rt-test/once (dynamic-require ''uses-a-in-define-values-before-a-is-defined #f))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

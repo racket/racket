@@ -249,14 +249,18 @@
         ;; For the case that the right-hand side won't capture a
         ;; continuation or return multiple times, we can generate a
         ;; simple definition:
-        (define (finish-definition ids [accum-exprs accum-exprs] [accum-ids accum-ids])
+        (define (finish-definition ids [accum-exprs accum-exprs] [accum-ids accum-ids]
+                                   #:schemified [schemified schemified]
+                                   #:k [k #f])
           (append
            (make-expr-defns accum-exprs)
            (cons
             schemified
             (let id-loop ([ids ids] [accum-exprs null] [accum-ids accum-ids])
               (cond
-                [(wrap-null? ids) (loop (wrap-cdr l) mut-l accum-exprs accum-ids)]
+                [(wrap-null? ids) (if k
+                                      (k accum-exprs accum-ids)
+                                      (loop (wrap-cdr l) mut-l accum-exprs accum-ids))]
                 [(or (or for-jitify? for-cify?)
                      (via-variable-mutated-state? (hash-ref mutated (unwrap (wrap-car ids)) #f)))
                  (define id (unwrap (wrap-car ids)))
@@ -302,8 +306,7 @@
                (if for-jitify?
                    expr
                    (make-expr-defn expr))
-               (append defns
-                       (loop (wrap-cdr l) mut-l null null)))])))
+               (append defns (loop (wrap-cdr l) mut-l null null)))])))
         ;; Dispatch on the schemified form, distinguishing definitions
         ;; from expressions:
         (match schemified
@@ -316,11 +319,29 @@
           [`(define-values ,ids ,rhs)
            (cond
              [(simple? #:pure? #f rhs prim-knowns knowns imports mutated simples)
-              (finish-definition ids)]
+              (match rhs
+                [`(values ,rhss ...)
+                 ;; Flatten `(define-values (id ...) (values rhs ...))` to
+                 ;; a sequence `(define id rhs) ...`
+                 (if (and (= (length rhss) (length ids))
+                          ;; Must be pure, otherwise a variable might be referenced
+                          ;; too early:
+                          (for/and ([rhs (in-list rhss)])
+                            (simple? rhs prim-knowns knowns imports mutated simples)))
+                     (let values-loop ([ids ids] [rhss rhss] [accum-exprs accum-exprs] [accum-ids accum-ids])
+                       (cond
+                         [(null? ids) (loop (wrap-cdr l) mut-l accum-exprs accum-ids)]
+                         [else
+                          (define id (car ids))
+                          (define rhs (car rhss))
+                          (finish-definition (list id) accum-exprs accum-ids
+                                              #:schemified `(define ,id ,rhs)
+                                              #:k (lambda (accum-exprs accum-ids)
+                                                    (values-loop (cdr ids) (cdr rhss) accum-exprs accum-ids)))]))
+                     (finish-definition ids))]
+                [`,_ (finish-definition ids)])]
              [else
               (finish-wrapped-definition ids rhs)])]
-          [`(splice . ,ls)
-           (loop (append ls (wrap-cdr l)) in-mut-l accum-exprs accum-ids)]
           [`,_
            (match form
              [`(define-values ,ids ,_)
@@ -418,21 +439,7 @@
            [`(define-values (,id) ,rhs)
             `(define ,id ,(schemify rhs))]
            [`(define-values ,ids ,rhs)
-            (let loop ([rhs rhs])
-              (match rhs
-                [`(values ,rhss ...)
-                 (cond
-                   [(= (length rhss) (length ids))
-                    `(splice ; <- result goes back to schemify, so don't schemify rhss
-                      ,@(for/list ([id (in-list ids)]
-                                   [rhs (in-list rhss)])
-                          `(define-values (,id) ,rhs)))]
-                   [else
-                    `(define-values ,ids ,(schemify rhs))])]
-                [`(let-values () ,rhs)
-                 (loop rhs)]
-                [`,_
-                 `(define-values ,ids ,(schemify rhs))]))]
+            `(define-values ,ids ,(schemify rhs))]
            [`(quote ,_) v]
            [`(let-values () ,body)
             (schemify body)]

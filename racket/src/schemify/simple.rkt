@@ -52,6 +52,11 @@
        (cached
         (for/and ([e (in-list es)])
           (simple? e)))]
+      [`(values ,es ...)
+       #:guard (not pure?)
+       (cached
+        (for/and ([e (in-list es)])
+          (simple? e)))]
       [`(,proc . ,args)
        (cached
         (let ([proc (unwrap proc)])
