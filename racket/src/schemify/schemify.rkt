@@ -20,7 +20,8 @@
          "inline.rkt"
          "letrec.rkt"
          "infer-name.rkt"
-         "ptr-ref-set.rkt")
+         "ptr-ref-set.rkt"
+         "literal.rkt")
 
 (provide schemify-linklet
          schemify-body)
@@ -74,7 +75,7 @@
 ;; means that a variable (which boxes a value) is expected.
 (define (schemify-linklet lk serializable? datum-intern? for-jitify? allow-set!-undefined?
                           unsafe-mode? enforce-constant? allow-inline? no-prompt?
-                          prim-knowns get-import-knowns import-keys)
+                          prim-knowns primitives get-import-knowns import-keys)
   (define (im-int-id id) (unwrap (if (pair? id) (cadr id) id)))
   (define (im-ext-id id) (unwrap (if (pair? id) (car id) id)))
   (define (ex-int-id id) (unwrap (if (pair? id) (car id) id)))
@@ -131,7 +132,7 @@
      (define src-syms (get-definition-source-syms bodys))
      ;; Schemify the body, collecting information about defined names:
      (define-values (new-body defn-info mutated)
-       (schemify-body* bodys/constants-lifted prim-knowns imports exports
+       (schemify-body* bodys/constants-lifted prim-knowns primitives imports exports
                        for-jitify? allow-set!-undefined? add-import! #f
                        unsafe-mode? enforce-constant? allow-inline? no-prompt?))
      (define all-grps (append grps (reverse new-grps)))
@@ -181,14 +182,14 @@
 
 ;; ----------------------------------------
 
-(define (schemify-body l prim-knowns imports exports for-cify? unsafe-mode? no-prompt?)
+(define (schemify-body l prim-knowns primitives imports exports for-cify? unsafe-mode? no-prompt?)
   (define-values (new-body defn-info mutated)
-    (schemify-body* l prim-knowns imports exports
+    (schemify-body* l prim-knowns primitives imports exports
                     #f #f (lambda (im ext-id index) #f)
                     for-cify? unsafe-mode? #t #t no-prompt?))
   new-body)
 
-(define (schemify-body* l prim-knowns imports exports
+(define (schemify-body* l prim-knowns primitives imports exports
                         for-jitify? allow-set!-undefined? add-import!
                         for-cify? unsafe-mode? enforce-constant? allow-inline? no-prompt?)
   ;; Keep simple checking efficient by caching results
@@ -202,6 +203,7 @@
     (for/fold ([knowns (hasheq)]) ([form (in-list l)])
       (define-values (new-knowns info)
         (find-definitions form prim-knowns knowns imports mutated simples unsafe-mode?
+                          #:primitives primitives
                           #:optimize? #t))
       new-knowns))
   ;; For non-exported definitions, we may need to create some variables
@@ -241,7 +243,7 @@
        [else
         (define form (car l))
         (define schemified (schemify form
-                                     prim-knowns knowns mutated imports exports simples
+                                     prim-knowns primitives knowns mutated imports exports simples
                                      allow-set!-undefined?
                                      add-import!
                                      for-cify? for-jitify?
@@ -404,7 +406,7 @@
 ;; Non-simple `mutated` state overrides bindings in `knowns`; a
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
-(define (schemify v prim-knowns knowns mutated imports exports simples allow-set!-undefined? add-import!
+(define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
                   for-cify? for-jitify? unsafe-mode? allow-inline? no-prompt?)
   (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [v v])
     (define (schemify v)
@@ -772,7 +774,7 @@
                                 ;; We'd normally leave this to `optimize`, but
                                 ;; need to handle it here before generating a
                                 ;; reference to the renamed identifier
-                                (known-literal-expr k)]
+                                (wrap-literal (known-literal-value k))]
                                [(and (known-copy? k)
                                      (hash-ref prim-knowns (known-copy-id k) #f))
                                 ;; Directly reference primitive
@@ -796,7 +798,7 @@
                     ;; a mapping that says the variable is ready by now
                     `(check-not-unsafe-undefined ,v ',(too-early-mutated-state-name state u-v))]
                    [else v])]))])))
-      (optimize s-v prim-knowns knowns imports mutated))
+      (optimize s-v prim-knowns primitives knowns imports mutated))
 
     (define (schemify-body l)
       (for/list ([e (in-list l)])

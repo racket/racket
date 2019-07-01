@@ -528,6 +528,7 @@
                            inline?
                            (not use-prompt?)
                            prim-knowns
+                           primitives
                            ;; Callback to get a specific linklet for a
                            ;; given import:
                            (if get-import

@@ -74,7 +74,7 @@
 (printf "Schemify...\n")
 (define body
   (time
-   (schemify-body bodys/re-uniqued prim-knowns #hasheq() #hasheq()
+   (schemify-body bodys/re-uniqued prim-knowns #hasheq() #hasheq() #hasheq()
                   ;; for cify:
                   #t
                   ;; unsafe mode:

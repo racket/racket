@@ -7,19 +7,37 @@
          "schemify.rkt"
          "known.rkt")
 
-(define prim-knowns
+(define-values (prim-knowns primitives)
   ;; Register primitives
   (let ([ns (make-base-namespace)])
     (parameterize ([current-namespace ns])
       (namespace-require 'racket/unsafe/ops)
       (namespace-require 'racket/flonum)
       (namespace-require 'racket/fixnum))
-    (for/hasheq ([s (in-list (namespace-mapped-symbols ns))]
-                 #:when (with-handlers ([exn:fail? (lambda (x) #f)])
-                          (procedure? (eval s ns))))
-      (values s (known-procedure (procedure-arity-mask (eval s ns)))))))
+    (define primitives
+      (for/hasheq ([s (in-list (namespace-mapped-symbols ns))]
+                   #:when (with-handlers ([exn:fail? (lambda (x) #f)])
+                            (procedure? (eval s ns))))
+        (values s (eval s ns))))
+    (values
+     (for/hasheq ([(s v) (in-hash primitives)])
+       (define a (procedure-arity-mask v))
+       (values s (case s
+                   [(+ - * /)
+                    (known-procedure/folding a)]
+                   [(fx+ fxlshift)
+                    (known-procedure/folding/limited a 'fixnum)]
+                   [(expt arithmetic-shift)
+                    (known-procedure/folding/limited a 'expt)]
+                   [(unsafe-fx+)
+                    (known-procedure/pure/folding-unsafe a 'fx+)]
+                   [else
+                    (known-procedure a)])))
+     primitives)))
 
 (define (wrap p)
+  p
+  #;
   (cond
     [(and (pair? p)
           (eq? (car p) 'define-values))
@@ -42,7 +60,7 @@
 (define-values (schemified importss exports import-keys imports-abis exports-info)
   (schemify-linklet `(linklet 
                       ()
-                      (x y [z ext-z])
+                      (x y [z ext-z] w)
                        .
                       ,(map
                         wrap
@@ -51,9 +69,15 @@
                           (define-values (y) (make-s (lambda () x) 5))
                           (define-values (x) (lambda () y))
                           (x)
+                          (define-values (w) (case-lambda [() (+ 1 7)] [(a) x]))
                           (letrec-values ([(loop) (lambda () (loop))]) (loop))
                           (let-values ([(a) 1] [(b) 2]) (list a b))
-                          (let-values ([(a b) (values 1 2)]) (list a b))
+                          (let-values ([(a b) (values 1 (+ 2 3))])
+                            (list a
+                                  b
+                                  (arithmetic-shift 3 1000)
+                                  (fx+ 4 5) (fx+ 4 (expt 2 40)) (fx* (fxlshift 1 20) (fxlshift 1 20))
+                                  (unsafe-fx+ 4 5) (unsafe-fx+ 4 (expt 2 40))))
                           (define-values (done) (z)))))
                     #;
                     (call-with-input-file "regexp.rktl" read)
@@ -66,6 +90,7 @@
                     #t ; allow-inline?
                     #f ; no-prompt?
                     prim-knowns
+                    primitives
                     #f
                     #f))
 

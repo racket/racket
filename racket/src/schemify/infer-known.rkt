@@ -18,6 +18,7 @@
 ;; that the variable will get a value without referencing anything
 ;; too early.
 (define (infer-known rhs defn rec? id knowns prim-knowns imports mutated simples unsafe-mode?
+                     #:primitives [primitives #hasheq()] ; for `optimize-inline?` mode
                      #:optimize-inline? [optimize-inline? #f])
   (cond
     [(lambda? rhs)
@@ -27,7 +28,7 @@
               (or (can-inline? lam)
                   (wrap-property defn 'compiler-hint:cross-module-inline)))
          (let ([lam (if optimize-inline?
-                        (optimize* lam prim-knowns knowns imports mutated unsafe-mode?)
+                        (optimize* lam prim-knowns primitives knowns imports mutated unsafe-mode?)
                         lam)])
            (known-procedure/can-inline arity-mask lam))
          (known-procedure arity-mask))]
