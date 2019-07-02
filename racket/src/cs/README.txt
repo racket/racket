@@ -68,8 +68,8 @@ with
 
       make PKGS="compiler-lib"
 
-in the clone's root directory. Alternatively, use use `make
-RACKET=...` to set the command for `racket`.
+in the clone's root directory. Alternatively, use `make RACKET=...`
+to set the command for `racket`.
 
 The use of development mode is described in more detail further below.
 
@@ -113,7 +113,7 @@ build directory to use for building Racket-on-Chez:
 
 The resulting Racket-on-Chez executable has the suffix "cs". To
 generate an executable without the "cs" suffix, supply
-`--enable-csdefault` to `configure`. The precense or absence of "cs"
+`--enable-csdefault` to `configure`. The presence or absence of "cs"
 affects the location of ".zo" files.
 
 Compilation on Windows does not use the `configure` script in "c".
@@ -135,7 +135,7 @@ Racket-on-Chez currently supports two compilation modes:
    linklets) or functions within linklets (with a "bytecode"
    interpreter around the compiled parts).
 
-   Select this mode by seting the `PLT_CS_MACH` environment variable,
+   Select this mode by setting the `PLT_CS_MACH` environment variable,
    but it's currently the default.
 
    In development mode or when the "cs" suffix is used for build mode,
@@ -150,7 +150,7 @@ Racket-on-Chez currently supports two compilation modes:
  * JIT mode --- The compiled form of a module is an S-expression where
    individual `lambda`s are compiled on demand.
 
-   Select this mode by seting the `PLT_CS_JIT` environment variable.
+   Select this mode by setting the `PLT_CS_JIT` environment variable.
 
    In development mode or when the "cs" suffix is used for build mode,
    compiled ".zo" files in this mode are written to a "cs"
@@ -281,7 +281,7 @@ Files in this directory:
          works. For example "demo/regexp.ss" runs the regexp matcher
          on a few examples. To run "demo/*.ss", use `make *-demo`.
 
- other *.rkt - Racket scripts like "convert.rkt" or comparisions like
+ other *.rkt - Racket scripts like "convert.rkt" or comparisons like
          "demo/regexp.rkt". For example, you can run "demo/regexp.rkt"
          and compare the reported timing to "demo/regexp.ss".
 
@@ -291,7 +291,7 @@ From Primitives to Modules
 The "expander" layer, as turned into a Chez Scheme library by
 "expander.sls", synthesizes primitive Racket modules such as
 `'#%kernel` and `'#%network`. The content of those primitive _modules_
-at the expander layer is based on primitve _instances_ (which are just
+at the expander layer is based on primitive _instances_ (which are just
 hash tables) as populated by tables in the "primitive" directory. For
 example, "primitive/network.scm" defines the content of the
 `'#network` primitive instance, which is turned into the primitive
@@ -324,12 +324,12 @@ pre-conversion form. Set `PLT_LINKLET_SHOW_JIT_DEMAND` to see forms as
 they are compiled on demand.
 
 In machine-code mode, set `PLT_LINKLET_SHOW_LAMBDA` to see individual
-compiled terms when a linklet is not compliled whole; set
-`PLT_LINKLET_SHOW_POST_LAMBDA` to see the linlet reorganized around
+compiled terms when a linklet is not compiled whole; set
+`PLT_LINKLET_SHOW_POST_LAMBDA` to see the linklet reorganized around
 those compiled parts; and/or set `PLT_LINKLET_SHOW_POST_INTERP` to see
 the "bytecode" form.
 
-Set `PLT_LINKLET_SHOW_CP0` to see the Schmeified form of a linklet
+Set `PLT_LINKLET_SHOW_CP0` to see the Schemified form of a linklet
 after expansion and optimization by Chez Scheme's cp0.
 
 Safety and Debugging Mode
@@ -434,7 +434,7 @@ atomic regions:
      - The Racket "thread" layer provides `start-atomic` and
        `end-atomic` to prevent Racket-thread swaps.
 
-       These are the same opertations as provided by
+       These are the same operations as provided by
        `ffi/unsafe/atomic`.
 
      - Disabling Chez Scheme interrupts will also disable Racket
@@ -447,7 +447,7 @@ atomic regions:
        disabling interrupts will prevent GC interrupts.
 
        The Racket "thread" layer provides `start-atomic/no-interrupts`
-       and `end-atomic/no-interrupts` for both declaing atomicity at
+       and `end-atomic/no-interrupts` for both declaring atomicity at
        the Racket level and turning off Chez Scheme interrupts. The
        combination is useful for implementing functionality that might
        be called in response to a GC and might also be called by
