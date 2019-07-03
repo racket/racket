@@ -334,6 +334,11 @@
     [(linklet-as-s-expr? l) (linklet-as-s-expr l)]
     [else l]))
 
+(define startup-submodule
+  (if submod-name
+      `(submod ,startup-module ,submod-name)
+      startup-module))
+
 (cond
  [expand?
   (pretty-write (syntax->datum (apply-to-module expand startup-module)))]
@@ -343,16 +348,19 @@
                   (extract-linklets
                    (apply-to-module compile startup-module))
                   #f)))]
+ [extract?
+  (unless cache-dir (error 'run "extract mode requires a cache directory"))
+  ;; Put target module in the cache without running it
+  (dynamic-require startup-module (void))]
  [else
   ;; Load and run the requested module
   (parameterize ([current-command-line-arguments (list->vector args)])
-    (namespace-require (if submod-name
-                           `(submod ,startup-module ,submod-name)
-                           startup-module)))])
+    (namespace-require startup-submodule))])
+
 
 (when extract?
   ;; Extract a bootstrapping slice of the requested module
-  (extract startup-module cache
+  (extract startup-submodule cache
            #:print-extracted-to print-extracted-to
            #:as-c? extract-to-c?
            #:as-decompiled? extract-to-decompiled?

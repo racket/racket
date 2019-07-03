@@ -65,5 +65,3 @@
   (install-error-value->string-handler!)
   (init-current-directory!)
   (init-current-ports! in-fd out-fd err-fd cust plumber))
-
-(module main racket/base)

@@ -211,5 +211,3 @@
          unsafe-os-semaphore-wait
 
          #%thread-instance)
-
-(module main racket/base)

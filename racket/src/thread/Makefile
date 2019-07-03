@@ -34,7 +34,7 @@ GLOBALS = --no-global \
           ++global-ok log-place-event
 
 
-GENERATE_ARGS = -t main.rkt --submod main \
+GENERATE_ARGS = -t main.rkt \
                 --check-depends $(BUILDDIR)compiled/thread-dep.rktd \
                 ++depend-module ../expander/bootstrap-run.rkt \
                 --depends $(BUILDDIR)compiled/thread-dep.rktd \
