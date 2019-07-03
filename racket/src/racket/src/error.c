@@ -90,7 +90,7 @@ static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
 static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
-static NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
+static MZ_NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
@@ -114,8 +114,8 @@ static Scheme_Object *make_log_reader(int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_reader_p(int argc, Scheme_Object *argv[]);
 static int log_reader_get(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
 
-static NORETURN void do_raise(Scheme_Object *arg, int need_debug, int barrier);
-static NORETURN void nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
+static MZ_NORETURN void do_raise(Scheme_Object *arg, int need_debug, int barrier);
+static MZ_NORETURN void nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
 static void update_want_level(Scheme_Logger *logger, Scheme_Object *name);
 
@@ -926,7 +926,7 @@ void scheme_init_logger_config() {
   scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
 }
 
-static NORETURN void
+static MZ_NORETURN void
 call_error(char *buffer, int len, Scheme_Object *exn)
 {
   if (scheme_current_thread->constant_folding) {
@@ -3346,7 +3346,7 @@ def_error_value_string_proc(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, l);
 }
 
-static NORETURN void
+static MZ_NORETURN void
 def_error_escape_proc(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *prompt;
@@ -4403,7 +4403,7 @@ scheme_raise_exn(int id, ...)
            1);
 }
 
-static NORETURN void
+static MZ_NORETURN void
 def_exn_handler(int argc, Scheme_Object *argv[])
 {
   char *s;
@@ -4441,7 +4441,7 @@ init_exn_handler(int argc, Scheme_Object *argv[])
 			     1, NULL, NULL, 0);
 }
 
-static NORETURN void
+static MZ_NORETURN void
 nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *arg = argv[0], *orig_arg = SCHEME_CDR((Scheme_Object *)old_exn);
@@ -4496,7 +4496,7 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
   call_error(buffer, blen, scheme_false);
 }
 
-static NORETURN void *do_raise_inside_barrier(void)
+static MZ_NORETURN void *do_raise_inside_barrier(void)
 {
   Scheme_Object *arg;
   Scheme_Object *v, *p[1], *h, *marks;
@@ -4606,13 +4606,13 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
 
   if (eb) {
     scheme_top_level_do(do_raise_inside_barrier, 1);
-    UNREACHABLE;
+    MZ_UNREACHABLE;
   }
   else
     do_raise_inside_barrier();
 }
 
-static NORETURN void
+static MZ_NORETURN void
 sch_raise(int argc, Scheme_Object *argv[])
 {
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
