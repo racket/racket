@@ -90,7 +90,7 @@ static Scheme_Object *exe_yield_handler(int, Scheme_Object *[]);
 static Scheme_Object *error_print_width(int, Scheme_Object *[]);
 static Scheme_Object *error_print_context_length(int, Scheme_Object *[]);
 static Scheme_Object *error_print_srcloc(int, Scheme_Object *[]);
-static Scheme_Object *def_error_escape_proc(int, Scheme_Object *[]);
+static NORETURN void def_error_escape_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
@@ -115,7 +115,7 @@ static Scheme_Object *log_reader_p(int argc, Scheme_Object *argv[]);
 static int log_reader_get(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
 
 static NORETURN void do_raise(Scheme_Object *arg, int need_debug, int barrier);
-static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
+static NORETURN void nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
 static void update_want_level(Scheme_Logger *logger, Scheme_Object *name);
 
@@ -227,7 +227,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   if (!def_error_esc_proc) {
     REGISTER_SO(def_error_esc_proc);
     def_error_esc_proc =
-      scheme_make_prim_w_arity(def_error_escape_proc,
+      scheme_make_prim_w_arity((Scheme_Prim *)def_error_escape_proc,
 			       "default-error-escape-handler",
 			       0, 0);
   }
@@ -926,7 +926,7 @@ void scheme_init_logger_config() {
   scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
 }
 
-static void
+static NORETURN void
 call_error(char *buffer, int len, Scheme_Object *exn)
 {
   if (scheme_current_thread->constant_folding) {
@@ -960,7 +960,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     escape_handler = scheme_get_param(orig_config, MZCONFIG_ERROR_ESCAPE_HANDLER);
     
     v = scheme_make_byte_string_without_copying("error display handler");
-    v = scheme_make_closed_prim_w_arity(nested_exn_handler,
+    v = scheme_make_closed_prim_w_arity((Scheme_Closed_Prim *)nested_exn_handler,
 					scheme_make_pair(v, exn),
 					"nested-exception-handler", 
 					1, 1);
@@ -1000,7 +1000,7 @@ call_error(char *buffer, int len, Scheme_Object *exn)
     }
 
     v = scheme_make_byte_string_without_copying("error escape handler");
-    v = scheme_make_closed_prim_w_arity(nested_exn_handler,
+    v = scheme_make_closed_prim_w_arity((Scheme_Closed_Prim *)nested_exn_handler,
 					scheme_make_pair(v, exn),
 					"nested-exception-handler", 
 					1, 1);
@@ -3346,9 +3346,9 @@ def_error_value_string_proc(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, l);
 }
 
-static Scheme_Object *
+static NORETURN void
 def_error_escape_proc(int argc, Scheme_Object *argv[])
-{  
+{
   Scheme_Object *prompt;
   Scheme_Thread *p = scheme_current_thread;
 
@@ -3361,8 +3361,6 @@ def_error_escape_proc(int argc, Scheme_Object *argv[])
     p->cjs.val = scheme_void_proc;
   }
   scheme_longjmp(scheme_error_buf, 1);
-
-  return scheme_void; /* Never get here */
 }
 
 static Scheme_Object *
@@ -4405,7 +4403,7 @@ scheme_raise_exn(int id, ...)
            1);
 }
 
-static Scheme_Object *
+static NORETURN void
 def_exn_handler(int argc, Scheme_Object *argv[])
 {
   char *s;
@@ -4432,8 +4430,6 @@ def_exn_handler(int argc, Scheme_Object *argv[])
   }
 
   call_error(s, len, argv[0]);
-
-  return scheme_void;
 }
 
 static Scheme_Object *
@@ -4445,7 +4441,7 @@ init_exn_handler(int argc, Scheme_Object *argv[])
 			     1, NULL, NULL, 0);
 }
 
-static Scheme_Object *
+static NORETURN void
 nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *arg = argv[0], *orig_arg = SCHEME_CDR((Scheme_Object *)old_exn);
@@ -4496,13 +4492,11 @@ nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[])
 			msg, mlen,
 			orig_raisetype,
 			orig_msg, orig_mlen);
-    
-  call_error(buffer, blen, scheme_false);
 
-  return scheme_void;
+  call_error(buffer, blen, scheme_false);
 }
 
-static void *do_raise_inside_barrier(void)
+static NORETURN void *do_raise_inside_barrier(void)
 {
   Scheme_Object *arg;
   Scheme_Object *v, *p[1], *h, *marks;
@@ -4526,7 +4520,7 @@ static void *do_raise_inside_barrier(void)
     }
 
     v = scheme_make_byte_string_without_copying("exception handler");
-    v = scheme_make_closed_prim_w_arity(nested_exn_handler,
+    v = scheme_make_closed_prim_w_arity((Scheme_Closed_Prim *)nested_exn_handler,
                                         scheme_make_pair(v, arg),
                                         "nested-exception-handler", 
                                         1, 1);
@@ -4570,11 +4564,9 @@ static void *do_raise_inside_barrier(void)
     } else {
       /* return from uncaught-exception handler */
       p[0] = scheme_false;
-      return nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
+      nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
     }
   }
-
-  return scheme_void;
 }
 
 static void
@@ -4612,13 +4604,15 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
 
   p->ku.k.p1 = arg;
 
-  if (eb)
+  if (eb) {
     scheme_top_level_do(do_raise_inside_barrier, 1);
+    UNREACHABLE;
+  }
   else
     do_raise_inside_barrier();
 }
 
-static void
+static NORETURN void
 sch_raise(int argc, Scheme_Object *argv[])
 {
   if ((argc > 1) && SCHEME_FALSEP(argv[1]))
@@ -4781,7 +4775,7 @@ void scheme_init_exn_config(void)
 {
   Scheme_Object *h;
 
-  h = scheme_make_prim_w_arity(def_exn_handler, "default-exception-handler", 1, 1);
+  h = scheme_make_prim_w_arity((Scheme_Prim *)def_exn_handler, "default-exception-handler", 1, 1);
 
   scheme_set_root_param(MZCONFIG_INIT_EXN_HANDLER, h);
 }

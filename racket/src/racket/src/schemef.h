@@ -197,8 +197,8 @@ MZ_EXTERN Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_A
 /*                              error handling                            */
 /*========================================================================*/
 
-MZ_EXTERN void scheme_signal_error(const char *msg, ...) NORETURN;
-MZ_EXTERN void scheme_raise_exn(int exnid, ...) NORETURN;
+MZ_EXTERN NORETURN void scheme_signal_error(const char *msg, ...);
+MZ_EXTERN NORETURN void scheme_raise_exn(int exnid, ...);
 MZ_EXTERN void scheme_warning(char *msg, ...);
 
 MZ_EXTERN void scheme_raise(Scheme_Object *exn);
@@ -221,17 +221,17 @@ MZ_EXTERN void scheme_glib_log_message(const char *log_domain, int log_level, co
 MZ_EXTERN void *scheme_glib_log_message_test(char *str);
 MZ_EXTERN void scheme_out_of_memory_abort();
 
-MZ_EXTERN void scheme_wrong_count(const char *name, int minc, int maxc, int argc, Scheme_Object **argv) NORETURN;
-MZ_EXTERN void scheme_wrong_count_m(const char *name, int minc, int maxc, int argc, Scheme_Object **argv, int is_method) NORETURN;
-MZ_EXTERN void scheme_case_lambda_wrong_count(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...) NORETURN;
-MZ_EXTERN void scheme_wrong_type(const char *name, const char *expected, int which, int argc, Scheme_Object **argv) NORETURN;
-MZ_EXTERN void scheme_wrong_contract(const char *name, const char *expected, int which, int argc, Scheme_Object **argv) NORETURN;
-MZ_EXTERN void scheme_wrong_field_type(Scheme_Object *c_name, const char *expected, Scheme_Object *o) NORETURN;
-MZ_EXTERN void scheme_wrong_field_contract(Scheme_Object *c_name, const char *expected, Scheme_Object *o) NORETURN;
-MZ_EXTERN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o) NORETURN;
-MZ_EXTERN void scheme_contract_error(const char *name, const char *msg, ...) NORETURN;
-MZ_EXTERN void scheme_wrong_return_arity(const char *where, int expected, int got, Scheme_Object **argv, const char *context_detail, ...) NORETURN;
-MZ_EXTERN void scheme_unbound_global(Scheme_Bucket *b) NORETURN;
+MZ_EXTERN NORETURN void scheme_wrong_count(const char *name, int minc, int maxc, int argc, Scheme_Object **argv);
+MZ_EXTERN NORETURN void scheme_wrong_count_m(const char *name, int minc, int maxc, int argc, Scheme_Object **argv, int is_method);
+MZ_EXTERN NORETURN void scheme_case_lambda_wrong_count(const char *name, int argc, Scheme_Object **argv, int is_method, int count, ...);
+MZ_EXTERN NORETURN void scheme_wrong_type(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+MZ_EXTERN NORETURN void scheme_wrong_contract(const char *name, const char *expected, int which, int argc, Scheme_Object **argv);
+MZ_EXTERN NORETURN void scheme_wrong_field_type(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
+MZ_EXTERN NORETURN void scheme_wrong_field_contract(Scheme_Object *c_name, const char *expected, Scheme_Object *o);
+MZ_EXTERN NORETURN void scheme_arg_mismatch(const char *name, const char *msg, Scheme_Object *o);
+MZ_EXTERN NORETURN void scheme_contract_error(const char *name, const char *msg, ...);
+MZ_EXTERN NORETURN void scheme_wrong_return_arity(const char *where, int expected, int got, Scheme_Object **argv, const char *context_detail, ...);
+MZ_EXTERN NORETURN void scheme_unbound_global(Scheme_Bucket *b);
 
 MZ_EXTERN Scheme_Object *scheme_dynamic_wind(void (*pre)(void *),
 					     Scheme_Object *(* volatile act)(void *),
