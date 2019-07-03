@@ -61,7 +61,7 @@ scan-build:racket:
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
     - echo "Detected $cpus cpus"
-    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' 
+    - scan-build -o scan-report_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' 
   dependencies:
     - prepare-cache:llvm
   artifacts:
@@ -84,7 +84,7 @@ scan-build:racketcs:
     - export LD_LIBRARY_PATH=$INSTALL_DIR/bin:$LD_LIBRARY_PATH
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
     - echo "Detected $cpus cpus"
-    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" CPPFLAGS="-DMZ_DECLARE_NORETURN" --disable-strip' cs
+    - scan-build -o scan-report-cs_cc -analyzer-config 'crosscheck-with-z3=true' make --load-average=$cpus PKGS="" CPUS=$((cpus + 1)) CONFIGURE_ARGS_qq='CFLAGS="-O0 -g" --disable-strip' cs
   dependencies:
     - prepare-cache:llvm
   artifacts:
