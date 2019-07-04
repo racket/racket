@@ -24,6 +24,8 @@
          call-with-input-string
          call-with-input-bytes
 
+         combine-output-ports
+
          ;; `mzlib/port` exports
          open-output-nowhere
          make-pipe-with-specials
@@ -163,6 +165,18 @@
 
 (define (call-with-input-bytes str proc)
   (with-input-from-x 'call-with-input-bytes 1 #t str proc))
+
+
+(define (combine-output-ports what . with)
+  (map (lambda (p)
+         (or (output-port? p)
+             (raise-argument-error 'combine-output-ports "output-port?" p)))
+         (cons what with))
+  (let-values ([(pin pout) (make-pipe-with-specials)])
+    (thread
+      (lambda ()
+        (apply copy-port (cons pin (cons what with)))))
+    pout))
 
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/port`
