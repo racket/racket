@@ -72,10 +72,10 @@ if test "$use_cs" = "yes" ; then
   mkdir -p cs/c
   case "$dir" in
     /*)
-     cd cs/c && "$dir/cs/c/configure" ${1+"$@"} && cd ../..
+     (cd cs/c && "$dir/cs/c/configure" ${1+"$@"})
      ;;
     *)
-     cd cs/c && "../../$dir/cs/c/configure" ${1+"$@"} && cd ../..
+     (cd cs/c && "../../$dir/cs/c/configure" ${1+"$@"})
      ;;
   esac
 fi
