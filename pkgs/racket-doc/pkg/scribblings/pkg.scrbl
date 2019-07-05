@@ -616,6 +616,9 @@ sub-commands.
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
+  @item{@DFlag{no-docs} --- Does not render documentation during setup after installation. This flag has no effect 
+        with @DFlag{no-setup}.}
+
   @item{@DFlag{recompile-only} ---Constrains @exec{raco setup} to at most recompile a module from
         machine-independent form, reporting an error if compilation from source is needed. This
         behavior is useful as a sanity check when installing built packages (to ensure that they
@@ -638,7 +641,8 @@ sub-commands.
                                    the @DFlag{deps} default to depend only on interactive mode.}
          #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
-         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}]}
+         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs} flags.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -753,6 +757,7 @@ the given @nonterm{pkg-source}s.
 
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{no-docs} --- Same as for @command-ref{install}.}
  @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -768,7 +773,8 @@ the given @nonterm{pkg-source}s.
          #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
          #:changed "6.90.0.27" @elem{Added the @DFlag{unclone} flag.}
-         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}]}
+         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs} flags.}]}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
@@ -796,6 +802,7 @@ the given @nonterm{pkg}s.
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+ @item{@DFlag{no-docs} --- Same as for @command-ref{install}.}
  @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -805,7 +812,8 @@ the given @nonterm{pkg}s.
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch} flag.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}
          #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
-         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}]}
+         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs} flags.}]}
 
 
 @subcommand{@command/toc{new} @nonterm{pkg} ---
@@ -889,12 +897,14 @@ package is created.
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
   @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
+  @item{@DFlag{no-docs} --- Same as for @command-ref{install}.}
   @item{@DFlag{recompile-only} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
 
 @history[#:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}
-         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}]}
+         #:changed "7.2.0.8" @elem{Added the @DFlag{recompile-only} flag.}
+         #:changed "7.4.0.4" @elem{Added the @DFlag{no-docs} flags.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling
