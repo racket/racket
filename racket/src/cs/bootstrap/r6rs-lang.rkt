@@ -13,6 +13,7 @@
          "syntax-mode.rkt"
          "constant.rkt"
          "config.rkt"
+         "rcd.rkt"
          (only-in "record.rkt"
                   do-$make-record-type
                   register-rtd-name!
@@ -576,32 +577,7 @@
      ;; For Chez Scheme's legacy procedure
      (struct-type-make-constructor rcd)]
     [(rec-cons-desc? rcd)
-     (define rtd (rec-cons-desc-rtd rcd))
-     (define ctr (struct-type-make-constructor rtd))
-     ((record-constructor-generator rcd) ctr)]))
-
-(define (record-constructor-generator rcd)
-  (define rtd (rec-cons-desc-rtd rcd))
-  (define p (rec-cons-desc-protocol rcd))
-  (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
-    (struct-type-info rtd))
-  (cond
-    [(not p) (lambda (ctr) ctr)]
-    [(rec-cons-desc-parent-rcd rcd)
-     => (lambda (p-rcd)
-          (lambda (ctr)
-            (p ((record-constructor-generator p-rcd)
-                (lambda args1
-                  (lambda args2
-                    (apply ctr (append args1 args2))))))))]
-    [super
-     (define parent-p (lookup-protocol super))
-     (lambda (ctr)
-       (p (parent-p
-           (lambda args1
-             (lambda args2
-               (apply ctr (append args1 args2)))))))]
-    [else p]))
+     (rcd->constructor rcd lookup-protocol)]))
 
 (define (make-record-type-descriptor name parent uid s? o? fields)
   (do-$make-record-type base-rtd parent name fields s? o? null #:uid uid))

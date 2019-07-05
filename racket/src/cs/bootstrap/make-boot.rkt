@@ -2,6 +2,7 @@
 (require racket/runtime-path
          racket/match
          racket/file
+         racket/pretty
          (only-in "r6rs-lang.rkt"
                   optimize-level)
          (only-in "scheme-lang.rkt"
@@ -99,7 +100,11 @@
 (namespace-require `(only (submod (file ,(path->string (resolved-module-path-name r6rs-lang-mod))) ikarus) with-implicit)
                    ns)
 
-(define orig-eval (current-eval))
+(define show? #f)
+(define orig-eval (let ([e (current-eval)])
+                    (lambda args
+                      (when show? (pretty-write args))
+                      (apply e args))))
 
 (define (call-with-expressions path proc)
   (call-with-input-file*
@@ -332,7 +337,7 @@
           (with-handlers (#;[exn:fail? (lambda (exn)
                                        (eprintf "ERROR: ~s\n" (exn-message exn))
                                        (set! failed? #t))])
-            ((orig-eval 'compile-file) src dest)))))
+            (time ((orig-eval 'compile-file) src dest))))))
     (when failed?
       (raise-user-error 'make-boot "compilation failure(s)")))
 

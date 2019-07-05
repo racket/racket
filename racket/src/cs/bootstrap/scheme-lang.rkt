@@ -23,7 +23,9 @@
                   make-record-constructor-descriptor
                   set-car!
                   set-cdr!)
-         (submod "r6rs-lang.rkt" hash-pair))
+         (submod "r6rs-lang.rkt" hash-pair)
+         (for-syntax "scheme-struct.rkt"
+                     "rcd.rkt"))
 
 (provide (rename-out [s:define define]
                      [s:define define-threaded]
@@ -364,16 +366,26 @@
 (define-syntax (letrec* stx)
   (syntax-case stx ()
     [(_ (clause ...) . body)
-     (let loop ([clauses (syntax->list #'(clause ...))] [lets '()] [letrecs '()])
+     (let loop ([clauses (syntax->list #'(clause ...))] [lets '()] [letrecs '()] [macros '()] [rcds #hasheq()])
        (cond
          [(null? clauses)
           #`(let #,(reverse lets)
-              (letrec #,(reverse letrecs)
+              (letrec-syntaxes+values #,(for/list ([s (in-list macros)])
+                                          (syntax-case s ()
+                                            [[id rhs]
+                                             #'[(id) (lambda (stx) (quote-syntax rhs))]]))
+                                      #,(for/list ([s (in-list (reverse letrecs))])
+                                          (syntax-case s ()
+                                            [[id rhs]
+                                             #'[(id) rhs]]))
                 . body))]
          [else
-          (syntax-case* (car clauses) ($primitive quote record-accessor record-predicate) (lambda (a b)
-                                                                                            (eq? (syntax-e a)
-                                                                                                 (syntax-e b)))
+          (define (id-eq? a b) (eq? (syntax-e a) (syntax-e b)))
+          (syntax-case* (car clauses) ($primitive record-accessor record-predicate
+                                                  $make-record-constructor-descriptor
+                                                  make-record-constructor-descriptor
+                                                  r6rs:record-constructor
+                                                  quote) id-eq?
             [[id (($primitive _ record-accessor) 'rtd n)]
              (and (struct-type? (syntax-e #'rtd))
                   (integer? (syntax-e #'n)))
@@ -382,7 +394,9 @@
                                              #`[id '#,a]
                                              (car clauses))
                                          lets)
-                     letrecs))]
+                     letrecs
+                     macros
+                     rcds))]
             [[id (($primitive _ record-mutator) 'rtd n)]
              (and (struct-type? (syntax-e #'rtd))
                   (integer? (syntax-e #'n)))
@@ -391,7 +405,9 @@
                                              #`[id '#,m]
                                              (car clauses))
                                          lets)
-                     letrecs))]
+                     letrecs
+                     macros
+                     rcds))]
             [[id (($primitive _ record-predicate) 'rtd)]
              (struct-type? (syntax-e #'rtd))
              (let ([p (compile-time-record-predicate (syntax-e #'rtd))])
@@ -399,9 +415,141 @@
                                              #`[id '#,p]
                                              (car clauses))
                                          lets)
-                     letrecs))]
+                     letrecs
+                     macros
+                     rcds))]
+            [[id (($primitive _ r6rs:record-constructor) 'rcd)]
+             (rec-cons-desc? (syntax-e #'rcd))
+             (let ([c (rcd->constructor (syntax-e #'rcd) #f)])
+               (cond
+                 [c (loop (cdr clauses) (cons #`[id #,c]
+                                              lets)
+                          letrecs
+                          macros
+                          rcds)]
+                 [else
+                  (and (log-warning "couldn't inline ~s" (car clauses)) #f)
+                  (loop (cdr clauses) lets (cons (car clauses) letrecs) macros rcds)]))]
+            [[id (($primitive _ mrcd)
+                  'rtd
+                  base
+                  proc
+                  . maybe-name)]
+             (and (or (eq? '$make-record-constructor-descriptor (syntax-e #'mrcd))
+                      (eq? 'make-record-constructor-descriptor (syntax-e #'mrcd)))
+                  (struct-type? (syntax-e #'rtd))
+                  (or (not (syntax-e #'base))
+                      (hash-ref rcds (syntax-e #'base) #f))
+                  (immediate-procedure-expression? #'proc))
+             (let ([rtd (syntax-e #'rtd)]
+                   [base-rcdi (and (syntax-e #'base)
+                                   (hash-ref rcds (syntax-e #'base) #f))])
+               (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
+                 (struct-type-info rtd))
+               (when (and (not base-rcdi)
+                          super)
+                 (error "can't handle an rcd without a base rcd and with a parent record type"))
+               (define rdci (rcd-info rtd #'proc base-rcdi (+ init-cnt (if base-rcdi
+                                                                           (rcd-info-init-cnt base-rcdi)
+                                                                           0))))
+               (loop (cdr clauses)
+                     lets
+                     (cons #`[id (mrcd
+                                  '#,rtd
+                                  base
+                                  proc
+                                  . maybe-name)]
+                           letrecs)
+                     macros
+                     (hash-set rcds (syntax-e #'id) rdci)))]
+            [[id (($primitive _ mrcd)
+                  'rtd
+                  'base-rcd
+                  proc
+                  . maybe-name)]
+             (and (or (eq? '$make-record-constructor-descriptor (syntax-e #'mrcd))
+                      (eq? 'make-record-constructor-descriptor (syntax-e #'mrcd)))
+                  (struct-type? (syntax-e #'rtd))
+                  (rec-cons-desc? (syntax-e #'base-rcd))
+                  (immediate-procedure-expression? #'proc))
+             (let ([rtd (syntax-e #'rtd)]
+                   [base-rcdi (rcd->rcdi (syntax-e #'base-rcd))])
+               (unless base-rcdi
+                 (error "can't handle this literal rcd: ~e" (syntax-e #'base-rcd)))
+               (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
+                 (struct-type-info rtd))
+               (define rdci (rcd-info rtd #'proc base-rcdi (+ init-cnt (rcd-info-init-cnt base-rcdi))))
+               (loop (cdr clauses)
+                     lets
+                     (cons #`[id (mrcd
+                                  '#,rtd
+                                  'base-rcd
+                                  proc
+                                  . maybe-name)]
+                           letrecs)
+                     macros
+                     (hash-set rcds (syntax-e #'id) rdci)))]
+            [[id (($primitive _ r6rs:record-constructor) rcd-id)]
+             (and (identifier? #'rcd-id)
+                  (hash-ref rcds (syntax-e #'rcd-id) #f))
+             (let ([rcdi (hash-ref rcds (syntax-e #'rcd-id))])
+               (define (rcdi->generator rcdi)
+                 (define base-rcdi (rcd-info-base-rcdi rcdi))
+                 (cond
+                   [(not (rcd-info-proto-expr rcdi))
+                    #`(lambda (ctr) ctr)]
+                   [(not base-rcdi)
+                    (rcd-info-proto-expr rcdi)]
+                   [else
+                    (with-syntax ([ctr (gensym 'ctr)]
+                                  [(p-arg ...) (for/list ([i (in-range (rcd-info-init-cnt base-rcdi))])
+                                                 (gensym))]
+                                  [(c-arg ...) (for/list ([i (in-range (- (rcd-info-init-cnt rcdi)
+                                                                          (rcd-info-init-cnt base-rcdi)))])
+                                                 (gensym))])
+                    #`(lambda (ctr)
+                        (#,(rcd-info-proto-expr rcdi)
+                         (#,(rcdi->generator base-rcdi)
+                          (lambda (p-arg ...)
+                            (lambda (c-arg ...)
+                              (ctr p-arg ... c-arg ...)))))))]))
+               (define c (struct-type-make-constructor (rcd-info-rtd rcdi)))
+               (loop (cdr clauses)
+                     lets
+                     (cons #`[id (#,(rcdi->generator rcdi) #,c)]
+                           letrecs)
+                     macros
+                     rcds))]
+            [[id (($primitive _ r6rs:record-constructor) _)]
+             (and (log-warning "couldn't simplify ~s" (car clauses))
+                  #f)
+             (void)]
+            
+            [[id (($primitive _ mrcd) . _)]
+             (and (or (eq? '$make-record-constructor-descriptor (syntax-e #'mrcd))
+                      (eq? 'make-record-constructor-descriptor (syntax-e #'mrcd)))
+                  (log-warning "couldn't recognize ~s" (car clauses))
+                  #f)
+             (void)]
             [else
-             (loop (cdr clauses) lets (cons (car clauses) letrecs))])]))]))
+             (loop (cdr clauses) lets (cons (car clauses) letrecs) macros rcds)])]))]))
+
+(define-for-syntax (immediate-procedure-expression? s)
+  (syntax-case s ()
+    [(id . _)
+     (and (identifier? #'id)
+          (or (eq? (syntax-e #'id) 'lambda)
+              (eq? (syntax-e #'id) 'case-lambda)))]
+    [_ #f]))
+
+(define-syntax (with-inline-cache stx)
+  (syntax-case stx ()
+    [(_ expr)
+     #`(let ([b #,(mcons #f #f)])
+         (or (mcar b)
+             (let ([r expr])
+               (set-mcar! b r)
+               r)))]))
 
 (define-syntax (s:parameterize stx)
   (syntax-case stx ()
@@ -582,16 +730,20 @@
 (define vector-for-each
   (case-lambda
     [(proc vec)
-     (for-each proc (vector->list vec))]
+     (for ([e (in-vector vec)])
+       (proc e))]
     [(proc vec1 vec2)
-     (for-each proc (vector->list vec1) (vector->list vec2))]
+     (for ([e1 (in-vector vec1)]
+           [e2 (in-vector vec2)])
+       (proc e1 e2))]
     [(proc . vecs)
      (apply for-each proc (map vector->list vecs))]))
    
 (define vector-map
   (case-lambda
     [(proc vec)
-     (list->vector (map proc (vector->list vec)))]
+     (for/vector #:length (vector-length vec) ([e (in-vector vec)])
+       (proc e))]
     [(proc . vecs)
      (list->vector (apply map proc (map vector->list vecs)))]))
 
