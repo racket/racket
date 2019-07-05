@@ -66,7 +66,34 @@
 (namespace-attach-module (current-namespace) r6rs-lang-mod ns)
 (namespace-attach-module (current-namespace) scheme-lang-mod ns)
 
-(namespace-require/copy r6rs-lang-mod ns) ; get `library`
+(namespace-require r6rs-lang-mod ns) ; get `library`
+
+;; Change some bindings from imported to top-level references so that
+;; expressions are compiled to reference variables that are updated by
+;; loading the Chez Scheme compiler. This approach is better than
+;; using `namespace-require/copy`, because we want most primitives to
+;; be referenced directly to make the compiler run faster.
+(define (reset-toplevels [more '()])
+  (for-each (lambda (sym)
+              (eval `(define ,sym ,sym) ns))
+            (append
+             more
+             '(identifier?
+               datum->syntax
+               syntax->list
+               syntax->datum
+               generate-temporaries
+               free-identifier=?
+               bound-identifier=?
+               make-compile-time-value
+               current-eval
+               eval
+               expand
+               compile
+               error
+               format))))
+
+(reset-toplevels)
 
 (status "Load nanopass")
 (define (load-nanopass)
@@ -88,9 +115,14 @@
   (load/cd (build-path nano-dir "nanopass/implementation-helpers.ikarus.ss"))
   (load-nanopass))
 
-(namespace-require/copy ''nanopass ns)
+(namespace-require ''nanopass ns)
 
-(namespace-require/copy scheme-lang-mod ns)
+(namespace-require scheme-lang-mod ns)
+(reset-toplevels '(run-cp0
+                   errorf
+                   $oops
+                   $undefined-violation
+                   generate-interrupt-trap))
 
 (namespace-require `(for-syntax ,r6rs-lang-mod) ns)
 (namespace-require `(for-syntax ,scheme-lang-mod) ns)

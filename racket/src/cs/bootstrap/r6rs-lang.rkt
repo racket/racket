@@ -18,7 +18,10 @@
                   do-$make-record-type
                   register-rtd-name!
                   register-rtd-fields!
-                  s:struct-type?)
+                  s:struct-type?
+                  record-predicate
+                  record-accessor
+                  record-mutator)
          (only-in "immediate.rkt"
                   base-rtd)
          (only-in "scheme-struct.rkt"
@@ -45,7 +48,8 @@
                      if
                      sort
                      fixnum?
-                     open-output-file)
+                     open-output-file
+                     dynamic-wind)
          library import export
          (rename-out [patch:define define]
                      [s:syntax syntax]
@@ -61,7 +65,8 @@
                      [s:splicing-let-syntax let-syntax]
                      [s:splicing-letrec-syntax letrec-syntax]
                      [let trace-let]
-                     [define trace-define])
+                     [define trace-define]
+                     [s:dynamic-wind dynamic-wind])
          guard
          identifier-syntax
          (for-syntax datum)
@@ -79,6 +84,9 @@
          record-constructor-descriptor
          record-constructor
          (rename-out [record-constructor r6rs:record-constructor])
+         record-predicate
+         record-accessor
+         record-mutator
          record-constructor-descriptor?
          syntax-violation
          port-position
@@ -371,6 +379,11 @@
   (syntax-rules (else)
     [(_ else) #t]
     [(_ e) e]))
+
+(define s:dynamic-wind
+  (case-lambda
+    [(pre thunk post) (dynamic-wind pre thunk post)]
+    [(critical? pre thunk post) (dynamic-wind pre thunk post)]))
 
 (begin-for-syntax
   (define-syntax-rule (with-implicit (tid id ...) body ...)

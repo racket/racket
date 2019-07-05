@@ -32,8 +32,7 @@
                      [s:define define-who]
                      [gen-let-values let-values]
                      [s:module module]
-                     [s:parameterize parameterize]
-                     [s:dynamic-wind dynamic-wind])
+                     [s:parameterize parameterize])
          set-who!
          import
          include
@@ -67,9 +66,6 @@
          with-values
          make-record-type
          type-descriptor
-         record-predicate
-         record-accessor
-         record-mutator
          csv7:record-field-accessor
          csv7:record-field-mutator
          csv7:record-field-mutable?
@@ -585,11 +581,6 @@
                              #'[flat-lhs (call-with-values (lambda () rhs)
                                                            (lambda lhs (values . flat-lhs)))])]))])
        #'(let-values ([lhs rhs] ...) body ...))]))
-
-(define s:dynamic-wind
-  (case-lambda
-    [(pre thunk post) (dynamic-wind pre thunk post)]
-    [(critical? pre thunk post) (dynamic-wind pre thunk post)]))
 
 (define-values (prim-flags->bits primvec get-priminfo)
   (get-primdata $sputprop scheme-dir))
