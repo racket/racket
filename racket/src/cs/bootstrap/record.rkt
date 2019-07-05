@@ -202,8 +202,9 @@
       (let ()
         (define-values (r-name init-cnt auto-cnt ref set immutables super skipped?)
           (struct-type-info rtd))
-        (or (not super)
-            (base-rtd-subtype-rtd? super)))))
+        (if super
+            (base-rtd-subtype-rtd? super)
+            #f))))
 
 ;; `i` does not count parent fields
 (define (record-accessor rtd i [name #f])
