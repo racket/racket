@@ -5,7 +5,7 @@
 
 ;; edited:
 ;; -- Matthias, organization in preparation for pretty-print
-;; -- Matthias, contracts 
+;; -- Matthias, contracts
 
 ;; -----------------------------------------------------------------------------
 ;; DEPENDENCIES
@@ -14,7 +14,7 @@
 (require syntax/readerr
          racket/contract)
 
-;; tests in: 
+;; tests in:
 ;; ~plt/pkgs/racket-test/tests/json/
 
 ;; docs in:
@@ -24,12 +24,12 @@
 ;; SERVICES
 
 (provide
- ;; Parameter 
- json-null ;; Parameter 
- 
- ;; Any -> Boolean 
+ ;; Parameter
+ json-null ;; Parameter
+
+ ;; Any -> Boolean
  jsexpr?
- 
+
  (contract-out
   [write-json
    (->* (any/c) ;; jsexpr? but dependent on #:null arg
@@ -102,7 +102,7 @@
       [(#\tab) "\\t"]
       [(#\\) "\\\\"]
       [(#\") "\\\""]
-      [else 
+      [else
        (define (u-esc n)
          (define str (number->string n 16))
          (define pad (case (string-length str)
@@ -341,7 +341,7 @@
     ;; used to reconstruct input for error reporting:
     (define (n->string n exp)
       (define s (number->string n))
-      (string->bytes/utf-8 
+      (string->bytes/utf-8
        (cond
          [(zero? exp) s]
          [else
@@ -408,9 +408,11 @@
                                        (maybe-bytes c))
                          #:eof? (eof-object? c))]))
     ;; need at least one digit, still:
-    (define (read-exponent-more n mark mark2 exp sgn) 
+    (define (read-exponent-more n mark mark2 exp sgn)
       (define c (read-byte i))
       (cond
+        [(and (digit-byte? c) (zero? (to-number c)))
+         (read-exponent-more n mark mark2 exp sgn)]
         [(digit-byte? c)
          (read-exponent-rest n exp (* sgn (to-number c)))]
         [else (bad-input (bytes-append (n->string n exp)
