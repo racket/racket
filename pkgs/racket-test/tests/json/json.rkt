@@ -95,6 +95,7 @@
 
 (define (parse-tests)
   (test (string->jsexpr @T{  0   }) =>  0
+        (string->jsexpr @T{  0x  }) =>  0 ; not clearly a good idea, but preserve old behavior
         (string->jsexpr @T{  1   }) =>  1
         (string->jsexpr @T{ -1   }) => -1 ; note: `+' is forbidden
         (string->jsexpr @T{ -12  }) => -12
@@ -109,6 +110,7 @@
         (string->jsexpr @T{-10.34e03}) => -10340.0
         (string->jsexpr @T{-10.34e+3}) => -10340.0
         (string->jsexpr @T{-10.34e+03}) => -10340.0
+        (string->jsexpr @T{-10.34e+0x}) => -10.340 ; preserve old behavior
         (string->jsexpr @T{-10.34e-3}) => -1.034e-2
         (string->jsexpr @T{-10.34e-03}) => -1.034e-2
         (string->jsexpr @T{-10.34e+31}) => -1.034e32

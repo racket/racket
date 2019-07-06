@@ -398,7 +398,7 @@
       (define c (read-byte i))
       (cond
         [(digit-byte? c)
-         (read-exponent-rest n exp (to-number c))]
+         (read-exponent-rest n exp (to-number c) 1)]
         [(eqv? c (char->integer #\+))
          (read-exponent-more n mark #"+" exp 1)]
         [(eqv? c (char->integer #\-))
@@ -411,23 +411,21 @@
     (define (read-exponent-more n mark mark2 exp sgn)
       (define c (read-byte i))
       (cond
-        [(and (digit-byte? c) (zero? (to-number c)))
-         (read-exponent-more n mark mark2 exp sgn)]
         [(digit-byte? c)
-         (read-exponent-rest n exp (* sgn (to-number c)))]
+         (read-exponent-rest n exp (to-number c) sgn)]
         [else (bad-input (bytes-append (n->string n exp)
                                        (bytes mark)
                                        mark2
                                        (maybe-bytes c))
                          #:eof? (eof-object? c))]))
     ;; more digits:
-    (define (read-exponent-rest n exp exp2)
+    (define (read-exponent-rest n exp exp2 sgn)
       (define c (peek-byte i))
       (cond
         [(digit-byte? c)
          (read-byte i)
-         (read-exponent-rest n exp (+ (* 10 exp2) (to-number c)))]
-        [else (exact->inexact (* n (expt 10 (+ exp exp2))))]))
+         (read-exponent-rest n exp (+ (* 10 exp2) (to-number c)) sgn)]
+        [else (exact->inexact (* n (expt 10 (+ exp (* sgn exp2)))))]))
     (start))
   ;;
   (define (read-json [top? #f])
