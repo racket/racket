@@ -170,7 +170,7 @@
   (define port-list (cons what with))
   (define wrap-evt-with-evts
     (lambda (evt . evts)
-      (if (empty? evts)
+      (if (equal? (length evts) 0)
           evt
           (wrap-evt evt (let ([wrapped-evts (apply wrap-evt-with-evts evts)])
                           (lambda (v)
