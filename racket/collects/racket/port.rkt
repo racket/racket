@@ -166,17 +166,62 @@
 (define (call-with-input-bytes str proc)
   (with-input-from-x 'call-with-input-bytes 1 #t str proc))
 
-
 (define (combine-output-ports what . with)
-  (map (lambda (p)
-         (or (output-port? p)
-             (raise-argument-error 'combine-output-ports "output-port?" p)))
-         (cons what with))
-  (let-values ([(pin pout) (make-pipe-with-specials)])
-    (thread
-      (lambda ()
-        (apply copy-port (cons pin (cons what with)))))
-    pout))
+  (define port-list (cons what with))
+  (define wrap-evt-with-evts
+    (lambda (evt . evts)
+      (if (empty? evts)
+          evt
+          (wrap-evt evt (let ([wrapped-evts (apply wrap-evt-with-evts evts)])
+                          (lambda (v)
+                            (sync wrapped-evts)))))))
+  (make-output-port
+   'combined-output-port
+   ; evt
+   (apply wrap-evt-with-evts port-list)
+   ; write-out 
+   (lambda (s start end non-block? breakable?)
+     (let ([s (subbytes s start end)])
+       (if non-block?
+           (map (lambda (p)
+                  (write-bytes-avail* s p)) port-list)
+           (begin
+             (if breakable?
+                 (map (lambda (p)
+                        (parameterize-break #t (write-bytes s p))) port-list)
+                 (map (lambda (p)
+                        (write-bytes s p)) port-list))
+             (bytes-length s)))))
+   ; close
+   void
+   ; write-out-special
+   (and (andmap port-writes-special? port-list)
+        (lambda (v no-buffer&block? breakable?)
+          (if no-buffer&block?
+              (map (lambda (p)
+                     (write-special-avail* v p)) port-list)
+              (if breakable?
+                  (map (lambda (p)
+                         (parameterize-break #t (write-special v p))) port-list)
+                  (map (lambda (p)
+                         (write-special v p)) port-list)))))
+   ; get-write-evt
+   (and (andmap port-writes-atomic? port-list)
+        (lambda (s start end)
+          (let ([s (subbytes s start end)])
+          (apply wrap-evt-with-evts
+                 (map
+                  (lambda (p)
+                    (write-bytes-avail-evt s p)) port-list)))))
+   ; get-write-special-evt
+   (and (andmap (lambda (p)
+                  (and (port-writes-atomic? p)
+                       (port-writes-special? p))) port-list)
+        (lambda (v)
+          (apply wrap-evt-with-evts
+                 (map
+                  (lambda (p)
+                    (write-special-evt v p)) port-list))))))
 
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/port`
