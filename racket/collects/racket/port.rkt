@@ -168,6 +168,9 @@
 
 (define (combine-output-ports what . with)
   (define port-list (cons what with))
+  (map (lambda (p)
+         (or (output-port? p)
+             (raise-argument-error 'combine-output-ports "output-port?" p))) port-list)
   (define wrap-evt-with-evts
     (lambda (evt . evts)
       (if (equal? (length evts) 0)
