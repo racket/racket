@@ -1002,12 +1002,12 @@
       [port-c (open-output-string)]
       [port-d (open-output-string)])
   (define port-abcd (combine-output-ports port-a port-b port-c port-d))
-  (test (void) (display "hello," port-abcd))
-  (test 5 (write-bytes-avail-evt #"world" port-abcd))
-  (test "hello, world" (get-output-string port-a))
-  (test "hello, world" (get-output-string port-b))
-  (test "hello, world" (get-output-string port-c))
-  (test "hello, world" (get-output-string port-d)))
+  (test (void) display "hello, " port-abcd)
+  (test 5 sync (write-bytes-avail-evt #"world" port-abcd))
+  (test "hello, world" get-output-string port-a)
+  (test "hello, world" get-output-string port-b)
+  (test "hello, world" get-output-string port-c)
+  (test "hello, world" get-output-string port-d))
 
 ;; --------------------------------------------------
 
