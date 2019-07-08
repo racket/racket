@@ -2423,12 +2423,18 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       mz_rs_sync();
 
       if (SAME_TYPE(SCHEME_TYPE(v), scheme_toplevel_type)) {
-        /* Load prefix: */
-        pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(v));
-        mz_rs_ldxi(JIT_R2, pos);
-        /* Extract bucket from prefix: */
-        pos = SCHEME_TOPLEVEL_POS(v);
-        jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        if (jitter->nc && (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)) {
+          Scheme_Object *b;
+          b = scheme_extract_global(v, jitter->nc, 0);
+          scheme_mz_load_retained(jitter, JIT_R2, b);
+        } else {
+          /* Load prefix: */
+          pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(v));
+          mz_rs_ldxi(JIT_R2, pos);
+          /* Extract bucket from prefix: */
+          pos = SCHEME_TOPLEVEL_POS(v);
+          jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        }
       } else {
         /* Load bucket */
         v = SCHEME_STATIC_TOPLEVEL_PREFIX(v)->a[SCHEME_TOPLEVEL_POS(v)];
@@ -3984,7 +3990,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, Scheme_Native_L
   Scheme_Lambda *lam;
   Generate_Lambda gdata;
   void *start_code, *tail_code, *arity_code;
-  int max_depth;
+  int max_depth, ns;
 
   lam = nlam->u2.orig_code;
   
@@ -4010,7 +4016,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, Scheme_Native_L
     abort();
   }
 
-  if (SCHEME_NATIVE_LAMBDA_FLAGS(nlam) & NATIVE_SPECIALIZED)
+  ns = SCHEME_NATIVE_LAMBDA_FLAGS(nlam) & NATIVE_SPECIALIZED;
+  if (ns)
     SCHEME_NATIVE_LAMBDA_FLAGS(nlam) -= NATIVE_SPECIALIZED;
 
   if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_PRESERVES_MARKS)
@@ -4042,10 +4049,12 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, Scheme_Native_L
     max_depth = gdata.max_tail_depth;
 
   /* max_let_depth is used for flags by generate_lambda: */
-  if (nlam->max_let_depth & 0x1) {
-    lam->body = NULL;
+  if (!ns) {
+    if (nlam->max_let_depth & 0x1) {
+      lam->body = NULL;
+    }
+    lam->context = NULL;
   }
-  lam->context = NULL;
   if (nlam->max_let_depth & 0x2) {
     Scheme_Native_Lambda *case_lam;
     case_lam = ((Scheme_Native_Lambda_Plus_Case *)nlam)->case_lam;

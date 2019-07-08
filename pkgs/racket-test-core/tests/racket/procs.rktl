@@ -615,5 +615,34 @@
              #rx"an even number of arguments")
 
 ;; ----------------------------------------
+;; procedure-specialize
+
+(let ([make-f (lambda (x)
+                (procedure-specialize
+                 (lambda (y)
+                   (cons x y))))])
+  (set! make-f make-f)
+  (test '(5 . 6) (make-f 5) 6))
+
+(let ([make-f (lambda (x)
+                (lambda (y)
+                  (cons x y)))])
+  (set! make-f make-f)
+  (let ([f (make-f 5)])
+    (test '(5 . 6) (procedure-specialize f) 6)
+    (test '(5 . 6) f 6)
+    (test '(7 . 8) (make-f 7) 8)))
+
+(define top-level-variable-to-mutate-form-specialized 'no)
+
+(let ([f (procedure-specialize
+          (lambda (y)
+            (set! top-level-variable-to-mutate-form-specialized 'yes)
+            y))])
+  (set! f f)
+  (test 'done f 'done)
+  (test 'yes values top-level-variable-to-mutate-form-specialized))
+
+;; ----------------------------------------
 
 (report-errs)
