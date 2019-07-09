@@ -1,3 +1,5 @@
+#include "cs_config.h"
+
 #ifndef WIN32
 # include <unistd.h>
 #endif
@@ -136,8 +138,13 @@ static char *get_self_path(char *exec_file)
 static long find_boot_section(char *me)
 {
   int fd, i;
+#if SIZEOF_VOID_P == 4
+  Elf32_Ehdr e;
+  Elf32_Shdr s;
+#else
   Elf64_Ehdr e;
   Elf64_Shdr s;
+#endif
   char *strs;
 
   fd = open(me, O_RDONLY, 0);
