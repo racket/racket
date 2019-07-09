@@ -496,6 +496,9 @@
 
 ;; ----------------------------------------
 
+(define-syntax-rule (keep-trying e)
+  (let loop () (unless e (loop))))
+
 (define (start-worker w)
   (define s (current-scheduler))
   (define th
@@ -504,12 +507,14 @@
        (current-future 'worker)
        (host:mutex-acquire (scheduler-mutex s))
        (let loop ()
-         (or (box-cas! (worker-sync-state w) 'idle 'running)
-             (box-cas! (worker-sync-state w) 'pending 'running))
+         (keep-trying
+          (or (box-cas! (worker-sync-state w) 'idle 'running)
+              (box-cas! (worker-sync-state w) 'running 'running)
+              (box-cas! (worker-sync-state w) 'pending 'running)))
          (cond
            [(worker-die? w) ; worker was killed
             (host:mutex-release (scheduler-mutex s))
-            (box-cas! (worker-sync-state w) 'running 'idle)]
+            (box-cas! (worker-sync-state w) 'running 'dead)]
            [(scheduler-futures-head s)
             => (lambda (f)
                  (deschedule-future f)
@@ -522,8 +527,9 @@
                  (loop))]
            [else
             ;; wait for work
-            (or (box-cas! (worker-sync-state w) 'pending 'idle)
-                (box-cas! (worker-sync-state w) 'running 'idle))
+            (keep-trying
+             (or (box-cas! (worker-sync-state w) 'pending 'idle)
+                 (box-cas! (worker-sync-state w) 'running 'idle)))
             (host:condition-wait (scheduler-cond s) (scheduler-mutex s))
             (loop)])))))
   (set-worker-pthread! w th))
