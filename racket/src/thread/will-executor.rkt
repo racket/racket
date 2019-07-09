@@ -17,7 +17,6 @@
          will-execute)
 
 (struct will-executor (host-we sema)
-  #:authentic
   #:property prop:evt (lambda (we)
                         (wrap-evt (semaphore-peek-evt (will-executor-sema we))
                                   (lambda (v) we))))

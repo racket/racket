@@ -67,6 +67,32 @@
 (arity-test will-try-execute 1 2)
 
 ;; ----------------------------------------
+;; Will executors as events
+
+(let ([we (make-will-executor)])
+  (let loop ([n 10])
+    (unless (zero? n)
+      (will-register we (cons n null)
+                     (lambda (s)
+                       (set! counter (cons (car s) counter))
+                       12))
+      (loop (sub1 n))))
+  (collect-garbage)
+  (test we sync/timeout #f we)
+
+  (define evt-checked 0)
+  (define val-checked 0)
+  (test we sync/timeout #f (chaperone-evt we
+                                          (lambda (e)
+                                            (test #t eq? we e)
+                                            (set! evt-checked (add1 evt-checked))
+                                            (values e (lambda (val)
+                                                        (test #t eq? we e)
+                                                        (set! val-checked (add1 val-checked))
+                                                        val)))))
+  (test '(1 1) list evt-checked val-checked))
+
+;; ----------------------------------------
 ;; Test custodian boxes
 
 (let ([c (make-custodian)]
