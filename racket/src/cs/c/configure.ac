@@ -651,6 +651,10 @@ else
   fi
 fi
 
+############## other inferred machine properties ################
+
+AC_CHECK_SIZEOF([void *])
+
 ############## final output ################
 
 # Pass certain configure args on to rktio
