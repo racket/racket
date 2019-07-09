@@ -256,5 +256,13 @@
 (err/rt-test (for/fxvector #:length 5 #:fill 0.0 ([i 5]) 8))
 (err/rt-test (for/fxvector #:length 10 #:fill 0.0 ([i 5]) 8))
 
+;; ----------------------------------------
+;; Make sure `fxvector` is not incorrectly constant-folded
+
+(let ([v (fxvector 1 2 3)])
+  (unsafe-fxvector-set! v 0 10)
+  (test 10 'ref (unsafe-fxvector-ref v 0)))
+
+;; ----------------------------------------
 
 (report-errs)
