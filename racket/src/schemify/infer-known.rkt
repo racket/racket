@@ -59,7 +59,10 @@
                [(or (known-procedure/can-inline? known)
                     (known-literal? known))
                 known]
-               [(not defn)
+               [(or (not defn)
+                    ;; can't just return `known`; like `known-procedure/can-inline/need-imports`,
+                    ;; we'd lose track of the need to potentially propagate imports
+                    (known-copy? known))
                 (known-copy rhs)]
                [else known]))]
        [defn a-known-constant]

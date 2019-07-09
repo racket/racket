@@ -2971,5 +2971,26 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test #t dynamic-require ''check-with-inlining-duplicates-by-using-submodules 'check))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check copy propagation across module boundaries
+
+(module defines-also-something-as-alias-for-something racket/base
+
+  (provide also-something)
+
+  (define something (list 1 2 3))
+  (define also-something something))
+
+
+(module uses-also-something-via-local-alias racket/base
+  (require 'defines-also-something-as-alias-for-something)
+
+  (provide v)
+
+  (define copy also-something)
+  (define v (list copy)))
+
+(test '((1 2 3)) dynamic-require ''uses-also-something-via-local-alias 'v)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
