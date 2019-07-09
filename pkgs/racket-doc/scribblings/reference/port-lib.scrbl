@@ -297,6 +297,18 @@ The optional @racket[in-name] and @racket[out-name] arguments
 determine the names of the result ports.}
 
 
+@defproc[(combine-output-ports [what output-port?]
+                               [with output-port?] ...)
+         output-port?]{
+
+Accepts a variable number of output ports and returns a new output port
+combining the original ports. When written to, the new port delegates
+the write operation to all the original ports. The combined port supports
+@racket[write-special] only when all the inner ports support it as well,
+and the combined port is ready when all inner ports are ready. Closing
+the combined output port does not close the original ports.}
+
+
 @defproc[(merge-input [a-in input-port?]
                       [b-in input-port?]
                       [buffer-limit (or/c exact-nonnegative-integer? #f) 4096])
