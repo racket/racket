@@ -387,7 +387,58 @@
   (try #\( #\) #\[ #\])
   (try #\[ #\] #\( #\))
   (try #\{ #\} #\[ #\]))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that comment forms can be redirecteed by a readtable
+
+(let ([readstr (lambda (s)
+                 (read (open-input-string s)))])
+  (define readtable
+    (make-readtable #f
+                    #\$ #\; #f
+                    #\* #\| #f
+                    #\? #\! #f))
+
+  (parameterize ([current-readtable readtable])
+    (test 'x readstr "$this\nx")
+    ;; char mapping doesn't affect `#...`
+    (err/rt-test (readstr "#$datum x") exn:fail:read?)
+    (err/rt-test (readstr "#* ??? *# x") exn:fail:read?)
+    (err/rt-test (readstr "#?/other\nx") exn:fail:read?)))
+
+(let ([readstr (lambda (s)
+                 (read (open-input-string s)))])
+  (define saw #f)
   
+  (define ((comment->x msg) ch in src line col pos)
+    (test #f equal? saw msg) ; only once
+    (set! saw msg)
+    'x)
+
+  (define readtable0
+    (make-readtable #f
+                    #\; 'terminating-macro (comment->x "line")
+                    #\; 'dispatch-macro (comment->x "s-exp")
+                    #\| 'dispatch-macro (comment->x "block")
+                    #\! 'dispatch-macro (comment->x "unix")))
+
+  (define readtable
+    (make-readtable readtable0
+                    #\$ #\; readtable0
+                    #\* #\| readtable0
+                    #\? #\! readtable0))
+
+  (parameterize ([current-readtable readtable])
+    (for ([str  '(";this" "$this" "#;datum" "#$datum" "#|a block|#" "#* x *#" "#!/usr/bin/env racket" "#?/other")]
+          [kind '("line"  "line"  "s-exp"   error     "block"       error     "unix"                  error)])
+      (cond
+        [(eq? kind 'error)
+         (err/rt-test (readstr str) exn:fail:read?)]
+        [else
+         (set! saw #f)
+         (test 'x readstr str)
+         (test kind values saw)]))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

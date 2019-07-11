@@ -43,13 +43,13 @@
           (result-special-comment)
           (skip-loop #f))]
      [(and (char=? #\# ec)
-           (eqv? #\| (peek-char/special in config 0 source)))
+           (eqv? #\| (readtable-effective-char/# rt (peek-char/special in config 0 source))))
       (skip-pipe-comment! c in config)
       (if (read-config-keep-comment? config)
           (result-special-comment)
           (skip-loop #f))]
      [(and (char=? #\# ec)
-           (eqv? #\! (peek-char/special in config 0 source))
+           (eqv? #\! (readtable-effective-char/# rt (peek-char/special in config 0 source)))
            (let ([c3 (peek-char/special in config 1 source)])
              (or (eqv? #\space c3)
                  (eqv? #\/ c3))))
@@ -58,7 +58,7 @@
           (result-special-comment)
           (skip-loop #f))]
      [(and (char=? #\# ec)
-           (eqv? #\; (peek-char/special in config 0 source)))
+           (eqv? #\; (readtable-effective-char/# rt (peek-char/special in config 0 source))))
       (consume-char in #\;)
       (define v (read-one #f in config))
       (when (eof-object? v)
