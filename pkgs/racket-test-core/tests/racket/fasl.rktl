@@ -209,4 +209,7 @@
                   [current-load-relative-directory #f])
      (fasl->s-exp (s-exp->fasl (build-path root 'same))))))
 
+(test (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))
+      fasl->s-exp (s-exp->fasl (list (dynamic-require 'racket/unsafe/undefined 'unsafe-undefined))))
+
 (report-errs)

@@ -1,6 +1,7 @@
 #lang racket/base
 (require '#%extfl
          racket/linklet
+         racket/unsafe/undefined
          (for-syntax racket/base)
          "private/truncate-path.rkt"
          "private/relative-path.rkt"
@@ -95,10 +96,9 @@
   (fasl-immutable-hash-type 37)
 
   (fasl-srcloc-type 38)
-
   (fasl-extflonum-type 39)
-
   (fasl-correlated-type 40)
+  (fasl-undefined-type 41)
 
   ;; Unallocated numbers here are for future extensions
 
@@ -350,8 +350,10 @@
                          (correlated-span v)))
            (loop (for/list ([k (in-list (correlated-property-symbol-keys v))])
                    (cons k (correlated-property v k))))]
+          [(eq? v unsafe-undefined)
+           (write-byte fasl-undefined-type o)]
           [else
-           (raise-arguments-error 'fasl-write
+           (raise-arguments-error 's-exp->fasl
                                   "cannot write value"
                                   "value" v)]))
       (get-output-bytes o #t)))
@@ -501,6 +503,8 @@
                                              (srcloc-span s))))
       (for/fold ([c c]) ([p (in-list (loop))])
         (correlated-property c (car p) (cdr p)))]
+     [(fasl-undefined-type)
+      unsafe-undefined]
      [else
       (cond
         [(type . >= . fasl-small-integer-start)
