@@ -4256,7 +4256,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
    #include <strings.h>
    int main() {
      mbstate_t state;
-     char *src = "X";
+     const char *src = "X";
      bzero(&state, sizeof(mbstate_t));
      mbsrtowcs(0, &src, 0, &state);
      return 0;
