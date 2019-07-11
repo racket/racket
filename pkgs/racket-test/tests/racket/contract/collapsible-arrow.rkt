@@ -902,14 +902,16 @@
 
   (test/spec-passed/result
    'calculate-drops:untrusted-chaperone
-   '(let* ([ctc1 (coerce-contract/f (make-chaperone-contract))]
+   '(let* ([lnp (λ (v np) v)]
+           [ctc1 (coerce-contract/f (make-chaperone-contract #:late-neg-projection lnp))]
            [ctcs (list ctc1 ctc1 ctc1)])
       (calculate-drops ctcs))
    '())
 
   (test/spec-passed/result
    'calculate-drops:untrusted-impersonator
-   '(let* ([ctc1 (coerce-contract/f (make-contract))]
+   '(let* ([lnp (λ (v np) v)]
+           [ctc1 (coerce-contract/f (make-contract #:late-neg-projection lnp))]
            [ctcs (list ctc1 ctc1 ctc1)])
       (calculate-drops ctcs))
    '())
