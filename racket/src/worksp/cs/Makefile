@@ -1,5 +1,5 @@
 
-INCS = /I.. /I..\..\rktio /I..\librktio /I$(SCHEME_DIR)\$(MACHINE)\boot\$(MACHINE)
+INCS = /I.. /I..\..\rktio /I..\librktio /I..\..\worksp\cs /I$(SCHEME_DIR)\$(MACHINE)\boot\$(MACHINE)
 
 RKTIO_LIB = ..\..\build\librktio.lib
 BASE_WIN32_LIBS = WS2_32.lib Shell32.lib User32.lib
