@@ -19,7 +19,6 @@
 (struct tcp-listener (lnr
                       closed ; boxed boolean
                       custodian-reference)
-  #:authentic
   #:property prop:evt (poller (lambda (l ctx) (poll-listener l ctx))))
 
 (define/who (tcp-listen port-no [max-allow-wait 4] [reuse? #f] [hostname #f])
