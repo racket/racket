@@ -307,6 +307,13 @@
 (close-input-port r2)
 (end)
 
+;; ----------------------------------------
+;; TCP listeners as events
+
+(chaperone-evt (tcp-listen 0)
+               (lambda (e) (values e values)))
+
+
 (start "TCP Echo, faster...\n")
 (define-values (r w r2 w2) (setup-mzscheme-echo #t))
 (close-input-port r)
