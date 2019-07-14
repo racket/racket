@@ -68,7 +68,7 @@
         [root (intmap-root t)])
     (if root
         ($intmap-ref et root (hash-code et key) key def)
-        ($fail def))))
+        def)))
 
 (define ($intmap-ref et t h key def)
   (cond
@@ -80,15 +80,15 @@
    [(Lf? t)
     (if (key=? et key (Lf-key t))
         (Lf-value t)
-        ($fail def))]
+        def)]
 
    [(Co? t)
     (if (fx= h (Co-hash t))
         ($collision-ref et t key def)
-        ($fail def))]
+        def)]
 
    [else
-    ($fail def)]))
+    def]))
 
 (define ($intmap-has-key? et t h key)
   (not (eq? *nothing* ($intmap-ref et t h key *nothing*))))
@@ -184,7 +184,7 @@
 ;; collision ops
 (define ($collision-ref et t key def)
   (let loop ([xs (Co-pairs t)])
-    (cond [(null? xs) ($fail def)]
+    (cond [(null? xs) def]
           [(key=? et key (caar xs)) (cdar xs)]
           [else (loop (cdr xs))])))
 
@@ -252,19 +252,6 @@
   (cond [(eq? et 'eq)  (eq-hash-code k)]
         [(eq? et 'eqv) (eqv-hash-code k)]
         [else          (key-equal-hash-code k)]))
-
-(define ($fail default)
-  (if (procedure? default)
-      (if (procedure-arity-includes? default 0)
-          (|#%app| default)
-          (raise (|#%app|
-                  exn:fail:contract:arity
-                  (string-append "hash-ref: arity mismatch for failure procedure;\n"
-                                 " given procedure does not accept zero arguments\n"
-                                 "  procedure: "
-                                 (error-value->string default))
-                  (current-continuation-marks))))
-      default))
 
 ;; iteration
 (define (intmap-iterate-first t)

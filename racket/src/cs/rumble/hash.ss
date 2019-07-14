@@ -257,31 +257,36 @@
 (define hash-ref
   (case-lambda
     [(ht k)
-     (let ([v (hash-ref ht k none)])
+     (let ([v (hash-ref/none ht k)])
        (if (eq? v none)
            (raise-arguments-error
             'hash-ref
             "no value found for key"
             "key" k)
            v))]
-    [(ht k fail)
-     (cond
-      [(mutable-hash? ht)
-       (lock-acquire (mutable-hash-lock ht))
-       (let ([v (hashtable-ref (mutable-hash-ht ht) k none)])
-         (lock-release (mutable-hash-lock ht))
-         (if (eq? v none)
-             ($fail fail)
-             v))]
-      [(intmap? ht) (intmap-ref ht k fail)]
-      [(weak-equal-hash? ht) (weak-hash-ref ht k fail)]
-      [(and (impersonator? ht)
-            (authentic-hash? (impersonator-val ht)))
-       (let ([v (impersonate-hash-ref ht k)])
-         (if (eq? v none)
-             ($fail fail)
-             v))]
-      [else (raise-argument-error 'hash-ref "hash?" ht)])]))
+    [(ht k default)
+     (let ([v (hash-ref/none ht k)])
+       (if (eq? v none)
+           (fail-hash-ref default)
+           v))]))
+
+(define (hash-ref/none ht k)
+  (cond
+   [(mutable-hash? ht)
+    (lock-acquire (mutable-hash-lock ht))
+    (begin0
+     (hashtable-ref (mutable-hash-ht ht) k none)
+     (lock-release (mutable-hash-lock ht)))]
+   [(intmap? ht)
+    (intmap-ref ht k none)]
+   [(weak-equal-hash? ht)
+    (weak-hash-ref ht k none)]
+   [(and (impersonator? ht)
+         (authentic-hash? (impersonator-val ht)))
+    ;; impersonate-hash-ref always returns none when the key is absent
+    (impersonate-hash-ref ht k)]
+   [else
+    (raise-argument-error 'hash-ref "hash?" ht)]))
 
 (define/who hash-for-each
   (case-lambda
@@ -745,7 +750,7 @@
 (define unsafe-immutable-hash-iterate-pair
   (case-lambda
    [(ht i) (unsafe-immutable-hash-iterate-pair ht i none)]
-   [(ht i bad-index-v) 
+   [(ht i bad-index-v)
     (if (iterator-for-impersonator? i)
         (hash-iterate-pair ht i bad-index-v)
         (unsafe-intmap-iterate-pair ht i))]))
@@ -807,14 +812,12 @@
          [(null? keys)
           ;; Not in the table:
           (lock-release (weak-equal-hash-lock t))
-          ($fail fail)]
+          fail]
          [(key-equal? (car keys) key)
-          (let* ([k (car keys)]
-                 [v (hashtable-ref (weak-equal-hash-vals-ht t) (car keys) none)])
-            (lock-release (weak-equal-hash-lock t))
-            (if (eq? v none)
-                ($fail fail)
-                v))]
+          (let ([k (car keys)])
+            (begin0
+             (hashtable-ref (weak-equal-hash-vals-ht t) (car keys) fail)
+             (lock-release (weak-equal-hash-lock t))))]
          [else (loop (cdr keys))])))]
    [(t key fail)
     (weak-hash-ref t key fail (key-equal-hash-code key) key-equal?)]))
@@ -1288,3 +1291,16 @@
    [pair? (cons bad-index-v bad-index-v)]
    [(and value? key?) (values bad-index-v bad-index-v)]
    [else bad-index-v]))
+
+(define (fail-hash-ref default)
+  (if (procedure? default)
+      (if (procedure-arity-includes? default 0)
+          (|#%app| default)
+          (raise (|#%app|
+                  exn:fail:contract:arity
+                  (string-append "hash-ref: arity mismatch for failure procedure;\n"
+                                 " given procedure does not accept zero arguments\n"
+                                 "  procedure: "
+                                 (error-value->string default))
+                  (current-continuation-marks))))
+      default))
