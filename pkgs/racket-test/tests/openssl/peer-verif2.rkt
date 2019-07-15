@@ -4,6 +4,8 @@
          racket/tcp
          racket/runtime-path)
 
+(define PORT 55001)
+
 (define (check fmt got expect)
   (unless (equal? got expect)
     (error 'check fmt got)))
@@ -36,14 +38,14 @@
   (call/custodian
    (lambda ()
      (define chan (make-channel))
-     (define listener (ssl-listen 55000 4 #t "localhost" server-ctx))
+     (define listener (ssl-listen PORT 4 #t "localhost" server-ctx))
      (thread (lambda ()
                (ssl-try-verify! listener #t)
                (define-values (in out) (ssl-accept listener))
                (channel-put chan (and (ssl-peer-verified? in) (ssl-peer-subject-name in)))))
      ;; Use ports->ssl-ports instead of ssl-connect so we can supply a fake hostname.
-     ;; (ssl-connect "localhost" 55000 client-ctx)
-     (define-values (in out) (tcp-connect "localhost" 55000))
+     ;; (ssl-connect "localhost" PORT client-ctx)
+     (define-values (in out) (tcp-connect "localhost" PORT))
      (if (symbol? client-ctx)
          (ports->ssl-ports in out #:mode 'connect #:encrypt client-ctx #:hostname server-hostname)
          (ports->ssl-ports in out #:mode 'connect #:context client-ctx #:hostname server-hostname))
@@ -56,7 +58,7 @@
     (ssl-load-certificate-chain! ctx server-crt)
     (ssl-load-private-key! ctx server-key #f #f)
     ctx))
-;; Set 
+;; Set roots for server-verifying-client
 (parameterize ((ssl-default-verify-sources (list cacert)))
   (ssl-load-default-verify-sources! server-ctx1)
   (ssl-load-default-verify-sources! server-ctx2))
