@@ -226,13 +226,13 @@ impersonator (i.e., not counting optional arguments that were
 not supplied). The arguments must be ordered according to the sorted
 order of the supplied arguments' keywords.
 
-If @racket[wrapper] is @racket[#f], then applying the resulting
+If @racket[wrapper-proc] is @racket[#f], then applying the resulting
 impersonator is the same as applying @racket[proc]. If
-@racket[wrapper] is @racket[#f] and no @racket[prop] is provided, then
+@racket[wrapper-proc] is @racket[#f] and no @racket[prop] is provided, then
 @racket[proc] is returned and is not impersonated.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
-to @racket[procedure-impersonator] must be even) add impersonator properties
+to @racket[impersonate-procedure] must be even) add impersonator properties
 or override impersonator-property values of @racket[proc].
 
 If any @racket[prop] is @racket[impersonator-prop:application-mark] and if the
