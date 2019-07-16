@@ -7,7 +7,7 @@
 
 @defproc[(get-module-code [path path-string?]
                           [#:submodule-path submodule-path (listof symbol?) '()]
-                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (get-default-compiled-sub-path)]
+                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (default-compiled-sub-path)]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
                           [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
@@ -31,7 +31,7 @@ specified by @racket[path] and @racket[submodule-path], where
 @racket[submodule-path] is empty for a root module or a list for a
 submodule.
 
-The @racket[compiled-subdir] argument defaults to @racket[(get-default-compiled-sub-path)];
+The @racket[compiled-subdir] argument defaults to @racket[(default-compiled-sub-path)];
 it specifies the sub-directory to search for a compiled version of the
 module. The @racket[roots] list specifies a compiled-file search path
 in the same way as the @racket[current-compiled-file-roots] parameter.
@@ -79,12 +79,12 @@ If @racket[notify-proc] is supplied, it is called for the file
 If @racket[read-syntax-proc] is provided, it is used to read the
 module from a source file (but not from a bytecode file).
 
-@history[#:changed "6.90.0.7" @elem{Use @racket[(get-default-compiled-sub-path)]
+@history[#:changed "6.90.0.7" @elem{Use @racket[(default-compiled-sub-path)]
                                     for the default value of @racket[compiled-subdir].}]}
 
 @defproc[(get-module-path [path path-string?]
                           [#:submodule? submodule? boolean?]
-                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (get-default-compiled-sub-path)]
+                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) (default-compiled-sub-path)]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
                           [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
                           [#:choose choose-proc 
@@ -111,11 +111,11 @@ submodule of the one specified by @racket[path].  When @racket[submodule?] is
 true, the result is never a @racket['so] path, as native libraries cannot
 provide submodules.
 
-@history[#:changed "6.90.0.7" @elem{Use @racket[(get-default-compiled-sub-path)]
+@history[#:changed "6.90.0.7" @elem{Use @racket[(default-compiled-sub-path)]
                                     for the default value of @racket[compiled-subdir].}]}
 
 
-@defproc[(get-default-compiled-sub-path) path-string?]{
+@defproc[(default-compiled-sub-path) path-string?]{
 
 If @racket[(use-compiled-file-paths)] is not @racket['()], returns the
 first element of the list. Otherwise, results @racket["compiled"].
