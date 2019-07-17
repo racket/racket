@@ -269,7 +269,7 @@ ${RACKETEXE} -v
 annotate-output ${RACOEXE} test -l tests/racket/test
 annotate-output ${RACKETEXE} -l tests/racket/contract/all
 annotate-output ${RACOEXE} test -l tests/json/json
-annotate-output ${RACOEXE} test -l tests/file/main
+annotate-output ${RACKETEXE} -l tests/file/main
 annotate-output ${RACOEXE} test -l tests/net/head
 annotate-output ${RACOEXE} test -l tests/net/uri-codec
 annotate-output ${RACOEXE} test -l tests/net/url

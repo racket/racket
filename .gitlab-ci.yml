@@ -113,7 +113,7 @@ test:ubsan:
     - raco test -l tests/racket/test 2>&1 | tee logs/test.log
     - racket -l tests/racket/contract/all 2>&1 | tee logs/contract-test.log
     - raco test -l tests/json/json 2>&1 | tee logs/json-test.log
-    - raco test -l tests/file/main 2>&1 | tee logs/file-test.log
+    - racket -l tests/file/main 2>&1 | tee logs/file-test.log
     - raco test -l tests/net/head 2>&1 | tee logs/net-head-test.log
     - raco test -l tests/net/uri-codec 2>&1 | tee logs/net-uri-codec-test.log
     - raco test -l tests/net/url 2>&1 | tee logs/net-url-test.log
@@ -146,7 +146,7 @@ test:ubsan:cs:
     - racocs test -l tests/racket/test 2>&1 | tee cs-logs/test.log
     - racketcs -l tests/racket/contract/all 2>&1 | tee cs-logs/contract-test.log
     - racocs test -l tests/json/json 2>&1 | tee cs-logs/json-test.log
-    - racocs test -l tests/file/main 2>&1 | tee cs-logs/file-test.log
+    - racketcs -l tests/file/main 2>&1 | tee cs-logs/file-test.log
     - racocs test -l tests/net/head 2>&1 | tee cs-logs/net-head-test.log
     - racocs test -l tests/net/uri-codec 2>&1 | tee cs-logs/net-uri-codec-test.log
     - racocs test -l tests/net/url 2>&1 | tee cs-logs/net-url-test.log

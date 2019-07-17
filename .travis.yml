@@ -39,7 +39,7 @@ script:
 - raco test -l tests/racket/test
 - racket -l tests/racket/contract/all
 - raco test -l tests/json/json
-- raco test -l tests/file/main
+- racket -l tests/file/main
 - raco test -l tests/net/head
 - raco test -l tests/net/uri-codec
 - raco test -l tests/net/url
