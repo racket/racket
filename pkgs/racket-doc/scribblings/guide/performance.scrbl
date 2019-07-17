@@ -680,7 +680,7 @@ To check whether incremental mode is in use and how it affects pause
 times, enable @tt{debug}-level logging output for the
 @racketidfont{GC} topic. For example,
 
-@commandline{racket -W "debuG@"@"GC error" main.rkt}
+@commandline{racket -W "debug@"@"GC error" main.rkt}
 
 runs @filepath{main.rkt} with garbage-collection logging to stderr
 (while preserving @tt{error}-level logging for all topics). Minor
