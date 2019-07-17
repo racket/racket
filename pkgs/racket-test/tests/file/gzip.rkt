@@ -93,7 +93,7 @@
   (define ch (make-channel))
   (thread (lambda ()
             (with-handlers [(exn:fail? (lambda (_exn) (channel-put ch 'success)))]
-              (tar-gzip tgz-file long-path)
+              (tar-gzip tgz-file long-path #:format 'ustar)
               (channel-put ch 'didnt-fail-in-tar-gzip))))
   (test (sync/timeout 10 ch) => 'success))
 
@@ -115,8 +115,10 @@
      (gzip-through-ports in (open-output-bytes) "defalte-me.dat" (current-seconds)))))
 
 (provide tests)
-(module+ main (tests))
 (define (tests) (test do (run-tests)))
+
+(module+ main (tests))
+;; Use "main.rkt" with `raco test`, instead of this file
 
 
 #|

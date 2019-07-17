@@ -4,6 +4,8 @@
 (provide tests)
 
 (module+ main (tests))
+;; Use "main.rkt" with `raco test`, instead of this file
+
 (define (tests)
   (test
    (md5 #"")
