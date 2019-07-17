@@ -254,7 +254,10 @@
                              [(equal? allowed '(#:a #:b))
                               (err/rt-test ((car p) 1 #:a 1 #:b 1))]
                              [(equal? allowed #f)
-                              (err/rt-test ((car p) 1 #:a 1 #:b 1))])))))))
+                              (err/rt-test ((car p) 1 #:a 1 #:b 1))])))
+                      ;; Try supplying many arguments
+                      (when (procedure-arity-includes? (car p) 100)
+                        (test #t list? (apply (car p) (for/list ([i 100]) i))))))))
               (map
                add-chaperone
                (append procs
