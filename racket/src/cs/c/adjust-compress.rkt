@@ -40,7 +40,9 @@
   (define o (open-output-bytes))
   (unless (parameterize ([current-input-port (open-input-bytes bstr)]
                          [current-output-port o])
-            (system* (find-executable-path "lz4") flag))
+            (define lz4 (or (find-executable-path "lz4")
+                            (error 'adjust-compress "could not find `lz4` executable, which is needed to adjust bootfile compression")))
+            (system* lz4 flag))
     (error "lz4 failed"))
   (get-output-bytes o))
 
