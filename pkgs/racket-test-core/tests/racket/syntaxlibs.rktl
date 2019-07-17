@@ -11,8 +11,8 @@
       [(_ tmpl)
        (let ([v (transform-template #'tmpl
                            #:save (lambda (stx) stx)
-                           #:restore-stx (lambda (v stx datum)
-                                           (datum->syntax stx datum stx stx stx)))])
+                           #:restore-stx #'(lambda (v stx datum)
+                                             (datum->syntax stx datum stx stx stx)))])
          v)]))
 
   (test '(1 #s(x "a" 1/2 8 9)
