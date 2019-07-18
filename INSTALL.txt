@@ -328,6 +328,9 @@ installers: build a server on the current machine, run clients on
 hosts specified via `CONFIG`, and start/stop VirtualBox virtual machines
 that act as client machines.
 
+If the server is already built, the `installers-from-built` target
+will drive the client builds without re-building the server.
+
 See the documentation of the "distro-build" package for a description
 of the site-configuration module and requirements on client hosts.
 
