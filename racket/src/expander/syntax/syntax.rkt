@@ -1,5 +1,7 @@
 #lang racket/base
-(require "../compile/serialize-property.rkt"
+(require racket/private/place-local
+         racket/fixnum
+         "../compile/serialize-property.rkt"
          "../compile/serialize-state.rkt"
          "../common/set.rkt"
          "../common/inline.rkt"
@@ -30,7 +32,9 @@
  
  deserialize-syntax
  deserialize-datum->syntax
- current-arm-inspectors)
+ current-arm-inspectors
+
+ syntax-place-init!)
 
 (struct syntax ([content #:mutable] ; datum and nested syntax objects; mutated for lazy propagation
                 scopes  ; scopes that apply at all phases
@@ -186,6 +190,8 @@
 (define (syntax->datum s)
   (syntax-map s (lambda (tail? x) x) (lambda (s d) d) syntax-content))
 
+(define-place-local known-syntax-pairs (make-weak-hasheq))
+
 (define (datum->syntax stx-c s [stx-l #f] [stx-p #f])
   (cond
    [(syntax? s) s]
@@ -212,9 +218,16 @@
                    (weaker-inspector insp (syntax-inspector stx-c)))))
     (define result-s
       (non-syntax-map s
-                      (lambda (tail? x) (if tail? x (wrap x)))
+                      (lambda (tail? x) (cond
+                                          [tail?
+                                           (when (and (fx> tail? 32)
+                                                      (fx= 0 (fxand tail? (fx- tail? 1))))
+                                             (hash-set! known-syntax-pairs x #t))
+                                           x]
+                                          [else (wrap x)]))
                       (lambda (s) s)
-                      disallow-cycles))
+                      disallow-cycles
+                      known-syntax-pairs))
     (if (and stx-p (not (eq? (syntax-props stx-p) empty-props)))
         (struct-copy syntax result-s
                      [props (syntax-props stx-p)])
@@ -248,14 +261,15 @@
 ;;  when a syntax object is found, it is just passed to `s->` --- so there's
 ;;  no `d->s` or `s-e`, since they would not be called
 
-(define-inline (non-syntax-map s f [s-> (lambda (x) x)] [seen #f])
+(define-inline (non-syntax-map s f [s-> (lambda (x) x)] [seen #f] [known-pairs #f])
   (datum-map s
              f
              (lambda (tail? v)
                (cond
                 [(syntax? v) (s-> v)]
                 [else (f tail? v)]))
-             seen))
+             seen
+             known-pairs))
 
 (define disallow-cycles
   (hasheq 'cycle-fail
@@ -263,6 +277,9 @@
             (raise-arguments-error 'datum->syntax
                                    "cannot create syntax from cyclic datum"
                                    "datum" s))))
+
+(define (syntax-place-init!)
+  (set! known-syntax-pairs (make-weak-hasheq)))
 
 ;; ----------------------------------------
 

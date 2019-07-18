@@ -34,6 +34,7 @@
                   compiled-expression-recompile)
          (only-in racket/private/config find-main-config)
          (only-in "syntax/cache.rkt" cache-place-init!)
+         (only-in "syntax/syntax.rkt" syntax-place-init!)
          (only-in "syntax/scope.rkt" scope-place-init!)
          (only-in "eval/module-cache.rkt" module-cache-place-init!)
          (only-in "common/performance.rkt" performance-place-init!)
@@ -207,6 +208,7 @@
   (datum->syntax core-stx s))
 
 (define (expander-place-init!)
+  (syntax-place-init!)
   (scope-place-init!)
   (cache-place-init!)
   (core-place-init!)
