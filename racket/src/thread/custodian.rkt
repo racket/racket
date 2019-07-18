@@ -265,7 +265,7 @@
 ;; In atomic mode
 (define (do-custodian-shutdown-all c)
   (unless (custodian-shut-down? c)
-    (set-custodian-shut-down?! c #t)
+    (set-custodian-shut-down! c)
     (when (custodian-sync-futures? c)
       (futures-sync-for-custodian-shutdown))
     (for ([(child callback) (in-hash (custodian-children c))])
