@@ -177,7 +177,7 @@
           (for ([pc (in-list free)])
             (place-channel-put pc 'get-counts-and-stop)
             (define-values (tests failures) (apply values (place-channel-get pc)))
-            (for ([i (in-range tests)]) (new-test-case))
+            (for ([i (in-range tests)]) (new-test-case 'unknown-name))
             (for ([i (in-range failures)]) (new-failure)))]
          [else
           (apply sync
