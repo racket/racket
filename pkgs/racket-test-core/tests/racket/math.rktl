@@ -340,7 +340,11 @@
   (test 0.0f0 tanh 0.0f0)
   (test #t single=? tanh+1 (tanh 1.0f0))
   (test 1.0f0 tanh 20.0f0)
-  (test 1.0f0 tanh +inf.f))
+  (test 1.0f0 tanh +inf.f)
+  (test #t single-flonum? (tanh -0.11100646f0))
+  (test #t single-flonum? (tanh 0.11100646f0))
+  (test #t single-flonum? (tanh 0.61100646f0))
+  (test #t single-flonum? (tanh 20.61100646f0)))
 
 (test +nan.0 tanh +nan.0)
 (test -1.0 tanh -inf.0)

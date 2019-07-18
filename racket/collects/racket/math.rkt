@@ -85,7 +85,7 @@
                     (define R
                       (/ (* g (+ (* (+ (* p2 g) p1) g) p0))
                          (+ (* (+ (* (+ g q2) g) q1) g) q0)))
-                    (+ z (* z R))]
+                    (+ z (* z (if (single-flonum? z) (real->single-flonum R) R)))]
                    [(z . < . 19.06154746539849600897D+00) (- 1 (/ 2 (+ 1 (exp (* 2 z)))))]
                    [(z . >= . 19.06154746539849600897D+00) (if (single-flonum? z) (real->single-flonum 1.0) 1.0)]
                    [else          z]))]  ; +nan.0 or +nan.f
