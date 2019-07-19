@@ -315,7 +315,7 @@ In a fully expanded program for a namespace whose @tech{base phase} is
 @racket[begin-for-syntax] and @racket[define-syntaxes] forms---not
 counting any @racket[begin-for-syntax] forms that wrap a
 @racket[module] or @racket[module*] form for the body of the @racket[module]
-or @racket[module*], unless a @racket[module*] form as @racket[#f] in place
+or @racket[module*], unless a @racket[module*] form has @racket[#f] in place
 of a @racket[_module-path] after the @racket[_id]. The
 @racket[_datum] in a @racket[quote-syntax] form
 preserves its information for all @tech{phase level}s.
