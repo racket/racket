@@ -537,5 +537,30 @@
   (test #t < retained 3))
 
 ;; ----------------------------------------
+;; Make sure that a weak box is not cleared before an associated
+;; will is run
+
+;; Put test in a `lambda` to make sure it's JITted:
+(define (check-weak-box-before-will)
+  (define v (gensym))
+  
+  (define w (make-will-executor))
+  (will-register w v (lambda (v) 'done))
+  
+  (define wb (make-weak-box v))
+  
+  (set! v #f)
+  (collect-garbage)
+  (let ([wv (weak-box-value wb)]
+        [we (will-try-execute w)])
+    (test 'done values we)
+    (test #t symbol? wv))
+  
+  (collect-garbage)
+  (test #f weak-box-value wb))
+
+(check-weak-box-before-will)
+
+;; ----------------------------------------
 
 (report-errs)

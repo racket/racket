@@ -4281,11 +4281,6 @@ static void do_disappear_and_finals()
   collect();
   if (GC_push_last_roots_again) { GC_push_last_roots_again(); collect(); }
 
-#if !NO_DISAPPEARING
-  /* Do disappearing: */
-  do_disappearing(&disappearing);
-#endif
-
   /* Queue unreachable eager finalizable, level 1: */  
   /* DO NOT COLLECT FROM collect_stack UNTIL AFTER THIS LOOP */
   /* (Otherwise, some ready eager finalizations may not be queued.) */
@@ -4295,6 +4290,11 @@ static void do_disappear_and_finals()
   }
   collect();
   if (GC_push_last_roots_again) { GC_push_last_roots_again(); collect(); }
+
+#if !NO_DISAPPEARING
+  /* Do disappearing: */
+  do_disappearing(&disappearing);
+#endif
 
   /* Queue unreachable eager finalizable, level 2: */  
   /* DO NOT COLLECT FROM collect_stack UNTIL AFTER THIS LOOP */
