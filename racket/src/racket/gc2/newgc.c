@@ -2672,10 +2672,13 @@ inline static int check_finalizers(NewGC *gc, int level, int old_gen, int fuel)
 
   if (!fuel) return 0;
 
+  GC_mark_no_recur(gc, 0);
+
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
   while(work) {
     if (!fuel) {
       GC_ASSERT(old_gen);
+      GC_mark_no_recur(gc, 1);
       return 0;
     }
     if (fuel > 0) {
@@ -2741,6 +2744,8 @@ inline static int check_finalizers(NewGC *gc, int level, int old_gen, int fuel)
       }
     }
   }
+
+  GC_mark_no_recur(gc, 1);
 
   return fuel;
 }
