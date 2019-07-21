@@ -306,6 +306,7 @@ scheme_init_struct (Scheme_Startup_Env *env)
   /* Add poller structure: */
   REGISTER_SO(poller_struct);
   poller_struct = scheme_make_struct_type_from_string("unsafe-poller", NULL, 1, NULL, NULL, 1);
+  REGISTER_SO(scheme_unsafe_poller_proc);
   scheme_unsafe_poller_proc = make_struct_proc((Scheme_Struct_Type *)poller_struct, "unsafe-poller", SCHEME_CONSTR, 1);
 
   REGISTER_SO(write_property);
