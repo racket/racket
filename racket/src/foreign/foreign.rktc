@@ -2720,7 +2720,7 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
 {
   Scheme_Object *data = SCHEME_PRIM_CLOSURE_ELS(self)[0];
   int curried = !SCHEME_VEC_ELS(data)[1] && !SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]);
-  const char    *name = SCHEME_BYTE_STR_VAL(SCHEME_VEC_ELS(data)[0]);
+  const char    *name = ((Scheme_Primitive_Closure *)self)->p.name;
   void          *c_func = (curried
                            ? (void*)SCHEME_PRIM_CLOSURE_ELS(self)[1]
                            : (void*)(SCHEME_VEC_ELS(data)[1]));
@@ -2895,6 +2895,7 @@ static Scheme_Object *make_ffi_call_from_curried(int argc, Scheme_Object *argv[]
 {
   Scheme_Object *data = SCHEME_PRIM_CLOSURE_ELS(self)[0];
   Scheme_Object *a[3], *name, *itypes, *obj, *cp;
+  const char *name_str;
   intptr_t ooff;
   int nargs;
 
@@ -2908,8 +2909,10 @@ static Scheme_Object *make_ffi_call_from_curried(int argc, Scheme_Object *argv[]
 
   name = SCHEME_VEC_ELS(data)[0];
   if (SCHEME_FFIOBJP(cp))
-    name = scheme_make_byte_string(((ffi_obj_struct*)(cp))->name);
-  
+    name_str = ((ffi_obj_struct*)(cp))->name;
+  else
+    name_str = SCHEME_BYTE_STR_VAL(name);
+
   itypes = SCHEME_VEC_ELS(data)[2];
 
   nargs = scheme_proper_list_length(itypes);
@@ -2920,7 +2923,7 @@ static Scheme_Object *make_ffi_call_from_curried(int argc, Scheme_Object *argv[]
 
   return scheme_make_prim_closure_w_arity(ffi_do_call_after_stack_check,
                                           3, a, 
-                                          SCHEME_BYTE_STR_VAL(name),
+                                          name_str,
                                           nargs, nargs);
   
 }
