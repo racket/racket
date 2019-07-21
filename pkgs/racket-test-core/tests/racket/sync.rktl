@@ -1005,6 +1005,15 @@
                               (values #f self)]))))
   (test #t sync (p)))
 
+(let ()
+  (struct not-ever-evt ()
+    #:property prop:evt
+    (unsafe-poller
+     (lambda (self wakeups)
+       (printf "~s\n" wakeups)
+       (values #f never-evt))))
+  (test #f sync/timeout 0 (not-ever-evt)))
+
 ;; ----------------------------------------
 ;;  Garbage collection
 

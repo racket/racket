@@ -1661,7 +1661,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
           v = scheme_make_closed_prim_w_arity(return_wrapped, (void *)v, "wrapper", 1, 1);
       }
       scheme_set_sync_target(sinfo, v, (done ? v : NULL), NULL, 0, 0, NULL);
-      return 1;
+      return done;
     }
   }
 
