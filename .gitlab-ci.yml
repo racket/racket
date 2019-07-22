@@ -1306,12 +1306,6 @@ test:emulation:nogenerations:ppc64el:
     - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --enable-cs --with-qemu-path $INSTALL_DIR
   dependencies:
     - prepare-cache:qemu
-    
-test:native:x86_64:cs:
-  extends: .preparearch:cs
-  variables:
-    ARCH: "x86_64"
-    INSTALL_DIR: $CI_PROJECT_DIR/install
 
 test:emulation:i386:cs:
   extends: .preparearch:cs
