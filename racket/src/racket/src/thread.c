@@ -3216,18 +3216,10 @@ static void remove_thread(Scheme_Thread *r)
   } else {
     /* Only this thread used the runstack, so clear/free it
        as aggressively as possible */
-#if defined(SENORA_GC_NO_FREE) || defined(MZ_PRECISE_GC)
     memset(r->runstack_start, 0, r->runstack_size * sizeof(Scheme_Object*));
-#else
-    GC_free(r->runstack_start);
-#endif
     r->runstack_start = NULL;
     for (saved = r->runstack_saved; saved; saved = saved->prev) {
-#if defined(SENORA_GC_NO_FREE) || defined(MZ_PRECISE_GC)
       memset(saved->runstack_start, 0, saved->runstack_size * sizeof(Scheme_Object*));
-#else
-      GC_free(saved->runstack_start);
-#endif
       saved->runstack_start = NULL;
     }
   }
