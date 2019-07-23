@@ -112,9 +112,9 @@
       [(|#%pthread|)
        ;; Entries in the `#%pthread` table are referenced more
        ;; directly in "compiled/thread.scm". To make that work, the
-       ;; entries need to be registered as built-in names with the
-       ;; expander, and they need to be listed in
-       ;; "primitive/internal.ss".
+       ;; entries need to be either primitives in all Racket
+       ;; implemenations or registered as built-in names with the
+       ;; expander and listed in "primitive/internal.ss".
        (hasheq
         'make-pthread-parameter make-pthread-parameter
         'unsafe-root-continuation-prompt-tag unsafe-root-continuation-prompt-tag

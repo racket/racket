@@ -65,15 +65,18 @@
                variable-set!/define
                make-instance-variable-reference
                instance-variable-reference
+               unbox/check-undefined
+               set-box!/check-undefined
                annotation?
                annotation-expression
                #%app
                #%call-with-values
+               call-with-module-prompt
                make-pthread-parameter
-               break-enabled-key
                engine-block
-               fasl->s-exp/intern
+               force-unfasl
                make-record-type-descriptor
+               make-record-constructor-descriptor
                record-constructor
                record-accessor
                record-mutator
@@ -83,8 +86,13 @@
                register-struct-predicate!
                register-struct-field-accessor!
                register-struct-field-mutator!
+               unsafe-struct?
                raise-binding-result-arity-error
-
+               structure-type-lookup-prefab-uid
+               struct-type-constructor-add-guards
+               impersonator-val
+               impersonator-ref
+               impersonate-set!
                ptr-ref/int8 ptr-set!/int8
                ptr-ref/uint8 ptr-set!/uint8
                ptr-ref/int16 ptr-set!/int16

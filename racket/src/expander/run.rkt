@@ -184,7 +184,9 @@
          ts
          (let ([l (read-dependencies-from-file check-dependencies)])
            (and l
-                (for/and ([dep (in-list l)])
+                (pair? l)
+                (equal? (car l) (string->bytes/utf-8 (version)))
+                (for/and ([dep (in-list (cdr l))])
                   (<= (file-or-directory-modify-seconds dep #f (lambda () +inf.0))
                       ts)))))
     (log-status "No dependencies are newer")
@@ -395,8 +397,10 @@
    dependencies-file
    #:exists 'truncate/replace
    (lambda (o)
-     (writeln (for/list ([dep (in-hash-keys dependencies)])
-                (path->bytes dep))
+     (writeln (cons
+               (string->bytes/utf-8 (version))
+               (for/list ([dep (in-hash-keys dependencies)])
+                 (path->bytes dep)))
               o))))
 
 (when makefile-dependencies-file

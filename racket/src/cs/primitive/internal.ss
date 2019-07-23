@@ -1,9 +1,10 @@
 
 ;; Exports that are not exposed to Racket, but
-;; can be used in a linklet:
+;; can be used in a linklet. These need to be
+;; listed in "built-in-symbol.rkt" in the expander,
+;; too.
 
 (define-primitive-table internal-table
-  [set-ctl-c-handler! (known-constant)]
   [impersonator-val (known-constant)]
   [impersonate-ref (known-constant)]
   [impersonate-set! (known-constant)]
@@ -14,7 +15,6 @@
   [register-struct-predicate! (known-constant)]
   [register-struct-field-accessor! (known-constant)]
   [register-struct-field-mutator! (known-constant)]
-  [struct-property-set! (known-constant)]
   [|#%call-with-values| (known-constant)]
   [unbox/check-undefined (known-constant)]
   [set-box!/check-undefined (known-constant)]
@@ -28,11 +28,9 @@
   [unsafe-struct? (known-constant)]
 
   [call-with-module-prompt (known-procedure 2)]
+  [raise-binding-result-arity-error (known-procedure 4)]
 
-  [fork-place (known-procedure 1)]
-  [start-place (known-procedure 32)]
   [make-pthread-parameter (known-procedure 2)]
-  [break-enabled-key (known-constant)]
   [engine-block (known-procedure 1)]
 
   [force-unfasl (known-procedure 2)]
