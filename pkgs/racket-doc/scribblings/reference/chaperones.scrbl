@@ -491,7 +491,9 @@ In addition, operations like
 keys from the table, use @racket[key-proc] to replace keys extracted
 from the table. Operations like @racket[hash-iterate-value] or
 @racket[hash-values] implicitly use @racket[hash-ref] and
-therefore redirect through @racket[ref-proc].
+therefore redirect through @racket[ref-proc]. The @racket[hash-ref-key]
+operation uses both @racket[ref-proc] and @racket[key-proc], the
+former to lookup the requested key and the latter to extract it.
 
 The @racket[ref-proc] must accept @racket[hash] and a key passed
 to @racket[hash-ref]. It must return a replacement key
@@ -499,7 +501,8 @@ as well as a procedure. The returned procedure is called only if the
 returned key is found in @racket[hash] via @racket[hash-ref], in which
 case the procedure is called with @racket[hash], the previously
 returned key, and the found value. The returned procedure must itself
-return a replacement for the found value.
+return a replacement for the found value. The returned procedure
+is ignored by @racket[hash-ref-key].
 
 The @racket[set-proc] must accept @racket[hash], a key passed to
 @racket[hash-set!] or @racket[hash-set], and the value passed to
@@ -515,10 +518,10 @@ replacement for the key, which is used with @racket[hash-remove!] or
 mapping using the (impersonator-replaced) key.
 
 The @racket[key-proc] must accept @racket[hash] and a key that has
-been extracted from @racket[hash] (by @racket[hash-iterate-key] or
-other operations that use @racket[hash-iterate-key] internally); it
-must produce a replacement for the key, which is then reported as a
-key extracted from the table.
+been extracted from @racket[hash] (by @racket[hash-ref-key],
+@racket[hash-iterate-key], or other operations that use
+@racket[hash-iterate-key] internally); it must produce a replacement
+for the key, which is then reported as a key extracted from the table.
 
 If @racket[clear-proc] is not @racket[#f], it must accept
 @racket[hash] as an argument, and its result is ignored. The fact that

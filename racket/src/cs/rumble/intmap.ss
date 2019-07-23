@@ -33,8 +33,6 @@
   [nongenerative #{Co pfwguidjcvqbvofiirp097jco-3}]
   [sealed #t])
 
-(define *nothing* (gensym))
-
 (define immutable-hash? intmap?)
 
 (define empty-hash (make-intmap 'equal #f))
@@ -63,35 +61,42 @@
         [(Co? t) (length (Co-pairs t))]
         [else 0]))
 
-(define (intmap-ref t key def)
+(define (do-intmap-ref t key with-leaf with-pair default)
   (let ([et (intmap-eqtype t)]
         [root (intmap-root t)])
     (if root
-        ($intmap-ref et root (hash-code et key) key def)
-        ($fail def))))
+        (do-$intmap-ref et root (hash-code et key) key with-leaf with-pair default)
+        default)))
 
-(define ($intmap-ref et t h key def)
-  (cond
-   [(Br? t)
-    (if (fx<= h (Br-prefix t))
-        ($intmap-ref et (Br-left t) h key def)
-        ($intmap-ref et (Br-right t) h key def))]
+(define (do-$intmap-ref et t h key with-leaf with-pair default)
+  (let loop ([t t])
+    (cond
+     [(Br? t)
+      (if (fx<= h (Br-prefix t))
+          (loop (Br-left t))
+          (loop (Br-right t)))]
 
-   [(Lf? t)
-    (if (key=? et key (Lf-key t))
-        (Lf-value t)
-        ($fail def))]
+     [(Lf? t)
+      (if (key=? et key (Lf-key t))
+          (with-leaf t)
+          default)]
 
-   [(Co? t)
-    (if (fx= h (Co-hash t))
-        ($collision-ref et t key def)
-        ($fail def))]
+     [(Co? t)
+      (if (fx= h (Co-hash t))
+          ($collision-ref et t key with-pair default)
+          default)]
 
-   [else
-    ($fail def)]))
+     [else
+      default])))
+
+(define (intmap-ref t key default)
+  (do-intmap-ref t key Lf-value cdr default))
+
+(define (intmap-ref-key t key default)
+  (do-intmap-ref t key Lf-key car default))
 
 (define ($intmap-has-key? et t h key)
-  (not (eq? *nothing* ($intmap-ref et t h key *nothing*))))
+  (do-$intmap-ref et t h key (lambda (_) #t) (lambda (_) #t) #f))
 
 (define (intmap-set t key val)
   (let ([et (intmap-eqtype t)])
@@ -182,10 +187,10 @@
     #f]))
 
 ;; collision ops
-(define ($collision-ref et t key def)
+(define ($collision-ref et t key with-pair default)
   (let loop ([xs (Co-pairs t)])
-    (cond [(null? xs) ($fail def)]
-          [(key=? et key (caar xs)) (cdar xs)]
+    (cond [(null? xs) default]
+          [(key=? et key (caar xs)) (with-pair (car xs))]
           [else (loop (cdr xs))])))
 
 (define ($collision-set et t key val)
@@ -252,19 +257,6 @@
   (cond [(eq? et 'eq)  (eq-hash-code k)]
         [(eq? et 'eqv) (eqv-hash-code k)]
         [else          (key-equal-hash-code k)]))
-
-(define ($fail default)
-  (if (procedure? default)
-      (if (procedure-arity-includes? default 0)
-          (|#%app| default)
-          (raise (|#%app|
-                  exn:fail:contract:arity
-                  (string-append "hash-ref: arity mismatch for failure procedure;\n"
-                                 " given procedure does not accept zero arguments\n"
-                                 "  procedure: "
-                                 (error-value->string default))
-                  (current-continuation-marks))))
-      default))
 
 ;; iteration
 (define (intmap-iterate-first t)

@@ -256,32 +256,85 @@
 
 (define hash-ref
   (case-lambda
-    [(ht k)
-     (let ([v (hash-ref ht k none)])
-       (if (eq? v none)
-           (raise-arguments-error
-            'hash-ref
-            "no value found for key"
-            "key" k)
-           v))]
-    [(ht k fail)
-     (cond
-      [(mutable-hash? ht)
-       (lock-acquire (mutable-hash-lock ht))
-       (let ([v (hashtable-ref (mutable-hash-ht ht) k none)])
-         (lock-release (mutable-hash-lock ht))
-         (if (eq? v none)
-             ($fail fail)
-             v))]
-      [(intmap? ht) (intmap-ref ht k fail)]
-      [(weak-equal-hash? ht) (weak-hash-ref ht k fail)]
-      [(and (impersonator? ht)
-            (authentic-hash? (impersonator-val ht)))
-       (let ([v (impersonate-hash-ref ht k)])
-         (if (eq? v none)
-             ($fail fail)
-             v))]
-      [else (raise-argument-error 'hash-ref "hash?" ht)])]))
+   [(ht k)
+    (let ([v (hash-ref/none ht k)])
+      (if (eq? v none)
+          (raise-arguments-error
+           'hash-ref
+           "no value found for key"
+           "key" k)
+          v))]
+   [(ht k fail)
+    (let ([v (hash-ref/none ht k)])
+      (if (eq? v none)
+          (fail-hash-ref 'hash-ref fail)
+          v))]))
+
+(define (hash-ref/none ht k)
+  (cond
+   [(mutable-hash? ht)
+    (lock-acquire (mutable-hash-lock ht))
+    (let ([v (hashtable-ref (mutable-hash-ht ht) k none)])
+      (lock-release (mutable-hash-lock ht))
+      v)]
+   [(intmap? ht)
+    (intmap-ref ht k none)]
+   [(weak-equal-hash? ht)
+    (weak-hash-ref ht k none)]
+   [(and (impersonator? ht)
+         (authentic-hash? (impersonator-val ht)))
+    (impersonate-hash-ref ht k)]
+   [else
+    (raise-argument-error 'hash-ref "hash?" ht)]))
+
+(define hash-ref-key
+  (case-lambda
+   [(ht k)
+    (let ([v (hash-ref-key/none ht k)])
+      (if (eq? v none)
+          (raise-arguments-error
+           'hash-ref-key
+           "hash does not contain key"
+           "key" k)
+          v))]
+   [(ht k fail)
+    (let ([v (hash-ref-key/none ht k)])
+      (if (eq? v none)
+          (fail-hash-ref 'hash-ref-key fail)
+          v))]))
+
+(define (hash-ref-key/none ht k)
+  (cond
+   [(mutable-hash? ht)
+    (lock-acquire (mutable-hash-lock ht))
+    (let ([v (if (hashtable-contains? (mutable-hash-ht ht) k)
+                 (car (hashtable-cell (mutable-hash-ht ht) k #f))
+                 none)])
+      (lock-release (mutable-hash-lock ht))
+      v)]
+   [(intmap? ht)
+    (intmap-ref-key ht k none)]
+   [(weak-equal-hash? ht)
+    (weak-hash-ref-key ht k none)]
+   [(and (impersonator? ht)
+         (authentic-hash? (impersonator-val ht)))
+    (impersonate-hash-ref-key ht k)]
+   [else
+    (raise-argument-error 'hash-ref-key "hash?" ht)]))
+
+(define (fail-hash-ref who default)
+  (if (procedure? default)
+      (if (procedure-arity-includes? default 0)
+          (|#%app| default)
+          (raise (|#%app|
+                  exn:fail:contract:arity
+                  (string-append (symbol->string who)
+                                 ": arity mismatch for failure procedure;\n"
+                                 " given procedure does not accept zero arguments\n"
+                                 "  procedure: "
+                                 (error-value->string default))
+                  (current-continuation-marks))))
+      default))
 
 (define/who hash-for-each
   (case-lambda
@@ -807,25 +860,23 @@
          [(null? keys)
           ;; Not in the table:
           (lock-release (weak-equal-hash-lock t))
-          ($fail fail)]
+          fail]
          [(key-equal? (car keys) key)
           (let* ([k (car keys)]
                  [v (hashtable-ref (weak-equal-hash-vals-ht t) (car keys) none)])
             (lock-release (weak-equal-hash-lock t))
-            (if (eq? v none)
-                ($fail fail)
-                v))]
+            v)]
          [else (loop (cdr keys))])))]
    [(t key fail)
     (weak-hash-ref t key fail (key-equal-hash-code key) key-equal?)]))
 
 ;; Only used in atomic mode:
-(define (weak-hash-ref-key ht key)
+(define (weak-hash-ref-key ht key default)
   (let* ([code (key-equal-hash-code key)]
          [keys (intmap-ref (weak-equal-hash-keys-ht ht) code '())])
     (let loop ([keys keys])
       (cond
-       [(null? keys) #f]
+       [(null? keys) default]
        [(key-equal? (car keys) key) (car keys)]
        [else (loop (cdr keys))]))))
 
@@ -1058,15 +1109,26 @@
 ;; ----------------------------------------
 
 (define (impersonate-hash-ref ht k)
-  (impersonate-hash-ref/set 'hash-ref #f
+  (impersonate-hash-ref/set 'hash-ref "value" #f
                             (lambda (ht k v) (hash-ref ht k none))
                             (lambda (procs ht k none-v)
                               (|#%app| (hash-procs-ref procs) ht k))
                             hash-procs-ref
                             ht k none))
 
+(define (impersonate-hash-ref-key ht k)
+  (impersonate-hash-ref/set 'hash-ref-key "key" #f
+                            (lambda (ht k v) (hash-ref-key ht k none))
+                            (lambda (procs ht k none-v)
+                              (let-values ([(new-k _) (|#%app| (hash-procs-ref procs) ht k)])
+                                (values new-k
+                                        (lambda (ht k none-v)
+                                          (|#%app| (hash-procs-key procs) ht k)))))
+                            hash-procs-ref
+                            ht k none))
+
 (define (impersonate-hash-set! ht k v)
-  (impersonate-hash-ref/set 'hash-set! #t
+  (impersonate-hash-ref/set 'hash-set! "void" #t
                             hash-set!
                             (lambda (procs ht k v)
                               (|#%app| (hash-procs-set procs) ht k v))
@@ -1074,7 +1136,7 @@
                             ht k v))
 
 (define (impersonate-hash-set ht k v)
-  (impersonate-hash-ref/set 'hash-set #t
+  (impersonate-hash-ref/set 'hash-set "hash" #t
                             hash-set
                             (lambda (procs ht k v)
                               (|#%app| (hash-procs-set procs) ht k v))
@@ -1082,7 +1144,7 @@
                             ht k v))
 
 (define (impersonate-hash-remove! ht k)
-  (impersonate-hash-ref/set 'hash-remove! #t
+  (impersonate-hash-ref/set 'hash-remove! "void" #t
                             (lambda (ht k false-v) (hash-remove! ht k))
                             (lambda (procs ht k false-v)
                               (values (|#%app| (hash-procs-remove procs) ht k) #f))
@@ -1090,14 +1152,14 @@
                             ht k #f))
 
 (define (impersonate-hash-remove ht k)
-  (impersonate-hash-ref/set 'hash-remove #t
+  (impersonate-hash-ref/set 'hash-remove "hash" #t
                             (lambda (ht k false-v) (hash-remove ht k))
                             (lambda (procs ht k false-v)
                               (values (|#%app| (hash-procs-remove procs) ht k) #f))
                             hash-procs-remove
                             ht k #f))
 
-(define (impersonate-hash-ref/set who set? authentic-op apply-wrapper get-wrapper ht k v)
+(define (impersonate-hash-ref/set who what-r set? authentic-op apply-wrapper get-wrapper ht k v)
   (let ([wrap-key? (hash-equal? ht)])
     (let loop ([ht ht] [get-k (and wrap-key? values)] [k k] [v v])
       (cond
@@ -1123,7 +1185,7 @@
                       (raise-chaperone-error who "value" new-v-or-wrap v))))
                 ;; Recur...
                 (let ([r (loop next-ht get-k new-k (if set? new-v-or-wrap none))])
-                  ;; In `ref` mode, `r` is the result value.
+                  ;; In `ref` mode, `r` is the result value (hash-ref) or key (hash-ref-key).
                   ;; In `set` mode, `r` is void or an updated hash table.
                   (cond
                    [(and set? (void? r))
@@ -1139,7 +1201,7 @@
                     (let ([new-r (new-v-or-wrap next-ht new-k r)])
                       (when chaperone?
                         (unless (chaperone-of? new-r r)
-                          (raise-chaperone-error who "value" new-r r)))
+                          (raise-chaperone-error who what-r new-r r)))
                       new-r)]))]
                [args
                 (raise-arguments-error who

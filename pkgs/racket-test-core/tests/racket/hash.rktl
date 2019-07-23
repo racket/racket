@@ -465,5 +465,52 @@
                            (p) in-hash-pairs in-weak-hash-pairs car)
 
 ;; ----------------------------------------
+;; hash-ref-key
+
+(let ()
+  (arity-test hash-ref-key 2 3)
+
+  (define (test-hash-ref-key ht eql? expected-retained-key expected-excised-key)
+    (define actual-retained-key (hash-ref-key ht expected-excised-key))
+    (define non-key (gensym 'nope))
+    (test #t eql? expected-retained-key expected-excised-key)
+    (test #t eq? actual-retained-key expected-retained-key)
+    (test (eq? eql? eq?) eq? actual-retained-key expected-excised-key)
+    (test #t eq? (hash-ref-key ht non-key 'absent) 'absent)
+    (test #t eq? (hash-ref-key ht non-key (lambda () 'absent)) 'absent)
+    (err/rt-test (hash-ref-key ht non-key) exn:fail:contract?))
+
+  (define (test-hash-ref-key/mut ht eql? expected-retained-key expected-excised-key)
+    (hash-set! ht expected-retained-key 'here)
+    (hash-set! ht expected-excised-key 'there)
+    (test-hash-ref-key ht eql? expected-retained-key expected-excised-key))
+
+  (define (test-hash-ref-key/immut ht eql? expected-retained-key expected-excised-key)
+    (define ht1 (hash-set (hash-set ht expected-excised-key 'here)
+                          expected-retained-key
+                          'there))
+    (test-hash-ref-key ht1 eql? expected-retained-key expected-excised-key))
+
+  ;; equal?-based hashes
+  (let* ([k1 "hello"]
+         [k2 (substring k1 0)])
+    (test-hash-ref-key/mut (make-hash) equal? k1 k2)
+    (test-hash-ref-key/mut (make-weak-hash) equal? k1 k2)
+    (test-hash-ref-key/immut (hash) equal? k1 k2))
+
+  ;; eqv?-based hashes
+  (let ([k1 (expt 2 64)]
+        [k2 (expt 2 64)])
+    (test-hash-ref-key/mut (make-hasheqv) eqv? k1 k2)
+    (test-hash-ref-key/mut (make-weak-hasheqv) eqv? k1 k2)
+    (test-hash-ref-key/immut (hasheqv) eqv? k1 k2))
+
+  ;; eq?-based hashes
+  (test-hash-ref-key/mut (make-hasheqv) eq? 'foo 'foo)
+  (test-hash-ref-key/mut (make-weak-hasheqv) eq? 'foo 'foo)
+  (test-hash-ref-key/immut (hasheqv) eq? 'foo 'foo))
+
+;; ----------------------------------------
+;;
 
 (report-errs)

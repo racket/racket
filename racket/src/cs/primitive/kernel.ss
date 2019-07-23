@@ -419,6 +419,7 @@
   [hash-map (known-procedure 12)]
   [hash-placeholder? (known-procedure/pure/folding 2)]
   [hash-ref (known-procedure 12)]
+  [hash-ref-key (known-procedure 12)]
   [hash-remove (known-procedure 4)]
   [hash-remove! (known-procedure 4)]
   [hash-set (known-procedure 8)]
