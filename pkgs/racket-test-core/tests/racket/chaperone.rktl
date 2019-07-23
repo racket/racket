@@ -2006,14 +2006,18 @@
       (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
       (test 'val2 hash-ref h2 'key2 #f)
       (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'key2 hash-ref-key h1 'key2 #f)
+      (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+      (test 'key2 hash-ref-key h2 'key2 #f)
+      (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
       (test (void) hash-remove! h2 'key3)
-      (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
       (test 'val2 hash-ref h2 'key2)
-      (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
       (test (void) hash-remove! h2 'key2)
-      (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (test #f hash-ref h2 'key2 #f)
-      (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+      (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
       (hash-for-each h2 void)
       (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
       (set! get-k #f)
@@ -2077,14 +2081,16 @@
          (test '(key val key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
          (test 'val2 hash-ref h2 'key2 #f)
          (test '(key2 val2 key2 val2 #f #f) list get-k get-v set-k set-v remove-k access-k)
+         (test 'key2 hash-ref-key h2 'key2)
+         (test '(key2 val2 key2 val2 #f key2) list get-k get-v set-k set-v remove-k access-k)
          (let ([h2 (hash-remove h2 'key3)])
-           (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
            (test 'val2 hash-ref h2 'key2)
-           (test '(key2 val2 key2 val2 key3 #f) list get-k get-v set-k set-v remove-k access-k)
+           (test '(key2 val2 key2 val2 key3 key2) list get-k get-v set-k set-v remove-k access-k)
            (let ([h2 (hash-remove h2 'key2)])
-             (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (test #f hash-ref h2 'key2 #f)
-             (test '(key2 val2 key2 val2 key2 #f) list get-k get-v set-k set-v remove-k access-k)
+             (test '(key2 val2 key2 val2 key2 key2) list get-k get-v set-k set-v remove-k access-k)
              (hash-for-each h2 void)
              (test '(key val key2 val2 key2 key) list get-k get-v set-k set-v remove-k access-k)
              (set! get-k #f)
@@ -3540,6 +3546,37 @@
 
   (test '(7) s-ref a-s 0))
   
+;; ----------------------------------------
+;; Check that `hash-ref-key` works with
+;; multiple layers of impersonation.
+
+(let ()
+  (define (ref-proc ht k)
+    (values (string-append "-" k)
+            (lambda (ht k v) v)))
+
+  (define (set-proc ht k v)
+    (values (string-append "-" k)
+            v))
+
+  (define (rem-proc ht k)
+    (string-append "-" k))
+
+  (define (key-proc ht k)
+    (substring k 1))
+
+  (define ht0 (make-hash))
+  (define ht1 (impersonate-hash ht0 ref-proc set-proc rem-proc key-proc))
+  (define ht2 (impersonate-hash ht1 ref-proc set-proc rem-proc key-proc))
+
+  (hash-set! ht2 "key" "value")
+  (test #t hash-has-key? ht0 "--key")
+  (test "key" hash-ref-key ht2 "key")
+  (test "-key" hash-ref-key ht1 "-key")
+  (test #f hash-ref-key ht2 "absent" #f)
+  (test #f hash-ref-key ht1 "absent" #f)
+  (err/rt-test (hash-ref-key ht2 "absent") exn:fail:contract?))
+
 ;; ----------------------------------------
 
 (report-errs)

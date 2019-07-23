@@ -254,7 +254,7 @@
           make-hash make-hasheqv make-hasheq
           make-immutable-hash make-immutable-hasheqv make-immutable-hasheq
           make-weak-hash make-weak-hasheq make-weak-hasheqv
-          hash-ref hash-set hash-set! hash-remove hash-remove!
+          hash-ref hash-ref-key hash-set hash-set! hash-remove hash-remove!
           hash-for-each hash-map hash-copy hash-clear hash-clear!
           hash-iterate-first hash-iterate-next
           hash-iterate-key hash-iterate-value

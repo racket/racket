@@ -71,8 +71,8 @@ a table-specific semaphore as needed. Three caveats apply, however:
  @itemize[
 
   @item{If a thread is terminated while applying @racket[hash-ref],
-  @racket[hash-set!], @racket[hash-remove!], @racket[hash-ref!],
-  or @racket[hash-update!] to a hash table that
+  @racket[hash-ref-key], @racket[hash-set!], @racket[hash-remove!],
+  @racket[hash-ref!], or @racket[hash-update!] to a hash table that
   uses @racket[equal?] or @racket[eqv?] key comparisons, all current
   and future operations on the hash table may block indefinitely.}
 
@@ -272,6 +272,77 @@ result:
 ]
 
 @see-also-caveats[]}
+
+@defproc[(hash-ref-key [hash hash?]
+                       [key any/c]
+                       [failure-result (failure-result/c any/c)
+                                       (lambda ()
+                                         (raise (make-exn:fail:contract ....)))])
+         any]{
+
+Returns the key held by @racket[hash] that is equivalent to @racket[key]
+according to @racket[hash]'s key-comparison function. If no key is found,
+then @racket[failure-result] is used as in @racket[hash-ref] to determine
+the result.
+
+If @racket[hash] is not an @tech{impersonator}, then the returned key,
+assuming it is found, will be @racket[eq?]-equivalent to the one
+actually retained by @racket[hash]:
+
+@examples[
+#:eval the-eval
+(define original-key "hello")
+(define key-copy (string-copy original-key))
+
+(equal? original-key key-copy)
+(eq? original-key key-copy)
+
+(define table (make-hash))
+(hash-set! table original-key 'value)
+
+(eq? (hash-ref-key table "hello") original-key)
+(eq? (hash-ref-key table "hello") key-copy)
+]
+
+If a mutable hash is updated multiple times using keys that are
+not @racket[eq?]-equivalent but are equivalent according to the
+hash's key-comparison procedure, the hash retains the first one:
+
+@examples[
+#:eval the-eval
+(define original-key "hello")
+(define key-copy (string-copy original-key))
+
+(define table (make-hash))
+(hash-set! table original-key 'one)
+(hash-set! table key-copy 'two)
+
+(eq? (hash-ref-key table "hello") original-key)
+(eq? (hash-ref-key table "hello") key-copy)
+]
+
+Conversely, an immutable hash retains the key that was most-recently
+used to update it:
+@examples[
+#:eval the-eval
+(define original-key "hello")
+(define key-copy (string-copy original-key))
+
+(define table0 (hash))
+(define table1 (hash-set table0 original-key 'one))
+(define table2 (hash-set table1 key-copy 'two))
+
+(eq? (hash-ref-key table2 "hello") original-key)
+(eq? (hash-ref-key table2 "hello") key-copy)
+]
+
+If @racket[hash] is an @tech{impersonator}, then the returned key
+will be determined as described in the documentation to
+@racket[impersonate-hash].
+
+@see-also-caveats[]
+
+@history[#:added "7.4.0.3"]}
 
 @defproc[(hash-ref! [hash hash?] [key any/c] [to-set (failure-result/c any/c)])
          any]{
