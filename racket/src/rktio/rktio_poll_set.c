@@ -1243,8 +1243,11 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
   if (fds && lt) {
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
     int fd = rktio_ltps_get_fd(lt);
-    RKTIO_FD_SET(fd, fds);
-    RKTIO_FD_SET(fd, RKTIO_GET_FDSET(fds, 2));
+    /* `fd` can be -1, because the file descriptor is created lazily */
+    if (fd != -1) {
+      RKTIO_FD_SET(fd, fds);
+      RKTIO_FD_SET(fd, RKTIO_GET_FDSET(fds, 2));
+    }
 #else
     rktio_merge_fd_sets(fds, rktio_ltps_get_fd_set(lt)); 
 #endif
