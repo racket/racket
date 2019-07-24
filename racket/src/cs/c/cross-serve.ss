@@ -20,23 +20,10 @@
   (enable-arithmetic-left-associative #t)
   (generate-procedure-source-information #t)
   (expand-omit-library-invocations #t)
-  ;; Set up the environment
-  (expand `(import (rename (rumble)
-                           [correlated? syntax?]
-                           [correlated-source syntax-source]
-                           [correlated-line syntax-line]
-                           [correlated-column syntax-column]
-                           [correlated-position syntax-position]
-                           [correlated-span syntax-span]
-                           [correlated-e syntax-e]
-                           [correlated->datum syntax->datum]
-                           [datum->correlated datum->syntax]
-                           [correlated-property syntax-property]
-                           [correlated-property-symbol-keys syntax-property-symbol-keys])
-                   (thread)
-                   (io)
-                   (regexp)
-                   (linklet)))
+  ;; Set up the environment; ../expander/env.ss must be loaded before compiling
+  (expand (let-syntax ([env (lambda (stx)
+                              (datum->syntax stx (list 'quote environment-imports)))])
+            env))
   ;; Serve requests to compile or to fasl data:
   (let ([in (standard-input-port)]
         [out (standard-output-port)])
