@@ -129,7 +129,7 @@ The @racketmodname[racket] library combines
              #:title "Exception system proposal"
              #:author "Daniel P. Friedman, C. T. Haynes, and R. Kent Dybvig"
              #:location "web page"
-             #:url "http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html"
+             #:url "https://web.archive.org/web/20161012054505/http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html"
              #:date "1995")
 
   (bib-entry #:key "Gasbichler02"
