@@ -275,6 +275,7 @@ RUMBLE_SRCS = rumble/define.ss \
               rumble/bytes.ss \
               rumble/string.ss \
               rumble/char.ss \
+              rumble/char-range.ss \
               rumble/symbol.ss \
               rumble/list.ss \
               rumble/vector.ss \

@@ -768,6 +768,7 @@
   (include "rumble/bytes.ss")
   (include "rumble/string.ss")
   (include "rumble/char.ss")
+  (include "rumble/char-range.ss")
   (include "rumble/list.ss")
   (include "rumble/vector.ss")
   (include "rumble/box.ss")
