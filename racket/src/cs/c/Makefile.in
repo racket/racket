@@ -341,8 +341,8 @@ plain-install-upcased:
 
 SCHEME_XPATCH = $(SCHEME_SRC)/$(TARGET_MACH)/s/xpatch
 
-compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss
-	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss
+compile-xpatch.$(TARGET_MACH): $(SCHEME_XPATCH) $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss $(srcdir)/../expander/env.ss
+	$(SCHEME) --script $(srcdir)/mk-cross-serve.ss $(srcdir)/cross-serve.ss $(srcdir)/../expander/env.ss
 	cat cross-serve.so $(SCHEME_XPATCH) > compile-xpatch.$(TARGET_MACH)
 
 RACKET_XPATCH = chezpart.$(MACH) rumble.$(MACH)	thread.$(MACH) \

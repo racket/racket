@@ -87,27 +87,12 @@
 
   ;; ----------------------------------------
 
+  (include "expander/env.ss")
+
   ;; The environment is used to evaluate linklets, so all primitives
   ;; need to be there imported there
   (parameterize ([expand-omit-library-invocations #f])
-    (eval `(import (rename (rumble)
-                           [correlated? syntax?]
-                           [correlated-source syntax-source]
-                           [correlated-line syntax-line]
-                           [correlated-column syntax-column]
-                           [correlated-position syntax-position]
-                           [correlated-span syntax-span]
-                           [correlated-e syntax-e]
-                           [correlated->datum syntax->datum]
-                           [datum->correlated datum->syntax]
-                           [correlated-property syntax-property]
-                           [correlated-property-symbol-keys syntax-property-symbol-keys])
-                   (thread)
-                   (io)
-                   (regexp)
-                   (linklet)
-                   (only (schemify)
-                         force-unfasl)))
+    (eval environment-imports) ; defined in "expander/env.ss"
     ;; Ensure that the library is visited, especially for a wpo build:
     (eval 'variable-set!))
 
