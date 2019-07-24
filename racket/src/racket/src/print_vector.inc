@@ -32,9 +32,11 @@ FUNC_NAME (Scheme_Object *vec, int notdisplay, int compact,
 	print_utf8_string(pp, buffer, 0, -1);
 	size -= common;
       }
-    } else if (notdisplay == 3)
+    } else if (notdisplay == 3) {
       F_VECTOR;
-    else
+      if (size)
+        print_utf8_string(pp, " ", 0, 1);
+    } else
       F_;
   }
 

@@ -3657,7 +3657,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 } while(0);
 #define F_0 print_utf8_string(pp, "#0(", 0, 3)
 #define F_D sprintf(buffer, "#%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(vector ", 0, 8)
+#define F_VECTOR print_utf8_string(pp, "(vector", 0, 7)
 #define F_ print_utf8_string(pp, "#(", 0, 2)
 #define PRINT_ELM() do {\
   print(elem, notdisplay, compact, ht, mt, pp); \
@@ -3677,7 +3677,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 #define DO_ELM_SELECTOR()  elem = SCHEME_FLVEC_ELS(vec)[i];
 #define F_0 print_utf8_string(pp, "#fl0(", 0, 5)
 #define F_D sprintf(buffer, "#fl%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(flvector ", 0, 10)
+#define F_VECTOR print_utf8_string(pp, "(flvector", 0, 9)
 #define F_ print_utf8_string(pp, "#fl(", 0, 4)
 #define PRINT_ELM() do {\
   print_utf8_string(pp, scheme_double_to_string(elem, buffer, 100, 0, &used_buffer), 0, -1); \
@@ -3697,7 +3697,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
 #define DO_ELM_SELECTOR()  elem = SCHEME_FXVEC_ELS(vec)[i];
 #define F_0 print_utf8_string(pp, "#fx0(", 0, 5)
 #define F_D sprintf(buffer, "#fx%d(", size)
-#define F_VECTOR print_utf8_string(pp, "(fxvector ", 0, 10)
+#define F_VECTOR print_utf8_string(pp, "(fxvector", 0, 9)
 #define F_ print_utf8_string(pp, "#fx(", 0, 4)
 #define PRINT_ELM() do {\
   print(elem, notdisplay, compact, ht, mt, pp); \
