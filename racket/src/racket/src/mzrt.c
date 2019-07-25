@@ -35,18 +35,6 @@ START_XFORM_SUSPEND;
 #include <sys/resource.h>
 #endif
 
-/* Define this is we need CGC support for threads. This was needed
-   when we tried to make places work with the Boehm GC, but since that has
-   other problems (notably disappearing links), we have given up on
-   having threads cooperate with CGC. */
-/* #define NEED_GC_THREAD_OPS */
-
-#ifdef NEED_GC_THREAD_OPS
-int GC_pthread_join(pthread_t thread, void **retval);
-int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void * arg);
-int GC_pthread_detach(pthread_t thread);
-#endif
-
 void mzrt_sleep(int seconds)
 {
 #ifdef WIN32
@@ -171,11 +159,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
   thread->threadid = (HANDLE)_beginthreadex(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
   ok = (thread->threadid != (HANDLE)-1L);
 #   else
-#    ifdef NEED_GC_THREAD_OPS
-  ok = !GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
-#    else
   ok = !pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
-#    endif
 #   endif
 
   if (!ok) {
@@ -216,11 +200,7 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
   rc = proc_thread_self->res;
   CloseHandle(thread->threadid);
 #else
-#   ifdef NEED_GC_THREAD_OPS
-  GC_pthread_join(thread->threadid, &rc);
-#   else
   pthread_join(thread->threadid, &rc);
-#   endif
 #endif
 
   if (!--thread->refcount)
@@ -234,11 +214,7 @@ int mz_proc_thread_detach(mz_proc_thread *thread) {
 #ifdef WIN32
   rc = CloseHandle(thread->threadid);
 #else
-#   ifdef NEED_GC_THREAD_OPS
-  rc = GC_pthread_detach(thread->threadid);
-#   else
   rc = pthread_detach(thread->threadid);
-#   endif
 #endif
 
   if (!--thread->refcount)
