@@ -217,19 +217,6 @@ After building MzCOMCGC, you can build the 3m variant by
 
 The result is "..\..\lib\MzCOM.exe".
 
-SenoraGC versus the Boehm GC
-----------------------------
-
-The "Release" and "Debug" solution configurations use SenoraGC (SGC),
-while the "AltGCRelease" and "AltGCDebug" configurations use the
-variant of the Boehm GC that is included with Racket.
-
-In project files, "SRelease" and "SDebug" (as used by the "Release"
-and "Debug" solution configurations) build against SGC, while
-"BRelease" and "BDebug" (as used by the "AltGCRelease" and
-"AltGCDebug" solution configurations) build against the Boehm GC.
-
-
 ========================================================================
  Versioning
 ========================================================================
