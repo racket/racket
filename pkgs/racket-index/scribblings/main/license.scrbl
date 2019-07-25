@@ -44,15 +44,6 @@ Racket software includes or extends the following copyrighted material:
 }
 
 @copyright{
-  Conservative garbage collector
-  Copyright (c) 1988, 1989 Hans-J. Boehm, Alan J. Demers
-  Copyright (c) 1991-1996 Xerox Corporation
-  Copyright (c) 1996-1999 Silicon Graphics
-  Copyright (c) 1999-2005 Hewlett-Packard Development Company, L.P.
-  All rights reserved.
-}
-
-@copyright{
   Collector C++ extension by Jesse Hull and John Ellis
   Copyright (c) 1994 Xerox Corporation
   All rights reserved.
