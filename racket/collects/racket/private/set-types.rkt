@@ -611,7 +611,7 @@
                    (:do-in
                     ;;outer bindings
                     ([(HT fn) (let ([xs set-expr])
-                                (if (custom-set? xs)
+                                (if (and (custom-set? xs) (-test? xs))
                                     (values
                                      (custom-set-table xs)
                                      (if (custom-set-spec xs)
@@ -619,8 +619,15 @@
                                          (lambda (x) x)))
                                     (values #f #f)))])
                     ;; outer check
-                    (unless (and HT (-test? HT))
-                      (custom-in-set/checked set-expr))
+                    (unless HT
+                      (define s set-expr)
+                      (if (custom-set? s)
+                          (raise (exn:fail:contract
+                                  (format "wrong kind of hash set, expected ~a, got: ~a\n" 'SETTYPE s)
+                                  (current-continuation-marks)))
+                          (raise (exn:fail:contract
+                                  (format "not a hash set: ~a" s)
+                                  (current-continuation-marks)))))
                     ;; loop bindings
                     ([i (-first HT)])
                     ;; pos check

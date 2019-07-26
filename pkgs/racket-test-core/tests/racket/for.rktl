@@ -776,6 +776,18 @@
 (err/rt-test (for/sum ([x (in-weak-set '(1 2))]) x)
              exn:fail:contract?
              #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-weak-set (set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-mutable-set (set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-immutable-set (mutable-set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
+(err/rt-test (for/sum ([x (in-immutable-set (weak-set 1 2))]) x)
+             exn:fail:contract?
+             #rx"wrong kind of hash set")
 (test 10 'in-hash-set (for/sum ([x (in-immutable-set (set 1 2 3 4))]) x))
 (test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-set 1 2 3 4))]) x))
 (test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-set 1 2 3 4))]) x))
