@@ -591,7 +591,17 @@
 ;; creates an new id with the given id and format str
 (define-for-syntax (mk-id id fmt-str)
   (datum->syntax id (string->symbol (format fmt-str (syntax->datum id)))))
-  
+
+;; raise-custom-set-exn : Any Symbol -> Exn
+;; Raises exception reporting that `s` is not a custom-set of type `expected-set-type`
+(define (raise-custom-set-exn s expected-set-type)
+  (raise
+   (exn:fail:contract
+    (if (custom-set? s)
+        (format "wrong kind of hash set, expected ~a, got: ~a\n" expected-set-type s)
+        (format "not a hash set: ~a" s))
+    (current-continuation-marks))))
+
 (define-syntax (define-in-set-sequence-syntax stx)
   (syntax-case stx (set-type:)
     [(_ set-type: SETTYPE)
@@ -610,24 +620,17 @@
                 #'[(id)
                    (:do-in
                     ;;outer bindings
-                    ([(HT fn) (let ([xs set-expr])
-                                (if (and (custom-set? xs) (-test? xs))
-                                    (values
-                                     (custom-set-table xs)
-                                     (if (custom-set-spec xs)
-                                         custom-elem-contents
-                                         (lambda (x) x)))
-                                    (values #f #f)))])
+                    ([(xs HT fn) (let ([xs set-expr])
+                                   (if (and (custom-set? xs) (-test? xs))
+                                       (values
+                                        #f
+                                        (custom-set-table xs)
+                                        (if (custom-set-spec xs)
+                                            custom-elem-contents
+                                            (lambda (x) x)))
+                                       (values xs #f #f)))])
                     ;; outer check
-                    (unless HT
-                      (define s set-expr)
-                      (if (custom-set? s)
-                          (raise (exn:fail:contract
-                                  (format "wrong kind of hash set, expected ~a, got: ~a\n" 'SETTYPE s)
-                                  (current-continuation-marks)))
-                          (raise (exn:fail:contract
-                                  (format "not a hash set: ~a" s)
-                                  (current-continuation-marks)))))
+                    (unless HT (raise-custom-set-exn xs 'SETTYPE))
                     ;; loop bindings
                     ([i (-first HT)])
                     ;; pos check
