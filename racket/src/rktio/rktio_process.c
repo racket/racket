@@ -1524,11 +1524,14 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
       {
 	int err;
+        char **use_env;
 
         if (!env)
-          env = rktio_get_environ_array();
+          use_env = rktio_get_environ_array();
+        else
+          use_env = env;
 
-	err = MSC_IZE(execve)(command, (char **)new_argv, (char **)env);
+	err = MSC_IZE(execve)(command, (char **)new_argv, use_env);
         if (err)
           err = errno;
 
@@ -1546,6 +1549,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       }
 
     default: /* parent */
+
+      free(new_argv);
 
       break;
     }
