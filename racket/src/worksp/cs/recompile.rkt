@@ -19,6 +19,7 @@
     (parameterize ([current-directory (build-path scheme-dir machine "nanopass")])
       (define o (open-output-bytes))
       (write-nanopass-config o)
+      (remove-files #rx"[.]so$")
       (write '(compile-library "nanopass.ss" "nanopass.so") o)
       (parameterize ([current-input-port (open-input-bytes (get-output-bytes o))])
 	(system* (build-path abs-scheme-dir machine "bin" machine "scheme.exe")
@@ -68,3 +69,8 @@
 (define (write-system-config o)
   (write-config o)
   (write '(subset-mode (quote system)) o))
+
+(define (remove-files rx)
+  (for ([f (in-directory)])
+    (when (regexp-match? rx f)
+      (delete-file f))))
