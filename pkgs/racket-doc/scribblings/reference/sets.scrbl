@@ -169,6 +169,7 @@ As with @racket[in-list] and some other sequence constructors,
 These sequence constructors are compatible with
 @secref["Custom_Hash_Sets" #:doc '(lib "scribblings/reference/reference.scrbl")].
 
+@history[#:added "6.4.0.7"]
 }
 
 @section{Set Predicates and Contracts}
