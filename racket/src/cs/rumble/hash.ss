@@ -105,17 +105,17 @@
   (cond
    [(mutable-hash? ht)
     (lock-acquire (mutable-hash-lock ht))
-    (cond
-     [(and (mutable-hash-cells ht)
-           (hashtable-contains? (mutable-hash-ht ht) k))
-      (let ([cell (hashtable-cell (mutable-hash-ht ht) k #f)])
+    (let ([cell (and (mutable-hash-cells ht)
+                     (hashtable-ref-cell (mutable-hash-ht ht) k))])
+      (cond
+       [cell
         (hashtable-delete! (mutable-hash-ht ht) k)
         ;; Clear cell, because it may be in `(locked-iterable-hash-cells ht)`
         (set-car! cell #!bwp)
         (set-cdr! cell #!bwp)
-        (set-locked-iterable-hash-retry?! ht #t))]
-     [else
-      (hashtable-delete! (mutable-hash-ht ht) k)])
+        (set-locked-iterable-hash-retry?! ht #t)]
+       [else
+        (hashtable-delete! (mutable-hash-ht ht) k)]))
     (lock-release (mutable-hash-lock ht))]
    [(weak-equal-hash? ht) (weak-hash-remove! ht k)]
    [(and (impersonator? ht)
@@ -307,9 +307,8 @@
   (cond
    [(mutable-hash? ht)
     (lock-acquire (mutable-hash-lock ht))
-    (let ([v (if (hashtable-contains? (mutable-hash-ht ht) k)
-                 (car (hashtable-cell (mutable-hash-ht ht) k #f))
-                 none)])
+    (let* ([pair (hashtable-ref-cell (mutable-hash-ht ht) k)]
+           [v (if pair (car pair) none)])
       (lock-release (mutable-hash-lock ht))
       v)]
    [(intmap? ht)
@@ -927,7 +926,7 @@
                        (cond
                         [(locked-iterable-hash-cells t)
                          ;; Clear cell, because it may be in `(locked-iterable-hash-cells ht)`
-                         (let ([cell (hashtable-cell ht a #f)])
+                         (let ([cell (hashtable-ref-cell ht a)])
                            (hashtable-delete! ht a)
                            (set-car! cell #!bwp)
                            (set-cdr! cell #!bwp))]
@@ -977,7 +976,7 @@
                 (cond
                  [(eq? #!bwp key) (loop (cdr l))]
                  [else
-                  (#%vector-set! vec (unbox pos) (hashtable-cell (weak-equal-hash-vals-ht ht) key #f))
+                  (#%vector-set! vec (unbox pos) (hashtable-ref-cell (weak-equal-hash-vals-ht ht) key))
                   (set-box! pos (add1 (unbox pos)))
                   (if (= (unbox pos) len)
                       ;; That's enough keys
