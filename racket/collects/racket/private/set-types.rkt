@@ -34,6 +34,8 @@
          in-immutable-set
          in-mutable-set
          in-weak-set
+
+         set->hash
          
          chaperone-hash-set
          impersonate-hash-set)
@@ -109,6 +111,12 @@
 (define (custom-set->stream s)
   (dprintf "custom-set->stream\n")
   (sequence->stream (custom-in-set s)))
+
+(define (set->hash s)
+  (unless (custom-set? s)
+    (raise (exn:fail:contract (format "not a hash set: ~a" s)
+                              (current-continuation-marks))))
+  (custom-set-table s))
 
 (define (custom-set-first s)
   (dprintf "custom-set-first\n")

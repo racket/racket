@@ -128,6 +128,13 @@ respectively.
 
 }
 
+@defproc[(set->hash [st (or/c set? set-mutable? set-weak?)]) hash?]{
+
+Converts a set to a hash table, if it is @tech{hash set}.
+
+@history[#:added "7.4.0.3"]
+}
+
 @deftogether[(
 @defform[(for/set (for-clause ...) body ...+)]
 @defform[(for/seteq (for-clause ...) body ...+)]
