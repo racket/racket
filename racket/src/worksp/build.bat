@@ -78,6 +78,7 @@ if errorlevel 1 exit /B 1
 copy ..\COPYING.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
+set PLT_REPLACE_INDEPENDENT_LAUNCHERS=yes
 ..\..\racket -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1
 
