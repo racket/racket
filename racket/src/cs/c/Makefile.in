@@ -335,6 +335,10 @@ plain-install-upcased:
 	$(ICP) GRacketCS.exe $(libpltdir)/GRacket$(CS_INSTALLED).exe
 	$(ICP) MzStart.exe $(libpltdir)/MzStart.exe
 	$(ICP) MrStart.exe $(libpltdir)/MrStart.exe
+	$(STRIP_DEBUG) $(prefix)/Racket$(CS_INSTALLED).exe
+	$(STRIP_DEBUG) $(libpltdir)/GRacket$(CS_INSTALLED).exe
+	$(STRIP_DEBUG) $(libpltdir)/MzStart.exe
+	$(STRIP_DEBUG) $(libpltdir)/MrStart.exe
 	$(MAKE) system-install
 	$(MAKE) compile-xpatch.$(TARGET_MACH)
 	$(MAKE) library-xpatch.$(TARGET_MACH)
