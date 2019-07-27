@@ -41,10 +41,17 @@
 #endif
 #define DUPLICATE_INPUT
 
+#if defined(__GNUC__)
+# define PRESERVE_IN_EXECUTABLE __attribute__((used))
+#else
+# define PRESERVE_IN_EXECUTABLE /* empty */
+#endif
+
 /* Win command lines limited to 1024 chars, so 1024 chars for
    command tail is ample */
 
-static wchar_t *input = 
+PRESERVE_IN_EXECUTABLE
+wchar_t * volatile input =
   L"<Command Line: Replace This ************************************"
   L"****************************************************************"
   L"****************************************************************"
@@ -79,14 +86,16 @@ static wchar_t *input =
 /* Win long filenames limited to 255 chars, so 254 chars for
    directory is ample */
 
-static wchar_t *exedir = L"<Executable Directory: Replace This ********"
+PRESERVE_IN_EXECUTABLE
+wchar_t *volatile exedir = L"<Executable Directory: Replace This ********"
                       L"********************************************"
                       L"********************************************"
                       L"********************************************"
                       L"********************************************"
                       L"********************************************>";
 
-static wchar_t *variant = L"<Executable Variant: Replace This>";
+PRESERVE_IN_EXECUTABLE
+wchar_t * volatile variant = L"<Executable Variant: Replace This>";
 
 static int wc_strlen(const wchar_t *ws)
 {
@@ -279,6 +288,7 @@ int wmain(int argc_in, wchar_t **argv_in)
   /* gcc: input is read-only */
   input = copy_string(input);
   exedir = copy_string(exedir);
+  variant = copy_string(variant);
 #endif
 
   count = 1;
