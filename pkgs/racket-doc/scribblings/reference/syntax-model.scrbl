@@ -606,7 +606,7 @@ is
 @racketblock[
 (define x 12)
 (define-syntax m ....)
-(let-values ([(x) 10]) x)
+(let ([x 10]) x)
 ]
 
 However, the result of the last expression is @racket[12], not
