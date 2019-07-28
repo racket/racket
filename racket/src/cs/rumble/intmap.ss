@@ -206,12 +206,6 @@
           [(key=? et key (caar xs)) (loop (cdr xs))]
           [else (cons (car xs) (loop (cdr xs)))])))
 
-(define ($collision-has-key? et t key)
-  (let loop ([xs (Co-pairs t)])
-    (cond [(null? xs) #f]
-          [(key=? et key (caar xs)) #t]
-          [else (loop (cdr xs))])))
-
 ;; bit twiddling
 (define-syntax-rule (match-prefix? h p m)
   (fx= (mask h m) p))
@@ -390,9 +384,13 @@
           (let ([xs (Co-pairs a)])
             (and (fx= (length xs) (length (Co-pairs b)))
                  (let loop ([xs xs])
-                   (cond [(null? xs) #t]
-                         [($collision-has-key? et b (caar xs)) (loop (cdr xs))]
-                         [else #f])))))]
+                   (cond [(null? xs)
+                          #t]
+                         [else
+                          (let ([pair ($collision-ref et b (caar xs) values #f)])
+                            (and pair
+                                 (eql? (cdar xs) (cdr pair))
+                                 (loop (cdr xs))))])))))]
 
     [else (and (not a) (not b))])))
 

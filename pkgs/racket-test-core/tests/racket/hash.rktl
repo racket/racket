@@ -112,6 +112,10 @@
   ;; 5 bits for both keys:
   (define ht3 (hash (a 1 0) #t
                     (a 33 0) #t))
+  ;; A hash with the same (colliding) keys as h1 but
+  ;; different values:
+  (define ht4 (hash (a 1 0) #f
+                    (a 1 2) #f))
 
   ;; Subset must compare a collision node with a subtree node (that
   ;; contains a collision node):
@@ -125,7 +129,18 @@
   (test #f hash-keys-subset? ht2 ht1)
   (test #f hash-keys-subset? ht2 ht0)
   (test #f hash-keys-subset? ht1 ht0)
-  (test #f hash-keys-subset? ht1 ht3))
+  (test #f hash-keys-subset? ht1 ht3)
+
+  ;; Equality of collision nodes:
+  (test #f equal? ht1 ht4)
+  (let ([ht4a (hash-set ht4 (a 1 0) #t)]
+        [ht4b (hash-set ht4 (a 1 2) #t)]
+        [ht5 (hash-set* ht4
+                        (a 1 0) #t
+                        (a 1 2) #t)])
+    (test #f equal? ht1 ht4a)
+    (test #f equal? ht1 ht4b)
+    (test #t equal? ht1 ht5)))
 
 (let ()
   (define-syntax (define-hash-iterations-tester stx)
