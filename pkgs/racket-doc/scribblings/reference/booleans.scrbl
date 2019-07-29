@@ -259,11 +259,21 @@ non-@racket[#f] value when applied to the structure.
 
 @defthing[prop:equal+hash struct-type-property?]{
 
-A deprecated @tech{structure type property} (see @secref["structprops"])
+A @tech{structure type property} (see @secref["structprops"])
 that supplies an equality predicate and hashing functions for a structure
-type. The @racket[gen:equal+hash] @tech{generic interface} should be used,
-instead. A @racket[prop:equal+hash] property value is a list of
-three procedures that correspond to the methods of @racket[gen:equal+hash].
+type. Using the @racket[prop:equal+hash] property is discouraged; the
+@racket[gen:equal+hash] @tech{generic interface} should be used instead.
+A @racket[prop:equal+hash] property value is a list of three procedures
+that correspond to the methods of @racket[gen:equal+hash]:
+
+@itemize[
+ @item{@racket[_equal-proc : (any/c any/c (any/c any/c . ->
+        . boolean?)  . -> . any/c)]}
+ @item{@racket[_hash-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)]}
+ @item{@racket[_hash2-proc : (any/c (any/c . -> . exact-integer?) . ->
+       . exact-integer?)]}
+]
 }
 
 @section{Boolean Aliases}

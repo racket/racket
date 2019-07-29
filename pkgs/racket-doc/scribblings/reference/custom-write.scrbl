@@ -96,9 +96,11 @@ This function is often used in conjunction with @racket[make-constructor-style-p
 }
 
 @defthing[prop:custom-write struct-type-property?]{
-A deprecated @tech{structure type property} (see @secref["structprops"])
+A @tech{structure type property} (see @secref["structprops"])
 that supplies a procedure that corresponds to @racket[gen:custom-write]'s
-@racket[write-proc]. Use @racket[gen:custom-write], instead.
+@racket[write-proc]. Using the @racket[prop:custom-write] property is
+discouraged; use the @racket[gen:custom-write] @tech{generic interface}
+instead.
 }
 
 @defproc[(custom-write? [v any/c]) boolean?]{

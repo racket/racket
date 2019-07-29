@@ -1254,10 +1254,11 @@ stream, but plain lists can be used as streams, and functions such as
 }
 
 @defthing[prop:stream struct-type-property?]{
-  A deprecated structure type property used to define custom
-  extensions to the stream API. Use @racket[gen:stream] instead.
-  Accepts a vector of three procedures taking the same arguments as
-  the methods in @racket[gen:stream].
+  A structure type property used to define custom
+  extensions to the stream API. Using the @racket[prop:stream] property
+  is discouraged; use the @racket[gen:stream] @tech{generic interface}
+  instead. Accepts a vector of three procedures taking the same arguments
+  as the methods in @racket[gen:stream].
 }
 
 @defproc[(stream/c [c contract?]) contract?]{

@@ -167,9 +167,10 @@ be used to implement any of the methods documented as
 }
 
 @defthing[prop:dict struct-type-property?]{
-  A deprecated structure type property used to define custom extensions
-  to the dictionary API. Use @racket[gen:dict] instead. Accepts a vector
-  of 10 method implementations:
+  A structure type property used to define custom extensions
+  to the dictionary API. Using the @racket[prop:dict] property is
+  discouraged; use the @racket[gen:dict] @tech{generic interface}
+  instead. Accepts a vector of 10 method implementations:
 
   @itemize[
            @item{@racket[dict-ref]}
