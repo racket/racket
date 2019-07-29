@@ -175,11 +175,11 @@ each element in the sequence.
   @racket[step] is non-negative, or less or equal to @racket[end] if
   @racket[step] is negative.  @speed[in-range "number"]
 
-  
+
   @examples[#:label "Example: gaussian sum" #:eval sequence-evaluator
     (for/sum ([x (in-range 10)]) x)]
 
-  
+
   @examples[#:label "Example: sum of even numbers" #:eval sequence-evaluator
     (for/sum ([x (in-range 0 100 2)]) x)]
 
@@ -259,7 +259,7 @@ each element in the sequence.
 
   If @racket[stop] is not in [-1, @racket[(vector-length vec)]],
   then the @exnraise[exn:fail:contract].
-  
+
   If @racket[start] is less than
   @racket[stop] and @racket[step] is negative, then the
   @exnraise[exn:fail:contract].  Similarly, if @racket[start]
@@ -403,7 +403,7 @@ each element in the sequence.
   Returns a sequence whose elements are pairs, each containing a key
   and its value from @racket[hash] (as opposed to using @racket[hash]
   directly as a sequence to get the key and value as separate values
-  for each element). 
+  for each element).
 
   The @racket[bad-index-v] argument, if supplied, is used in the same
   way as by @racket[in-hash]. When an invalid index is encountered,
@@ -418,39 +418,39 @@ each element in the sequence.
   @history[#:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]}
 
 @deftogether[(
-@defproc[(in-mutable-hash 
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+@defproc[(in-mutable-hash
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-mutable-hash 
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c]) 
+         (in-mutable-hash
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-keys
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-keys
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-values
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-values
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-mutable-hash-pairs
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-mutable-hash-pairs
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))] [bad-index-v any/c])
 	  sequence?]
-@defproc[(in-immutable-hash 
+@defproc[(in-immutable-hash
           [hash (and/c hash? immutable?)])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-immutable-hash 
+         (in-immutable-hash
           [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-immutable-hash-keys
@@ -474,29 +474,29 @@ each element in the sequence.
          (in-immutable-hash-pairs
           [hash (and/c hash? immutable?)] [bad-index-v any/c])
 	  sequence?]
-@defproc[(in-weak-hash 
-          [hash (and/c hash? hash-weak?)]) 
+@defproc[(in-weak-hash
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
-         (in-weak-hash 
+         (in-weak-hash
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-keys
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-keys
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-values
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-keys
           [hash (and/c hash? hash-weak?)] [bad-index-v any/c])
 	  sequence?]
 @defproc[(in-weak-hash-pairs
-          [hash (and/c hash? hash-weak?)]) 
+          [hash (and/c hash? hash-weak?)])
 	  sequence?]
 @defproc[#:link-target? #f
          (in-weak-hash-pairs
@@ -504,9 +504,9 @@ each element in the sequence.
 	  sequence?]
 )]{
    Sequence constructors for specific kinds of hash tables.
-   These may perform better than the analogous @racket[in-hash] 
+   These may perform better than the analogous @racket[in-hash]
    forms.
-   
+
    @history[#:added "6.4.0.6"
             #:changed "7.0.0.10" @elem{Added the optional @racket[bad-index-v] argument.}]
 }
@@ -703,7 +703,7 @@ each element in the sequence.
   @itemize[
     @item{The first result is a @racket[_pos->element] procedure that
       takes the current position and returns the value(s) for the
-      current element.}      
+      current element.}
     @item{The optional second result is an @racket[_early-next-pos]
       procedure that is described further below. Alternatively, the
       optional second result can be @racket[#f], which is equivalent
@@ -1383,7 +1383,7 @@ values from the generator.
     (welcome)]}
 
 @defform/subs[(in-generator maybe-arity body ...+)
-              ([maybe-arity code:blank 
+              ([maybe-arity code:blank
                             (code:line #:arity arity-k)])]{
   Produces a @tech{sequence} that encapsulates the @tech{generator}
   formed by @racket[(generator () body ...+)]. The values produced by
@@ -1406,7 +1406,7 @@ values from the generator.
   values for each element, its arity should be declared with an
   @racket[#:arity arity-k] clause; the @racket[arity-k] must be a
   literal, exact, non-negative integer.
-  
+
   @examples[#:eval generator-eval
     (eval:error
      (let ([g (in-generator
