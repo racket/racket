@@ -97,9 +97,9 @@ in the case of @tech{complex numbers}. Two characters are
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
 Return @racket[#t] if @racket[v1] and @racket[v2] refer to the same
-object, @racket[#f] otherwise. As a special case among @tech{numbers}, 
-two @tech{fixnums} that are @racket[=] are also the same according 
-to @racket[eq?]. See also @secref["model-eq"]. 
+object, @racket[#f] otherwise. As a special case among @tech{numbers},
+two @tech{fixnums} that are @racket[=] are also the same according
+to @racket[eq?]. See also @secref["model-eq"].
 
 @examples[
 (eq? 'yes 'yes)
@@ -289,7 +289,7 @@ Returns @racket[(not v)].}
 @defform[(nand expr ...)]{
   Same as @racket[(not (and expr ...))].
 
-  @examples[#:eval 
+  @examples[#:eval
             bool-eval
             (nand #f #t)
             (nand #f (error 'ack "we don't get here"))]
@@ -300,22 +300,22 @@ Returns @racket[(not v)].}
 
   In the two argument case, returns @racket[#t] if neither of the
   arguments is a true value.
-  
-  @examples[#:eval 
+
+  @examples[#:eval
             bool-eval
             (nor #f #t)
             (nor #t (error 'ack "we don't get here"))]
 
-          
+
 }
 
 @defform[(implies expr1 expr2)]{
   Checks to be sure that the first
   expression implies the second.
-  
+
   Same as @racket[(if expr1 expr2 #t)].
-  
-  @examples[#:eval 
+
+  @examples[#:eval
             bool-eval
             (implies #f #t)
             (implies #f #f)
