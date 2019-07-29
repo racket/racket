@@ -130,7 +130,7 @@ respectively.
 
 @defproc[(set->hash [st (or/c set? set-mutable? set-weak?)]) hash?]{
 
-Converts a set to a hash table, if it is @tech{hash set}.
+Converts a set to a hash table, if it is a @tech{hash set}.
 
 @history[#:added "7.4.0.3"]
 }
