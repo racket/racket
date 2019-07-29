@@ -1095,7 +1095,7 @@ prepare-cache:qemu:
       
 .preparearch:
   image: ubuntu:18.04
-  stage: stage5
+  stage: stage6
   tags:
     - x86_64
     - privileged
