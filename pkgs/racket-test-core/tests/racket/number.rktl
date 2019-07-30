@@ -2887,17 +2887,30 @@
 (test 120 integer-length (- (expt 2 120) 1))
 (test 121 integer-length (+ (expt 2 120) 1))
 
-; don't attempt to print numbers that are billions of bits long
-(test (+ (expt 2 30) 1) 'integer-length-vlarge-1
-  (integer-length (expt 2 (expt 2 30))))
-(test (- (expt 2 31) 63) 'integer-length-vlarge-2
-  (integer-length (expt 2 (- (expt 2 31) 64))))
+(define (avoid-big-allocation?)
+  ;; A Raspberry Pi running Linux is a likely too-small device,
+  ;; so at least detect that one:
+  (and (file-exists? "/proc/meminfo")
+       (call-with-input-file*
+        "/proc/meminfo"
+        (lambda (i)
+          (define m (regexp-match #rx"MemTotal: +([0-9]+) kB" i))
+          (and m
+               (< (string->number (bytes->string/utf-8 (cadr m)))
+                  (* 1.5 1024 1024)))))))
 
-; these will have bignum output on 32 bit machines
-(test (- (expt 2 31) 1) 'integer-length-vlarge-3
-  (integer-length (expt 2 (- (expt 2 31) 2))))
-(test (- (expt 2 31) 0) 'integer-length-overflow
-  (integer-length (expt 2 (- (expt 2 31) 1))))
+(unless (avoid-big-allocation?)
+  ; don't attempt to print numbers that are billions of bits long
+  (test (+ (expt 2 30) 1) 'integer-length-vlarge-1
+        (integer-length (expt 2 (expt 2 30))))
+  (test (- (expt 2 31) 63) 'integer-length-vlarge-2
+        (integer-length (expt 2 (- (expt 2 31) 64))))
+  
+  ; these will have bignum output on 32 bit machines
+  (test (- (expt 2 31) 1) 'integer-length-vlarge-3
+        (integer-length (expt 2 (- (expt 2 31) 2))))
+  (test (- (expt 2 31) 0) 'integer-length-overflow
+        (integer-length (expt 2 (- (expt 2 31) 1)))))
 
 (test "0" number->string 0)
 (test "1" number->string 1)
