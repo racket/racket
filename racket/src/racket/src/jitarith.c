@@ -2271,7 +2271,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   extract_nary_arg(JIT_R0, trigger_arg, jitter, app, alt_args, use_short);
   CHECK_LIMIT();
 
-  if (unsafe_fl < 1) {
+  if ((unsafe_fl < 1) && (unsafe_fx < 1)) {
     /* trigger argument a fixnum? */
     reffx = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
   } else
