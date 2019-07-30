@@ -3402,7 +3402,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
         key_wraps = scheme_make_raw_pair((Scheme_Object *)who, key_wraps);
       if (mode == 0 || mode == 5) {
         /* hash-ref or hash-ref-key */
-        Scheme_Object *interned_key;
+        Scheme_Object *interned_key = NULL;
         if (SCHEME_HASHTP(o)) {
           Scheme_Hash_Table *t = (Scheme_Hash_Table *)o;
           if (t->mutex) scheme_wait_sema(t->mutex, 0);
