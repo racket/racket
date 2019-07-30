@@ -604,6 +604,10 @@ case "$host_os" in
       i386|i486|i586|i686)
        enable_parallel_by_default=yes
        ;;
+      arm*)
+       EXTRA_GMP_OBJ="gmp_arm_gcc.o"
+       EXTRA_GMP_DEP='$(EXTRA_GMP_DEP_FILE)'
+       ;;
       *)
        ;;
     esac

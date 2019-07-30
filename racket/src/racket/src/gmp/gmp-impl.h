@@ -720,6 +720,10 @@ extern mp_size_t __gmp_default_fp_limb_precision;
 #define TARGET_REGISTER_STARVED 0
 #endif
 
+#if defined (__arm__)
+# define HAVE_NATIVE_mpn_invert_limb 1
+#endif
+
 /* Use a library function for invert_limb, if available. */
 #if ! defined (invert_limb) && HAVE_NATIVE_mpn_invert_limb
 #define mpn_invert_limb  __MPN(invert_limb)
