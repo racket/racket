@@ -2230,13 +2230,16 @@ installation or in a user-specific location, respectively, if
 
 @history[#:added "1.1"]
 
-@defproc[(materialize-user-docs [on-setup ((-> boolean?) -> any) (lambda (setup) (setup))])
+@defproc[(materialize-user-docs [on-setup ((-> boolean?) -> any) (lambda (setup) (setup))]
+                                [#:skip-user-doc-check? skip-user-doc-check? any/c #f])
          void?]{
 
 Checks whether a user-specific documentation entry point already
 exists in @racket[(find-user-doc-dir)], and if not, runs @exec{raco
 setup} in a mode that will create the entry point (to have the same
-content as the installation's documentation entry point.)
+content as the installation's documentation entry point.) If
+@racket[skip-user-doc-check?] is not @racket[#f], then skips the
+check for the user-specific documentation entry point.
 
 The run of @exec{raco setup} is packaged in a thunk that is provided to
 @racket[on-setup], which can adjust the current output and error ports
@@ -2244,4 +2247,6 @@ as appropriate and check the thunk's result for success.
 
 The @racket[on-setup] argument is not called if the documentation entry
 point already exists in @racket[(find-user-doc-dir)].
+
+@history[#:changed "1.1" @list{Added the @racket[skip-user-doc-check?] argument.}]
 }
