@@ -2992,5 +2992,22 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test '((1 2 3)) dynamic-require ''uses-also-something-via-local-alias 'v)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check resolution of module paths in a namespace produced by `module->namespace`
+
+(err/rt-test (eval '(require (submod "." inner)))
+             (lambda (exn) (and (exn:fail? exn)
+                                (regexp-match? #rx"no base path for relative submodule path" (exn-message exn)))))
+
+(module defines-a-submodule-named-inner racket/base
+  (module inner racket/base
+    (provide i)
+    (define i 'yes)))
+
+(dynamic-require ''defines-a-submodule-named-inner #f)
+(parameterize ([current-namespace (module->namespace ''defines-a-submodule-named-inner)])
+  (eval '(require (submod "." inner)))
+  (test 'yes eval 'i))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

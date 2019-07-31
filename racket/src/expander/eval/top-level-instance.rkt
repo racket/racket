@@ -41,6 +41,7 @@
                                   reqs
                                   #f ; no syntax errors should happen
                                   ns
+                                  #:self (namespace-self-mpi/no-top-level ns)
                                   (namespace-phase ns)
                                   (make-requires+provides #f)
                                   #:who 'require

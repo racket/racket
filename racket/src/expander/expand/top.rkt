@@ -103,13 +103,15 @@
    (define disarmed-s (syntax-disarm s))
    (define-match m disarmed-s '(#%require req ...))
    (define sc (new-scope 'macro)) ; to hide bindings
+   (define ns (expand-context-namespace ctx))
    ;; Check the `#%require` form syntax and trigger compile-time
    ;; instanations
    (parse-and-perform-requires! (for/list ([req (in-list (m 'req))])
                                   (add-scope req sc))
                                 s
+                                #:self (namespace-self-mpi/no-top-level ns)
                                 #:visit? #f
-                                (expand-context-namespace ctx)
+                                ns
                                 (expand-context-phase ctx)
                                 (make-requires+provides #f)
                                 #:who 'require
