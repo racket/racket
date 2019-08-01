@@ -47,9 +47,8 @@
 (define (custom-set-member? s x)
   (dprintf "custom-set-member?\n")
   (set-check-elem 'set-member? s x)
-  (hash-ref (custom-set-table s)
-            (set-wrap-elem s x)
-            #f))
+  (hash-has-key? (custom-set-table s)
+                 (set-wrap-elem s x)))
 
 (define (custom-set-count s)
   (dprintf "custom-set-count\n")
