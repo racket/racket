@@ -3,8 +3,8 @@
 
 (Section 'wills)
 
-(collect-garbage 'major)
-(collect-garbage 'minor)
+(test (void) collect-garbage 'major)
+(test (void) collect-garbage 'minor)
 (err/rt-test (collect-garbage 'other))
 
 (test #t exact-nonnegative-integer? (current-memory-use))

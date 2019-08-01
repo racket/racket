@@ -79,7 +79,8 @@
                  (current-engine-state))
         ;; This `set-timer` doesn't necessarily penalize the right thread,
         ;; but it's likely to penalize a thread that is allocating quickly:
-        (set-timer 1)))))
+        (set-timer 1))
+      (void))))
 
 (define collect-garbage
   (case-lambda
