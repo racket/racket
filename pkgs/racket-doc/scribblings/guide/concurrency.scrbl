@@ -194,7 +194,7 @@ the items and then pass their results to the result thread via the @racket[resul
 (define result-thread
         (thread (lambda ()
                   (let loop ()
-                    (displayln (channel-get result-channel))
+                    (display (channel-get result-channel))
                     (loop)))))
 
 (define work-channel (make-channel))
@@ -206,10 +206,10 @@ the items and then pass their results to the result thread via the @racket[resul
        (case item
          [(DONE)
           (channel-put result-channel
-                       (format "Thread ~a done" thread-id))]
+                       (format "Thread ~a done\n" thread-id))]
          [else
           (channel-put result-channel
-                       (format "Thread ~a processed ~a"
+                       (format "Thread ~a processed ~a\n"
                                thread-id
                                item))
           (loop)])))))
@@ -217,6 +217,7 @@ the items and then pass their results to the result thread via the @racket[resul
 (for ([item '(A B C D E F G H DONE DONE)])
   (channel-put work-channel item))
 (for-each thread-wait work-threads)
+(channel-put result-channel "") (code:comment "waits until result-thread has printed all other output")
 ]
 
 @section{Buffered Asynchronous Channels}
