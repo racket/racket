@@ -1,6 +1,7 @@
 #lang racket/base
 
-(provide vector-set*! vector-copy vector-map vector-map! vector-append
+(provide vector-empty? vector-set*! vector-copy
+         vector-map vector-map! vector-append
          vector-take vector-drop vector-split-at
          vector-take-right vector-drop-right vector-split-at-right
          vector-filter vector-filter-not
@@ -11,7 +12,12 @@
          (for-syntax racket/base)
          (rename-in (except-in "private/sort.rkt" sort)
                     [vector-sort! raw-vector-sort!]
-                    [vector-sort raw-vector-sort])) 
+                    [vector-sort raw-vector-sort]))
+
+(define (vector-empty? v)
+  (unless (vector? v)
+    (raise-argument-error 'vector-empty? "vector?" v))
+  (zero? (vector-length v)))
 
 (define (vector-set*! v . pairs)
   (unless (even? (length pairs))

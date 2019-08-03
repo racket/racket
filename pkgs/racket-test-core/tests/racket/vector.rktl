@@ -61,6 +61,12 @@
 (err/rt-test (vector-fill! '(1 2 3) 0))
 
 
+;; ---------- vector-empty? ----------
+(test #f vector-empty? '#(a))
+(test #f vector-empty? '#(()))
+(test #f vector-empty? '#(#()))
+(test #t vector-empty? '#())
+
 
 ;; ---------- vector-take/drop[-right] ----------
 (let ()
