@@ -677,7 +677,7 @@
    ([#:bool dry-run () ("Don't actually change package installation")])
    #:job-flags
    ([#:bool no-setup () ("Don't `raco setup` after changing packages (usually a bad idea)")]
-    [#:bool no-docs () "Do not compile .scrbl files and do not build documentation"]
+    [#:bool no-docs ("-D") "Do not compile .scrbl files and do not build documentation"]
     [#:bool recompile-only () ("Expect built packages, possibly machine-independent")]
     [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]
     [#:bool batch () ("Disable interactive mode and all prompts")])
