@@ -1,6 +1,6 @@
 
 /* The version string has one of the forms:
-      X.Y
+      X.Y       Z = 0, W = 0
       X.Y.Z     Z != 0
       X.Y.Z.W   W != 0
    where each X, Y, Z, W is a non-negative exact integer, Y must not
@@ -14,9 +14,9 @@
 */
 
 #define MZSCHEME_VERSION_X 7
-#define MZSCHEME_VERSION_Y 3
+#define MZSCHEME_VERSION_Y 4
 #define MZSCHEME_VERSION_Z 0
-#define MZSCHEME_VERSION_W 900
+#define MZSCHEME_VERSION_W 0
 
 /* A level of indirection makes `#` work as needed: */
 #define AS_a_STR_HELPER(x) #x
