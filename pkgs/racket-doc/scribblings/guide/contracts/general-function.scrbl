@@ -542,16 +542,20 @@ Now, suppose that we also want to ensure that the first result of
  first contract strengthens the old one so that the result is a prefix of
  the given word. 
 
-This contract is expensive to check, of course. Here is a slightly
-  cheaper version: 
+This contract is expensive to check, of course. Here is a 
+  cheaper, though less stringent, version: 
 @racketblock[
 (provide
  (contract-out
   [split (->i ([fl (listof char?)])
-              (values [s (fl) (string-len/c (length fl))]
+              (values [s (fl) (string-len/c (+ 1 (length fl)))]
                       [c (listof char?)]))]))
 ]
+Stop! Why did we add @racket[1] to the length of @racket[fl]?
 
+@;{
+Running @racket[(split '())] would reveal this documentation bug.
+}
 
 @ctc-section[#:tag "no-domain"]{Fixed but Statically Unknown Arities}
 
