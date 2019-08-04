@@ -956,21 +956,29 @@
                #f #f
                (lambda ()
                  (let* ([v (struct->vector obj struct-ellipses)]
-                        [pf? (prefab?! obj v)])
-                   (let ([qd (if pf?
-                                 (to-quoted out qd obj)
-                                 qd)])
-                     (when (or (not qd) (positive? qd))
+                        [pf? (prefab?! obj v)]
+                        [print-vec-length? (and print-vec-length? (not pf?))]
+                        [qd (if pf?
+                                (to-quoted out qd obj)
+                                qd)]
+                        [as-expr? (and qd (zero? qd))]
+                        [l (cond
+                             [as-expr?
+                              (cons (make-unquoted (object-name obj))
+                                    (cdr (vector->list v)))]
+                             [print-vec-length?
+                              (vector->repeatless-list v)]
+                             [else
+                              (vector->list v)])])
+                     (unless as-expr?
                        (out "#")
-                       (when pf? (out "s")))
-                     (wr-lst (let ([l (vector->list v)])
-                               (if (and qd (zero? qd))
-                                   (cons (make-unquoted (object-name obj))
-                                         (cdr l))
-                                   l))
-                             #f (dsub1 depth) pair? car cdr "(" ")" 
-                             qd)))))
-              (parameterize ([print-struct #f])
+                       (when pf?
+                         (out "s"))
+                       (when print-vec-length?
+                         (out (number->string (vector-length v)))))
+                     (wr-lst l
+                             #f (dsub1 depth) pair? car cdr "(" ")" qd))))
+            (parameterize ([print-struct #f])
                 ((if display? orig-display orig-write) obj pport)))]
          [(hash? obj)  
           (if (and print-hash-table?
@@ -1162,21 +1170,29 @@
                           (write-custom pp* obj pport depth display? width qd #t))]
                        [(struct? obj) ; print-struct is on if we got here
                         (let* ([v (struct->vector obj struct-ellipses)]
-                               [pf? (prefab?! obj v)])
-                          (let ([qd (if pf?
-                                        (to-quoted out qd obj)
-                                        qd)])
-                            (when (or (not qd) (positive? qd))
-                              (out "#")
-                              (when pf? (out "s")))
-                            (pp-list (let ([l (vector->list v)])
-                                       (if (and qd (zero? qd))
-                                           (cons (make-unquoted (object-name obj))
-                                                 (cdr l))
-                                           l))
-                                     extra pp-expr #f depth
-                                     pair? car cdr pair-open pair-close
-                                     qd)))]
+                               [pf? (prefab?! obj v)]
+                               [print-vec-length? (and print-vec-length? (not pf?))]
+                               [qd (if pf?
+                                       (to-quoted out qd obj)
+                                       qd)]
+                               [as-expr? (and qd (zero? qd))]
+                               [l (cond
+                                    [as-expr?
+                                     (cons (make-unquoted (object-name obj))
+                                           (cdr (vector->list v)))]
+                                    [print-vec-length?
+                                     (vector->repeatless-list v)]
+                                    [else
+                                     (vector->list v)])])
+                          (unless as-expr?
+                            (out "#")
+                            (when pf?
+                              (out "s"))
+                            (when print-vec-length?
+                              (out (number->string (vector-length v)))))
+                          (pp-list l
+                                   extra pp-expr #f depth
+                                   pair? car cdr pair-open pair-close qd))]
                        [(hash? obj)
                         (let* ([qd (to-quoted out qd obj)]
                                [expr? (and qd (zero? qd))])
