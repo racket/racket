@@ -28,7 +28,7 @@
           (define last (v-ref v (sub1 len)))
           (let loop ([i (- len 2)] [accum 0])
             (cond
-              [(zero? i) accum]
+              [(< i 0) accum]
               [(equ? (v-ref v i) last)
                (loop (sub1 i) (add1 accum))]
               [else accum]))]))
