@@ -2131,7 +2131,7 @@ The @racket[define-struct/contract] form only allows a subset of the
                                 (code:line #:srcloc srcloc-expr)]
                     [name-for-blame
                      (code:line)
-                     #:name-for-blame blame-id]
+                     (code:line #:name-for-blame blame-id)]
                     [context-limit (code:line)
                      (code:line #:context-limit limit-expr)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
