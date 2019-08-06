@@ -34,6 +34,8 @@ Returns @racket[#t] if @racket[v] is a vector, @racket[#f] otherwise.}
 
 Returns @racket[#t] if @racket[v] is empty (i.e. its length is 0), @racket[#f] otherwise.}
 
+@history[#:added "7.4.0.4"]}
+
 @defproc[(make-vector [size exact-nonnegative-integer?]
                       [v any/c 0]) vector?]{
 
