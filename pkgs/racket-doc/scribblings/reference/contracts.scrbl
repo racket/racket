@@ -1988,7 +1988,7 @@ contracts paired with exported @racket[id]s.  Contracts broken
 within the @racket[with-contract] @racket[body] will use the
 @racket[blame-id] for their negative position.
 
-If a free-var-list is given, then any uses of the free variables
+If a @racket[free-var-list] is given, then any uses of the free variables
 inside the @racket[body] will be protected with contracts that
 blame the context of the @racket[with-contract] form for the positive
 positions and the @racket[with-contract] form for the negative ones.}
