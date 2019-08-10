@@ -61,28 +61,31 @@
 
 (define ((allocator d) proc)
   (check-arity-includes-1 'allocator d)
-  (rename
-   (let-values ([(_ allowed-kws) (procedure-keywords proc)])
-     (define (register v)
-       (when v
-         (define ds (node (make-late-weak-box v) d #f #f #f))
-         (add-node! ds)
-         (hash-set! allocated v ds)
-         (register-finalizer v deallocate))
-       v)
-     (cond
-       [(null? allowed-kws)
-        (lambda args
-          (call-as-atomic
-           (lambda ()
-             (register (apply proc args)))))]
-       [else
-        (make-keyword-procedure
-         (λ (kws kw-args . rest)
-           (call-as-atomic
-            (lambda ()
-              (register (keyword-apply proc kws kw-args rest))))))]))
-   proc))
+  (cond
+    [(not proc) #f]
+    [else
+     (rename
+      (let-values ([(_ allowed-kws) (procedure-keywords proc)])
+        (define (register v)
+          (when v
+            (define ds (node (make-late-weak-box v) d #f #f #f))
+            (add-node! ds)
+            (hash-set! allocated v ds)
+            (register-finalizer v deallocate))
+          v)
+        (cond
+          [(null? allowed-kws)
+           (lambda args
+             (call-as-atomic
+              (lambda ()
+                (register (apply proc args)))))]
+          [else
+           (make-keyword-procedure
+            (λ (kws kw-args . rest)
+              (call-as-atomic
+               (lambda ()
+                 (register (keyword-apply proc kws kw-args rest))))))]))
+      proc)]))
 
 (define ((deallocator [get-arg car]) proc)
   (check-arity-includes-1 'deallocator get-arg "(-> list/c any/c)")

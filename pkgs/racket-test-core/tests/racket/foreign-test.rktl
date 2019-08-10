@@ -5,6 +5,7 @@
 
 (require ffi/unsafe
          ffi/unsafe/cvector
+         ffi/unsafe/alloc
          ffi/unsafe/define
          ffi/unsafe/define/conventions
          ffi/vector
@@ -1299,6 +1300,11 @@
   (eq? (tagged-obj3 o) obj3)
   (= (tagged-non2 o) obj2-addr)
   (= (tagged-non4 o) obj4-addr))
+
+;; ----------------------------------------
+
+(test #t procedure? ((allocator void) void))
+(test #f (allocator void) #f)
 
 ;; ----------------------------------------
 
