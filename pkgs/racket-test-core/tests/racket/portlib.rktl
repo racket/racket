@@ -998,7 +998,7 @@
 ;; --------------------------------------------------
 ;; test combine-output-ports
 (let ([port-a (open-output-string)]
-      [port-d (open-output-string)])
+      [port-b (open-output-string)])
   (define port-ab (combine-output-ports port-a port-b))
   (test (void) display "hello, " port-abcd)
   (test 5  write-bytes-avail #"world" port-abcd)
