@@ -1000,8 +1000,8 @@
 (let ([port-a (open-output-string)]
       [port-b (open-output-string)])
   (define port-ab (combine-output-ports port-a port-b))
-  (test (void) display "hello, " port-abcd)
-  (test 5  write-bytes-avail #"world" port-abcd)
+  (test (void) display "hello, " port-ab)
+  (test 5  write-bytes-avail #"world" port-ab)
   (test "hello, world" get-output-string port-a)
   (test "hello, world" get-output-string port-b))
 
