@@ -999,9 +999,14 @@
 ;; test combine-output-ports
 (let ([port-a (open-output-string)]
       [port-b (open-output-string)])
-  (define port-ab (combine-output-ports port-a port-b))
-  (test (void) display "hello, " port-ab)
-  (test 5  write-bytes-avail #"world" port-ab)
+  (define two-byte-port (make-output-port
+                          `two-byte-port
+                          port-b
+                          (lambda (s start end no-buffer&block? breakable?)
+                            (write-bytes-avail (subbytes s start (+ start 2)) port-b))
+                          void))
+  (define port-ab (combine-output-ports port-a two-byte-port))
+  (test 12  write-bytes #"hello, world" port-ab)
   (test "hello, world" get-output-string port-a)
   (test "hello, world" get-output-string port-b))
 

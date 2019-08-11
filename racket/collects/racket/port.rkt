@@ -168,32 +168,38 @@
 
 (define (combine-output-ports port-a port-b)
   (define-values (b-pin b-pout) (make-pipe 4096))
-  (define (do-write-ab write-fun-a write-fun-b s start end)
-    (let ([written-to-a
-           (subbytes s
-                     start
-                     (+ start (write-fun-a (subbytes s start end) port-a)))])
-      (if (equal? (write-fun-b written-to-a port-b) (bytes-length written-to-a))
-          (bytes-length written-to-a)
-          b-pout)))
   (define (flush-b write-fun-b)
     (let ([b-buffer-content (read-bytes (pipe-content-length b-pin) b-pin)])
       (write-fun-b b-buffer-content port-b)))
+  (define (do-write-ab write-fun-a write-fun-b s start end [buffer #t])
+    (if (zero? (pipe-content-length b-pin))
+        (let ([written-to-a
+               (subbytes s
+                         start
+                         (+ start (write-fun-a (subbytes s start end) port-a)))])
+          (if buffer
+              (if (equal? (write-fun-b written-to-a port-b) (bytes-length written-to-a))
+                  (bytes-length written-to-a)
+                  b-pout)
+              (write-fun-b written-to-a port-b)))
+        (let
+            ([flushed (flush-b write-fun-b)])
+          (if (zero? (pipe-content-length b-pin))
+              (+ flushed (do-write-ab write-fun-a write-fun-b s start end))
+              flushed))))
+
   (make-output-port
-   'combined-output-port
-   ; evt
+   'combined-output
    (replace-evt port-a (lambda (v) port-b))
-   ; write-out
    (lambda (s start end no-buffer&block? breakable?)
      (cond
        [(equal? start end)
         (begin
           (flush-b write-bytes)
           0)]
-       [no-buffer&block? (do-write-ab write-bytes-avail* write-bytes-avail* s start end)]
-       [breakable? (do-write-ab write-bytes-avail/enable-break write-bytes-avail s start end)]
+       [no-buffer&block? (do-write-ab write-bytes-avail* write-bytes-avail* s start end #f)]
+       [breakable? (do-write-ab write-bytes-avail/enable-break write-bytes s start end)]
        [else (do-write-ab write-bytes write-bytes s start end)]))
-   ; close
    void))
 
 ;; ----------------------------------------
