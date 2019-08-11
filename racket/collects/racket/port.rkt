@@ -166,59 +166,35 @@
 (define (call-with-input-bytes str proc)
   (with-input-from-x 'call-with-input-bytes 1 #t str proc))
 
-(define (combine-output-ports what . with)
-  (define port-list (cons what with))
-  (map (lambda (p)
-         (or (output-port? p)
-             (raise-argument-error 'combine-output-ports "output-port?" p)))
-       port-list)
-  (define (evts-and evts)
-    (if (null? (cdr evts))
-        (car evts)
-        (wrap-evt (car evts)
-                  (let ([wrapped-evts (evts-and (cdr evts))])
-                    (lambda (v)
-                      (sync wrapped-evts))))))
+(define (combine-output-ports port-a port-b)
+  (define-values (b-pin b-pout) (make-pipe 4096))
+  (define (do-write-ab write-fun-a write-fun-b s start end)
+    (let ([written-to-a
+           (subbytes s
+                     start
+                     (+ start (write-fun-a (subbytes s start end) port-a)))])
+      (if (equal? (write-fun-b written-to-a port-b) (bytes-length written-to-a))
+          (bytes-length written-to-a)
+          b-pout)))
+  (define (flush-b write-fun-b)
+    (let ([b-buffer-content (read-bytes (pipe-content-length b-pin) b-pin)])
+      (write-fun-b b-buffer-content port-b)))
   (make-output-port
    'combined-output-port
-   ; combined port is ready when all inner ports are ready
-   (evts-and port-list)
-   ; write-out procedure
-   (lambda (s start end non-block? breakable?)
-     (let ([s (subbytes s start end)])
-       (andmap (lambda (p)
-                 (cond [non-block? (write-bytes-avail* s p)]
-                       [breakable? (parameterize-break #t (write-bytes s p))]
-                       [else (write-bytes s p)]))
-               port-list)))
-   ; closing combined port doesn't close nested ports
-   void
-   ; write-out-special only if all ports
-   ; can do it
-   (and (andmap port-writes-special? port-list)
-        (lambda (v no-buffer&block? breakable?)
-          (andmap (lambda (p)
-                    (cond [no-buffer&block? (write-special-avail* v p)]
-                          [breakable? (parameterize-break #t (write-special v p))]
-                          [else (write-special v p)]))
-                  port-list)))
-   ; get-write-evt when all ports can write atomic
-   (and (andmap port-writes-atomic? port-list)
-        (lambda (s start end)
-          (let ([s (subbytes s start end)])
-            (evts-and (map (lambda (p)
-                             (write-bytes-avail-evt s p))
-                           port-list)))))
-   ; get-write-special-evt
-   (and (andmap (lambda (p)
-                  (and (port-writes-atomic? p)
-                       (port-writes-special? p)))
-                port-list)
-        (lambda (v)
-          (evts-and (map
-                     (lambda (p)
-                       (write-special-evt v p))
-                     port-list))))))
+   ; evt
+   (replace-evt port-a (lambda (v) port-b))
+   ; write-out
+   (lambda (s start end no-buffer&block? breakable?)
+     (cond
+       [(equal? start end)
+        (begin
+          (flush-b write-bytes)
+          0)]
+       [no-buffer&block? (do-write-ab write-bytes-avail* write-bytes-avail* s start end)]
+       [breakable? (do-write-ab write-bytes-avail/enable-break write-bytes-avail s start end)]
+       [else (do-write-ab write-bytes write-bytes s start end)]))
+   ; close
+   void))
 
 ;; ----------------------------------------
 ;; the code below used to be in `mzlib/port`
