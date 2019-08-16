@@ -166,6 +166,8 @@ static char *string_to_from_locale(int to_bytes,
 				   intptr_t *olen, int perm,
 				   int *no_cvt);
 
+static void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le);
+
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
 ROSYM static Scheme_Object *sys_symbol;
@@ -183,6 +185,10 @@ SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
 
 THREAD_LOCAL_DECL(static Scheme_Object *fs_change_props);
+
+THREAD_LOCAL_DECL(static char *cached_locale_encoding_name);
+THREAD_LOCAL_DECL(struct rktio_converter_t *cached_locale_to_converter);
+THREAD_LOCAL_DECL(struct rktio_converter_t *cached_locale_from_converter);
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
@@ -2571,6 +2577,18 @@ static Scheme_Object *system_language_country(int argc, Scheme_Object *argv[])
   return s;
 }
 
+static void do_convert_close(rktio_converter_t *cd, int cache_mode, const char *to_e, const char *from_e)
+/* If `cache_mode` is -1, then `to_e` needs to be freed (or cached).
+   If `cache_mode` is 1, then `from_e` needs to be freed (or cached). */
+{
+  if (cache_mode == -1)
+    cache_locale_or_close(1, cd, (char *)to_e);
+  else if (cache_mode == 1)
+    cache_locale_or_close(0, cd, (char *)from_e);
+  else if (!cache_mode)
+    rktio_converter_close(scheme_rktio, cd);
+}
+
 static char *do_convert(rktio_converter_t *cd,
 			/* if !cd and either from_e or to_e can be NULL, then
 			   reset_locale() must have been called */
@@ -2598,7 +2616,7 @@ static char *do_convert(rktio_converter_t *cd,
 			   1 for more avail */
 			int *status)
 {
-  int dip, dop, close_it = 0, mz_utf8 = 0;
+  int dip, dop, close_it = 0, cache_mode = 0, mz_utf8 = 0;
   intptr_t il, ol, r;
   GC_CAN_IGNORE char *ip, *op;
 
@@ -2611,6 +2629,12 @@ static char *do_convert(rktio_converter_t *cd,
   if (!cd) {
     if (rktio_convert_properties(scheme_rktio) & RKTIO_CONVERTER_SUPPORTED) {
       char *tmp_from_e = NULL, *tmp_to_e = NULL;
+
+      if (!to_e && !strcmp(from_e, MZ_UCS4_NAME))
+        cache_mode = -1;
+      else if (!from_e && !strcmp(to_e, MZ_UCS4_NAME))
+        cache_mode = 1;
+
       if (!from_e) {
 	tmp_from_e = rktio_locale_encoding(scheme_rktio);
         from_e = tmp_from_e;
@@ -2619,10 +2643,23 @@ static char *do_convert(rktio_converter_t *cd,
 	tmp_to_e = rktio_locale_encoding(scheme_rktio);
         to_e = tmp_to_e;
       }
-      cd = rktio_converter_open(scheme_rktio, to_e, from_e);
+
+      if ((cache_mode == -1)
+          && cached_locale_to_converter
+          && !strcmp(to_e, cached_locale_encoding_name)) {
+        cd = cached_locale_to_converter;
+        cached_locale_to_converter = NULL;
+      } else if ((cache_mode == 1)
+                 && cached_locale_from_converter
+                 && !strcmp(from_e, cached_locale_encoding_name)) {
+        cd = cached_locale_from_converter;
+        cached_locale_from_converter = NULL;
+      } else {
+        cd = rktio_converter_open(scheme_rktio, to_e, from_e);
+      }
       close_it = 1;
-      if (tmp_from_e) free(tmp_from_e);
-      if (tmp_to_e) free(tmp_to_e);
+      if (tmp_from_e && ((cache_mode != 1) || !cd)) free(tmp_from_e);
+      if (tmp_to_e && ((cache_mode != -1) || !cd)) free(tmp_to_e);
     } else if (to_from_utf8) {
       /* Assume UTF-8 */
       mz_utf8 = 1;
@@ -2737,7 +2774,7 @@ static char *do_convert(rktio_converter_t *cd,
 	} else {
 	  *status = 1;
 	  if (close_it)
-	    rktio_converter_close(scheme_rktio, cd);
+            do_convert_close(cd, cache_mode, to_e, from_e);
 	  while (extra--) {
 	    out[od + dop + extra] = 0;
 	  }
@@ -2748,7 +2785,7 @@ static char *do_convert(rktio_converter_t *cd,
 	if (icerr == RKTIO_ERROR_CONVERT_BAD_SEQUENCE)
 	  *status = -2;
 	if (close_it)
-	  rktio_converter_close(scheme_rktio, cd);
+          do_convert_close(cd, cache_mode, to_e, from_e);
 	while (extra--) {
 	  out[od + dop + extra] = 0;
 	}
@@ -2766,7 +2803,7 @@ static char *do_convert(rktio_converter_t *cd,
       } else {
 	*status = 0;
 	if (close_it)
-          rktio_converter_close(scheme_rktio, cd);
+          do_convert_close(cd, cache_mode, to_e, from_e);
 	while (extra--) {
 	  out[od + dop + extra] = 0;
 	}
@@ -2792,17 +2829,31 @@ static char *string_to_from_locale(int to_bytes,
   rktio_converter_t *cd;
 
   le = rktio_locale_encoding(scheme_rktio);
-  if (to_bytes)
-    cd = rktio_converter_open(scheme_rktio, le, MZ_UCS4_NAME);
-  else
-    cd = rktio_converter_open(scheme_rktio, MZ_UCS4_NAME, le);
-  free(le);
-  
+  if (cached_locale_encoding_name
+      && !strcmp(le, cached_locale_encoding_name)
+      && (to_bytes ? cached_locale_to_converter : cached_locale_from_converter)) {
+    if (to_bytes) {
+      cd = cached_locale_to_converter;
+      cached_locale_to_converter = NULL;
+    } else {
+      cd = cached_locale_from_converter;
+      cached_locale_from_converter = NULL;
+    }
+  } else {  
+    if (to_bytes)
+      cd = rktio_converter_open(scheme_rktio, le, MZ_UCS4_NAME);
+    else
+      cd = rktio_converter_open(scheme_rktio, MZ_UCS4_NAME, le);
+  }
+
   if (!cd) {
+    free(le);
     *no_cvt = 1;
     return NULL;
   }
   *no_cvt = 0;
+
+  status = 0;
 
   while (len) {
     /* We might have conversion errors... */
@@ -2818,6 +2869,7 @@ static char *string_to_from_locale(int to_bytes,
 
     if ((perm < 0) && (used < len)) {
       rktio_converter_close(scheme_rktio, cd);
+      free(le);
       return NULL;
     }
 
@@ -2832,7 +2884,7 @@ static char *string_to_from_locale(int to_bytes,
 	*olen = (clen >> 2);
 	((mzchar *)c)[*olen] = 0;
       }
-      rktio_converter_close(scheme_rktio, cd);
+      cache_locale_or_close(to_bytes, cd, le);
       return c;
     }
 
@@ -2864,7 +2916,7 @@ static char *string_to_from_locale(int to_bytes,
     }
   }
 
-  rktio_converter_close(scheme_rktio, cd);
+  cache_locale_or_close(to_bytes, cd, le);
 
   if (to_bytes) {
     parts = append_all_byte_strings_backwards(parts);
@@ -2876,6 +2928,42 @@ static char *string_to_from_locale(int to_bytes,
     *olen = SCHEME_CHAR_STRTAG_VAL(parts);
 
     return (char *)SCHEME_CHAR_STR_VAL(parts);
+  }
+}
+
+void cache_locale_or_close(int to_bytes, rktio_converter_t *cd, char *le)
+{
+  if (to_bytes ? cached_locale_to_converter : cached_locale_from_converter) {
+    rktio_converter_close(scheme_rktio, cd);
+    free(le);
+  } else {
+    if (!cached_locale_encoding_name || strcmp(le, cached_locale_encoding_name)) {
+      scheme_clear_locale_cache();
+      cached_locale_encoding_name = le;
+    } else
+      free(le);
+
+    rktio_convert_reset(scheme_rktio, cd);
+    if (to_bytes)
+      cached_locale_to_converter = cd;
+    else
+      cached_locale_from_converter = cd;
+  }
+}
+
+void scheme_clear_locale_cache(void)
+{
+  if (cached_locale_encoding_name) {
+    if (cached_locale_to_converter) {
+      rktio_converter_close(scheme_rktio, cached_locale_to_converter);
+      cached_locale_to_converter = NULL;
+    }
+    if (cached_locale_from_converter) {
+      rktio_converter_close(scheme_rktio, cached_locale_from_converter);
+      cached_locale_from_converter = NULL;
+    }
+    free(cached_locale_encoding_name);
+    cached_locale_encoding_name = NULL;
   }
 }
 

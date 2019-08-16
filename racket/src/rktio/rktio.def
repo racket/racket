@@ -176,6 +176,7 @@ rktio_converter_open
 rktio_converter_close
 rktio_convert
 rktio_convert_in
+rktio_convert_reset
 rktio_locale_recase
 rktio_recase_utf16
 rktio_locale_strcoll

@@ -12,6 +12,9 @@
          bytes-convert
          bytes-convert-end)
 
+(module+ reset
+  (provide bytes-reset-converter))
+
 (struct bytes-converter ([c #:mutable]
                          [custodian-reference #:mutable]))
 
@@ -229,3 +232,9 @@
      (define err (and (= converted RKTIO_CONVERT_ERROR)
                       (rktio_get_last_error rktio)))
      (values in-consumed out-produced err)]))
+
+;; in atomic mode
+(define (bytes-reset-converter converter)
+  (define c  (bytes-converter-c converter))
+  (unless (utf-8-converter? c)
+    (rktio_convert_reset rktio c)))

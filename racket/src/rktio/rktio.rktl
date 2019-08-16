@@ -1263,6 +1263,11 @@
   (intptr_t out_end)))
 (define-function
  ()
+ void
+ rktio_convert_reset
+ (((ref rktio_t) rktio) ((ref rktio_converter_t) cvt)))
+(define-function
+ ()
  (ref char)
  rktio_locale_recase
  (((ref rktio_t) rktio) (rktio_bool_t to_up) (rktio_const_string_t in)))

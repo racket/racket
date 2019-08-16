@@ -4,6 +4,7 @@
          "../host/rktio.rkt"
          "../string/utf-16-encode.rkt"
          "../converter/main.rkt"
+         "cache.rkt"
          "parameter.rkt"
          "string.rkt"
          "recase.rkt"
@@ -93,10 +94,11 @@
      (define c2 #f)
      (define in-bstr1 (string->bytes/ucs-4 s1 0 (string-length s1)))
      (define in-bstr2 (string->bytes/ucs-4 s2 0 (string-length s2)))
+     (define enc (locale-string-encoding))
      (dynamic-wind
       (lambda ()
-        (set! c1 (bytes-open-converter ucs-4-encoding (locale-string-encoding)))
-        (set! c2 (bytes-open-converter ucs-4-encoding (locale-string-encoding))))
+        (set! c1 (bytes-open-converter/cached-to enc))
+        (set! c2 (bytes-open-converter/cached-to2 enc)))
       (lambda ()
         (let loop ([pos1 0] [pos2 0] [end1 (bytes-length in-bstr1)] [end2 (bytes-length in-bstr2)])
           (define-values (bstr1 in-used1 status1)
@@ -154,5 +156,5 @@
                [else
                 (loop pos1 pos2 (+ pos1 len) (+ pos2 len))])])))
       (lambda ()
-        (bytes-close-converter c1)
-        (bytes-close-converter c2)))]))
+        (bytes-close-converter/cached-to c1 enc)
+        (bytes-close-converter/cached-to2 c2 enc)))]))

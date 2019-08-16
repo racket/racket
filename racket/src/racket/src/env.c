@@ -586,6 +586,7 @@ void scheme_place_instance_destroy(int force)
   GC_destruct_child_gc();
 #endif
   scheme_free_all_code();
+  scheme_clear_locale_cache();
   rktio_destroy(scheme_rktio);
 }
 

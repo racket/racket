@@ -1119,6 +1119,9 @@ RKTIO_EXTERN rktio_convert_result_t *rktio_convert_in(rktio_t *rktio,
    doesn't return a NULL result; instead, `converted` in the result
    reports the error. */
 
+RKTIO_EXTERN void rktio_convert_reset(rktio_t *rktio, rktio_converter_t *cvt);
+/* Resets a converter to its initial state. */
+
 RKTIO_EXTERN_NOERR char *rktio_locale_recase(rktio_t *rktio,
                                              rktio_bool_t to_up,
                                              rktio_const_string_t in);

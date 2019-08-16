@@ -176,6 +176,7 @@ Sforeign_symbol("rktio_converter_open", (void *)rktio_converter_open);
 Sforeign_symbol("rktio_converter_close", (void *)rktio_converter_close);
 Sforeign_symbol("rktio_convert", (void *)rktio_convert);
 Sforeign_symbol("rktio_convert_in", (void *)rktio_convert_in);
+Sforeign_symbol("rktio_convert_reset", (void *)rktio_convert_reset);
 Sforeign_symbol("rktio_locale_recase", (void *)rktio_locale_recase);
 Sforeign_symbol("rktio_recase_utf16", (void *)rktio_recase_utf16);
 Sforeign_symbol("rktio_locale_strcoll", (void *)rktio_locale_strcoll);
