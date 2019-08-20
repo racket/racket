@@ -12,6 +12,7 @@ rktio_fd_is_socket
 rktio_fd_is_udp
 rktio_fd_is_terminal
 rktio_fd_is_text_converted
+rktio_fd_is_pending_open
 rktio_fd_modes
 rktio_open
 rktio_close

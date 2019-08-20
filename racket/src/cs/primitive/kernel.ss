@@ -622,6 +622,7 @@
   [port-provides-progress-evts? (known-procedure 2)]
   [port-read-handler (known-procedure 6)]
   [port-try-file-lock? (known-procedure 4)]
+  [port-waiting-peer? (known-procedure 2)]
   [port-write-handler (known-procedure 6)]
   [port-writes-atomic? (known-procedure 2)]
   [port-writes-special? (known-procedure 2)]

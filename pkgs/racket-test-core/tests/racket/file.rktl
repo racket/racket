@@ -1724,6 +1724,52 @@
 (for ([f '("tmp1" "tmp2" "tmp3")] #:when (file-exists? f)) (delete-file f))
 
 (current-directory original-dir)
+
+(unless (eq? 'windows (system-type))
+  (define fifo (build-path work-dir "ff"))
+  (system* (find-executable-path "mkfifo") fifo)
+
+  (define i1 (open-input-file fifo))
+  (define o1 (open-output-file fifo #:exists 'update))
+  (write-bytes #"abc" o1)
+  (flush-output o1)
+  (test #"abc" read-bytes 3 i1)
+  (close-input-port i1)
+  (close-output-port o1)
+
+  (define (check-output-blocking do-write-abc)
+    ;; Make sure an output fifo blocks until there's a reader
+    (define t1
+      (thread
+       (lambda ()
+         (define o2 (open-output-file fifo #:exists 'update))
+         (test #t port-waiting-peer? o2)
+         (do-write-abc o2)
+         (close-output-port o2))))
+    (define t2
+      (thread
+       (lambda ()
+         (sync (system-idle-evt))
+         (define i2 (open-input-file fifo))
+         (test #"abc" read-bytes 3 i2)
+         (close-input-port i2))))
+    (sync t1)
+    (sync t2))
+
+  (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
+  (check-output-blocking (lambda (o2)
+                           (parameterize ([current-output-port o2])
+                             (system* (find-executable-path "echo")
+                                      "-n"
+                                      "abc"))))
+
+  (delete-file fifo))
+
+(test #f port-waiting-peer? (current-input-port))
+(test #f port-waiting-peer? (current-output-port))
+(test #f port-waiting-peer? (open-input-bytes #""))
+(err/rt-test (port-waiting-peer? 10))
+
 (delete-directory work-dir)
 
 ;; Network - - - - - - - - - - - - - - - - - - - - - -

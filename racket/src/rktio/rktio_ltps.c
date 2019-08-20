@@ -208,7 +208,16 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 # endif
   rktio_ltps_handle_pair_t *v;
   rktio_ltps_handle_t *s;
-  intptr_t fd = rktio_fd_system_fd(rktio, rfd);
+  intptr_t fd;
+
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rktio_fd_is_pending_open(rktio, rfd)) {
+    set_racket_error(RKTIO_ERROR_UNSUPPORTED);
+    return NULL;
+  }
+#endif
+
+  fd = rktio_fd_system_fd(rktio, rfd);
 
 # ifdef HAVE_KQUEUE_SYSCALL
   if (!rktio_fd_is_socket(rktio, rfd)) {

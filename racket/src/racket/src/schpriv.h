@@ -3606,6 +3606,7 @@ void scheme_flush_orig_outputs(void);
 void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
+Scheme_Object *scheme_port_waiting_peer_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
                                          int internal, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 

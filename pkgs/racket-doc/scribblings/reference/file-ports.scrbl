@@ -187,7 +187,10 @@ The file specified by @racket[path] need not be a regular file. It
 might be a device that is connected through the filesystem, such as
 @filepath{aux} on Windows or @filepath{/dev/null} on Unix. The output
 port is block-buffered by default, unless the file corresponds to a
-terminal, in which case it is line-buffered by default.
+terminal, in which case it is line-buffered by default. On Unix and
+Mac OS, if the file is a fifo, then the port will block for writing
+until a reader for the fifo is available; see also
+@racket[port-waiting-peer?].
 
 The port produced by @racket[open-output-file] should be explicitly
 closed, either though @racket[close-output-port] or indirectly via
@@ -212,7 +215,10 @@ then @exnraise[exn:fail:filesystem:errno].
 @history[#:changed "6.9.0.6" @elem{On Unix and Mac OS, make @racket['truncate/replace]
                                    replace on a permission error. On Windows, make
                                    @racket['replace] always replace instead truncating
-                                   like @racket['truncate/replace].}]}
+                                   like @racket['truncate/replace].}
+         #:changed "7.4.0.5" @elem{Changed handling of a fifo on Unix and Mac OS to
+                                   make the port block for output until the fifo has a
+                                   reader.}]}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]

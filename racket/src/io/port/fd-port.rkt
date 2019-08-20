@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/fixnum
          "../common/class.rkt"
+         "../common/check.rkt"
          "../host/rktio.rkt"
          "../host/error.rkt"
          "../host/thread.rkt"
@@ -26,6 +27,7 @@
          open-output-fd
          finish-fd-output-port
          terminal-port?
+         port-waiting-peer?
          fd-port-fd
          prop:fd-place-message-opener)
 
@@ -347,6 +349,19 @@
     [(fd-output-port? cp)
      (fd-output-port-fd cp)]
     [else #f]))
+
+(define/who (port-waiting-peer? p)
+  (define cp (->core-output-port p #:default #f))
+  (cond
+    [cp
+     (cond
+       [(fd-output-port? cp)
+        (define fd (fd-port-fd cp))
+        (rktio_fd_is_pending_open rktio fd)]
+       [else #f])]
+    [(input-port? p) #f]
+    [else
+     (raise-argument-error who "port?" p)]))
 
 ;; ----------------------------------------
 

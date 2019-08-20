@@ -257,6 +257,11 @@
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
 (define-function
  ()
+ rktio_bool_t
+ rktio_fd_is_pending_open
+ (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))
+(define-function
+ ()
  int
  rktio_fd_modes
  (((ref rktio_t) rktio) ((ref rktio_fd_t) rfd)))

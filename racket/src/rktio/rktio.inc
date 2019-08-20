@@ -12,6 +12,7 @@ Sforeign_symbol("rktio_fd_is_socket", (void *)rktio_fd_is_socket);
 Sforeign_symbol("rktio_fd_is_udp", (void *)rktio_fd_is_udp);
 Sforeign_symbol("rktio_fd_is_terminal", (void *)rktio_fd_is_terminal);
 Sforeign_symbol("rktio_fd_is_text_converted", (void *)rktio_fd_is_text_converted);
+Sforeign_symbol("rktio_fd_is_pending_open", (void *)rktio_fd_is_pending_open);
 Sforeign_symbol("rktio_fd_modes", (void *)rktio_fd_modes);
 Sforeign_symbol("rktio_open", (void *)rktio_open);
 Sforeign_symbol("rktio_close", (void *)rktio_close);

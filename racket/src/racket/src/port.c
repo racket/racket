@@ -3296,6 +3296,30 @@ scheme_file_stream_port_p (int argc, Scheme_Object *argv[])
   return scheme_false;
 }
 
+Scheme_Object *scheme_port_waiting_peer_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[0];
+
+  if (SCHEME_OUTPUT_PORTP(p)) {
+    Scheme_Output_Port *op;
+
+    op = scheme_output_port_record(p);
+
+    if (SAME_OBJ(op->sub_type, fd_output_port_type)) {
+      rktio_fd_t *rfd = ((Scheme_FD *)op->port_data)->fd;
+      if (rktio_fd_is_pending_open(scheme_rktio, rfd))
+        return scheme_true;
+    }
+  } else if (SCHEME_INPUT_PORTP(p)) {
+    /* ok */
+  } else {
+    scheme_wrong_contract("port-waiting-peer?", "port?", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
+
+  return scheme_false;
+}
+
 int scheme_get_port_file_descriptor(Scheme_Object *p, intptr_t *_fd)
 {
   intptr_t fd = 0;
@@ -3325,8 +3349,11 @@ int scheme_get_port_file_descriptor(Scheme_Object *p, intptr_t *_fd)
 	fd = MSC_IZE (fileno)((FILE *)((Scheme_Output_File *)op->port_data)->f);
 	fd_ok = 1;
       } else if (SAME_OBJ(op->sub_type, fd_output_port_type))  {
-	fd = rktio_fd_system_fd(scheme_rktio, ((Scheme_FD *)op->port_data)->fd);
-	fd_ok = 1;
+        rktio_fd_t *rfd = ((Scheme_FD *)op->port_data)->fd;
+        if (!rktio_fd_is_pending_open(scheme_rktio, rfd)) {
+          fd = rktio_fd_system_fd(scheme_rktio, rfd);
+          fd_ok = 1;
+        }
       }
     }
   }
@@ -6233,6 +6260,17 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   if (!stdin_fd || !stdout_fd || !stderr_fd)
     scheme_custodian_check_available(NULL, name, "file-stream");
+
+  /* In case `stdout_fd` or `stderr_fd` is a fifo with no read end
+     open, wait for it. */
+  if (stdout_fd && rktio_fd_is_pending_open(scheme_rktio, stdout_fd)) {
+    a[0] = args[0];
+    scheme_sync(1, a);
+  }
+  if (stderr_fd && rktio_fd_is_pending_open(scheme_rktio, stderr_fd)) {
+    a[0] = args[2];
+    scheme_sync(1, a);
+  }
 
   /*--------------------------------------*/
   /*        Create subprocess             */

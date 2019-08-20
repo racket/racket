@@ -29,6 +29,9 @@ struct rktio_fd_t {
   int bufcount;
   char buffer[1];
 # endif
+# ifdef RKTIO_USE_PENDING_OPEN
+  struct open_in_thread_t *pending;
+# endif
 #endif
   
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -201,9 +204,46 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   return rfd;
 }
 
+int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending)
+    rktio_pending_open_poll(rktio, rfd, rfd->pending);
+  return !!rfd->pending;
+#else
+  return 0;
+#endif
+}
+
+#ifdef RKTIO_USE_PENDING_OPEN
+rktio_fd_t *rktio_pending_system_fd(rktio_t *rktio, struct open_in_thread_t *oit, int modes)
+{
+  rktio_fd_t *rfd;
+
+  rfd = calloc(1, sizeof(rktio_fd_t));
+  rfd->modes = (modes - (modes & RKTIO_OPEN_INIT));
+  rfd->pending = oit;
+
+  return rfd;
+}
+
+void rktio_update_system_fd(rktio_t *rktio, rktio_fd_t *rfd, int fd, int modes)
+/* Convert an open-pending rfd to a normal rfd. The given `modes` adds
+   to (and completes) the modes provided to `rktio_pending_system_fd`. */
+{
+  rfd->fd = fd;
+  rfd->modes |= modes;
+  rfd->pending = NULL;
+}
+#endif
+
+
 intptr_t rktio_internal_fd_system_fd(rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
+# ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) return -1;
+# endif
   return rfd->fd;
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -272,6 +312,14 @@ int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd)
   return ((rfd->modes & RKTIO_OPEN_UDP) ? 1 : 0);
 }
 
+int rktio_fd_is_open_pending(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) return 1;
+#endif
+  return 0;
+}
+
 int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return rfd->modes;
@@ -298,6 +346,9 @@ int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd)
 
 int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd)
 {
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) return 0;
+#endif
   return rktio_system_fd_is_terminal(rktio, (intptr_t)rfd->fd);
 }
 
@@ -314,6 +365,13 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t nfd;
+
+# ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) {
+    rktio_pending_open_retain(rktio, rfd->pending);
+    return rktio_pending_system_fd(rktio, rfd->pending, rfd->modes);
+  }
+# endif
 
   do {
     nfd = dup(rfd->fd);
@@ -375,16 +433,22 @@ void rktio_reliably_close(intptr_t s)
 #endif
 
 static rktio_ok_t do_close(rktio_t *rktio /* maybe NULL */, rktio_fd_t *rfd, int set_error)
+/* The `rktio` argument can be NULL for a detached file descriptor */
 {
   int ok;
 
 #ifdef RKTIO_SYSTEM_UNIX
   int cr;
 
-  cr = rktio_reliably_close_err(rfd->fd);
+# ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending)
+    cr = rktio_pending_open_release(rktio, rfd->pending);
+  else
+# endif
+    cr = rktio_reliably_close_err(rfd->fd);
 
 # ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
-  if (rktio && !(rfd->modes & RKTIO_OPEN_SOCKET))
+  if (rktio && !(rfd->modes & RKTIO_OPEN_SOCKET) && (!cr || !set_error))
     rktio_release_lockf(rktio, rfd->fd);
 # endif
 
@@ -446,12 +510,24 @@ void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
 
 rktio_fd_transfer_t *rktio_fd_detach(rktio_t *rktio, rktio_fd_t *rfd)
 {
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending)
+    rktio_pending_open_detach(rktio, rfd->pending);
+#endif
+
   return (rktio_fd_transfer_t *)rfd;
 }
 
 rktio_fd_t *rktio_fd_attach(rktio_t *rktio, rktio_fd_transfer_t *rfdt)
 {
-  return (rktio_fd_t *)rfdt;
+  rktio_fd_t *rfd = (rktio_fd_t *)rfdt;
+
+#ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending)
+    rktio_pending_open_attach(rktio, rfd->pending);
+#endif
+
+  return rfd;
 }
 
 void rktio_fd_close_transfer(rktio_fd_transfer_t *rfdt)
@@ -592,6 +668,19 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
     return RKTIO_POLL_READY;
   else {
     int sr;
+
+# ifdef RKTIO_USE_PENDING_OPEN
+    if (rfd->pending) {
+      int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+      if (errval) {
+        errno = errval;
+        get_posix_error();
+        return RKTIO_POLL_ERROR;
+      } else if (rfd->pending)
+        return RKTIO_POLL_NOT_READY;
+    }
+# endif
+
 # ifdef HAVE_POLL_SYSCALL
     struct pollfd pfd[1];
     pfd[0].fd = rfd->fd;
@@ -616,7 +705,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
       /* Mac OS X 10.8 and 10.9: select() seems to claim that a pipe
          is always ready for output. To work around that problem,
          kqueue() support might be used for pipes, but that has different
-         problems. The poll() code above should be used, instead. */
+         problems. The pol() code above should be used, instead. */
       sr = select(rfd->fd + 1, NULL, RKTIO_FDS(writefds), RKTIO_FDS(exnfds), &time);
     } while ((sr == -1) && (errno == EINTR));
 # endif
@@ -692,6 +781,13 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 {
 #ifdef RKTIO_SYSTEM_UNIX
   rktio_poll_set_t *fds2;
+
+# ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) {
+    rktio_poll_add_pending_open(rktio, rfd, rfd->pending, fds);
+    return;
+  }
+# endif
 
   if (modes & RKTIO_POLL_READ) {
     RKTIO_FD_SET(rfd->fd, fds);
@@ -1232,7 +1328,19 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_write(rktio, rfd, buffer, len);
-  
+
+# ifdef RKTIO_USE_PENDING_OPEN
+  if (rfd->pending) {
+    int errval = rktio_pending_open_poll(rktio, rfd, rfd->pending);
+    if (errval) {
+      errno = errval;
+      get_posix_error();
+      return RKTIO_WRITE_ERROR;
+    } else if (rfd->pending)
+      return 0;
+  }
+# endif
+
   flags = fcntl(rfd->fd, F_GETFL, 0);
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags | RKTIO_NONBLOCKING);

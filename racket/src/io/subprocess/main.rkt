@@ -116,6 +116,14 @@
         
         (define command-bstr (->host (->path command) who '(execute)))
 
+        ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
+        (define (maybe-wait fd)
+          (when (and fd (rktio_fd_is_pending_open rktio (fd-port-fd fd)))
+            (sync fd)))
+        (maybe-wait stdout)
+        (unless (eq? stderr 'stdout)
+          (maybe-wait stderr))
+
         (start-atomic)
         (poll-subprocess-finalizations)
         (check-current-custodian who)
