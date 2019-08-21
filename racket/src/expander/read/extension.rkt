@@ -81,33 +81,36 @@
   (define accum-str (accum-string-init! config))
   (when init-c
     (accum-string-add! accum-str init-c))
-  (let loop ()
-    (define c (peek-char/special in config))
-    (cond
-     [(eof-object? c) (void)]
-     [(not (char? c))
-      (consume-char/special in config c)
-      (reader-error in config #:due-to c
-                    "found non-character while reading `#~a`"
-                    extend-str)]
-     [(char-whitespace? c) (void)]
-     [(or (char-lang-nonsep? c)
-          (char=? #\/ c))
-      (consume-char in c)
-      (accum-string-add! accum-str c)
-      (loop)]
-     [else
-      (consume-char in c)
-      (reader-error in config
-                    (string-append "expected only alphanumeric, `-`, `+`, `_`, or `/`"
-                                   " characters for `~a`, found `~a`")
-                    extend-str
-                    c)]))
+  (define last-char
+    (let loop ()
+      (define c (peek-char/special in config))
+      (cond
+       [(eof-object? c) c]
+       [(not (char? c))
+        (consume-char/special in config c)
+        (reader-error in config #:due-to c
+                      "found non-character while reading `#~a`"
+                      extend-str)]
+       [(char-whitespace? c) c]
+       [(or (char-lang-nonsep? c)
+            (char=? #\/ c))
+        (consume-char in c)
+        (accum-string-add! accum-str c)
+        (loop)]
+       [else
+        (consume-char in c)
+        (reader-error in config
+                      (string-append "expected only alphanumeric, `-`, `+`, `_`, or `/`"
+                                     " characters for `~a`, found `~a`")
+                      extend-str
+                      c)])))
 
   (define lang-str (accum-string-get! accum-str config))
   (when (equal? lang-str "")
     (reader-error in config
-                  "expected a non-empty sequence of alphanumeric, `-`, `+`, `_`, or `/` after `~a`"
+                  (if (eof-object? last-char)
+                    "expected a non-empty sequence of alphanumeric, `-`, `+`, `_`, or `/` after `~a`"
+                    "expected a single space after `~a`")
                   extend-str))
 
   (when (char=? #\/ (string-ref lang-str 0))
