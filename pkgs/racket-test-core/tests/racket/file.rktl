@@ -1726,6 +1726,13 @@
 (current-directory original-dir)
 
 (unless (eq? 'windows (system-type))
+  (define can-open-nonblocking-fifo?
+    ;; The general implementation of fifo-write ports requires
+    ;; OS-managed threads internally. Use support forr futures and/or
+    ;; places as an indication that OS threads are available.
+    (or (place-enabled?)
+        (futures-enabled?)))
+
   (define fifo (build-path work-dir "ff"))
   (system* (find-executable-path "mkfifo") fifo)
 
@@ -1756,12 +1763,13 @@
     (sync t1)
     (sync t2))
 
-  (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
-  (check-output-blocking (lambda (o2)
-                           (parameterize ([current-output-port o2])
-                             (system* (find-executable-path "echo")
-                                      "-n"
-                                      "abc"))))
+  (when can-open-nonblocking-fifo?
+    (check-output-blocking (lambda (o2) (write-bytes #"abc" o2)))
+    (check-output-blocking (lambda (o2)
+                             (parameterize ([current-output-port o2])
+                               (system* (find-executable-path "echo")
+                                        "-n"
+                                        "abc")))))
 
   (delete-file fifo))
 
