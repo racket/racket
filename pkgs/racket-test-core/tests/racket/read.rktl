@@ -1339,6 +1339,24 @@
   (err/rt-test (read-language p)
                (lambda (exn) (regexp-match? #rx"read-language" (exn-message exn)))))
 
+(parameterize ([read-accept-reader #t])
+  (err/rt-test (read (open-input-string "#lang"))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang "))
+               (lambda (exn) (regexp-match? #rx"expected a non-empty sequence of" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang  "))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang  x"))
+               (lambda (exn) (regexp-match? #rx"expected a single space" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang ."))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang x."))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang \n"))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn))))
+  (err/rt-test (read (open-input-string "#lang \nx"))
+               (lambda (exn) (regexp-match? #rx"expected only" (exn-message exn)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (require racket/flonum
