@@ -210,9 +210,7 @@ struct rktio_addrinfo_t {
 # define rktio_AI_PASSIVE AI_PASSIVE 
 # define do_getaddrinfo(n, s, h, res) getaddrinfo(n, s, RKTIO_AS_ADDRINFO(h), RKTIO_AS_ADDRINFO_PTR(res))
 # define do_freeaddrinfo freeaddrinfo
-# ifdef RKTIO_SYSTEM_WINDOWS
-#  define do_gai_strerror gai_strerrorA
-# else
+# ifndef RKTIO_SYSTEM_WINDOWS
 #  define do_gai_strerror gai_strerror
 # endif
 #else
@@ -749,9 +747,18 @@ void rktio_addrinfo_free(rktio_t *rktio, rktio_addrinfo_t *a)
   do_freeaddrinfo(RKTIO_AS_ADDRINFO(a));
 }
 
-const char *rktio_gai_strerror(int errnum)
+const char *rktio_gai_strerror(rktio_t *rktio, int errnum)
 {
+#ifdef RKTIO_SYSTEM_WINDOWS
+  char *s;
+  s = NARROW_PATH_copy(gai_strerrorW(errnum));
+  if (rktio->last_err_str)
+    free(rktio->last_err_str);
+  rktio->last_err_str = s;
+  return s;
+#else
   return do_gai_strerror(errnum);
+#endif
 }
 
 /*========================================================================*/

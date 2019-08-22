@@ -233,7 +233,7 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   
 void rktio_free_ghbn(rktio_t *rktio);
 
-const char *rktio_gai_strerror(int errnum);
+const char *rktio_gai_strerror(rktio_t *rktio, int errnum);
 
 /*========================================================================*/
 /* Processes                                                              */
