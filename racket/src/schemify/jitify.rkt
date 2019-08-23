@@ -101,12 +101,14 @@
                    get-e)
                new-lifts)]
       [else
-       (define e (extractable-annotation `(lambda ,(if (no-lifts? body-lifts)
-                                                       captures
-                                                       (cons lifts-id captures))
-                                            ,jitted-proc)
-                                        arity-mask
-                                        name))
+       (define e (extractable-annotation (reannotate
+                                          v
+                                          `(lambda ,(if (no-lifts? body-lifts)
+                                                        captures
+                                                        (cons lifts-id captures))
+                                             ,jitted-proc))
+                                         arity-mask
+                                         name))
        (define-values (all-captures new-lifts)
          (cond
            [(no-lifts? body-lifts)

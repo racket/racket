@@ -563,7 +563,7 @@
                                                                       (add-code-hash a)
                                                                       a)
                                                                   arity-mask
-                                                                  name)))]
+                                                                  (extract-inferred-name expr name))))]
                                           [else
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
@@ -576,7 +576,7 @@
                                                                compile*)
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
-                                                    (make-wrapped-code code arity-mask name)
+                                                    (make-wrapped-code code arity-mask (extract-inferred-name expr name))
                                                     code))))])))]))
        (define-values (paths impl-lam/paths)
          (if serializable?

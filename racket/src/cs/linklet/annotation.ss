@@ -30,6 +30,15 @@
    ;; correlated will be nested only in pairs with current expander
    [else (values v v)]))
 
+(define (extract-inferred-name expr default-name)
+  (let ([name (and (correlated? expr)
+                   (correlated-property expr 'inferred-name))])
+    (cond
+     [(void? name) #f]
+     [(correlated? name) (correlated-e name)]
+     [(symbol? name) name]
+     [else default-name])))
+
 (define (transfer-srcloc v e stripped-e)
   (let ([src (correlated-source v)]
         [pos (correlated-position v)]
