@@ -25,7 +25,8 @@ table is also either mutable or immutable. Immutable hash tables
 support effectively constant-time access and update, just like mutable
 hash tables; the constant on immutable operations is usually larger,
 but the functional nature of immutable hash tables can pay off in
-certain algorithms.
+certain algorithms. Use @racket[immutable?] to check whether a hash
+table is immutable.
 
 @margin-note{Immutable hash tables actually provide @math{O(log N)}
 access and update. Since @math{N} is limited by the address space so
