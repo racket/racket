@@ -56,7 +56,7 @@
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
 
-(define (rewrite-format str irritants)
+(define (rewrite-format who str irritants)
   (cond
    [(equal? str "attempt to reference undefined variable ~s")
     (values (string-append
@@ -66,6 +66,14 @@
    [(and (equal? str "undefined for ~s")
          (equal? irritants '(0)))
     (values "division by zero" null)]
+   [(equal? str "~s is not a pair")
+    (values "contract violation\n  expected: pair?\n  given: ~s"
+            irritants)]
+   [(and (equal? str "incorrect list structure ~s")
+         (cxr->contract who))
+    => (lambda (ctc)
+         (values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
+                 irritants))]
    [else
     (let ([str (string-copy str)]
           [len (string-length str)])
@@ -98,3 +106,40 @@
   (and (>= (string-length str) (string-length p))
        (string=? (substring str (- (string-length str) (string-length p)) (string-length str)) p)))
 
+;; Maps a function name like 'cadr to a contract
+;; string like "(cons/c any/c pair?)"
+(define (cxr->contract who)
+  (let-syntax ([gen (lambda (stx)
+                      (letrec ([add-all
+                                (lambda (pre p tmpl)
+                                  (cond
+                                   [(null? p) '()]
+                                   [else
+                                    (cons
+                                     (list (string-append (caar p) pre)
+                                           (format tmpl (cadar p)))
+                                     (add-all pre (cdr p) tmpl))]))])
+                        (let ([combos
+                               (reverse
+                                (let loop ([alts '(x x x)])
+                                  (cond
+                                   [(null? alts)
+                                    `(["a" "pair?"]
+                                      ["d" "pair?"])]
+                                   [else
+                                    (let ([r (loop (cdr alts))])
+                                      (append
+                                       (add-all "a" r "(cons/c ~a any/c)")
+                                       (add-all "d" r "(cons/c any/c ~a)")
+                                       r))])))])
+                          (with-syntax ([(combo ...)
+                                         (map (lambda (c)
+                                                (list (list (datum->syntax
+                                                             #'here
+                                                             (string->symbol (string-append "c" (car c) "r"))))
+                                                      (cadr c)))
+                                              combos)])
+                            #`(case who
+                                combo ...
+                                [else #f])))))])
+    (gen)))

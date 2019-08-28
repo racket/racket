@@ -286,6 +286,12 @@
 (err/rt-test (list-tail '(1) 2) exn:application:mismatch?)
 (err/rt-test (list-tail '(1 2 . 3) 3) exn:application:mismatch?)
 
+(err/rt-test (car 0) exn:fail:contract? #rx"car: contract violation.*expected: pair[?].*given: 0")
+(err/rt-test (cdr 0) exn:fail:contract? #rx"cdr: contract violation.*expected: pair[?].*given: 0")
+(err/rt-test (cadr 0) exn:fail:contract? #rx"cadr: contract violation.*expected: .cons/c any/c pair[?]..*given: 0")
+(err/rt-test (cdadr 0) exn:fail:contract? #rx"cdadr: contract violation.*expected: .cons/c any/c .cons/c pair[?] any/c..*given: 0")
+(err/rt-test (cdadar 0) exn:fail:contract? #rx"cdadar: contract violation.*expected: .cons/c .cons/c any/c .cons/c pair[?] any/c.. any/c.*given: 0")
+
 (define (test-mem memq memq-name)
   (test '(a b c) memq 'a '(a b c))
   (test '(b c) memq 'b '(a b c))

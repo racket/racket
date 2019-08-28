@@ -670,7 +670,8 @@
             (exn-message v)]
            [(format-condition? v)
             (let-values ([(fmt irritants)
-                          (rewrite-format (condition-message v)
+                          (rewrite-format (and (who-condition? v) (condition-who v))
+                                          (condition-message v)
                                           (condition-irritants v))])
               (apply format fmt irritants))]
            [(syntax-violation? v)
