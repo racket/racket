@@ -1402,7 +1402,7 @@
     (let* ([bstr (make-bytevector size 0)]
            [p (make-cpointer bstr #f)])
       (lock-object bstr)
-      (with-global-lock (the-foreign-guardian p (lambda () (unlock-object bstr))))
+      (unsafe-add-global-finalizer p (lambda () (unlock-object bstr)))
       p)]
    [else
     (raise-unsupported-error 'malloc
@@ -1464,7 +1464,7 @@
       (poll-foreign-guardian))))
 
 (define (unsafe-add-global-finalizer v proc)
-  (the-foreign-guardian v proc))
+  (with-global-lock (the-foreign-guardian v proc)))
 
 ;; ----------------------------------------
 
@@ -1973,7 +1973,7 @@
         (let* ([code (make-code proc)]
                [cb (create-callback code)])
           (lock-object code)
-          (with-global-lock (the-foreign-guardian cb (lambda () (unlock-object code))))
+          (unsafe-add-global-finalizer cb (lambda () (unlock-object code)))
           cb)))]))
 
 ;; ----------------------------------------

@@ -34,7 +34,8 @@
 (define gc-counter 1)
 (define log-collect-generation-radix 2)
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
-(define allocated-after-major (* 32 1024 1024))
+(define allocated+overhead-after-major (* 32 1024 1024))
+(define non-full-gc-counter 0)
 
 ;; Called in any thread with all other threads paused. The Racket
 ;; thread scheduler may be in atomic mode. In fact, the engine
@@ -51,7 +52,8 @@
         (set! gc-counter (add1 this-counter)))
     (let ([gen (cond
                 [(and (not g)
-                      (>= pre-allocated (* 2 allocated-after-major)))
+                      (or (>= pre-allocated+overhead (* 2 allocated+overhead-after-major))
+                          (>= non-full-gc-counter 10000)))
                  ;; Force a major collection if memory use has doubled
                  (collect-maximum-generation)]
                 [else
@@ -63,12 +65,13 @@
                     [else gen]))])])
       (run-collect-callbacks car)
       (collect gen)
-      (let ([post-allocated (bytes-allocated)])
+      (let ([post-allocated (bytes-allocated)]
+            [post-allocated+overhead (current-memory-bytes)])
         (when (= gen (collect-maximum-generation))
-          (set! allocated-after-major post-allocated))
+          (set! allocated+overhead-after-major post-allocated+overhead))
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
-                                post-allocated  (current-memory-bytes) (real-time) (cpu-time)))
+                                post-allocated  post-allocated+overhead (real-time) (cpu-time)))
       (update-eq-hash-code-table-size!)
       (poll-foreign-guardian)
       (run-collect-callbacks cdr)
@@ -80,6 +83,11 @@
         ;; This `set-timer` doesn't necessarily penalize the right thread,
         ;; but it's likely to penalize a thread that is allocating quickly:
         (set-timer 1))
+      (cond
+       [(= gen (collect-maximum-generation))
+        (set! non-full-gc-counter 0)]
+       [else
+        (set! non-full-gc-counter (add1 non-full-gc-counter))])
       (void))))
 
 (define collect-garbage
@@ -349,7 +357,7 @@
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
   (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
-    (when (>= (bytes-allocated) (* 2 allocated-after-major))
+    (when (>= (current-memory-bytes) (* 2 allocated+overhead-after-major))
       (collect-garbage))
     ph))
 
