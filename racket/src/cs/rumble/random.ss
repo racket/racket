@@ -90,15 +90,17 @@
   (srand-half! s (bitwise-and (bitwise-arithmetic-shift-right x 16) #xFFFF)))
 
 (define (srand-half! s x)
-  (let* ([x (random-n! x
+  (let* ([u32+ (lambda (a b)
+                 (bitwise-and (+ a b) #xFFFFFFFF))]
+         [x (random-n! x
                        (- Im1 1)
                        (lambda (z)
                          (pseudo-random-generator-x10-set!
                           s
                           (exact->inexact
                            (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x10 s))
-                                    z)
+                                 (u32+ (inexact->exact (pseudo-random-generator-x10 s))
+                                       z)
                                  (- Im1 1)))))))]
          [x (random-n! x
                        Im1
@@ -106,20 +108,20 @@
                          (pseudo-random-generator-x11-set!
                           s
                           (exact->inexact
-                           (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x11 s))
-                                    z)
-                                 Im1))))))]
+                           (modulo
+                            (u32+ (inexact->exact (pseudo-random-generator-x11 s))
+                                  z)
+                            Im1)))))]
          [x (random-n! x
                        Im1
                        (lambda (z)
                          (pseudo-random-generator-x12-set!
                           s
                           (exact->inexact
-                           (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x12 s))
-                                    z)
-                                 Im1))))))]
+                           (modulo
+                            (u32+ (inexact->exact (pseudo-random-generator-x12 s))
+                                  z)
+                            Im1)))))]
          [x (random-n! x
                        (- Im2 1)
                        (lambda (z)
@@ -127,8 +129,8 @@
                           s
                           (exact->inexact
                            (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x20 s))
-                                    z)
+                                 (u32+ (inexact->exact (pseudo-random-generator-x20 s))
+                                       z)
                                  (- Im2 1)))))))]
          [x (random-n! x
                        Im2
@@ -136,20 +138,20 @@
                          (pseudo-random-generator-x21-set!
                           s
                           (exact->inexact
-                           (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x21 s))
-                                    z)
-                                 Im2))))))]
+                           (modulo
+                            (u32+ (inexact->exact (pseudo-random-generator-x21 s))
+                                  z)
+                            Im2)))))]
          [x (random-n! x
                        Im2
                        (lambda (z)
                          (pseudo-random-generator-x22-set!
                           s
                           (exact->inexact
-                           (+ 1 (modulo
-                                 (+ (inexact->exact (pseudo-random-generator-x22 s))
-                                    z)
-                                 Im2))))))])
+                           (modulo
+                            (u32+ (inexact->exact (pseudo-random-generator-x22 s))
+                                  z)
+                            Im2)))))])
     (void)))
 
 (define (random-n! x Im k)
