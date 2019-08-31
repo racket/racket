@@ -1324,6 +1324,10 @@ The resulting bindings are as follows:
   only when a @racket[#:property] is specified --- a structure type that 
   corresponds to a wrapper to reflect properties (see below).}
 
+ @item{@racketidfont{make-wrap-}@racketvarfont{id}: only when a
+  @racket[#:property] is specified --- a function that takes a
+  cpointer and returns a wrapper structure that holds the cpointer.}
+
 ]
 
 Objects of the new type are actually C pointers, with a type tag that
