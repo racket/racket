@@ -48,14 +48,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include <string.h>
 #include <unistd.h>
 
-/* FIXME: hard-wired */
-# define __LITTLE_ENDIAN	1234
-# define __BIG_ENDIAN		4321
-# define __BYTE_ORDER __LITTLE_ENDIAN
-
-
-#   define __BYTE_ORDER __LITTLE_ENDIAN
-
 #ifdef __GNUC__
 # define UNUSED		__attribute__((unused))
 # define NORETURN	__attribute__((noreturn))
