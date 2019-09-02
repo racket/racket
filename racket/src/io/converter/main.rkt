@@ -170,8 +170,8 @@
   (define c (bytes-converter-c converter))
   (unless c
     (end-atomic)
-    (raise-argument-error who "converter is closed"
-                          "converter" converter))
+    (raise-arguments-error who "converter is closed"
+                           "converter" converter))
   (define use-dest-bstr (or dest-bstr
                             (make-bytes (if dest-end-pos
                                             (- dest-end-pos dest-start-pos)
