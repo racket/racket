@@ -53,9 +53,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # define __BIG_ENDIAN		4321
 # define __BYTE_ORDER __LITTLE_ENDIAN
 
-
-#   define __BYTE_ORDER __LITTLE_ENDIAN
-
 #ifdef __GNUC__
 # define UNUSED		__attribute__((unused))
 # define NORETURN	__attribute__((noreturn))
