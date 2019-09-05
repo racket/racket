@@ -311,6 +311,7 @@
 ;;                                      <symbol-or-#f> or name of <proc>
 ;;  - (vector <symbol-or-#f> <proc> 'method) => is a method
 ;;  - (box <symbol>) => JIT function generated, name is <symbol>, not a method
+;;  - <parameter-data> => parameter
 
 ;; ----------------------------------------
 
@@ -501,6 +502,7 @@
      [(#%box? name) (#%unbox name)]
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
+     [(parameter-data? name) 'parameter-procedure]
      [else name])))
 
 ;; ----------------------------------------
@@ -866,13 +868,6 @@
 ;; ----------------------------------------
 
 (define (set-primitive-applicables!)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor parameter)
-                        0)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor derived-parameter)
-                        0)
-
   (struct-property-set! prop:procedure
                         (record-type-descriptor position-based-accessor)
                         (lambda (pba s p)

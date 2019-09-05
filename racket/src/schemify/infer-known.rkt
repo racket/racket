@@ -4,7 +4,7 @@
          "known.rkt"
          "import.rkt"
          "simple.rkt"
-         "pthread-parameter.rkt"
+         "parameter-result.rkt"
          "constructed-procedure.rkt"
          "literal.rkt"
          "inline.rkt"
@@ -67,7 +67,7 @@
                [else known]))]
        [defn a-known-constant]
        [else (known-copy rhs)])]
-    [(pthread-parameter? rhs prim-knowns knowns mutated)
+    [(parameter-result? rhs prim-knowns knowns mutated)
      (known-procedure 3)]
     [(constructed-procedure-arity-mask rhs)
      => (lambda (m) (known-procedure m))]

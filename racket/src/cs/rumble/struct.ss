@@ -126,14 +126,14 @@
 
 (define/who make-inspector
   (case-lambda
-    [() (new-inspector (|#%app| current-inspector))]
+    [() (new-inspector (current-inspector))]
     [(i)
      (check who inspector? i)
      (new-inspector i)]))
 
 (define/who make-sibling-inspector
   (case-lambda
-   [() (make-sibling-inspector (|#%app| current-inspector))]
+   [() (make-sibling-inspector (current-inspector))]
    [(i)
     (check who inspector? i)
     (new-inspector (inspector-parent i))]))
@@ -427,11 +427,11 @@
 (define make-struct-type
   (case-lambda 
     [(name parent-rtd init-count auto-count)
-     (make-struct-type name parent-rtd init-count auto-count #f '() (|#%app| current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count #f '() (current-inspector) #f '() #f name)]
     [(name parent-rtd init-count auto-count auto-val)
-     (make-struct-type name parent-rtd init-count auto-count auto-val '() (|#%app| current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val '() (current-inspector) #f '() #f name)]
     [(name parent-rtd init-count auto-count auto-val props)
-     (make-struct-type name parent-rtd init-count auto-count auto-val props (|#%app| current-inspector) #f '() #f name)]
+     (make-struct-type name parent-rtd init-count auto-count auto-val props (current-inspector) #f '() #f name)]
     [(name parent-rtd init-count auto-count auto-val props insp)
      (make-struct-type name parent-rtd init-count auto-count auto-val props insp #f '() #f name)]
     [(name parent-rtd init-count auto-count auto-val props insp proc-spec)
@@ -499,9 +499,9 @@
 (define struct-type-install-properties!
   (case-lambda
    [(rtd name init-count auto-count parent-rtd)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd '() (|#%app| current-inspector) #f '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd '() (current-inspector) #f '() #f name #f)]
    [(rtd name init-count auto-count parent-rtd props)
-    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props (|#%app| current-inspector) #f '() #f name #f)]
+    (struct-type-install-properties! rtd name init-count auto-count parent-rtd props (current-inspector) #f '() #f name #f)]
    [(rtd name init-count auto-count parent-rtd props insp)
     (struct-type-install-properties! rtd name init-count auto-count parent-rtd props insp #f '() #f name #f)]
    [(rtd name init-count auto-count parent-rtd props insp proc-spec)
@@ -1041,7 +1041,7 @@
     (and (not (eq? insp none))
          (or (not insp)
              (eq? insp 'prefab)
-             (inspector-superior? (|#%app| current-inspector) insp)))))
+             (inspector-superior? (current-inspector) insp)))))
 
 ;; Check whether a structure type is fully transparent
 (define (struct-type-transparent? rtd)

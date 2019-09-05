@@ -245,7 +245,7 @@
 
 (define/who random
   (case-lambda
-   [() (pseudo-random-generator-real! (|#%app| current-pseudo-random-generator))]
+   [() (pseudo-random-generator-real! (current-pseudo-random-generator))]
    [(n)
     (cond
      [(pseudo-random-generator? n)
@@ -257,7 +257,7 @@
                         (<= 1 n 4294967087))
              :contract "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
              n)
-      (pseudo-random-generator-integer! (|#%app| current-pseudo-random-generator) n)])]
+      (pseudo-random-generator-integer! (current-pseudo-random-generator) n)])]
    [(n prg)
     (check who
            :test (and (integer? n)
@@ -274,4 +274,4 @@
                     (<= k (sub1 (expt 2 31))))
          :contract "(integer-in 0 (sub1 (expt 2 31)))"
          k)
-  (pseudo-random-generator-seed! (|#%app| current-pseudo-random-generator) k))
+  (pseudo-random-generator-seed! (current-pseudo-random-generator) k))

@@ -52,15 +52,29 @@
               key
               #f))
 
-(define-record-type (parameter create-parameter authentic-parameter?)
-  (fields proc guard))
+(define-record-type parameter-data
+  (fields guard))
 
-(define-record-type (derived-parameter create-derived-parameter derived-parameter?)
-  (parent parameter)
+(define-record-type derived-parameter-data
+  (parent parameter-data)
   (fields next))
 
 (define (parameter? v)
   (authentic-parameter? (strip-impersonator v)))
+
+(define (authentic-parameter? v)
+  (and (wrapper-procedure? v)
+       (parameter-data? (wrapper-procedure-data v))))
+
+(define (parameter-guard p)
+  (parameter-data-guard (wrapper-procedure-data p)))
+
+(define (derived-parameter? v)
+  (and (wrapper-procedure? v)
+       (derived-parameter-data? (wrapper-procedure-data v))))
+
+(define (derived-parameter-next p)
+  (derived-parameter-data-next (wrapper-procedure-data p)))
 
 (define/who make-parameter
   (case-lambda
@@ -69,19 +83,22 @@
      (check who (procedure-arity-includes/c 1) :or-false guard)
      (let ([default-c (make-thread-cell v #t)])
        (letrec ([self
-                 (create-parameter
-                  (case-lambda
-                   [()
-                    (let ([c (or (parameter-cell self)
-                                 default-c)])
-                      (thread-cell-ref c))]
-                   [(v)
-                    (let ([c (or (parameter-cell self)
-                                 default-c)])
-                      (thread-cell-set! c (if guard
-                                              (guard v)
-                                              v)))])
-                  guard)])
+                 (make-wrapper-procedure
+                  (|#%name|
+                   parameter-procedure
+                   (case-lambda
+                    [()
+                     (let ([c (or (parameter-cell self)
+                                  default-c)])
+                       (thread-cell-ref c))]
+                    [(v)
+                     (let ([c (or (parameter-cell self)
+                                  default-c)])
+                       (thread-cell-set! c (if guard
+                                               (guard v)
+                                               v)))]))
+                   3
+                   (make-parameter-data guard))])
          self))]))
 
 (define/who (make-derived-parameter p guard wrap)
@@ -90,12 +107,16 @@
          p)
   (check who (procedure-arity-includes/c 1) guard)
   (check who (procedure-arity-includes/c 1) wrap)
-  (create-derived-parameter (let ([self (parameter-proc p)])
-                              (case-lambda
-                               [(v) (self (guard v))]
-                               [() (wrap (self))]))
-                            guard
-                            p))
+  (make-wrapper-procedure (let ([self p])
+                            (|#%name|
+                             parameter-procedure
+                             (case-lambda
+                              [(v) (self (guard v))]
+                              [() (wrap (self))])))
+                          3
+                          (make-derived-parameter-data
+                           guard
+                           p)))
 
 (define/who (parameter-procedure=? a b)
   (check who parameter? a)
