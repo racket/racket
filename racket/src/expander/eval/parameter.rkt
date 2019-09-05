@@ -24,25 +24,29 @@
   (make-parameter (replace-me who)
                   (lambda (p)
                     (check who (procedure-arity-includes/c 1) p)
-                    p)))
+                    p)
+                  'current-eval))
 
 (define/who current-compile
   (make-parameter (replace-me who)
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-compile))
 
 (define/who current-load
   (make-parameter (replace-me who)
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-load))
 
 (define/who current-load/use-compiled
   (make-parameter (replace-me who)
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-load/use-compiled))
 
 (define/who current-library-collection-paths
   (make-parameter null
@@ -52,7 +56,8 @@
                                       (andmap complete-path-string? l)))
                            #:contract "(listof (and/c path-string? complete-path?))"
                            l)
-                    (map to-path l))))
+                    (map to-path l))
+                  'current-library-collection-paths))
 
 (define/who current-library-collection-links
   (make-parameter null
@@ -84,7 +89,8 @@
                              [else
                               (for/hash ([(k v) (in-hash p)])
                                 (values k (to-path v)))]))
-                         l))))
+                         l))
+                  'current-library-collection-links))
 
 (define/who use-compiled-file-paths
   (make-parameter (list (string->path "compiled"))
@@ -94,7 +100,8 @@
                                       (andmap relative-path-string? l)))
                            #:contract "(listof (and/c path-string? relative-path?))"
                            l)
-                    (map to-path l))))
+                    (map to-path l))
+                  'use-compiled-file-paths))
 
 (define/who current-compiled-file-roots
   (make-parameter '(same)
@@ -107,7 +114,8 @@
                                               l)))
                            #:contract "(listof (or/c path-string? 'same))"
                            l)
-                    (map to-path l))))
+                    (map to-path l))
+                  'current-compiled-file-roots))
 
 (define/who use-compiled-file-check
   (make-parameter 'modify-seconds
@@ -115,13 +123,14 @@
                     (check who (lambda (v) (or (eq? v 'modify-seconds) (eq? v 'exists)))
                            #:contract "(or/c 'modify-seconds 'exists)"
                            v)
-                    v)))
+                    v)
+                  'use-compiled-file-check))
 
 (define use-collection-link-paths
-  (make-parameter #t (lambda (v) (and v #t))))
+  (make-parameter #t (lambda (v) (and v #t)) 'use-collection-link-paths))
 
 (define use-user-specific-search-paths
-  (make-parameter #t (lambda (v) (and v #t))))
+  (make-parameter #t (lambda (v) (and v #t)) 'use-user-specific-search-paths))
 
 (define (complete-path-string? p)
   (and (path-string? p) (complete-path? p)))

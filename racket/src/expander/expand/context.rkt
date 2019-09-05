@@ -159,7 +159,8 @@
                                                    (raise-argument-error 'current-expand-observe
                                                                           "(or/c (procedure-arity-includes/c 2) #f)"
                                                                           v))
-                                                 v)))
+                                                 v)
+                                               'current-expand-observe))
 
 ;; ----------------------------------------
 

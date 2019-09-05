@@ -1105,13 +1105,13 @@
   (include "linklet/cross-compile.ss")
   
   (define compile-enforce-module-constants
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'compile-enforce-module-constants))
 
   (define compile-context-preservation-enabled
-    (make-parameter #f (lambda (v) (and v #t))))
+    (make-parameter #f (lambda (v) (and v #t)) 'compile-context-preservation-enabled))
 
   (define compile-allow-set!-undefined
-    (make-parameter #f (lambda (v) (and v #t))))
+    (make-parameter #f (lambda (v) (and v #t)) 'compile-allow-set!-undefined))
 
   (define current-compile-target-machine
     (make-parameter (machine-type) (lambda (v)
@@ -1121,7 +1121,8 @@
                                        (raise-argument-error 'current-compile-target-machine
                                                              "(or/c #f (and/c symbol? compile-target-machine?))"
                                                              v))
-                                     v)))
+                                     v)
+				     'current-compile-target-machine))
 
   (define (compile-target-machine? v)
     (unless (symbol? v)
@@ -1131,10 +1132,10 @@
              #t)))
 
   (define eval-jit-enabled
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'eval-jit-enabled))
   
   (define load-on-demand-enabled
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'load-on-demand-enabled))
 
   ;; --------------------------------------------------
 

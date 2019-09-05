@@ -10,7 +10,7 @@
          match-expander-transform trans-match trans-match* parse-struct
          dd-parse parse-quote parse-id in-splicing?)
 
-(define in-splicing? (make-parameter #f))
+(define in-splicing? (make-parameter #f #f 'in-splicing?))
 
 ;; parse x as a match variable
 ;; x : identifier

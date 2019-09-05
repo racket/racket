@@ -15,7 +15,8 @@
                       (raise-argument-error 'read-on-demand-source
                                             "(or/c #f #t (and/c path? complete-path?))"
                                             v))
-                    v)))
+                    v)
+		  'read-on-demand-source))
 
 (define (adjust-linklet-bundle-laziness-and-paths ht)
   (let loop ([i (hash-iterate-first ht)])

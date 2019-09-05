@@ -463,7 +463,8 @@
        (raise-argument-error 'current-module-name-resolver
                              "(and/c (procedure-arity-includes/c 2) (procedure-arity-includes/c 4))"
                              v))
-     v)))
+     v)
+   'current-module-name-resolver))
 
 ;; ----------------------------------------
 
@@ -475,7 +476,8 @@
                       (raise-argument-error 'current-module-declare-name
                                             "(or/c #f resolved-module-path?)"
                                             r))
-                    r)))
+                    r)
+                  'current-module-declare-name))
 
 (define current-module-declare-source
   (make-parameter #f
@@ -486,7 +488,8 @@
                       (raise-argument-error 'current-module-declare-source
                                             "(or/c #f symbol? (and/c path? complete-path?))"
                                             s))
-                    s)))
+                    s)
+                  'current-module-declare-source))
 
 (define (substitute-module-declare-name default-name)
   (define current-name (current-module-declare-name))

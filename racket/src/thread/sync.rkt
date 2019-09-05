@@ -672,7 +672,8 @@
   (make-parameter (make-pseudo-random-generator)
                   (lambda (v)
                     (check who pseudo-random-generator? v)
-                    v)))
+                    v)
+                  'current-evt-pseudo-random-generator))
 
 ;; rotates the order of syncers in `s` to implement fair selection:
 (define (random-rotate-syncing! s)

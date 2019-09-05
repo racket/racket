@@ -29,7 +29,7 @@
 ;; current version only works until 2099 CE Gregorian
 
 (define date-display-format 
-  (make-parameter 'american))
+  (make-parameter 'american #f 'date-display-format))
 
 (define (month/number->string x)
   (case x

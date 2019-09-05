@@ -310,7 +310,7 @@
 (define orig-eval (current-eval))
 (define orig-compile (current-compile))
 
-(define linklet-compile-to-s-expr (make-parameter #f))
+(define linklet-compile-to-s-expr (make-parameter #f #f 'linklet-compile-to-s-expr))
 
 ;; Compile to a serializable form
 (define (compile-linklet c [name #f] [import-keys #f] [get-import (lambda (key) (values #f #f))] [options '(serializable)])

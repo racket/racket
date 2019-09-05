@@ -33,7 +33,7 @@
 ;; Modules that are defined via `embedded-load` can be "predefined",
 ;; because they can be defined in every place as the embedded load
 ;; is replayed in each place
-(define current-module-declare-as-predefined (make-parameter #f))
+(define current-module-declare-as-predefined (make-parameter #f #f 'current-module-declare-as-predefined))
 
 (define (eval-module c
                      #:namespace [ns (current-namespace)]
