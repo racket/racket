@@ -11,6 +11,9 @@
 
 (define/who (thread-cell-ref c)
   (check who thread-cell? c)
+  (unsafe-thread-cell-ref c))
+
+(define (unsafe-thread-cell-ref c)
   (let* ([t (current-engine-thread-cell-values)]
          [v (if t
                 (hashtable-ref t c none)

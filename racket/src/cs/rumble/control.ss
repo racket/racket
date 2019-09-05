@@ -140,7 +140,7 @@
 ;; To support special treatment of break parameterizations, and also
 ;; to initialize disabled breaks for `dynamic-wind` pre and post
 ;; thunks:
-(define break-enabled-key (gensym 'break-enabled))
+(define break-enabled-key '#{break-enabled n1kcvqw4c9hh8t3fi3659ci94-2})
 
 (define/who (continuation-prompt-available? tag)
   (check who continuation-prompt-tag? tag)

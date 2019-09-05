@@ -1,6 +1,6 @@
 
 ;; Continuation-mark key:
-(define parameterization-key (gensym "parameterization-key"))
+(define parameterization-key '#{parameterization n1kcvqw4c9hh8t3fi3659ci94-1})
 
 (define-record parameterization (ht))
 
@@ -94,7 +94,7 @@
          [()
           (let ([c (or (parameter-cell data)
                        default-c)])
-            (thread-cell-ref c))]
+            (unsafe-thread-cell-ref c))]
          [(v)
           (let ([c (or (parameter-cell data)
                        default-c)])

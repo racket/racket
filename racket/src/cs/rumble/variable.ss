@@ -1,6 +1,6 @@
 ;; A "variable" is a linklet import or export
 
-(define undefined (gensym "undefined"))
+(define undefined '#{undefined bjjxts6iq4xqtw8kz4eb1jxbs-0})
 
 (define-record-type variable (fields (mutable val) name))
 

@@ -727,8 +727,9 @@
                 record-field-accessor
                 record-field-mutator))
 
-  (define/no-lift none (chez:gensym "none"))
-  (define/no-lift none2 (chez:gensym "none2")) ; never put this in an emphemeron
+  ;; Internal tokens that are different from all possible user-level values:
+  (define/no-lift none '#{none kwcju864gpycc2h151s9atbmo-1})
+  (define/no-lift none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
