@@ -570,7 +570,7 @@ void scheme_init_thread(Scheme_Startup_Env *env)
   ADD_PARAMETER("current-thread-group", current_thread_set, MZCONFIG_THREAD_SET, env);
 
   ADD_PRIM_W_ARITY("parameter?"            , parameter_p           , 1, 1, env);
-  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 2, env);
+  ADD_PRIM_W_ARITY("make-parameter"        , make_parameter        , 1, 3, env);
   ADD_PRIM_W_ARITY("make-derived-parameter", make_derived_parameter, 3, 3, env);
   ADD_PRIM_W_ARITY("parameter-procedure=?" , parameter_procedure_eq, 2, 2, env);
   ADD_PRIM_W_ARITY("parameterization?"     , parameterization_p    , 1, 1, env);
@@ -7842,11 +7842,18 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   Scheme_Object *p, *cell, *a[1];
   ParamData *data;
   void *k;
+  const char *name;
 
   k = scheme_make_pair(scheme_true, scheme_false); /* generates a key */
 
   if (argc > 1)
-    scheme_check_proc_arity("make-parameter", 1, 1, argc, argv);
+    scheme_check_proc_arity2("make-parameter", 1, 1, argc, argv, 1);
+  if (argc > 2) {
+    if (!SCHEME_SYMBOLP(argv[2]))
+      scheme_wrong_contract("make-parameter", "parameter?", 2, argc, argv);
+    name = scheme_symbol_val(argv[2]);
+  } else
+    name = "parameter-procedure";
 
   data = MALLOC_ONE_RT(ParamData);
 #ifdef MZTAG_REQUIRED
@@ -7855,11 +7862,11 @@ static Scheme_Object *make_parameter(int argc, Scheme_Object **argv)
   data->key = (Scheme_Object *)k;
   cell = scheme_make_thread_cell(argv[0], 1);
   data->defcell = cell;
-  data->guard = ((argc > 1) ? argv[1] : NULL);
+  data->guard = (((argc > 1) && SCHEME_TRUEP(argv[1])) ? argv[1] : NULL);
 
   a[0] = (Scheme_Object *)data;
   p = scheme_make_prim_closure_w_arity(do_param_fast, 1, a, 
-                                       "parameter-procedure", 0, 1);
+                                       name, 0, 1);
   ((Scheme_Primitive_Proc *)p)->pp.flags |= SCHEME_PRIM_TYPE_PARAMETER;
 
   return p;

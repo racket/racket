@@ -502,7 +502,7 @@
      [(#%box? name) (#%unbox name)]
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
-     [(parameter-data? name) 'parameter-procedure]
+     [(parameter-data? name) (parameter-data-name name)]
      [else name])))
 
 ;; ----------------------------------------

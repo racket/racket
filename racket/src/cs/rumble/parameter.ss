@@ -24,7 +24,7 @@
                  [v (if guard
                         (|#%app| guard v)
                         v)])
-            (loop (intmap-set ht p (make-thread-cell v #t))
+            (loop (intmap-set ht (parameter-key p) (make-thread-cell v #t))
                   (cddr args)))]))]
      [(parameter? (car args))
       (raise-arguments-error 'extend-parameterization
@@ -53,7 +53,8 @@
               #f))
 
 (define-record-type parameter-data
-  (fields guard))
+  (fields guard
+          (mutable name))) ; not actually mutable, but ensures fresh allocations
 
 (define-record-type derived-parameter-data
   (parent parameter-data)
@@ -69,6 +70,9 @@
 (define (parameter-guard p)
   (parameter-data-guard (wrapper-procedure-data p)))
 
+(define (parameter-key p)
+  (wrapper-procedure-data p))
+
 (define (derived-parameter? v)
   (and (wrapper-procedure? v)
        (derived-parameter-data? (wrapper-procedure-data v))))
@@ -78,28 +82,27 @@
 
 (define/who make-parameter
   (case-lambda
-    [(v) (make-parameter v #f)]
-    [(v guard)
+    [(v) (make-parameter v #f 'parameter-procedure)]
+    [(v guard) (make-parameter v guard 'parameter-procedure)]
+    [(v guard name)
      (check who (procedure-arity-includes/c 1) :or-false guard)
-     (let ([default-c (make-thread-cell v #t)])
-       (letrec ([self
-                 (make-wrapper-procedure
-                  (|#%name|
-                   parameter-procedure
-                   (case-lambda
-                    [()
-                     (let ([c (or (parameter-cell self)
-                                  default-c)])
-                       (thread-cell-ref c))]
-                    [(v)
-                     (let ([c (or (parameter-cell self)
-                                  default-c)])
-                       (thread-cell-set! c (if guard
-                                               (guard v)
-                                               v)))]))
-                   3
-                   (make-parameter-data guard))])
-         self))]))
+     (check who symbol? name)
+     (let ([default-c (make-thread-cell v #t)]
+           [data (make-parameter-data guard name)])
+       (make-arity-wrapper-procedure
+        (case-lambda
+         [()
+          (let ([c (or (parameter-cell data)
+                       default-c)])
+            (thread-cell-ref c))]
+         [(v)
+          (let ([c (or (parameter-cell data)
+                       default-c)])
+            (thread-cell-set! c (if guard
+                                    (guard v)
+                                    v)))])
+        3
+        data))]))
 
 (define/who (make-derived-parameter p guard wrap)
   (check who authentic-parameter?
@@ -107,16 +110,16 @@
          p)
   (check who (procedure-arity-includes/c 1) guard)
   (check who (procedure-arity-includes/c 1) wrap)
-  (make-wrapper-procedure (let ([self p])
-                            (|#%name|
-                             parameter-procedure
-                             (case-lambda
-                              [(v) (self (guard v))]
-                              [() (wrap (self))])))
-                          3
-                          (make-derived-parameter-data
-                           guard
-                           p)))
+  (make-arity-wrapper-procedure
+   (case-lambda
+    [(v) (p (guard v))]
+    [() (wrap (p))])
+   3
+   (make-derived-parameter-data
+    guard
+    (parameter-data-name
+     (wrapper-procedure-data p))
+    p)))
 
 (define/who (parameter-procedure=? a b)
   (check who parameter? a)
@@ -133,10 +136,12 @@
   (make-parameter root-inspector
                   (lambda (v)
                     (check who inspector? v)
-                    v)))
+                    v)
+                  'current-inspector))
 
 (define/who current-code-inspector
   (make-parameter root-inspector
                   (lambda (v)
                     (check who inspector? v)
-                    v)))
+                    v)
+                  'current-code-inspector))
