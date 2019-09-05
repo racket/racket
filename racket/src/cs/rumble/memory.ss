@@ -34,7 +34,7 @@
 (define gc-counter 1)
 (define log-collect-generation-radix 2)
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
-(define allocated+overhead-after-major (* 32 1024 1024))
+(define trigger-major-gc-memory-bytes (* 32 1024 1024))
 (define non-full-gc-counter 0)
 
 ;; Called in any thread with all other threads paused. The Racket
@@ -52,7 +52,7 @@
         (set! gc-counter (add1 this-counter)))
     (let ([gen (cond
                 [(and (not g)
-                      (or (>= pre-allocated+overhead (* 2 allocated+overhead-after-major))
+                      (or (>= pre-allocated+overhead trigger-major-gc-memory-bytes)
                           (>= non-full-gc-counter 10000)))
                  ;; Force a major collection if memory use has doubled
                  (collect-maximum-generation)]
@@ -68,7 +68,12 @@
       (let ([post-allocated (bytes-allocated)]
             [post-allocated+overhead (current-memory-bytes)])
         (when (= gen (collect-maximum-generation))
-          (set! allocated+overhead-after-major post-allocated+overhead))
+          ;; Trigger a major GC when twice as much memory is used. Twice
+          ;; `post-allocated+overhead` seems to be too long a wait, because
+          ;; that value may include underused pages that have locked objects.
+          ;; Using just `post-allocated` is too small, because it may force an
+          ;; immediate major GC too soon. Split the difference.
+          (set! trigger-major-gc-memory-bytes (+ post-allocated post-allocated+overhead)))
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  post-allocated+overhead (real-time) (cpu-time)))
@@ -357,7 +362,7 @@
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
   (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
-    (when (>= (current-memory-bytes) (* 2 allocated+overhead-after-major))
+    (when (>= (current-memory-bytes) trigger-major-gc-memory-bytes)
       (collect-garbage))
     ph))
 
