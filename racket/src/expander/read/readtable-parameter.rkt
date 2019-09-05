@@ -10,4 +10,5 @@
 (define/who current-readtable (make-parameter #f
                                               (lambda (v)
                                                 (check who prop:readtable? #:or-false v)
-                                                v)))
+                                                v)
+                                              'current-readtable))

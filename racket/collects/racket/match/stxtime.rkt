@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-(define match-...-nesting (make-parameter 0))
+(define match-...-nesting (make-parameter 0 #f 'match-...-nesting))
 
 (struct acc-prop (n acc))
 

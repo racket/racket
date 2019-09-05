@@ -60,7 +60,7 @@
 
 ;; == Disappeared uses ==
 
-(define current-recorded-disappeared-uses (make-parameter #f))
+(define current-recorded-disappeared-uses (make-parameter #f #f 'current-recorded-disappeared-uses))
 
 (define-syntax-rule (with-disappeared-uses body-expr ... stx-expr)
   (let-values ([(stx disappeared-uses)
@@ -164,7 +164,8 @@
                       (raise-argument-error 'current-syntax-context
                                             "(or/c syntax? #f)"
                                             new-value))
-                    new-value)))
+                    new-value)
+                  'current-syntax-context))
 
 (define (wrong-syntax stx #:extra [extras null] format-string . args)
   (unless (or (eq? stx #f) (syntax? stx))

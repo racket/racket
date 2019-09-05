@@ -12,10 +12,10 @@
 (provide compile*)
 
 ;; should we reorder stuff?
-(define can-reorder? (make-parameter #t))
+(define can-reorder? (make-parameter #t #f 'can-reorder?))
 
 ;; for non-linear patterns
-(define vars-seen (make-parameter null))
+(define vars-seen (make-parameter null #f 'vars-seen))
 
 (define (hash-on f elems #:equal? [eql #t])
   (define-values (ht h-ref h-set!)

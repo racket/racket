@@ -142,7 +142,8 @@
                            p)
                     (if (procedure-arity-includes? p 3)
                         p
-                        (lambda (v o [quote-depth 0]) (p v o))))))
+                        (lambda (v o [quote-depth 0]) (p v o))))
+                  'global-port-print-handler))
 
 (void (install-do-global-print! global-port-print-handler
                                 default-global-port-print-handler))

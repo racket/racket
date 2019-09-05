@@ -47,7 +47,8 @@
                                       " (and/c syntax? (lambda (stx) (module-path? (syntax->datum stx))))"
                                       " #f)")
                        v))
-                    v)))
+                    v)
+                  'current-module-path-for-load))
 
 (define (maybe-raise-missing-module name filename pre rel post errstr)
   (define path (current-module-path-for-load))

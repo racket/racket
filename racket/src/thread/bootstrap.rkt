@@ -151,7 +151,7 @@
     [(v) (unsafe-place-local-set! l v)]))
 
 (define initial-place-local-table (make-hasheq))
-(define place-local-table (make-parameter initial-place-local-table))
+(define place-local-table (make-parameter initial-place-local-table #f 'place-local-table))
 
 (define (unsafe-make-place-local v)
   (define key (vector v 'place-locale))

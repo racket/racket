@@ -45,7 +45,9 @@
 (define current-yielder
   (make-parameter
    (lambda (v)
-     (error 'yield "must be called in the context of a generator"))))
+     (error 'yield "must be called in the context of a generator"))
+   #f
+   'current-yielder))
 
 (define yield
   (case-lambda [()  ((current-yielder))]

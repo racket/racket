@@ -24,7 +24,7 @@
                dependencies)     ; list of key
         #:prefab)
 
-(define current-cache-layer (make-parameter #f))
+(define current-cache-layer (make-parameter #f #f 'current-cache-layer))
 
 ;; A cache later collects immediate dependencies
 ;; for a module as it is compiled

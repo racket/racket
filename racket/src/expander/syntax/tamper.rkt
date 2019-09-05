@@ -54,7 +54,7 @@
   (if (tamper-armed? t) 'armed t))
 
 ;; Set during deserialize to select a code inspector:
-(define current-arm-inspectors (make-parameter (seteq)))
+(define current-arm-inspectors (make-parameter (seteq) #f 'current-arm-inspectors))
 
 (define (deserialize-tamper t)
   (if (eq? t 'armed) (current-arm-inspectors) t))

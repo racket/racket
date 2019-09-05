@@ -130,7 +130,8 @@
                                               (raise-argument-error 'current-namespace
                                                                     "namespace?"
                                                                     v))
-                                            v)))
+                                            v)
+                                          'current-namespace))
 
 (define (namespace-get-root-expand-ctx ns)
   (force (unbox (namespace-root-expand-ctx ns))))

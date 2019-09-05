@@ -49,13 +49,13 @@
                            (thread (lambda () (sync nack) ((control-state-evt-abandon cse))))
                            (control-state-evt-evt cse)))))
 
-(define current-async-semaphore (make-parameter #f))
+(define current-async-semaphore (make-parameter #f #f 'current-async-semaphore))
 
 (define (async-evt)
   (or (current-async-semaphore)
       (error 'async-evt "not in a `poller` callback")))
 
-(define current-kill-callbacks (make-parameter '()))
+(define current-kill-callbacks (make-parameter '() #f 'current-kill-callbacks))
 
 (define (thread-push-kill-callback! p)
   (current-kill-callbacks (cons p (current-kill-callbacks))))

@@ -14,7 +14,7 @@
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
-(define match-equality-test (make-parameter equal?))
+(define match-equality-test (make-parameter equal? #f 'match-equality-test))
 
 (define-struct (exn:misc:match exn:fail) (value srclocs)
   #:property prop:exn:srclocs (lambda (ex) (exn:misc:match-srclocs ex))
