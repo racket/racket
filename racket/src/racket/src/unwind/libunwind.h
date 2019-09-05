@@ -60,9 +60,9 @@ extern "C" {
 # ifdef __APPLE__
 #  define _XOPEN_SOURCE
 # endif
-# define __USE_GNU
+# define _GNU_SOURCE
 # include <ucontext.h>
-# undef __USE_GNU
+# undef _GNU_SOURCE
 #endif
 
   /* XXXXXXXXXXXXXXXXXXXX x86 Target XXXXXXXXXXXXXXXXXXXX */
