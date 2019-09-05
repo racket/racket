@@ -255,10 +255,11 @@
   (make-parameter #f (lambda (v)
                        (unless (or (not v) (eq? v 'kill) (eq? v 'interrupt))
                          (raise-argument-error who "(or/c #f 'kill 'interrupt)" v))
-                       v)))
+                       v)
+                  'current-subprocess-custodian-mode))
 
 (define subprocess-group-enabled
-  (make-parameter #f (lambda (v) (and v #t))))
+  (make-parameter #f (lambda (v) (and v #t)) 'subprocess-group-enabled))
 
 ;; ----------------------------------------
 

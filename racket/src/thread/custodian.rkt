@@ -74,7 +74,8 @@
   (make-parameter root-custodian
                   (lambda (v)
                     (check who custodian? v)
-                    v)))
+                    v)
+                  'current-custodian))
 
 ;; To initialize a new place:
 (define (set-root-custodian! c)

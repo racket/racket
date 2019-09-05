@@ -48,7 +48,8 @@
                       (raise-argument-error 'current-input-port
                                             "input-port?"
                                             v))
-                    v)))
+                    v)
+                  'current-input-port))
 
 (define current-output-port
   (make-parameter orig-output-port
@@ -57,7 +58,8 @@
                       (raise-argument-error 'current-output-port
                                             "output-port?"
                                             v))
-                    v)))
+                    v)
+                  'current-output-port))
 
 (define current-error-port
   (make-parameter orig-error-port
@@ -66,7 +68,8 @@
                       (raise-argument-error 'current-error-port
                                             "output-port?"
                                             v))
-                    v)))
+                    v)
+                  'current-error-port))
 
 (define (init-current-ports! in-fd out-fd err-fd cust plumber)
   (set! orig-input-port (open-input-fd in-fd "stdin"

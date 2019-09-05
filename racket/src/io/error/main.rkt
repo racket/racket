@@ -47,7 +47,7 @@
     (raise-argument-error who "(or/c symbol? string?)" init)]))
 
 (define error-print-source-location
-  (make-parameter #t (lambda (v) (and v #t))))
+  (make-parameter #t (lambda (v) (and v #t)) 'error-print-source-location))
 
 ;; Install the default error-value->string handler,
 ;; replacing the non-working primitive placeholder

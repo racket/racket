@@ -98,4 +98,5 @@
   (make-parameter default-load-extension
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-load-extension))

@@ -39,7 +39,8 @@
                   (lambda (l)
                     (unless (logger? l)
                       (raise-argument-error 'current-logger "logger?" l))
-                    l)))
+                    l)
+                  'current-logger))
 
 (define (logger-init!)
   (set! root-logger (make-root-logger))

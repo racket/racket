@@ -241,7 +241,8 @@
   (make-parameter (make-pseudo-random-generator)
                   (lambda (v)
                     (check who pseudo-random-generator? v)
-                    v)))
+                    v)
+                  'current-pseudo-random-generator))
 
 (define/who random
   (case-lambda
