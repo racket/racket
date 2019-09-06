@@ -43,7 +43,7 @@
                                             in
                                             config))
   (define c (read-char/special in config))
-  (unless (char=? c #\space)
+  (unless (eqv? c #\space)
     (reader-error in config
                   "expected a single space after `~a`"
                   extend-str))
@@ -56,7 +56,7 @@
 (define (read-extension-#! read-recur dispatch-c in config
                            #:get-info? [get-info? #f])
   (define c (read-char/special in config))
-  (unless (char-lang-nonsep? c)
+  (unless (and (char? c) (char-lang-nonsep? c))
     (bad-syntax-error in config (if (char? c)
                                     (string dispatch-c #\! c)
                                     (string dispatch-c #\!))))
