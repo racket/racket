@@ -67,6 +67,10 @@
 (test 1 'for/stream (stream-first (for*/stream ([x '(1 0)]) (/ x))))
 (test 625 'for/stream (stream-ref (for/stream ([x (in-naturals)]) (* x x)) 25))
 
+;; for/stream should be lazy https://github.com/racket/racket/issues/2812
+(test #true stream? (for/stream ((x '(0)) #:when (/ x x)) (void)))
+(test #true stream? (for*/stream ((x '(0)) #:when (/ x x)) (void)))
+
 (test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)] #:break (> i 5)) i))
 (test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)]) #:break (> i 5) i))
 (test '(0 1 2 3 4 5) stream->list (for/stream ([i (in-naturals)])
