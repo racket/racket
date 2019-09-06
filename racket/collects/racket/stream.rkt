@@ -10,7 +10,8 @@
                     [stream-ref stream-get-generics])
          "private/sequence.rkt"
          (only-in "private/stream-cons.rkt"
-                  stream-cons)
+                  stream-cons
+                  stream-lazy)
          "private/generic-methods.rkt"
          (for-syntax racket/base))
 
@@ -338,11 +339,12 @@
         [(_ clauses . body)
          (with-syntax ([((pre-body ...) (post-body ...)) (split-for-body stx #'body)])
            (quasisyntax/loc stx
-             (#,derived-stx #,stx
-                            ([get-rest empty-stream]
-                             #:delay-with thunk)
-               clauses
-               pre-body ...
-               (stream-cons (let () post-body ...) (get-rest)))))]))
+             (stream-lazy
+               (#,derived-stx #,stx
+                              ([get-rest empty-stream]
+                               #:delay-with thunk)
+                 clauses
+                 pre-body ...
+                 (stream-cons (let () post-body ...) (get-rest))))))]))
     (values (make-for/stream #'for/foldr/derived)
             (make-for/stream #'for*/foldr/derived))))
