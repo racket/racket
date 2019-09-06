@@ -34,7 +34,16 @@
 (define gc-counter 1)
 (define log-collect-generation-radix 2)
 (define collect-generation-radix-mask (sub1 (bitwise-arithmetic-shift 1 log-collect-generation-radix)))
-(define trigger-major-gc-memory-bytes (* 32 1024 1024))
+
+;; Some allocation patterns create a lot of overhead (i.e., wasted
+;; pages in the allocator), so we need to detect that and force a GC.
+;; Other patterns don't have as much overhead, so triggering only
+;; on total size with overhead can increase peak memory use too much.
+;; Trigger a GC is either the non-overhead or with-overhead counts
+;; group enough.
+(define GC-TRIGGER-FACTOR 2)
+(define trigger-major-gc-allocated (* 32 1024 1024))
+(define trigger-major-gc-allocated+overhead (* 64 1024 1024))
 (define non-full-gc-counter 0)
 
 ;; Called in any thread with all other threads paused. The Racket
@@ -52,7 +61,8 @@
         (set! gc-counter (add1 this-counter)))
     (let ([gen (cond
                 [(and (not g)
-                      (or (>= pre-allocated+overhead trigger-major-gc-memory-bytes)
+                      (or (>= pre-allocated trigger-major-gc-allocated)
+                          (>= pre-allocated+overhead trigger-major-gc-allocated+overhead)
                           (>= non-full-gc-counter 10000)))
                  ;; Force a major collection if memory use has doubled
                  (collect-maximum-generation)]
@@ -73,7 +83,8 @@
           ;; that value may include underused pages that have locked objects.
           ;; Using just `post-allocated` is too small, because it may force an
           ;; immediate major GC too soon. Split the difference.
-          (set! trigger-major-gc-memory-bytes (+ post-allocated post-allocated+overhead)))
+          (set! trigger-major-gc-allocated (* GC-TRIGGER-FACTOR post-allocated))
+          (set! trigger-major-gc-allocated+overhead (* GC-TRIGGER-FACTOR post-allocated+overhead)))
         (garbage-collect-notify gen
                                 pre-allocated pre-allocated+overhead pre-time pre-cpu-time
                                 post-allocated  post-allocated+overhead (real-time) (cpu-time)))
@@ -362,7 +373,8 @@
 (define/who (make-phantom-bytes k)
   (check who exact-nonnegative-integer? k)
   (let ([ph (create-phantom-bytes (make-phantom-bytevector k))])
-    (when (>= (current-memory-bytes) trigger-major-gc-memory-bytes)
+    (when (or (>= (bytes-allocated) trigger-major-gc-allocated)
+              (>= (current-memory-bytes) trigger-major-gc-allocated+overhead))
       (collect-garbage))
     ph))
 
