@@ -47,6 +47,7 @@
   [ffi-callback-maker (known-procedure 60)]
   [ffi-lib (known-procedure 14)]
   [ffi-lib-name (known-procedure 2)]
+  [ffi-lib-unload (known-procedure 2)]
   [ffi-lib? (known-procedure 2)]
   [ffi-obj (known-procedure 4)]
   [ffi-obj-lib (known-procedure 2)]

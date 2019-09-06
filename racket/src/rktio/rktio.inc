@@ -195,6 +195,7 @@ Sforeign_symbol("rktio_sha2_update", (void *)rktio_sha2_update);
 Sforeign_symbol("rktio_sha2_final", (void *)rktio_sha2_final);
 Sforeign_symbol("rktio_dll_open", (void *)rktio_dll_open);
 Sforeign_symbol("rktio_dll_find_object", (void *)rktio_dll_find_object);
+Sforeign_symbol("rktio_dll_close", (void *)rktio_dll_close);
 Sforeign_symbol("rktio_dll_get_error", (void *)rktio_dll_get_error);
 Sforeign_symbol("rktio_set_dll_procs", (void *)rktio_set_dll_procs);
 Sforeign_symbol("rktio_get_last_error_kind", (void *)rktio_get_last_error_kind);

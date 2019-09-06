@@ -143,7 +143,8 @@ static intptr_t add_check_overflow(const char *who, intptr_t a, intptr_t b)
 @cdefstruct[ffi-lib []
   [handle    "NON_GCBALE_PTR(rktio_dll_t)"]
   [name      "Scheme_Object*"]
-  [is_global "int"]]
+  [is_global "int"]
+  [refcount "int"]]
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 
@@ -181,11 +182,12 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
                            MYNAME": couldn't open %V (%R)", argv[0]);
       }
     }
-    @cmake["lib" ffi-lib "handle" "argv[0]" "!name"]
+    @cmake["lib" ffi-lib "handle" "argv[0]" "!name" "1"]
     scheme_hash_set(opened_libs, hashname, (Scheme_Object*)lib);
     /* no dlclose finalizer - since the hash table always keeps a reference */
     /* maybe add some explicit unload at some point */
-  }
+  } else
+    lib->refcount++;
   return (Scheme_Object*)lib;
 }
 
@@ -194,6 +196,50 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
   if (!SCHEME_FFILIBP(argv[0]))
     scheme_wrong_contract(MYNAME, "ffi-lib?", 0, argc, argv);
   return ((ffi_lib_struct*)argv[0])->name;
+}
+
+/* (ffi-lib-unload ffi-lib) -> (void) */
+@cdefine[ffi-lib-unload 1]{
+  ffi_lib_struct *lib;
+
+  if (!SCHEME_FFILIBP(argv[0]))
+    scheme_wrong_contract(MYNAME, "ffi-lib?", 0, argc, argv);
+
+  lib = (ffi_lib_struct *)argv[0];
+  if (!lib->handle)
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     MYNAME": couldn't close already-closed lib %V",
+                     lib->name);
+
+  --lib->refcount;
+  if (lib->refcount)
+    return scheme_void;
+  
+  if (rktio_dll_close(scheme_rktio, lib->handle)) {
+    Scheme_Object *hashname;
+
+    lib->handle = NULL;
+
+    if (SCHEME_FALSEP(lib->name))
+      hashname = (Scheme_Object *)"";
+    else {
+      hashname = TO_PATH(lib->name);
+      hashname = (Scheme_Object *)SCHEME_PATH_VAL(hashname);
+    }
+    scheme_hash_set(opened_libs, hashname, NULL);
+  } else {
+    char *msg;
+    msg = rktio_dll_get_error(scheme_rktio);
+    if (msg) {
+      msg = scheme_strdup_and_free(msg);
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       MYNAME": couldn't close %V (%s)", lib->name, msg);
+    } else
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       MYNAME": couldn't close %V (%R)", lib->name);
+  }
+
+  return scheme_void;
 }
 
 /*****************************************************************************/
@@ -219,6 +265,12 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_contract(MYNAME, "bytes?", 0, argc, argv);
   dlname = SCHEME_BYTE_STR_VAL(argv[0]);
+
+  if (!lib->handle) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     MYNAME": couldn't get \"%s\" from already-closed %V",
+                     dlname, lib->name);
+  }
 
   dlobj = rktio_dll_find_object(scheme_rktio, lib->handle, dlname);
   if (!dlobj) {

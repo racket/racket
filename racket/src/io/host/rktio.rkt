@@ -11,7 +11,7 @@
          rktio-errstep
          racket-error?
          rktio-place-init!)
-;; More `provide`s are added by macros below
+;; More `provide`s added by macros below
 
 (define rktio-table
   (or (primitive-table '#%rktio)

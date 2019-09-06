@@ -195,6 +195,7 @@ rktio_sha2_update
 rktio_sha2_final
 rktio_dll_open
 rktio_dll_find_object
+rktio_dll_close
 rktio_dll_get_error
 rktio_set_dll_procs
 rktio_get_last_error_kind

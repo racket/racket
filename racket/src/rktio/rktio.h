@@ -1241,12 +1241,24 @@ RKTIO_EXTERN rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t na
    reported, then rktio_dll_get_error() must be used before any other
    `rktio_dll_...` call to get an error string.
 
-   Currently, there's no way to close and unload a DLL. Even when the
-   given `rktio` is closed with `rktio_destroy`, loaded libraries
-   remain in the process. */
+   If a DLL has been loaded with `name` already, the previous result
+   is returned again, but with an internal reference count returned.
+   The `as_global` argument matters only for the first load of a DLL
+   thrrough a given `name`.
+
+   Unless the DLL is explicitly unloaded with `rktio_dll_close`, even
+   when the given `rktio` is closed with `rktio_destroy`, loaded
+   libraries remain in the process. */
 
 RKTIO_EXTERN void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string_t name);
 /* Find an address within `dll` for the `name` export.
+
+   An error result can be `RKTIO_ERROR_DLL` as for `rktio_dll_open`. */
+
+RKTIO_EXTERN rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll);
+/* Decrements the reference count on `dll`, and if it goes to zero,
+   unloads the DLL using system-provided functions and destroys the
+   `dll` argument.
 
    An error result can be `RKTIO_ERROR_DLL` as for `rktio_dll_open`. */
 
@@ -1257,7 +1269,10 @@ RKTIO_EXTERN char *rktio_dll_get_error(rktio_t *rktio);
 
 typedef void *(*dll_open_proc)(rktio_const_string_t name, rktio_bool_t as_global);
 typedef void *(*dll_find_object_proc)(void *h, rktio_const_string_t name);
-RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open, dll_find_object_proc dll_find_object);
+typedef void (*dll_close_proc)(void *h);
+RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open,
+                                      dll_find_object_proc dll_find_object,
+                                      dll_close_proc dll_close);
 /* Installs procedures that are tried before native mechanisms,
    currently only supported for Windows. */
 
