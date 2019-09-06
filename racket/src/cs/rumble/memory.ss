@@ -423,7 +423,7 @@
        [else #'(foreign-procedure s ...)])]))
 
 ;; This is an inconvenient callback interface, certainly, but it
-;; accomodates a limitatuon of the traditional Racket implementation
+;; accomodates a limitation of the traditional Racket implementation
 (define (run-one-collect-callback v save sel)
   (let ([protocol (#%vector-ref v 0)]
         [proc (cpointer-address (#%vector-ref v 1))]
