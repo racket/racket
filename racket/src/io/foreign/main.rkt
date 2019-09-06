@@ -10,7 +10,7 @@
          "../locale/string.rkt")
 
 (provide ffi-get-lib
-         ffi-lib-unload
+         ffi-unload-lib
          ffi-get-obj
          current-load-extension)
 
@@ -36,7 +36,7 @@
         (raise-dll-error who msg err-str dll)])]
     [else (success-k dll)]))
 
-(define/who (ffi-lib-unload dll)
+(define/who (ffi-unload-lib dll)
   (start-atomic)
   (define r (rktio_dll_close rktio dll))
   (cond

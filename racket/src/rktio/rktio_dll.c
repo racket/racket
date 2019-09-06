@@ -138,6 +138,9 @@ rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t name, rktio_boo
 rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll)
 {
   int ok = 1;
+
+  if (!dll->name)
+    return ok;
   
   dll->refcount--;
   if (dll->refcount)

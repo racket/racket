@@ -748,6 +748,10 @@
                    (lambda (h)
                      (make-ffi-lib h name))))]))
 
+(define/who (ffi-lib-unload lib)
+  (check who ffi-lib? lib)
+  (ffi-unload-lib (ffi-lib-handle lib))) 
+
 (define-record-type (cpointer/ffi-obj make-ffi-obj ffi-obj?)
   (parent cpointer)
   (fields lib name))
@@ -777,6 +781,11 @@
         #f
         (success-k #f))))
 
+(define ffi-unload-lib
+  ;; Placeholder implementation that does nothing:
+  (lambda (lib)
+    (void)))
+
 (define ffi-get-obj
   ;; Placeholder implementation that always fails:
   (lambda (who lib lib-name name success-k)
@@ -790,9 +799,10 @@
   ;; Placeholder implementation
   (lambda (p) p))
 
-(define (set-ffi-get-lib-and-obj! do-ffi-get-lib do-ffi-get-obj do-ffi-ptr->address)
+(define (set-ffi-get-lib-and-obj! do-ffi-get-lib do-ffi-get-obj do-ffi-unload-lib do-ffi-ptr->address)
   (set! ffi-get-lib do-ffi-get-lib)
   (set! ffi-get-obj do-ffi-get-obj)
+  (set! ffi-unload-lib do-ffi-unload-lib)
   (set! ffi-ptr->address do-ffi-ptr->address))
 
 ;; ----------------------------------------

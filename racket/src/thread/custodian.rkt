@@ -33,9 +33,10 @@
          custodian-register-thread
          custodian-register-place
          raise-custodian-is-shut-down
-         set-post-shutdown-action!
+         unsafe-add-post-custodian-shutdown
          check-queued-custodian-shutdown
          set-place-custodian-procs!
+         set-post-shutdown-action!
          custodian-check-immediate-limit)
 
 (module+ scheduling
@@ -186,6 +187,10 @@
     (when self-ref
       (set-custodian-reference-c! self-ref (custodian-self-reference parent)))
     (hash-clear! (custodian-children c))
+    (set-custodian-post-shutdown! parent
+                                  (append (custodian-post-shutdown c)
+                                          (custodian-post-shutdown parent)))
+    (set-custodian-post-shutdown! c null)
     (when gc-roots (hash-clear! gc-roots))))
   
 ;; Called in scheduler thread:
@@ -274,6 +279,9 @@
           (callback child c)
           (callback child)))
     (hash-clear! (custodian-children c))
+    (for ([proc (in-list (custodian-post-shutdown c))])
+      (proc))
+    (set-custodian-post-shutdown! c null)
     (let ([sema (custodian-shutdown-sema c)])
       (when sema
         (semaphore-post-all sema)))
@@ -290,6 +298,15 @@
          (when (custodian-shut-down? c)
            (semaphore-post-all sema))
          sema))))
+
+(define/who (unsafe-add-post-custodian-shutdown proc [custodian #f])
+  (check who (procedure-arity-includes/c 0) proc)
+  (check who custodian? #:or-false custodian)
+  (define c (or custodian (place-custodian current-place)))
+  (unless (and (not (place-parent current-place))
+               (eq? c (place-custodian current-place)))
+    (atomically
+     (set-custodian-post-shutdown! c (cons proc (custodian-post-shutdown c))))))
 
 (define (custodian-subordinate? c super-c)
   (let loop ([p-cref (custodian-parent-reference c)])

@@ -4,7 +4,8 @@
 (require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
          (only-in '#%unsafe
                   unsafe-thread-at-root
-                  unsafe-make-security-guard-at-root)
+                  unsafe-make-security-guard-at-root
+                  unsafe-add-post-custodian-shutdown)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
@@ -130,7 +131,8 @@
 (define (get-ffi-lib name [version/s ""]
 		     #:fail [fail #f]
 		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs]
-                     #:global? [global? (eq? (system-type 'so-mode) 'global)])
+                     #:global? [global? (eq? (system-type 'so-mode) 'global)]
+                     #:custodian [custodian #f])
   (cond
    [(not name) (ffi-lib name)] ; #f => NULL => open this executable
    [(not (or (string? name) (path? name)))
@@ -172,37 +174,48 @@
 				 (string-append name0 "." lib-suffix v)
 				 (string-append name0 v "." lib-suffix))))
 		       versions)])
-      (or ;; try to look in our library paths first
-       (and (not absolute?)
-	    (ormap (lambda (dir)
-		     ;; try good names first, then original
-		     (or (ormap (lambda (name) (try-lib (build-path dir name)))
-				names)
-			 (try-lib (build-path dir name0))))
-		   (get-lib-dirs)))
-       ;; try a system search
-       (ormap try-lib names)              ; try good names first
-       (try-lib name0)                    ; try original
-       (ormap try-lib-if-exists? names)   ; try relative paths
-       (try-lib-if-exists? name0)         ; relative with original
-       ;; give up: by default, call ffi-lib so it will raise an error
-       (begin
-         (log-ffi-lib-debug
-          "failed for (ffi-lib ~v ~v), tried: ~a"
-          name0 version/s
-          (apply
-           string-append
-           (for/list ([attempt (reverse tried)])
-             (format "\n  ~e~a" attempt
-                     (cond [(absolute-path? attempt)
-                            (cond [(file-exists?/insecure attempt) " (exists)"]
-                                  [else " (no such file)"])]
-                           [else " (using OS library search path)"])))))
-         (if fail
-             (fail)
-             (if (pair? names)
-                 (ffi-lib (car names) #f global?)
-                 (ffi-lib name0 #f global?))))))]))
+      (define lib
+        (or ;; try to look in our library paths first
+         (and (not absolute?)
+              (ormap (lambda (dir)
+                       ;; try good names first, then original
+                       (or (ormap (lambda (name) (try-lib (build-path dir name)))
+                                  names)
+                           (try-lib (build-path dir name0))))
+                     (get-lib-dirs)))
+         ;; try a system search
+         (ormap try-lib names)              ; try good names first
+         (try-lib name0)                    ; try original
+         (ormap try-lib-if-exists? names)   ; try relative paths
+         (try-lib-if-exists? name0)         ; relative with original
+         ;; give up: by default, call ffi-lib so it will raise an error
+         (begin
+           (log-ffi-lib-debug
+            "failed for (ffi-lib ~v ~v), tried: ~a"
+            name0 version/s
+            (apply
+             string-append
+             (for/list ([attempt (reverse tried)])
+               (format "\n  ~e~a" attempt
+                       (cond [(absolute-path? attempt)
+                              (cond [(file-exists?/insecure attempt) " (exists)"]
+                                    [else " (no such file)"])]
+                             [else " (using OS library search path)"])))))
+           (and (not fail)
+                (if (pair? names)
+                    (ffi-lib (car names) #f global?)
+                    (ffi-lib name0 #f global?))))))
+      (cond
+        [lib
+         (when custodian
+           (unsafe-add-post-custodian-shutdown (lambda () (ffi-lib-unload lib))
+                                               (if (eq? custodian 'place)
+                                                   #f
+                                                   custodian)))
+         lib]
+        [fail
+         (fail)]
+        [else (error 'ffi-lib "internal error; shouldn't get here")]))]))
 
 (define (get-ffi-lib-internal x)
   (if (ffi-lib? x) x (get-ffi-lib x)))

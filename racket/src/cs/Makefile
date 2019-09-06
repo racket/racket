@@ -5,7 +5,7 @@ RACKET = ../../bin/racket
 SCHEME = scheme
 
 # Controls whether Racket layers are built as unsafe:
-UNSAFE_COMP = --unsafe
+UNSAFE_COMP = # --unsafe
 
 # Controls whether compiled code is compressed:
 COMPRESS_COMP = # --compress

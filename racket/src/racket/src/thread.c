@@ -650,7 +650,7 @@ scheme_init_unsafe_thread (Scheme_Startup_Env *env)
   ADD_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 5, env);
   ADD_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
 
-  ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 1, env);
+  ADD_PRIM_W_ARITY("unsafe-add-post-custodian-shutdown", unsafe_add_post_custodian_shutdown, 1, 2, env);
 
   ADD_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
   ADD_PRIM_W_ARITY("unsafe-get-place-table", unsafe_get_place_table, 0, 0, env);
@@ -1236,6 +1236,8 @@ Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *parent)
   data_ptr = (void ***)scheme_malloc(sizeof(void**));
   m->data_ptr = data_ptr;
 
+  m->post_callbacks = scheme_null;
+
   insert_custodian(m, parent);
 
   scheme_add_finalizer(m, do_adjust_custodian_family, data_ptr);
@@ -1553,6 +1555,17 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     }
 #endif
 
+    if (SCHEME_PAIRP(m->post_callbacks)) {
+      Scheme_Object *proc;
+      scheme_start_in_scheduler();
+      while (SCHEME_PAIRP(m->post_callbacks)) {
+        proc = SCHEME_CAR(m->post_callbacks);
+        m->post_callbacks = SCHEME_CDR(m->post_callbacks);
+        _scheme_apply_multi(proc, 0, NULL);
+      }
+      scheme_end_in_scheduler();
+    }
+
     m->count = 0;
     m->alloc = 0;
     m->elems = 0;
@@ -1571,7 +1584,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     adjust_custodian_family(m, m);
 
     adjust_limit_table(m);
-    
+
     m = next_m;
   }
 
@@ -1950,36 +1963,31 @@ void do_run_atexit_closers_on_all()
 
 static Scheme_Object *unsafe_add_post_custodian_shutdown(int argc, Scheme_Object *argv[])
 {
+  Scheme_Custodian *c;
+  Scheme_Object *l;
+  
   scheme_check_proc_arity("unsafe-add-post-custodian-shutdown", 0, 0, argc, argv);
 
+  if ((argc > 1)
+      && !(SCHEME_FALSEP(argv[1])
+           || SCHEME_CUSTODIANP(argv[1])))
+    scheme_wrong_contract("unsafe-add-post-custodian-shutdown", "custodian?", 1, argc, argv);
+
+  if ((argc > 1) && !SCHEME_FALSEP(argv[1]))
+    c = (Scheme_Custodian *)argv[1];
+  else
+    c = main_custodian;
+
 #if defined(MZ_USE_PLACES)
-  if (!RUNNING_IN_ORIGINAL_PLACE) {
-    if (!post_custodian_shutdowns) {
-      REGISTER_SO(post_custodian_shutdowns);
-      post_custodian_shutdowns = scheme_null;
-    }
-    
-    post_custodian_shutdowns = scheme_make_pair(argv[0], post_custodian_shutdowns);
-  }
+  if (RUNNING_IN_ORIGINAL_PLACE
+      && (c == main_custodian))
+    return scheme_void;
 #endif
+      
+  l = scheme_make_pair(argv[0], c->post_callbacks);
+  c->post_callbacks = l;
   
   return scheme_void;
-}
-
-void scheme_run_post_custodian_shutdown()
-{
-#if defined(MZ_USE_PLACES)
-  if (post_custodian_shutdowns) {
-    Scheme_Object *proc;
-    scheme_start_in_scheduler();
-    while (SCHEME_PAIRP(post_custodian_shutdowns)) {
-      proc = SCHEME_CAR(post_custodian_shutdowns);
-      post_custodian_shutdowns = SCHEME_CDR(post_custodian_shutdowns);
-      _scheme_apply_multi(proc, 0, NULL);
-    }
-    scheme_end_in_scheduler();
-  }
-#endif
 }
 
 void scheme_set_atexit(Scheme_At_Exit_Proc p)

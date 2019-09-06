@@ -34,8 +34,7 @@
          place-channel-put
 
          set-make-place-ports+fds!
-         place-pumper-threads
-         unsafe-add-post-custodian-shutdown)
+         place-pumper-threads)
 
 ;; For `(struct place ...)`, see "place-object.rkt"
 
@@ -440,13 +439,6 @@
 
 (define (place-pumper-threads p vec)
   (set-place-pumpers! p vec))
-
-(define (unsafe-add-post-custodian-shutdown proc)
-  (when (place-parent current-place)
-    (atomically
-     (set-place-post-shutdown! current-place
-                               (cons proc
-                                     (place-post-shutdown current-place))))))
 
 (void (set-place-custodian-procs!
        (lambda ()
