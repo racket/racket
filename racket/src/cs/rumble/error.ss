@@ -462,7 +462,7 @@
 
 ;; ----------------------------------------
 
-(define exception-handler-key (gensym "exception-handler-key"))
+(define exception-handler-key '#{exception-handler-key o9xm0uula3d2mbq9wueixh79r-0})
 
 (define (default-uncaught-exception-handler exn)
   (let ([message (if (exn? exn)
@@ -507,7 +507,7 @@
 (define-thread-local link-instantiate-continuations (make-ephemeron-eq-hashtable))
 
 ;; For `instantiate-linklet` to help report which linklet is being run:
-(define linklet-instantiate-key (gensym "linklet"))
+(define linklet-instantiate-key '#{linklet o9xm0uula3d2mbq9wueixh79r-1})
 
 ;; Convert a contination to a list of function-name and
 ;; source information. Cache the result half-way up the
