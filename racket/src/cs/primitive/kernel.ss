@@ -515,7 +515,7 @@
   [make-log-receiver (known-procedure/no-prompt -4)]
   [make-logger (known-procedure/no-prompt -1)]
   [make-output-port (known-procedure 4080)]
-  [make-parameter (known-procedure 6)]
+  [make-parameter (known-procedure 14)]
   [make-phantom-bytes (known-procedure/no-prompt 2)]
   [make-pipe (known-procedure/no-prompt 15)]
   [make-placeholder (known-procedure/pure 2)]
