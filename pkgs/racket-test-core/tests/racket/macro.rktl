@@ -2416,5 +2416,32 @@
 (test 11 dynamic-require ''syntax-local-bind-syntaxes-free-id-context 'result)
 
 ;; ----------------------------------------
+;; Related to the above, make sure `syntax-local-value/immediate` resolves rename
+;; transformers in a context with first-class definition context bindings
+
+(module syntax-local-value-free-id-context racket/base
+  (require (for-syntax racket/base))
+  (provide result)
+  (begin-for-syntax
+    (struct indirect-rename-transformer (target-holder)
+      #:property prop:rename-transformer
+      (lambda (self) (syntax-local-value (indirect-rename-transformer-target-holder self)))))
+  (define-syntax (m stx)
+    (define intdef (syntax-local-make-definition-context))
+    (syntax-local-bind-syntaxes (list (syntax-local-introduce #'holder)) #'#'add1 intdef)
+    (syntax-local-bind-syntaxes (list (syntax-local-introduce #'add1-indirect))
+                                (syntax-local-introduce #'(indirect-rename-transformer #'holder))
+                                intdef)
+    (define-values [value target]
+      (syntax-local-value/immediate
+       (internal-definition-context-introduce intdef #'add1-indirect 'add)
+       #f
+       (list intdef)))
+    #`'#,(indirect-rename-transformer? value))
+  (define result (m)))
+
+(test #t dynamic-require ''syntax-local-value-free-id-context 'result)
+
+;; ----------------------------------------
 
 (report-errs)
