@@ -171,6 +171,7 @@
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
+  (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
   (define show-on? (or gensym-on?
                        pre-jit-on?
                        pre-lift-on?
@@ -179,6 +180,7 @@
                        jit-demand-on?
                        known-on?
                        cp0-on?
+                       assembly-on?
                        (getenv "PLT_LINKLET_SHOW")))
   (define show
     (case-lambda
@@ -207,7 +209,12 @@
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
   (define (compile* e)
-    (call-with-system-wind (lambda () (compile e))))
+    (call-with-system-wind (lambda ()
+                             (if assembly-on?
+                                 (parameterize ([#%$assembly-output (#%current-output-port)])
+                                   (printf ";; assembly ---------------------\n")
+                                   (compile e))
+                                 (compile e)))))
   (define (interpret* e)
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)

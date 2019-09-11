@@ -58,6 +58,7 @@
 (check-defined '#%$record-cas!)
 (check-defined 'eq-hashtable-try-atomic-cell)
 (check-defined 'hashtable-ref-cell)
+(check-defined 'call-consuming-continuation-attachment)
 
 ;; ----------------------------------------
 

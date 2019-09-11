@@ -259,7 +259,7 @@
   ;; current metacontinuation frame is already empty, don't push more
   (assert-in-uninterrupted)
   (assert-not-in-system-wind)
-  (call-with-current-continuation-attachment
+  (call-getting-continuation-attachment
    'none
    (lambda (at)
      (cond
@@ -930,13 +930,15 @@
 (define-syntax with-continuation-mark
   (syntax-rules ()
     [(_ key val body)
-     (call-with-current-continuation-attachment
-      empty-mark-frame
-      (lambda (a)
-        (call-setting-continuation-attachment
-         (mark-frame-update a key val)
-         (lambda ()
-           body))))]))
+     (let* ([k key]
+            [v val])
+       (call-consuming-continuation-attachment
+        empty-mark-frame
+        (lambda (a)
+          (call-setting-continuation-attachment
+           (mark-frame-update a k v)
+           (lambda ()
+             body)))))]))
 
 ;; Return a continuation that expects a thunk to resume. That way, we
 ;; can can an `(end-uninterrupted)` and check for breaks in the
@@ -1030,14 +1032,14 @@
 (define (elem+cache-strip t) (if (elem+cache? t) (elem+cache-elem t) t))
 
 ;; Export this form renamed to `call-with-immediate-continuation-mark`.
-;; It's a macro to ensure that the underlying `call-with-current-continuation-attachment`
+;; It's a macro to ensure that the underlying `call-getting-continuation-attachment`
 ;; is exposed.
 (define-syntax (call-with-immediate-continuation-mark/inline stx)
   (syntax-case stx (lambda)
     [(_ key-expr proc-expr)
      #'(call-with-immediate-continuation-mark/inline key-expr proc-expr #f)]
     [(_ key-expr (lambda (arg) body ...) default-v-expr)
-     #'(call-with-current-continuation-attachment
+     #'(call-getting-continuation-attachment
         empty-mark-frame
         (lambda (a)
           (let* ([key key-expr]
