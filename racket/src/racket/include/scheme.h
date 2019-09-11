@@ -253,7 +253,9 @@ extern "C"
 #endif
 
 #if !defined(MZ_NORETURN)
-# if defined(__GNUC__) || defined(__clang__)
+# if !defined(MZ_PRECISE_RETURN_SPEC)
+#  define MZ_NORETURN
+# elif defined(__GNUC__) || defined(__clang__)
 #  define MZ_NORETURN __attribute__((noreturn))
 # elif defined(_MSC_VER)
 #  define MZ_NORETURN __declspec(noreturn)
