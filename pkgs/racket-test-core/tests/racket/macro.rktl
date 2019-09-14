@@ -2443,5 +2443,24 @@
 (test #t dynamic-require ''syntax-local-value-free-id-context 'result)
 
 ;; ----------------------------------------
+;; Ensure the expansion of a rename transformer is not `syntax-original?`
+
+(module rename-transformer-introduction-scope racket/base
+  (require (for-syntax racket/base))
+  (provide sym free-id=? original?)
+  (define x #f)
+  (define-syntax y (make-rename-transformer #'x))
+  (define-syntax (m stx)
+    (define expanded-y (syntax-local-introduce (local-expand #'y 'expression '())))
+    #`(values '#,(syntax-e expanded-y)
+              '#,(free-identifier=? expanded-y #'x)
+              '#,(syntax-original? expanded-y)))
+  (define-values (sym free-id=? original?) (m)))
+
+(test 'x dynamic-require ''rename-transformer-introduction-scope 'sym)
+(test #t dynamic-require ''rename-transformer-introduction-scope 'free-id=?)
+(test #f dynamic-require ''rename-transformer-introduction-scope 'original?)
+
+;; ----------------------------------------
 
 (report-errs)
