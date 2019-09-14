@@ -195,6 +195,10 @@
 (test-sequence [(2.0 4.0 6.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 1 6 2))
 (test-sequence [(8.0 6.0 4.0)] (in-flvector (flvector 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0) 7 2 -2))
 
+;; test malformed in-flvector
+(err/rt-test (for/list ([x (in-flvector)]) x))
+(err/rt-test (in-flvector))
+
 ;; flvector sequence tests
 
 (test-sequence [(1.0 2.0 3.0)] (flvector 1.0 2.0 3.0))

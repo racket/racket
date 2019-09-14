@@ -1979,6 +1979,8 @@
           (parameterize ([current-directory tmp-dir])
             (for/hash ([f (mk)])
               (values f #t)))))
+  (err/rt-test (for/list ([f (in-directory tmp-dir #f '?)]) f))
+  (err/rt-test (in-directory tmp-dir #f '?))
   (delete-directory/files tmp-dir))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
