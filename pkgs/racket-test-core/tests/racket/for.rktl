@@ -12,10 +12,8 @@
 (test-sequence [(3.0 4.0 5.0)] (in-range 3.0 6.0))
 (test-sequence [(3.0 3.5 4.0 4.5 5.0 5.5)] (in-range 3.0 6.0 0.5))
 (test-sequence [(3.0 3.1 3.2)] (in-range 3.0 3.3 0.1))
-(err/rt-test (for/list ([x (in-range)]) x))
-(err/rt-test (in-range))
-(err/rt-test (for/list ([x (in-naturals 0 1)]) x))
-(err/rt-test (in-naturals 0 1))
+(err/rt-test-sequence (in-range))
+(err/rt-test-sequence (in-naturals 0 1))
 
 (test-sequence [(a b c)] '(a b c))
 (test-sequence [(a b c)] (in-list '(a b c)))

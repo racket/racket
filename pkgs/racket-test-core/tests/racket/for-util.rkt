@@ -3,7 +3,8 @@
 (require (for-syntax racket/base))
 
 (provide test-multi-sequence
-         test-sequence)
+         test-sequence
+         err/rt-test-sequence)
 
 ;; Utilities used by various tests of sequences
 
@@ -125,3 +126,14 @@
        (test-multi-sequence [seq] gen))]
     [(_ seqs gen)
      (test-multi-sequence seqs gen)]))
+
+(define-syntax err/rt-test-sequence
+  (syntax-rules ()
+    [(_ gen . rest)
+     (begin
+       ;; Tests specific to single-values:
+       (err/rt-test (for ([i gen]) i) . rest)
+       (err/rt-test (for/list ([i gen]) i) . rest)
+       (err/rt-test (for/list~ ([i gen]) i) . rest)
+       (err/rt-test gen . rest)
+       (err/rt-test (for ([(i j) gen]) i) . rest))]))
