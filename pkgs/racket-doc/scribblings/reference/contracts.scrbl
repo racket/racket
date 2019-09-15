@@ -1437,7 +1437,15 @@ arguments:
 @racketblock[(->i ()
                   (#:x [x number?]
                    #:y [y (x) (>=/c x)])
-                  [result (x y) (and/c number? (>=/c (+ x y)))])]
+                  [result (x y)
+                   (and/c number?
+                          (if (and (number? x) (number? y))
+                              (>=/c (+ x y))
+                              any/c))])]
+The conditional in the range that tests @racket[_x] and @racket[_y]
+is necessary to cover the situation where @racket[_x] or @racket[_y]
+are not supplied by the calling context (meaning they might be bound
+to @racket[the-unsupplied-arg]).
 
 The contract expressions are not always evaluated in
 order. First, if there is no dependency for a given contract expression,
@@ -1455,11 +1463,11 @@ there is no dependency between two arguments (or the result and an
 argument), then the contract that appears earlier in the source text is
 evaluated first.
 
- If all of the identifier positions of the range
-contract are @racket[_]s (underscores), then the range contract expressions
-are evaluated when the function is called instead of when it returns.
-Otherwise, dependent range expressions are evaluated when the function
- returns.
+ If all of the identifier positions of a range contract with
+ a dependency are @racket[_]s (underscores), then the range
+ contract expressions are evaluated when the function is
+ called instead of when it returns. Otherwise, dependent
+ range expressions are evaluated when the function returns.
 
  If there are optional arguments that are not supplied, then
  the corresponding variables will be bound to a special value
