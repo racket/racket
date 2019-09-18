@@ -64,17 +64,19 @@
 
 ;; in atomic mode
 (define (fd-semaphore-poll-ready?)
-  (unless (eq? shared-ltps rktio_NULL)
-    (rktio_ltps_poll rktio shared-ltps)
-    (let loop ([did? #f])
-      (define h (rktio_ltps_get_signaled_handle rktio shared-ltps))
-      (cond
-        [(rktio-error? h)
-         ;; Could log an error that isn't RKTIO_ERROR_LTPS_NOT_FOUND
-         did?]
-        [else
-         (define ib (address->immobile-cell (rktio_ltps_handle_get_data rktio h)))
-         (semaphore-post-all (immobile-cell-ref ib))
-         (free-immobile-cell ib)
-         (rktio_free h)
-         (loop #t)]))))
+  (cond
+    [(eq? shared-ltps rktio_NULL) #f]
+    [else
+     (rktio_ltps_poll rktio shared-ltps)
+     (let loop ([did? #f])
+       (define h (rktio_ltps_get_signaled_handle rktio shared-ltps))
+       (cond
+         [(rktio-error? h)
+          ;; Could log an error that isn't RKTIO_ERROR_LTPS_NOT_FOUND
+          did?]
+         [else
+          (define ib (address->immobile-cell (rktio_ltps_handle_get_data rktio h)))
+          (semaphore-post-all (immobile-cell-ref ib))
+          (free-immobile-cell ib)
+          (rktio_free h)
+          (loop #t)]))]))
