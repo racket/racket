@@ -47,7 +47,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
@@ -99,7 +99,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
@@ -167,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
@@ -217,7 +217,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
@@ -266,7 +266,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
@@ -318,7 +318,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:X64 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				SuppressStartupBanner="true"
@@ -386,7 +386,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions="/MACHINE:I386 /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"
@@ -436,7 +436,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll"
+				AdditionalOptions=" /DELAYLOAD:libracketxxxxxxx.dll"
 				AdditionalDependencies="delayimp.lib user32.lib"
 				OutputFile="..\..\..\RacketCGC.exe"
 				LinkIncremental="1"

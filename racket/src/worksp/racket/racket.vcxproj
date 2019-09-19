@@ -74,7 +74,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalOptions>/DELAYLOAD:libracketxxxxxxx.dll /DELAYLOAD:libmzgcxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/DELAYLOAD:libracketxxxxxxx.dll %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>delayimp.lib;user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>..\..\..\RacketCGC.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
