@@ -52,6 +52,7 @@
          $record?
          $primitive
          $unbound-object?
+         $app
          (rename-out [get-$unbound-object $unbound-object])
          meta-cond
          constant
@@ -597,6 +598,9 @@
   (syntax-rules ()
     [(_ name) name]
     [(_ opt name) name]))
+
+(define ($app proc . args)
+  (apply proc args))
 
 (define tc (make-hasheq))
 (define ($tc) tc)

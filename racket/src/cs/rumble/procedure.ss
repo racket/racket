@@ -58,7 +58,7 @@
   (syntax-case stx ()
     [(_ rator rand ...)
      (with-syntax ([n-args (length #'(rand ...))])
-       #'((extract-procedure rator n-args) rand ...))]))
+       #'(#3%$app (extract-procedure rator n-args) rand ...))]))
 
 (define |#%call-with-values|
   (|#%name|
