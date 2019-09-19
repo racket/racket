@@ -62,6 +62,7 @@
 (define (too-early-mutated-state? v)
   (or (eq? v 'too-early)
       (eq? v 'set!ed-too-early)
+      (eq? v 'undefined)
       (too-early? v)))
 
 (define (too-early-mutated-state-name v default-sym)

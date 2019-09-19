@@ -127,8 +127,8 @@
        (if serializable?
            (convert-for-serialize bodys #f datum-intern?)
            (values bodys null)))
-     ;; Collect source names for define identifiers, to the degree that the source
-     ;; name differs from the
+     ;; Collect source names for defined identifiers, to the degree that the
+     ;; original source name differs from the current name
      (define src-syms (get-definition-source-syms bodys))
      ;; Schemify the body, collecting information about defined names:
      (define-values (new-body defn-info mutated)
@@ -579,11 +579,16 @@
             (define int-id (unwrap id))
             (define ex (hash-ref exports int-id #f))
             (define new-rhs (schemify rhs))
+            (define state (hash-ref mutated int-id #f))
             (cond
               [ex
-               `(,(if allow-set!-undefined? 'variable-set! 'variable-set!/check-undefined) ,(export-id ex) ,new-rhs)]
+               (define set-id
+                 (if (or allow-set!-undefined?
+                         (not (too-early-mutated-state? state)))
+                     'variable-set!
+                     'variable-set!/check-undefined))
+               `(,set-id ,(export-id ex) ,new-rhs)]
               [else
-               (define state (hash-ref mutated int-id #f))
                (cond
                  [(and (too-early-mutated-state? state)
                        (not for-cify?))
@@ -785,7 +790,10 @@
                  (cond
                    [(and (via-variable-mutated-state? state)
                          (hash-ref exports u-v #f))
-                    => (lambda (ex) `(variable-ref ,(export-id ex)))]
+                    => (lambda (ex)
+                         (if (too-early-mutated-state? state)
+                             `(variable-ref ,(export-id ex))
+                             `(variable-ref/no-check ,(export-id ex))))]
                    [(hash-ref imports u-v #f)
                     => (lambda (im)
                          (define k (import-lookup im))
