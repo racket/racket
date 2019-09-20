@@ -286,7 +286,7 @@
        (values (reannotate v `(if ,new-tst ,new-thn ,new-els))
                new-free/els
                new-lifts/els)]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (define sub-convert-mode (convert-mode-non-tail convert-mode))
        (define-values (new-key new-free/key new-lifts/key)
          (jitify-expr key env mutables free lifts sub-convert-mode #f in-name))
@@ -294,7 +294,7 @@
          (jitify-expr val env mutables new-free/key new-lifts/key sub-convert-mode #f in-name))
        (define-values (new-body new-free/body new-lifts/body)
          (jitify-expr body env mutables new-free/val new-lifts/val convert-mode name in-name))
-       (values (reannotate v `(with-continuation-mark ,new-key ,new-val ,new-body))
+       (values (reannotate v `(with-continuation-mark* ,mode ,new-key ,new-val ,new-body))
                new-free/body
                new-lifts/body)]
       [`(quote ,_) (values v free lifts)]
@@ -651,7 +651,7 @@
        (find-mutable env tst
                      (find-mutable env thn
                                    (find-mutable env els accum)))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (find-mutable env key
                      (find-mutable env val
                                    (find-mutable env body accum)))]
@@ -797,7 +797,7 @@
           (record-sizes! tst sizes)
           (record-sizes! thn sizes)
           (record-sizes! els sizes))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (+ 1
           (record-sizes! key sizes)
           (record-sizes! val sizes)

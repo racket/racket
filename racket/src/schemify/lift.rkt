@@ -102,7 +102,7 @@
          (lift-in-expr? v))]
       [`(if ,tst ,thn ,els)
        (or (lift-in-expr? tst) (lift-in-expr? thn) (lift-in-expr? els))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,_ ,key ,val ,body)
        (or (lift-in-expr? key) (lift-in-expr? val) (lift-in-expr? body))]
       [`(quote ,_) #f]
       [`(#%variable-reference . ,_) (error 'internal-error "unexpected variable reference")]
@@ -143,7 +143,7 @@
       [`(quote . ,_) #f]
       [`(if ,tst ,thn ,els)
        (or (lift? tst) (lift? thn) (lift? els))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,_ ,key ,val ,body)
        (or (lift? key) (lift? val) (lift? body))]
       [`(set! ,_ ,rhs) (lift? rhs)]
       [`(#%variable-reference) #f]
@@ -229,10 +229,12 @@
        (reannotate v `(if ,(lift-in-expr tst)
                           ,(lift-in-expr thn)
                           ,(lift-in-expr els)))]
-      [`(with-continuation-mark ,key ,val ,body)
-       (reannotate v `(with-continuation-mark ,(lift-in-expr key)
-                                              ,(lift-in-expr val)
-                                              ,(lift-in-expr body)))]
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
+       (reannotate v `(with-continuation-mark*
+                        ,mode
+                        ,(lift-in-expr key)
+                        ,(lift-in-expr val)
+                        ,(lift-in-expr body)))]
       [`(quote ,_) v]
       [`(#%variable-reference . ,_) (error 'internal-error "unexpected variable reference")]
       [`(set! ,id ,rhs)
@@ -310,7 +312,7 @@
               [frees+binds (compute-lifts! thn frees+binds lifts locals)]
               [frees+binds (compute-lifts! els frees+binds lifts locals)])
          frees+binds)]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,_ ,key ,val ,body)
        (let* ([frees+binds (compute-lifts! key frees+binds lifts locals)]
               [frees+binds (compute-lifts! val frees+binds lifts locals)]
               [frees+binds (compute-lifts! body frees+binds lifts locals)])
@@ -519,8 +521,8 @@
         [`(quote . ,_) v]
         [`(if ,tst ,thn ,els)
          (reannotate v `(if ,(convert tst) ,(convert thn) ,(convert els)))]
-        [`(with-continuation-mark ,key ,val ,body)
-         (reannotate v `(with-continuation-mark ,(convert key) ,(convert val) ,(convert body)))]
+        [`(with-continuation-mark* ,mode ,key ,val ,body)
+         (reannotate v `(with-continuation-mark* ,mode ,(convert key) ,(convert val) ,(convert body)))]
         [`(set! ,id ,rhs)
          (define info (and (hash-ref lifts (unwrap id) #f)))
          (cond

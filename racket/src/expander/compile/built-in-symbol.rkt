@@ -57,6 +57,7 @@
                letrec*
                define
                $value
+               with-continuation-mark*
                pariah
                variable-set!
                variable-ref

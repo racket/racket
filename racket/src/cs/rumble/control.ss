@@ -940,6 +940,48 @@
            (lambda ()
              body)))))]))
 
+;; Specializations of `with-continuation-mark*` as determined by a mode:
+(define-syntax with-continuation-mark*
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ mode key val body)
+       (case (syntax->datum #'mode)
+         [(general)
+          #'(with-continuation-mark key val body)]
+         [(push)
+          ;; Assume no mark in place for this frame
+          #'(let* ([k key]
+                   [v val])
+              (call-setting-continuation-attachment
+               (if (impersonator? k)
+                   (mark-frame-update empty-mark-frame k v)
+                   (cons k v))
+               (lambda ()
+                 body)))]
+         [(authentic)
+          ;; Assume `key` produces an authentic value
+          #'(let* ([k key]
+                   [v val])
+              (call-consuming-continuation-attachment
+               empty-mark-frame
+               (lambda (a)
+                 (call-setting-continuation-attachment
+                  (if a
+                      (mark-frame-update a k v)
+                      (cons k v))
+                  (lambda ()
+                    body)))))]
+         [(push-authentic)
+          ;; Assume no mark in place, and `key` produces an authentic value
+          #'(let* ([k key]
+                   [v val])
+              (call-setting-continuation-attachment
+               (cons k v)
+               (lambda ()
+                 body)))]
+         [else
+          (#%error 'with-continuation-mark* "unrecognized mode: ~s" #'mode)])])))
+
 ;; Return a continuation that expects a thunk to resume. That way, we
 ;; can can an `(end-uninterrupted)` and check for breaks in the
 ;; destination continuation

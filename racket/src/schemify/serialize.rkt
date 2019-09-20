@@ -64,8 +64,8 @@
                   ,@(convert-body bodys))]
               [`(if ,tst ,thn ,els)
                `(if ,(convert tst) ,(convert thn) ,(convert els))]
-              [`(with-continuation-mark ,key ,val ,body)
-               `(with-continuation-mark ,(convert key) ,(convert val) ,(convert body))]
+              [`(with-continuation-mark* ,mode ,key ,val ,body)
+               `(with-continuation-mark* ,mode ,(convert key) ,(convert val) ,(convert body))]
               [`(begin ,exps ...)
                `(begin . ,(convert-body exps))]
               [`(begin0 ,exps ...)
@@ -120,7 +120,7 @@
        (or (convert-any? tst)
            (convert-any? thn)
            (convert-any? els))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,_ ,key ,val ,body)
        (or (convert-any? key)
            (convert-any? val)
            (convert-any? body))]

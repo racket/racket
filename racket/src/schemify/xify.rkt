@@ -32,8 +32,8 @@
         `(begin . ,(xify-body body env))]
        [`(if ,tst ,thn ,els)
         `(if ,(xify tst env) ,(xify thn env) ,(xify els env))]
-       [`(with-continuation-mark ,key ,val ,body)
-        `(with-continuation-mark ,(xify key env) ,(xify val env) ,(xify body env))]
+       [`(with-continuation-mark* ,mode ,key ,val ,body)
+        `(with-continuation-mark* ,mode ,(xify key env) ,(xify val env) ,(xify body env))]
        [`(set! ,id ,rhs)
         `(set! ,(xify id env) ,(xify rhs env))]
        ;; Catch-all for other forms, which we can treat like applications

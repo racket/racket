@@ -29,6 +29,7 @@
           unsafe-call-with-composable-continuation/no-wind
 
           with-continuation-mark
+          with-continuation-mark* ; not exported to Racket
           (rename [call-with-immediate-continuation-mark/inline
                    call-with-immediate-continuation-mark]
                   [call-with-immediate-continuation-mark

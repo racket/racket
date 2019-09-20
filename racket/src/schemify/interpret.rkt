@@ -243,7 +243,7 @@
                (compile-expr tst env stack-depth stk-i #f)
                (add-clears new-then then-stk-i all-clear)
                (add-clears new-else else-stk-i all-clear))]
-      [`(with-continuation-mark ,key ,val ,body)
+      [`(with-continuation-mark* ,mode ,key ,val ,body)
        (define new-body (compile-expr body env stack-depth stk-i tail?))
        (define new-val (compile-expr val env stack-depth stk-i #f))
        (vector 'wcm
@@ -841,7 +841,8 @@
                                          (letrec ([ok 'ok])
                                            (set! other (call-with-values (lambda () (values 71 (begin0 88 ok)))
                                                          (lambda (v q) (list q v))))
-                                           (with-continuation-mark
+                                           (with-continuation-mark*
+                                            general
                                             'x 'cm/x
                                             (list (if s s #f) x ok other
                                                   (f 'vec) (g 'also-vec 'more)
