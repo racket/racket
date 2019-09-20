@@ -252,7 +252,10 @@
                                      allow-set!-undefined?
                                      add-import!
                                      for-cify? for-jitify?
-                                     unsafe-mode? allow-inline? no-prompt?))
+                                     unsafe-mode? allow-inline? no-prompt?
+                                     (if (and no-prompt? (null? (cdr l)))
+                                         'tail
+                                         'fresh)))
         ;; For the case that the right-hand side won't capture a
         ;; continuation or return multiple times, we can generate a
         ;; simple definition:
@@ -429,9 +432,9 @@
 ;; a 'too-early state in `mutated` for a `letrec`-bound variable can be
 ;; effectively canceled with a mapping in `knowns`.
 (define (schemify v prim-knowns primitives knowns mutated imports exports simples allow-set!-undefined? add-import!
-                  for-cify? for-jitify? unsafe-mode? allow-inline? no-prompt?)
+                  for-cify? for-jitify? unsafe-mode? allow-inline? no-prompt? wcm-state)
   ;; `wcm-state` is one of: 'tail (= unknown), 'fresh (= no marks), or 'marked (= some marks)
-  (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state 'tail] [v v])
+  (let schemify/knowns ([knowns knowns] [inline-fuel init-inline-fuel] [wcm-state wcm-state] [v v])
     (define (schemify v wcm-state)
       (define s-v
         (reannotate
@@ -864,4 +867,4 @@
          (cons (schemify (car l) 'fresh)
                (schemify-body (cdr l) wcm-state))]))
 
-    (schemify v 'fresh)))
+    (schemify v wcm-state)))
