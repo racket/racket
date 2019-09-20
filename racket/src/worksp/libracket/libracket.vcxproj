@@ -245,10 +245,6 @@
       <Project>{abc29f1e-06fd-4e39-97ff-1c7922f6901a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\libmzgc\libmzgc.vcxproj">
-      <Project>{66548e7b-294e-40ef-b7c0-c8d6d7e6234f}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\sgc\sgc.vcxproj">
       <Project>{8128f0ae-848a-4985-945a-568796a6ddd7}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

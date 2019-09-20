@@ -143,8 +143,8 @@ To build GRacketCGC, build the GRacket solution:
 
 The build processes for RacketCGC and GRacketCGC automatically builds
 
-  libmzgc    - makes racket\lib\libmzgcxxxxxxx.dll and
-               racket\src\worksp\libmzgc\Release\libmzgcxxxxxxx.lib
+  sgc        - makes racket\lib\libmzgcxxxxxxx.dll and
+               racket\src\worksp\sgc\Release\libmzgcxxxxxxx.lib
 
   libracket  - makes racket\lib\libracketxxxxxxx.dll and
                racket\src\worksp\mzsrc\Release\mzsrcxxxxxxx.lib

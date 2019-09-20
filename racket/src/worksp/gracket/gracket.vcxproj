@@ -199,10 +199,6 @@ addman.bat
     <None Include="WATCH1.CUR" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\libmzgc\libmzgc.vcxproj">
-      <Project>{66548e7b-294e-40ef-b7c0-c8d6d7e6234f}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\libracket\libracket.vcxproj">
       <Project>{a6713577-7dfb-48f8-b8c1-7db2d7c51f90}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -24,7 +24,5 @@
 	(when m
 	  (fprintf o "    ~a @~a\n" (caddr m) (cadr m))))))))
 
-(gen-one "libmzgc")
 (gen-one "libracket")
 (gen-one "libracket3m")
-
