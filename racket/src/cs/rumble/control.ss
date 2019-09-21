@@ -1077,9 +1077,11 @@
 ;; It's a macro to ensure that the underlying `call-getting-continuation-attachment`
 ;; is exposed.
 (define-syntax (call-with-immediate-continuation-mark/inline stx)
-  (syntax-case stx (lambda)
+  (syntax-case stx (lambda |#%name|)
     [(_ key-expr proc-expr)
      #'(call-with-immediate-continuation-mark/inline key-expr proc-expr #f)]
+    [(_ key-expr (|#%name| _ (lambda (arg) body ...)) default-v-expr)
+     #'(call-with-immediate-continuation-mark/inline key-expr (lambda (arg) body ...) #f)]
     [(_ key-expr (lambda (arg) body ...) default-v-expr)
      #'(call-getting-continuation-attachment
         empty-mark-frame
