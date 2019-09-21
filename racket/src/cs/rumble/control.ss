@@ -1106,14 +1106,43 @@
   (case-lambda
     [(marks key) (continuation-mark-set-first marks key #f)]
     [(marks key none-v)
-     (continuation-mark-set-first marks key none-v
-                                  ;; Treat `break-enabled-key` and `parameterization-key`, specially
-                                  ;; so that things like `current-break-parameterization` work without
-                                  ;; referencing the root continuation prompt tag
-                                  (if (or (eq? key break-enabled-key)
-                                          (eq? key parameterization-key))
-                                      the-root-continuation-prompt-tag
-                                      the-default-continuation-prompt-tag))]
+     (let ([prompt-tag
+            ;; Treat `break-enabled-key` and `parameterization-key`, specially
+            ;; so that things like `current-break-parameterization` work without
+            ;; referencing the root continuation prompt tag
+            (if (or (eq? key break-enabled-key)
+                    (eq? key parameterization-key))
+                the-root-continuation-prompt-tag
+                the-default-continuation-prompt-tag)])
+       (cond
+         [(not (or marks
+                   (impersonator? key)
+                   (current-future)))
+          ;; Fast path for simple and common case:
+          (let ([v (marks-search (current-mark-stack)
+                                 key
+                                 #f ; at-outer?
+                                 prompt-tag
+                                 #f)])
+            (if (eq? v none)
+                (let ([v (marks-search (get-rest-mark-chain (current-mark-splice) (current-metacontinuation))
+                                       key
+                                       #t ; at-outer?
+                                       prompt-tag
+                                       #f)])
+                  (if (eq? v none)
+                      (cond
+                        [(eq? key parameterization-key)
+                         empty-parameterization]
+                        [(eq? key break-enabled-key)
+                         (current-engine-init-break-enabled-cell none-v)]
+                        [else
+                         none-v])
+                      v))
+                v))]
+         [else
+          ;; General path:
+          (continuation-mark-set-first marks key none-v prompt-tag)]))]
     [(marks key none-v orig-prompt-tag)
      (check who continuation-mark-set? :or-false marks)
      (check who continuation-prompt-tag? orig-prompt-tag)
@@ -1161,7 +1190,7 @@
 ;; The result is `none` is not found.
 ;; The result is `none2` if `need-tag?` and the prompt tag is never found.
 (define (marks-search elems key at-outer? prompt-tag need-tag?)
-  (let loop ([elems elems] [elems/cache-pos elems] [cache-step? #f] [depth 0])
+  (let loop ([elems elems] [elems/cache-pos elems] [depth 0])
     (cond
      [(or (null? elems)
           (and at-outer?
@@ -1209,13 +1238,19 @@
                              none
                              (marks-search marks key #f #f #f)))
                        ;; We're looking at just one frame:
-                       (extract-mark-from-frame* t key none #f))])
+                       (cond
+                         ;; Inline common case:
+                         [(pair? t)
+                          (if (eq? (car t) key)
+                              (cdr t)
+                              none)]
+                         [else
+                          (extract-mark-from-frame* t key none #f)]))])
             (cond
              [(eq? v none)
               ;; Not found at this point; keep looking
               (loop (cdr elems)
-                    (if cache-step? (cdr elems/cache-pos) elems/cache-pos)
-                    (not cache-step?)
+                    (if (fxodd? depth) (cdr elems/cache-pos) elems/cache-pos)
                     (fx+ 1 depth))]
              [else
               ;; Found it
@@ -1225,7 +1260,7 @@
 ;; To make `continuation-mark-set-first` constant-time, cache
 ;; a key--value mapping at a point that's half-way in
 (define (cache-result! marks marks/cache-pos depth key v at-outer? prompt-tag)
-  (unless (< depth 16)
+  (unless (< depth 8)
     (let* ([t (car marks/cache-pos)]
            [new-t (if (elem+cache? t)
                       t
