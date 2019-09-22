@@ -4565,6 +4565,9 @@ static MZ_NORETURN void *do_raise_inside_barrier(void)
       /* return from uncaught-exception handler */
       p[0] = scheme_false;
       nested_exn_handler(scheme_make_pair(scheme_false, arg), 1, p);
+#ifndef MZ_PRECISE_RETURN_SPEC
+      return NULL;
+#endif
     }
   }
 }
