@@ -1194,12 +1194,13 @@
     (cond
      [(or (null? elems)
           (and at-outer?
+               (not (eq? prompt-tag the-root-continuation-prompt-tag))
                (eq? (mark-chain-frame-tag (elem+cache-strip (car elems))) prompt-tag)))
       ;; Not found
       (cond
        [(and need-tag? (null? elems)) none2]
        [else
-        (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
+        (cache-result! elems/cache-pos depth key none at-outer? prompt-tag)
         none])]
      [else
       (let t-loop ([t (car elems)])
@@ -1223,11 +1224,11 @@
                   (t-loop (elem+cache-elem t))]
                  [(eq? v none)
                   ;; The cache records that it's not in the rest:
-                  (cache-result! elems elems/cache-pos depth key none at-outer? prompt-tag)
+                  (cache-result! elems/cache-pos depth key none at-outer? prompt-tag)
                   none]
                  [else
                   ;; The cache provides a value from the rest:
-                  (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
+                  (cache-result! elems/cache-pos depth key v at-outer? prompt-tag)
                   v]))]))]
          [else
           ;; Try the element:
@@ -1239,11 +1240,12 @@
                              (marks-search marks key #f #f #f)))
                        ;; We're looking at just one frame:
                        (cond
-                         ;; Inline common case:
+                         ;; Inline common cases:
                          [(pair? t)
                           (if (eq? (car t) key)
                               (cdr t)
                               none)]
+                         [(eq? t 'empty) none]
                          [else
                           (extract-mark-from-frame* t key none #f)]))])
             (cond
@@ -1254,12 +1256,12 @@
                     (fx+ 1 depth))]
              [else
               ;; Found it
-              (cache-result! elems elems/cache-pos depth key v at-outer? prompt-tag)
+              (cache-result! elems/cache-pos depth key v at-outer? prompt-tag)
               v]))]))])))
 
 ;; To make `continuation-mark-set-first` constant-time, cache
 ;; a key--value mapping at a point that's half-way in
-(define (cache-result! marks marks/cache-pos depth key v at-outer? prompt-tag)
+(define (cache-result! marks/cache-pos depth key v at-outer? prompt-tag)
   (unless (< depth 8)
     (let* ([t (car marks/cache-pos)]
            [new-t (if (elem+cache? t)
@@ -1272,8 +1274,8 @@
                                                (if at-outer?
                                                    ;; At the metacontinuation level, cache depends on the
                                                    ;; prompt tag:
-                                                   (let ([old (intmap-ref (elem+cache-cache new-t) key none2)])
-                                                     (intmap-set (if (eq? old none2) empty-hasheq old) prompt-tag v))
+                                                   (let ([old (intmap-ref (elem+cache-cache new-t) key empty-hasheq)])
+                                                     (intmap-set old prompt-tag v))
                                                    v))))))
 
 (define/who continuation-mark-set->list

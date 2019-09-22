@@ -39,12 +39,12 @@
    (extend-parameterization (current-parameterization) parameter value)
    (thunk)))
 
+;; Not exported; the one for `racket/base` is in `racket/private/more-scheme`
 (define (current-parameterization)
   (continuation-mark-set-first
    #f
    parameterization-key
-   empty-parameterization
-   the-root-continuation-prompt-tag))
+   empty-parameterization))
 
 (define (parameter-cell key)
   (intmap-ref (parameterization-ht
