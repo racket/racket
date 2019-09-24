@@ -515,6 +515,10 @@
 
    (comp 'yes (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]) (expand #'(match-lambda ((a ?) #f))) 'no))
    (comp 'yes (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]) (expand #'(match-lambda ((?) #f))) 'no))
+   (comp 'yes (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]
+                              [exn:fail? (lambda _ 'no)])
+                (expand #'(match 1 [1 (=> (fail)) 1]))
+                'no))
 
    (comp
     'yes
