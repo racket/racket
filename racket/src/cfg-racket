@@ -1478,7 +1478,7 @@ Optional Features:
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
-  --enable-sdk7=<path>    use Mac OS 10.7 SDK directory
+  --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
