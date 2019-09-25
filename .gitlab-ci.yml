@@ -51,13 +51,13 @@ prepare-cache:llvm:
 # Build cgc
 build:racket:cgc:
   stage: stage2
+  image: pmatos/racket-ci:builddeps
+  needs: []
   tags:
     - linux
     - x86_64
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
   script:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-cgcdefault --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread
@@ -70,14 +70,14 @@ build:racket:cgc:
 
 build:racket:3m:
   stage: stage3
+  image: pmatos/racket-ci:builddeps
+  needs: ["build:racket:cgc"]
   tags:
     - linux
     - x86_64
   variables:
     CGC_INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
     INSTALL_DIR: $CI_PROJECT_DIR/install/racket3m
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
   script:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread --enable-racket=$CGC_INSTALL_DIR/bin/racket
@@ -92,14 +92,14 @@ build:racket:3m:
 
 build:racket:cs:
   stage: stage4
+  image: pmatos/racket-ci:builddeps
+  needs: ["build:racket:3m"]
   tags:
     - linux
     - x86_64
   variables:
     MMM_INSTALL_DIR: $CI_PROJECT_DIR/install/racket3m
     INSTALL_DIR: $CI_PROJECT_DIR/install/racketcs
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++ uuid-dev git
   script:
     - cd racket/src
     - rm -r ChezScheme || true
@@ -117,6 +117,7 @@ build:racket:cs:
 # Build racket with scan-build
 scan:racket:cgc:
   stage: stage2
+  needs: ["prepare-cache:llvm"]
   tags:
     - linux
     - x86_64
@@ -141,6 +142,7 @@ scan:racket:cgc:
 
 scan:racket:3m:
   stage: stage3
+  needs: ["prepare-cache:llvm", "build:racket:cgc"]
   tags:
     - linux
     - x86_64
@@ -167,6 +169,7 @@ scan:racket:3m:
 
 scan:racket:cs:
   stage: stage4
+  needs: ["prepare-cache:llvm", "build:racket:3m"]
   tags:
     - linux
     - x86_64
@@ -368,6 +371,7 @@ scan:racket:cs:
 # Test: test:racket:test
 test:racket:test:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:racket:test
   allow_failure: true
   dependencies:
@@ -382,6 +386,7 @@ test:racket:test:cgc:
 
 test:racket:test:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:racket:test
   dependencies:
@@ -396,6 +401,7 @@ test:racket:test:3m:
 
 test:racket:test:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   allow_failure: true
   extends: .test:racket:test
   dependencies:
@@ -411,6 +417,7 @@ test:racket:test:cs:
 # Test: test:racket:contract:all
 test:racket:contract:all:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:cgc
@@ -424,6 +431,7 @@ test:racket:contract:all:cgc:
 
 test:racket:contract:all:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:3m
@@ -437,6 +445,7 @@ test:racket:contract:all:3m:
 
 test:racket:contract:all:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:cs
@@ -451,6 +460,7 @@ test:racket:contract:all:cs:
 # Test: test:json:json
 test:json:json:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:json:json
   dependencies:
     - build:racket:cgc
@@ -464,6 +474,7 @@ test:json:json:cgc:
 
 test:json:json:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:json:json
   dependencies:
     - build:racket:3m
@@ -477,6 +488,7 @@ test:json:json:3m:
 
 test:json:json:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:json:json
   dependencies:
     - build:racket:cs
@@ -491,6 +503,7 @@ test:json:json:cs:
 # Test: test:file:main
 test:file:main:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:file:main
   dependencies:
     - build:racket:cgc
@@ -504,6 +517,7 @@ test:file:main:cgc:
 
 test:file:main:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:file:main
   dependencies:
     - build:racket:3m
@@ -517,6 +531,7 @@ test:file:main:3m:
 
 test:file:main:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:file:main
   dependencies:
     - build:racket:cs
@@ -531,6 +546,7 @@ test:file:main:cs:
 # Test: test:net:head
 test:net:head:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:head
   dependencies:
     - build:racket:cgc
@@ -542,6 +558,7 @@ test:net:head:cgc:
 
 test:net:head:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:head
   dependencies:
     - build:racket:3m
@@ -555,6 +572,7 @@ test:net:head:3m:
 
 test:net:head:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:head
   dependencies:
     - build:racket:cs
@@ -569,6 +587,7 @@ test:net:head:cs:
 # Test: test:net:uri-codec
 test:net:uri-codec:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:cgc
@@ -582,6 +601,7 @@ test:net:uri-codec:cgc:
 
 test:net:uri-codec:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:3m
@@ -595,6 +615,7 @@ test:net:uri-codec:3m:
 
 test:net:uri-codec:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:cs
@@ -609,6 +630,7 @@ test:net:uri-codec:cs:
 # Test: test:net:url
 test:net:url:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:url
   dependencies:
     - build:racket:cgc
@@ -622,6 +644,7 @@ test:net:url:cgc:
 
 test:net:url:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:net:url
   dependencies:
@@ -636,6 +659,7 @@ test:net:url:3m:
 
 test:net:url:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:url
   dependencies:
     - build:racket:cs
@@ -650,6 +674,7 @@ test:net:url:cs:
 # Test: test:net:url-port
 test:net:url-port:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:url-port
   dependencies:
     - build:racket:cgc
@@ -663,6 +688,7 @@ test:net:url-port:cgc:
 
 test:net:url-port:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:net:url-port
   dependencies:
@@ -677,6 +703,7 @@ test:net:url-port:3m:
 
 test:net:url-port:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:url-port
   dependencies:
     - build:racket:cs
@@ -691,6 +718,7 @@ test:net:url-port:cs:
 # Test: test:net:encoders
 test:net:encoders:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:cgc
@@ -704,6 +732,7 @@ test:net:encoders:cgc:
 
 test:net:encoders:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:3m
@@ -717,6 +746,7 @@ test:net:encoders:3m:
 
 test:net:encoders:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:cs
@@ -731,6 +761,7 @@ test:net:encoders:cs:
 # Test: test:openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev:basic
 test:openssl:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
@@ -745,6 +776,7 @@ test:openssl:cgc:
 
 test:openssl:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
@@ -759,6 +791,7 @@ test:openssl:3m:
 
 test:openssl:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
@@ -774,6 +807,7 @@ test:openssl:cs:
 # Test: test:match:main
 test:match:main:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:match:main
   dependencies:
     - build:racket:cgc
@@ -787,6 +821,7 @@ test:match:main:cgc:
 
 test:match:main:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:match:main
   dependencies:
     - build:racket:3m
@@ -800,6 +835,7 @@ test:match:main:3m:
 
 test:match:main:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:match:main
   dependencies:
     - build:racket:cs
@@ -814,6 +850,7 @@ test:match:main:cs:
 # Test: test:zo-path
 test:zo-path:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:zo-path
   dependencies:
     - build:racket:cgc
@@ -827,6 +864,7 @@ test:zo-path:cgc:
 
 test:zo-path:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:zo-path
   dependencies:
     - build:racket:3m
@@ -840,6 +878,7 @@ test:zo-path:3m:
 
 test:zo-path:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:zo-path
   dependencies:
     - build:racket:cs
@@ -854,6 +893,7 @@ test:zo-path:cs:
 # Test: test:xml:test
 test:xml:test:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:xml:test
   dependencies:
     - build:racket:cgc
@@ -867,6 +907,7 @@ test:xml:test:cgc:
 
 test:xml:test:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:xml:test
   dependencies:
     - build:racket:3m
@@ -880,6 +921,7 @@ test:xml:test:3m:
 
 test:xml:test:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:xml:test
   dependencies:
     - build:racket:cs
@@ -894,6 +936,7 @@ test:xml:test:cs:
 # Test: test:db:all-tests
 test:db:all-tests:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:cgc
@@ -907,6 +950,7 @@ test:db:all-tests:cgc:
 
 test:db:all-tests:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:3m
@@ -920,6 +964,7 @@ test:db:all-tests:3m:
 
 test:db:all-tests:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:cs
@@ -934,6 +979,7 @@ test:db:all-tests:cs:
 # Test: test:stxparse
 test:stxparse:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:stxparse
   dependencies:
     - build:racket:cgc
@@ -947,6 +993,7 @@ test:stxparse:cgc:
 
 test:stxparse:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:stxparse
   dependencies:
     - build:racket:3m
@@ -960,6 +1007,7 @@ test:stxparse:3m:
 
 test:stxparse:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:stxparse
   dependencies:
     - build:racket:cs
@@ -979,6 +1027,7 @@ test:stxparse:cs:
 .prepare:
   stage: stage5
   image: ubuntu:18.04
+  needs: []
   before_script:
     - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev uuid-dev
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -1065,6 +1114,7 @@ test:ubsan:cs:
 prepare-cache:qemu:
   image: ubuntu:18.04
   stage: stage1
+  needs: []
   tags:
     - linux
     - x86_64
@@ -1095,6 +1145,7 @@ prepare-cache:qemu:
       
 .preparearch:
   image: ubuntu:18.04
+  needs: []
   stage: stage6
   tags:
     - x86_64
@@ -1208,6 +1259,7 @@ test:emulation:ppc64el:
 
 .preparearch:nogenerations:
   image: ubuntu:18.04
+  needs: []
   stage: stage6
   only:
     - schedules
@@ -1286,6 +1338,7 @@ test:emulation:nogenerations:ppc64el:
 # CS
 .preparearch:cs:
   image: ubuntu:18.04
+  needs: []
   stage: stage5
   tags:
     - x86_64
