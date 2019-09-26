@@ -2443,5 +2443,34 @@
 (test #t dynamic-require ''syntax-local-value-free-id-context 'result)
 
 ;; ----------------------------------------
+;; Make sure replacing scopes of binding on reference does not
+;; turn a non-`syntax-original?` identifier into a `syntax-original?`
+;; one
+
+(let ([m #'(module m racket/base
+             (let ()
+               (define x 10)
+               (define-syntax y
+                 (syntax-rules ()
+                   [(_) x]))
+               (+ (y)
+                  x)))])
+  (define found-it? #f)
+  (define (check s)
+    (cond
+      [(syntax? s)
+       (when (and (syntax-original? s)
+                  (eq? (syntax-e s) 'x))
+         (test #f = (syntax-line s) (+ (syntax-line m) 6))
+         (when (= (syntax-line s) (+ (syntax-line m) 7))
+           (set! found-it? #t)))
+       (check (syntax-e s))]
+    [(pair? s)
+     (check (car s))
+     (check (cdr s))]))
+  (check (expand m))
+  (test #t values found-it?))
+
+;; ----------------------------------------
 
 (report-errs)
