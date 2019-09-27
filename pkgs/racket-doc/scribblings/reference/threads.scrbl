@@ -6,7 +6,7 @@
 @guideintro["concurrency"]{threads}
 
 See @secref["thread-model"] for basic information on the Racket
-thread model. See also @secref["futures"].
+thread model. See also @secref["futures"] and @secref["places"].
 
 When a thread is created, it is placed into the management of the
 @tech{current custodian} and added to the current @tech{thread
@@ -30,19 +30,6 @@ no visible windows or running timers.}
 A thread can be used as a @tech{synchronizable event} (see
 @secref["sync"]).  A thread is @tech{ready for synchronization} when
 @racket[thread-wait] would not block; @resultItself{thread}.
-
-All constant-time procedures and operations provided by Racket are
-thread-safe because they are @defterm{atomic}. For example,
-@racket[set!] assigns to a variable as an atomic action with respect
-to all threads, so that no thread can see a ``half-assigned''
-variable. Similarly, @racket[vector-set!] assigns to a vector
-atomically. The @racket[hash-set!] procedure is not atomic, but
-the table is protected by a lock; see @secref["hashtables"] for more
-information. Port operations are generally not atomic, but they are
-thread-safe in the sense that a byte consumed by one thread from an
-input port will not be returned also to another thread, and procedures
-like @racket[port-commit-peeked] and @racket[write-bytes-avail] offer
-specific concurrency guarantees.
 
 @;------------------------------------------------------------------------
 @section{Creating Threads}

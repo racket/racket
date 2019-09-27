@@ -168,7 +168,13 @@ The @racketmodname[racket] library combines
             #:location "Principles and Practice of Parallel Programming"
             #:date "1990")
 
- (bib-entry #:key "L'Ecuyer02"
+  (bib-entry #:key "Lamport79"
+             #:title "How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs"
+             #:author "Leslie Lamport"
+             #:location "IEEE Transactions on Computers"
+             #:date "179")
+
+  (bib-entry #:key "L'Ecuyer02"
             #:author "Pierre L'Ecuyer, Richard Simard, E. Jack Chen, and W. David Kelton"
             #:title "An Object-Oriented Random-Number Package With Many Long Streams and Substreams"
             #:location "Operations Research, 50(6)"
