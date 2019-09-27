@@ -952,8 +952,7 @@ used only to abort to the point of capture.
 Racket supports multiple @deftech{threads} of evaluation.  Threads run
 concurrently, in the sense that one thread can preempt another without
 its cooperation, but threads currently all run on the same processor
-(i.e., the same underlying operating system process and thread). See also
-@secref["futures"] and @secref["places"].
+(i.e., the same underlying operating system process and thread).
 
 Threads are created explicitly by functions such as @racket[thread]. 
 In terms of the evaluation model, each step in evaluation
@@ -1000,6 +999,21 @@ thread's value for a preserved thread cell serves as the initial value
 for the cell in the created thread. For a non-preserved thread cell, a
 new thread sees the same initial value (specified when the thread cell
 is created) as all other threads.
+
+@tech{Futures} and @tech{places} offer different kinds of concurrency
+and parallelism, and they have weaker guarantees about shared state.
+(Places can share state through functions like
+@racket[make-shared-bytes].) Each thread of evaluation in a future or
+place is constrained to behave consistent with the possibility of some
+other thread that might inspect any shared data starting at any point
+that a future or place starts. In the case that two futures or two
+places share state, each read or write operation to shared state
+corresponds to a read or write operation at the virtual-memory level,
+and the operations are constrained to the order they could be observed
+by other threads. However, Racket does not enforce additional
+guarantees about reordering that might be performed at the
+virtual-memory level or below, except in the case of operations that
+specify such guarantees explicitly (e.g., @racket[box-cas!]).
 
 @;------------------------------------------------------------------------
 @section[#:tag "parameter-model"]{Parameters}
