@@ -1529,5 +1529,21 @@
   (test 'ok values v))
 
 ;; ----------------------------------------
+;; Try to make a semaphore-post succeed at exactly
+;; the same time that a `sync/timeout` times out
+
+(for ([i 10])
+  (define s (make-semaphore))
+  (define t (thread
+             (lambda ()
+               (sleep (- 0.1 (* 0.001 (random))))
+               (semaphore-post s))))
+  (define r (sync/timeout 0.1 s))
+  (unless r
+    ;; This will get stuck if the success of time sync got lost
+    (sync s))
+  (thread-wait t))
+
+;; ----------------------------------------
 
 (report-errs)

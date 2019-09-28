@@ -121,13 +121,13 @@
                     timeout
                     (timeout-at . <= . (current-inexact-milliseconds)))
                (start-atomic)
-               (syncing-done! s none-syncer)
                (cond
                  [(syncing-selected s)
                   ;; Selected after all:
                   (end-atomic)
                   (loop #f #f)]
                  [else
+                  (syncing-done! s none-syncer)
                   (end-atomic)
                   ;; Return result in a thunk:
                   (lambda () #f)])]
