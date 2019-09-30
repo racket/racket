@@ -5,6 +5,15 @@ stages:
   - stage4
   - stage5
   - stage6
+
+# Workaround to gitlab#30361
+noNeeds:
+  image: alpine:latest 
+  stage: stage1
+  script:
+    - echo "This build is a workaround for 'https://gitlab.com/gitlab-org/gitlab/issues/30631'"
+  dependencies: []
+  
 # ---------------------------------------------------------------------------------------------------
 # Using debian:stable-slim to perform an llvm build with Z3 support
 # The reason this is necessary is that we need Z3 support in scan-build
@@ -52,7 +61,7 @@ prepare-cache:llvm:
 build:racket:cgc:
   stage: stage2
   image: pmatos/racket-ci:builddeps
-  needs: []
+  needs: ["noNeeds"]
   tags:
     - linux
     - x86_64
@@ -1027,7 +1036,7 @@ test:stxparse:cs:
 .prepare:
   stage: stage5
   image: ubuntu:18.04
-  needs: []
+  needs: ["noNeeds"]
   before_script:
     - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev uuid-dev
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -1114,7 +1123,6 @@ test:ubsan:cs:
 prepare-cache:qemu:
   image: ubuntu:18.04
   stage: stage1
-  needs: []
   tags:
     - linux
     - x86_64
@@ -1145,8 +1153,8 @@ prepare-cache:qemu:
       
 .preparearch:
   image: ubuntu:18.04
-  needs: []
   stage: stage6
+  needs: ["prepare-cache:qemu"]
   tags:
     - x86_64
     - privileged
@@ -1164,7 +1172,9 @@ prepare-cache:qemu:
     - prepare-cache:qemu
 
 test:native:armv7l:
-  extends: .preparearch
+  image: ubuntu:18.04
+  stage: stage6  
+  needs: ["noNeeds"]
   allow_failure: true
   variables:
     ARCH: "armv7l"
@@ -1172,6 +1182,15 @@ test:native:armv7l:
   tags:
     - armv7l
     - linux
+  before_script:
+    - ls -la
+    - find $INSTALL_DIR -type f
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - apt-get update
+  script:
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
 
 # Emulation targets
 test:emulation:arm64:
@@ -1259,7 +1278,7 @@ test:emulation:ppc64el:
 
 .preparearch:nogenerations:
   image: ubuntu:18.04
-  needs: []
+  needs: ["prepare-cache:qemu"]
   stage: stage6
   only:
     - schedules
@@ -1338,7 +1357,7 @@ test:emulation:nogenerations:ppc64el:
 # CS
 .preparearch:cs:
   image: ubuntu:18.04
-  needs: []
+  needs: ["prepare-cache:qemu"]
   stage: stage5
   tags:
     - x86_64
