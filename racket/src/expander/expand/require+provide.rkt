@@ -318,7 +318,7 @@
                                (if (procedure? ok-binding/delayed)
                                    (ok-binding/delayed)
                                    ok-binding/delayed)))
-       (define (raise-already-bound defined?)
+       (define (raise-already-bound defined? where)
          (raise-syntax-error who
                              (string-append "identifier already "
                                             (if defined? "defined" "required")
@@ -328,7 +328,12 @@
                                               [(= 1 phase) " for syntax"]
                                               [else (format " for phase ~a" phase)]))
                              orig-s
-                             id))
+                             id
+                             null
+                             (cond
+                               [(bulk-required? where)
+                                (format "\n  also provided by: ~.s" (syntax->datum (bulk-required-s where)))]
+                               [else ""])))
        (cond
          [(and (not at-mod)
                (not define-shadowing-require?))
@@ -364,7 +369,7 @@
           (define also-required (requires+provides-also-required r+p))
           (define prev-b (hash-ref also-required (module-binding-sym b) #f))
           (when (and prev-b (not (same-binding? ok-binding prev-b)))
-            (raise-already-bound #f))
+            (raise-already-bound #f #f))
           (hash-set! also-required (module-binding-sym b) ok-binding)
           (set-requires+provides-all-bindings-simple?! r+p #f)
           #t]
@@ -382,7 +387,7 @@
                  (set-requires+provides-all-bindings-simple?! r+p #f)
                  only-can-can-shadow-require?]
                 [define-shadowing-require? #f]
-                [else (raise-already-bound defined?)])))
+                [else (raise-already-bound defined? r)])))
           (cond
             [define-shadowing-require?
               ;; Not defined, but defining now (shadowing all requires);
