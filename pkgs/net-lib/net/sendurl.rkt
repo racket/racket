@@ -203,6 +203,8 @@
     (define json
       (with-handlers ([exn:fail? (λ (exn) (fail (exn-message exn)))])
         (read-json in)))
+    (when (eof-object? json)
+      (fail "didn't find LSHandlers key in (empty) json"))
     (define handlers (hash-ref json 'LSHandlers (λ () (fail "didn't find LSHandlers key in json"))))
     (unless ((listof hash?) handlers) (fail "confusing LSHandlers ~s" handlers))
     (define uri
