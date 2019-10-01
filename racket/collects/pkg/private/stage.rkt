@@ -904,10 +904,11 @@
 
 (define (drop-redundant-files pkg-dir)
   ;; Ad hoc space-saving rule: for an installation-wide package, remove
-  ;; any redundant "COPYING.txt" or "COPYING_LESSER.txt" files.
+  ;; any redundant license files.
   (when (and (eq? 'installation (current-pkg-scope))
              (find-share-dir))
-    (for ([i (in-list '("COPYING.txt" "COPYING_LESSER.txt"))])
+    (for ([i (in-list '("COPYING.txt" "COPYING_LESSER.txt" "COPYRIGHT.txt"
+                                      "LICENSE-APACHE" "LICENSE-MIT"))])
       (define pkg-file (build-path pkg-dir i))
       (define share-file (build-path (find-share-dir) i))
       (when (and (file-exists? pkg-file)
