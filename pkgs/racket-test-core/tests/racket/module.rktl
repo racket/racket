@@ -3009,5 +3009,24 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test 'yes eval 'i))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check reporting of require conflicts includes "who" provided the binding first
+
+(module require-conflict-is-sourced-a racket/base
+  (provide x)
+  (define x 'a))
+
+(module require-conflict-is-sourced-b racket/base
+  (provide x)
+  (define x 'b))
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (require 'require-conflict-is-sourced-a
+              'require-conflict-is-sourced-b)))
+ (lambda (exn)
+   (regexp-match? #rx"already required\n  at: x\n  in: \\(quote require-conflict-is-sourced-b\\)\n  also provided by: \\(quote require-conflict-is-sourced-a\\)" (exn-message exn))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
