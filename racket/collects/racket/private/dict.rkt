@@ -2,6 +2,7 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
+	 racket/list
          racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
@@ -131,7 +132,7 @@
      [else
       (let ([a (car xd)])
         (if (equal? (car a) key)
-            (cdr xd)
+            (loop (cdr xd))
             (cons a (loop (cdr xd)))))])))
 
 (define (vector-iterate-first d)
@@ -159,23 +160,23 @@
 (define (assoc-count d)
   (unless (assoc? d)
     (raise-argument-error 'dict-count "dict?" d))
-  (length d))
+  (length (assoc-keys d)))
 
 (struct assoc-iter (head pos))
 
 (define (assoc-iterate-first d)
   (unless (assoc? d)
     (raise-argument-error 'dict-iterate-first "dict?" d))
-  (if (null? d) #f (assoc-iter d d)))
+  (if (null? d) #f (assoc-iter d (assoc->list d))))
 
 (define (assoc-iterate-next d i)
   (cond
     [(and (assoc-iter? i)
-          (eq? d (assoc-iter-head i)))
+          (equal? d (assoc-iter-head i)))
      (let ([pos (cdr (assoc-iter-pos i))])
        (if (null? pos)
            #f
-           (assoc-iter d pos)))]
+           (assoc-iter d (assoc->list pos))))]
     [(assoc? d)
      (raise-mismatch-error
       'dict-iterate-next
@@ -251,16 +252,28 @@
     (proc (car x) (cdr x))))
 
 (define (assoc-keys d)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-keys "dict?" d))
-    (car x)))
+  (remove-duplicates
+    (for/list ([x (in-list d)])
+      (unless (pair? x)
+        (raise-argument-error 'dict-keys "dict?" d))
+      (car x))))
+
+(define (assoc-map-unique f d)
+  (let loop ([xd d]
+	     [keys (assoc-keys d)])
+    (cond
+      [(or (null? xd) (null? keys)) null]
+      [else
+       (let ([a (car xd)])
+         (if (equal? (car a) (car keys))
+             (cons (f a) (loop (cdr xd) (cdr keys)))
+             (loop (cdr xd) (cdr keys))))])))
 
 (define (assoc-values d)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-values "dict?" d))
-    (cdr x)))
+  (assoc-map-unique cdr d))
+
+(define (assoc->list d)
+  (assoc-map-unique (lambda (x) x) d))
 
 (define (fallback-copy d)
   (unless (dict-implements? d 'dict-clear dict-set!)
@@ -406,7 +419,7 @@
     (define dict-for-each assoc-for-each)
     (define dict-keys assoc-keys)
     (define dict-values assoc-values)
-    (define dict->list values)
+    (define dict->list assoc->list)
     (define dict-empty? null?)
     (define dict-clear assoc-clear)])
   #:defaults ()
