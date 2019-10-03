@@ -292,8 +292,12 @@ Scheme_Object *scheme_write_linklet(Scheme_Object *obj)
 
   if (linklet->jit_ready)
     scheme_arg_mismatch("write",
-                        "cannot marshal linklet that has been evaluated",
+                        "cannot marshal linklet that has been evaluated: ",
                         obj);
+  if (!linklet->serializable)
+    scheme_contract_error("write",
+                          "linklet is not serializable",
+                          NULL);
 
   l = scheme_null;
   
@@ -404,6 +408,8 @@ Scheme_Object *scheme_read_linklet(Scheme_Object *obj, int unsafe_ok)
 
   linklet = MALLOC_ONE_TAGGED(Scheme_Linklet);
   linklet->so.type = scheme_linklet_type;
+
+  linklet->serializable = 1;
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   linklet->name = SCHEME_CAR(obj);

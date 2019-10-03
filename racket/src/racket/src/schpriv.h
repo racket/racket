@@ -3318,6 +3318,7 @@ struct Scheme_Linklet
 
   char jit_ready; /* true if the linklet is in has been prepared for the JIT */
   char reject_eval; /* true when loaded without the root inspector, for example */
+  char serializable; /* record whether the linklet was intended to be serialized */
 
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
 

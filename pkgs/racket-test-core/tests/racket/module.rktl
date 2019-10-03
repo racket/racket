@@ -3028,5 +3028,18 @@ case of module-leve bindings; it doesn't cover local bindings.
    (regexp-match? #rx"already required\n  at: x\n  in: \\(quote require-conflict-is-sourced-b\\)\n  also provided by: \\(quote require-conflict-is-sourced-a\\)" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the error is reasonable if `current-compile`
+;; is used directly and the result abused:
+
+(parameterize ([current-compile
+                (let ([orig-compile (current-compile)])
+                  (lambda (stx im?)
+                    (orig-compile stx #t)))]) ; #t argument sets up the abuse
+  (define c (compile '(module m racket/base)))
+  (err/rt-test (write c (open-output-bytes))
+               exn:fail:contract?
+               #rx"write: linklet is not serializable"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
