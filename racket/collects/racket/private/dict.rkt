@@ -2,7 +2,7 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
-	 racket/list
+         racket/list
          racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
@@ -260,7 +260,7 @@
 
 (define (assoc-map-unique f d)
   (let loop ([xd d]
-	     [keys (assoc-keys d)])
+             [keys (assoc-keys d)])
     (cond
       [(or (null? xd) (null? keys)) null]
       [else
