@@ -62,7 +62,7 @@
   (semaphore-wait ready-s)
   (thread-suspend t)
   (semaphore-post s)
-  (define (go ticks next-prefix complete expire)
+  (define (go ticks next-prefix complete-or-expire)
     (set! prefix next-prefix)
     (break-thread t)
     (thread-resume t)
@@ -85,9 +85,9 @@
        (sync t t2 (thread-suspend-evt t))))
     (cond
      [(thread-dead? t)
-      (apply complete 0 results)]
+      (complete-or-expire #f results 0)]
      [else
-      (expire go (if timeout? 0 10))]))
+      (complete-or-expire go #f (if timeout? 0 10))]))
   go)
 
 (define (engine-block)

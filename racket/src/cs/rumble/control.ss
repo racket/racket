@@ -310,14 +310,15 @@
                                          ;; ready:
                                          (proc))))])
                         ;; Prepare to use cc-guard, if one was enabled:
-                        (let ([cc-guard (or (metacontinuation-frame-cc-guard (car (current-metacontinuation)))
-                                            values)])
+                        (let ([cc-guard (metacontinuation-frame-cc-guard (car (current-metacontinuation)))])
                           ;; Continue normally; the metacontinuation could be different
                           ;; than when we captured this metafunction frame, though:
                           (resume-metacontinuation
                            delimit?
                            ;; Apply the cc-guard, if any, outside of the prompt:
-                           (lambda () (apply cc-guard results)))))))])
+                           (if cc-guard
+                               (lambda () (apply cc-guard results))
+                               results))))))])
               (cond
                [(aborting? r)
                 ;; Remove the prompt as we call the handler:
@@ -329,7 +330,35 @@
                 ;; We're returning normally; the metacontinuation frame has
                 ;; been popped already by `resume-metacontinuation`
                 (end-uninterrupted 'resume)
-                (r)])))))]))))
+                (if (#%procedure? r)
+                    (r)
+                    (if (and (pair? r) (null? (cdr r)))
+                        (car r)
+                        (#%apply values r)))])))))]))))
+
+;; Simplified `call-in-empty-metacontinuation-frame` suitable for swapping engines:
+(define (call-in-empty-metacontinuation-frame-for-swap proc)
+  (assert-in-uninterrupted)
+  (assert-not-in-system-wind)
+  (call/cc
+   (lambda (resume-k)
+     (#%$current-stack-link #%$null-continuation)
+     (current-mark-stack '())
+     (let ([mf (make-metacontinuation-frame #f
+                                            resume-k
+                                            (current-winders)
+                                            (current-mark-splice)
+                                            #f
+                                            #f
+                                            #f
+                                            #f)])
+       (current-winders '())
+       (current-mark-splice empty-mark-frame)
+       (current-metacontinuation (cons mf (current-metacontinuation)))
+       (let ([r (proc)])
+         (let ([mf (car (current-metacontinuation))])
+           (pop-metacontinuation-frame)
+           ((metacontinuation-frame-resume-k mf) r)))))))
 
 (define (metacontinuation-frame-update-mark-splice current-mf mark-splice)
   (make-metacontinuation-frame (metacontinuation-frame-tag current-mf)
@@ -995,7 +1024,7 @@
 ;; captured by `call/cc/end-uninterrupted`:
 (define (end-uninterrupted-with-values args)
   (end-uninterrupted/call-hook 'cc)
-  (apply values args))
+  (#%apply values args))
 
 (define (current-mark-chain)
   (get-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
@@ -1770,7 +1799,7 @@
               (current-winders winders)
               (call-winder-thunk 'dw-post post)
               (end-uninterrupted/call-hook 'dw)
-              (lambda () (apply values args))))))))))
+              (lambda () (#%apply values args))))))))))
 
 (define (call-winder-thunk who thunk)
   (with-continuation-mark
@@ -1884,11 +1913,7 @@
    [(current-system-wind-start-k)
     => (lambda (k) (swap-metacontinuation-with-system-wind saved proc k))]
    [else
-    (call-in-empty-metacontinuation-frame
-     #f
-     fail-abort-to-delimit-continuation
-     #f ; don't try to shift continuation marks
-     #t ; delimit
+    (call-in-empty-metacontinuation-frame-for-swap
      (lambda ()
        (let ([now-saved (make-saved-metacontinuation
                          (current-metacontinuation)
@@ -1923,7 +1948,7 @@
              proc
            (lambda args
              (lambda ()
-               (apply values args)))))
+               (#%apply values args)))))
        (lambda () (current-system-wind-start-k #f)))))))
 
 (define (swap-metacontinuation-with-system-wind saved proc start-k)

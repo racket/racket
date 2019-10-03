@@ -580,11 +580,12 @@
            (set-future*-state! f #f)
            (on-transition-to-unfinished)
            (future-suspend)))
-       (lambda (leftover-ticks result)
-         ;; Done --- completed or suspend (e.g., blocked)
-         (void))
-       (lambda (e timeout?)
-         (loop e))))
+       (lambda (e results leftover-ticks)
+         (cond
+           [e (loop e)]
+           [else
+            ;; Done --- completed or suspend (e.g., blocked)
+            (void)]))))
   (log-future 'end-work (future*-id f))
   (current-future 'worker)
   (set-box! (worker-current-future-box w) #f))

@@ -7,7 +7,7 @@
 ;; Don't mix Chez engines with this implementation, because we take
 ;; over the timer.
 
-(define-record engine-state (mc complete expire thread-cell-values init-break-enabled-cell reset-handler))
+(define-record engine-state (mc complete-or-expire thread-cell-values init-break-enabled-cell reset-handler))
 
 (define-virtual-register current-engine-state #f)
 
@@ -24,7 +24,18 @@
 (define (set-engine-exit-handler! proc)
   (set! engine-exit proc))
 
-(define (make-engine thunk prompt-tag abort-handler init-break-enabled-cell empty-config?)
+;; An engine is repesented by a procedure that takes thee arguments:
+;;   * ticks: number of ticks to run before exire
+;;   * prefix: thunk to invoke just before continuing (counts toward ticks)
+;;   * complete-or-expire: callback that accepts 3 arguments:
+;;      - engine or #f: an engine if the original `thunk` has not yet returned
+;;      - list or #f: a list if the original `thunk` has returned values
+;;      - remining-ticks: a number of ticks leftover due to complete or `(engine-block)`
+(define (make-engine thunk          ; can return any number of values
+                     prompt-tag     ; prompt to wrap around call to `thunk`
+                     abort-handler  ; handler for that prompt
+                     init-break-enabled-cell ; default break-enable cell
+                     empty-config?) ; whether to clone the current parameterization
   (let ([paramz (if empty-config?
                     empty-parameterization
                     (current-parameterization))])
@@ -57,22 +68,24 @@
    ;; For `continuation-marks`:
    [() to-saves]
    ;; Normal engine case:
-   [(ticks prefix complete expire)
+   [(ticks prefix complete-or-expire)
     (start-implicit-uninterrupted 'create)
     ((swap-metacontinuation
       to-saves
       (lambda (saves)
-        (current-engine-state (make-engine-state saves complete expire thread-cell-values
+        (current-engine-state (make-engine-state saves complete-or-expire thread-cell-values
                                                  init-break-enabled-cell (reset-handler)))
-        (reset-handler (lambda ()
-                         (end-uninterrupted 'reset)
-                         (if (current-engine-state)
-                             (engine-return (void))
-                             (chez:exit))))
+        (reset-handler engine-reset-handler)
         (timer-interrupt-handler engine-block-via-timer)
         (end-implicit-uninterrupted 'create)
         (set-timer ticks)
         (proc prefix))))]))
+
+(define (engine-reset-handler)
+  (end-uninterrupted 'reset)
+  (if (current-engine-state)
+      (engine-return (void))
+      (chez:exit)))
 
 (define (engine-block-via-timer)
   (cond
@@ -102,12 +115,13 @@
           (end-implicit-uninterrupted 'block)
           (current-engine-state #f)
           (lambda () ; returned to the `swap-continuation` in `create-engine`
-            ((engine-state-expire es)
+            ((engine-state-complete-or-expire es)
              (create-engine
               saves
               (lambda (prefix) prefix) ; returns `prefix` to the above "(("
               (engine-state-thread-cell-values es)
               (engine-state-init-break-enabled-cell es))
+             #f
              remain-ticks))))))]
    [() (engine-block #f)]))
 
@@ -125,7 +139,7 @@
       ;; as interrupts are enabled)
       (set-timer 1)])))
 
-(define (engine-return . args)
+(define (engine-return . results)
   (assert-not-in-uninterrupted)
   (timer-interrupt-handler void)
   (let ([es (current-engine-state)])
@@ -140,7 +154,7 @@
          (current-engine-state #f)
          (end-implicit-uninterrupted 'return)
          (lambda () ; returned to the `swap-continuation` in `create-engine`
-           (apply (engine-state-complete es) remain-ticks args)))))))
+           ((engine-state-complete-or-expire es) #f results remain-ticks)))))))
 
 (define (make-empty-thread-cell-values)
   (make-ephemeron-eq-hashtable))

@@ -50,7 +50,7 @@
 
 ;; in atomic mode and only in main pthread
 (define (flush-future-log)
-  (define new-events (unbox events))
+  (define new-events (unbox* events))
   (unless (null? new-events)
     (cond
       [(box-cas! events new-events null)
