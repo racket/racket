@@ -5224,6 +5224,16 @@ static void release_flushing_lock(void *_fop)
   fop->flushing = 0;
 }
 
+static void consume_buffer_bytes(Scheme_FD *fop, intptr_t wrote)
+{
+  if (fop->bufcount == wrote)
+    fop->bufcount = 0;
+  else {
+    memmove(fop->buffer + wrote, fop->buffer, fop->bufcount - wrote);
+    fop->bufcount -= wrote;
+  }
+}
+
 static intptr_t flush_fd(Scheme_Output_Port *op,
                          const char * volatile bufstr, volatile uintptr_t buflen, volatile uintptr_t offset,
                          int immediate_only, int enable_break)
@@ -5232,6 +5242,7 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 {
   Scheme_FD * volatile fop = (Scheme_FD *)op->port_data;
   volatile intptr_t wrote = 0;
+  volatile int consume_buffer;
 
   if (fop->flushing) {
     if (scheme_force_port_closed) {
@@ -5251,15 +5262,12 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
   if (!bufstr) {
     bufstr = (char *)fop->buffer;
     buflen = fop->bufcount;
-  }
+    consume_buffer = 1;
+  } else
+    consume_buffer = 0;
 
   if (buflen) {
     fop->flushing = 1;
-    fop->bufcount = 0;
-    /* If write is interrupted, we drop chars on the floor.
-       Not ideal, but we'll go with it for now.
-       Note that write_string_avail supports break-reliable
-       output through `immediate_only'. */
 
     while (1) {
       intptr_t len;
@@ -5272,6 +5280,8 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 
         if (immediate_only == 2) {
           fop->flushing = 0;
+          if (consume_buffer)
+            consume_buffer_bytes(fop, wrote);
           return wrote;
         }
 
@@ -5287,6 +5297,14 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
                                           enable_break);
         END_ESCAPEABLE();
       } else if (len == RKTIO_WRITE_ERROR) {
+        if (consume_buffer) {
+          /* Drop unsuccessfully flushed bytes. This isn't the
+             obviously right choice, but otherwise a future flush
+             attempt (including one triggered by trying to close the
+             port or one triggered by a plumber) will likely just fail
+             again, which is probably worse than dropping bytes. */
+          consume_buffer_bytes(fop, buflen);
+        }
 	if (scheme_force_port_closed) {
 	  /* Don't signal exn or wait. Just give up. */
 	  return wrote;
@@ -5298,6 +5316,8 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 	  return 0; /* doesn't get here */
           }
       } else if ((len + offset == buflen) || immediate_only) {
+        if (consume_buffer)
+          consume_buffer_bytes(fop, buflen);
 	fop->flushing = 0;
 	return wrote + len;
       } else {

@@ -1,7 +1,8 @@
 
 (load-relative "loadtest.rktl")
 (require ffi/file
-         ffi/unsafe)
+         ffi/unsafe
+         compiler/find-exe)
 
 (Section 'file)
 
@@ -1911,6 +1912,116 @@
     (sc-run #t pub-mod '(write))
     (sc-run #f priv-mod '(read))
     (sc-run #f priv-mod '(read write delete))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that when flushing a TCP output port fails, it
+;; clears the buffer
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-n")])
+
+  ;; A flush will eventually fail:
+  (with-handlers ([exn:fail:filesystem? void])
+    (let loop ()
+      (write-bytes #"foo" stdin)
+      (flush-output stdin)
+      (loop)))
+
+  ;; Next flush should not fail, because the buffer content
+  ;; should have been discarded by a failed flush:
+  (test (void) flush-output stdin)
+  
+  ;; Closing should not fail:
+  (test (void) close-output-port stdin)
+
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that when flushing an OS-level pipe fails, it
+;; clears the buffer
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-n")])
+
+  ;; A flush will eventually fail:
+  (with-handlers ([exn:fail:filesystem? void])
+    (let loop ()
+      (write-bytes #"foo" stdin)
+      (flush-output stdin)
+      (loop)))
+
+  ;; Next flush should not fail, because the buffer content
+  ;; should have been discarded by a failed flush:
+  (test (void) flush-output stdin)
+  
+  ;; Closing should not fail:
+  (test (void) close-output-port stdin)
+
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that an asynchronous break that interrupts a flush
+;; doesn't lose buffered bytes
+
+(let-values ([(subproc stdout stdin stderr) (subprocess #f #f #f (find-exe) "-e"
+                                                        (format "~s"
+                                                                '(begin
+                                                                   (define noise (make-bytes 256 (char->integer #\x)))
+                                                                   ;; Fill up the OS-level output pipe:
+                                                                   (let loop ()
+                                                                     (unless (zero? (write-bytes-avail* noise (current-output-port)))
+                                                                       (loop)))
+                                                                   ;; Wait until the other end has read:
+                                                                   (write-bytes-avail #"noise" (current-output-port))
+                                                                   (close-output-port (current-output-port))
+                                                                   ;; Drain the OS-level input pipe, suceeding if we
+                                                                   ;; find a "!".
+                                                                   (let loop ()
+                                                                     (define b (read-byte (current-input-port)))
+                                                                     (when (eqv? b (char->integer #\!))
+                                                                       (exit 0))
+                                                                     (when (eof-object? b)
+                                                                       (exit 1))
+                                                                     (loop)))))])
+
+  ;; Fill up the OS-level output pipe:
+  (let loop ()
+    (unless (zero? (write-bytes-avail* #"?????" stdin))
+      (loop)))
+
+  ;; At this point, the other end is still waiting for us to read.
+  ;; Add something to the Racket-level buffer that we want to make sure
+  ;; doesn't get lost
+  (write-bytes #"!" stdin)
+
+  ;; Thread will get stuck trying to flush:
+  (define t (thread (lambda ()
+                      (with-handlers ([exn:break? void])
+                        (flush-output stdin)))))
+
+  (sync (system-idle-evt))
+  (break-thread t)
+  (thread-wait t)
+
+  ;; Drain output from subprocess, so it can be unblocked:
+  (let loop ()
+    (unless (eof-object? (read-bytes-avail! (make-bytes 10) stdout))
+      (loop)))
+
+  ;; Subprocess should be reading at this point
+  (flush-output stdin)
+
+  (close-output-port stdin)
+  (close-input-port stderr)
+  (close-input-port stdout)
+
+  (subprocess-wait subproc)
+
+  (test 0 subprocess-status subproc))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check `in-directory'
