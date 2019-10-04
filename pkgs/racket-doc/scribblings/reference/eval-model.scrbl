@@ -1010,7 +1010,7 @@ that a future or place starts. In the case that two futures or two
 places share state, each read or write operation to shared state
 corresponds to a read or write operation at the virtual-memory level,
 and the operations are constrained to the order they could be observed
-by other threads. However, Racket does not enforce additional
+or affected by a thread. However, Racket does not enforce additional
 guarantees about reordering that might be performed at the
 virtual-memory level or below, except in the case of operations that
 specify such guarantees explicitly (e.g., @racket[box-cas!]).
