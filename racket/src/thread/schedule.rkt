@@ -33,7 +33,9 @@
   (make-initial-thread (lambda ()
                          (set-place-host-roots! initial-place (host:current-place-roots))
                          (thunk)))
-  (poll-and-select-thread! 0))
+  (call-with-engine-completion
+   (lambda (done)
+     (poll-and-select-thread! 0))))
 
 ;; Initializes the thread system in a new place:
 (define (call-in-another-main-thread c thunk)
@@ -41,8 +43,8 @@
   (set-root-custodian! c)
   (init-system-idle-evt!)
   (init-future-place!)
-  (call-in-main-thread thunk)
-  (init-schedule-counters!))
+  (init-schedule-counters!)
+  (call-in-main-thread thunk))
 
 ;; ----------------------------------------
 

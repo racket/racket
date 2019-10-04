@@ -12,7 +12,6 @@
                   [make-engine rumble:make-engine]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
-                  [current-engine-state rumble:current-engine-state]
                   [call-with-engine-completion rumble:call-with-engine-completion]
                   [make-condition rumble:make-condition]
                   [condition-wait rumble:condition-wait]
@@ -132,7 +131,6 @@
         'make-engine rumble:make-engine
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
-        'current-engine-state (lambda (v) (rumble:current-engine-state v))
         'call-with-engine-completion rumble:call-with-engine-completion
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
         'poll-will-executors poll-will-executors

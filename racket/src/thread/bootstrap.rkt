@@ -280,8 +280,6 @@
                   'condition-broadcast (lambda args
                                          (error "condition-broadcast: not ready"))
                   'threaded? (lambda () #f)
-                  'current-engine-state (lambda args
-                                          (error "current-engine state: not ready"))
                   'make-mutex (lambda () (make-semaphore 1))
                   'mutex-acquire (lambda (s) (semaphore-wait s))
                   'mutex-release (lambda (s) (semaphore-post s))

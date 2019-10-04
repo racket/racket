@@ -213,7 +213,7 @@
 (define/who (ptr-equal? p1 p2)
   (let ([p1 (unwrap-cpointer who p1)]
         [p2 (unwrap-cpointer who p2)])
-    (with-interrupts-disabled ; disable GC while extracting addresses
+    (with-interrupts-disabled* ; disable GC while extracting addresses
      (= (cpointer-address p1) (cpointer-address p2)))))
 
 (define/who (ptr-offset p)
@@ -900,7 +900,7 @@
               (eq? 'utf-16be host-rep)
               (eq? 'utf-32le host-rep)
               (eq? 'utf-32be host-rep))
-          (let ([v (with-interrupts-disabled
+          (let ([v (with-interrupts-disabled*
                     (foreign-ref 'uptr (cpointer-address p) 0))])
             (case host-rep
               [(utf-16le) (utf16->string (uptr->bytes/2-byte-nul v) 'little #t)]
@@ -909,7 +909,7 @@
               [(utf-32be) (utf16->string (uptr->bytes/4-byte-nul v) 'big #t)]))]
          [else
           ;; Disable interrupts to avoid a GC:
-          (with-interrupts-disabled
+          (with-interrupts-disabled*
            ;; Special treatment is needed for 'scheme-object, since the
            ;; host Scheme rejects the use of 'scheme-object with
            ;; `foreign-ref`
@@ -1086,7 +1086,7 @@
                                  "atomic destination" orig-p)]
          [else
           ;; Disable interrupts to avoid a GC:
-          (with-interrupts-disabled
+          (with-interrupts-disabled*
            ;; Special treatment is needed for 'scheme-object, since
            ;; the host Scheme rejects the use of 'scheme-object with
            ;; `foreign-set!`
@@ -1133,7 +1133,7 @@
                                "destination" to
                                "source" from)])]
      [else
-      (with-interrupts-disabled
+      (with-interrupts-disabled*
        (let ([to (+ (cpointer*-address to) to-offset)]
              [from (+ (cpointer*-address from) from-offset)])
        (cond
@@ -1275,7 +1275,7 @@
       (raise-arguments-error 'memset "cannot set non-atomic"
                              "destination" to)]
      [else
-      (with-interrupts-disabled
+      (with-interrupts-disabled*
        (let ([to (fx+ (cpointer*-address to) to-offset)])
          (let loop ([to to] [len len])
            (unless (fx= len 0)
@@ -1420,7 +1420,7 @@
 
 (define/who (free p)
   (let ([p (unwrap-cpointer who p)])
-    (with-interrupts-disabled
+    (with-interrupts-disabled*
      (foreign-free (cpointer-address p)))))
 
 (define-record-type (cpointer/cell make-cpointer/cell cpointer/cell?)
@@ -1618,13 +1618,13 @@
                                                (make-ftype-pointer ,id p))))
                                      ids)
                                 '())))])
-            (let* ([wb (with-interrupts-disabled
+            (let* ([wb (with-interrupts-disabled*
                         (weak-hash-ref ffi-expr->code expr #f))]
                    [code (if wb (car wb) #!bwp)])
               (if (eq? code #!bwp)
                   (let ([code (eval/foreign expr (if call? 'comp-ffi-call 'comp-ffi-back))])
                     (hashtable-set! ffi-code->expr (car code) expr)
-                    (with-interrupts-disabled
+                    (with-interrupts-disabled*
                      (weak-hash-set! ffi-expr->code expr (weak-cons code #f)))
                     code)
                   code)))]
@@ -1667,24 +1667,24 @@
               [proc
                (case-lambda
                 [()
-                 (c->s out-type (with-interrupts-disabled (proc)))]
+                 (c->s out-type (with-interrupts-disabled* (proc)))]
                 [(orig-a)
                  (let ([a (unwrap orig-a (car in-types))])
                    (c->s out-type (retain
                                    orig-a
-                                   (with-interrupts-disabled (proc (unpack a (car in-types)))))))]
+                                   (with-interrupts-disabled* (proc (unpack a (car in-types)))))))]
                 [(orig-a orig-b)
                  (let ([a (unwrap orig-a (car in-types))]
                        [b (unwrap orig-b (cadr in-types))])
                    (c->s out-type (retain
                                    orig-a orig-b
-                                   (with-interrupts-disabled
+                                   (with-interrupts-disabled*
                                     (proc (unpack a (car in-types)) (unpack b (cadr in-types)))))))]
                 [(orig-a orig-b orig-c)
                  (let ([a (unwrap orig-a (car in-types))]
                        [b (unwrap orig-b (cadr in-types))]
                        [c (unwrap orig-c (caddr in-types))])
-                   (c->s out-type (with-interrupts-disabled
+                   (c->s out-type (with-interrupts-disabled*
                                    (retain
                                     orig-a orig-b orig-c
                                     (proc (unpack a (car in-types))
@@ -1697,21 +1697,21 @@
                        [d (unwrap orig-d (cadddr in-types))])
                    (c->s out-type (retain
                                    orig-a orig-b orig-c orig-d
-                                   (with-interrupts-disabled
+                                   (with-interrupts-disabled*
                                     (proc (unpack a (car in-types))
                                           (unpack b (cadr in-types))
                                           (unpack c (caddr in-types))
                                           (unpack d (cadddr in-types)))))))]
                 [orig-args
                  (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
-                   (c->s out-type (with-interrupts-disabled
+                   (c->s out-type (with-interrupts-disabled*
                                    (retain
                                     orig-args
                                     (#%apply proc (map (lambda (a t) (unpack a t)) args in-types))))))])]
               [else
                (lambda orig-args
                  (let ([args (map (lambda (a t) (unwrap a t)) orig-args in-types)])
-                   (c->s out-type (with-interrupts-disabled
+                   (c->s out-type (with-interrupts-disabled*
                                    (retain
                                     orig-args
                                     (#%apply (gen-proc (cpointer-address proc-p))
@@ -1743,7 +1743,7 @@
                                              ;; result is a struct type; need to allocate space for it
                                              (normalized-malloc ret-size ret-malloc-mode))])
                            (when lock (mutex-acquire lock))
-                           (with-interrupts-disabled
+                           (with-interrupts-disabled*
                             (when blocking? (currently-blocking? #t))
                             (retain
                              orig-args

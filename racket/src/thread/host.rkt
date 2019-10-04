@@ -36,7 +36,6 @@
         make-engine
         engine-timeout
         engine-return
-        current-engine-state
         call-with-engine-completion
         current-process-milliseconds
         set-ctl-c-handler!

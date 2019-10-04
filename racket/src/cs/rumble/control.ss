@@ -337,7 +337,7 @@
                         (#%apply values r)))])))))]))))
 
 ;; Simplified `call-in-empty-metacontinuation-frame` suitable for swapping engines:
-(define (call-in-empty-metacontinuation-frame-for-swap proc)
+(define (call-with-empty-metacontinuation-frame-for-swap proc)
   (assert-in-uninterrupted)
   (assert-not-in-system-wind)
   (call/cc
@@ -355,7 +355,7 @@
        (current-winders '())
        (current-mark-splice empty-mark-frame)
        (current-metacontinuation (cons mf (current-metacontinuation)))
-       (let ([r (proc)])
+       (let ([r (proc (current-metacontinuation))])
          (let ([mf (car (current-metacontinuation))])
            (pop-metacontinuation-frame)
            ((metacontinuation-frame-resume-k mf) r)))))))
@@ -1423,8 +1423,8 @@
      (maybe-future-barricade orig-tag)
      (let ([tag (strip-impersonator orig-tag)])
        (cond
-        [(#%procedure? k)
-         (let ([mc (saved-metacontinuation-mc (k))])
+        [(#%procedure? k) ; => an engine
+         (let ([mc (k)])
            (make-continuation-mark-set
             (prune-mark-chain-suffix
              who
@@ -1900,9 +1900,7 @@
 ;; ----------------------------------------
 ;; Metacontinuation swapping for engines
 
-(define-record saved-metacontinuation (mc system-winders exn-state))
-
-(define empty-metacontinuation (make-saved-metacontinuation '() '() (create-exception-state)))
+(define empty-metacontinuation '())
 
 ;; Similar to `call-with-current-continuation` plus
 ;; applying an old continuation, but does not run winders;
@@ -1913,17 +1911,10 @@
    [(current-system-wind-start-k)
     => (lambda (k) (call-with-current-metacontinuation-with-system-wind proc k))]
    [else
-    (call-in-empty-metacontinuation-frame-for-swap
-     (lambda ()
-       (proc (make-saved-metacontinuation
-              (current-metacontinuation)
-              (#%$current-winders)
-              (current-exception-state)))))]))
+    (call-with-empty-metacontinuation-frame-for-swap proc)]))
 
 (define (apply-meta-continuation saved k)
-  (current-metacontinuation (saved-metacontinuation-mc saved))
-  (#%$current-winders (saved-metacontinuation-system-winders saved))
-  (current-exception-state (saved-metacontinuation-exn-state saved))
+  (current-metacontinuation saved)
   (k))
 
 ;; ----------------------------------------

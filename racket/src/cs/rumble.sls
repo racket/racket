@@ -53,7 +53,6 @@
           engine-timeout
           engine-return
           call-with-engine-completion
-          current-engine-state
           set-ctl-c-handler!
           get-ctl-c-handler
           set-scheduler-lock-callbacks!

@@ -11,7 +11,7 @@
 
 (define-record engine-state (complete-or-expire thread-cell-values init-break-enabled-cell))
 
-(define-virtual-register current-engine-state #f)
+(define-virtual-register current-engine-state (make-engine-state #f #f #f))
 
 (define (set-ctl-c-handler! proc)
   (keyboard-interrupt-handler (case-lambda
@@ -25,6 +25,18 @@
 
 (define (set-engine-exit-handler! proc)
   (set! engine-exit proc))
+
+(define (currently-in-engine?)
+  (engine-state-complete-or-expire (current-engine-state)))
+
+(define (set-current-engine-state! complete-or-expire thread-cell-values init-break-enabled-cell)
+  (let ([es (current-engine-state)])
+    (set-engine-state-complete-or-expire! es complete-or-expire)
+    (set-engine-state-thread-cell-values! es thread-cell-values)
+    (set-engine-state-init-break-enabled-cell! es init-break-enabled-cell)))
+
+(define (clear-current-engine-state!)
+  (set-current-engine-state! #f #f #f))
 
 ;; An engine is repesented by a procedure that takes three arguments, where the
 ;; procedure must be tail-called either within `call-with-engine-completion` or
@@ -81,9 +93,7 @@
     (apply-meta-continuation
      to-saves
      (lambda ()
-       (current-engine-state
-        (make-engine-state complete-or-expire thread-cell-values init-break-enabled-cell))
-       (reset-handler engine-reset-handler)
+       (set-current-engine-state! complete-or-expire thread-cell-values init-break-enabled-cell)
        (timer-interrupt-handler engine-block-via-timer)
        (end-implicit-uninterrupted 'create)
        (set-timer ticks)
@@ -95,18 +105,25 @@
 (define (call-with-engine-completion proc)
   (call-with-current-metacontinuation
    (lambda (saves)
-     (let ([rh (reset-handler)])
+     (let ([rh (reset-handler)]
+           [ws (#%$current-winders)]
+           [exns (current-exception-state)])
+       (reset-handler engine-reset-handler)
+       (#%$current-winders '())
+       (current-exception-state (create-exception-state))
        (proc (lambda args
-               (current-engine-state #f)
+               (clear-current-engine-state!)
                (apply-meta-continuation
                 saves
                 (lambda ()
                   (reset-handler rh)
+                  (#%$current-winders ws)
+                  (current-exception-state exns)
                   (#%apply values args)))))))))
 
 (define (engine-reset-handler)
   (end-uninterrupted 'reset)
-  (if (current-engine-state)
+  (if (currently-in-engine?)
       (engine-return (void))
       (chez:exit)))
 
@@ -116,31 +133,31 @@
     (pending-interrupt-callback engine-block/timeout)]
    [else
     (engine-block/timeout)]))
-    
+
 (define engine-block
   (case-lambda
    [(timeout?)
     (assert-not-in-uninterrupted)
     (timer-interrupt-handler void)
-    (let ([es (current-engine-state)]
+    (let ([complete-or-expire (engine-state-complete-or-expire (current-engine-state))]
+          [thread-cell-values (engine-state-thread-cell-values (current-engine-state))]
+          [init-break-enabled-cell (engine-state-init-break-enabled-cell (current-engine-state))]
           [remain-ticks (if timeout?
                             0
                             (set-timer 0))])
-      (unless es
+      (unless complete-or-expire
         (error 'engine-block "not currently running an engine"))
       (start-implicit-uninterrupted 'block)
       (call-with-current-metacontinuation
        (lambda (saves)
          (end-implicit-uninterrupted 'block)
-         (current-engine-state #f)
-         ((engine-state-complete-or-expire es)
-          (create-engine
-           saves
-           (lambda (prefix) (prefix))
-           (engine-state-thread-cell-values es)
-           (engine-state-init-break-enabled-cell es))
-          #f
-          remain-ticks))))]
+         (clear-current-engine-state!)
+         (complete-or-expire (create-engine saves
+                                            (lambda (prefix) (prefix))
+                                            thread-cell-values
+                                            init-break-enabled-cell)
+                             #f
+                             remain-ticks))))]
    [() (engine-block #f)]))
 
 (define (engine-block/timeout)
@@ -160,16 +177,16 @@
 (define (engine-return . results)
   (assert-not-in-uninterrupted)
   (timer-interrupt-handler void)
-  (let ([es (current-engine-state)])
-    (unless es
+  (let ([complete-or-expire (engine-state-complete-or-expire (current-engine-state))])
+    (unless complete-or-expire
       (error 'engine-return "not currently running an engine"))
     (let ([remain-ticks (set-timer 0)])
       (start-implicit-uninterrupted 'block)
       (call-with-current-metacontinuation
        (lambda (ignored-saves)
          (end-implicit-uninterrupted 'block)
-         (current-engine-state #f)
-         ((engine-state-complete-or-expire es) #f results remain-ticks))))))
+         (clear-current-engine-state!)
+         (complete-or-expire #f results remain-ticks))))))
 
 (define (make-empty-thread-cell-values)
   (make-ephemeron-eq-hashtable))
@@ -179,10 +196,8 @@
 (define original-thread-id (get-thread-id))
 
 (define (current-engine-thread-cell-values)
-  (let ([es (current-engine-state)])
-    (if es
-        (engine-state-thread-cell-values es)
-        (root-thread-cell-values))))
+  (or (engine-state-thread-cell-values (current-engine-state))
+      (root-thread-cell-values)))
 
 (define (set-current-engine-thread-cell-values! new-t)
   (let ([current-t (current-engine-thread-cell-values)])
@@ -209,7 +224,5 @@
     new-t))
 
 (define (current-engine-init-break-enabled-cell none-v)
-  (let ([es (current-engine-state)])
-    (if es
-        (engine-state-init-break-enabled-cell es)
-        none-v)))
+  (or (engine-state-init-break-enabled-cell (current-engine-state))
+      none-v))
