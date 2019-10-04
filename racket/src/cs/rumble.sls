@@ -47,16 +47,18 @@
           chaperone-continuation-mark-key
           call-with-system-wind ; not exported to Racket
 
+          ;; not exported to Racket:
           make-engine
           engine-block
           engine-timeout
           engine-return
-          current-engine-state  ; not exported to Racket
-          set-ctl-c-handler! ; not exported to Racket
-          get-ctl-c-handler  ; not exported to Racket
-          set-scheduler-lock-callbacks! ; not exported to Racket
-          set-scheduler-atomicity-callbacks! ; not exported to Racket
-          set-engine-exit-handler! ; not exported to Racket
+          call-with-engine-completion
+          current-engine-state
+          set-ctl-c-handler!
+          get-ctl-c-handler
+          set-scheduler-lock-callbacks!
+          set-scheduler-atomicity-callbacks!
+          set-engine-exit-handler!
 
           make-thread-cell
           thread-cell?

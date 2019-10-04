@@ -1908,22 +1908,23 @@
 ;; applying an old continuation, but does not run winders;
 ;; this operation makes sense for thread or engine context
 ;; switches
-(define (swap-metacontinuation saved proc)
+(define (call-with-current-metacontinuation proc)
   (cond
    [(current-system-wind-start-k)
-    => (lambda (k) (swap-metacontinuation-with-system-wind saved proc k))]
+    => (lambda (k) (call-with-current-metacontinuation-with-system-wind proc k))]
    [else
     (call-in-empty-metacontinuation-frame-for-swap
      (lambda ()
-       (let ([now-saved (make-saved-metacontinuation
-                         (current-metacontinuation)
-                         (#%$current-winders)
-                         (current-exception-state))])
-         (current-metacontinuation (saved-metacontinuation-mc saved))
-         (#%$current-winders (saved-metacontinuation-system-winders saved))
-         (current-exception-state (saved-metacontinuation-exn-state saved))
-         (set! saved #f) ; break link for space safety
-         (proc now-saved))))]))
+       (proc (make-saved-metacontinuation
+              (current-metacontinuation)
+              (#%$current-winders)
+              (current-exception-state)))))]))
+
+(define (apply-meta-continuation saved k)
+  (current-metacontinuation (saved-metacontinuation-mc saved))
+  (#%$current-winders (saved-metacontinuation-system-winders saved))
+  (current-exception-state (saved-metacontinuation-exn-state saved))
+  (k))
 
 ;; ----------------------------------------
 
@@ -1951,14 +1952,14 @@
                (#%apply values args)))))
        (lambda () (current-system-wind-start-k #f)))))))
 
-(define (swap-metacontinuation-with-system-wind saved proc start-k)
+(define (call-with-current-metacontinuation-with-system-wind proc start-k)
   (current-system-wind-start-k #f)
   (call/cc
    (lambda (system-wind-k) ; continuation with system `dynamic-wind` behavior
      ;; escape to starting point, running winders, before
      ;; capturing the rest of the metacontinuation:
      (start-k (lambda ()
-                (let ([prefix (swap-metacontinuation saved proc)])
+                (let ([prefix (call-with-current-metacontinuation proc)])
                   (current-system-wind-start-k start-k)
                   (system-wind-k prefix)))))))
 

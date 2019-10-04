@@ -564,28 +564,30 @@
                          break-enabled-default-cell
                          #t))
   (current-atomic (add1 (current-atomic)))
-  (let loop ([e e])
-    (e TICKS
-       (lambda ()
-         ;; Check whether the main pthread wants to know we're here
-         (when (and (zero? (current-atomic))
-                    (worker-pinged? w))
-           (host:mutex-acquire (scheduler-mutex (current-scheduler)))
-           (check-in w)
-           (host:mutex-release (scheduler-mutex (current-scheduler))))
-         ;; Check that the future should still run
-         (when (and (custodian-shut-down?/other-pthread (future*-custodian f))
-                    (zero? (current-atomic)))
-           (lock-acquire (future*-lock f))
-           (set-future*-state! f #f)
-           (on-transition-to-unfinished)
-           (future-suspend)))
-       (lambda (e results leftover-ticks)
-         (cond
-           [e (loop e)]
-           [else
-            ;; Done --- completed or suspend (e.g., blocked)
-            (void)]))))
+  (call-with-engine-completion
+   (lambda (done)
+     (let loop ([e e])
+       (e TICKS
+          (lambda ()
+            ;; Check whether the main pthread wants to know we're here
+            (when (and (zero? (current-atomic))
+                       (worker-pinged? w))
+              (host:mutex-acquire (scheduler-mutex (current-scheduler)))
+              (check-in w)
+              (host:mutex-release (scheduler-mutex (current-scheduler))))
+            ;; Check that the future should still run
+            (when (and (custodian-shut-down?/other-pthread (future*-custodian f))
+                       (zero? (current-atomic)))
+              (lock-acquire (future*-lock f))
+              (set-future*-state! f #f)
+              (on-transition-to-unfinished)
+              (future-suspend)))
+          (lambda (e results leftover-ticks)
+            (cond
+              [e (loop e)]
+              [else
+               ;; Done --- completed or suspend (e.g., blocked)
+               (done (void))]))))))
   (log-future 'end-work (future*-id f))
   (current-future 'worker)
   (set-box! (worker-current-future-box w) #f))

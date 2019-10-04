@@ -1,13 +1,15 @@
-;; Like Chez's engine API, but
+;; Inspried by Chez's engine API, but
 ;;   - works with delimited-continuations extensions in "control.ss"
 ;;   - doesn't run winders when suspending or resuming an engine
 ;;   - accepts an extra "prefix" argument to run code within an engine
 ;;     just before resuming the engine's continuation
+;;   - supports direct engine-to-engine transition instead of a
+;;     back-and-forth between an engine scheduler
 
 ;; Don't mix Chez engines with this implementation, because we take
 ;; over the timer.
 
-(define-record engine-state (mc complete-or-expire thread-cell-values init-break-enabled-cell reset-handler))
+(define-record engine-state (complete-or-expire thread-cell-values init-break-enabled-cell))
 
 (define-virtual-register current-engine-state #f)
 
@@ -24,13 +26,17 @@
 (define (set-engine-exit-handler! proc)
   (set! engine-exit proc))
 
-;; An engine is repesented by a procedure that takes thee arguments:
+;; An engine is repesented by a procedure that takes three arguments, where the
+;; procedure must be tail-called either within `call-with-engine-completion` or
+;; in an engine call's `complete-or-expire` callback:
 ;;   * ticks: number of ticks to run before exire
 ;;   * prefix: thunk to invoke just before continuing (counts toward ticks)
-;;   * complete-or-expire: callback that accepts 3 arguments:
+;;   * complete-or-expire: callback that accepts 3 arguments,
 ;;      - engine or #f: an engine if the original `thunk` has not yet returned
 ;;      - list or #f: a list if the original `thunk` has returned values
 ;;      - remining-ticks: a number of ticks leftover due to complete or `(engine-block)`
+;;     where the callback must end by tail-calling another engine procedure or
+;;     the procedure provided by `call-with-engine-completion`
 (define (make-engine thunk          ; can return any number of values
                      prompt-tag     ; prompt to wrap around call to `thunk`
                      abort-handler  ; handler for that prompt
@@ -63,6 +69,8 @@
                        (new-engine-thread-cell-values))
                    init-break-enabled-cell)))
 
+;; Internal: creates an engine procedure to be called within `call-with-engine-completion`
+;; or from an enginer procedure's `complete-or-expire` callback
 (define (create-engine to-saves proc thread-cell-values init-break-enabled-cell)
   (case-lambda
    ;; For `continuation-marks`:
@@ -70,16 +78,31 @@
    ;; Normal engine case:
    [(ticks prefix complete-or-expire)
     (start-implicit-uninterrupted 'create)
-    ((swap-metacontinuation
-      to-saves
-      (lambda (saves)
-        (current-engine-state (make-engine-state saves complete-or-expire thread-cell-values
-                                                 init-break-enabled-cell (reset-handler)))
-        (reset-handler engine-reset-handler)
-        (timer-interrupt-handler engine-block-via-timer)
-        (end-implicit-uninterrupted 'create)
-        (set-timer ticks)
-        (proc prefix))))]))
+    (apply-meta-continuation
+     to-saves
+     (lambda ()
+       (current-engine-state
+        (make-engine-state complete-or-expire thread-cell-values init-break-enabled-cell))
+       (reset-handler engine-reset-handler)
+       (timer-interrupt-handler engine-block-via-timer)
+       (end-implicit-uninterrupted 'create)
+       (set-timer ticks)
+       (proc prefix)))]))
+
+;; Captures the current metacontinuation as an engine runner, and calls `proc`
+;; with a procedure to be tail-called from an engine procedure's `complete-or-expire`
+;; callback to return to the metacontinuation
+(define (call-with-engine-completion proc)
+  (call-with-current-metacontinuation
+   (lambda (saves)
+     (let ([rh (reset-handler)])
+       (proc (lambda args
+               (current-engine-state #f)
+               (apply-meta-continuation
+                saves
+                (lambda ()
+                  (reset-handler rh)
+                  (#%apply values args)))))))))
 
 (define (engine-reset-handler)
   (end-uninterrupted 'reset)
@@ -105,24 +128,19 @@
                             (set-timer 0))])
       (unless es
         (error 'engine-block "not currently running an engine"))
-      (reset-handler (engine-state-reset-handler es))
       (start-implicit-uninterrupted 'block)
-      ;; Extra pair of parens around swap is to apply a prefix
-      ;; function on swapping back in:
-      ((swap-metacontinuation
-        (engine-state-mc es)
-        (lambda (saves)
-          (end-implicit-uninterrupted 'block)
-          (current-engine-state #f)
-          (lambda () ; returned to the `swap-continuation` in `create-engine`
-            ((engine-state-complete-or-expire es)
-             (create-engine
-              saves
-              (lambda (prefix) prefix) ; returns `prefix` to the above "(("
-              (engine-state-thread-cell-values es)
-              (engine-state-init-break-enabled-cell es))
-             #f
-             remain-ticks))))))]
+      (call-with-current-metacontinuation
+       (lambda (saves)
+         (end-implicit-uninterrupted 'block)
+         (current-engine-state #f)
+         ((engine-state-complete-or-expire es)
+          (create-engine
+           saves
+           (lambda (prefix) (prefix))
+           (engine-state-thread-cell-values es)
+           (engine-state-init-break-enabled-cell es))
+          #f
+          remain-ticks))))]
    [() (engine-block #f)]))
 
 (define (engine-block/timeout)
@@ -145,16 +163,13 @@
   (let ([es (current-engine-state)])
     (unless es
       (error 'engine-return "not currently running an engine"))
-    (reset-handler (engine-state-reset-handler es))
     (let ([remain-ticks (set-timer 0)])
-      (start-implicit-uninterrupted 'return)
-      (swap-metacontinuation
-       (engine-state-mc es)
-       (lambda (saves)
+      (start-implicit-uninterrupted 'block)
+      (call-with-current-metacontinuation
+       (lambda (ignored-saves)
+         (end-implicit-uninterrupted 'block)
          (current-engine-state #f)
-         (end-implicit-uninterrupted 'return)
-         (lambda () ; returned to the `swap-continuation` in `create-engine`
-           ((engine-state-complete-or-expire es) #f results remain-ticks)))))))
+         ((engine-state-complete-or-expire es) #f results remain-ticks))))))
 
 (define (make-empty-thread-cell-values)
   (make-ephemeron-eq-hashtable))

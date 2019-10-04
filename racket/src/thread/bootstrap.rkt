@@ -96,6 +96,9 @@
 (define (engine-timeout)
   (void))
 
+(define (call-with-engine-completion proc)
+  (proc values))
+
 (define ctl-c-handler #f)
 
 (define (set-ctl-c-handler! proc)
@@ -233,6 +236,7 @@
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
+                  'call-with-engine-completion call-with-engine-completion
                   'current-process-milliseconds current-process-milliseconds
                   'set-ctl-c-handler! set-ctl-c-handler!
                   'set-break-enabled-transition-hook! void

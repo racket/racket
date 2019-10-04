@@ -434,11 +434,15 @@
 (define engine-tag (default-continuation-prompt-tag))
 
 (define e (make-engine (lambda () 'done) engine-tag #f #f #f))
-(check (e 100 void (lambda (e results remain-ticks) results))
+(check (call-with-engine-completion
+        (lambda (done)
+          (e 100 void (lambda (e results remain-ticks) (done results)))))
        '(done))
 
 (define e-forever (make-engine (lambda () (let loop () (loop))) engine-tag #f #f #f))
-(check (procedure? (e-forever 10 void (lambda (e results remain-ticks) e)))
+(check (procedure? (call-with-engine-completion
+                    (lambda (done)
+                      (e-forever 10 void (lambda (e results remain-ticks) (done e))))))
        #t)
 
 (define e-10 (make-engine (lambda () 
@@ -453,13 +457,15 @@
                           engine-tag #f
                           #f #f))
 (check (let ([started 0])
-         (let loop ([e e-10] [n 0])
-           (e 100
-              (lambda () (set! started (add1 started)))
-              (lambda (e results remain)
-                (if e
-                    (loop e (add1 n))
-                    (list results n started))))))
+         (call-with-engine-completion
+          (lambda (done)
+            (let loop ([e e-10] [n 0])
+              (e 100
+                 (lambda () (set! started (add1 started)))
+                 (lambda (e results remain)
+                   (if e
+                       (loop e (add1 n))
+                       (done (list results n started)))))))))
        '((done) 10 11))
 
 ;; Check that winders are not run on engine swaps:
@@ -478,13 +484,15 @@
                                      (lambda () (set! post (add1 post))))])))
                               engine-tag #f
                               #f #f)])
-    (check (let loop ([e e-10/dw] [n 0])
-             (e 200
-                void
-                (lambda (e results remain)
-                  (if e
-                      (loop e (add1 n))
-                      (vector results post n)))))
+    (check (call-with-engine-completion
+            (lambda (done)
+              (let loop ([e e-10/dw] [n 0])
+                (e 200
+                   void
+                   (lambda (e results remain)
+                     (if e
+                         (loop e (add1 n))
+                         (done (vector results post n))))))))
            '#((done 10 0) 10 10))))
 
 ;; ----------------------------------------
@@ -502,14 +510,18 @@
           (make-engine gen engine-tag #f #f #f)
           (thread-cell-ref ut)
           (thread-cell-ref pt)))
-  (define l1 ((make-engine gen engine-tag #f #f #f)
-              100
-              void
-              (lambda (e results remain) (car results))))
-  (define l2 ((list-ref l1 2)
-              100
-              void
-              (lambda (e results remain) (car results))))
+  (define l1 (call-with-engine-completion
+              (lambda (done)
+                ((make-engine gen engine-tag #f #f #f)
+                 100
+                 void
+                 (lambda (e results remain) (done (car results)))))))
+  (define l2 (call-with-engine-completion
+              (lambda (done)
+                ((list-ref l1 2)
+                 100
+                 void
+                 (lambda (e results remain) (done (car results)))))))
   (check (list-ref l1 0) 1)
   (check (list-ref l1 1) 100)
   (check (list-ref l1 3) 2)
@@ -528,7 +540,10 @@
              (extend-parameterization (continuation-mark-set-first #f parameterization-key) my-param 'set)
            (make-engine (lambda () (|#%app| my-param)) engine-tag #f #f #f))])
   (check (|#%app| my-param) 'init)
-  (check (e 1000 void (lambda (e vs remain) vs)) '(set)))
+  (check (call-with-engine-completion
+          (lambda (done)
+            (e 1000 void (lambda (e vs remain) (done vs)))))
+         '(set)))
 
 (let ([also-my-param (make-derived-parameter my-param
                                              (lambda (v) (list v))
@@ -626,16 +641,19 @@
                           #f #f))
 
 (check (let ([prefixes 0])
-         (let loop ([e e-sw] [i 0])
-           (e 100
-              (lambda () (set! prefixes (add1 prefixes)))
-              (lambda (e v remain)
-                (if e
-                    (loop e (add1 i))
-                    (list (> i 2)
-                          (= prefixes (add1 i))
-                          (- (car v) i)
-                          (- (cadr v) i)))))))
+         (call-with-engine-completion
+          (lambda (done)
+            (let loop ([e e-sw] [i 0])
+              (e 100
+                 (lambda () (set! prefixes (add1 prefixes)))
+                 (lambda (e v remain)
+                   (if e
+                       (loop e (add1 i))
+                       (done
+                        (list (> i 2)
+                              (= prefixes (add1 i))
+                              (- (car v) i)
+                              (- (cadr v) i))))))))))
        '(#t #t 1 0))
 
 ;; ----------------------------------------
