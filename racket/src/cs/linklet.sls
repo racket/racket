@@ -208,13 +208,19 @@
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
-  (define (compile* e)
-    (call-with-system-wind (lambda ()
-                             (if assembly-on?
-                                 (parameterize ([#%$assembly-output (#%current-output-port)])
-                                   (printf ";; assembly ---------------------\n")
-                                   (compile e))
-                                 (compile e)))))
+  (define compile*
+    (case-lambda
+     [(e safe?)
+      (call-with-system-wind (lambda ()
+                               (parameterize ([optimize-level (if safe?
+                                                                  (optimize-level)
+                                                                  3)])
+                                 (if assembly-on?
+                                     (parameterize ([#%$assembly-output (#%current-output-port)])
+                                       (printf ";; assembly ---------------------\n")
+                                       (compile e))
+                                     (compile e)))))]
+     [(e) (compile* e #t)]))
   (define (interpret* e)
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
@@ -225,7 +231,7 @@
   (define (eval/foreign e mode)
     (performance-region
      mode
-     (compile* e)))
+     (compile* e #f)))
 
   (define primitives (make-hasheq)) ; hash of sym -> known
   (define primitive-tables '())     ; list of (cons sym hash)
