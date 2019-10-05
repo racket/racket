@@ -191,6 +191,7 @@
          would-be-future
          current-future
          future-block
+         future-sync
          current-future-prompt
          reset-future-logs-for-tracing!
          mark-future-trace-end!

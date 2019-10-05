@@ -28,6 +28,7 @@
          would-be-future
          touch
          future-block
+         future-sync
          current-future-prompt
          currently-running-future
          reset-future-logs-for-tracing!
@@ -350,6 +351,35 @@
        [else
         (abort-current-continuation future-scheduler-prompt-tag (void))]))
    future-start-prompt-tag))
+
+;; ----------------------------------------
+
+;; Call `thunk` in the place's main thread:
+(define (future-sync who thunk)
+  (define me-f (current-future))
+  (cond
+    [(future*-would-be? me-f)
+     (current-future #f)
+     (log-future 'sync (future*-id me-f) #:prim-name who)
+     (let ([v (thunk)])
+       (log-future 'result (future*-id me-f))
+       (current-future me-f)
+       v)]
+    [else
+     ;; Atomic mode prevents getting terminated or swapped out
+     ;; while we block on the main thread
+     (current-atomic (add1 (current-atomic)))
+     (begin0
+       ;; Host's `call-as-asynchronous-callback` will post `thunk`
+       ;; so that it's returned by `host:poll-async-callbacks` to
+       ;; the scheduler in the place's main thread
+       (host:call-as-asynchronous-callback
+        (lambda ()
+          (log-future 'sync (future*-id me-f) #:prim-name who)
+          (let ([v (thunk)])
+            (log-future 'result (future*-id me-f))
+            v)))
+       (current-atomic (sub1 (current-atomic))))]))
 
 ;; ----------------------------------------
 

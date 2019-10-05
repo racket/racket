@@ -95,4 +95,6 @@
         [mutex-release host:mutex-release]
         threaded?
 
+        [call-as-asynchronous-callback host:call-as-asynchronous-callback]
+
         continuation-current-primitive)

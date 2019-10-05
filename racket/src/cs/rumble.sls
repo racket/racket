@@ -707,6 +707,7 @@
           set-future-callbacks!
           install-primitives-table!
           continuation-current-primitive
+          call-as-asynchronous-callback
 
           ;; compile-time use in "thread.sls"
           current-atomic-virtual-register
@@ -792,6 +793,7 @@
   (include "rumble/place.ss")
   (include "rumble/errno-data.ss")
   (include "rumble/foreign.ss")
+  (include "rumble/async-callback.ss")
   (include "rumble/future.ss")
   (include "rumble/inline.ss")
 

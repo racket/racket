@@ -27,22 +27,31 @@ We should also test deep continuations.
 (define-struct future-event (future-id process-id what time prim-name target-fid) 
     #:prefab)
 
-(define (get-events-of-type type log) 
-    (filter (λ (e) 
-              (equal? (future-event-what e) type)) 
+(define (get-events-of-type type log)
+    (filter (λ (e)
+              (equal? (future-event-what e) type))
             log))
 
 (define (get-blocks log)
-    (get-events-of-type 'block log))
+  (get-events-of-type 'block log))
   
-  (define (get-touch-blocks log) 
-    (get-events-of-type 'touch log))
+(define (get-sync-blocks log)
+  (get-events-of-type 'sync log))
   
-  (define (get-blocks-on prim log) 
-    (filter (λ (e) 
-              (equal? (future-event-prim-name e) 
-                      prim)) 
-            (get-blocks log)))
+(define (get-touch-blocks log)
+  (get-events-of-type 'touch log))
+
+(define (get-blocks-on prim log)
+  (filter (λ (e)
+            (equal? (future-event-prim-name e)
+                    prim))
+          (get-blocks log)))
+
+(define (get-sync-blocks-on prim log)
+  (filter (λ (e)
+            (equal? (future-event-prim-name e)
+                    prim))
+          (get-sync-blocks log)))
 
 (when (futures-enabled?)
   (define recv (make-log-receiver (current-logger) 'debug)) 
@@ -96,7 +105,25 @@ We should also test deep continuations.
          (check-equal? 5 (length (get-blocks log)))
          (check-equal? 1 (length (get-touch-blocks log)))
          (check-equal? 4 (length (get-blocks-on 'printf log)))
-         (check-equal? 1 (length (get-blocks-on 'would-be-future log)))]))))
+         (check-equal? 1 (length (get-blocks-on 'would-be-future log)))])))
+
+  (let ([f (let ([ht (make-hasheq)])
+             (would-be-future (λ ()
+                                (hash-set! ht 'ok 5)
+                                (hash-ref ht 'ok))))])
+    (touch f)
+    (let ([log (raw-log-output)])
+      ;; Racket CS syncs on hash-ref, traditional Racket blocks
+      (case (system-type 'vm)
+        [(chez-scheme)
+         (check-equal? 2 (length (get-sync-blocks log)))
+         (check-equal? 1 (length (get-sync-blocks-on 'hash-set! log)))
+         (check-equal? 1 (length (get-sync-blocks-on 'hash-ref log)))]
+        [else
+         (check-equal? 2 (length (get-blocks log)))
+         (check-equal? 1 (length (get-blocks-on 'hash-set! log)))
+         (check-equal? 1 (length (get-blocks-on 'hash-ref log)))])
+      (check-equal? 0 (length (get-touch-blocks log))))))
 
 ;; ----------------------------------------
 

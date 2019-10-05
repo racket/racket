@@ -1545,7 +1545,7 @@
     (#%$keep-live v) ...
     result))
 
-(define call-locks (make-hasheq))
+(define call-locks (make-eq-hashtable))
 
 (define (ffi-call/callable call? in-types out-type abi save-errno lock-name blocking? atomic? async-apply)
   (let* ([conv (case abi
@@ -1633,10 +1633,11 @@
          [arg-makers (cddr gen-proc+ret-maker+arg-makers)]
          [async-callback-queue (and (procedure? async-apply) (current-async-callback-queue))]
          [lock (and lock-name
-                    (or (hash-ref call-locks (string->symbol lock-name) #f)
-                        (let ([lock (make-mutex)])
-                          (hash-set! call-locks (string->symbol lock-name) lock)
-                          lock)))])
+                    (with-global-lock
+                     (or (eq-hashtable-ref call-locks (string->symbol lock-name) #f)
+                         (let ([lock (make-mutex)])
+                           (eq-hashtable-set! call-locks (string->symbol lock-name) lock)
+                           lock))))])
     (cond
      [call?
       (cond
@@ -1847,13 +1848,7 @@
 (define-virtual-register place-thread-category PLACE-KNOWN-THREAD)
 (define (register-as-place-main!)
   (place-thread-category PLACE-MAIN-THREAD)
-  (foreign-place-init!))
-
-(define (foreign-place-init!)
-  (current-async-callback-queue (make-async-callback-queue (make-mutex)
-                                                           (make-condition)
-                                                           '()
-                                                           (make-async-callback-poll-wakeup))))
+  (async-callback-place-init!))
 
 ;; Can be called in any Scheme thread
 (define (call-as-atomic-callback thunk atomic? async-apply async-callback-queue)
@@ -1881,63 +1876,18 @@
    [else
     ;; Not in a place's main thread; queue an async callback
     ;; and wait for the response
-    (let* ([result-done? (box #f)]
-           [result #f]
-           [q async-callback-queue]
-           [m (async-callback-queue-lock q)]
-           [need-interrupts?
-            ;; If we created this thread by `fork-pthread`, we must
-            ;; have gotten here by a foreign call, so interrupts are
-            ;; currently disabled
-            (eqv? (place-thread-category) PLACE-KNOWN-THREAD)])
-      (mutex-acquire m)
-      (set-async-callback-queue-in! q (cons (lambda ()
-                                              (set! result (|#%app| async-apply thunk))
-                                              (mutex-acquire m)
-                                              (set-box! result-done? #t)
-                                              (condition-broadcast (async-callback-queue-condition q))
-                                              (mutex-release m))
-                                            (async-callback-queue-in q)))
-      ((async-callback-queue-wakeup q))
-      (let loop ()
-        (unless (unbox result-done?)
-          (when need-interrupts?
-            ;; Enable interrupts so that the thread is deactivated
-            ;; when we wait on the condition
-            (enable-interrupts))
-          (condition-wait (async-callback-queue-condition q) m)
-          (when need-interrupts? (disable-interrupts))
-          (loop)))
-      (mutex-release m)
-      result)]))
+    (async-callback-queue-call async-callback-queue
+                               (lambda () (|#%app| async-apply thunk))
+                               ;; If we created this thread by `fork-pthread`, we must
+                               ;; have gotten here by a foreign call, so interrupts are
+                               ;; currently disabled
+                               (eqv? (place-thread-category) PLACE-KNOWN-THREAD))]))
 
 (define scheduler-start-atomic void)
 (define scheduler-end-atomic void)
 (define (set-scheduler-atomicity-callbacks! start-atomic end-atomic)
   (set! scheduler-start-atomic start-atomic)
   (set! scheduler-end-atomic end-atomic))
-
-(define make-async-callback-poll-wakeup (lambda () void))
-(define (set-make-async-callback-poll-wakeup! make-wakeup)
-  (set! make-async-callback-poll-wakeup make-wakeup))
-
-(define-record async-callback-queue (lock condition in wakeup))
-
-(define-virtual-register current-async-callback-queue #f)
-
-;; Returns callbacks to run in atomic mode
-(define (poll-async-callbacks)
-  (let ([q (current-async-callback-queue)])
-    (mutex-acquire (async-callback-queue-lock q))
-    (let ([in (async-callback-queue-in q)])
-      (cond
-       [(null? in)
-        (mutex-release (async-callback-queue-lock q))
-        '()]
-       [else
-        (set-async-callback-queue-in! q '())
-        (mutex-release (async-callback-queue-lock q))
-        (reverse in)]))))
 
 ;; ----------------------------------------
 
