@@ -2,6 +2,7 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
+         racket/set
          racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
