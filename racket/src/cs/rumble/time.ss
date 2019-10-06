@@ -78,15 +78,17 @@
      (/ (time-nanosecond t) 1000000.)))
 
 (define (time-apply f extra)
-  (let ([stats (statistics)])
+  (let ([stats (statistics)]
+	[t (current-time 'time-process)])
     (call-with-values (lambda () (apply f extra))
       (lambda args
-        (let ([new-stats (statistics)])
+        (let ([new-stats (statistics)]
+	      [new-t (current-time 'time-process)])
           (values
            args
+	   ;; sstats-cpu records time only for the current thread
            (inexact->exact (floor (time->ms
-                                   (time-difference (sstats-cpu new-stats)
-                                                    (sstats-cpu stats)))))
+                                   (time-difference new-t t))))
            (inexact->exact (floor (time->ms
                                    (time-difference (sstats-real new-stats)
                                                     (sstats-real stats)))))
