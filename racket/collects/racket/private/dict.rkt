@@ -156,50 +156,6 @@
 
 (define vector-iterate-value vector-ref)
 
-(struct assoc-iter (head pos))
-
-(define (assoc-iterate-first d)
-  (unless (assoc? d)
-    (raise-argument-error 'dict-iterate-first "dict?" d))
-  (if (null? d) #f (assoc-iter d (assoc->list d))))
-
-(define (assoc-iterate-next d i)
-  (cond
-    [(and (assoc-iter? i)
-          (eq? d (assoc-iter-head i)))
-     (let ([pos (cdr (assoc-iter-pos i))])
-       (if (null? pos)
-           #f
-           (assoc-iter d pos)))]
-    [(assoc? d)
-     (raise-mismatch-error
-      'dict-iterate-next
-      "invalid iteration position for association list: "
-      i)]
-    [else (raise-argument-error 'dict-iterate-next "dict?" d)]))
-
-(define (assoc-iterate-key d i)
-  (cond
-    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
-     (caar (assoc-iter-pos i))]
-    [(assoc? d)
-     (raise-mismatch-error
-      'dict-iterate-key
-      "invalid iteration position for association list: "
-      i)]
-    [else (raise-argument-error 'dict-iterate-key "dict?" d)]))
-
-(define (assoc-iterate-value d i)
-  (cond
-    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
-     (cdar (assoc-iter-pos i))]
-    [(assoc? d)
-     (raise-mismatch-error
-      'dict-iterate-value
-      "invalid iteration position for association list: "
-      i)]
-    [else (raise-argument-error 'dict-iterate-value "dict?" d)]))
-
 (define (vector-has-key? vec key)
   (and (exact-nonnegative-integer? key)
        (< key (vector-length vec))))
@@ -282,6 +238,50 @@
   d2)
 
 (define (assoc-clear d) '())
+
+(struct assoc-iter (head pos))
+
+(define (assoc-iterate-first d)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-iterate-first "dict?" d))
+  (if (null? d) #f (assoc-iter d (assoc->list d))))
+
+(define (assoc-iterate-next d i)
+  (cond
+    [(and (assoc-iter? i)
+          (eq? d (assoc-iter-head i)))
+     (let ([pos (cdr (assoc-iter-pos i))])
+       (if (null? pos)
+           #f
+           (assoc-iter d pos)))]
+    [(assoc? d)
+     (raise-mismatch-error
+      'dict-iterate-next
+      "invalid iteration position for association list: "
+      i)]
+    [else (raise-argument-error 'dict-iterate-next "dict?" d)]))
+
+(define (assoc-iterate-key d i)
+  (cond
+    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
+     (caar (assoc-iter-pos i))]
+    [(assoc? d)
+     (raise-mismatch-error
+      'dict-iterate-key
+      "invalid iteration position for association list: "
+      i)]
+    [else (raise-argument-error 'dict-iterate-key "dict?" d)]))
+
+(define (assoc-iterate-value d i)
+  (cond
+    [(and (assoc-iter? i) (eq? d (assoc-iter-head i)))
+     (cdar (assoc-iter-pos i))]
+    [(assoc? d)
+     (raise-mismatch-error
+      'dict-iterate-value
+      "invalid iteration position for association list: "
+      i)]
+    [else (raise-argument-error 'dict-iterate-value "dict?" d)]))
 
 (define (fallback-clear d)
   (unless (dict-implements? d 'dict-remove)
