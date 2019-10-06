@@ -201,14 +201,14 @@
     (raise-argument-error 'assoc-fold-unique "dict?" d))
   (let loop ([xd d]
              [acc init]
-             [seen (set)])
+             [seen (make-immutable-hash)])
     (cond
       [(null? xd) acc]
       [else
        (let ([a (car xd)])
-         (if (set-member? seen (car a))
+         (if (hash-has-key? seen (car a))
              (loop (cdr xd) acc seen)
-             (loop (cdr xd) (f a acc) (set-add seen (car a)))))])))
+             (loop (cdr xd) (f a acc) (hash-set seen (car a) #t))))])))
 
 (define (assoc-count d)
   (unless (assoc? d)
