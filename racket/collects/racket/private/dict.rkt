@@ -2,7 +2,6 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
-         racket/list
          racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
@@ -157,11 +156,6 @@
 
 (define vector-iterate-value vector-ref)
 
-(define (assoc-count d)
-  (unless (assoc? d)
-    (raise-argument-error 'dict-count "dict?" d))
-  (length (assoc-keys d)))
-
 (struct assoc-iter (head pos))
 
 (define (assoc-iterate-first d)
@@ -172,11 +166,11 @@
 (define (assoc-iterate-next d i)
   (cond
     [(and (assoc-iter? i)
-          (equal? d (assoc-iter-head i)))
+          (eq? d (assoc-iter-head i)))
      (let ([pos (cdr (assoc-iter-pos i))])
        (if (null? pos)
            #f
-           (assoc-iter d (assoc->list pos))))]
+           (assoc-iter d pos)))]
     [(assoc? d)
      (raise-mismatch-error
       'dict-iterate-next
@@ -245,6 +239,25 @@
       (raise-argument-error 'dict-map "dict?" d))
     (proc (car x) (cdr x))))
 
+(define (assoc-fold-unique f init d)
+  (unless (assoc? d)
+    (raise-argument-error 'assoc-fold-unique "dict?" d))
+  (let loop ([xd d]
+             [acc init]
+             [seen (set)])
+    (cond
+      [(null? xd) acc]
+      [else
+       (let ([a (car xd)])
+         (if (set-member? seen (car a))
+             (loop (cdr xd) acc seen)
+             (loop (cdr xd) (f a acc) (set-add seen (car a)))))])))
+
+(define (assoc-count d)
+  (unless (assoc? d)
+    (raise-argument-error 'dict-count "dict?" d))
+  (assoc-fold-unique (lambda (a acc) (+ acc 1)) 0 d))
+
 (define (assoc-for-each d proc)
   (for ([x (in-list d)])
     (unless (pair? x)
@@ -252,28 +265,13 @@
     (proc (car x) (cdr x))))
 
 (define (assoc-keys d)
-  (remove-duplicates
-    (for/list ([x (in-list d)])
-      (unless (pair? x)
-        (raise-argument-error 'dict-keys "dict?" d))
-      (car x))))
-
-(define (assoc-map-unique f d)
-  (let loop ([xd d]
-             [keys (assoc-keys d)])
-    (cond
-      [(or (null? xd) (null? keys)) null]
-      [else
-       (let ([a (car xd)])
-         (if (equal? (car a) (car keys))
-             (cons (f a) (loop (cdr xd) (cdr keys)))
-             (loop (cdr xd) (cdr keys))))])))
+  (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d))
 
 (define (assoc-values d)
-  (assoc-map-unique cdr d))
+  (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d))
 
 (define (assoc->list d)
-  (assoc-map-unique (lambda (x) x) d))
+  (assoc-fold-unique cons null d))
 
 (define (fallback-copy d)
   (unless (dict-implements? d 'dict-clear dict-set!)
