@@ -78,21 +78,19 @@
      (/ (time-nanosecond t) 1000000.)))
 
 (define (time-apply f extra)
-  (let ([stats (statistics)])
+  (let ([pre-cpu (current-time 'time-process)]
+        [pre-real (current-time 'time-monotonic)]
+        [pre-gc (#%$gc-cpu-time)])
     (call-with-values (lambda () (apply f extra))
       (lambda args
-        (let ([new-stats (statistics)])
+        (let ([post-cpu (current-time 'time-process)]
+              [post-real (current-time 'time-monotonic)]
+              [post-gc (#%$gc-cpu-time)])
           (values
            args
-           (inexact->exact (floor (time->ms
-                                   (time-difference (sstats-cpu new-stats)
-                                                    (sstats-cpu stats)))))
-           (inexact->exact (floor (time->ms
-                                   (time-difference (sstats-real new-stats)
-                                                    (sstats-real stats)))))
-           (inexact->exact (floor (time->ms
-                                   (time-difference (sstats-gc-cpu new-stats)
-                                                    (sstats-gc-cpu stats)))))))))))
+           (inexact->exact (floor (time->ms (time-difference post-cpu pre-cpu))))
+           (inexact->exact (floor (time->ms (time-difference post-real pre-real))))
+           (inexact->exact (floor (time->ms (time-difference post-gc pre-gc))))))))))
 
 (define (current-gc-milliseconds)
   (inexact->exact (floor (time->ms (#%$gc-cpu-time)))))
