@@ -779,10 +779,13 @@
             (cond
               [(and (or (eq? (car expr) 'unquote)
                         (eq? (car expr) 'unsyntax))
-                    (symbol? (cadr expr)))
+                    ;; don't use cadr here since `car` and `cdr` are arguments to
+                    ;; this function
+                    (symbol? (car (cdr expr))))
+               (define v (car (cdr expr)))
                (define s (if display?
-                             (symbol->string (cadr expr))
-                             (format "~s" (cadr expr))))
+                             (symbol->string v)
+                             (format "~s" v)))
                (when (and (positive? (string-length s))
                           (eqv? #\@ (string-ref s 0)))
                  ;; Avoid ambiguity by adding a space
