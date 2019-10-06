@@ -472,7 +472,7 @@
   (define i-ns (namespace->module-namespace m-ns
                                             (module-path-index-resolve (module-binding-module binding))
                                             (phase+ (phase- (module-binding-phase binding) phase-level)
-                                                    phase-shift)
+                                                    (namespace-phase m-ns))
                                             #:complain-on-failure? #t))
   (define val (namespace-get-variable i-ns (module-binding-phase binding) (module-binding-sym binding)
                                       (lambda () (error 'namespace-require/copy
