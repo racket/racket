@@ -222,13 +222,13 @@
     (proc (car x) (cdr x))))
 
 (define (assoc-keys d)
-  (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d)))
 
 (define (assoc-values d)
-  (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d)))
 
 (define (assoc->list d)
-  (assoc-fold-unique cons null d))
+  (reverse (assoc-fold-unique cons null d)))
 
 (define (fallback-copy d)
   (unless (dict-implements? d 'dict-clear dict-set!)
