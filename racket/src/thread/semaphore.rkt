@@ -32,7 +32,7 @@
   #:property
   prop:evt
   (poller (lambda (s poll-ctx)
-            (semaphore-wait/poll s poll-ctx))))
+            (semaphore-wait/poll s s poll-ctx))))
 (define count-field-pos 2) ; used with `unsafe-struct*-cas!`
 
 (struct semaphore-peek-evt (sema)
@@ -40,6 +40,7 @@
   prop:evt
   (poller (lambda (sp poll-ctx)
             (semaphore-wait/poll (semaphore-peek-evt-sema sp)
+                                 sp
                                  poll-ctx
                                  #:peek? #t
                                  #:result sp))))
@@ -157,7 +158,7 @@
            (lambda () (semaphore-wait s)))])))]))
 
 ;; In atomic mode
-(define (semaphore-wait/poll s poll-ctx
+(define (semaphore-wait/poll s self poll-ctx
                              #:peek? [peek? #f]
                              #:result [result s])
   ;; Similar to `semaphore-wait, but as called by `sync`,
@@ -170,7 +171,7 @@
       (set-semaphore-count! s (sub1 c)))
     (values (list result) #f)]
    [(poll-ctx-poll? poll-ctx)
-    (values #f never-evt)]
+    (values #f self)]
    [else
     (define w (if peek?
                   (semaphore-peek-select-waiter (poll-ctx-select-proc poll-ctx))

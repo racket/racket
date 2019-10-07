@@ -90,7 +90,7 @@
     (waiter-resume! (car pw+v) (void))
     (values (list (cdr pw+v)) #f)]
    [(poll-ctx-poll? poll-ctx)
-    (values #f never-evt)]
+    (values #f ch)]
    [else
     (define b (box #f))
     (define gq (channel-get-queue ch))
@@ -142,7 +142,7 @@
           void])))]))
 
 ;; In atomic mode
-(define (channel-put/poll ch v result poll-ctx)
+(define (channel-put/poll ch v self poll-ctx)
   ;; Similar to `channel-put`, but works in terms of a
   ;; `select-waiter` instead of a thread
   (assert-atomic-mode)
@@ -152,9 +152,9 @@
    [gw+b
     (set-box! (cdr gw+b) v)
     (waiter-resume! (car gw+b) v)
-    (values (list result) #f)]
+    (values (list self) #f)]
    [(poll-ctx-poll? poll-ctx)
-    (values #f async-evt)]
+    (values #f self)]
    [else
     (define pq (channel-put-queue ch))
     (define pw (channel-select-waiter (poll-ctx-select-proc poll-ctx)
@@ -172,11 +172,11 @@
                                    [gw+b
                                     (set-box! (cdr gw+b) v)
                                     (waiter-resume! (car gw+b) v)
-                                    (values result #t)]
+                                    (values self #t)]
                                    [else
                                     (set! n (queue-add! pq (cons pw v)))
                                     (values #f #f)])))
-             (lambda (v) result)))]))
+             (lambda (v) self)))]))
 
 (define/who (channel-put-evt ch v)
   (check who channel? ch)

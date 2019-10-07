@@ -676,7 +676,8 @@
            [`(call-with-values ,generator ,receiver)
             (cond
               [(and (lambda? generator)
-                    (lambda? receiver))
+                    (or (lambda? receiver)
+                        (eq? (unwrap receiver) 'list)))
                `(call-with-values ,(schemify generator 'fresh) ,(schemify receiver 'fresh))]
               [else
                (left-to-right/app (if for-cify? 'call-with-values '#%call-with-values)

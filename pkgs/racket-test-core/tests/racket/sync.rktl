@@ -566,6 +566,15 @@
                                   s))
                 (make-semaphore))))
 
+(let ()
+  (define k #f)
+  (test always-evt sync (poll-guard-evt
+                         (lambda (poll?)
+                           (let/cc now-k
+                             (set! k now-k))
+                           always-evt)))
+  (err/rt-test (k 10)))
+
 ;; ----------------------------------------
 ;; Replace waitables
 

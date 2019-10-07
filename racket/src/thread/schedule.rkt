@@ -10,6 +10,7 @@
          "thread-group.rkt"
          "schedule-info.rkt"
          (submod "thread.rkt" scheduling)
+         (submod "sync.rkt" scheduling)
          "system-idle-evt.rkt"
          "exit.rkt"
          "future.rkt"
@@ -44,6 +45,7 @@
   (init-system-idle-evt!)
   (init-future-place!)
   (init-schedule-counters!)
+  (init-sync-place!)
   (call-in-main-thread thunk))
 
 ;; ----------------------------------------

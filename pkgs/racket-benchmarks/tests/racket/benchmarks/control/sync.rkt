@@ -25,14 +25,49 @@
    (for ([i (in-range M)])
      (sync e))))
 
-'sync-two
+'sync-guard
+(times
+ (let ([g (guard-evt (lambda () always-evt))])
+   (for ([i (in-range M)])
+     (sync g))))
+
+'sync-semaphore+never
 (times
  (let ([s (make-semaphore M)])
    (for ([i (in-range M)])
      (sync s never-evt))))
 
-'sync-three
+'sync-semaphore+semaphore
 (times
- (let ([s (make-semaphore M)])
+ (let ([s (make-semaphore M)]
+       [s2 (make-semaphore M)])
    (for ([i (in-range M)])
-     (sync s always-evt never-evt))))
+     (sync s s2))))
+
+'sync-semaphore+semaphore/timeout
+(times
+ (let ([s (make-semaphore)]
+       [s2 (make-semaphore)])
+   (for ([i (in-range M)])
+     (sync/timeout 0 s s2))))
+
+'sync-semaphore+semaphore/timeout-callback
+(times
+ (let ([s (make-semaphore)]
+       [s2 (make-semaphore)])
+   (for ([i (in-range M)])
+     (sync/timeout list s s2))))
+
+'sync-guard+guard
+(times
+ (let ([g (guard-evt (lambda () always-evt))])
+   (for ([i (in-range M)])
+     (sync g g))))
+
+'sync-three-semaphores
+(times
+ (let ([s (make-semaphore M)]
+       [s2 (make-semaphore M)]
+       [s3 (make-semaphore M)])
+   (for ([i (in-range M)])
+     (sync s s2 s3))))
