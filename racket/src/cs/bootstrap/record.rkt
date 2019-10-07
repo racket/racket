@@ -151,7 +151,7 @@
     (error 'normalize-fields "not a list: ~s" fields))
   (define (check-type t)
     (case t
-      [(scheme-object uptr ptr) t]
+      [(scheme-object uptr ptr double) t]
       [else
        (error 'make-struct-type "unsupported type ~s" t)]))
   (define (is-mut? m)
@@ -298,7 +298,7 @@
   (define (ptr-type? t)
     (case t
       [(scheme-object ptr) #t]
-      [(uptr) #f]
+      [(uptr double) #f]
       [else (error "unrecognized type")]))
   (define (assert-accessor)
     (when mut? (error 'csv7:record-field-mutator "immutable base-rtd field")))

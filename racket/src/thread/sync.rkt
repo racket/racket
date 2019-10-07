@@ -40,10 +40,10 @@
   #:transparent
         #:mutable)
 
-(define (make-syncer evt wraps)
-  (syncer evt wraps null #f null null null #f #f))
+(define (make-syncer evt wraps prev)
+  (syncer evt wraps null #f null null null prev #f))
 
-(define none-syncer (make-syncer #f null))
+(define none-syncer (make-syncer #f null #f))
 
 (define (make-syncing syncers #:disable-break [disable-break #f])
   (syncing #f ; selected
@@ -267,12 +267,11 @@
                 first
                 last)]
          [else
-          (define sr (make-syncer arg wraps))
+          (define sr (make-syncer arg wraps last))
           (unless (and (null? extended-commits)
                        (null? guarded-abandons))
             (set-syncer-commits! sr extended-commits)
             (set-syncer-abandons! sr guarded-abandons))
-          (set-syncer-prev! sr last)
           (when last
             (set-syncer-next! last sr))
           (loop (cdr evts)

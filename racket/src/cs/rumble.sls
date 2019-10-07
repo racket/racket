@@ -406,12 +406,7 @@
 
           random
           random-seed
-          pseudo-random-generator?
-          make-pseudo-random-generator
           current-pseudo-random-generator
-          vector->pseudo-random-generator
-          vector->pseudo-random-generator!
-          pseudo-random-generator->vector
           pseudo-random-generator-vector?
 
           mpair?

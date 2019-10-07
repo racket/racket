@@ -106,4 +106,3 @@
    (define t2 (make s2 s1))
    (thread-wait t1)
    (thread-wait t2)))
-

@@ -2,7 +2,7 @@
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
 (define-values (need-maj need-min need-sub need-dev)
-  (values 9 5 3 2))
+  (values 9 5 3 3))
 
 (unless (guard (x [else #f]) (eval 'scheme-fork-version-number))
   (error 'compile-file
@@ -13,7 +13,7 @@
               (and (= maj need-maj)
                    (or (> min need-min)
                        (and (= min need-min)
-                            (or (>= sub need-sub)
+                            (or (> sub need-sub)
                                 (and (= sub need-sub)
                                      (>= dev need-dev)))))))
     (error 'compile-file "need a newer Chez Scheme")))
