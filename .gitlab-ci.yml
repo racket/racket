@@ -210,6 +210,7 @@ scan:racket:cs:
 # Jobs starting with . are templates to be used as extensions to real jobs
 #
 .test:racket:test:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -222,6 +223,7 @@ scan:racket:cs:
       - test.log
       
 .test:racket:contract:all:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -233,6 +235,7 @@ scan:racket:cs:
       - test.log
 
 .test:json:json:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -244,6 +247,7 @@ scan:racket:cs:
       - test.log
 
 .test:file:main:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -255,6 +259,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:head:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -266,6 +271,7 @@ scan:racket:cs:
       - test.log
     
 .test:net:uri-codec:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -277,6 +283,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:url:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -288,6 +295,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:url-port:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -299,6 +307,7 @@ scan:racket:cs:
       - test.log
       
 .test:net:encoders:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -310,6 +319,7 @@ scan:racket:cs:
       - test.log
 
 .test:openssl:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -321,6 +331,7 @@ scan:racket:cs:
       - test.log
 
 .test:match:main:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -332,6 +343,7 @@ scan:racket:cs:
       - test.log
 
 .test:zo-path:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -343,6 +355,7 @@ scan:racket:cs:
       - test.log
 
 .test:xml:test:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -354,6 +367,7 @@ scan:racket:cs:
       - test.log
 
 .test:db:all-tests:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -365,6 +379,7 @@ scan:racket:cs:
       - test.log
 
 .test:stxparse:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -386,7 +401,6 @@ test:racket:test:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -401,7 +415,6 @@ test:racket:test:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -416,7 +429,6 @@ test:racket:test:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -431,7 +443,6 @@ test:racket:contract:all:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -445,7 +456,6 @@ test:racket:contract:all:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -459,7 +469,6 @@ test:racket:contract:all:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -488,7 +497,6 @@ test:json:json:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -502,7 +510,6 @@ test:json:json:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -517,7 +524,6 @@ test:file:main:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -531,7 +537,6 @@ test:file:main:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -545,7 +550,6 @@ test:file:main:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -560,7 +564,6 @@ test:net:head:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - raco pkg install pkgs/base pkgs/racket-lib
     - raco pkg install --auto racket-test
@@ -572,7 +575,6 @@ test:net:head:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -586,7 +588,6 @@ test:net:head:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -601,7 +602,6 @@ test:net:uri-codec:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -615,7 +615,6 @@ test:net:uri-codec:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -629,7 +628,6 @@ test:net:uri-codec:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -644,7 +642,6 @@ test:net:url:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -659,7 +656,6 @@ test:net:url:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -673,7 +669,6 @@ test:net:url:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -688,7 +683,6 @@ test:net:url-port:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -703,7 +697,6 @@ test:net:url-port:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -717,7 +710,6 @@ test:net:url-port:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -732,7 +724,6 @@ test:net:encoders:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -746,7 +737,6 @@ test:net:encoders:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -760,7 +750,6 @@ test:net:encoders:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -776,7 +765,6 @@ test:openssl:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -791,7 +779,6 @@ test:openssl:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -806,7 +793,6 @@ test:openssl:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -821,7 +807,6 @@ test:match:main:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -835,7 +820,6 @@ test:match:main:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -849,7 +833,6 @@ test:match:main:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -864,7 +847,6 @@ test:zo-path:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -878,7 +860,6 @@ test:zo-path:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -892,7 +873,6 @@ test:zo-path:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -907,7 +887,6 @@ test:xml:test:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -921,7 +900,6 @@ test:xml:test:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -935,7 +913,6 @@ test:xml:test:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -950,7 +927,6 @@ test:db:all-tests:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -964,7 +940,6 @@ test:db:all-tests:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -978,7 +953,6 @@ test:db:all-tests:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -993,7 +967,6 @@ test:stxparse:cgc:
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -1007,7 +980,6 @@ test:stxparse:3m:
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -1021,7 +993,6 @@ test:stxparse:cs:
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
