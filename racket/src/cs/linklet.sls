@@ -243,6 +243,7 @@
      (lambda (table)
        (hash-for-each (cdr table) (lambda (k v) (hash-set! primitives k v))))
      tables)
+    (unsafe-hash-seal! primitives)
     ;; prropagate table to the rumble layer
     (install-primitives-table! primitives))
   

@@ -270,6 +270,7 @@
           unsafe-weak-hash-iterate-first unsafe-weak-hash-iterate-next
           unsafe-weak-hash-iterate-key unsafe-weak-hash-iterate-value
           unsafe-weak-hash-iterate-key+value unsafe-weak-hash-iterate-pair
+          unsafe-hash-seal!    ; not exported to racket
 
           hash? hash-eq? hash-equal? hash-eqv? hash-weak? immutable-hash?
           hash-count

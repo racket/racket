@@ -57,13 +57,11 @@
     (make-scheduler-lock)]
    [else #f]))
 
-(define lock-acquire
-  (case-lambda
-   [(lock)
-    (cond
-     [(not lock) (disable-interrupts)]
-     [else
-      (scheduler-lock-acquire lock)])]))
+(define (lock-acquire lock)
+  (cond
+   [(not lock) (disable-interrupts)]
+   [else
+    (scheduler-lock-acquire lock)]))
 
 (define (lock-release lock)
   (cond

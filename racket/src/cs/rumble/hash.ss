@@ -238,6 +238,11 @@
                 ht))))]
    [else (raise-argument-error 'hash-clear! "(and/c hash? immutable?)" ht)]))
 
+(define/who (unsafe-hash-seal! ht)
+  (check who eq-mutable-hash? ht)
+  (prepare-iterate! ht (hash-count ht))
+  (set-locked-iterable-hash-lock! ht #f))
+
 (define (hash-eq? ht)
   (cond
    [(mutable-hash? ht) (eq-mutable-hash? ht)]

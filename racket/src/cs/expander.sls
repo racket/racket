@@ -66,6 +66,7 @@
          (let ([ht (make-hasheq)])
            (hash-set! ht 'prim prim)
            ...
+           (unsafe-hash-seal! ht)
            ht))]))
 
   (include "primitive/kernel.ss")
