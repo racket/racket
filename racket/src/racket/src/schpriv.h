@@ -22,7 +22,7 @@
 #define HOOK_SHARED_OK /* EMPTY */
 #endif
 
-#ifdef OS_X
+#if defined(OS_X) || defined(__linux__)
 # define MZ_CHECK_ASSERTS
 #endif
 
