@@ -82,7 +82,8 @@
 (define (set-root-custodian! c)
   (set! root-custodian c)
   (current-custodian c)
-  (set! custodian-will-executor (host:make-late-will-executor void #f)))
+  (set! custodian-will-executor (host:make-late-will-executor void #f))
+  (set! custodians-with-limits (make-hasheq)))
 
 (define/who (make-custodian [parent (current-custodian)])
   (check who custodian? parent)
@@ -374,7 +375,7 @@
 
 ;; Ensures that custodians with memory limits are not treated as
 ;; inaccessible and merged:
-(define custodians-with-limits (make-hasheq))
+(define-place-local custodians-with-limits (make-hasheq))
 
 ;; ----------------------------------------
 
