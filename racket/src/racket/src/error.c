@@ -1,6 +1,5 @@
 #include "schpriv.h"
 #include "schrktio.h"
-#include <assert.h>
 #include <ctype.h>
 #ifdef DOS_FILE_SYSTEM
 # include <windows.h>
@@ -610,7 +609,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	      tlen = strlen(es) + 24;
 	      t = (const char *)scheme_malloc_atomic(tlen);
 
-              assert(errkind_str);
+              MZ_ASSERT(errkind_str);
 	      sprintf((char *)t, "%s; %s=%d", es, errkind_str, en);
 	      tlen = strlen(t);
               if (_errno_val) {
