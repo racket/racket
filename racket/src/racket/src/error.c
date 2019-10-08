@@ -538,7 +538,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    int en, he, none = 0;
 	    char *es;
-            const char *errkind_str;
+            const char *errkind_str = NULL;
             Scheme_Object *err_kind = NULL;
             
 	    if (type == 'm') {
@@ -608,6 +608,8 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 #endif
 	      tlen = strlen(es) + 24;
 	      t = (const char *)scheme_malloc_atomic(tlen);
+
+              MZ_ASSERT(errkind_str);
 	      sprintf((char *)t, "%s; %s=%d", es, errkind_str, en);
 	      tlen = strlen(t);
               if (_errno_val) {
