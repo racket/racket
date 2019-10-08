@@ -278,6 +278,10 @@
         ((ffi 'hoho (_fun _int (_fun _int -> (_fun _int -> _int)) -> _int))
          3 (lambda (x) (lambda (y) (+ y (* x x))))))
   ;; ---
+  ;; FIXME: this test is broken, because the array allocated by `(_list io _int len)`
+  ;; has no reason to stay in place; a GC during the callback may move it.
+  ;; The solution is probably to extend `_list` so that an allocation mode like
+  ;; 'atomic-interior can be supplied.
   (let ([qsort (get-ffi-obj 'qsort #f
                             (_fun (l    : (_list io _int len))
                                   (len  : _int = (length l))
