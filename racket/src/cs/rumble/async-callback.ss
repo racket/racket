@@ -5,20 +5,21 @@
   (place-async-callback-queue))
 
 (define (async-callback-place-init!)
-  (place-async-callback-queue (make-async-callback-queue (make-mutex)
+  (place-async-callback-queue (make-async-callback-queue (make-mutex)     ; ordered *before* `interrupts-disable`-as-lock
                                                          (make-condition)
                                                          '()
                                                          (make-async-callback-poll-wakeup))))
 
 (define (call-as-asynchronous-callback thunk)
-  (with-interrupts-disabled*
-   (async-callback-queue-call (current-async-callback-queue) thunk #t)))
+  (async-callback-queue-call (current-async-callback-queue) thunk #f #t))
 
-(define (async-callback-queue-call async-callback-queue thunk need-interrupts?)
+(define (async-callback-queue-call async-callback-queue thunk interrupts-disabled? need-atomic?)
   (let* ([result-done? (box #f)]
          [result #f]
          [q async-callback-queue]
          [m (async-callback-queue-lock q)])
+    (when interrupts-disabled? (enable-interrupts)) ; interrupt "lock" ordered after mutex
+    (when need-atomic? (scheduler-start-atomic)) ; don't abandon engine after mutex is acquired
     (mutex-acquire m)
     (set-async-callback-queue-in! q (cons (lambda ()
                                             (set! result (thunk))
@@ -30,21 +31,22 @@
     ((async-callback-queue-wakeup q))
     (let loop ()
       (unless (unbox result-done?)
-        (when need-interrupts?
-          ;; Enable interrupts so that the thread is deactivated
-          ;; when we wait on the condition
-          (enable-interrupts))
+        ;; Interrupts must be enabled so that the thread is deactivated
+        ;; when we wait on the condition
         (condition-wait (async-callback-queue-condition q) m)
-        (when need-interrupts? (disable-interrupts))
         (loop)))
     (mutex-release m)
+    (when need-atomic? (scheduler-end-atomic))
+    (when interrupts-disabled? (enable-interrupts))
     result))
 
 (define make-async-callback-poll-wakeup (lambda () void))
 (define (set-make-async-callback-poll-wakeup! make-wakeup)
-  (set! make-async-callback-poll-wakeup make-wakeup))
+  (set! make-async-callback-poll-wakeup make-wakeup)
+  (set-async-callback-queue-wakeup! (current-async-callback-queue) (make-wakeup)))
 
-;; Returns callbacks to run in atomic mode
+;; Returns callbacks to run in atomic mode. Interrupts must not be disabled
+;; when ths function is called.
 (define (poll-async-callbacks)
   (let ([q (current-async-callback-queue)])
     (mutex-acquire (async-callback-queue-lock q))
