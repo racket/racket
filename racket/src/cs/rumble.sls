@@ -803,6 +803,7 @@
   (set-base-exception-handler!)
   (init-place-locals!)
   (register-as-place-main!)
+  (remember-original-place!)
   (set-collect-handler!)
   (set-primitive-applicables!)
   (set-continuation-applicables!)
