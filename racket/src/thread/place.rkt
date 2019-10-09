@@ -73,7 +73,6 @@
      (host:mutex-acquire lock)
      (set-place-queued-result! new-place (if flush-failed? 1 (if (byte? v) v 0)))
      (place-has-activity! new-place)
-     (unsafe-custodian-unregister new-place (place-custodian-ref new-place))
      (host:mutex-release lock))
     ;; Switch to scheduler, so it can exit:
     (engine-block))
@@ -215,6 +214,10 @@
                   (set-place-host-thread! p #f)
                   #t)))
       (log-place "reap" #:data (place-id p))))
+  (define cref (place-custodian-ref p))
+  (when cref
+    (unsafe-custodian-unregister p cref)
+    (set-place-custodian-ref! p #f))
   result)
 
 ;; In atomic mode, callback from custodian:
