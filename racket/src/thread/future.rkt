@@ -354,6 +354,7 @@
 
 ;; ----------------------------------------
 
+;; Can be in a future thread
 ;; Call `thunk` in the place's main thread:
 (define (future-sync who thunk)
   (define me-f (current-future))
@@ -366,6 +367,8 @@
        (current-future me-f)
        v)]
     [else
+     ;; In case the main thread is trying to shut down futures, check in:
+     (engine-block)
      ;; Atomic mode prevents getting terminated or swapped out
      ;; while we block on the main thread
      (current-atomic (add1 (current-atomic)))
@@ -606,7 +609,8 @@
               (check-in w)
               (host:mutex-release (scheduler-mutex (current-scheduler))))
             ;; Check that the future should still run
-            (when (and (custodian-shut-down?/other-pthread (future*-custodian f))
+            (when (and (or (custodian-shut-down?/other-pthread (future*-custodian f))
+                           (worker-die? w))
                        (zero? (current-atomic)))
               (lock-acquire (future*-lock f))
               (set-future*-state! f #f)
@@ -628,37 +632,48 @@
   ;; have had a chance to notice a custodian shutdown or a
   ;; future-scheduler shutdown.
   ;;
-  ;; Assert: all works have `ping` as #f.
+  ;; Assert: all workers have `ping` as #f.
   (define s (current-scheduler))
   (host:mutex-acquire (scheduler-mutex s))
   (for ([w (in-list (scheduler-workers s))])
-    ;; Although `(worker-ping w) is #f, a worker pthread may be
-    ;; running `(worker-pinged? w)`, so we need a retry loop here
     (let retry ()
       (unless (box-cas! (worker-ping w) #f #t)
         (retry))))
   ;; Assert: all workers have `ping` as #t.
   ;; Wake up idle threads so they check in:
   (host:condition-broadcast (scheduler-cond s))
+  (drain-async-callbacks (scheduler-mutex s)) ; releases and re-acquires mutex
   ;; When a worker sets `ping` to #f, they must broadcast
   ;; a wakeup for the following loop's benefit
   (let loop ()
-    (host:condition-wait (scheduler-ping-cond s) (scheduler-mutex s))
     (when (for/or ([w (in-list (scheduler-workers s))])
             (unbox (worker-ping w)))
+      (host:condition-wait (scheduler-ping-cond s) (scheduler-mutex s))
       (loop)))
   ;; Assert: all workers have `ping` as #f.
   (host:mutex-release (scheduler-mutex s)))
 
 ;; lock-free synchronization to check whether the box content is #f
 (define (worker-pinged? w)
-  (box-cas! w #f #f))
+  (box-cas! (worker-ping w) #t #t))
 
 ;; called with scheduler lock
 (define (check-in w)
   (when (unbox (worker-ping w))
     (set-box! (worker-ping w) #f)
     (host:condition-broadcast (scheduler-ping-cond (current-scheduler)))))
+
+;; in atomic mode
+;; While we're trying to finish up futures, some of them
+;; may be blocked waiting for async callbacks. No new ones
+;; will get posted since we've set the ping flag, so we
+;; only have to drain once.
+(define (drain-async-callbacks m)
+  (host:mutex-release m)
+  (define callbacks (host:poll-async-callbacks))
+  (for ([callback (in-list callbacks)])
+    (callback))
+  (host:mutex-acquire m))
 
 ;; ----------------------------------------
 

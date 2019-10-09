@@ -1776,7 +1776,7 @@
                                             [else r])))))])
                              (if (and orig-place?
                                       (not (eqv? 0 (get-thread-id))))
-                                 (async-callback-queue-call orig-place-async-callback-queue (lambda () (go)) #f #t)
+                                 (async-callback-queue-call orig-place-async-callback-queue (lambda () (go)) #f #t void #t)
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
@@ -1853,8 +1853,7 @@
 (define PLACE-MAIN-THREAD 2)
 (define-virtual-register place-thread-category PLACE-KNOWN-THREAD)
 (define (register-as-place-main!)
-  (place-thread-category PLACE-MAIN-THREAD)
-  (async-callback-place-init!))
+  (place-thread-category PLACE-MAIN-THREAD))
 
 (define orig-place-async-callback-queue #f)
 (define (remember-original-place!)
@@ -1895,7 +1894,9 @@
                                  known-thread?
                                  ;; In a thread created by `fork-pthread`, we'll have to tell
                                  ;; the scheduler to be in atomic mode:
-                                 known-thread?))]))
+                                 known-thread?
+                                 ;; Wait for result:
+                                 #t))]))
 
 (define scheduler-start-atomic void)
 (define scheduler-end-atomic void)
