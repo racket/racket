@@ -71,7 +71,7 @@ build:racket:cgc:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-cgcdefault --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
-    - make -l $cpus -j $((cpus+1))
+    - make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   artifacts:
     paths:
@@ -91,7 +91,7 @@ build:racket:3m:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread --enable-racket=$CGC_INSTALL_DIR/bin/racket
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
-    - make -l $cpus -j $((cpus+1))
+    - make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   dependencies:
     - build:racket:cgc
