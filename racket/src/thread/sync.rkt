@@ -631,23 +631,53 @@
      [else
       (define e (syncer-evt sr))
       (and (or (async-evt? e)
-               (never-evt? e))
+               (never-evt? e)
+               (and (nested-sync-evt? e)
+                    (let ([s (nested-sync-evt-s e)])
+                      (and (not (syncing-selected s))
+                           (all-asynchronous? s)))))
            (not (evt-impersonator? e))
            (loop (syncer-next sr)))]))))
+
+;; In atomic mode
+;; Gets nested syncings due to `replace-evt`, where they must
+;; all have only asynchronous events
+(define (nested-syncings s orig-s)
+  (let loop ([sr (syncing-syncers s)])
+    (cond
+      [(not sr) null]
+      [else
+       (define e (syncer-evt sr))
+       (cond
+         [(nested-sync-evt? e)
+          (define s (nested-sync-evt-s e))
+          (set-syncing-wakeup! s
+                               ;; In atomic mode
+                               (lambda ()
+                                 ((syncing-wakeup orig-s))))
+          (append (nested-syncings s orig-s)
+                  (cons s
+                        (loop (syncer-next sr))))]
+         [else
+          (loop (syncer-next sr))])])))
 
 ;; Install a callback to reschedule the current thread if an
 ;; asynchronous selection happens, and then deschedule the thread
 (define (suspend-syncing-thread s timeout-at)
   ((atomically
     (let retry ()
+      (define nss (nested-syncings s s)) ; sets `syncing-wakeup` propagation
       (cond
-       [(syncing-selected s)
+       [(or (syncing-selected s)
+            (for/or ([ns (in-list nss)])
+              (syncing-selected ns)))
         ;; don't suspend after all
         void]
        [else
         (define t (current-thread/in-atomic))
         (set-syncing-wakeup!
          s
+         ;; In atomic mode
          (lambda ()
            (set-syncing-wakeup! s void)
            ;; In case this callback is late, where the thread was
@@ -659,14 +689,15 @@
         ;; to have both at this point
         (thread-deschedule! t
                             timeout-at
+                            ;; In atomic mode:
                             (lambda ()
                               ;; Interrupt due to break/kill/suspend
                               (set-syncing-wakeup! s void)
                               (unless (syncing-selected s)
                                 (syncing-interrupt! s)))
+                            ;; In non-atomic mode and tail position:
                             (lambda ()
                               ;; Continue from suspend or ignored break...
-                              ;; In non-atomic mode and tail position:
                               ((atomically
                                 (unless (syncing-selected s)
                                   (syncing-retry! s))
