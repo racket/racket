@@ -102,23 +102,23 @@ build:racket:3m:
 build:racket:cs:
   stage: stage4
   image: pmatos/racket-ci:builddeps
-  needs: ["build:racket:3m"]
+  needs: ["build:racket:cgc"]
   tags:
     - linux
     - x86_64
   variables:
-    MMM_INSTALL_DIR: $CI_PROJECT_DIR/install/racket3m
+    CGC_INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
     INSTALL_DIR: $CI_PROJECT_DIR/install/racketcs
   script:
     - cd racket/src
     - rm -r ChezScheme || true
     - git clone --depth=1 --recurse-submodules -j8 https://github.com/racket/ChezScheme
-    - ./configure --prefix=$INSTALL_DIR --enable-compress --disable-docs --enable-pthread --enable-racket=$MMM_INSTALL_DIR/bin/racket --enable-csdefault --enable-csonly
+    - ./configure --prefix=$INSTALL_DIR --enable-compress --disable-docs --enable-pthread --enable-racket=$CGC_INSTALL_DIR/bin/racket --enable-csdefault --enable-csonly
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
     - make -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   dependencies:
-    - build:racket:3m
+    - build:racket:cgc
   artifacts:
     paths:
       - $INSTALL_DIR
