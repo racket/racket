@@ -284,6 +284,7 @@
                   'mutex-acquire (lambda (s) (semaphore-wait s))
                   'mutex-release (lambda (s) (semaphore-post s))
                   'call-as-asynchronous-callback (lambda (thunk) (thunk))
+                  'post-as-asynchronous-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k) #f)))
 
 ;; add dummy definitions that implement pthreads and conditions etc.

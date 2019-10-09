@@ -29,6 +29,7 @@
                   [get-initial-pthread rumble:get-initial-pthread]
                   [current-place-roots rumble:current-place-roots]
                   [call-as-asynchronous-callback rumble:call-as-asynchronous-callback]
+                  [post-as-asynchronous-callback rumble:post-as-asynchronous-callback]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
@@ -164,6 +165,7 @@
         'exit place-exit
         'pthread? rumble:thread?
         'call-as-asynchronous-callback rumble:call-as-asynchronous-callback
+        'post-as-asynchronous-callback rumble:post-as-asynchronous-callback
         'get-thread-id rumble:get-thread-id
         'make-condition rumble:make-condition
         'condition-wait rumble:condition-wait

@@ -74,7 +74,7 @@
      (set-place-queued-result! new-place (if flush-failed? 1 (if (byte? v) v 0)))
      (place-has-activity! new-place)
      (host:mutex-release lock))
-    ;; Switch to scheduler, so it can exit:
+    ;; Switch to scheduler, so it can exit via `check-place-activity`
     (engine-block))
   ;; Atomic mode to create ports and deliver them to the new place
   (start-atomic)
@@ -161,7 +161,7 @@
 (void
  (set-check-place-activity!
   ;; Called in atomic mode by scheduler
-  (lambda ()
+  (lambda (callbacks)
     (define p current-place)
     (unless (box-cas! (place-activity-canary p) #f #f)
       (box-cas! (place-activity-canary p) #t #f)
@@ -175,6 +175,11 @@
         (set-place-dequeue-semas! p null))
       (host:mutex-release (place-lock p))
       (when queued-result
+        ;; If we have pending callbacks, re-post them, so they don't get dropped:
+        (host:post-as-asynchronous-callback (lambda ()
+                                              (for ([callback (in-list callbacks)])
+                                                (callback))))
+        ;; Exit the place:
         (force-exit queued-result))
       (for ([s (in-list dequeue-semas)])
         (thread-did-work!)

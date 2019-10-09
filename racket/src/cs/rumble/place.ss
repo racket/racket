@@ -85,6 +85,7 @@
                    (root-thread-cell-values (make-empty-thread-cell-values))
                    (init-place-locals!)
                    (register-as-place-main!)
+                   (async-callback-place-init!)
                    (let ([result (call/cc
                                   (lambda (esc)
                                     (set-box! place-esc-box esc)
@@ -105,7 +106,9 @@
   (set! do-start-place proc))
 
 (define (start-place pch path sym in out err cust plumber)
-  (do-start-place pch path sym in out err cust plumber))
+  (let ([finish (do-start-place pch path sym in out err cust plumber)])
+    (reset-async-callback-poll-wakeup!)
+    finish))
 
 (define (place-exit v)
   (let ([esc (unbox place-esc-box)])

@@ -70,16 +70,22 @@
   (when poll-now?
     (check-external-events))
   (call-pre-poll-external-callbacks)
-  (check-place-activity)
+  (check-place-activity callbacks)
   (when (check-queued-custodian-shutdown)
     (when (thread-dead? root-thread)
       (force-exit 0)))
   (flush-future-log)
   (cond
-    [(and (null? callbacks)
-          (all-threads-poll-done?))
+    [(all-threads-poll-done?)
      ;; May need to sleep
      (cond
+       [(not (null? callbacks))
+        ;; Need to run atomic callbacks in some thread, so make one
+        (do-make-thread 'callbacks
+                        (lambda () (void))
+                        #:custodian #f
+                        #:at-root? #t)
+        (poll-and-select-thread! TICKS callbacks)]
        [(and (not poll-now?)
              (check-external-events))
         ;; Retry and reset counter for checking external events

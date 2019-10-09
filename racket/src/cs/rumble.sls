@@ -704,6 +704,7 @@
           install-primitives-table!
           continuation-current-primitive
           call-as-asynchronous-callback
+          post-as-asynchronous-callback
 
           ;; compile-time use in "thread.sls"
           current-atomic-virtual-register
@@ -803,6 +804,7 @@
   (set-base-exception-handler!)
   (init-place-locals!)
   (register-as-place-main!)
+  (async-callback-place-init!)
   (remember-original-place!)
   (set-collect-handler!)
   (set-primitive-applicables!)
