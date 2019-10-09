@@ -369,20 +369,17 @@
     [else
      ;; In case the main thread is trying to shut down futures, check in:
      (engine-block)
-     ;; Atomic mode prevents getting terminated or swapped out
-     ;; while we block on the main thread
-     (current-atomic (add1 (current-atomic)))
-     (begin0
-       ;; Host's `call-as-asynchronous-callback` will post `thunk`
-       ;; so that it's returned by `host:poll-async-callbacks` to
-       ;; the scheduler in the place's main thread
-       (host:call-as-asynchronous-callback
-        (lambda ()
-          (log-future 'sync (future*-id me-f) #:prim-name who)
-          (let ([v (thunk)])
-            (log-future 'result (future*-id me-f))
-            v)))
-       (current-atomic (sub1 (current-atomic))))]))
+     ;; Host's `call-as-asynchronous-callback` will post `thunk`
+     ;; so that it's returned by `host:poll-async-callbacks` to
+     ;; the scheduler in the place's main thread; it will also
+     ;; tell the scheduler to be in atomic mode so that we don't
+     ;; get terminated or swapped out while blocking on the main thread
+     (host:call-as-asynchronous-callback
+      (lambda ()
+        (log-future 'sync (future*-id me-f) #:prim-name who)
+        (let ([v (thunk)])
+          (log-future 'result (future*-id me-f))
+          v)))]))
 
 ;; ----------------------------------------
 
