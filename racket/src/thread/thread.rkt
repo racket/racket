@@ -1000,7 +1000,8 @@
                               (set-thread-mailbox-wakeup! t (lambda () (wakeup) (receive))))
                             (add-wakeup-callback!)
                             (values #f (control-state-evt
-                                        (wrap-evt async-evt (lambda (v) self))
+                                        async-evt
+                                        (lambda (v) self)
                                         ;; interrupt (all must be interrupted, so just install `void`):
                                         (lambda () (set-thread-mailbox-wakeup! t void))
                                         ;; abandon:
