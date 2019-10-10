@@ -472,7 +472,7 @@
      (check who (procedure-arity-includes/c 1) proc)
      (check who continuation-prompt-tag? tag)
      (maybe-future-barricade tag)
-     (call/cc/end-uninterrupted
+     (call/cc
       (lambda (k)
         (|#%app|
          proc
@@ -494,7 +494,7 @@
      (call-with-composable-continuation* p tag #t)]))
 
 (define (call-with-composable-continuation* p tag wind?)
-  (call/cc/end-uninterrupted
+  (call/cc
    (lambda (k)
      (|#%app|
       p
@@ -564,8 +564,10 @@
            (eq? (continuation-next-attachments (full-continuation-k c))
                 (current-mark-stack)))
       ;; Short cut: jump within the same metacontinuation, no winder
-      ;; changes or changes to marks, and no tag impersonators to deal with
-      ((full-continuation-k c) (lambda () (end-uninterrupted-with-values/same-marks args)))]
+      ;; changes or changes to marks (so no break-enabled changes),
+      ;; and no tag impersonators to deal with
+      (end-uninterrupted 'cc)
+      (apply (full-continuation-k c) args)]
      [else
       (let-values ([(common-mc   ; shared part of the current metacontinuation
                      rmc-append) ; non-shared part of the destination metacontinuation
@@ -615,7 +617,8 @@
          ;; the metacontinuation won't change (except by escaping):
          (activate-and-wrap-cc-guard-for-impersonator!
           (full-continuation-tag c)))
-       ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
+       (end-uninterrupted 'cc)
+       (apply-with-break-transition (full-continuation-k c) args))
      ;; If a winder changed the meta-continuation, try again for a
      ;; non-composable continuation:
      (and (non-composable-continuation? c)
@@ -629,7 +632,8 @@
                              (current-metacontinuation)))
   (current-winders (full-continuation-winders c))
   (current-mark-splice (full-continuation-mark-splice c))
-  ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
+  (end-uninterrupted 'cc)
+  (apply-with-break-transition (full-continuation-k c) args))
 
 ;; Used as a "handler" for a prompt without a tag, which is used for
 ;; composable continuations
@@ -1023,26 +1027,6 @@
                  body)))]
          [else
           (#%error 'with-continuation-mark* "unrecognized mode: ~s" #'mode)])])))
-
-;; Return a continuation that expects a thunk to resume. That way, we
-;; can can an `(end-uninterrupted)` and check for breaks in the
-;; destination continuation
-(define (call/cc/end-uninterrupted proc)
-  ((call/cc
-    (lambda (k)
-      (lambda ()
-        (proc k))))))
-
-;; Called on the arguments to return to a continuation
-;; captured by `call/cc/end-uninterrupted`:
-(define (end-uninterrupted-with-values args)
-  (end-uninterrupted/call-hook 'cc)
-  (#%apply values args))
-
-;; When marks didn't change, then no need to call the hook:
-(define (end-uninterrupted-with-values/same-marks args)
-  (end-uninterrupted 'cc)
-  (#%apply values args))
 
 (define (current-mark-chain)
   (get-mark-chain (current-mark-stack) (current-mark-splice) (current-metacontinuation)))
@@ -1914,6 +1898,16 @@
 
 (define (set-break-enabled-transition-hook! proc)
   (set! break-enabled-transition-hook proc))
+
+(define (apply-with-break-transition k args)
+  ;; Install attachments of `k` before calling
+  ;; `break-enabled-transition-hook`. Technically, the hook is called
+  ;; with the wrong Scheme continuation, which might keep the
+  ;; continuation live longer than it should. But the hook can't see
+  ;; the difference, and its only options are to return or escape.
+  (current-mark-stack (continuation-next-attachments k))
+  (break-enabled-transition-hook)
+  (apply k args))
 
 ;; ----------------------------------------
 ;; Metacontinuation swapping for engines
