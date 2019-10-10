@@ -1776,7 +1776,7 @@
                                             [else r])))))])
                              (if (and orig-place?
                                       (not (eqv? 0 (get-thread-id))))
-                                 (async-callback-queue-call orig-place-async-callback-queue (lambda () (go)) #f #t void #t)
+                                 (async-callback-queue-call orig-place-async-callback-queue (lambda () (go)) #f #t #t)
                                  (go))))])
                  (c->s out-type r)))
              (fxsll 1 (length in-types))
