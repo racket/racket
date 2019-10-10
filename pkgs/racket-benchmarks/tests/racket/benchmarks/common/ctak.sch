@@ -29,31 +29,32 @@
   (cond ((not (< y x))  ;xy
          (k z))
         (else (call-with-current-continuation
-               (ctak-aux
-                k
-                (call-with-current-continuation
-                 (lambda (k)
-                   (ctak-aux k
-                             (- x 1)
-                             y
-                             z)))
-                (call-with-current-continuation
-                 (lambda (k)
-                   (ctak-aux k
-                             (- y 1)
-                             z
-                             x)))
-                (call-with-current-continuation
-                 (lambda (k)
-                   (ctak-aux k
-                             (- z 1)
-                             x
-                             y))))))))
+               (lambda (k)
+                 (ctak-aux
+                  k
+                  (call-with-current-continuation
+                   (lambda (k)
+                     (ctak-aux k
+                               (- x 1)
+                               y
+                               z)))
+                  (call-with-current-continuation
+                   (lambda (k)
+                     (ctak-aux k
+                               (- y 1)
+                               z
+                               x)))
+                  (call-with-current-continuation
+                   (lambda (k)
+                     (ctak-aux k
+                               (- z 1)
+                               x
+                               y)))))))))
 
 ;;; call: (ctak 18 12 6)
 
 (let ((input (with-input-from-file "input.txt" read)))
-  (time (let loop ((n 25) (v 0))
+  (time (let loop ((n 125) (v 0))
           (if (zero? n)
               v
               (loop (- n 1)
