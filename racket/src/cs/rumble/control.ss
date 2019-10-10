@@ -420,11 +420,11 @@
      '()
      ;; No winders left:
      (lambda ()
-       (do-abort-current-continuation who tag args wind?))
+       (do-abort-current-continuation who tag args #t))
      ;; If the metacontinuation changes, check target before retrying:
      (lambda ()
        (check-prompt-still-available who tag)
-       (do-abort-current-continuation who tag args wind?)))]))
+       (do-abort-current-continuation who tag args #t)))]))
 
 (define (check-prompt-still-available who tag)
   (unless (continuation-prompt-available? tag)
@@ -551,63 +551,76 @@
 
 (define (apply-non-composable-continuation c args)
   (assert-in-uninterrupted)
-  (let* ([tag (full-continuation-tag c)])
-    (let-values ([(common-mc   ; shared part of the current metacontinuation
-                   rmc-append) ; non-shared part of the destination metacontinuation
-                  ;; We check every time, just in case control operations
-                  ;; change the current continuation out from under us.
-                  (find-common-metacontinuation (full-continuation-mc c)
-                                                (current-metacontinuation)
-                                                (strip-impersonator tag))])
-      (let loop ()
-        (cond
-         [(eq? common-mc (current-metacontinuation))
-          ;; Replace the current metacontinuation frame's continuation
-          ;; with the saved one; this replacement will take care of any
-          ;; shared winders within the frame.
-          (apply-immediate-continuation c rmc-append args)]
-         [else
-          ;; Unwind this metacontinuation frame:
-          (wind-to
-           '()
-           ;; If all winders complete simply:
-           (lambda ()
-             (pop-metacontinuation-frame)
-             (loop))
-           ;; If a winder changes the metacontinuation, then
-           ;; start again:
-           (lambda ()
-             (apply-non-composable-continuation c args)))])))))
+  (let ([mc (current-metacontinuation)]
+        [c-mc (full-continuation-mc c)]
+        [tag (full-continuation-tag c)])
+    (cond
+     [(and (null? c-mc)
+           (pair? mc)
+           (not (impersonator? tag))
+           (eq? tag (metacontinuation-frame-tag (car mc)))
+           (same-winders? (current-winders) (full-continuation-winders c))
+           (eq? (current-mark-splice) (full-continuation-mark-splice c))
+           (eq? (continuation-next-attachments (full-continuation-k c))
+                (current-mark-stack)))
+      ;; Short cut: jump within the same metacontinuation, no winder
+      ;; changes or changes to marks, and no tag impersonators to deal with
+      ((full-continuation-k c) (lambda () (end-uninterrupted-with-values/same-marks args)))]
+     [else
+      (let-values ([(common-mc   ; shared part of the current metacontinuation
+                     rmc-append) ; non-shared part of the destination metacontinuation
+                    ;; We check every time, just in case control operations
+                    ;; change the current continuation out from under us.
+                    (find-common-metacontinuation  c-mc
+                                                   mc
+                                                   (strip-impersonator tag))])
+        (let loop ()
+          (cond
+           [(eq? common-mc (current-metacontinuation))
+            ;; Replace the current metacontinuation frame's continuation
+            ;; with the saved one; this replacement will take care of any
+            ;; shared winders within the frame.
+            (apply-immediate-continuation c rmc-append args)]
+           [else
+            ;; Unwind this metacontinuation frame:
+            (wind-to
+             '()
+             ;; If all winders complete simply:
+             (lambda ()
+               (pop-metacontinuation-frame)
+               (loop))
+             ;; If a winder changes the metacontinuation, then
+             ;; start again:
+             (lambda ()
+               (apply-non-composable-continuation c args)))])))])))
 
 ;; Apply a continuation within the current metacontinuation frame:
 (define (apply-immediate-continuation c rmc args)
   (assert-in-uninterrupted)
-  (call-with-appended-metacontinuation
-   rmc
-   c
-   args
-   (lambda ()
-     (let ([mark-stack (full-continuation-mark-stack c)])
-       (current-mark-splice (let ([mark-splice (full-continuation-mark-splice c)])
-                              (if (composable-continuation? c)
-                                  (merge-mark-splice mark-splice (current-mark-splice))
-                                  mark-splice)))
-       (wind-to
-        (full-continuation-winders c)
-        ;; When no winders are left:
-        (lambda ()
-          (when (non-composable-continuation? c)
-            ;; Activate/add cc-guards in target prompt; any user-level
-            ;; callbacks here are run with a continuation barrier, so
-            ;; the metacontinuation won't change (except by escaping):
-            (activate-and-wrap-cc-guard-for-impersonator!
-             (full-continuation-tag c)))
-          ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
-        ;; If a winder changed the meta-continuation, try again for a
-        ;; non-composable continuation:
-        (and (non-composable-continuation? c)
-             (lambda ()
-               (apply-non-composable-continuation c args))))))))
+  (apply-continuation-with-appended-metacontinuation rmc c args))
+
+(define (apply-continuation-within-metacontinuation c args)
+  (let ([mark-stack (full-continuation-mark-stack c)])
+    (current-mark-splice (let ([mark-splice (full-continuation-mark-splice c)])
+                           (if (composable-continuation? c)
+                               (merge-mark-splice mark-splice (current-mark-splice))
+                               mark-splice)))
+    (wind-to
+     (full-continuation-winders c)
+     ;; When no winders are left:
+     (lambda ()
+       (when (non-composable-continuation? c)
+         ;; Activate/add cc-guards in target prompt; any user-level
+         ;; callbacks here are run with a continuation barrier, so
+         ;; the metacontinuation won't change (except by escaping):
+         (activate-and-wrap-cc-guard-for-impersonator!
+          (full-continuation-tag c)))
+       ((full-continuation-k c) (lambda () (end-uninterrupted-with-values args))))
+     ;; If a winder changed the meta-continuation, try again for a
+     ;; non-composable continuation:
+     (and (non-composable-continuation? c)
+          (lambda ()
+            (apply-non-composable-continuation c args))))))
 
 ;; Like `apply-immediate-continuation`, but don't run winders
 (define (apply-immediate-continuation/no-wind c args)
@@ -739,7 +752,7 @@
                             exn:fail:contract:continuation
                             (list "tag" tag)))
 
-(define (call-with-appended-metacontinuation rmc dest-c dest-args proc)
+(define (apply-continuation-with-appended-metacontinuation rmc dest-c dest-args)
   ;; Assumes that the current metacontinuation frame is ready to be
   ;; replaced with `mc` (reversed as `rmc`) plus `proc`.
   ;; In the simple case of no winders and an empty frame immediate
@@ -750,7 +763,7 @@
   (assert-in-uninterrupted)
   (let loop ([rmc rmc])
     (cond
-     [(null? rmc) (proc)]
+     [(null? rmc) (apply-continuation-within-metacontinuation dest-c dest-args)]
      [else
       (let ([mf (maybe-merge-splice (composable-continuation? dest-c)
                                     (metacontinuation-frame-clear-cache (car rmc)))]
@@ -1024,6 +1037,11 @@
 ;; captured by `call/cc/end-uninterrupted`:
 (define (end-uninterrupted-with-values args)
   (end-uninterrupted/call-hook 'cc)
+  (#%apply values args))
+
+;; When marks didn't change, then no need to call the hook:
+(define (end-uninterrupted-with-values/same-marks args)
+  (end-uninterrupted 'cc)
   (#%apply values args))
 
 (define (current-mark-chain)
