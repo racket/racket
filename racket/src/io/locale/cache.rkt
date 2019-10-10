@@ -21,9 +21,11 @@
 (define (new-cache) (cache #f #f #f #f))
 
 (define-place-local local-cache (new-cache))
+(define-place-local converter-custodian (unsafe-make-custodian-at-root))
 
 (define (convert-cache-init!)
-  (set! local-cache (new-cache)))
+  (set! local-cache (new-cache))
+  (set! converter-custodian (unsafe-make-custodian-at-root)))
 
 (define (cache-clear! get update!)
   (define c (get local-cache))
@@ -57,24 +59,21 @@
 
 (define (bytes-open-converter/cached-to enc)
   (or (cache-lookup! enc cache-to set-cache-to!)
-      (bytes-open-converter ucs-4-encoding enc)))
+      (bytes-open-converter-in-custodian 'bytes-open-converter/cached-to converter-custodian ucs-4-encoding enc)))
 
 (define (bytes-open-converter/cached-to2 enc)
   (or (cache-lookup! enc cache-to2 set-cache-to2!)
-      (bytes-open-converter ucs-4-encoding enc)))
+      (bytes-open-converter-in-custodian 'bytes-open-converter/cached-to2 converter-custodian ucs-4-encoding enc)))
 
 (define (bytes-open-converter/cached-from enc)
   (or (cache-lookup! enc cache-from set-cache-from!)
-      (bytes-open-converter enc "UTF-8")))
+      (bytes-open-converter-in-custodian 'bytes-open-converter/cached-from converter-custodian enc "UTF-8")))
 
 (define (bytes-close-converter/cached-to c enc)
-  (or (cache-save! c enc cache-to set-cache-to!)
-      (bytes-close-converter c)))
+  (cache-save! c enc cache-to set-cache-to!))
 
 (define (bytes-close-converter/cached-to2 c enc)
-  (or (cache-save! c enc cache-to2 set-cache-to2!)
-      (bytes-close-converter c)))
+  (cache-save! c enc cache-to2 set-cache-to2!))
 
 (define (bytes-close-converter/cached-from c enc)
-  (or (cache-save! c enc cache-from set-cache-from!)
-      (bytes-close-converter c)))
+  (cache-save! c enc cache-from set-cache-from!))

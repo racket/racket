@@ -2,7 +2,8 @@
 (require (only-in '#%linklet primitive-table)
          (only-in '#%unsafe
                   unsafe-custodian-register
-                  unsafe-custodian-unregister)
+                  unsafe-custodian-unregister
+                  unsafe-make-custodian-at-root)
          "../../thread/current-sandman.rkt"
          ffi/unsafe/atomic
          (only-in ffi/unsafe
@@ -149,6 +150,7 @@
                          'plumber-flush-handle-remove! plumber-flush-handle-remove!
                          'unsafe-custodian-register unsafe-custodian-register
                          'unsafe-custodian-unregister unsafe-custodian-unregister
+                         'unsafe-make-custodian-at-root unsafe-make-custodian-at-root
                          'thread-push-kill-callback! thread-push-kill-callback!
                          'thread-pop-kill-callback! thread-pop-kill-callback!
                          'unsafe-add-pre-poll-callback! (lambda (proc) (void))
