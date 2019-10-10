@@ -374,9 +374,9 @@
   (let loop ([sr (syncing-syncers s)]
              [retries 0] ; count retries on `sr`, and advance if it's too many
              [polled-all-so-far? #t])
+    (start-atomic)
     (when (syncing-need-retry? s)
       (syncing-retry! s))
-    (start-atomic)
     (cond
       [(syncing-selected s)
        => (lambda (sr)
@@ -473,9 +473,12 @@
              (end-atomic)
              (loop sr (add1 retries) polled-all-so-far?)])]
          [(control-state-evt? new-evt)
+          (define wrap-proc (control-state-evt-wrap-proc new-evt))
           (define interrupt-proc (control-state-evt-interrupt-proc new-evt))
           (define abandon-proc (control-state-evt-abandon-proc new-evt))
           (define retry-proc (control-state-evt-retry-proc new-evt))
+          (unless (eq? wrap-proc values)
+            (set-syncer-wraps! sr (cons wrap-proc (syncer-wraps sr))))
           (unless (eq? interrupt-proc void)
             (set-syncer-interrupts! sr (cons interrupt-proc (syncer-interrupts sr))))
           (unless (eq? abandon-proc void)
@@ -726,6 +729,7 @@
         ;; represents the instantited attempt to sync on `evt`:
         (control-state-evt
          (nested-sync-evt s next orig-evt)
+         values
          (lambda () (syncing-interrupt! s))
          (lambda () (syncing-abandon! s))
          (lambda () (syncing-retry! s)))))))

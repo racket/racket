@@ -55,7 +55,8 @@
                            (increment-receiever-waiters! lr)
                            (queue-add! (queue-log-receiver-waiters lr) b)))
                (values #f (control-state-evt
-                           (wrap-evt async-evt (lambda (e) (unbox b)))
+                           async-evt
+                           (lambda (e) (unbox b))
                            (lambda ()
                              (queue-remove-node! (queue-log-receiver-waiters lr) n)
                              (decrement-receiever-waiters! lr))

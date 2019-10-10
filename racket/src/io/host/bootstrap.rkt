@@ -42,12 +42,13 @@
 
 (define (poll-ctx-sched-info ctx) #f)
 
-(struct control-state-evt (evt interrupt abandon retry)
+(struct control-state-evt (evt wrap interrupt abandon retry)
   #:property prop:evt (lambda (cse)
                         (nack-guard-evt
                          (lambda (nack)
                            (thread (lambda () (sync nack) ((control-state-evt-abandon cse))))
-                           (control-state-evt-evt cse)))))
+                           (wrap-evt (control-state-evt-evt cse)
+                                     (control-state-evt-wrap cse))))))
 
 (define current-async-semaphore (make-parameter #f #f 'current-async-semaphore))
 

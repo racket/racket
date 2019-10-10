@@ -98,22 +98,21 @@
                                       (current-thread/in-atomic)))
     (define n (queue-add! gq (cons gw b)))
     (values #f
-            (wrap-evt
-             (control-state-evt async-evt
-                                (lambda () (queue-remove-node! gq n))
-                                void
-                                (lambda ()
-                                  ;; Retry: get ready value or requeue
-                                  (define pw+v (queue-fremove! pq not-matching-select-waiter))
-                                  (cond
+            (control-state-evt async-evt
+                               (lambda (v) (unbox b))
+                               (lambda () (queue-remove-node! gq n))
+                               void
+                               (lambda ()
+                                 ;; Retry: get ready value or requeue
+                                 (define pw+v (queue-fremove! pq not-matching-select-waiter))
+                                 (cond
                                    [pw+v
                                     (waiter-resume! (car pw+v) (void))
                                     (set-box! b (cdr pw+v))
                                     (values #t #t)]
                                    [else
                                     (set! n (queue-add! gq (cons gw b)))
-                                    (values #f #f)])))
-             (lambda (v) (unbox b))))]))
+                                    (values #f #f)]))))]))
 
 ;; ----------------------------------------
 
@@ -161,22 +160,21 @@
                                       (current-thread/in-atomic)))
     (define n (queue-add! pq (cons pw v)))
     (values #f
-            (wrap-evt
-             (control-state-evt async-evt
-                                (lambda () (queue-remove-node! pq n))
-                                void
-                                (lambda ()
-                                  ;; Retry: put ready value or requeue
-                                  (define gw+b (queue-fremove! gq not-matching-select-waiter))
-                                  (cond
+            (control-state-evt async-evt
+                               (lambda (v) self)
+                               (lambda () (queue-remove-node! pq n))
+                               void
+                               (lambda ()
+                                 ;; Retry: put ready value or requeue
+                                 (define gw+b (queue-fremove! gq not-matching-select-waiter))
+                                 (cond
                                    [gw+b
                                     (set-box! (cdr gw+b) v)
                                     (waiter-resume! (car gw+b) v)
                                     (values self #t)]
                                    [else
                                     (set! n (queue-add! pq (cons pw v)))
-                                    (values #f #f)])))
-             (lambda (v) self)))]))
+                                    (values #f #f)]))))]))
 
 (define/who (channel-put-evt ch v)
   (check who channel? ch)

@@ -135,7 +135,15 @@
 ;; semaphore was meanwhile posted). As another example, a
 ;; `nack-guard-evt`'s result uses `abandon-proc` to post to the NACK
 ;; event.
+;; Beware that it doesn't make sense to use `wrap-evt` around the
+;; `control-state-evt` or the `evt` inside for an asynchronously
+;; satisfied event (like the way that semaphores are implemented). The
+;; event may be selected asynchronously before a wrapper on the inner
+;; event is found, so that the result turns out to be an unwrapped
+;; event. Or the `interrupt-proc`, etc., callbacks may not be found
+;; early enough if the `control-state-evt` is wrapped.
 (struct control-state-evt (evt
+                           wrap-proc
                            interrupt-proc ; thunk for break/kill initiated or otherwise before `abandon-proc`
                            abandon-proc ; thunk for not selected, including break/kill complete
                            retry-proc) ; thunk for resume from break; return `(values _val _ready?)`

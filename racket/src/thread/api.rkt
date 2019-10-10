@@ -79,6 +79,7 @@
          (if (evt? v)
              v
              (wrap-evt always-evt (lambda () v)))))
+      values
       void
       (lambda () (semaphore-post s))
       void))))

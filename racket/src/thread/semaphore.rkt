@@ -182,19 +182,19 @@
     ;; event through a callback. Pair the event with a nack callback
     ;; to get back out of line.
     (values #f
-            (wrap-evt
-             (control-state-evt async-evt
-                                (lambda ()
-                                  (assert-atomic-mode)
-                                  (queue-remove-node! s n)
-                                  (when (queue-empty? s)
-                                    (set-semaphore-count! s 0))) ; allow CAS again
-                                void
-                                (lambda ()
-                                  ;; Retry: decrement or requeue
-                                  (assert-atomic-mode)
-                                  (define c (semaphore-count s))
-                                  (cond
+            (control-state-evt async-evt
+                               (lambda (v) result)
+                               (lambda ()
+                                 (assert-atomic-mode)
+                                 (queue-remove-node! s n)
+                                 (when (queue-empty? s)
+                                   (set-semaphore-count! s 0))) ; allow CAS again
+                               void
+                               (lambda ()
+                                 ;; Retry: decrement or requeue
+                                 (assert-atomic-mode)
+                                 (define c (semaphore-count s))
+                                 (cond
                                    [(positive? c)
                                     (unless peek?
                                       (set-semaphore-count! s (sub1 c)))
@@ -202,8 +202,7 @@
                                    [else
                                     (set! n (queue-add! s w))
                                     (set-semaphore-count! s -1) ; so CAS not tried for `semaphore-post`
-                                    (values #f #f)])))
-             (lambda (v) result)))]))
+                                    (values #f #f)]))))]))
 
 ;; Called only when it should immediately succeed:
 (define (semaphore-wait/atomic s)
