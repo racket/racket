@@ -67,36 +67,39 @@
          (equal? irritants '(0)))
     (values "division by zero" null)]
    [(equal? str "~s is not a pair")
-    (values "contract violation\n  expected: pair?\n  given: ~s"
-            irritants)]
+    (format-error-values "contract violation\n  expected: pair?\n  given: ~s"
+                         irritants)]
    [(and (equal? str "incorrect list structure ~s")
          (cxr->contract who))
     => (lambda (ctc)
-         (values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
-                 irritants))]
+         (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
+                              irritants))]
    [else
-    (let ([str (string-copy str)]
-          [len (string-length str)])
-      (let loop ([i 0] [accum-irritants '()] [irritants irritants])
-        (cond
-         [(fx= i len)
-          ;; `irritants` should be empty by now
-          (values str (append (reverse accum-irritants) irritants))]
-         [(and (char=? #\~ (string-ref str i))
-               (fx< (fx+ i 1) len))
-          (case (string-ref str (fx+ i 1))
-            [(#\~ #\%) (loop (fx+ i 2) accum-irritants irritants)]
-            [(#\s)
-             (string-set! str (fx+ i 1) #\a)
-             (loop (fx+ i 2)
-                   (cons (error-value->string (car irritants))
-                         accum-irritants)
-                   (cdr irritants))]
-            [else (loop (fx+ i 2)
-                        (cons (car irritants)
-                              accum-irritants)
-                        (cdr irritants))])]
-         [else (loop (fx+ i 1) accum-irritants irritants)])))]))
+    (format-error-values str irritants)]))
+
+(define (format-error-values str irritants)
+  (let ([str (string-copy str)]
+        [len (string-length str)])
+    (let loop ([i 0] [accum-irritants '()] [irritants irritants])
+      (cond
+       [(fx= i len)
+        ;; `irritants` should be empty by now
+        (values str (append (reverse accum-irritants) irritants))]
+       [(and (char=? #\~ (string-ref str i))
+             (fx< (fx+ i 1) len))
+        (case (string-ref str (fx+ i 1))
+          [(#\~ #\%) (loop (fx+ i 2) accum-irritants irritants)]
+          [(#\s)
+           (string-set! str (fx+ i 1) #\a)
+           (loop (fx+ i 2)
+                 (cons (error-value->string (car irritants))
+                       accum-irritants)
+                 (cdr irritants))]
+          [else (loop (fx+ i 2)
+                      (cons (car irritants)
+                            accum-irritants)
+                      (cdr irritants))])]
+       [else (loop (fx+ i 1) accum-irritants irritants)]))))
 
 (define (string-prefix? p str)
   (and (>= (string-length str) (string-length p))
