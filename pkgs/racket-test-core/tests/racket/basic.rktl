@@ -1497,6 +1497,8 @@
 (err/rt-test (apply (lambda x x) 1))
 (err/rt-test (apply (lambda x x) 1 2))
 (err/rt-test (apply (lambda x x) 1 '(2 . 3)))
+(err/rt-test (apply 10 '(2 . 3)))
+(err/rt-test (apply 10 0 '(2 . 3)))
 
 (test '(b e h) map cadr '((a b) (d e) (g h)))
 (test '(5 7 9) map + '(1 2 3) '(4 5 6))
