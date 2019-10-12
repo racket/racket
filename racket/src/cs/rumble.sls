@@ -635,9 +635,9 @@
           ptr-ref/double ptr-set!/double  ; not exported to Racket
           ptr-ref/float ptr-set!/float    ; not exported to Racket
 
-          unsafe-unbox
+          (rename [inline:unsafe-unbox unsafe-unbox]
+                  [inline:unsafe-set-box! unsafe-set-box!])
           unsafe-unbox*
-          unsafe-set-box!
           unsafe-set-box*!
           unsafe-box*-cas!
 
@@ -646,12 +646,12 @@
           unsafe-set-mcar!
           unsafe-set-mcdr!
 
-          unsafe-vector-ref
-          unsafe-vector-set!
+          (rename [inline:unsafe-vector-ref unsafe-vector-ref]
+                  [inline:unsafe-vector-set! unsafe-vector-set!]
+                  [inline:unsafe-vector-length unsafe-vector-length])
           unsafe-vector*-ref
           unsafe-vector*-set!
           unsafe-vector*-cas!
-          unsafe-vector-length
           unsafe-vector*-length
 
           unsafe-fxvector-length
@@ -670,8 +670,8 @@
           unsafe-string-ref
           unsafe-string-set!
 
-          unsafe-struct-ref
-          unsafe-struct-set!
+          (rename [inline:unsafe-struct-ref unsafe-struct-ref]
+                  [inline:unsafe-struct-set! unsafe-struct-set!])
           unsafe-struct*-ref
           unsafe-struct*-set!
           unsafe-struct*-cas!
