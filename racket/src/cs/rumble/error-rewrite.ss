@@ -47,6 +47,7 @@
                             (rename . args))])])
         (rename bytevector-u8-ref bytes-ref
                 bytevector-u8-set! bytes-set!
+                bytevector-length bytes-length
                 bitwise-arithmetic-shift arithmetic-shift
                 fixnum->flonum fx->fl 
                 flonum->fixnum fl->fx
@@ -55,6 +56,8 @@
                 real->flonum ->fl)
         (set! rewrites-added? #t)))
     (getprop n 'error-rename n)))
+
+(define is-not-a-str "~s is not a")
 
 (define (rewrite-format who str irritants)
   (cond
@@ -74,6 +77,36 @@
     => (lambda (ctc)
          (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
                               irritants))]
+   [(equal? str  "~s is not a valid index for ~s")
+    (cond
+     [(exact-nonnegative-integer? (car irritants))
+      (let-values ([(what len)
+                    (let ([v (cadr irritants)])
+                      (cond
+                       [(vector? v) (values "vector" (vector-length v))]
+                       [(bytes? v) (values "byte string" (bytes-length v))]
+                       [(string? v) (values "string" (string-length v))]
+                       [(fxvector? v) (values "fxvector" (fxvector-length v))]
+                       [else (values "value" #f)]))])
+        (format-error-values (string-append "index is out of range\n"
+                                            "  index: ~s\n"
+                                            "  valid range: [0, " (if len (number->string len) "...") "]\n"
+                                            "  " what ": ~s")
+                             irritants))]
+     [else
+      (format-error-values (string-append "contract violation\n"
+                                          "  expected: exact-nonnegative-integer?\n"
+                                          "  given: ~s\n"
+                                          "  argument position: 2nd\n"
+                                          "  first argument...:\n"
+                                          "   ~s")
+                           irritants)])]
+   [(and (> (string-length str) (string-length is-not-a-str))
+         (equal? (substring str 0 (string-length is-not-a-str)) is-not-a-str)
+         (= 1 (length irritants)))
+    (let ([ctc (desc->contract (substring str (string-length is-not-a-str) (string-length str)))])
+      (format-error-values (string-append "contract violation\n  expected: " ctc "\n  given: ~s")
+                           irritants))]
    [else
     (format-error-values str irritants)]))
 
@@ -146,3 +179,40 @@
                                 combo ...
                                 [else #f])))))])
     (gen)))
+
+(define (desc->contract str)
+  (cond
+   [(equal? str " mutable vector")
+    "(and/c vector? (not/c immutable?))"]
+   [(equal? str " bytevector")
+    "bytes?"]
+   [(equal? str " mutable bytevector")
+    "(and/c bytes? (not/c immutable?))"]
+   [(equal? str " mutable box")
+    "(and/c box? (not/c immutable?))"]
+   [(equal? str " character")
+    "char?"]
+   [(equal? str " real number")
+    "real?"]
+   [(equal? str " proper list")
+    "list?"]
+   [(equal? str "n flvector")
+    "flvector?"]
+   [else
+    (let* ([l (string->list str)]
+           [l (cond
+               [(and (pair? l)
+                     (eqv? (car l) #\space))
+                (cdr l)]
+               [(and (pair? l)
+                     (eqv? (car l) #\n)
+                     (pair? (cdr l))
+                     (eqv? (cadr l) #\space))
+                (cddr l)]
+               [else l])])
+      (list->string
+       (let loop ([l l])
+         (cond
+          [(null? l) '(#\?)]
+          [(eqv? (car l) #\space) (cons #\- (loop (cdr l)))]
+          [else (cons (car l) (loop (cdr l)))]))))]))
