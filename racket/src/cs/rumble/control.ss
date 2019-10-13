@@ -1112,7 +1112,7 @@
     [(_ key-expr proc-expr)
      #'(call-with-immediate-continuation-mark/inline key-expr proc-expr #f)]
     [(_ key-expr (|#%name| _ (lambda (arg) body ...)) default-v-expr)
-     #'(call-with-immediate-continuation-mark/inline key-expr (lambda (arg) body ...) #f)]
+     #'(call-with-immediate-continuation-mark/inline key-expr (lambda (arg) body ...) default-v-expr)]
     [(_ key-expr (lambda (arg) body ...) default-v-expr)
      #'(call-getting-continuation-attachment
         empty-mark-frame
