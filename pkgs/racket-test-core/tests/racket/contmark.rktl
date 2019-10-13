@@ -698,6 +698,7 @@
 
 (test #f call-with-immediate-continuation-mark 'x (lambda (v) v))
 (test 10 call-with-immediate-continuation-mark 'x (lambda (v) v) 10)
+(test 10 'also-ten (call-with-immediate-continuation-mark 'x (lambda (v) v) 10))
 (test 12 'cwicm (with-continuation-mark 'x 12 (call-with-immediate-continuation-mark 'x (lambda (v) v))))
 (test '(#f) 'cwiwcm (with-continuation-mark 'x 12 (list (call-with-immediate-continuation-mark 'x (lambda (v) v)))))
 (test 12 'cwicm (with-continuation-mark 'x 12 
