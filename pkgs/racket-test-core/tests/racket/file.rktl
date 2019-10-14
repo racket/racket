@@ -1211,12 +1211,22 @@
   (close-input-port e)
   (subprocess-wait s))
 
-(let ()
-  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(let loop () (write-bytes (make-bytes 1024)) (loop))"))
+(for ([force-close? '(#t #f)])
+  (define c (make-custodian))
+
+  (define-values (s i o e)
+    (parameterize ([current-custodian c])
+      (subprocess #f #f #f (find-exe) "-e" "(let loop () (write-bytes (make-bytes 1024)) (loop))")))
 
   (thread (lambda ()
             (sync (system-idle-evt))
-            (close-output-port o)))
+            (if (or force-close?
+                    ;; For Windows, we need a close that doesn't try
+                    ;; to flush, because there's no way to avoid
+                    ;; buffering at the rktio level:
+                    (eq? 'windows (system-type)))
+                (custodian-shutdown-all c)
+                (close-output-port o))))
 
   (err/rt-test
    (let loop ()
