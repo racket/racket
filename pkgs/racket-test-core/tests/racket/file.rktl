@@ -1167,6 +1167,68 @@
   (delete-file tempfilename))
 
 ;;------------------------------------------------------------
+;; File-stream ports and blocking behavior
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  (err/rt-test
+   (peek-bytes-avail! (make-bytes 10) 0 #f i)
+   exn:fail?)
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  (test 0 peek-bytes-avail! (make-bytes 10) 0 (port-progress-evt i) i)
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(read)"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-input-port i)))
+
+  ;; Short not get stuck:
+  (sync (port-progress-evt i))
+
+  (close-output-port o)
+  (close-input-port e)
+  (subprocess-wait s))
+
+(let ()
+  (define-values (s i o e) (subprocess #f #f #f (find-exe) "-e" "(let loop () (write-bytes (make-bytes 1024)) (loop))"))
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (close-output-port o)))
+
+  (err/rt-test
+   (let loop ()
+     (write-bytes-avail #"hello" o)
+     (loop))
+   exn:fail?)
+
+  (close-input-port i)
+  (close-input-port e)
+  (subprocess-wait s))
+
+;;------------------------------------------------------------
 
 ;; Test custom output port
 (let ([l null]

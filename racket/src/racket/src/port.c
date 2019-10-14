@@ -5174,6 +5174,8 @@ fd_flush_done(Scheme_Object *port)
 
   op = scheme_output_port_record(port);
 
+  if (op->closed) return 1;
+
   fop = (Scheme_FD *)op->port_data;
 
   return !fop->flushing;
@@ -5296,6 +5298,9 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
                                           (Scheme_Object *)op, 0.0,
                                           enable_break);
         END_ESCAPEABLE();
+
+        if (op->closed)
+          return 0;
       } else if (len == RKTIO_WRITE_ERROR) {
         if (consume_buffer) {
           /* Drop unsuccessfully flushed bytes. This isn't the
@@ -5448,12 +5453,15 @@ fd_close_output(Scheme_Output_Port *port)
   if (fop->bufcount)
     flush_fd(port, NULL, 0, 0, 0, 0);
 
-  if (fop->flushing && !scheme_force_port_closed)
+  if (fop->flushing && fop->bufcount && !scheme_force_port_closed) {
     wait_until_fd_flushed(port, 0);
+    if (port->closed)
+      return;
+  }
 
   if (!scheme_force_port_closed && fop->fd) {
     /* Check for flushing at the rktio level (not to be confused
-       with pulmber flushes): */
+       with plumber flushes): */
     while (!rktio_poll_write_flushed(scheme_rktio, fop->fd)) {
       scheme_block_until(end_fd_flush_done, end_fd_flush_needs_wakeup, (Scheme_Object *)fop, 0.0);
     }
