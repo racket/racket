@@ -1054,3 +1054,8 @@
      [(_ (~or (~seq a b c (~parse (d e f) #'(a b c)))
               (~seq x:id ...)))
       (void)])))
+
+;; from @jjsimpso, ~between pattern (10/2019)
+(convert-compile-time-error
+ (syntax-parse #'(1 2 'bar 4 5 'bar 'foo)
+   [((~seq (~between x:nat 2 2) ... z) ...+ expr) (void)]))
