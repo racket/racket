@@ -732,6 +732,12 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
     int retval;
     Win_FD_Output_Thread *oth = rfd->oth;
 
+    if (check_flushed && rfd->oth->nonblocking) {
+      /* Not Windows 95, so any written data really is in the pipe, as
+         good as flushed, and we don't really need to ask the thread. */
+      return RKTIO_POLL_READY;
+    }
+
     WaitForSingleObject(oth->lock_sema, INFINITE);
     if (oth->nonblocking) {
       if (oth->needflush) {

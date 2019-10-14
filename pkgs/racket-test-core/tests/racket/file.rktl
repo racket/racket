@@ -1221,10 +1221,11 @@
   (thread (lambda ()
             (sync (system-idle-evt))
             (if (or force-close?
-                    ;; For Windows, we need a close that doesn't try
+                    ;; For really old Windows, we need a close that doesn't try
                     ;; to flush, because there's no way to avoid
                     ;; buffering at the rktio level:
-                    (eq? 'windows (system-type)))
+                    (and (eq? 'windows (system-type))
+                         (not (regexp-match? "Windows NT" (system-type 'machine)))))
                 (custodian-shutdown-all c)
                 (close-output-port o))))
 

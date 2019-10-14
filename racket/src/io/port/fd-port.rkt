@@ -213,10 +213,24 @@
        #:break newline?
        (void)))]
 
+  ;; in atomic mode, but may leave it temporarily
+  [flush-rktio-buffer-fully
+   (lambda ()
+     (unless (rktio-flushed?)
+       (end-atomic)
+       (sync (rktio-fd-flushed-evt this))
+       (start-atomic)
+       (flush-rktio-buffer-fully)))]
+
   #:static
   [flush-buffer/external
    (lambda ()
      (flush-buffer-fully #f))]
+
+  [rktio-flushed?
+   (lambda ()
+     (or (not bstr)
+         (rktio_poll_write_flushed rktio fd)))]
 
   #:override
   ;; in atomic mode
@@ -258,6 +272,7 @@
   [close
    (lambda ()
      (flush-buffer-fully #f) ; can temporarily leave atomic mode
+     (flush-rktio-buffer-fully) ; can temporarily leave atomic mode
      (when bstr ; <- in case a concurrent close succeeded
        (send fd-output-port this on-close)
        (when flush-handle
@@ -456,6 +471,29 @@
             (lambda (ps)
               (rktio_poll_add rktio (fd-evt-fd fde) ps mode)))
            (values #f fde)])]))))
+
+;; ----------------------------------------
+;; Wait on rktio-level flushing. At the time of writing, this is
+;; needed only for Windows so old that Racket CS doesn't run on it,
+;; but here just in case rktio or something else changes.
+
+(struct rktio-fd-flushed-evt (p)
+  #:property
+  prop:evt
+  (poller
+   (lambda (ffe ctx)
+     (define p  (rktio-fd-flushed-evt-p ffe))
+     (cond
+       [(send fd-output-port p rktio-flushed?)
+        (values '(#t) #f)]
+       [else
+        (sandman-poll-ctx-add-poll-set-adder!
+         ctx
+         (lambda (ps)
+           (if (send fd-output-port p rktio-flushed?)
+               (rktio_poll_set_add_nosleep rktio ps)
+               (rktio_poll_add rktio (fd-output-port-fd p) ps RKTIO_POLL_FLUSH))))
+        (values #f (list ffe))]))))
 
 ;; ----------------------------------------
 

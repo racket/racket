@@ -278,9 +278,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *buffer, intptr_
    mode. Alternatively, the result can be `RKTIO_WRITE_ERROR` for an
    error. Although `rktio_write` is intended to write only bytes that
    can be fully delivered to the OS, there may be OS limitations that
-   require buffering (e.g., on Windows). Use `rktio_poll_write_flushed`
-   to make sure the data is received by the destination before closing
-   `fd`. */
+   require buffering (e.g., on ancient versions of Windows). Use
+   `rktio_poll_write_flushed` to make sure the data is received by the
+   destination before closing `fd`. */
 
 #define RKTIO_WRITE_ERROR (-2)
 
