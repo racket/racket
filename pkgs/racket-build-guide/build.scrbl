@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require "common.rkt"
-          scribble/bnf)
+@(require "common.rkt")
 
 @title[#:tag "build"]{Building Racket from Source}
 
@@ -193,8 +192,9 @@ control both the makefile and the @exec{raco setup} part, use
 
 @commandline{make CPUS=@nonterm{n}}
 
-which recurs with @exec{make -j <n> JOB_OPTIONS="-j <n>"}. Setting
-@exec{CPUS} also works with @exec{make unix-style}.
+which recurs with @exec{make -j @nonterm{n} JOB_OPTIONS="-j
+@nonterm{n}"}. Setting @exec{CPUS} also works with @exec{make
+unix-style}.
 
 Use @exec{make as-is} (or @exec{nmake win32-as-is}) to perform the
 same build actions as @exec{make in-place}, but without consulting any
@@ -234,10 +234,10 @@ bootstrap. And if you have a Chez Scheme source directory already, you
 can supply that with @exec{SCHEME_SRC=@nonterm{dir}} instead of
 downloading a new copy:
 
+@commandline{make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme}
+
 @margin-note{For now, Racket on Chez requires the variant of Chez Scheme at
              @url{https://github.com/racket/ChezScheme}}
-
-@commandline{make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme}
 
 Use @exec{make both} to build both traditional Racket and Racket on
 Chez Scheme, where packages are updated and documentation is built only

@@ -1,6 +1,5 @@
 #lang scribble/manual
-@(require "common.rkt"
-          scribble/bnf)
+@(require "common.rkt")
 
 @(define distro-build-doc '(lib "distro-build/distro-build.scrbl"))
 

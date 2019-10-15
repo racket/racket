@@ -3,11 +3,11 @@
 (define scribblings '(("racket-build-guide.scrbl" (multi-page) (racket-core -98))))
 
 (define deps
-  '("base"))
+  '("base"
+    "scribble-lib"))
 
 (define build-deps
-  '("scribble-lib"
-    "racket-doc"
+  '("racket-doc"
     "scribble-doc"
     "distro-build-doc"))
 

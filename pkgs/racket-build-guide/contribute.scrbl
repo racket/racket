@@ -1,6 +1,5 @@
 #lang scribble/manual
 @(require "common.rkt"
-          scribble/bnf
           (for-label (only-in scribble/manual history)))
 
 @title[#:tag "contribute"]{Contibuting to Racket Development}
