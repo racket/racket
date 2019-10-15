@@ -162,7 +162,7 @@ install them.
 To install a subset of the packages in @filepath{pkgs}, supply @exec{PKGS} value to
 @exec{make}. For example,
 
-@commandline{make PKGS="gui-lib readline-lib}
+@commandline{make PKGS="gui-lib readline-lib"}
 
 links only the @filepath{gui-lib} and @filepath{readline-lib} packages
 and their dependencies. The default value of @exec{PKGS} is
@@ -240,7 +240,7 @@ downloading a new copy:
 @commandline{make cs RACKET=racket SCHEME_SRC=path/to/ChezScheme}
 
 Use @exec{make both} to build both traditional Racket and Racket on
-Chez Scheme, where packages are updated documentation is built only
+Chez Scheme, where packages are updated and documentation is built only
 once (using traditional Racket).
 
 
