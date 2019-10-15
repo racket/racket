@@ -149,6 +149,8 @@
           ;; Thread continues
           (cond
             [(zero? (current-atomic))
+             (when (thread-dead? root-thread)
+               (force-exit 0))
              (define new-leftover-ticks (- leftover-ticks (- TICKS remaining-ticks)))
              (accum-cpu-time! t (new-leftover-ticks . <= . 0))
              (set-thread-future! t (current-future))

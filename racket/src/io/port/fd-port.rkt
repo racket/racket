@@ -32,12 +32,14 @@
          prop:fd-place-message-opener)
 
 ;; in atomic mode
-(define (fd-close fd fd-refcount)
+(define (fd-close fd fd-refcount
+                  #:discard-errors? [discard-errors? #f])
   (set-box! fd-refcount (sub1 (unbox fd-refcount)))
   (when (zero? (unbox fd-refcount))
     (fd-semaphore-update! fd 'remove)
     (define v (rktio_close rktio fd))
-    (when (rktio-error? v)
+    (when (and (rktio-error? v)
+               (not discard-errors?))
       (end-atomic)
       (raise-rktio-error #f v "error closing stream port"))))
 
@@ -507,7 +509,7 @@
                                (if (input-port? port)
                                    (send fd-input-port port on-close)
                                    (send fd-output-port port on-close))
-                               (fd-close fd fd-refcount)
+                               (fd-close fd fd-refcount #:discard-errors? #t)
                                (set-closed-state! port))
                              #f
                              #f))
