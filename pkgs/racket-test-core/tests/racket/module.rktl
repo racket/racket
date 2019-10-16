@@ -2932,7 +2932,13 @@ case of module-leve bindings; it doesn't cover local bindings.
 
   (define re-o2 (open-output-bytes))
   (write re-m2 re-o2)
-  (check-vm (get-output-bytes re-o2) (system-type 'vm)))
+  (check-vm (get-output-bytes re-o2) (system-type 'vm))
+
+  ;; Check top-level compilation:
+  (define tl-o (open-output-bytes))
+  (parameterize ([current-compile-target-machine #f])
+    (write (compile '(begin (display "hi") (newline))) tl-o))
+  (check-vm (get-output-bytes tl-o) 'linklet))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure `(define-values (id ...) (values rhs ...))` is not
