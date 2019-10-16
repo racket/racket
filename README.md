@@ -3,19 +3,31 @@ packages. The rest of the Racket distribution source code is in other
 repositories, mostly under [the Racket GitHub
 organization](https://github.com/racket).
 
-Building
---------
+Distribution and Documentation
+------------------------------
 
-To build the full Racket distribution from this repository, run `make`
-in the top-level directory. To build minimal Racket, run `make base`.
-For more information, see the [Build Guide](build.md).
+Download a built version of Racket from
+
+  [https://download.racket-lang.org](https://download.racket-lang.org)
+
+View documentation for the distribution and packages at
+
+  [https://docs.racket-lang.org](https://docs.racket-lang.org)
+
+Building from Source
+--------------------
+
+For information on building Racket from this repository, see the
+[Build Guide](build.md).
 
 Contributing
 ------------
 
-Contribute to Racket by submitting a pull request, joining the
-[development mailing list](https://lists.racket-lang.org), or visiting
-the IRC or Slack channels.
+Contribute to Racket by
+submitting a [pull request](https://github.com/racket/racket/pulls),
+reporting an [issue](https://github.com/racket/racket/issues),
+joining the [development mailing list](https://lists.racket-lang.org),
+or visiting the IRC or Slack channels.
 
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
