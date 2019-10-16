@@ -88,10 +88,12 @@
                 ,name)]
             [else v])))
     (define arity-mask (argss->arity-mask argss))
+    (define i-name (or (wrap-property v 'inferred-name)
+                       name))
     (cond
       [(and (null? captures)
             (no-lifts? body-lifts))
-       (define e (extractable-annotation jitted-proc arity-mask name))
+       (define e (extractable-annotation jitted-proc arity-mask i-name))
        (define-values (get-e new-lifts)
          (cond
            [(convert-mode-need-lift? convert-mode) (add-lift e lifts)]
@@ -108,7 +110,7 @@
                                                         (cons lifts-id captures))
                                              ,jitted-proc))
                                          arity-mask
-                                         name))
+                                         i-name))
        (define-values (all-captures new-lifts)
          (cond
            [(no-lifts? body-lifts)
