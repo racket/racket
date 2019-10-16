@@ -8,7 +8,7 @@ Building
 
 To build the full Racket distribution from this repository, run `make`
 in the top-level directory. To build minimal Racket, run `make base`.
-For more information, see the [Build Guide](build-guide.md).
+For more information, see the [Build Guide](build.md).
 
 Contributing
 ------------
@@ -20,8 +20,9 @@ the IRC or Slack channels.
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
 licenses are available in this repository in the files
-[COPYING_LESSER](racket/src/COPYING_LESSER.txt),
-[LICENSE-APACHE](LICENSE-APACHE), and [LICENSE-MIT](LICENSE-MIT).
+[LICENSE-LGPL.txt](racket/src/LICENSE-LGPL.txt),
+[LICENSE-APACHE.txt](racket/src/LICENSE-APACHE.txt), and
+[LICENSE-MIT.txt](racket/src/LICENSE-MIT.txt).
 
 License
 -------

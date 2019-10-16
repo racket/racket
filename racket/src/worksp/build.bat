@@ -71,11 +71,11 @@ msbuild mzcom%PLTSLNVER%.sln /p:Configuration=3m /p:Platform=%BUILDMODE%
 if errorlevel 1 exit /B 1
 cd ..
 
-copy ..\COPYING-libscheme.txt ..\..\share\
+copy ..\LICENSE-libscheme.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING_LESSER.txt ..\..\share\
+copy ..\LICENSE-LGPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
-copy ..\COPYING.txt ..\..\share\
+copy ..\LICENSE-GPL.txt ..\..\share\
 if errorlevel 1 exit /B 1
 
 set PLT_REPLACE_INDEPENDENT_LAUNCHERS=yes

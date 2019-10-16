@@ -5,7 +5,8 @@ the IRC or Slack channels.
 By making a contribution, you are agreeing that your contribution is
 licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
 licenses are available in this repository in the files
-racket/src/COPYING_LESSER.txt, LICENSE-APACHE, and LICENSE-MIT.
+racket/src/LICENSE-LGPL.txt, racket/src/LICENSE-APACHE.txt, and
+racket/src/LICENSE-MIT.txt.
 
-See the [Racket Build Guide](../build-guide.md) for more guidabce on
+See the [Racket Build Guide](../build.md) for more guidance on
 contributing.

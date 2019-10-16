@@ -2,7 +2,7 @@ This is the source code distribution for minimal Racket.
 
 If this directory is part of a clone of the Git repository for Racket,
 then the clone's root directory includes a makefile to both build
-minimal Racket and install packages. See "build-guide.md" in the clone's
+minimal Racket and install packages. See "build.md" in the clone's
 root directory.
 
 ========================================================================

@@ -21,13 +21,8 @@ General Public License (LGPL).  This means
 
 ]
 
-See @filepath{COPYING_LESSER.txt} in your Racket installation's @filepath{lib}
+See @filepath{LICENSE-LGPL.txt} in your Racket installation's @filepath{share}
 directory for more information.
-
-@copyright{
-  Racket
-  Copyright (c) 2010-2018 PLT Design Inc.
-}
 
 Racket software includes or extends the following copyrighted material:
 

@@ -43,9 +43,9 @@ ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(appsdir)" \
              "$(DESTDIR)$(mandir)"
 
-COPYING = "$(srcdir)/COPYING-libscheme.txt" \
-          "$(srcdir)/COPYING_LESSER.txt" \
-          "$(srcdir)/COPYING.txt"
+COPYING = "$(srcdir)/LICENSE-libscheme.txt" \
+          "$(srcdir)/LICENSE-LGPL.txt" \
+          "$(srcdir)/LICENSE-GPL.txt"
 
 all:
 	$(MAKE) @MAIN_MAKE_TARGET@
