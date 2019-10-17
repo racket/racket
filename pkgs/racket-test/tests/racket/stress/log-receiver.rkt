@@ -1,5 +1,9 @@
 #lang racket/base
 
+(module+ test
+  (module config info
+    (define timeout 300)))
+
 (define (do-thread t) (thread t))
 (set! do-thread do-thread)
 
