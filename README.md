@@ -3,14 +3,18 @@ packages. The rest of the Racket distribution source code is in other
 repositories, mostly under [the Racket GitHub
 organization](https://github.com/racket).
 
-Distribution and Documentation
+Quick Start
 ------------------------------
 
-Download a built version of Racket from
+Pre-built versions of Racket for a variety of operating systems and
+architectures, as well as convienient source distributions are
+available at
 
   [https://download.racket-lang.org](https://download.racket-lang.org)
 
-View documentation for the distribution and packages at
+Racket comes with extensive documentation, including several tutorials.
+You can read all of this documentation, as well as documentation for
+third-party packages at
 
   [https://docs.racket-lang.org](https://docs.racket-lang.org)
 
