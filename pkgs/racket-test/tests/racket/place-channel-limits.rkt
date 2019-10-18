@@ -5,6 +5,10 @@
 ;;  * allocating shared arrays, and 
 ;;  * putting messages into an channel with no receiver
 
+(module+ test
+  (module config info
+    (define timeout 200)))
+
 (define (check mode)
   (for ([i 20])
     (printf "iter ~a\n" i)
