@@ -12,7 +12,7 @@
 
          set-empty? set-member? set-count
          set=? subset? proper-subset?
-         set-map set-for-each
+         set-map set-filter set-for-each
          set-copy set-copy-clear
          set->list set->stream set-first set-rest
          set-add set-remove set-clear
@@ -310,6 +310,7 @@
        [subset? (or/c (-> generic-set? me boolean?) #f)]
        [proper-subset? (or/c (-> generic-set? me boolean?) #f)]
        [set-map (or/c (-> generic-set? (-> elem/c any/c) list?) #f)]
+       [set-filter (or/c (-> generic-set? (-> elem/c any/c) list?) #f)]
        [set-for-each (or/c (-> generic-set? (-> elem/c any) void?) #f)]
        [set-copy (or/c (-> generic-set? generic-set?) #f)]
        [in-set (or/c (-> generic-set? sequence?) #f)]

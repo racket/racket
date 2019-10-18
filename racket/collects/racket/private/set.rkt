@@ -8,7 +8,7 @@
 
          set-empty? set-member? set-count
          set=? subset? proper-subset?
-         set-map set-for-each
+         set-map set-filter set-for-each
          set-copy set-copy-clear
          set->list set->stream set-first set-rest
          set-add set-remove set-clear
@@ -44,6 +44,8 @@
        #t))
 
 (define (list-map s f) (map f s))
+
+(define (list-filter s f) (filter f s))
 
 (define (list-for-each s f) (for-each f s))
 
@@ -218,6 +220,10 @@
 (define (fallback-map s f)
   (for/list ([x (*in-set s)])
     (f x)))
+
+(define (fallback-filter s f)
+  (for/fold ([xs '()] [x (*in-set s)])
+    (if (f x) (cons x xs) xs)))
 
 (define (fallback-for-each s f)
   (for ([x (*in-set s)])
@@ -422,6 +428,7 @@
   (subset? set set2)
   (proper-subset? set set2)
   (set-map set f)
+  (set-filter set f)
   (set-for-each set f)
   (set-copy set)
   (set-copy-clear set)
@@ -454,6 +461,7 @@
     (define subset? list-subset?)
     (define proper-subset? list-proper-subset?)
     (define set-map list-map)
+    (define set-filter list-filter)
     (define set-for-each list-for-each)
     (define set-copy-clear list-clear)
     (define in-set in-list)
@@ -476,6 +484,7 @@
    (define subset? fallback-subset?)
    (define proper-subset? fallback-proper-subset?)
    (define set-map fallback-map)
+   (define set-filter fallback-filter)
    (define set-for-each fallback-for-each)
    (define set-copy fallback-copy)
    (define in-set fallback-in-set)

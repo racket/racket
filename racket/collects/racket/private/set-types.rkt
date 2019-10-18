@@ -92,6 +92,11 @@
   (for/fold ([xs '()]) ([k (in-hash-keys (custom-set-table s))])
     (cons (f (set-unwrap-key s k)) xs)))
 
+(define (custom-set-filter s f)
+  (dprintf "custom-set-filter\n")
+  (for/fold ([xs '()]) ([k (in-hash-keys (custom-set-table s))])
+    (if (f (set-unwrap-key s k)) (cons (set-unwrap-key s k) xs) xs)))
+
 (define (custom-set-for-each s f)
   (dprintf "custom-set-for-each\n")
   (for ([k (in-hash-keys (custom-set-table s))])
@@ -702,6 +707,7 @@
    (define subset? custom-subset?)
    (define proper-subset? custom-proper-subset?)
    (define set-map custom-set-map)
+   (define set-filter custom-set-filter)
    (define set-for-each custom-set-for-each)
    (define set-copy custom-set-copy)
    (define set-copy-clear custom-set-copy-clear)
@@ -735,6 +741,7 @@
    (define subset? custom-subset?)
    (define proper-subset? custom-proper-subset?)
    (define set-map custom-set-map)
+   (define set-filter custom-set-filter)
    (define set-for-each custom-set-for-each)
    (define set-copy custom-set-copy)
    (define set-copy-clear custom-set-copy-clear)
