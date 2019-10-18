@@ -25,7 +25,7 @@ datatypes are all sets:
 
 A @deftech{hash set} is a set whose elements are compared via @racket[equal?],
 @racket[eqv?], or @racket[eq?] and partitioned via @racket[equal-hash-code],
-@racket[eqv-hash-code], or @racket[eq-hash-code].  A hash set is either
+@racket[eqv-hash-code], or @racket[eq-hash-code]. A hash set is either
 immutable or mutable; mutable hash sets retain their elements either strongly
 or weakly.
 
@@ -51,12 +51,12 @@ certain algorithms.
 All hash sets @impl{implement} @racket[set->stream],
 @racket[set-empty?], @racket[set-member?], @racket[set-count],
 @racket[subset?], @racket[proper-subset?], @racket[set-map],
-@racket[set-for-each], @racket[set-copy], @racket[set-copy-clear],
-@racket[set->list], and @racket[set-first].  Immutable hash sets in
-addition @impl{implement} @racket[set-add], @racket[set-remove],
-@racket[set-clear], @racket[set-union], @racket[set-intersect],
-@racket[set-subtract], and @racket[set-symmetric-difference].  Mutable
-hash sets in addition @impl{implement} @racket[set-add!],
+@racket[set-filter], @racket[set-for-each], @racket[set-copy],
+@racket[set-copy-clear], @racket[set->list], and @racket[set-first]. 
+Immutable hash sets in addition @impl{implement} @racket[set-add],
+@racket[set-remove], @racket[set-clear], @racket[set-union],
+@racket[set-intersect], @racket[set-subtract], and @racket[set-symmetric-difference].
+Mutable hash sets in addition @impl{implement} @racket[set-add!],
 @racket[set-remove!], @racket[set-clear!], @racket[set-union!],
 @racket[set-intersect!], @racket[set-subtract!], and
 @racket[set-symmetric-difference!].
@@ -714,6 +714,18 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 Applies the procedure @racket[proc] to each element in
 @racket[st] in an unspecified order, accumulating the results
 into a list.
+
+Supported for any @racket[st] that @supp{supports} @racket[set->stream].
+
+}
+
+@defproc[(set-filter [st generic-set?]
+                     [pred (any/c . -> . any/c)])
+         (listof any/c)]{
+
+Returns a list with the elements of @racket[st] for which @racket[pred]
+produces a true value. The @racket[pred] procedure is applied to each
+element in an unspecified order.
 
 Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
