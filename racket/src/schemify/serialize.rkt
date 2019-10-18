@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/extflonum
          racket/prefab
+         racket/unsafe/undefined
          "match.rkt"
          "wrap.rkt"
          "path-for-srcloc.rkt"
@@ -18,6 +19,11 @@
 ;; out and replace the use of a quoted value with a variable
 ;; reference. This lifting can interefere with optimizations, so only
 ;; lift as a last resort.
+;;
+;; Also lift out paths so they can be made relative, convert large
+;; constants to fasl form, and lift out other non-serializable values
+;; (so that `compile` will be ok, even though `write` cannot write out
+;; those values).
 
 (define (convert-for-serialize bodys for-cify? datum-intern?)
   (define lifted-eq-constants (make-hasheq))
@@ -244,7 +250,22 @@
                     new-q)]
               [(extflonum? q)
                `(string->number ,(format "~a" q) 10 'read)]
-              [else `(quote ,q)]))
+              [(or for-cify?
+                   (null? q)
+                   (number? q)
+                   (char? q)
+                   (boolean? q)
+                   (symbol? q)
+                   (eof-object? q)
+                   (void? q)
+                   (eq? q unsafe-undefined))
+               ;; Serializable in-place:
+               `(quote ,q)]
+              [else
+               ;; Lift out anything non-serializable, so we can deal with those
+               ;; values like we deal with paths:
+               (define id (add-lifted (to-fasl (box q) #f)))
+               `(force-unfasl ,id)]))
           (cond
             [(and (quote? rhs)
                   (or (not for-cify?)
