@@ -142,6 +142,14 @@
 (test #t equal? (set) (let ([a (set 1 2 3)]) (set-symmetric-difference a a)))
 (test #t equal? (set) (let ([a (set 1 2 3)] [b (set 1 2 3)]) (set-symmetric-difference a b)))
 
+(test (filter even? '(1 2 3 4 5))
+      'set-filter/mutable
+      (sort (set-filter (mutable-set 1 2 3 4 5) even?) <))
+
+(test (filter even? '(1 2 3 4 5))
+      'set-filter/immutable
+      (sort (set-filter (set 1 2 3 4 5) even?) <))
+
 (let ([s (set 1 2 3)])
   (test #t equal? s (set-add (set-add (set-add (set) 1) 2) 3))
   (test #t equal? (seteq 1 2 3) (seteq 1 2 3))
@@ -201,6 +209,11 @@
 
   (test #t andmap negative? (set-map s -))
   (test 3 length (set-map s +))
+
+  (test 0 length (set-filter s negative?))
+  (test 1 length (set-filter s even?))
+  (test 2 length (set-filter s odd?))
+  (test 3 length (set-filter s positive?))
 
   (let ([v 0])
     (set-for-each s (lambda (n) (set! v (+ v n))))
