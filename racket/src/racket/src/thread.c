@@ -2039,6 +2039,8 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
 static void check_scheduled_kills()
 {
+  int force_gc = 0;
+
   if (scheme_no_stack_overflow) {
     /* don't shutdown something that may be in an atomic callback */
     return;
@@ -2049,6 +2051,16 @@ static void check_scheduled_kills()
     k = SCHEME_CAR(scheduled_kills);
     scheduled_kills = SCHEME_CDR(scheduled_kills);
     do_close_managed((Scheme_Custodian *)k);
+    force_gc = 1;
+  }
+
+  if (force_gc) {
+    /* A shutdown in response to a memory limit merits another major
+       GC to clean up and reset the expected heap size. Otherwise, if
+       another limit is put in place, it will be checked (on a major
+       GC) even later, which will set the major-GC trigger even
+       higher, and so on. */
+    scheme_collect_garbage();
   }
 }
 

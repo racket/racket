@@ -256,6 +256,12 @@
      (for ([c (in-list queued)]
            #:when (custodian-this-place? c))
        (do-custodian-shutdown-all c))
+     ;; A shutdown in response to a memory limit merits another
+     ;; major GC to clean up and reset the expected heap size.
+     ;; Otherwise, if another limit is put in place, it will be
+     ;; checked (on a major GC) even later, which will set the
+     ;; major-GC trigger even higher, and so on.
+     (collect-garbage)
      #t]))
 
 (define place-ensure-wakeup! (lambda () #f)) ; call before enabling shutdowns
