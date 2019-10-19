@@ -28,15 +28,15 @@ Racket-on-Chez version. In the worst case, it must be exactly the same
 version (using the traditional Racket implementation) as the one
 you're trying to build.
 
-When you use `configure --enable-cs` or similar as described in
-"../README.txt", then a bootstrapping variant of Racket is built
-automatically. You can select a different Racket excutable by
-supplying `--enable-racket=...` to `configure`.
+  Note: When you use `configure --enable-cs` or similar as described
+  in "../README.txt", then a bootstrapping variant of Racket is built
+  automatically. You can select a different Racket excutable by
+  supplying `--enable-racket=...` to `configure`.
 
 The Chez Scheme build must also be sufficiently new. See
 "../README.txt" for information on obtaining Chez Scheme (when not
 using a source Racket distribution that includes Chez Scheme's source
-already).
+already), and see "Building Chez Scheme" below for building.
 
 
 ========================================================================
@@ -58,7 +58,8 @@ Scheme installation.
 
 For this development mode, either Chez Scheme needs to be installed as
 `scheme`, or you must use `make SCHEME=...` to set the command for
-`scheme`.
+`scheme`. For information on building Chez Scheme from source, see
+"Building Chez Scheme" below.
 
 Development mode also needs a Racket installation with at least the
 "compiler-lib" package installed. By default, the makefile looks for
@@ -169,6 +170,33 @@ for ".zo" files. For example, you may want to preserve a normal build
 while also building in machine-code mode with `PLT_CS_DEBUG` set, in
 which case setting `PLT_ZO_PATH` to something like "a6osx-debug" could
 be a good idea.
+
+
+========================================================================
+ Building Chez Scheme
+========================================================================
+
+The Racket variant of Chez Scheme does not include boot files needed
+to compile Chez Scheme using Chez Scheme, but Racket can load enough
+of Chez Scheme to compile Chez Scheme boot files.
+
+ * Obtain a sufficiently new Racket implementation, possibly by
+   following the directions in "../README.txt" to build the
+   traditional implemenation of Racket. No extra packages are needed
+   beyond a minimal Racket build.
+
+ * Set the current directory to a "ChezScheme" directory --- either a
+   checkout of the Git repository for the Racket branch of Chez Scheme
+   or the "ChezScheme" directory in the Racket source distribution.
+
+ * In "ChezScheme", run "main.rkt" in the "bootstrap" subdirectory of
+   this directory:
+
+      racket [here]/bootstrap/main.rkt
+
+   Alternatively, install the "cs-bootstrap" package and run
+
+      racket -l cs-bootstrap
 
 
 ========================================================================
@@ -332,6 +360,12 @@ the "bytecode" form.
 Set `PLT_LINKLET_SHOW_CP0` to see the Schemified form of a linklet
 after expansion and optimization by Chez Scheme's cp0.
 
+Set `PLT_LINKLET_SHOW_ASM` to see the assembly form of a linklet after
+compilation by Chez Scheme. Assembly format uses Chez Scheme's
+abstraction of architecture-specific machine instructions (where the
+assembly is translated to actual machine code in a fairly
+straightforward way).
+
 Safety and Debugging Mode
 -------------------------
 
@@ -413,20 +447,18 @@ atomic regions:
  * For critical sections with respect to Chez Scheme / OS threads, use
    a mutex or a spinlock.
 
-   For example, the implementation of `eq?` and `eqv?`-based hash
-   tables uses a spinlock to guard hash tables, so they can be
-   accessed concurrently from futures. In contrast, `equal?`-based
-   hash table operations are not atomic from the Racket perspective,
-   so they can't be locked by a mutex or spinlock; they use
-   Racket-thread locks, instead. The "rumble/lock.ss" layer skips the
-   `eq?`/`eqv?`-table spinlock when threads are not enabled at the
-   Chez Scheme level.
+   For example, `eq?` and `eqv?`-based hash tables can be accessed
+   concurrently from Chez Scheme threads as long as they are guarded
+   by a mutex or spinlock. In contrast, `equal?`-based hash table
+   operations are not atomic from the Racket perspective, so they
+   can't be locked by a mutex or spinlock; they use Racket-thread
+   locks, instead.
 
-   Chez Scheme deactivates a thread that is blocked on a mutex, so you
-   don't have to worry about waiting on a mutex blocking GCs. However,
-   if a lock guards a value that is also used by a GC callback, then
-   interrupts should be disabled before taking the lock to avoid
-   deadlock.
+   Chez Scheme deactivates a thread that is blocked on a mutex, as
+   long as interrupts are not disabled, so you don't have to worry
+   about waiting on a mutex blocking GCs. However, if a lock guards a
+   value that is also used by a GC callback, then interrupts should be
+   disabled before taking the lock to avoid deadlock.
 
  * For critical sections at the Racket level, there are multiple
    possibilities:

@@ -10,13 +10,13 @@ root directory.
 ========================================================================
 
 Racket is distributed under the GNU Lesser General Public License
-(LGPL). See the file "COPYING_LESSER.txt" for more information.
+(LGPL). See "LICENSE.txt" for more information.
 
 Compiled executables, documentation, and up-to-date information:
    http://racket-lang.org/
 
 Pre-compiled daily snapshots:
-   http://pre.racket-lang.org/
+   http://snapshot.racket-lang.org/
 
 Main development repository:
    https://github.com/racket/racket
