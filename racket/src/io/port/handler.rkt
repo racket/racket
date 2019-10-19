@@ -76,8 +76,8 @@
                                                   h)))]))
 
 (define/who (default-port-write-handler v o)
-  (check who output-port? o)
-  (do-write 'write v o))
+  (let ([co (->core-output-port o who)])
+    (do-write 'write v co)))
 
 (define/who port-display-handler
   (case-lambda
@@ -95,8 +95,8 @@
                                                     h)))]))
 
 (define/who (default-port-display-handler v o)
-  (check who output-port? o)
-  (do-display 'display v o))
+  (let ([co (->core-output-port o who)])
+    (do-display 'display v co)))
 
 (define/who port-print-handler
   (case-lambda
@@ -125,11 +125,11 @@
   ((global-port-print-handler) v o quote-depth))
 
 (define/who (default-global-port-print-handler v o [quote-depth 0])
-  (check who output-port? o)
-  (check who (lambda (d) (or (eq? d 0) (eq? d 1)))
-         #:contract "(or/c 0 1)"
-         quote-depth)
-  (do-print 'print v o quote-depth))
+  (let ([co (->core-output-port o who)])
+    (check who (lambda (d) (or (eq? d 0) (eq? d 1)))
+           #:contract "(or/c 0 1)"
+           quote-depth)
+    (do-print 'print v co quote-depth)))
 
 (define/who global-port-print-handler
   (make-parameter default-global-port-print-handler

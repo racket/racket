@@ -914,6 +914,39 @@
 (err/rt-test (port-write-handler sp (lambda (x) 9)))
 (err/rt-test (port-write-handler sp (lambda (x y z) 9)))
 
+;; Check use of handlers by `printf`
+(let ()
+  (define p (open-output-bytes))
+  (port-display-handler p (lambda (x p)
+                            (write-bytes #"D" p)))
+  (port-write-handler p (lambda (x p)
+                          (write-bytes #"W" p)))
+  (port-print-handler p (lambda (x p [d 0])
+                          (write-bytes #"P" p)))
+
+  (display 'x p)
+  (fprintf p "~a" 'y)
+  (fprintf p "~.a" 'z) ; does not use handler
+
+  (write 'x p)
+  (fprintf p "~s" 'y)
+  (fprintf p "~.s" 'z) ; does not use handler
+
+  (print 'x p)
+  (fprintf p "~v" 'y)
+  (fprintf p "~.v" 'z) ; does not use handler
+
+  (test #"DDzWWzPP'z" get-output-bytes p))
+
+;; Make sure `printf` works with wrapped ports
+(let ()
+  (struct w (p) #:property prop:output-port (struct-field-index p))
+  (define o (open-output-bytes))
+  (define p (w o))
+
+  (fprintf p "0~a~a~s~v~.a~a~.s~.v" 1 #"1" 2 3 4 #"4" 5 6)
+  (test #"011234456" get-output-bytes o))
+
 ;;------------------------------------------------------------
 ;; peek-string and variants:
 
