@@ -65,8 +65,8 @@
 ;; Reporting registration in a custodian through this indirection
 ;; enables GCing custodians that aren't directly referenced, merging
 ;; the managed objects into the parent. To support multiple moves,
-;; `c` can be another reference
-(struct custodian-reference ([c #:mutable])
+;; `weak-c` can be another reference.
+(struct custodian-reference ([weak-c #:mutable])
   #:authentic)
 
 (define-place-local custodian-will-executor (host:make-late-will-executor void #f))
@@ -82,8 +82,7 @@
 (define (set-root-custodian! c)
   (set! root-custodian c)
   (current-custodian c)
-  (set! custodian-will-executor (host:make-late-will-executor void #f))
-  (set! custodians-with-limits (make-hasheq)))
+  (set! custodian-will-executor (host:make-late-will-executor void #f)))
 
 (define/who (make-custodian [parent (current-custodian)])
   (check who custodian? parent)
@@ -95,6 +94,7 @@
                                         (lambda (c)
                                           (reference-sink children)
                                           (do-custodian-shutdown-all c)))
+                                      #:weak? #t
                                       #:at-exit? #t
                                       #:gc-root? #t))
   (set-custodian-parent-reference! c cref)
@@ -141,7 +141,7 @@
         (hash-set! (custodian-gc-roots cust) obj #t)
         (host:enable-interrupts))
       (or (custodian-self-reference cust)
-          (let ([cref (custodian-reference cust)])
+          (let ([cref (custodian-reference (make-weak-box cust))])
             (set-custodian-self-reference! cust cref)
             cref))])))
 
@@ -174,19 +174,20 @@
     (define parent (custodian-reference->custodian p-cref))
     (define gc-roots (custodian-gc-roots c))
     (unsafe-custodian-unregister c p-cref)
-    (for ([(child callback) (in-hash (custodian-children c))])
-      (define gc-root? (and gc-roots (hash-ref gc-roots child #f) #t))
-      (cond
-        [(willed-callback? callback)
-         (do-custodian-register parent child (willed-callback-proc callback)
-                                #:at-exit? (at-exit-callback? callback)
-                                #:gc-root? gc-root?)]
-        [else
-         (do-custodian-register parent child callback
-                                #:gc-root? gc-root?)]))
+    (for ([(child callback) (in-hash (custodian-children c) #f)])
+      (when child
+        (define gc-root? (and gc-roots (hash-ref gc-roots child #f) #t))
+        (cond
+          [(willed-callback? callback)
+           (do-custodian-register parent child (willed-callback-proc callback)
+                                  #:at-exit? (at-exit-callback? callback)
+                                  #:gc-root? gc-root?)]
+          [else
+           (do-custodian-register parent child callback
+                                  #:gc-root? gc-root?)])))
     (define self-ref (custodian-self-reference c))
     (when self-ref
-      (set-custodian-reference-c! self-ref (custodian-self-reference parent)))
+      (set-custodian-reference-weak-c! self-ref (custodian-self-reference parent)))
     (hash-clear! (custodian-children c))
     (set-custodian-post-shutdown! parent
                                   (append (custodian-post-shutdown c)
@@ -236,6 +237,9 @@
 
 ;; Called in atomic mode by the scheduler
 (define (check-queued-custodian-shutdown)
+  (when gc-on-check-queue?
+    (set! gc-on-check-queue? #f)
+    (collect-garbage))
   (cond
     [(null? queued-shutdowns) #f]
     [else
@@ -260,9 +264,15 @@
      ;; major GC to clean up and reset the expected heap size.
      ;; Otherwise, if another limit is put in place, it will be
      ;; checked (on a major GC) even later, which will set the
-     ;; major-GC trigger even higher, and so on.
-     (collect-garbage)
+     ;; major-GC trigger even higher, and so on. Since the
+     ;; scheduler is likely working in the context of a thread
+     ;; that was shut down by the custodian, defer the GC to
+     ;; the scheduler's next time around.
+     (set! gc-on-check-queue? #t)
      #t]))
+
+;; Pending GC due to memory-limit custodian shutdown?
+(define-place-local gc-on-check-queue? #f)
 
 (define place-ensure-wakeup! (lambda () #f)) ; call before enabling shutdowns
 (define place-wakeup-initial void)
@@ -281,10 +291,11 @@
     (set-custodian-shut-down! c)
     (when (custodian-sync-futures? c)
       (futures-sync-for-custodian-shutdown))
-    (for ([(child callback) (in-hash (custodian-children c))])
-      (if (procedure-arity-includes? callback 2)
-          (callback child c)
-          (callback child)))
+    (for ([(child callback) (in-hash (custodian-children c) #f)])
+      (when child
+        (if (procedure-arity-includes? callback 2)
+            (callback child c)
+            (callback child))))
     (hash-clear! (custodian-children c))
     (for ([proc (in-list (custodian-post-shutdown c))])
       (proc))
@@ -295,7 +306,8 @@
     (define p-cref (custodian-parent-reference c))
     (when p-cref
       (unsafe-custodian-unregister c p-cref))
-    (hash-remove! custodians-with-limits c)))
+    (set-custodian-memory-limits! c null)
+    (remove-limit-custodian! c)))
 
 (define (custodian-get-shutdown-sema c)
   (atomically
@@ -329,17 +341,17 @@
       (custodian-subordinate? ref-c c)))
 
 (define (custodian-reference->custodian cref)
-  (define c (custodian-reference-c cref))
+  (define c (custodian-reference-weak-c cref))
   (cond
     [(custodian-reference? c)
-     (define next-c (custodian-reference-c c))
+     (define next-c (custodian-reference-weak-c c))
      (cond
        [(custodian-reference? next-c)
         ;; shrink the chain
-        (set-custodian-reference-c! cref next-c)
+        (set-custodian-reference-weak-c! cref next-c)
         (custodian-reference->custodian cref)]
-       [else next-c])]
-    [else c]))
+       [else (weak-box-value next-c)])]
+    [else (weak-box-value c)]))
 
 (define/who (custodian-managed-list c super-c)
   (check who custodian? c)
@@ -374,14 +386,24 @@
      (define old-limit (custodian-immediate-limit limit-cust))
      (when (or (not old-limit) (old-limit . > . need-amt))
        (set-custodian-immediate-limit! limit-cust need-amt)))
-   (hash-set! custodians-with-limits limit-cust #t)
+   (host:disable-interrupts)
    (host:mutex-acquire memory-limit-lock)
+   (hash-set! custodians-with-limits limit-cust #t)
    (set! compute-memory-sizes (max compute-memory-sizes 1))
-   (host:mutex-release memory-limit-lock)))
+   (host:mutex-release memory-limit-lock)
+   (host:enable-interrupts)))
 
 ;; Ensures that custodians with memory limits are not treated as
-;; inaccessible and merged:
-(define-place-local custodians-with-limits (make-hasheq))
+;; inaccessible and merged; use only while holding the memory-limit
+;; lock and with interrupts disabled (or be in a GC)
+(define custodians-with-limits (make-hasheq))
+
+(define (remove-limit-custodian! c)
+  (host:disable-interrupts)
+  (host:mutex-acquire memory-limit-lock)
+  (hash-remove! custodians-with-limits c)
+  (host:mutex-release memory-limit-lock)
+  (host:enable-interrupts))
 
 ;; ----------------------------------------
 

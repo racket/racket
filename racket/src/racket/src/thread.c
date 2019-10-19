@@ -855,7 +855,7 @@ static void adjust_limit_table(Scheme_Custodian *c)
 {
   /* If a custodian has a limit and any object or children, then it
      must not be collected and merged with its parent. To prevent
-     collection, we register the custodian in the `limite_custodians'
+     collection, we register the custodian in the `limited_custodians'
      table. */
   if (c->has_limit) {
     if (c->elems || CUSTODIAN_FAM(c->children)) {
@@ -1576,8 +1576,10 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     m->mrefs = NULL;
     m->shut_down = 1;
     
-    if (SAME_OBJ(m, start))
+    if (SAME_OBJ(m, start)) {
+      adjust_limit_table(m);
       break;
+    }
     next_m = CUSTODIAN_FAM(m->global_prev);
 
     /* Remove this custodian from its parent */
