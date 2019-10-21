@@ -392,15 +392,29 @@ impersonator.
 (p-ref struct:c)
 ]}
 
+
 @defproc[(struct-type-property? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{structure type property
 descriptor} value, @racket[#f] otherwise.}
 
+
 @defproc[(struct-type-property-accessor-procedure? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an accessor procedure produced
 by @racket[make-struct-type-property], @racket[#f] otherwise.}
+
+
+@defproc[(struct-type-property-predicate-procedure? [v any/c]
+                                                    [prop (or/c struct-type-property? #f) #f])
+         boolean?]{
+
+Returns @racket[#t] if @racket[v] is a predicate procedure produced by
+@racket[make-struct-type-property] and either @racket[prop] is
+@racket[#f] or it was produced by the same call to
+@racket[make-struct-type-property], @racket[#f] otherwise.
+
+@history[#:added "7.5.0.11"]}
 
 @;------------------------------------------------------------------------
 @include-section["generic.scrbl"]

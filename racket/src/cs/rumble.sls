@@ -210,6 +210,7 @@
           make-struct-type-property
           struct-type-property?
           struct-type-property-accessor-procedure?
+          struct-type-property-predicate-procedure?
           make-struct-type
           struct-type-install-properties! ; not exported to Racket
           structure-type-lookup-prefab-uid ; not exported to Racket

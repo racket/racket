@@ -126,12 +126,13 @@ static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_pred_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_constr_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_prop_getter_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *struct_prop_pred_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_prop_getter_p(int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name, 
+static Scheme_Object *make_struct_proc(Scheme_Struct_Type *struct_type, char *func_name,
 				       Scheme_ProcT proc_type, int field_num);
 
-static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1, 
+static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const char *post1,
 				const char *fn, int fnl, const char *post2, int sym);
 
 static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always);
@@ -630,12 +631,17 @@ scheme_init_struct (Scheme_Startup_Env *env)
                                                     "struct-type-property-accessor-procedure?",
                                                     1, 1),
 			     env);
+  scheme_addto_prim_instance("struct-type-property-predicate-procedure?",
+			     scheme_make_immed_prim(struct_prop_pred_p,
+                                                    "struct-type-property-predicate-procedure?",
+                                                    1, 2),
+			     env);
   scheme_addto_prim_instance("impersonator-property-accessor-procedure?",
 			     scheme_make_immed_prim(chaperone_prop_getter_p,
                                                     "impersonator-property-accessor-procedure?",
                                                     1, 1),
 			     env);
-  
+
   /*** Inspectors ****/
 
   REGISTER_SO(scheme_make_inspector_proc);
@@ -3339,6 +3345,30 @@ struct_prop_getter_p(int argc, Scheme_Object *argv[])
   return ((STRUCT_mPROCP(v, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
            && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type))
 	  ? scheme_true : scheme_false);
+}
+static Scheme_Object *
+struct_prop_pred_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0], *prop, *prop_t;
+
+  if (argc > 1) {
+    if (SCHEME_TRUEP(argv[1]) && !SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_struct_property_type))
+      scheme_wrong_contract("struct-type-property-predicate-procedure?", "(or/c struct-type-property? #f)", 1, argc, argv);
+  }
+
+  if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
+
+  if (!(STRUCT_mPROCP(v, SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
+        && SAME_TYPE(SCHEME_TYPE(SCHEME_PRIM_CLOSURE_ELS(v)[0]), scheme_struct_property_type)))
+    return scheme_false;
+
+  if ((argc > 1) && SCHEME_TRUEP(argv[1])) {
+    prop = SCHEME_PRIM_CLOSURE_ELS(v)[0];
+    prop_t = argv[1];
+    return (SAME_OBJ(prop, prop_t) ? scheme_true : scheme_false);
+  }
+
+  return scheme_true;
 }
 
 static Scheme_Object *

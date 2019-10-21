@@ -18,6 +18,9 @@
 ;; Maps a property-accessor function to `(cons predicate-proc can-impersonate)`:
 (define property-accessors (make-ephemeron-eq-hashtable))
 
+;; Maps a property-predicate function to `struct-property`:
+(define property-predicates (make-ephemeron-eq-hashtable))
+
 (define (struct-type-property? v)
   (struct-type-prop? v))
 
@@ -96,6 +99,10 @@
           (hashtable-set! property-accessors
                           acc
                           (cons pred can-impersonate?)))
+         (with-global-lock*
+          (hashtable-set! property-predicates
+                          pred
+                          st))
          (values st
                  pred
                  acc)))]))
@@ -105,6 +112,19 @@
        (let ([v (strip-impersonator v)])
          (with-global-lock* (hashtable-ref property-accessors v #f)))
        #t))
+
+(define/who struct-type-property-predicate-procedure?
+  (case-lambda
+   [(v) (struct-type-property-predicate-procedure? v #f)]
+   [(v spt)
+    (check who struct-type-property? :or-false spt)
+    (and (procedure? v)
+         (let* ([v (strip-impersonator v)]
+                [spt-c (with-global-lock* (hashtable-ref property-predicates v #f))])
+           (cond
+            [(not spt-c) #f]
+            [(not spt) #t]
+            [else (eq? spt spt-c)])))]))
 
 (define (struct-type-property-accessor-procedure-pred v)
   (car (with-global-lock (hashtable-ref property-accessors v #f))))

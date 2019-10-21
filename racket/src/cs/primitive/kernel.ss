@@ -838,6 +838,7 @@
   [struct-type-make-constructor (known-procedure 6)]
   [struct-type-make-predicate (known-procedure 2)]
   [struct-type-property-accessor-procedure? (known-procedure 2)]
+  [struct-type-property-predicate-procedure? (known-procedure 6)]
   [struct-type-property? (known-procedure/no-prompt 2)]
   [struct-type? (known-procedure/no-prompt 2)]
   [struct:arity-at-least (known-constant)]

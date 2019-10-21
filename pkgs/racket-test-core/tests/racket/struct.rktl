@@ -8,6 +8,8 @@
 	     [(insp1) (make-inspector)]
 	     [(insp2) (make-inspector)])
   (arity-test make-struct-type-property 1 4)
+  (arity-test struct-type-property-accessor-procedure? 1 1)
+  (arity-test struct-type-property-predicate-procedure? 1 2)
   (test 3 primitive-result-arity make-struct-type-property)
   (arity-test p? 1 1)
   (arity-test p-ref 1 2)
@@ -16,6 +18,14 @@
   (test #f struct-type-property? 5)
   (test #t struct-type-property-accessor-procedure? p-ref)
   (test #t struct-type-property-accessor-procedure? p2-ref)
+  (test #f struct-type-property-predicate-procedure? p-ref)
+  (test #f struct-type-property-predicate-procedure? p? prop:p2)
+  (test #t struct-type-property-predicate-procedure? p?)
+  (test #t struct-type-property-predicate-procedure? p? #f)
+  (test #t struct-type-property-predicate-procedure? p? prop:p)
+  (err/rt-test (struct-type-property-predicate-procedure? p? 'oops))
+  (err/rt-test (struct-type-property-predicate-procedure? 7 'oops))
+  (err/rt-test (struct-type-property-predicate-procedure? 7 0))
   (let-values ([(type make pred sel set) (make-struct-type 'a #f 2 1 'un (list (cons prop:p 87)) (make-inspector insp1))]
 	       [(typex makex predx selx setx) (make-struct-type 'ax #f 0 5 #f null (make-inspector insp2))])
     (arity-test make-struct-type 4 11)
