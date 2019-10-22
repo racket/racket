@@ -17,6 +17,8 @@
                 (any/c)
                 . ->* .
                 exact-integer?)]
+ [date->julian/scaliger (date? . -> . exact-integer?)]
+ [julian/scaliger->string (exact-integer? . -> . string?)]
  [date->julian/scalinger (date? . -> . exact-integer?)]
  [julian/scalinger->string (exact-integer? . -> . string?)])
 
@@ -123,8 +125,8 @@
        (values (list week-day ", " day day-th " " month " " year)
                (list ", " hour12 ":" minute am-pm))]
       [(julian)
-       (values (list (julian/scalinger->string
-                      (date->julian/scalinger date)))
+       (values (list (julian/scaliger->string
+                      (date->julian/scaliger date)))
                (list ", " hour24 ":" minute ":" second))]
       [(iso-8601)
        (values
@@ -308,12 +310,12 @@
         (date-minute d)
         (date-second d)))
 
-;; date->julian/scalinger :
+;; date->julian/scaliger :
 ;; date -> number [julian-day]
 
 ;; Note: This code is correct until 2099 CE Gregorian
 
-(define (date->julian/scalinger date)
+(define (date->julian/scaliger date)
   (define day (date-day date))
   (define month (date-month date))
   (define d-year (date-year date))
@@ -348,10 +350,10 @@
        gregorian-adjustment))
   final-date)
 
-;; julian/scalinger->string :
+;; julian/scaliger->string :
 ;; number [julian-day] -> string [julian-day-format]
 
-(define (julian/scalinger->string julian-day)
+(define (julian/scaliger->string julian-day)
   (apply string-append
          (cons "JD "
                (reverse
@@ -372,3 +374,7 @@
                                              (cadr reversed-digits)
                                              (car reversed-digits)))
                                 (loop (cdr (cdr (cdr reversed-digits))))))))))))
+
+;; Misspelled names for backward compatibility:
+(define (date->julian/scalinger d) (date->julian/scaliger d))
+(define (julian/scalinger->string i) (julian/scaliger->string i))

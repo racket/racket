@@ -226,16 +226,26 @@ local time by default or UTC if @racket[local-time?] is
 error is signaled, otherwise an integer is returned.}
 
 
-@defproc[(date->julian/scalinger [date date?]) exact-integer?]{
+@defproc[(date->julian/scaliger [date date?]) exact-integer?]{
 
 Converts a date structure (up to 2099 BCE Gregorian) into a Julian
 date number. The returned value is not a strict Julian number, but
-rather Scalinger's version, which is off by one for easier
+rather Scaliger's version, which is off by one for easier
 calculations.}
 
 
-@defproc[(julian/scalinger->string [date-number exact-integer?])
+@defproc[(julian/scaliger->string [date-number exact-integer?])
          string?]{
 
-Converts a Julian number (Scalinger's off-by-one version) into a
+Converts a Julian number (Scaliger's off-by-one version) into a
 string.}
+
+
+@deftogether[(
+@defproc[(date->julian/scalinger [date date?]) exact-integer?]
+@defproc[(julian/scalinger->string [date-number exact-integer?])
+         string?]
+)]{
+
+The same as @racket[date->julian/scaliger] and
+@racket[julian/scaliger->string], but misspelled.}

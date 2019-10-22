@@ -73,7 +73,9 @@
   (test-string 'julian #f "JD 2 453 860")
   (test-string 'julian #t "JD 2 453 860, 03:02:01")
   
+  (test 2453860 date->julian/scaliger d)
   (test 2453860 date->julian/scalinger d)
+  (test "JD 2 453 860" julian/scaliger->string 2453860)
   (test "JD 2 453 860" julian/scalinger->string 2453860))
 
 ;; Bad dates
