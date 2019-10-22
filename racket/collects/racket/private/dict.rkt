@@ -219,10 +219,10 @@
   (assoc-fold-unique (lambda (a acc) (+ acc 1)) 0 d #:who dict-count))
 
 (define (assoc-keys d)
-  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc) #:who 'dict-keys) null d)))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d #:who 'dict-keys)))
 
 (define (assoc-values d)
-  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc) #:who 'dict-values) null d)))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d #:who 'dict-values)))
 
 (define (assoc->list d)
   (reverse (assoc-fold-unique cons null d #:who 'dict->list)))
