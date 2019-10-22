@@ -1,30 +1,37 @@
 ;; A "thread cell" is actually an "engine cell" at the Rumble level
 
+;; Need at least one mutable field, so allocated each time
 (define-record-type (thread-cell create-thread-cell thread-cell?)
-  (fields (mutable default-value) ; declare mutable so allocated each time
-          preserved?))
+  (fields default-value
+          preserved?
+          (mutable mutated?)))
 
 (define make-thread-cell
   (case-lambda
     [(v) (make-thread-cell v #f)]
-    [(v preserved?) (create-thread-cell v (and preserved? #t))]))
+    [(v preserved?) (create-thread-cell v (and preserved? #t) #f)]))
 
 (define/who (thread-cell-ref c)
   (check who thread-cell? c)
-  (let* ([t (current-engine-thread-cell-values)]
-         [v (if t
-                (hashtable-ref t c none)
-                none)])
-    (cond
-     [(eq? v none)
-      (thread-cell-default-value c)]
-     [else v])))
+  (unsafe-thread-cell-ref c))
+
+(define (unsafe-thread-cell-ref c)
+  (if (thread-cell-mutated? c)
+      (let* ([t (current-engine-thread-cell-values)])
+        (if t
+            (eq-hashtable-ref t c (thread-cell-default-value c))
+            (thread-cell-default-value c)))
+      (thread-cell-default-value c)))
 
 (define/who (thread-cell-set! c v)
   (check who thread-cell? c)
-  (hashtable-set! (current-engine-thread-cell-values)
-                  c
-                  v))
+  (thread-cell-mutated?-set! c #t)
+  (let ([p (eq-hashtable-try-atomic-cell (current-engine-thread-cell-values) c v)])
+    (cond
+     [p (set-cdr! p v)]
+     [else
+      ;; Contention, so try again
+      (thread-cell-set! c v)])))
 
 ;; ----------------------------------------
 

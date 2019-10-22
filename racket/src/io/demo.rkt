@@ -15,6 +15,22 @@
 (path->string (current-directory))
 (set-string->number?! string->number)
 
+(let ()
+  (define-values (i o) (make-pipe 4096))
+
+  (define done? #f)
+
+  (thread (lambda ()
+            (sync (system-idle-evt))
+            (set! done? #t)
+            (close-input-port i)))
+
+  ;; Should error:
+  (let loop ()
+    (write-bytes #"hello" o)
+    (unless done?
+      (loop))))
+
 (define-syntax-rule (test expect rhs)
   (let ([e expect]
         [v rhs])

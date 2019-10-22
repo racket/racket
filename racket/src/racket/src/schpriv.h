@@ -22,7 +22,7 @@
 #define HOOK_SHARED_OK /* EMPTY */
 #endif
 
-#ifdef OS_X
+#if defined(OS_X) || defined(__linux__)
 # define MZ_CHECK_ASSERTS
 #endif
 
@@ -436,6 +436,7 @@ void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
+void scheme_clear_locale_cache(void);
 
 XFORM_NONGCING int scheme_is_multithreaded(int now);
 
@@ -849,6 +850,7 @@ struct Scheme_Custodian {
   Scheme_Close_Custodian_Client **closers;
   void **data;
   void ***data_ptr; /* points to `data`, registered as finalizer data for strong retention */
+  Scheme_Object *post_callbacks; /* additional callbacks run after all others */
 
   /* weak indirections: */
   Scheme_Custodian_Reference *parent;
@@ -876,7 +878,6 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 Scheme_Custodian *scheme_get_current_custodian(void);
 void scheme_run_atexit_closers_on_all(Scheme_Exit_Closer_Func alt);
 void scheme_run_atexit_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
-void scheme_run_post_custodian_shutdown();
 
 typedef struct Scheme_Security_Guard {
   Scheme_Object so;
@@ -3317,6 +3318,7 @@ struct Scheme_Linklet
 
   char jit_ready; /* true if the linklet is in has been prepared for the JIT */
   char reject_eval; /* true when loaded without the root inspector, for example */
+  char serializable; /* record whether the linklet was intended to be serialized */
 
   Scheme_Hash_Table *constants; /* holds info about the linklet's body for inlining */
 
@@ -3605,6 +3607,7 @@ void scheme_flush_orig_outputs(void);
 void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
+Scheme_Object *scheme_port_waiting_peer_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
                                          int internal, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 

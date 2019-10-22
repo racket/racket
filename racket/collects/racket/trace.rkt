@@ -13,8 +13,8 @@
 
   (define max-dash-space-depth 10)
   (define number-nesting-depth 6)
-  (define current-prefix-out (make-parameter "<"))
-  (define current-prefix-in (make-parameter ">"))
+  (define current-prefix-out (make-parameter "<" #f 'current-prefix-out))
+  (define current-prefix-in (make-parameter ">" #f 'current-prefix-in))
 
   (define (as-spaces s)
     (make-string (string-length s) #\space))
@@ -70,7 +70,8 @@
                         (raise-argument-error 'current-trace-notify
                                               "(any/c . -> . any)"
                                               p))
-                      p)))
+                      p)
+                    'current-trace-notify))
 
   (define (as-trace-notify thunk)
     (let ([p (open-output-bytes)])
@@ -130,7 +131,9 @@
               [else
                 ;; In non-expression mode, just use `write':
                 (pretty-write (append (cons name args)
-                                      (apply append (map list kws kw-vals))))]))))))
+                                      (apply append (map list kws kw-vals))))]))))
+      #f
+      'current-trace-print-args))
 
   (define -:trace-print-results
     (lambda (name results level)

@@ -63,6 +63,24 @@ interactive terminal, @racket[#f] otherwise.
                                    to any value, instead of resticting
                                    the domain to ports}]}
 
+
+@defproc[(port-waiting-peer? [port port?]) boolean?]{
+
+Returns @racket[#t] if @racket[port] is not ready for reading or
+writing because it is waiting for a peer process to complete a stream
+construction, @racket[#f] otherwise.
+
+On Unix and Mac OS, opening a fifo for output creates a peer-waiting
+port if no reader for the same fifo is already opened. In that case,
+the output port is not ready for writing until a reader is opened;
+that is, write opertaions will block. Use @racket[sync] if necessary
+to wait until writing will not block---that is, until the read end of
+the fifo is opened.
+
+@history[#:added "7.4.0.5"]}
+
+
+
 @defthing[eof eof-object?]{A value (distinct from all other values)
 that represents an end-of-file.}
 

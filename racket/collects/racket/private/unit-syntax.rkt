@@ -7,7 +7,7 @@
 
 (define bind-at #f)
 
-(define error-syntax (make-parameter #f))
+(define error-syntax (make-parameter #f #f 'error-syntax))
 (define raise-stx-err
   (case-lambda
     ((msg) (raise-syntax-error #f msg (error-syntax)))

@@ -468,7 +468,8 @@ tcp_in_buffer_mode(Scheme_Port *p, int mode)
 
 static intptr_t tcp_do_write_string(Scheme_Output_Port *port, 
                                     const char *s, intptr_t offset, intptr_t len, 
-                                    int rarely_block, int enable_break)
+                                    int rarely_block, int enable_break,
+                                    int drop_buffer_on_error)
 {
   /* We've already checked for buffering before we got here. */
   /* If rarely_block is 1, it means only write as much as
@@ -492,7 +493,9 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
       if (rarely_block)
 	return sent;
       else
-	sent += tcp_do_write_string(port, s, offset + sent, len - sent, 0, enable_break);
+	sent += tcp_do_write_string(port, s, offset + sent, len - sent,
+                                    0, enable_break,
+                                    drop_buffer_on_error);
     }
   }
 
@@ -524,10 +527,19 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
     goto top;
   }
 
-  if (sent == RKTIO_WRITE_ERROR)
+  if (sent == RKTIO_WRITE_ERROR) {
+    if (drop_buffer_on_error) {
+      /* See "Drop unsuccessfully flushed bytes" in "port.c" for a
+         rationale (although TCP ports are not automatically
+         registered with a plumber). */
+      data->b.out_bufpos = 0;
+      data->b.out_bufmax = 0;
+    }
+
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-write: error writing\n"
                      "  system error: %R");
+  }
 
   return sent;
 }
@@ -548,7 +560,8 @@ static int tcp_flush(Scheme_Output_Port *port,
     }
     amt = tcp_do_write_string(port, data->b.out_buffer, data->b.out_bufpos, 
 			      data->b.out_bufmax - data->b.out_bufpos,
-			      rarely_block, enable_break);
+			      rarely_block, enable_break,
+                              1);
     flushed += amt;
     data->b.out_bufpos += amt;
     if (rarely_block && (data->b.out_bufpos < data->b.out_bufmax))
@@ -599,7 +612,7 @@ static intptr_t tcp_write_string(Scheme_Output_Port *port,
   }
 
   /* When we get here, the buffer is empty */
-  return tcp_do_write_string(port, s, offset, len, rarely_block, enable_break);
+  return tcp_do_write_string(port, s, offset, len, rarely_block, enable_break, 0);
 }
 
 static void tcp_close_output(Scheme_Output_Port *port)

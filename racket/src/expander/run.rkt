@@ -173,8 +173,10 @@
                                                #f)])
          (let ([l (call-with-input-file file read)])
            (and (list? l)
+                (pair? l)
                 (andmap bytes? l)
-                (map bytes->path l))))))
+                (cons (car l)
+                      (map bytes->path (cdr l))))))))
 
 (when check-dependencies
   (unless print-extracted-to

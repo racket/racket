@@ -12,6 +12,7 @@ rktio_fd_is_socket
 rktio_fd_is_udp
 rktio_fd_is_terminal
 rktio_fd_is_text_converted
+rktio_fd_is_pending_open
 rktio_fd_modes
 rktio_open
 rktio_close
@@ -176,6 +177,7 @@ rktio_converter_open
 rktio_converter_close
 rktio_convert
 rktio_convert_in
+rktio_convert_reset
 rktio_locale_recase
 rktio_recase_utf16
 rktio_locale_strcoll
@@ -193,6 +195,7 @@ rktio_sha2_update
 rktio_sha2_final
 rktio_dll_open
 rktio_dll_find_object
+rktio_dll_close
 rktio_dll_get_error
 rktio_set_dll_procs
 rktio_get_last_error_kind

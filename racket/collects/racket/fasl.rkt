@@ -119,10 +119,14 @@
 
 (define (s-exp->fasl v
                      [orig-o #f]
-                     #:keep-mutable? [keep-mutable? #f])
+                     #:keep-mutable? [keep-mutable? #f]
+                     #:handle-fail [handle-fail #f])
   (when orig-o
     (unless (output-port? orig-o)
       (raise-argument-error 'fasl->s-exp "(or/c output-port? #f)" orig-o)))
+  (when handle-fail
+    (unless (and (procedure? handle-fail) (procedure-arity-includes? handle-fail 1))
+      (raise-argument-error 'fasl->s-exp "(or/c (procedure-arity-includes/c 1) #f)" handle-fail)))
   (define o (or orig-o (open-output-bytes)))
   (define shared (make-hasheq))
   (define shared-counter 0)
@@ -353,9 +357,11 @@
           [(eq? v unsafe-undefined)
            (write-byte fasl-undefined-type o)]
           [else
-           (raise-arguments-error 's-exp->fasl
-                                  "cannot write value"
-                                  "value" v)]))
+           (if handle-fail
+               (loop (handle-fail v))
+               (raise-arguments-error 's-exp->fasl
+                                      "cannot write value"
+                                      "value" v))]))
       (get-output-bytes o #t)))
   ;; Record the number of entries in the shared-value table that is
   ;; used by `fasl-graph-ref-type` and `fasl-graph-ref-type`:

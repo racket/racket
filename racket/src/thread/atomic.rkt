@@ -105,7 +105,14 @@
 ;; no race with the scheduler
 (define (add-end-atomic-callback! cb)
   (host:disable-interrupts)
-  (end-atomic-callback (cons cb (end-atomic-callback)))
+  (define all-cbs (end-atomic-callback))
+  (let loop ([cbs all-cbs])
+    (cond
+      [(eq? cbs 0)
+       (end-atomic-callback (cons cb all-cbs))]
+      [else
+       (unless (eq? (car cbs) cb)
+         (loop (cdr cbs)))]))
   (host:enable-interrupts))
 
 ;; ----------------------------------------

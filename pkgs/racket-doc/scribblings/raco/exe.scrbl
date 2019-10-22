@@ -57,7 +57,7 @@ sub-submodule named @racketidfont{declare-preserve-for-embedding}
 
 Language reader modules that are used only via @hash-lang[] are also
 not automatically embedded. To support dynamic use of @hash-lang[]
-with a language specifcation, supply the @DPFlag{lang} flag to
+with a language specification, supply the @DPFlag{lang} flag to
 @exec{raco exe}. The argument after @DPFlag{lang} can be a language
 name, but more generally it can be text to appear just after
 @hash-lang[]. For example, @litchar{at-exp racket/base} makes sense as

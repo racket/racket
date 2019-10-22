@@ -142,7 +142,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
                  int cs_compiled_subdir, int is_gui,
 		 int wm_is_gracket_or_x11_arg_count,
                  char *gracket_guid_or_x11_args,
-		 void *dll_open, void *dll_find_object)
+		 void *dll_open, void *dll_find_object, void *dll_close)
 /* exe argument already stripped from argv */
 {
 #if !defined(RACKET_USE_FRAMEWORK) || !defined(RACKET_AS_BOOT)
@@ -160,7 +160,7 @@ void racket_boot(int argc, char **argv, char *exec_file, char *run_file,
   if (dlldir)
     rktio_set_dll_path((wchar_t *)dlldir);
   if (dll_open)
-    rktio_set_dll_procs(dll_open, dll_find_object);
+    rktio_set_dll_procs(dll_open, dll_find_object, dll_close);
 #endif
 
   Sscheme_init(NULL);

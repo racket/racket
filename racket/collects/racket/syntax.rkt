@@ -60,7 +60,7 @@
 
 ;; == Disappeared uses ==
 
-(define current-recorded-disappeared-uses (make-parameter #f))
+(define current-recorded-disappeared-uses (make-parameter #f #f 'current-recorded-disappeared-uses))
 
 (define-syntax-rule (with-disappeared-uses body-expr ... stx-expr)
   (let-values ([(stx disappeared-uses)
@@ -110,13 +110,17 @@
                    #:source [src #f]
                    #:props [props #f]
                    #:cert [cert #f]
+                   #:subs? [subs? #f]
+                   #:subs-intro [subs-intro (default-intro)]
                    fmt . args)
-  (define (convert x) (->atom x 'format-id))
   (check-restricted-format-string 'format-id fmt)
-  (let* ([args (map convert args)]
-         [str (apply format fmt args)]
-         [sym (string->symbol str)])
-    (datum->syntax lctx sym src props cert)))
+  (define arg-strs (map (lambda (a) (->string a 'format-id)) args))
+  (define str (apply format fmt arg-strs))
+  (define id (datum->syntax lctx (string->symbol str) src props))
+  (cond [subs?
+         (syntax-property id 'sub-range-binders
+                          (make-subs 'format-id id fmt args arg-strs subs-intro))]
+        [else id]))
 ;; Eli: This looks very *useful*, but I'd like to see it more convenient to
 ;;   "preserve everything".  Maybe add a keyword argument that when #t makes
 ;;   all the others use values lctx, and when syntax makes the others use that
@@ -128,7 +132,7 @@
 ;;   throw an error if there's more or less than 1.
 
 (define (format-symbol fmt . args)
-  (define (convert x) (->atom x 'format-symbol))
+  (define (convert x) (->string x 'format-symbol))
   (check-restricted-format-string 'format-symbol fmt)
   (let ([args (map convert args)])
     (string->symbol (apply format fmt args))))
@@ -139,17 +143,51 @@
 (define (check-restricted-format-string who fmt)
   (unless (restricted-format-string? fmt)
     (raise-arguments-error who
-                           (format "format string should have ~a placeholders"
-                                   fmt)
+                           "format string should have only ~a placeholders"
                            "format string" fmt)))
 
-(define (->atom x err)
+(define (make-subs who id fmt args arg-strs intro)
+  (define seglens (restricted-format-string-segment-lengths fmt))
+  (for/fold ([len 0] [subs null] #:result subs) ;; len is total length so far
+            ([arg (in-list args)] [arg-str (in-list arg-strs)] [seglen (in-list seglens)])
+    (define len* (+ len seglen))
+    (values (+ len* (string-length arg-str))
+            (cond [(identifier? arg)
+                   (cons (make-subrange (intro id) (intro arg)
+                                        len* (string-length arg-str))
+                         subs)]
+                  [else subs]))))
+
+(define (make-subrange new-id old-id start-in-new-id old-id-len)
+  (vector-immutable new-id start-in-new-id old-id-len 0.5 0.5
+                    old-id 0 old-id-len 0.5 0.5))
+
+(define (restricted-format-string-segment-lengths fmt)
+  ;; Returns (list p1 p2 ...) s.t. the Nth placeholder follows pN characters
+  ;; generated from the format string since the previous placeholder.
+  ;; Example: for "~ax~~ayz~aw~a", want '(0 5 1).
+  ;; PRE: fmt is restricted-format-string.
+  (let loop ([start 0] [since-last 0])
+    (cond [(regexp-match-positions #rx"~." fmt start)
+           => (lambda (p)
+                (let ([m-start (caar p)] [m-end (cdar p)])
+                  (case (string-ref fmt (add1 m-start))
+                    [(#\a #\A)
+                     (cons (+ since-last (- m-start start)) (loop m-end 0))]
+                    [else ;; "~[^aA]" produces 1 char
+                     (loop (+ since-last (- m-start start) 1))])))]
+          [else null])))
+
+(define (default-intro)
+  (if (syntax-transforming?) syntax-local-introduce values))
+
+(define (->string x err)
   (cond [(string? x) x]
-        [(symbol? x) x]
-        [(identifier? x) (syntax-e x)]
+        [(symbol? x) (symbol->string x)]
+        [(identifier? x) (symbol->string (syntax-e x))]
         [(keyword? x) (keyword->string x)]
-        [(number? x) x]
-	[(char? x) x]
+        [(number? x) (number->string x)]
+        [(char? x) (string x)]
         [else (raise-argument-error err
                                     "(or/c string? symbol? identifier? keyword? char? number?)"
                                     x)]))
@@ -164,7 +202,8 @@
                       (raise-argument-error 'current-syntax-context
                                             "(or/c syntax? #f)"
                                             new-value))
-                    new-value)))
+                    new-value)
+                  'current-syntax-context))
 
 (define (wrong-syntax stx #:extra [extras null] format-string . args)
   (unless (or (eq? stx #f) (syntax? stx))

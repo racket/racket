@@ -268,9 +268,8 @@
 (define (to-utf-16 s)
   (let ([v (malloc _gcpointer)])
     (ptr-set! v _string/utf-16 s)
-    (let ([p (ptr-ref v _gcpointer)])
-      (let ([len (* 2 (+ 1 (utf-16-length s)))])
-        (ptr-ref v (_bytes o len))))))
+    (let ([len (* 2 (+ 1 (utf-16-length s)))])
+      (ptr-ref v (_bytes o len)))))
 
 (define (utf-16-length s)
   (for/fold ([len 0]) ([c (in-string s)])

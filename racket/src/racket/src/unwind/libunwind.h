@@ -57,7 +57,9 @@ extern "C" {
 
 #include <inttypes.h>
 #ifndef UNW_ARM
-# define _XOPEN_SOURCE /* needed for Mac OS X */
+# ifdef __APPLE__
+#  define _XOPEN_SOURCE
+# endif
 # define __USE_GNU
 # include <ucontext.h>
 # undef __USE_GNU

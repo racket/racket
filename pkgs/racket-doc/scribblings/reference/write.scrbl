@@ -117,7 +117,7 @@ escapes:
  
   @item{@FmtMark{.}@nonterm{c} where @nonterm{c} is @litchar{a},
   @litchar{A}, @litchar{s}, @litchar{S}, @litchar{v}, or @litchar{V}:
-  truncates @racket[display], @racket[write], or @racket[print] output
+  truncates default-handler @racket[display], @racket[write], or @racket[print] output
   to @racket[(error-print-width)] characters, using @litchar{...} as
   the last three characters if the untruncated output would be longer}
 

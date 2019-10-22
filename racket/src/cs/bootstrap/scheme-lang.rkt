@@ -52,6 +52,7 @@
          $record?
          $primitive
          $unbound-object?
+         $app
          (rename-out [get-$unbound-object $unbound-object])
          meta-cond
          constant
@@ -99,6 +100,7 @@
          $suppress-primitive-inlining
          debug-level
          scheme-version-number
+         scheme-fork-version-number
          (rename-out [make-parameter $make-thread-parameter]
                      [make-parameter make-thread-parameter]
                      [cons make-binding]
@@ -597,6 +599,9 @@
     [(_ name) name]
     [(_ opt name) name]))
 
+(define ($app proc . args)
+  (apply proc args))
+
 (define tc (make-hasheq))
 (define ($tc) tc)
 (define ($thread-tc tc) tc)
@@ -845,7 +850,22 @@
 (define $suppress-primitive-inlining (make-parameter #f))
 (define debug-level (make-parameter 0))
 
-(define (scheme-version-number) (values 9 5 3))
+(define (scheme-version-number)
+  (define v (lookup-constant 'scheme-version))
+  (if (zero? (arithmetic-shift v -24))
+      (values (arithmetic-shift v -16)
+              (bitwise-and 255 (arithmetic-shift v -8))
+              (bitwise-and 255 v))
+      (values (arithmetic-shift v -24)
+              (bitwise-and 255 (arithmetic-shift v -16))
+              (bitwise-and 255 (arithmetic-shift v -8)))))
+
+(define (scheme-fork-version-number)
+  (define v (lookup-constant 'scheme-version))
+  (define-values (maj min sub) (scheme-version-number))
+  (if (zero? (arithmetic-shift v -24))
+      (values maj min sub 0)
+      (values maj min sub (bitwise-and 255 v))))
 
 (define (make-hashtable hash eql?)
   (cond

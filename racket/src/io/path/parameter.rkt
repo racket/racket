@@ -15,12 +15,14 @@
 		    [(unix) (path #"/" 'unix)]
 		    [(windows) (path #"C:\\" 'windows)])
                   (lambda (v)
-                    (check-directory-path who v))))
+                    (check-directory-path who v))
+                  'current-directory))
 
 (define/who current-directory-for-user
   (make-parameter (current-directory)
                   (lambda (v)
-                    (check-directory-path who v))))
+                    (check-directory-path who v))
+                  'current-directory-for-user))
 
 
 (define/who current-load-relative-directory
@@ -28,7 +30,8 @@
                   (lambda (v)
                     (check who path-string? #:or-false v)
                     (and v
-                         (path->complete-path v (current-directory))))))
+                         (path->complete-path v (current-directory))))
+                  'current-load-relative-directory))
 
 (define (check-directory-path who v)
   (check who path-string? v)

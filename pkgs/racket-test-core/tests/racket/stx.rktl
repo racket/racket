@@ -1939,14 +1939,24 @@
                       s)
                (get-output-bytes s))
              exn:fail?)
-;; non-cyclic variant:
-(err/rt-test (let ([s (open-output-bytes)])
-               (write (compile `(quote ,(let ([ht (make-hasheq)])
-                                          (hash-set! ht #'bad 10)
-                                          ht)))
-                      s)
-               (get-output-bytes s))
-             exn:fail?)
+
+(unless (eq? 'chez-scheme (system-type 'vm))
+  ;; non-cyclic variant:
+  (err/rt-test (let ([s (open-output-bytes)])
+                 (write (compile `(quote ,(let ([ht (make-hasheq)])
+                                            (hash-set! ht #'bad 10)
+                                            ht)))
+                        s)
+                 (get-output-bytes s))
+               exn:fail?)
+  ;; non-transparent struct variant:
+  (err/rt-test (let ([s (open-output-bytes)])
+                 (write (compile `(quote ,(let ()
+                                            (struct a (x y))
+                                            (a 1 2))))
+                        s)
+                 (get-output-bytes s))
+               exn:fail?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; define-syntax-rule

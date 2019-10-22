@@ -386,25 +386,26 @@
                       'done
                       (unbox (loop (sub1 n)))))))))
 
-(let ([init-memory-use (current-memory-use)])
-  (define done? #f)
-  (define t (thread (lambda ()
-                      ((dynamic-require ''allocates-many-vectors 'go))
-                      (set! done? #t))))
-  (define watcher-t (thread
-                     (lambda ()
-                       (let loop ()
-                         (sleep 0.1)
-                         (define mu (current-memory-use))
-                         (printf "~s\n" mu)
-                         (cond
-                          [(mu . < . (+ init-memory-use (* 100 1024 1024)))
-                           (loop)]
-                          [else
-                           (kill-thread t)])))))
-  (sync t)
-  (kill-thread watcher-t)
-  (test #t 'many-vectors-in-reasonable-space? done?))
+(unless (eq? 'cgc (system-type 'gc))
+  (let ([init-memory-use (current-memory-use)])
+    (define done? #f)
+    (define t (thread (lambda ()
+                        ((dynamic-require ''allocates-many-vectors 'go))
+                        (set! done? #t))))
+    (define watcher-t (thread
+                       (lambda ()
+                         (let loop ()
+                           (sleep 0.1)
+                           (define mu (current-memory-use))
+                           (printf "~s\n" mu)
+                           (cond
+                             [(mu . < . (+ init-memory-use (* 100 1024 1024)))
+                              (loop)]
+                             [else
+                              (kill-thread t)])))))
+    (sync t)
+    (kill-thread watcher-t)
+    (test #t 'many-vectors-in-reasonable-space? done?)))
 
 ;; ----------------------------------------
 ;; Check that a thread that has a reference to

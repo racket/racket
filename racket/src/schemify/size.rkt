@@ -32,7 +32,7 @@
           (body-leftover-size (cons rhss body) (sub1 size))]
          [`(if ,tst ,thn ,els)
           (leftover-size els (leftover-size thn (leftover-size tst (sub1 size))))]
-         [`(with-continuation-mark ,key ,val ,body)
+         [`(with-continuation-mark* ,_ ,key ,val ,body)
           (leftover-size body (leftover-size val (leftover-size key (sub1 size))))]
          [`(begin0 . ,body)
           (body-leftover-size body (sub1 size))]

@@ -1,6 +1,10 @@
 #lang racket/base
 (require "test-util.rkt")
 
+(module+ test
+  (module config info
+    (define timeout 180)))
+
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 
                  'racket/class

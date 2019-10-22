@@ -44,7 +44,8 @@
   (make-parameter root-thread-group
                   (lambda (v)
                     (check who thread-group? v)
-                    v)))
+                    v)
+                  'current-thread-group))
 
 (define (make-another-initial-thread-group)
   (set! root-thread-group (make-root-thread-group)))

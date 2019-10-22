@@ -57,8 +57,18 @@ offset is always in bytes.}
 @defproc[(cpointer-gcable? [cptr cpointer?]) boolean?]{
 
 Returns @racket[#t] if @racket[cptr] is treated as a reference to
-memory that is managed by the garbage collector, @racket[#f]
-otherwise.}
+memory that is (assumed to be) managed by the garbage collector,
+@racket[#f] otherwise.
+
+For a pointer based on @racket[_gcpointer] as a result type,
+@racket[cpointer-gcable?] will return @racket[#t]. In the @3m[] and
+@CGC[] variants of Racket, @racket[cpointer-gcable?] will return
+@racket[#f] for a pointer based on @racket[_pointer] as a result type.
+The @CS[] variant is mostly the sane, except that if a pointer is
+extracted using the @racket[_pointer] type from memory allocated as
+@racket['nonatomic], @racket[cpointer-gcable?] will report @racket[#t]
+for the extracted pointer.}
+
 
 @; ----------------------------------------------------------------------
 
@@ -466,12 +476,12 @@ use by such finalizers.}
 @defproc[(make-sized-byte-string [cptr cpointer?] [length exact-nonnegative-integer?]) 
          bytes?]{
 
-Returns a byte string made of the given pointer and the given length.
-No copying is performed. Beware that future implementations of Racket
-may not support this function (in case of a byte string representation
-that combines a size and byte-string content without an indirection).
+Returns a byte string made of the given pointer and the given length
+in the @3m[] and @CGC[] variants of Racket; no copying is performed.
+In the @CS[] variant, the @racket[exn:fail:unsupported] exception is
+raised.
 
-Beware also that the representation of a Racket byte string normally
+Beware that the representation of a Racket byte string normally
 requires a nul terminator at the end of the byte string (after
 @racket[length] bytes), but some functions work with a byte-string
 representation that has no such terminator---notably

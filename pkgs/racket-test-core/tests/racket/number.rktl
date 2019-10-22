@@ -2691,6 +2691,10 @@
                               (apply append (for/list ([i 10000])
                                               (random-sample (range 10) 100)))))))
 
+(parameterize ([current-pseudo-random-generator (make-pseudo-random-generator)])
+  (random-seed 2)
+  (test '#(1062645402 3593208522 3838676319 2291995347 179540564 3081399108)
+        pseudo-random-generator->vector (current-pseudo-random-generator)))
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))

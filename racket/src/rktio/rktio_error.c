@@ -141,7 +141,7 @@ const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
     s = strerror(errid);
 #endif
   } else if (kind == RKTIO_ERROR_KIND_GAI)
-    s = rktio_gai_strerror(errid);
+    s = rktio_gai_strerror(rktio, errid); /* may use `last_err_str` */
 #ifdef RKTIO_SYSTEM_WINDOWS
   else if (kind == RKTIO_ERROR_KIND_WINDOWS) {
     wchar_t mbuf[256];

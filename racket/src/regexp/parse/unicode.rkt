@@ -1,5 +1,6 @@
 #lang racket/base
-(require "chyte.rkt"
+(require (only-in racket/bool xor)
+         "chyte.rkt"
          "chyte-case.rkt"
          "ast.rkt"
          "config.rkt"
@@ -11,8 +12,13 @@
   (chyte-case/eos
    s pos
    [(#\{)
+    (define-values (cat-negated? next-pos)
+      (chyte-case/eos
+       s (add1 pos)
+       [(#\^) (values #t (+ pos 2))]
+       [else  (values #f (add1 pos))]))
     (define-values (l pos2)
-      (let loop ([accum null] [pos (add1 pos)])
+      (let loop ([accum null] [pos next-pos])
         (chyte-case/eos
          s pos
          [(eos)
@@ -67,7 +73,8 @@
                            "unrecognized property name in `\\~a{}`: `~a`"
                            (integer->char p-c)
                            (list->string (map integer->char l)))]))
-    (values (rx:unicode-categories categories (= p-c (char->integer #\p)))
+    (define prop-negated? (= p-c (char->integer #\P)))
+    (values (rx:unicode-categories categories (not (xor prop-negated? cat-negated?)))
             pos2)]
    [else
     (parse-error s pos config

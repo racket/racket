@@ -13,6 +13,8 @@
 (test #f object-name 'hello)
 (test #f object-name "hi")
 
+(test 'eval object-name eval)
+
 (define (src-name? s)
   (and (symbol? s)
        (regexp-match ":[0-9]+.[0-9]+$" (symbol->string s))

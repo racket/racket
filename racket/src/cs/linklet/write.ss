@@ -20,6 +20,7 @@
        [(not i) (values ht cross-machine)]
        [else
         (let-values ([(key v) (hash-iterate-key+value orig-ht i)])
+          (when (linklet? v) (check-fasl-preparation v))
           (let ([new-v (if (and (linklet? v)
                                 (pair? (linklet-paths v)))
                            (adjust-cross-perparation
@@ -46,3 +47,8 @@
     (if (or (pair? p) (eq? p 'faslable-unsafe))
         (set-linklet-preparation l 'faslable)
         l)))
+
+(define (check-fasl-preparation l)
+  (case (linklet-preparation l)
+    [(callable lazy)
+     (raise-arguments-error 'write "linklet is not serializable")]))

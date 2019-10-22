@@ -34,17 +34,23 @@ static int scheme_utf8_encode(unsigned int *path, int zero_offset, int len,
 #ifdef WIN32
 typedef void *(*scheme_dll_open_proc)(const char *name, int as_global);
 typedef void *(*scheme_dll_find_object_proc)(void *h, const char *name);
+typedef void (*scheme_dll_close_proc)(void *h);
 static scheme_dll_open_proc embedded_dll_open;
 static scheme_dll_find_object_proc scheme_dll_find_object;
-static void scheme_set_dll_procs(scheme_dll_open_proc open, scheme_dll_find_object_proc find)
+static scheme_dll_close_proc embedded_dll_close;
+static void scheme_set_dll_procs(scheme_dll_open_proc open,
+                                 scheme_dll_find_object_proc find,
+                                 scheme_dll_close_proc close)
 {
   embedded_dll_open = open;
   scheme_dll_find_object = find;
+  embedded_dll_close = close;
 }
 # include "../../start/embedded_dll.inc"
 #else
 # define embedded_dll_open NULL
 # define scheme_dll_find_object NULL
+# define embedded_dll_close NULL
 #endif
 
 char *boot_file_data = "BooT FilE OffsetS:xxxxyyyyyzzzz";
@@ -408,7 +414,7 @@ static int bytes_main(int argc, char **argv,
               pos1, pos2, pos3,
               CS_COMPILED_SUBDIR, RACKET_IS_GUI,
 	      wm_is_gracket_or_x11_arg_count, gracket_guid_or_x11_args,
-	      embedded_dll_open, scheme_dll_find_object);
+	      embedded_dll_open, scheme_dll_find_object, embedded_dll_close);
   
   return 0;
 }

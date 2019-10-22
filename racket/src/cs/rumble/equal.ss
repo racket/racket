@@ -195,7 +195,7 @@
 ;; continuation maps `key-equality-wrap-key` to a key-wrapping
 ;; function.
 
-(define key-equality-wrap-key (gensym))
+(define key-equality-wrap-key '#{equality n1kcvqw4c9hh8t3fi3659ci94-0})
 
 ;; Looking in the continaution is expensive relative to `equal?`, so
 ;; look in a box as a quick pre-test. Multiple threads may increment

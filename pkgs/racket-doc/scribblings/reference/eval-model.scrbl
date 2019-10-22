@@ -952,19 +952,42 @@ used only to abort to the point of capture.
 Racket supports multiple @deftech{threads} of evaluation.  Threads run
 concurrently, in the sense that one thread can preempt another without
 its cooperation, but threads currently all run on the same processor
-(i.e., the same underlying operating system process and thread). See also
-@secref["futures"].
+(i.e., the same underlying operating system process and thread).
 
 Threads are created explicitly by functions such as @racket[thread]. 
 In terms of the evaluation model, each step in evaluation
 actually deals with multiple concurrent
 expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
-communicate through shared state, and sequential consistency is
+communicate through shared state, and @defterm{sequential consistency} @cite["Lamport79"] is
 guaranteed (i.e., the result is consistent with some global sequence
 imposed on all evaluation steps across threads). Most evaluation steps involve a
-single step in a single expression, but certain synchronization
-primitives require multiple threads to progress together in one step.
+single step in a single thread, but certain synchronization
+primitives require multiple threads to progress together in one step; for example,
+an exchange of a value through a @tech{channel} progresses in two
+threads simultaneously.
+
+Unless otherwise noted, all constant-time procedures and operations
+provided by Racket are thread-safe in the sense that they are
+@defterm{atomic}: they happen as a single evaluation step.
+For example, @racket[set!] assigns to a variable as an atomic action
+with respect to all threads, so that no thread can see a
+``half-assigned'' variable. Similarly, @racket[vector-set!] assigns to
+a vector atomically. Note that the evaluation of a @racket[set!]
+expression with its subexpression is not necessarily atomic, because
+evaluating the subexpression involves a separate step of evaluation.
+Only the assignment action itself (which takes after the subexpression
+is evaluated to obtain a value) is atomic. Similarly, a procedure
+application can involve multiple steps that are not atomic, even if
+the procedure itself performs an atomic action.
+
+The @racket[hash-set!] procedure is not atomic, but the table is
+protected by a lock; see @secref["hashtables"] for more information.
+Port operations are generally not atomic, but they are thread-safe in
+the sense that a byte consumed by one thread from an input port will
+not be returned also to another thread, and procedures like
+@racket[port-commit-peeked] and @racket[write-bytes-avail] offer
+specific concurrency guarantees.
 
 In addition to the state that is shared among all threads, each thread
 has its own private state that is accessed through @deftech{thread
@@ -976,6 +999,21 @@ thread's value for a preserved thread cell serves as the initial value
 for the cell in the created thread. For a non-preserved thread cell, a
 new thread sees the same initial value (specified when the thread cell
 is created) as all other threads.
+
+@tech{Futures} and @tech{places} offer different kinds of concurrency
+and parallelism, and they have weaker guarantees about shared state.
+(Places can share state through functions like
+@racket[make-shared-bytes].) Each thread of evaluation in a future or
+place is constrained to behave consistent with the possibility of some
+other thread that might inspect any shared data starting at any point
+that a future or place starts. In the case that two futures or two
+places share state, each read or write operation to shared state
+corresponds to a read or write operation at the virtual-memory level,
+and the operations are constrained to the order they could be observed
+or affected by a thread. However, Racket does not enforce additional
+guarantees about reordering that might be performed at the
+virtual-memory level or below, except in the case of operations that
+specify such guarantees explicitly (e.g., @racket[box-cas!]).
 
 @;------------------------------------------------------------------------
 @section[#:tag "parameter-model"]{Parameters}

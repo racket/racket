@@ -29,6 +29,7 @@
           unsafe-call-with-composable-continuation/no-wind
 
           with-continuation-mark
+          with-continuation-mark* ; not exported to Racket
           (rename [call-with-immediate-continuation-mark/inline
                    call-with-immediate-continuation-mark]
                   [call-with-immediate-continuation-mark
@@ -46,16 +47,17 @@
           chaperone-continuation-mark-key
           call-with-system-wind ; not exported to Racket
 
+          ;; not exported to Racket:
           make-engine
           engine-block
           engine-timeout
           engine-return
-          current-engine-state  ; not exported to Racket
-          set-ctl-c-handler! ; not exported to Racket
-          get-ctl-c-handler  ; not exported to Racket
-          set-scheduler-lock-callbacks! ; not exported to Racket
-          set-scheduler-atomicity-callbacks! ; not exported to Racket
-          set-engine-exit-handler! ; not exported to Racket
+          call-with-engine-completion
+          set-ctl-c-handler!
+          get-ctl-c-handler
+          set-scheduler-lock-callbacks!
+          set-scheduler-atomicity-callbacks!
+          set-engine-exit-handler!
 
           make-thread-cell
           thread-cell?
@@ -268,6 +270,7 @@
           unsafe-weak-hash-iterate-first unsafe-weak-hash-iterate-next
           unsafe-weak-hash-iterate-key unsafe-weak-hash-iterate-value
           unsafe-weak-hash-iterate-key+value unsafe-weak-hash-iterate-pair
+          unsafe-hash-seal!    ; not exported to racket
 
           hash? hash-eq? hash-equal? hash-eqv? hash-weak? immutable-hash?
           hash-count
@@ -404,12 +407,7 @@
 
           random
           random-seed
-          pseudo-random-generator?
-          make-pseudo-random-generator
           current-pseudo-random-generator
-          vector->pseudo-random-generator
-          vector->pseudo-random-generator!
-          pseudo-random-generator->vector
           pseudo-random-generator-vector?
 
           mpair?
@@ -610,7 +608,7 @@
           ctype-alignof ctype-basetype ctype-c->scheme ctype-scheme->c ctype-sizeof ctype?
           end-stubborn-change extflvector->cpointer
           ffi-call ffi-call-maker ffi-callback ffi-callback-maker ffi-callback?
-          ffi-lib-name ffi-lib? ffi-obj ffi-obj-lib
+          ffi-lib-name ffi-lib? ffi-obj ffi-obj-lib ffi-lib-unload
           ffi-obj-name  ffi-obj? flvector->cpointer free free-immobile-cell lookup-errno
           make-array-type make-cstruct-type make-ctype make-late-weak-box make-late-weak-hasheq
           make-sized-byte-string make-union-type malloc malloc-immobile-cell
@@ -637,9 +635,9 @@
           ptr-ref/double ptr-set!/double  ; not exported to Racket
           ptr-ref/float ptr-set!/float    ; not exported to Racket
 
-          unsafe-unbox
+          (rename [inline:unsafe-unbox unsafe-unbox]
+                  [inline:unsafe-set-box! unsafe-set-box!])
           unsafe-unbox*
-          unsafe-set-box!
           unsafe-set-box*!
           unsafe-box*-cas!
 
@@ -648,12 +646,12 @@
           unsafe-set-mcar!
           unsafe-set-mcdr!
 
-          unsafe-vector-ref
-          unsafe-vector-set!
+          (rename [inline:unsafe-vector-ref unsafe-vector-ref]
+                  [inline:unsafe-vector-set! unsafe-vector-set!]
+                  [inline:unsafe-vector-length unsafe-vector-length])
           unsafe-vector*-ref
           unsafe-vector*-set!
           unsafe-vector*-cas!
-          unsafe-vector-length
           unsafe-vector*-length
 
           unsafe-fxvector-length
@@ -672,8 +670,8 @@
           unsafe-string-ref
           unsafe-string-set!
 
-          unsafe-struct-ref
-          unsafe-struct-set!
+          (rename [inline:unsafe-struct-ref unsafe-struct-ref]
+                  [inline:unsafe-struct-set! unsafe-struct-set!])
           unsafe-struct*-ref
           unsafe-struct*-set!
           unsafe-struct*-cas!
@@ -705,6 +703,8 @@
           set-future-callbacks!
           install-primitives-table!
           continuation-current-primitive
+          call-as-asynchronous-callback
+          post-as-asynchronous-callback
 
           ;; compile-time use in "thread.sls"
           current-atomic-virtual-register
@@ -727,8 +727,9 @@
                 record-field-accessor
                 record-field-mutator))
 
-  (define/no-lift none (chez:gensym "none"))
-  (define/no-lift none2 (chez:gensym "none2")) ; never put this in an emphemeron
+  ;; Internal tokens that are different from all possible user-level values:
+  (define/no-lift none '#{none kwcju864gpycc2h151s9atbmo-1})
+  (define/no-lift none2 '#{none kwcju864gpycc2h151s9atbmo-2}) ; never put this in an emphemeron
 
   (include "rumble/define.ss")
   (include "rumble/virtual-register.ss")
@@ -789,6 +790,7 @@
   (include "rumble/place.ss")
   (include "rumble/errno-data.ss")
   (include "rumble/foreign.ss")
+  (include "rumble/async-callback.ss")
   (include "rumble/future.ss")
   (include "rumble/inline.ss")
 
@@ -802,6 +804,8 @@
   (set-base-exception-handler!)
   (init-place-locals!)
   (register-as-place-main!)
+  (async-callback-place-init!)
+  (remember-original-place!)
   (set-collect-handler!)
   (set-primitive-applicables!)
   (set-continuation-applicables!)

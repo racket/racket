@@ -14,7 +14,8 @@
                       (force-exit v)))
                   (lambda (p)
                     (check who (procedure-arity-includes/c 1) p)
-                    p)))
+                    p)
+                  'exit-handler))
 
 ;; In a non-main place, must be called only in the scheduler:
 (define (force-exit v)

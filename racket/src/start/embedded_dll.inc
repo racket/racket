@@ -153,10 +153,16 @@ static long in_memory_get_offset(const char *name)
   return 0;
 }
 
+static void in_memory_close(void *h)
+{
+  if (h)
+    MemoryFreeLibrary((HMEMORYMODULE)h);
+}
+
 static void register_embedded_dll_hooks()
 {
   if (embedded_dlls) {
-    scheme_set_dll_procs(in_memory_open, in_memory_find_object);
+    scheme_set_dll_procs(in_memory_open, in_memory_find_object, in_memory_close);
   }
 }
 

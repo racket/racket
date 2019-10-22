@@ -3,5 +3,5 @@
 (provide current-force-delete-permissions)
 
 (define current-force-delete-permissions
-  (make-parameter #t (lambda (v) (and v #t))))
+  (make-parameter #t (lambda (v) (and v #t)) 'current-force-delete-permissions))
 

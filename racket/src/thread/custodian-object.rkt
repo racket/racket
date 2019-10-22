@@ -22,7 +22,8 @@
                    [gc-roots #:mutable]   ; weak references to charge to custodian; access without interrupts
                    [memory-limits #:mutable]   ; list of (cons limit cust)
                    [immediate-limit #:mutable] ; limit on immediate allocation
-                   [sync-futures? #:mutable])  ; whether a sync witht future threads is needed on shutdown
+                   [sync-futures? #:mutable]   ; whether a sync witht future threads is needed on shutdown
+                   [post-shutdown #:mutable])  ; callbacks to run in atomic mode after shutdown
   #:authentic)
 
 (define (create-custodian parent)
@@ -37,7 +38,8 @@
              #f     ; GC roots
              null   ; memory limits
              #f     ; immediate limit
-             #f))   ; sync-futures?
+             #f     ; sync-futures?
+             null)) ; post-shutdown
 
 ;; Call only from a place's main pthread, and only a
 ;; place's main thread should change the box value.

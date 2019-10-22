@@ -16,6 +16,7 @@
          bound
          s=
          a=
+         convert-compile-time-error
          convert-syntax-error)
 
 #|

@@ -418,11 +418,13 @@ See @secref["foreign:tagged-pointers"] for creating pointer types that
 use these tags for safety. A @racket[#f] value is converted to
 @cpp{NULL} and vice versa.
 
-The address referenced by a @racket[_pointer] value must not refer to
+As a result type, the address referenced by a @racket[_pointer] value must not refer to
 memory managed by the garbage collector (unless the address
 corresponds to a value that supports interior pointers and that is
 otherwise referenced to preserve the value from garbage collection).
 The reference is not traced or updated by the garbage collector.
+As an argument type, @racket[_pointer] works for a reference to either
+GC-managed memory or not.
 
 The @racket[equal?] predicate equates C pointers (including pointers
 for @racket[_gcpointer] and possibly containing an offset) when they
@@ -433,11 +435,13 @@ case the equality rules of the relevant structure types apply.}
 
 @defthing[_gcpointer ctype?]{
 
-Like @racket[_pointer], but for a C pointer value that can refer to memory
-managed by the garbage collector.
+The same as @racket[_pointer] as an argument type, but as a result
+type, @racket[_gcpointer] corresponds to a C pointer value that refers
+to memory managed by the garbage collector.
 
-Although a @racket[_gcpointer] can reference to memory that is not
-managed by the garbage collector, beware of using an address that
+In the @3m[] and @CGC[] variants of Racket, a @racket[_gcpointer] result
+pointer can reference to memory that is not
+managed by the garbage collector, but beware of using an address that
 might eventually become managed by the garbage collector. For example,
 if a reference is created by @racket[malloc] with @racket['raw] and
 released by @racket[free], then the @racket[free] may allow the memory
@@ -445,9 +449,8 @@ formerly occupied by the reference to be used later by the garbage
 collector.
 
 The @racket[cpointer-gcable?] function returns @racket[#t] for a
-cpointer generated via the @racket[_gcpointer] type, while it
-generates @racket[#f] for a cpointer generated via the
-@racket[_cpointer] type.}
+cpointer generated via the @racket[_gcpointer] result type. See
+@racket[cpointer-gcable?] for more information.}
 
 
 @deftogether[(
@@ -1141,10 +1144,13 @@ type; a byte string is passed as @racket[_bytes] without any copying.
 Beware that a Racket byte string is not necessarily nul terminated;
 see also @racket[_bytes/nul-terminated].
 
-In the @3m[] and @CGC[] variants of Racket, a C non-NULL @cpp{char*}
-is converted to a Racket byte string without copying. In the @CS[]
-variant, conversion requires copying to represent a C @cpp{char*}
-result as a Racket byte string. In both cases, the C result must have
+In the @3m[] and @CGC[] variants of Racket, a C non-NULL result value
+is converted to a Racket byte string without copying; the pointer is
+treated as potentially managed by the garbage collector (see
+@racket[_gcpointer] for caveats). In the @CS[] variant of Racket,
+conversion requires copying to represent a C @cpp{char*}
+result as a Racket byte string, and the original pointer is @emph{not}
+treated as managed by the garbage collector. In both cases, the C result must have
 a nul terminator to determine the Racket byte string's length.
 
 A @racket[(_bytes o len-expr)] form is a @tech{custom function type}.
@@ -1181,6 +1187,7 @@ As usual, @racket[_bytes/nul-terminated] treats @racket[#f] as
 results.
 
 @history[#:added "6.12.0.2"]}
+
 
 @; ------------------------------------------------------------
 
@@ -1323,6 +1330,10 @@ The resulting bindings are as follows:
  @item{@racketidfont{struct:cpointer:}@racketvarfont{id}:
   only when a @racket[#:property] is specified --- a structure type that 
   corresponds to a wrapper to reflect properties (see below).}
+
+ @item{@racketidfont{make-wrap-}@racketvarfont{id}: only when a
+  @racket[#:property] is specified --- a function that takes a
+  cpointer and returns a wrapper structure that holds the cpointer.}
 
 ]
 

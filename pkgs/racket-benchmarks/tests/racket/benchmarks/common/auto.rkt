@@ -282,6 +282,9 @@ exec racket -qu "$0" ${1+"$@"}
             (s (bytes->number (cadddr m)))
             (if (caddr m) (s (bytes->number (caddr m))) 0))))
 
+  (define (clean-up-chez bm)
+    (delete-file (format "~a.so" bm)))
+
   (define (setup-chez-sps bm)
     (setup-sps bm "(only (chezscheme) time)"))
 
@@ -336,14 +339,18 @@ exec racket -qu "$0" ${1+"$@"}
   (define (extract-gambit-times bm str)
     (let ([m (regexp-match (byte-regexp
                             (bytes-append
-                             #"([0-9]+) ms real.*[^0-9]"
-                             #"([0-9]+) ms cpu.*"
-                             #"(?:no collections|collections? accounting for ([0-9]+) ms.*)"))
+                             #"([0-9][0-9.]*) (secs|ms) real[^0-9]*"
+                             #"([0-9][0-9.]*) (?:secs|ms) cpu.*"
+                             #"(?:no collections|collections? accounting for ([0-9][0-9.]*) (?:secs|ms).*)"))
                            str)])
-      (map bytes->number
-           (list (caddr m)
-                 (cadr m)
-                 (or (cadddr m) #"0")))))
+      (map (lambda (i)
+             (if (equal? #"secs" (caddr m))
+                 (inexact->exact (round (* i 1000)))
+                 i))
+           (map bytes->number
+                (list (cadddr m)
+                      (cadr m)
+                      (or (cadddr (cdr m)) #"0"))))))
 
   (define (extract-racket-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])
@@ -575,14 +582,14 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 run-petite
                 extract-chez-times
-                void
+                clean-up-chez
                 racket-specific-progs)
      (make-impl 'chez
                 void
                 mk-chez
                 run-chez
                 extract-chez-times
-                void
+                clean-up-chez
                 racket-specific-progs)
      (make-impl 'chez-sps
                 setup-chez-sps

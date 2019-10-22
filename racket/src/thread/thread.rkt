@@ -266,7 +266,8 @@
   (when (thread-dead-sema t)
     (semaphore-post-all (thread-dead-sema t)))
   (unless (thread-descheduled? t)
-    (thread-group-remove! (thread-parent t) t))
+    (thread-group-remove! (thread-parent t) t)
+    (thread-unscheduled-for-work-tracking! t))
   (remove-from-sleeping-threads! t)
   (run-kill-callbacks! t)
   (when (thread-forward-break-to t)
@@ -423,6 +424,7 @@
     (internal-error "tried to deschedule a descheduled thread"))
   (set-thread-descheduled?! t #t)
   (thread-group-remove! (thread-parent t) t)
+  (thread-unscheduled-for-work-tracking! t)
   (when timeout-at
     (add-to-sleeping-threads! t (sandman-merge-timeout #f timeout-at)))
   (when (eq? t (current-thread/in-atomic))
@@ -733,6 +735,9 @@
 (define (thread-did-work!)
   (set! poll-done-threads #hasheq()))
 
+(define (thread-unscheduled-for-work-tracking! t)
+  (set! poll-done-threads (hash-remove poll-done-threads t)))
+
 ;; ----------------------------------------
 ;; Breaks
 
@@ -995,7 +1000,8 @@
                               (set-thread-mailbox-wakeup! t (lambda () (wakeup) (receive))))
                             (add-wakeup-callback!)
                             (values #f (control-state-evt
-                                        (wrap-evt async-evt (lambda (v) self))
+                                        async-evt
+                                        (lambda (v) self)
                                         ;; interrupt (all must be interrupted, so just install `void`):
                                         (lambda () (set-thread-mailbox-wakeup! t void))
                                         ;; abandon:

@@ -2,7 +2,7 @@ This is the source code distribution for minimal Racket.
 
 If this directory is part of a clone of the Git repository for Racket,
 then the clone's root directory includes a makefile to both build
-minimal Racket and install packages. See "INSTALL.txt" in the clone's
+minimal Racket and install packages. See "build.md" in the clone's
 root directory.
 
 ========================================================================
@@ -10,13 +10,13 @@ root directory.
 ========================================================================
 
 Racket is distributed under the GNU Lesser General Public License
-(LGPL). See the file "COPYING_LESSER.txt" for more information.
+(LGPL). See "LICENSE.txt" for more information.
 
 Compiled executables, documentation, and up-to-date information:
    http://racket-lang.org/
 
 Pre-compiled daily snapshots:
-   http://pre.racket-lang.org/
+   http://snapshot.racket-lang.org/
 
 Main development repository:
    https://github.com/racket/racket

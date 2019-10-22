@@ -9,14 +9,16 @@
 ensuring that values allocated through foreign functions are reliably
 deallocated.}
 
-@defproc[((allocator [dealloc (any/c . -> . any)]) [alloc procedure?]) procedure?]{
+@defproc[((allocator [dealloc (any/c . -> . any)]) [alloc (or/c procedure? #f)]) (or/c procedure? #f)]{
 
 Produces an @deftech{allocator} procedure that behaves like
 @racket[alloc], but each result @racket[_v] of the @tech{allocator},
 if not @racket[#f], is given a finalizer that calls @racket[dealloc]
-on @racket[_v] --- unless the call has been canceled by applying a
+on @racket[_v]---unless the call has been canceled by applying a
 @tech{deallocator} (produced by @racket[deallocator]) to @racket[_v].
 Any existing @racket[dealloc] registered for @racket[_v] is canceled.
+If and only if @racket[alloc] is @racket[#f], @racket[((allocator
+alloc) dealloc)] produces @racket[#f].
 
 The resulting @tech{allocator} calls @racket[alloc] in @tech{atomic
 mode} (see @racket[call-as-atomic]). The result from @racket[alloc] is
@@ -44,7 +46,9 @@ a new deallocation action that will run earlier.
 
 @history[#:changed "7.0.0.4" @elem{Added atomic mode for @racket[dealloc]
                                    and changed non-main place exits to call
-                                   all remaining @racket[dealloc]s.}]}
+                                   all remaining @racket[dealloc]s.}
+         #:changed "7.4.0.4" @elem{Produce @racket[#f] when @racket[alloc]
+                                   is @racket[#f].}]}
 
 @deftogether[(
 @defproc[((deallocator [get-arg (list? . -> . any/c) car]) [dealloc procedure?]) 

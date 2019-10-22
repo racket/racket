@@ -152,6 +152,7 @@ typedef struct ffi_lib_struct {
   NON_GCBALE_PTR(rktio_dll_t) handle;
   Scheme_Object* name;
   int is_global;
+  int refcount;
 } ffi_lib_struct;
 #define SCHEME_FFILIBP(x) (SCHEME_TYPE(x)==ffi_lib_tag)
 #define MYNAME "ffi-lib?"
@@ -222,10 +223,12 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
     lib->handle = (handle);
     lib->name = (argv[0]);
     lib->is_global = (!name);
+    lib->refcount = (1);
     scheme_hash_set(opened_libs, hashname, (Scheme_Object*)lib);
     /* no dlclose finalizer - since the hash table always keeps a reference */
     /* maybe add some explicit unload at some point */
-  }
+  } else
+    lib->refcount++;
   return (Scheme_Object*)lib;
 }
 #undef MYNAME
@@ -237,6 +240,53 @@ static Scheme_Object *foreign_ffi_lib_name(int argc, Scheme_Object *argv[])
   if (!SCHEME_FFILIBP(argv[0]))
     scheme_wrong_contract(MYNAME, "ffi-lib?", 0, argc, argv);
   return ((ffi_lib_struct*)argv[0])->name;
+}
+#undef MYNAME
+
+/* (ffi-lib-unload ffi-lib) -> (void) */
+#define MYNAME "ffi-lib-unload"
+static Scheme_Object *foreign_ffi_lib_unload(int argc, Scheme_Object *argv[])
+{
+  ffi_lib_struct *lib;
+
+  if (!SCHEME_FFILIBP(argv[0]))
+    scheme_wrong_contract(MYNAME, "ffi-lib?", 0, argc, argv);
+
+  lib = (ffi_lib_struct *)argv[0];
+  if (!lib->handle)
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     MYNAME": couldn't close already-closed lib %V",
+                     lib->name);
+
+  --lib->refcount;
+  if (lib->refcount)
+    return scheme_void;
+
+  if (rktio_dll_close(scheme_rktio, lib->handle)) {
+    Scheme_Object *hashname;
+
+    lib->handle = NULL;
+
+    if (SCHEME_FALSEP(lib->name))
+      hashname = (Scheme_Object *)"";
+    else {
+      hashname = TO_PATH(lib->name);
+      hashname = (Scheme_Object *)SCHEME_PATH_VAL(hashname);
+    }
+    scheme_hash_set(opened_libs, hashname, NULL);
+  } else {
+    char *msg;
+    msg = rktio_dll_get_error(scheme_rktio);
+    if (msg) {
+      msg = scheme_strdup_and_free(msg);
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       MYNAME": couldn't close %V (%s)", lib->name, msg);
+    } else
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       MYNAME": couldn't close %V (%R)", lib->name);
+  }
+
+  return scheme_void;
 }
 #undef MYNAME
 
@@ -294,6 +344,12 @@ static Scheme_Object *foreign_ffi_obj(int argc, Scheme_Object *argv[])
   if (!SCHEME_BYTE_STRINGP(argv[0]))
     scheme_wrong_contract(MYNAME, "bytes?", 0, argc, argv);
   dlname = SCHEME_BYTE_STR_VAL(argv[0]);
+
+  if (!lib->handle) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     MYNAME": couldn't get \"%s\" from already-closed %V",
+                     dlname, lib->name);
+  }
 
   dlobj = rktio_dll_find_object(scheme_rktio, lib->handle, dlname);
   if (!dlobj) {
@@ -4947,6 +5003,8 @@ void scheme_init_foreign(Scheme_Startup_Env *env)
     scheme_make_noncm_prim(foreign_ffi_lib, "ffi-lib", 1, 3), env);
   scheme_addto_prim_instance("ffi-lib-name",
     scheme_make_noncm_prim(foreign_ffi_lib_name, "ffi-lib-name", 1, 1), env);
+  scheme_addto_prim_instance("ffi-lib-unload",
+    scheme_make_noncm_prim(foreign_ffi_lib_unload, "ffi-lib-unload", 1, 1), env);
   scheme_addto_prim_instance("ffi-obj?",
     scheme_make_immed_prim(foreign_ffi_obj_p, "ffi-obj?", 1, 1), env);
   scheme_addto_prim_instance("ffi-obj",
@@ -5312,6 +5370,8 @@ void scheme_init_foreign(Scheme_Env *env)
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib", 1, 3), env);
   scheme_addto_primitive_instance("ffi-lib-name",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib-name", 1, 1), env);
+  scheme_addto_primitive_instance("ffi-lib-unload",
+   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-lib-unload", 1, 1), env);
   scheme_addto_primitive_instance("ffi-obj?",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "ffi-obj?", 1, 1), env);
   scheme_addto_primitive_instance("ffi-obj",

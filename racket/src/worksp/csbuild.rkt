@@ -292,14 +292,14 @@
 (make-directory* "../../doc")
 (make-directory* "../../share")
 
-(copy-file "../COPYING-libscheme.txt"
-           "../../share/COPYING-libscheme.txt"
+(copy-file "../LICENSE-libscheme.txt"
+           "../../share/LICENSE-libscheme.txt"
            #t)
-(copy-file "../COPYING_LESSER.txt"
-           "../../share/COPYING_LESSER.txt"
+(copy-file "../LICENSE-LGPL.txt"
+           "../../share/LICENSE-LGPL.txt"
            #t)
-(copy-file "../COPYING.txt"
-           "../../share/COPYING.txt"
+(copy-file "../LICENSE-GPL.txt"
+           "../../share/LICENSE-GPL.txt"
            #t)
 
 (parameterize ([current-directory "mzstart"])

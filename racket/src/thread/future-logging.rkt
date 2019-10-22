@@ -50,7 +50,7 @@
 
 ;; in atomic mode and only in main pthread
 (define (flush-future-log)
-  (define new-events (unbox events))
+  (define new-events (unbox* events))
   (unless (null? new-events)
     (cond
       [(box-cas! events new-events null)
@@ -71,8 +71,11 @@
                              (number->string proc-id)
                              ": "
                              (if (and (eqv? proc-id 0)
-                                      (eq? action 'block))
-                                 (string-append "HANDLING: "
+                                      (or (eq? action 'block)
+                                          (eq? action 'sync)))
+                                 (string-append (if (eq? action 'block)
+                                                    "HANDLING: "
+                                                    "synchronizing: ")
                                                 (symbol->string
                                                  (or (future-event-prim-name e)
                                                      '|[unknown]|)))
@@ -88,6 +91,7 @@
     [(start-work) "started work"]
     [(end-work) "ended work"]
     [(block) "BLOCKING on process 0"]
+    [(sync) "synchronizing with process 0"]
     [(touch) "touching future: touch"]
     [(result) "result determined"]
     [(suspend) "suspended"]

@@ -10,6 +10,7 @@
          "../locale/string.rkt")
 
 (provide ffi-get-lib
+         ffi-unload-lib
          ffi-get-obj
          current-load-extension)
 
@@ -32,16 +33,19 @@
        [else
         (define msg (string-append "could not load foreign library"
                                    "\n  path: " (if bstr (bytes->string/locale bstr #\?) "[all opened]")))
-        (cond
-          [err-str
-           (raise
-            (exn:fail:filesystem
-             (string-append (symbol->string who) ": " msg
-                            "\n  system error: " (->string err-str))
-             (current-continuation-marks)))]
-          [else
-           (raise-filesystem-error who dll msg)])])]
+        (raise-dll-error who msg err-str dll)])]
     [else (success-k dll)]))
+
+(define/who (ffi-unload-lib dll)
+  (start-atomic)
+  (define r (rktio_dll_close rktio dll))
+  (cond
+    [(rktio-error? r)
+     (define err-str (dll-get-error r))
+     (end-atomic)
+     (raise-dll-error who "could not unload foreign library" err-str r)]
+    [else
+     (end-atomic)]))
 
 (define (ffi-get-obj who dll dll-name name success-k)
   (check who path-string? #:or-false dll-name)
@@ -79,6 +83,17 @@
               (rktio_to_bytes p)
               (rktio_free p))]))))
 
+(define (raise-dll-error who msg err-str v)
+  (cond
+    [err-str
+     (raise
+      (exn:fail:filesystem
+       (string-append (symbol->string who) ": " msg
+                      "\n  system error: " (->string err-str))
+       (current-continuation-marks)))]
+    [else
+     (raise-filesystem-error who v msg)]))
+
 (define (->string s)
   (if (bytes? s)
       (bytes->string/utf-8 s #\?)
@@ -98,4 +113,5 @@
   (make-parameter default-load-extension
                   (lambda (p)
                     (check who (procedure-arity-includes/c 2) p)
-                    p)))
+                    p)
+                  'current-load-extension))

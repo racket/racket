@@ -41,7 +41,10 @@
                                       (hash->linklet-bundle
                                        (hasheq
                                         0
-                                        (build-shared-data-linklet cims ns))))))
+                                        (build-shared-data-linklet
+                                         cims
+                                         ns
+                                         #:to-correlated-linklet? to-correlated-linklet?))))))
                    sequence-ht))
     (compiled-in-memory (hash->linklet-directory ht)
                         #f ; self

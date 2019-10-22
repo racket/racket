@@ -1,63 +1,22 @@
 
 ;; Check to make we're using a build of Chez Scheme
 ;; that has all the features we need.
+(define-values (need-maj need-min need-sub need-dev)
+  (values 9 5 3 3))
 
-(let-values ([(maj min sub) (scheme-version-number)])
-  (unless (or (> maj 9)
-              (and (= maj 9)
-                   (or (> min 5)
-                       (and (= min 5)
-                            (>= sub 3)))))
+(unless (guard (x [else #f]) (eval 'scheme-fork-version-number))
+  (error 'compile-file
+         (error 'compile-file "need the Racket fork of Chez Scheme to build")))
+
+(let-values ([(maj min sub dev) (scheme-fork-version-number)])
+  (unless (or (> maj need-maj)
+              (and (= maj need-maj)
+                   (or (> min need-min)
+                       (and (= min need-min)
+                            (or (> sub need-sub)
+                                (and (= sub need-sub)
+                                     (>= dev need-dev)))))))
     (error 'compile-file "need a newer Chez Scheme")))
-
-(define (check-ok what thunk)
-  (unless (guard (x [else #f]) (thunk))
-    (error 'compile-file
-           (format
-            "failed trying `~a`; probably you need a newer Chez Scheme"
-            what))))
-
-(define (check-defined expr)
-  (check-ok expr (lambda () (eval expr))))
-
-(check-defined 'box-cas!)
-(check-defined 'make-arity-wrapper-procedure)
-(check-defined 'generate-procedure-source-information)
-(check-defined 'object-backreferences)
-(check-defined 'current-generate-id)
-(check-defined 'load-compiled-from-port)
-(check-defined 'collect-rendezvous)
-(check-defined '(define-ftype T (function __collect_safe () void)))
-(check-defined 'call-setting-continuation-attachment)
-(check-defined 'hashtable-cells)
-(check-ok "fxvector-set!"
-          (lambda ()
-            (parameterize ([optimize-level 3]
-                           [run-cp0 (lambda (cp0 x) x)])
-
-              (eval '(define (op x)
-                       (if (fx- 0) 0 0)))
-              (eval '(define (f x)
-                       (fxvector-set! x 0 (op 0))))
-              (eval '(f (fxvector 0))))))
-(check-defined 'vfasl-convert-file)
-(check-defined 'compute-size-increments)
-(check-defined 'enable-type-recovery)
-(check-defined 'make-wrapper-procedure)
-(check-defined 'make-phantom-bytevector)
-(check-defined 'enable-arithmetic-left-associative)
-(check-ok "eq? on flonums"
-          (lambda ()
-            (let* ([n (string->number "3.14")]
-                   [v (vector n n)])
-              (collect 0)
-              (unless (eq? (vector-ref v 0) (vector-ref v 1))
-                (error 'eq-on-flonum "no")))))
-(check-defined 'procedure-known-single-valued?)
-(check-defined 'compress-format)
-(check-defined '#%$record-cas!)
-(check-defined 'eq-hashtable-try-atomic-cell)
-(check-defined 'hashtable-ref-cell)
 
 ;; ----------------------------------------
 

@@ -1245,7 +1245,7 @@ stream, but plain lists can be used as streams, and functions such as
        (define (stream-first stream)
          (first (list-stream-v stream)))
        (define (stream-rest stream)
-         (rest (list-stream-v stream)))])
+         (list-stream (rest (list-stream-v stream))))])
 
     (define l1 (list-stream '(1 2)))
     (stream? l1)

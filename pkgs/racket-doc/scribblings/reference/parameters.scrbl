@@ -31,18 +31,26 @@ value originally associated with a parameter through
 reachable, even if the parameter is mutated.
 
 @defproc[(make-parameter [v any/c]
-                         [guard (or/c (any/c . -> . any) #f) #f]) 
+                         [guard (or/c (any/c . -> . any) #f) #f]
+                         [name symbol? 'parameter-procedure])
          parameter?]{
 
 Returns a new parameter procedure. The value of the parameter is
-initialized to @racket[v] in all threads.  If @racket[guard] is
-supplied, it is used as the parameter's guard procedure.  A guard
+initialized to @racket[v] in all threads.
+
+If @racket[guard] is not @racket[#f],
+it is used as the parameter's guard procedure.  A guard
 procedure takes one argument. Whenever the parameter procedure is
 applied to an argument, the argument is passed on to the guard
 procedure. The result returned by the guard procedure is used as the
 new parameter value.  A guard procedure can raise an exception to
 reject a change to the parameter's value. The @racket[guard] is not
-applied to the initial @racket[v].}
+applied to the initial @racket[v].
+
+The @racket[name] argument is used as the parameter procedure's name
+as reported by @racket[object-name].
+
+@history[#:changed "7.4.0.6" @elem{Added the @racket[name] argument.}]}
 
 @defform[(parameterize ([parameter-expr value-expr] ...)
            body ...+)

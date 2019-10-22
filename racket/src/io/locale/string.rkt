@@ -3,6 +3,7 @@
          "../string/convert.rkt"
          "../string/utf-8-decode.rkt"
          "../converter/main.rkt"
+         "cache.rkt"
          "parameter.rkt"
          "ucs-4.rkt")
 
@@ -20,9 +21,10 @@
      (string->bytes/utf-8 str err-byte start end)]
     [else
      (define c #f)
+     (define enc (locale-string-encoding))
      (dynamic-wind
       (lambda ()
-        (set! c (bytes-open-converter ucs-4-encoding (locale-string-encoding))))
+        (set! c (bytes-open-converter/cached-to enc)))
       (lambda ()
         (define in-bstr (string->bytes/ucs-4 str start end))
         (let loop ([pos 0])
@@ -51,7 +53,7 @@
                     (apply bytes-append (cons bstr (cons err-bstr r)))
                     (cons bstr (cons err-bstr r)))])])))
       (lambda ()
-        (bytes-close-converter c)))]))
+        (bytes-close-converter/cached-to c enc)))]))
 
 (define/who (bytes->string/locale in-bstr [err-char #f] [start 0] [end (and (bytes? in-bstr)
                                                                             (bytes-length in-bstr))])
@@ -65,9 +67,10 @@
      (bytes->string/utf-8 in-bstr err-char start end)]
     [else
      (define c #f)
+     (define enc (locale-string-encoding))
      (dynamic-wind
       (lambda ()
-        (set! c (bytes-open-converter (locale-string-encoding) "UTF-8")))
+        (set! c (bytes-open-converter/cached-from enc)))
       (lambda ()
         (let loop ([pos 0])
           (define-values (bstr in-used status)
@@ -95,4 +98,4 @@
                     (bytes->string/utf-8 (apply bytes-append (cons bstr (cons err-bstr r))))
                     (cons bstr (cons err-bstr r)))])])))
       (lambda ()
-        (bytes-close-converter c)))]))
+        (bytes-close-converter/cached-from c enc)))]))

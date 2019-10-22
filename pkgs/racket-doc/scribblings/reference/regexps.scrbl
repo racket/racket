@@ -512,10 +512,7 @@ return @emph{only} the separators, making such uses equivalent to
                            [end-pos (or/c exact-nonnegative-integer? #f) #f]
                            [output-port (or/c output-port? #f) #f]
                            [input-prefix bytes? #""])
-         (if (and (or (string? pattern) (regexp? pattern))
-                  (string? input))
-             (or/c #f (cons/c string? (listof (or/c string? #f))))
-             (or/c #f (cons/c bytes?  (listof (or/c bytes?  #f)))))]{
+         (or/c #f (cons/c bytes? (listof (or/c bytes? #f))))]{
 
 Like @racket[regexp-match] on input ports, except that if the match
 fails, no characters are read and discarded from @racket[in].

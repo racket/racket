@@ -46,7 +46,8 @@
                                       (>= v 3))
                            :contract "(and/c exact-integer? (>=/c 3))"
                            v)
-                    v)))
+                    v)
+                  'error-print-width))
 
 (define/who error-value->string-handler
   (make-parameter (lambda (v len)
@@ -60,13 +61,15 @@
                       "[?error-value->string-handler not ready?]"]))
                   (lambda (v)
                     (check who (procedure-arity-includes/c 2) v)
-                    v)))
+                    v)
+                  'error-value->string-handler))
 
 (define/who error-print-context-length
   (make-parameter 16
                   (lambda (v)
                     (check who exact-nonnegative-integer? v)
-                    v)))
+                    v)
+                  'error-print-context-length))
 
 ;; ----------------------------------------
 
@@ -459,7 +462,7 @@
 
 ;; ----------------------------------------
 
-(define exception-handler-key (gensym "exception-handler-key"))
+(define exception-handler-key '#{exception-handler-key o9xm0uula3d2mbq9wueixh79r-0})
 
 (define (default-uncaught-exception-handler exn)
   (let ([message (if (exn? exn)
@@ -504,7 +507,7 @@
 (define-thread-local link-instantiate-continuations (make-ephemeron-eq-hashtable))
 
 ;; For `instantiate-linklet` to help report which linklet is being run:
-(define linklet-instantiate-key (gensym "linklet"))
+(define linklet-instantiate-key '#{linklet o9xm0uula3d2mbq9wueixh79r-1})
 
 ;; Convert a contination to a list of function-name and
 ;; source information. Cache the result half-way up the
@@ -670,7 +673,8 @@
             (exn-message v)]
            [(format-condition? v)
             (let-values ([(fmt irritants)
-                          (rewrite-format (condition-message v)
+                          (rewrite-format (and (who-condition? v) (condition-who v))
+                                          (condition-message v)
                                           (condition-irritants v))])
               (apply format fmt irritants))]
            [(syntax-violation? v)
@@ -747,19 +751,22 @@
   (make-parameter default-uncaught-exception-handler
                   (lambda (v)
                     (check who (procedure-arity-includes/c 1) v)
-                    v)))
+                    v)
+                  'uncaught-exception-handler))
 
 (define/who error-display-handler
   (make-parameter default-error-display-handler
                   (lambda (v)
                     (check who (procedure-arity-includes/c 2) v)
-                    v)))
+                    v)
+                  'error-display-handler))
 
 (define/who error-escape-handler
   (make-parameter default-error-escape-handler
                   (lambda (v)
                     (check who (procedure-arity-includes/c 0) v)
-                    v)))
+                    v)
+                  'error-escape-handler))
 
 (define (set-no-locate-source!)
   ;; Disable searching through the filesystem to convert a source +

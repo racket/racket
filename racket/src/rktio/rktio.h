@@ -193,7 +193,8 @@ RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int
    use `RKTIO_OPEN_INIT`. */
 
 RKTIO_EXTERN_NOERR intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
-/* Extracts a native file descriptor or socket. */
+/* Extracts a native file descriptor or socket. A file descriptor must
+   not be in pending-open mode as reported by `rktio_fd_is_pending_open`. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd);
@@ -203,8 +204,14 @@ RKTIO_EXTERN rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
 /* The functions mostly report values of recorded mode flags. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
-/* Reports whether RKTIO_OPEN_TEXT was use and has an effect. The
-   RKTIO_OPEN_TEXT flag has an effect only on Windows. */
+/* Reports whether `RKTIO_OPEN_TEXT` was use and has an effect. The
+   `RKTIO_OPEN_TEXT` flag has an effect only on Windows. */
+
+RKTIO_EXTERN rktio_bool_t rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
+/* Reports whether `rfd` will block on writing because it corresponds
+   to the write end of a fifo that has no open reader. In that case,
+   `rktio_fd_system_fd` cannot report a file descriptor and `rktio_ltps_add`
+   will error with `RKTIO_ERROR_UNSUPPORTED`. */
 
 RKTIO_EXTERN_NOERR int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns all of the recorded mode flags, including those provided to
@@ -216,7 +223,9 @@ RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, rktio_const_string_t src, in
    in read mode, and can report `RKTIO_ERROR_IS_A_DIRECTORY`,
    `RKTIO_ERROR_EXISTS`, or `RKTIO_ERROR_ACCESS_DENIED` in place of a
    system error in write mode. On Windows, can report
-   `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE`. */
+   `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE`. If `modes` has `RKTIO_OPEN_WRITE`
+   without `RKTIO_OPEN_READ`, then the result may be a file descriptor
+   in pending-open mode until the read end is opened. */
 
 RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 /* Can report `RKTIO_ERROR_EXISTS` in place of system error,
@@ -269,9 +278,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *buffer, intptr_
    mode. Alternatively, the result can be `RKTIO_WRITE_ERROR` for an
    error. Although `rktio_write` is intended to write only bytes that
    can be fully delivered to the OS, there may be OS limitations that
-   require buffering (e.g., on Windows). Use `rktio_poll_write_flushed`
-   to make sure the data is received by the destination before closing
-   `fd`. */
+   require buffering (e.g., on ancient versions of Windows). Use
+   `rktio_poll_write_flushed` to make sure the data is received by the
+   destination before closing `fd`. */
 
 #define RKTIO_WRITE_ERROR (-2)
 
@@ -582,7 +591,8 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
                                                    rktio_const_string_t current_directory,
                                                    rktio_envvars_t *envvars,
                                                    int flags);
-/* `flags` flags: */
+/* The output file descriptors `stdin_fd` must not be a pending-open
+   descriptor. The `flags` are: */
 #define RKTIO_PROCESS_NEW_GROUP                 (1<<0)
 #define RKTIO_PROCESS_STDOUT_AS_STDERR          (1<<1)
 #define RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE     (1<<2)
@@ -1119,6 +1129,9 @@ RKTIO_EXTERN rktio_convert_result_t *rktio_convert_in(rktio_t *rktio,
    doesn't return a NULL result; instead, `converted` in the result
    reports the error. */
 
+RKTIO_EXTERN void rktio_convert_reset(rktio_t *rktio, rktio_converter_t *cvt);
+/* Resets a converter to its initial state. */
+
 RKTIO_EXTERN_NOERR char *rktio_locale_recase(rktio_t *rktio,
                                              rktio_bool_t to_up,
                                              rktio_const_string_t in);
@@ -1228,12 +1241,24 @@ RKTIO_EXTERN rktio_dll_t *rktio_dll_open(rktio_t *rktio, rktio_const_string_t na
    reported, then rktio_dll_get_error() must be used before any other
    `rktio_dll_...` call to get an error string.
 
-   Currently, there's no way to close and unload a DLL. Even when the
-   given `rktio` is closed with `rktio_destroy`, loaded libraries
-   remain in the process. */
+   If a DLL has been loaded with `name` already, the previous result
+   is returned again, but with an internal reference count returned.
+   The `as_global` argument matters only for the first load of a DLL
+   thrrough a given `name`.
+
+   Unless the DLL is explicitly unloaded with `rktio_dll_close`, even
+   when the given `rktio` is closed with `rktio_destroy`, loaded
+   libraries remain in the process. */
 
 RKTIO_EXTERN void *rktio_dll_find_object(rktio_t *rktio, rktio_dll_t *dll, rktio_const_string_t name);
 /* Find an address within `dll` for the `name` export.
+
+   An error result can be `RKTIO_ERROR_DLL` as for `rktio_dll_open`. */
+
+RKTIO_EXTERN rktio_ok_t rktio_dll_close(rktio_t *rktio, rktio_dll_t *dll);
+/* Decrements the reference count on `dll`, and if it goes to zero,
+   unloads the DLL using system-provided functions and destroys the
+   `dll` argument.
 
    An error result can be `RKTIO_ERROR_DLL` as for `rktio_dll_open`. */
 
@@ -1244,7 +1269,10 @@ RKTIO_EXTERN char *rktio_dll_get_error(rktio_t *rktio);
 
 typedef void *(*dll_open_proc)(rktio_const_string_t name, rktio_bool_t as_global);
 typedef void *(*dll_find_object_proc)(void *h, rktio_const_string_t name);
-RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open, dll_find_object_proc dll_find_object);
+typedef void (*dll_close_proc)(void *h);
+RKTIO_EXTERN void rktio_set_dll_procs(dll_open_proc dll_open,
+                                      dll_find_object_proc dll_find_object,
+                                      dll_close_proc dll_close);
 /* Installs procedures that are tried before native mechanisms,
    currently only supported for Windows. */
 

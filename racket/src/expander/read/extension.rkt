@@ -43,19 +43,20 @@
                                             in
                                             config))
   (define c (read-char/special in config))
-  (unless (char=? c #\space)
+  (unless (eqv? c #\space)
     (reader-error in config
                   "expected a single space after `~a`"
                   extend-str))
   
   (read-lang extend-str read-recur in config
+             #:one-space? #t
              #:who '|#lang|
              #:get-info? get-info?))
 
 (define (read-extension-#! read-recur dispatch-c in config
                            #:get-info? [get-info? #f])
   (define c (read-char/special in config))
-  (unless (char-lang-nonsep? c)
+  (unless (and (char? c) (char-lang-nonsep? c))
     (bad-syntax-error in config (if (char? c)
                                     (string dispatch-c #\! c)
                                     (string dispatch-c #\!))))
@@ -68,6 +69,7 @@
 
 (define (read-lang extend-str read-recur in config
                    #:init-c [init-c #f]
+                   #:one-space? [one-space? #f]
                    #:get-info? [get-info? #f]
                    #:who who)
   (unless (and (check-parameter read-accept-reader config)
@@ -90,7 +92,14 @@
       (reader-error in config #:due-to c
                     "found non-character while reading `#~a`"
                     extend-str)]
-     [(char-whitespace? c) (void)]
+     [(and (char-whitespace? c)
+           (positive? (accum-string-count accum-str)))
+      (void)]
+     [(and one-space?
+           (char=? c #\space))
+      (reader-error in config
+                    "expected a single space after `~a`"
+                    extend-str)]
      [(or (char-lang-nonsep? c)
           (char=? #\/ c))
       (consume-char in c)
@@ -107,8 +116,9 @@
   (define lang-str (accum-string-get! accum-str config))
   (when (equal? lang-str "")
     (reader-error in config
-                  "expected a non-empty sequence of alphanumeric, `-`, `+`, `_`, or `/` after `~a`"
-                  extend-str))
+                  "expected a non-empty sequence of alphanumeric, `-`, `+`, `_`, or `/` after `~a~a`"
+                  extend-str
+                  (if one-space? " " "")))
 
   (when (char=? #\/ (string-ref lang-str 0))
     (reader-error in config

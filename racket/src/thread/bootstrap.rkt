@@ -62,7 +62,7 @@
   (semaphore-wait ready-s)
   (thread-suspend t)
   (semaphore-post s)
-  (define (go ticks next-prefix complete expire)
+  (define (go ticks next-prefix complete-or-expire)
     (set! prefix next-prefix)
     (break-thread t)
     (thread-resume t)
@@ -85,9 +85,9 @@
        (sync t t2 (thread-suspend-evt t))))
     (cond
      [(thread-dead? t)
-      (apply complete 0 results)]
+      (complete-or-expire #f results 0)]
      [else
-      (expire go (if timeout? 0 10))]))
+      (complete-or-expire go #f (if timeout? 0 10))]))
   go)
 
 (define (engine-block)
@@ -95,6 +95,9 @@
 
 (define (engine-timeout)
   (void))
+
+(define (call-with-engine-completion proc)
+  (proc values))
 
 (define ctl-c-handler #f)
 
@@ -151,7 +154,7 @@
     [(v) (unsafe-place-local-set! l v)]))
 
 (define initial-place-local-table (make-hasheq))
-(define place-local-table (make-parameter initial-place-local-table))
+(define place-local-table (make-parameter initial-place-local-table #f 'place-local-table))
 
 (define (unsafe-make-place-local v)
   (define key (vector v 'place-locale))
@@ -233,6 +236,7 @@
                   'engine-timeout engine-timeout
                   'engine-return (lambda args
                                    (error "engine-return: not ready"))
+                  'call-with-engine-completion call-with-engine-completion
                   'current-process-milliseconds current-process-milliseconds
                   'set-ctl-c-handler! set-ctl-c-handler!
                   'set-break-enabled-transition-hook! void
@@ -276,11 +280,11 @@
                   'condition-broadcast (lambda args
                                          (error "condition-broadcast: not ready"))
                   'threaded? (lambda () #f)
-                  'current-engine-state (lambda args
-                                          (error "current-engine state: not ready"))
                   'make-mutex (lambda () (make-semaphore 1))
                   'mutex-acquire (lambda (s) (semaphore-wait s))
                   'mutex-release (lambda (s) (semaphore-post s))
+                  'call-as-asynchronous-callback (lambda (thunk) (thunk))
+                  'post-as-asynchronous-callback (lambda (thunk) (thunk))
                   'continuation-current-primitive (lambda (k) #f)))
 
 ;; add dummy definitions that implement pthreads and conditions etc.

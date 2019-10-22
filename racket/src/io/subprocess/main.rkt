@@ -116,6 +116,14 @@
         
         (define command-bstr (->host (->path command) who '(execute)))
 
+        ;; If `stdout` or `stderr` is a fifo with no read end open, wait for it:
+        (define (maybe-wait fd)
+          (when (and fd (rktio_fd_is_pending_open rktio (fd-port-fd fd)))
+            (sync fd)))
+        (maybe-wait stdout)
+        (unless (eq? stderr 'stdout)
+          (maybe-wait stderr))
+
         (start-atomic)
         (poll-subprocess-finalizations)
         (check-current-custodian who)
@@ -247,10 +255,11 @@
   (make-parameter #f (lambda (v)
                        (unless (or (not v) (eq? v 'kill) (eq? v 'interrupt))
                          (raise-argument-error who "(or/c #f 'kill 'interrupt)" v))
-                       v)))
+                       v)
+                  'current-subprocess-custodian-mode))
 
 (define subprocess-group-enabled
-  (make-parameter #f (lambda (v) (and v #t))))
+  (make-parameter #f (lambda (v) (and v #t)) 'subprocess-group-enabled))
 
 ;; ----------------------------------------
 

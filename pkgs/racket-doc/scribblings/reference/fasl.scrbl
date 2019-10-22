@@ -11,7 +11,8 @@
 @deftogether[(
 @defproc[(s-exp->fasl [v any/c]
                       [out (or/c output-port? #f) #f]
-                      [#:keep-mutable? keep-mutable? any/c #f])
+                      [#:keep-mutable? keep-mutable? any/c #f]
+                      [#:handle-fail handle-fail (or/c #f (any/c . -> . any/c)) #f])
          (or/c (void) bytes?)]
 @defproc[(fasl->s-exp [in (or/c input-port? bytes?)]
                       [#:datum-intern? datum-intern? any/c #t])
@@ -32,6 +33,15 @@ after @racket[write]---or it can include @tech{correlated
 objects} mixed with those values. The byte string produced by
 @racket[s-exp->fasl] does not use the same format as compiled code,
 however.
+
+If a value within @racket[v] is not valid as a @racket[quote]d
+literal, and if @racket[handle-fail] is not @racket[#f], then
+@racket[handle-fail] is called on the nested value, and the result of
+@racket[handle-fail] is written in that value's place. The
+@racket[handle-fail] procedure might raise an exception instead of
+returning a replacement value. If @racket[handle-fail] is @racket[#f],
+then the @exnraise[exn:fail:contract] when an invalid value is
+encountered.
 
 Like @racket[(compile `(quote ,v))], @racket[s-exp->fasl] does not
 preserve graph structure, support cycles, or handle non-@tech{prefab}
@@ -69,7 +79,8 @@ fasl
 @history[#:changed "6.90.0.21" @elem{Made @racket[s-exp->fasl] format version-independent
                                      and added the @racket[#:keep-mutable?]
                                      and @racket[#:datum-intern?] arguments.}
-         #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}]}
+         #:changed "7.3.0.7" @elem{Added support for @tech{correlated objects}.}
+         #:changed "7.5.0.3" @elem{Added the @racket[#:handle-fail] argument.}]}
 
 @; ----------------------------------------------------------------------
 

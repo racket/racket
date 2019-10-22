@@ -199,8 +199,8 @@
         (cond
          [(rename-transformer? v)
           (if immediate?
-              (values v (rename-transformer-target v))
-              (loop (rename-transformer-target v)))]
+              (values v (rename-transformer-target-in-context v ctx))
+              (loop (rename-transformer-target-in-context v ctx)))]
          [immediate? (values v #f)]
          [else v])])])))
 

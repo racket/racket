@@ -36,7 +36,7 @@
         make-engine
         engine-timeout
         engine-return
-        current-engine-state
+        call-with-engine-completion
         current-process-milliseconds
         set-ctl-c-handler!
         set-break-enabled-transition-hook!
@@ -94,5 +94,8 @@
         [mutex-acquire host:mutex-acquire]
         [mutex-release host:mutex-release]
         threaded?
+
+        [call-as-asynchronous-callback host:call-as-asynchronous-callback]
+        [post-as-asynchronous-callback host:post-as-asynchronous-callback]
 
         continuation-current-primitive)

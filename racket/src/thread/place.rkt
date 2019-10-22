@@ -34,8 +34,7 @@
          place-channel-put
 
          set-make-place-ports+fds!
-         place-pumper-threads
-         unsafe-add-post-custodian-shutdown)
+         place-pumper-threads)
 
 ;; For `(struct place ...)`, see "place-object.rkt"
 
@@ -74,9 +73,8 @@
      (host:mutex-acquire lock)
      (set-place-queued-result! new-place (if flush-failed? 1 (if (byte? v) v 0)))
      (place-has-activity! new-place)
-     (unsafe-custodian-unregister new-place (place-custodian-ref new-place))
      (host:mutex-release lock))
-    ;; Switch to scheduler, so it can exit:
+    ;; Switch to scheduler, so it can exit via `check-place-activity`
     (engine-block))
   ;; Atomic mode to create ports and deliver them to the new place
   (start-atomic)
@@ -163,7 +161,7 @@
 (void
  (set-check-place-activity!
   ;; Called in atomic mode by scheduler
-  (lambda ()
+  (lambda (callbacks)
     (define p current-place)
     (unless (box-cas! (place-activity-canary p) #f #f)
       (box-cas! (place-activity-canary p) #t #f)
@@ -177,6 +175,11 @@
         (set-place-dequeue-semas! p null))
       (host:mutex-release (place-lock p))
       (when queued-result
+        ;; If we have pending callbacks, re-post them, so they don't get dropped:
+        (host:post-as-asynchronous-callback (lambda ()
+                                              (for ([callback (in-list callbacks)])
+                                                (callback))))
+        ;; Exit the place:
         (force-exit queued-result))
       (for ([s (in-list dequeue-semas)])
         (thread-did-work!)
@@ -216,6 +219,10 @@
                   (set-place-host-thread! p #f)
                   #t)))
       (log-place "reap" #:data (place-id p))))
+  (define cref (place-custodian-ref p))
+  (when cref
+    (unsafe-custodian-unregister p cref)
+    (set-place-custodian-ref! p #f))
   result)
 
 ;; In atomic mode, callback from custodian:
@@ -440,13 +447,6 @@
 
 (define (place-pumper-threads p vec)
   (set-place-pumpers! p vec))
-
-(define (unsafe-add-post-custodian-shutdown proc)
-  (when (place-parent current-place)
-    (atomically
-     (set-place-post-shutdown! current-place
-                               (cons proc
-                                     (place-post-shutdown current-place))))))
 
 (void (set-place-custodian-procs!
        (lambda ()

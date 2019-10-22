@@ -12,7 +12,8 @@
          "r6rs-readtable.rkt"
          "scheme-readtable.rkt"
          "parse-makefile.rkt"
-         "config.rkt")
+         "config.rkt"
+         "strip.rkt")
 
 ;; Set `SCHEME_SRC` and `MACH` to specify the ChezScheme source
 ;; directory and the target machine. Set the `MAKE_BOOT_FOR_CROSS`
@@ -183,7 +184,7 @@
       (lambda (stx)
         (syntax-case stx ()
           [("noexpand" form)
-           (orig-eval ($uncprep (syntax-e #'form)))]
+           (orig-eval (strip-$app (strip-$primitive ($uncprep (syntax-e #'form)))))]
           [_
            (orig-eval stx)])))
      (call-with-expressions
@@ -206,9 +207,11 @@
                            [(eval-when (compile) . rest)
                             #'(eval-when (compile eval load) . rest)]
                            [_ stx])))))
-          (define r (if (struct? ex)
-                        ($uncprep ex)
-                        ex))
+          (define r (strip-$app
+                     (strip-$primitive
+                      (if (struct? ex)
+                          ($uncprep ex)
+                          ex))))
           (e r))))
      (status "Load cmacros using expander")
      (load-ss (build-path scheme-dir "s/cmacros.ss"))

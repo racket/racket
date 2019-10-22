@@ -45,7 +45,11 @@
          (all-from-out "parameter.rkt"))
 
 (module+ internal
-  (provide do-display
+  (provide display-via-handler
+           write-via-handler
+           print-via-handler
+
+           do-display
            do-write
            do-print
            do-global-print
@@ -53,6 +57,9 @@
            install-do-global-print!))
 
 (define/who (display v [o (current-output-port)])
+  (display-via-handler who v o))
+
+(define (display-via-handler who v o)
   (let ([co (->core-output-port o who)])
     (define display-handler (core-output-port-display-handler co))
     (if display-handler
@@ -74,6 +81,9 @@
      (void)]))
 
 (define/who (write v [o (current-output-port)])
+  (write-via-handler who v o))
+
+(define (write-via-handler who v o)
   (let ([co (->core-output-port o who)])
     (define write-handler (core-output-port-write-handler co))
     (if write-handler
@@ -87,6 +97,9 @@
   (void))
 
 (define/who (print v [o (current-output-port)] [quote-depth PRINT-MODE/UNQUOTED])
+  (print-via-handler who v o quote-depth))
+
+(define/who (print-via-handler who v o quote-depth)
   (let ([co (->core-output-port o who)])
     (check who print-mode? #:contract "(or/c 0 1)" quote-depth)
     (define print-handler (core-output-port-print-handler co))

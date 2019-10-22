@@ -2932,7 +2932,13 @@ case of module-leve bindings; it doesn't cover local bindings.
 
   (define re-o2 (open-output-bytes))
   (write re-m2 re-o2)
-  (check-vm (get-output-bytes re-o2) (system-type 'vm)))
+  (check-vm (get-output-bytes re-o2) (system-type 'vm))
+
+  ;; Check top-level compilation:
+  (define tl-o (open-output-bytes))
+  (parameterize ([current-compile-target-machine #f])
+    (write (compile '(begin (display "hi") (newline))) tl-o))
+  (check-vm (get-output-bytes tl-o) 'linklet))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure `(define-values (id ...) (values rhs ...))` is not
@@ -3007,6 +3013,38 @@ case of module-leve bindings; it doesn't cover local bindings.
 (parameterize ([current-namespace (module->namespace ''defines-a-submodule-named-inner)])
   (eval '(require (submod "." inner)))
   (test 'yes eval 'i))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check reporting of require conflicts includes "who" provided the binding first
+
+(module require-conflict-is-sourced-a racket/base
+  (provide x)
+  (define x 'a))
+
+(module require-conflict-is-sourced-b racket/base
+  (provide x)
+  (define x 'b))
+
+(err/rt-test
+ (eval
+  '(module m racket/base
+     (require 'require-conflict-is-sourced-a
+              'require-conflict-is-sourced-b)))
+ (lambda (exn)
+   (regexp-match? #rx"already required\n  at: x\n  in: \\(quote require-conflict-is-sourced-b\\)\n  also provided by: \\(quote require-conflict-is-sourced-a\\)" (exn-message exn))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the error is reasonable if `current-compile`
+;; is used directly and the result abused:
+
+(parameterize ([current-compile
+                (let ([orig-compile (current-compile)])
+                  (lambda (stx im?)
+                    (orig-compile stx #t)))]) ; #t argument sets up the abuse
+  (define c (compile '(module m racket/base)))
+  (err/rt-test (write c (open-output-bytes))
+               exn:fail:contract?
+               #rx"write: linklet is not serializable"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -12,7 +12,7 @@
                   [make-engine rumble:make-engine]
                   [engine-timeout rumble:engine-timeout]
                   [engine-return rumble:engine-return]
-                  [current-engine-state rumble:current-engine-state]
+                  [call-with-engine-completion rumble:call-with-engine-completion]
                   [make-condition rumble:make-condition]
                   [condition-wait rumble:condition-wait]
                   [condition-signal rumble:condition-signal]
@@ -28,6 +28,8 @@
                   [get-thread-id rumble:get-thread-id]
                   [get-initial-pthread rumble:get-initial-pthread]
                   [current-place-roots rumble:current-place-roots]
+                  [call-as-asynchronous-callback rumble:call-as-asynchronous-callback]
+                  [post-as-asynchronous-callback rumble:post-as-asynchronous-callback]
                   [set-ctl-c-handler! rumble:set-ctl-c-handler!]
                   [set-break-enabled-transition-hook! rumble:set-break-enabled-transition-hook!]
                   [set-reachable-size-increments-callback! rumble:set-reachable-size-increments-callback!]
@@ -131,7 +133,7 @@
         'make-engine rumble:make-engine
         'engine-timeout rumble:engine-timeout
         'engine-return rumble:engine-return
-        'current-engine-state (lambda (v) (rumble:current-engine-state v))
+        'call-with-engine-completion rumble:call-with-engine-completion
         'set-ctl-c-handler! rumble:set-ctl-c-handler!
         'poll-will-executors poll-will-executors
         'make-will-executor rumble:make-will-executor
@@ -162,6 +164,8 @@
         'call-with-current-pthread-continuation call/cc
         'exit place-exit
         'pthread? rumble:thread?
+        'call-as-asynchronous-callback rumble:call-as-asynchronous-callback
+        'post-as-asynchronous-callback rumble:post-as-asynchronous-callback
         'get-thread-id rumble:get-thread-id
         'make-condition rumble:make-condition
         'condition-wait rumble:condition-wait
@@ -194,4 +198,4 @@
                                       (lambda ()
                                         (current-atomic (fx- (current-atomic) 1))))
 
-  (set-future-callbacks! future-block current-future-prompt))
+  (set-future-callbacks! future-block future-sync current-future-prompt))

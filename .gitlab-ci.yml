@@ -5,6 +5,15 @@ stages:
   - stage4
   - stage5
   - stage6
+
+# Workaround to gitlab#30361
+noNeeds:
+  image: alpine:latest 
+  stage: stage1
+  script:
+    - echo "This build is a workaround for 'https://gitlab.com/gitlab-org/gitlab/issues/30631'"
+  dependencies: []
+  
 # ---------------------------------------------------------------------------------------------------
 # Using debian:stable-slim to perform an llvm build with Z3 support
 # The reason this is necessary is that we need Z3 support in scan-build
@@ -51,18 +60,18 @@ prepare-cache:llvm:
 # Build cgc
 build:racket:cgc:
   stage: stage2
+  image: pmatos/racket-ci:builddeps
+  needs: ["noNeeds"]
   tags:
     - linux
     - x86_64
   variables:
     INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
   script:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-cgcdefault --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
-    - make -l $cpus -j $((cpus+1))
+    - make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   artifacts:
     paths:
@@ -70,19 +79,19 @@ build:racket:cgc:
 
 build:racket:3m:
   stage: stage3
+  image: pmatos/racket-ci:builddeps
+  needs: ["build:racket:cgc"]
   tags:
     - linux
     - x86_64
   variables:
     CGC_INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
     INSTALL_DIR: $CI_PROJECT_DIR/install/racket3m
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++
   script:
     - cd racket/src
     - ./configure --prefix=$INSTALL_DIR --enable-jit --enable-foreign --enable-places --enable-futures --enable-float --disable-docs --enable-cify --enable-pthread --enable-racket=$CGC_INSTALL_DIR/bin/racket
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
-    - make -l $cpus -j $((cpus+1))
+    - make CFLAGS="-Werror" -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   dependencies:
     - build:racket:cgc
@@ -92,24 +101,24 @@ build:racket:3m:
 
 build:racket:cs:
   stage: stage4
+  image: pmatos/racket-ci:builddeps
+  needs: ["build:racket:cgc"]
   tags:
     - linux
     - x86_64
   variables:
-    MMM_INSTALL_DIR: $CI_PROJECT_DIR/install/racket3m
+    CGC_INSTALL_DIR: $CI_PROJECT_DIR/install/racketcgc
     INSTALL_DIR: $CI_PROJECT_DIR/install/racketcs
-  before_script:
-    - apt-get update && apt-get install -y unzip python libxml2-dev libfindbin-libs-perl make gcc g++ uuid-dev git
   script:
     - cd racket/src
     - rm -r ChezScheme || true
     - git clone --depth=1 --recurse-submodules -j8 https://github.com/racket/ChezScheme
-    - ./configure --prefix=$INSTALL_DIR --enable-compress --disable-docs --enable-pthread --enable-racket=$MMM_INSTALL_DIR/bin/racket --enable-csdefault --enable-csonly
+    - ./configure --prefix=$INSTALL_DIR --enable-compress --disable-docs --enable-pthread --enable-racket=$CGC_INSTALL_DIR/bin/racket --enable-csdefault --enable-csonly
     - export cpus=$(grep -c ^processor /proc/cpuinfo)
     - make -l $cpus -j $((cpus+1))
     - make -j  $((cpus+1)) install
   dependencies:
-    - build:racket:3m
+    - build:racket:cgc
   artifacts:
     paths:
       - $INSTALL_DIR
@@ -117,6 +126,7 @@ build:racket:cs:
 # Build racket with scan-build
 scan:racket:cgc:
   stage: stage2
+  needs: ["prepare-cache:llvm"]
   tags:
     - linux
     - x86_64
@@ -141,6 +151,7 @@ scan:racket:cgc:
 
 scan:racket:3m:
   stage: stage3
+  needs: ["prepare-cache:llvm", "build:racket:cgc"]
   tags:
     - linux
     - x86_64
@@ -167,6 +178,7 @@ scan:racket:3m:
 
 scan:racket:cs:
   stage: stage4
+  needs: ["prepare-cache:llvm", "build:racket:3m"]
   tags:
     - linux
     - x86_64
@@ -198,6 +210,7 @@ scan:racket:cs:
 # Jobs starting with . are templates to be used as extensions to real jobs
 #
 .test:racket:test:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -210,6 +223,7 @@ scan:racket:cs:
       - test.log
       
 .test:racket:contract:all:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -221,6 +235,7 @@ scan:racket:cs:
       - test.log
 
 .test:json:json:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -232,6 +247,7 @@ scan:racket:cs:
       - test.log
 
 .test:file:main:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -243,6 +259,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:head:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -254,6 +271,7 @@ scan:racket:cs:
       - test.log
     
 .test:net:uri-codec:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -265,6 +283,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:url:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -276,6 +295,7 @@ scan:racket:cs:
       - test.log
 
 .test:net:url-port:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -287,6 +307,7 @@ scan:racket:cs:
       - test.log
       
 .test:net:encoders:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -298,6 +319,7 @@ scan:racket:cs:
       - test.log
 
 .test:openssl:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -309,6 +331,7 @@ scan:racket:cs:
       - test.log
 
 .test:match:main:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -320,6 +343,7 @@ scan:racket:cs:
       - test.log
 
 .test:zo-path:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -331,6 +355,7 @@ scan:racket:cs:
       - test.log
 
 .test:xml:test:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -342,6 +367,7 @@ scan:racket:cs:
       - test.log
 
 .test:db:all-tests:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -353,6 +379,7 @@ scan:racket:cs:
       - test.log
 
 .test:stxparse:
+  image: pmatos/racket-ci:testdeps
   tags:
     - linux
     - x86_64
@@ -368,12 +395,12 @@ scan:racket:cs:
 # Test: test:racket:test
 test:racket:test:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:racket:test
   allow_failure: true
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -382,12 +409,12 @@ test:racket:test:cgc:
 
 test:racket:test:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:racket:test
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -396,12 +423,12 @@ test:racket:test:3m:
 
 test:racket:test:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   allow_failure: true
   extends: .test:racket:test
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -411,11 +438,11 @@ test:racket:test:cs:
 # Test: test:racket:contract:all
 test:racket:contract:all:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -424,11 +451,11 @@ test:racket:contract:all:cgc:
 
 test:racket:contract:all:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -437,11 +464,11 @@ test:racket:contract:all:3m:
 
 test:racket:contract:all:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:racket:contract:all
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates sqlite
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -451,6 +478,7 @@ test:racket:contract:all:cs:
 # Test: test:json:json
 test:json:json:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:json:json
   dependencies:
     - build:racket:cgc
@@ -464,11 +492,11 @@ test:json:json:cgc:
 
 test:json:json:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:json:json
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -477,11 +505,11 @@ test:json:json:3m:
 
 test:json:json:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:json:json
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -491,11 +519,11 @@ test:json:json:cs:
 # Test: test:file:main
 test:file:main:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:file:main
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -504,11 +532,11 @@ test:file:main:cgc:
 
 test:file:main:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:file:main
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -517,11 +545,11 @@ test:file:main:3m:
 
 test:file:main:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:file:main
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -531,22 +559,22 @@ test:file:main:cs:
 # Test: test:net:head
 test:net:head:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:head
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - raco pkg install pkgs/base pkgs/racket-lib
     - raco pkg install --auto racket-test
 
 test:net:head:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:head
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -555,11 +583,11 @@ test:net:head:3m:
 
 test:net:head:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:head
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -569,11 +597,11 @@ test:net:head:cs:
 # Test: test:net:uri-codec
 test:net:uri-codec:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -582,11 +610,11 @@ test:net:uri-codec:cgc:
 
 test:net:uri-codec:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -595,11 +623,11 @@ test:net:uri-codec:3m:
 
 test:net:uri-codec:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:uri-codec
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -609,11 +637,11 @@ test:net:uri-codec:cs:
 # Test: test:net:url
 test:net:url:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:url
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -622,12 +650,12 @@ test:net:url:cgc:
 
 test:net:url:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:net:url
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -636,11 +664,11 @@ test:net:url:3m:
 
 test:net:url:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:url
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -650,11 +678,11 @@ test:net:url:cs:
 # Test: test:net:url-port
 test:net:url-port:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:url-port
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -663,12 +691,12 @@ test:net:url-port:cgc:
 
 test:net:url-port:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:net:url-port
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -677,11 +705,11 @@ test:net:url-port:3m:
 
 test:net:url-port:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:url-port
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -691,11 +719,11 @@ test:net:url-port:cs:
 # Test: test:net:encoders
 test:net:encoders:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -704,11 +732,11 @@ test:net:encoders:cgc:
 
 test:net:encoders:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -717,11 +745,11 @@ test:net:encoders:3m:
 
 test:net:encoders:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:net:encoders
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -731,12 +759,12 @@ test:net:encoders:cs:
 # Test: test:openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev:basic
 test:openssl:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -745,12 +773,12 @@ test:openssl:cgc:
 
 test:openssl:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -759,12 +787,12 @@ test:openssl:3m:
 
 test:openssl:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   allow_failure: true
   extends: .test:openssl
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -774,11 +802,11 @@ test:openssl:cs:
 # Test: test:match:main
 test:match:main:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:match:main
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -787,11 +815,11 @@ test:match:main:cgc:
 
 test:match:main:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:match:main
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -800,11 +828,11 @@ test:match:main:3m:
 
 test:match:main:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:match:main
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -814,11 +842,11 @@ test:match:main:cs:
 # Test: test:zo-path
 test:zo-path:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:zo-path
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -827,11 +855,11 @@ test:zo-path:cgc:
 
 test:zo-path:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:zo-path
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -840,11 +868,11 @@ test:zo-path:3m:
 
 test:zo-path:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:zo-path
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -854,11 +882,11 @@ test:zo-path:cs:
 # Test: test:xml:test
 test:xml:test:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:xml:test
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -867,11 +895,11 @@ test:xml:test:cgc:
 
 test:xml:test:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:xml:test
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -880,11 +908,11 @@ test:xml:test:3m:
 
 test:xml:test:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:xml:test
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -894,11 +922,11 @@ test:xml:test:cs:
 # Test: test:db:all-tests
 test:db:all-tests:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -907,11 +935,11 @@ test:db:all-tests:cgc:
 
 test:db:all-tests:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -920,11 +948,11 @@ test:db:all-tests:3m:
 
 test:db:all-tests:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:db:all-tests
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -934,11 +962,11 @@ test:db:all-tests:cs:
 # Test: test:stxparse
 test:stxparse:cgc:
   stage: stage3
+  needs: ["build:racket:cgc"]
   extends: .test:stxparse
   dependencies:
     - build:racket:cgc
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcgc/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -947,11 +975,11 @@ test:stxparse:cgc:
 
 test:stxparse:3m:
   stage: stage4
+  needs: ["build:racket:3m"]
   extends: .test:stxparse
   dependencies:
     - build:racket:3m
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racket3m/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -960,11 +988,11 @@ test:stxparse:3m:
 
 test:stxparse:cs:
   stage: stage5
+  needs: ["build:racket:cs"]
   extends: .test:stxparse
   dependencies:
     - build:racket:cs
   before_script:
-    - apt-get update && apt-get install -y openssl ca-certificates libfontconfig1-dev libpango1.0-dev libcairo2-dev libjpeg-dev libturbojpeg0-dev
     - export PATH=$CI_PROJECT_DIR/install/racketcs/bin:$PATH
     - racket -l- pkg/dirs-catalog --immediate $PWD/rktcat $PWD/pkgs/
     - raco pkg config --set catalogs $PWD/rktcat/ https://pkgs.racket-lang.org https://planet-compats.racket-lang.org
@@ -979,6 +1007,7 @@ test:stxparse:cs:
 .prepare:
   stage: stage5
   image: ubuntu:18.04
+  needs: ["noNeeds"]
   before_script:
     - apt-get update && apt-get install -y git lsb-release gcc gcc-8 g++ g++-8 make libfontconfig1-dev libcairo2-dev openssl libpango1.0-dev libjpeg-turbo8-dev libncurses5-dev uuid-dev
     - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 700 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -1096,6 +1125,7 @@ prepare-cache:qemu:
 .preparearch:
   image: ubuntu:18.04
   stage: stage6
+  needs: ["prepare-cache:qemu"]
   tags:
     - x86_64
     - privileged
@@ -1113,7 +1143,9 @@ prepare-cache:qemu:
     - prepare-cache:qemu
 
 test:native:armv7l:
-  extends: .preparearch
+  image: ubuntu:18.04
+  stage: stage6  
+  needs: ["noNeeds"]
   allow_failure: true
   variables:
     ARCH: "armv7l"
@@ -1121,6 +1153,15 @@ test:native:armv7l:
   tags:
     - armv7l
     - linux
+  before_script:
+    - ls -la
+    - find $INSTALL_DIR -type f
+    - export PATH=$INSTALL_DIR/bin:$PATH
+    - apt-get update
+  script:
+    - export cpus=$(grep -c ^processor /proc/cpuinfo)
+    - echo "Detected $cpus cpus"
+    - .gitlab/build-test.sh --jobs $((cpus + 1)) --maxload ${cpus} --with-arch ${ARCH} --with-debian stretch --with-debian-mirror http://ftp.de.debian.org/debian/ --with-project-path ${CI_PROJECT_DIR} --with-chroot-path /tmp/racket-${ARCH}-${CI_COMMIT_SHORT_SHA}-chroot --with-qemu-path $INSTALL_DIR
 
 # Emulation targets
 test:emulation:arm64:
@@ -1208,6 +1249,7 @@ test:emulation:ppc64el:
 
 .preparearch:nogenerations:
   image: ubuntu:18.04
+  needs: ["prepare-cache:qemu"]
   stage: stage6
   only:
     - schedules
@@ -1286,6 +1328,7 @@ test:emulation:nogenerations:ppc64el:
 # CS
 .preparearch:cs:
   image: ubuntu:18.04
+  needs: ["prepare-cache:qemu"]
   stage: stage5
   tags:
     - x86_64

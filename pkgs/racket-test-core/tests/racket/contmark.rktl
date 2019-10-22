@@ -698,6 +698,7 @@
 
 (test #f call-with-immediate-continuation-mark 'x (lambda (v) v))
 (test 10 call-with-immediate-continuation-mark 'x (lambda (v) v) 10)
+(test 10 'also-ten (call-with-immediate-continuation-mark 'x (lambda (v) v) 10))
 (test 12 'cwicm (with-continuation-mark 'x 12 (call-with-immediate-continuation-mark 'x (lambda (v) v))))
 (test '(#f) 'cwiwcm (with-continuation-mark 'x 12 (list (call-with-immediate-continuation-mark 'x (lambda (v) v)))))
 (test 12 'cwicm (with-continuation-mark 'x 12 
@@ -1055,6 +1056,24 @@
         list
         (continuation-mark-set->list (continuation-marks k) 'key)
         (continuation-mark-set->list (continuation-marks k) 'key)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to help check that an "update"
+;; of a continuation attachment isn't changed to
+;; a "replace":
+
+(test '(1)
+      'other-marks
+      (let ()
+        (define (f)
+          (letrec ([f (lambda () f)])
+            (with-continuation-mark
+             'x 2
+             (continuation-mark-set->list (current-continuation-marks) 'y))))
+        
+        (with-continuation-mark
+         'y 1
+         (f))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

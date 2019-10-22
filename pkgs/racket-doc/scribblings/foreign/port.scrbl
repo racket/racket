@@ -63,7 +63,17 @@ previously created with @racket[unsafe-file-descriptor->semaphore] or
 )]{
 
 Returns a file descriptor (which is a @tt{HANDLE} value on Windows) of
-a socket for @racket[port] if it has one, @racket[#f] otherwise.}
+a socket for @racket[port] if it has one, @racket[#f] otherwise.
+
+On Unix and Mac OS, the result of
+@racket[unsafe-port->file-descriptor] can be @racket[#f] if it
+corresponds to a port that is waiting for its peer as reported by
+@racket[port-waiting-peer?], such as the write end of a fifo where no
+reader is connected. Wait until such is ready by using @racket[sync]).
+
+@history[#:changed "7.4.0.5" @elem{Accommodate a fifo write
+                                   end blocked on a reader by
+                                   returning @racket[#f].}]}
 
 
 @deftogether[(

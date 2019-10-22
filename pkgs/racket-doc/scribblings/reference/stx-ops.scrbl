@@ -33,7 +33,7 @@ Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
 ]}
 
 
-@defproc[(syntax-source [stx syntax?]) any]{
+@defproc[(syntax-source [stx syntax?]) any/c]{
 
 Returns the source for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
@@ -111,7 +111,7 @@ source location of @racket[stx]. The result is based on the
 @tech{lexical information} of @racket[stx].}
 
 
-@defproc[(syntax-e [stx syntax?]) any]{
+@defproc[(syntax-e [stx syntax?]) any/c]{
 
 Unwraps the immediate datum structure from a @tech{syntax object},
 leaving nested syntax structure (if any) in place.  The result of
@@ -187,7 +187,7 @@ object in the result of @racket[(syntax->list stx)] is @tech{tainted}.
 ]}
 
 
-@defproc[(syntax->datum [stx syntax?]) any]{
+@defproc[(syntax->datum [stx syntax?]) any/c]{
 
 Returns a datum by stripping the lexical information, source-location
 information, properties, and tamper status from @racket[stx]. Inside of

@@ -113,6 +113,7 @@
 		       ,(version))
 	   (assoc-pair "NSPrincipalClass" "NSApplicationMain")
            (assoc-pair "NSHighResolutionCapable" (true))
+	   (assoc-pair "NSRequiresAquaSystemAppearance" (false))
 	   (assoc-pair "NSSupportsAutomaticGraphicsSwitching" (true))))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))

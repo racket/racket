@@ -476,7 +476,7 @@
                              (1/log-message (|#%app| 1/current-logger) level str #f)))
   (set-error-display-eprintf! (lambda (fmt . args)
                                 (apply 1/fprintf (|#%app| 1/current-error-port) fmt args)))
-  (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ptr->address)
+  (set-ffi-get-lib-and-obj! ffi-get-lib ffi-get-obj ffi-unload-lib ptr->address)
   (set-make-async-callback-poll-wakeup! unsafe-make-signal-received)
   (set-get-machine-info! get-machine-info)
   (set-processor-count! (1/processor-count))

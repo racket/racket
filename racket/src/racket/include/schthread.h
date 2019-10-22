@@ -251,7 +251,6 @@ typedef struct Thread_Local_Variables {
   intptr_t scheme_current_cont_mark_pos_;
   struct Scheme_Custodian *main_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
-  struct Scheme_Object *post_custodian_shutdowns_;
   struct Scheme_Plumber *initial_plumber_;
   struct Scheme_Config *initial_config_;
   struct Scheme_Thread *swap_target_;
@@ -321,6 +320,9 @@ typedef struct Thread_Local_Variables {
   int num_minor_garbage_collections_;
   int locale_on_;
   void *current_locale_name_ptr_;
+  char *cached_locale_encoding_name_;
+  struct rktio_converter_t *cached_locale_to_converter_;
+  struct rktio_converter_t *cached_locale_from_converter_;
   int gensym_counter_;
   struct Scheme_Object *dummy_input_port_;
   struct Scheme_Object *dummy_output_port_;
@@ -636,7 +638,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define main_custodian XOA (scheme_get_thread_local_variables()->main_custodian_)
 #define last_custodian XOA (scheme_get_thread_local_variables()->last_custodian_)
 #define limited_custodians XOA (scheme_get_thread_local_variables()->limited_custodians_)
-#define post_custodian_shutdowns XOA (scheme_get_thread_local_variables()->post_custodian_shutdowns_)
 #define initial_plumber XOA (scheme_get_thread_local_variables()->initial_plumber_)
 #define initial_config XOA (scheme_get_thread_local_variables()->initial_config_)
 #define swap_target XOA (scheme_get_thread_local_variables()->swap_target_)
@@ -706,6 +707,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define num_minor_garbage_collections XOA (scheme_get_thread_local_variables()->num_minor_garbage_collections_)
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
 #define current_locale_name_ptr XOA (scheme_get_thread_local_variables()->current_locale_name_ptr_)
+#define cached_locale_encoding_name XOA (scheme_get_thread_local_variables()->cached_locale_encoding_name_)
+#define cached_locale_to_converter XOA (scheme_get_thread_local_variables()->cached_locale_to_converter_)
+#define cached_locale_from_converter XOA (scheme_get_thread_local_variables()->cached_locale_from_converter_)
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
 #define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)

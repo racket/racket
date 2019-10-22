@@ -99,7 +99,9 @@
         s))
 
   (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
-                                                     (void))))
+                                                     (void))
+                                                   #f
+                                                   'deserialize-module-guard))
   (define varref (#%variable-reference varref))
 
   (define (collapse/resolve-module-path-index mpi deser-path->relative-path)

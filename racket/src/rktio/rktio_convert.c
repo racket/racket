@@ -507,6 +507,11 @@ rktio_convert_result_t *rktio_convert_in(rktio_t *rktio,
   return r;
 }
 
+void rktio_convert_reset(rktio_t *rktio, rktio_converter_t *cvt)
+{
+  (void)iconv(cvt->cd, NULL, NULL, NULL, NULL);
+}
+
 /*============================================================*/
 /* Case conversion                                            */
 /*============================================================*/

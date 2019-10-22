@@ -210,15 +210,15 @@
         (unless (procedure-arity-includes? proc 2)
           (raise-mismatch-error name "given procedure does not accept 2 arguments: " proc))
         (let ([len (length l)])
-          (let loop ([more more][n 3])
-            (unless (null? more)
-              (unless (list? (car more))
+          (let loop ([remaining more][n 3])
+            (unless (null? remaining)
+              (unless (list? (car remaining))
                 (apply raise-argument-error name "list?" n proc init l more))
-              (unless (= len (length (car more)))
+              (unless (= len (length (car remaining)))
                 (raise-mismatch-error name 
                                       "given list does not have the same size as the first list: "
-                                      (car more)))
-              (loop (cdr more) (add1 n))))
+                                      (car remaining)))
+              (loop (cdr remaining) (add1 n))))
           (unless (procedure-arity-includes? proc (+ 2 (length more)))
             (raise-mismatch-error name 
                                   (format "given procedure does not accept ~a arguments: " 

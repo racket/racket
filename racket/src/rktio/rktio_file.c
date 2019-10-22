@@ -11,6 +11,18 @@
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <windows.h>
 #endif
+#ifdef RKTIO_USE_PENDING_OPEN
+#include <string.h>
+#endif
+
+#ifdef RKTIO_SYSTEM_UNIX
+static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rktio_fd_t *existing_rfd);
+#endif
+
+#ifdef RKTIO_USE_PENDING_OPEN
+static rktio_fd_t *open_via_thread(rktio_t *rktio, const char *filename, int modes, int flags);
+static int do_pending_open_release(rktio_t *rktio, struct open_in_thread_t *data, int close_fd);
+#endif
 
 /*========================================================================*/
 /* Opening a file                                                         */
@@ -106,8 +118,6 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
   int flags;
-  struct stat buf;
-  int cr;
 
   flags = (((modes & RKTIO_OPEN_READ) ? O_RDWR : O_WRONLY)
            | ((modes & RKTIO_OPEN_MUST_EXIST ? 0 : O_CREAT)));
@@ -124,48 +134,20 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
   } while ((fd == -1) && (errno == EINTR));
 
   if (errno == ENXIO) {
-    /* FIFO with no reader? Try opening in RW mode: */
+    /* FIFO with no reader? */
+#ifdef RKTIO_USE_PENDING_OPEN
+    return open_via_thread(rktio, filename, modes, flags | RKTIO_BINARY);
+#else
+    /* Try opening in RW mode: */
     flags -= O_WRONLY;
     flags |= O_RDWR;
     do {
       fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, 0666);
     } while ((fd == -1) && (errno == EINTR));
+#endif
   }
 
-  if (fd == -1) {
-    if (errno == EISDIR) {
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      return NULL;
-    } else if (errno == EEXIST) {
-      set_racket_error(RKTIO_ERROR_EXISTS);
-      return NULL;
-    } else if (errno == EACCES) {
-      set_racket_error(RKTIO_ERROR_ACCESS_DENIED);
-      return NULL;
-    }
-
-    if (fd == -1) {
-      get_posix_error();
-      return NULL;
-    }
-  }
-
-  do {
-    cr = fstat(fd, &buf);
-  } while ((cr == -1) && (errno == EINTR));
-
-  if (cr) {
-    get_posix_error();
-    do {
-      cr = close(fd);
-    } while ((cr == -1) && (errno == EINTR));
-    return NULL;
-  }
-
-  return rktio_system_fd(rktio, fd, (modes
-                                     | (S_ISREG(buf.st_mode)
-                                        ? RKTIO_OPEN_REGFILE
-                                        : RKTIO_OPEN_NOT_REGFILE)));
+  return finish_unix_fd_creation(rktio, fd, modes, NULL);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
@@ -235,6 +217,54 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
   return rfd;
 #endif
 }
+
+#ifdef RKTIO_SYSTEM_UNIX
+static rktio_fd_t *finish_unix_fd_creation(rktio_t *rktio, int fd, int modes, rktio_fd_t *existing_rfd)
+{
+  struct stat buf;
+  int cr;
+
+  if (fd == -1) {
+    if (errno == EISDIR) {
+      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
+      return NULL;
+    } else if (errno == EEXIST) {
+      set_racket_error(RKTIO_ERROR_EXISTS);
+      return NULL;
+    } else if (errno == EACCES) {
+      set_racket_error(RKTIO_ERROR_ACCESS_DENIED);
+      return NULL;
+    }
+
+    if (fd == -1) {
+      get_posix_error();
+      return NULL;
+    }
+  }
+
+  do {
+    cr = fstat(fd, &buf);
+  } while ((cr == -1) && (errno == EINTR));
+
+  if (cr) {
+    get_posix_error();
+    do {
+      cr = close(fd);
+    } while ((cr == -1) && (errno == EINTR));
+    return NULL;
+  }
+
+  modes |= (S_ISREG(buf.st_mode)
+            ? RKTIO_OPEN_REGFILE
+            : RKTIO_OPEN_NOT_REGFILE);
+
+  if (existing_rfd) {
+    rktio_update_system_fd(rktio, existing_rfd, fd, modes);
+    return existing_rfd;
+  } else
+    return rktio_system_fd(rktio, fd, modes);
+}
+#endif
 
 rktio_fd_t *rktio_open(rktio_t *rktio, const char *filename, int modes)
 {
@@ -373,3 +403,260 @@ rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t
   }
 #endif
 }
+
+/*========================================================================*/
+/* Thread for blocking open                                               */
+/*========================================================================*/
+
+/* When opening a fifo for writing, then there's no way to open in
+   non-blocking mode and then poll for whether reader is ready.
+   Instead, we have to open in a separate thread. When the open
+   succeeds, post to a waiting rktio_t's signal handle.
+
+   To allow a blocked-on-opening file descriptor to be transferred
+   across rktio_t domains, the record that represents the extra thread
+   must be sharable among multiple OS threads, and we must in general
+   keep an array of handles.
+
+   If the blocked-omn-opening file descriptor is closed, then we have
+   to be able to cancel the thread. This isn't so bad, since we want
+   to support canceling only while the `open` system call is
+   blocked. */
+
+#ifdef RKTIO_USE_PENDING_OPEN
+
+/* An instance of `open_in_thread_t` can be shared by multiple threads
+   (i.e., multiple `rktio_t` instances) */
+typedef struct open_in_thread_t {
+  pthread_mutex_t lock;
+  int ready;
+  pthread_cond_t ready_cond; /* wait until helper thread is ready (including cleanup) */
+  char *filename;
+  int flags;
+  int done;
+  int fd;
+  int errval;
+  int refcount;
+  pthread_t th;
+  int num_handles;
+  rktio_signal_handle_t **handles;
+} open_in_thread_t;
+
+
+static void free_open_in_thread(open_in_thread_t *data)
+{
+  pthread_detach(data->th);
+  if (data->handles)
+    free(data->handles);
+  free(data->filename);
+  free(data);
+}
+
+static void cleanup_open_thread(void *_data)
+{
+  int i, refcount;
+  open_in_thread_t *data = (open_in_thread_t *)_data;
+
+  pthread_mutex_lock(&data->lock);
+  for (i = 0; i < data->num_handles; i++)
+    if (data->handles[i])
+      rktio_signal_received_at(data->handles[i]);
+  refcount = data->refcount;
+  data->done = 1;
+  pthread_mutex_unlock(&data->lock);
+
+  if (!refcount) {
+    if (data->fd != -1)
+      rktio_reliably_close(data->fd);
+    free_open_in_thread(data);
+  }
+}
+
+static void *do_open_in_thread(void *_data)
+{
+  open_in_thread_t *data = (open_in_thread_t *)_data;
+  int fd;
+  int old_type;
+
+  /* To be on the safe side, disable cancelation except 
+     just around the call to `open` */
+  pthread_setcanceltype(PTHREAD_CANCEL_DISABLE, &old_type);
+  pthread_cleanup_push(cleanup_open_thread, data);
+
+  pthread_mutex_lock(&data->lock);
+  data->ready = 1;
+  pthread_cond_signal(&data->ready_cond);
+  pthread_mutex_unlock(&data->lock);
+
+  data->fd = -1;
+
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
+  /* Cancelation only possible during `open`, a which point it's ok
+     and sufficient to run `cleanup_open_thread`; we're assuming that
+     either `open` returns with a file descriptor or the thread is
+     canceled before `open` returns, but not both (otherwise there
+     could be a space leak) */
+  do {
+    fd = open(data->filename, data->flags, 0666);
+  } while ((fd == -1) && (errno == EINTR));
+
+  pthread_setcanceltype(PTHREAD_CANCEL_DISABLE, NULL);
+
+  data->fd = fd;
+  if (fd == -1)
+    data->errval = errno;
+
+  /* Runs `cleanup_open_thread` while popping it: */
+  pthread_cleanup_pop(1);
+
+  /* In general, a function tha changes the cancelation type should
+     restore it before returning */
+  pthread_setcanceltype(old_type, NULL);
+
+  return NULL;
+}
+
+static rktio_fd_t *open_via_thread(rktio_t *rktio, const char *filename, int modes, int flags)
+{
+  open_in_thread_t *data;
+
+  data = calloc(1, sizeof(open_in_thread_t));
+
+  data->refcount = 1;
+
+  data->filename = strdup(filename);
+  data->flags = flags;
+  pthread_mutex_init(&data->lock, NULL);
+  pthread_cond_init(&data->ready_cond, NULL);
+
+  data->num_handles = 1;
+  data->handles = malloc(sizeof(rktio_signal_handle_t*));
+  data->handles[0] = rktio_get_signal_handle(rktio);
+
+  (void)pthread_create(&data->th, NULL, do_open_in_thread, data);
+
+  pthread_mutex_lock(&data->lock);
+  if (!data->ready)
+    pthread_cond_wait(&data->ready_cond, &data->lock);
+  pthread_mutex_unlock(&data->lock);
+
+  return rktio_pending_system_fd(rktio, data, modes);
+}
+
+int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *existing_rfd, struct open_in_thread_t *data)
+/* non-zero result is an errno value */
+{
+  int done;
+
+  pthread_mutex_lock(&data->lock);
+  done = data->done;
+  pthread_mutex_unlock(&data->lock);
+
+  if (done) {
+    if (data->fd == -1)
+      return data->errval;
+    else {
+      int fd = data->fd;
+      (void)do_pending_open_release(rktio, data, 0);
+      if (!finish_unix_fd_creation(rktio, fd, 0, existing_rfd)) {
+        /* Posix error must be saved in `rktio` */
+        return rktio->errid;
+      }
+      return 0;
+    }
+  } else
+    return 0;
+}
+
+void rktio_poll_add_pending_open(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *data, rktio_poll_set_t *fds)
+{
+  int done;
+
+  pthread_mutex_lock(&data->lock);
+  done = data->done;
+  pthread_mutex_unlock(&data->lock);
+
+  if (done)
+    rktio_poll_set_add_nosleep(rktio, fds);
+}
+
+void rktio_pending_open_attach(rktio_t *rktio, struct open_in_thread_t *data)
+{
+  int i;
+  rktio_signal_handle_t *h = rktio_get_signal_handle(rktio);
+
+  pthread_mutex_lock(&data->lock);
+  if (!data->done) {
+    for (i = 0; i < data->num_handles; i++)
+      if (!data->handles[i]) {
+        data->handles[i] = h;
+        break;
+      }
+    if (i >= data->num_handles) {
+      rktio_signal_handle_t **old = data->handles;
+      int n = (2 * data->num_handles);
+      data->handles = calloc(n, sizeof(rktio_signal_handle_t*));
+      memcpy(data->handles, old, data->num_handles * sizeof(rktio_signal_handle_t*));
+      data->handles[data->num_handles] = h;
+      data->num_handles = n;
+    }
+  }
+  pthread_mutex_unlock(&data->lock);
+}
+
+static void do_detach(rktio_t *rktio, struct open_in_thread_t *data)
+{
+  int i;
+  rktio_signal_handle_t *h = rktio_get_signal_handle(rktio);
+
+  for (i = 0; i < data->num_handles; i++)
+    if (data->handles[i] == h)
+      data->handles[i] = NULL;
+}
+
+void rktio_pending_open_detach(rktio_t *rktio, struct open_in_thread_t *data)
+{
+  pthread_mutex_lock(&data->lock);
+  do_detach(rktio, data);
+  pthread_mutex_unlock(&data->lock);
+}
+
+
+void rktio_pending_open_retain(rktio_t *rktio, struct open_in_thread_t *data)
+{
+  pthread_mutex_lock(&data->lock);
+  data->refcount++;
+  pthread_mutex_unlock(&data->lock);
+}
+
+int do_pending_open_release(rktio_t *rktio, struct open_in_thread_t *data, int close_fd)
+/* The rktio argument can be NULL for a detached use */
+{
+  int bye;
+
+  pthread_mutex_lock(&data->lock);
+  --data->refcount;
+  bye = (data->done && !data->refcount);
+  if (!bye) {
+    do_detach(rktio, data);
+    if (!data->refcount)
+      pthread_cancel(data->th);
+  }
+  pthread_mutex_unlock(&data->lock);
+
+  if (bye) {
+    if (close_fd && (data->fd != -1))
+      rktio_reliably_close(data->fd);
+    free_open_in_thread(data);
+  }
+
+  return 0;
+}
+
+int rktio_pending_open_release(rktio_t *rktio, struct open_in_thread_t *data)
+{
+  return do_pending_open_release(rktio, data, 1);
+}
+
+#endif

@@ -233,7 +233,7 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   
 void rktio_free_ghbn(rktio_t *rktio);
 
-const char *rktio_gai_strerror(int errnum);
+const char *rktio_gai_strerror(rktio_t *rktio, int errnum);
 
 /*========================================================================*/
 /* Processes                                                              */
@@ -338,6 +338,23 @@ void rktio_close_fds_after_fork(int len, int skip1, int skip2, int skip3);
 #endif
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
+
+#ifdef RKTIO_USE_PTHREADS
+# define RKTIO_USE_PENDING_OPEN
+#endif
+
+#ifdef RKTIO_USE_PENDING_OPEN
+struct open_in_thread_t;
+rktio_fd_t *rktio_pending_system_fd(rktio_t *rktio, struct open_in_thread_t *oit, int modes);
+void rktio_update_system_fd(rktio_t *rktio, rktio_fd_t *rfd, int fd, int modes);
+int rktio_fd_is_pending_open(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_pending_open_poll(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit);
+void rktio_poll_add_pending_open(rktio_t *rktio, rktio_fd_t *rfd, struct open_in_thread_t *oit, rktio_poll_set_t *fds);
+void rktio_pending_open_detach(rktio_t *rktio, struct open_in_thread_t *oit);
+void rktio_pending_open_attach(rktio_t *rktio, struct open_in_thread_t *oit);
+void rktio_pending_open_retain(rktio_t *rktio, struct open_in_thread_t *oit);
+int rktio_pending_open_release(rktio_t *rktio, struct open_in_thread_t *oit);
+#endif
 
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 

@@ -335,6 +335,16 @@
   (test 5 eval 'x ns))
 
 ;; ----------------------------------------
+;; Check that `namespace-require/copy` works at compile time
+
+(let-syntax ([m (lambda (stx)
+                  (define ns (make-base-empty-namespace))
+                  (parameterize ([current-namespace ns])
+                    (namespace-require/copy 'racket/base)
+                    #`#,(eval '(+ 1 2))))])
+  (test 3 values (m)))
+
+;; ----------------------------------------
 ;; Check that bulk `require` replaces individual bindings
 
 (let ([ns (make-base-empty-namespace)])

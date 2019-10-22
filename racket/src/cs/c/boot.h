@@ -4,7 +4,7 @@ BOOT_EXTERN void racket_boot(int argc, char **argv, char *exec_file, char *run_f
 			     int pos1, int pos2, int pos3,
 			     int cs_compiled_subdir, int is_gui,
 			     int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args,
-			     void *ddll_open, void *dll_find_object);
+			     void *ddll_open, void *dll_find_object, void *dll_close);
 
 typedef void (*racket_boot_t)(int argc, char **argv, char *exec_file, char *run_file,
 			      char* boot_exe, long segment_offset,
@@ -12,4 +12,4 @@ typedef void (*racket_boot_t)(int argc, char **argv, char *exec_file, char *run_
 			      int pos1, int pos2, int pos3,
 			      int cs_compiled_subdir, int is_gui,
                               int wm_is_gracket_or_x11_arg_count, char *gracket_guid_or_x11_args,
-			      void *ddll_open, void *dll_find_object);
+			      void *ddll_open, void *dll_find_object, void *dll_close);

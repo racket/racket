@@ -284,7 +284,9 @@
        (when input-ref
          (slow-mode!)
          (set! input-ref #f)
-         (progress!))))]
+         (progress!)
+         (check-input-unblocking)
+         (check-output-unblocking))))]
 
   [get-progress-evt
    (lambda ()
@@ -433,6 +435,9 @@
          (cond
            [(fx= src-start src-end) ;; => flush
             0]
+           [(not input-ref)
+            ;; No input end => accept all bytes
+            (fx- src-end src-start)]
            [(and (end . fx>= . start)
                  (end . fx< . top-pos))
             (define amt (apply-limit (fxmin (fx- top-pos end)
@@ -486,7 +491,8 @@
        (when output-ref
          (slow-mode!)
          (set! output-ref #f)
-         (check-input-unblocking))))])
+         (check-input-unblocking)
+         (check-output-unblocking))))])
 
 ;; ----------------------------------------
 
@@ -531,8 +537,6 @@
 
 ;; ----------------------------------------
 
-;; Note: a thread blocked on writing to a limited pipe cannot be GCed
-;; due to the use of `replace-evt`.
 (struct pipe-write-poller (d)
   #:property
   prop:evt
@@ -541,7 +545,9 @@
      (with-object pipe-data (pipe-write-poller-d pwp)
        (sync-both)
        (cond
-         [(not (output-full?))
+         [(or (not (output-full?))
+              (not input-ref)
+              (not output-ref))
           (values (list pwp) #f)]
          [else
           (unless write-ready-sema
@@ -560,7 +566,9 @@
      (with-object pipe-data (pipe-read-poller-d prp)
        (sync-both)
        (cond
-         [(not (input-empty?))
+         [(or (not (input-empty?))
+              (not output-ref)
+              (not input-ref))
           (values (list 0) #f)]
          [else
           (unless read-ready-sema

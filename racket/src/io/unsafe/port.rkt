@@ -42,6 +42,7 @@
 (define (unsafe-port->file-descriptor p)
   (define fd (fd-port-fd p))
   (and fd
+       (not (rktio_fd_is_pending_open rktio fd))
        (rktio_fd_system_fd rktio fd)))
 
 (define (unsafe-port->socket p)

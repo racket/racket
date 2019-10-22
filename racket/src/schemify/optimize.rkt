@@ -21,6 +21,8 @@
      (if (literal? t)
          (if (unwrap t) e1 e2)
          v)]
+    [`(begin (quote ,_) ,e . ,es) ; avoid `begin` that looks like it provides a name
+     (optimize (reannotate v `(begin ,e . ,es)) prim-knowns primitives knowns imports mutated)]
     [`(not ,t)
      (if (literal? t)
          `,(not (unwrap t))
@@ -76,8 +78,8 @@
 
 ;; ----------------------------------------
 
-;; Recursive optimization --- useful when not fused with schemify,
-;; such as for an initial optimization pass on a definition of a
+;; Recursive optimization on pre-schemified --- useful when not fused with
+;; schemify, such as for an initial optimization pass on a definition of a
 ;; function that can be inlined (where converting away
 ;; `variable-reference-from-unsafe?` is particularly important)
 

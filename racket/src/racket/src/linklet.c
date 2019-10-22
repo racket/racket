@@ -63,7 +63,7 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
                                                        Scheme_Object *name,
                                                        Scheme_Object **_import_keys,
                                                        Scheme_Object *get_import,
-                                                       int unsafe_mode, int static_mode);
+                                                       int unsafe_mode, int static_mode, int serializable);
 
 static Scheme_Object *_instantiate_linklet_multi(Scheme_Linklet *linklet, Scheme_Instance *instance,
                                                  int num_instances, Scheme_Instance **instances,
@@ -355,7 +355,8 @@ void extract_import_info(const char *who, int argc, Scheme_Object **argv,
 
 static void parse_compile_options(const char *who, int arg_pos,
                                   int argc, Scheme_Object **argv,
-                                  int *_unsafe, int *_static_mode)
+                                  int *_unsafe, int *_static_mode,
+                                  int *_serializable)
 {
   Scheme_Object *redundant = NULL, *flag, *flags = argv[arg_pos];
   int serializable = 0;
@@ -404,14 +405,13 @@ static void parse_compile_options(const char *who, int arg_pos,
 
   *_unsafe = unsafe;
   *_static_mode = static_mode;
+  *_serializable = serializable;
 }
 
 static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *e, *import_keys, *get_import, *a[2];
-  int unsafe = 0, static_mode = 0;
-
-  /* Last argument, `serializable?`, is ignored */
+  int unsafe = 0, static_mode = 0, serializable = 1;
 
   extract_import_info("compile-linklet", argc, argv, &import_keys, &get_import);
 
@@ -432,10 +432,10 @@ static Scheme_Object *compile_linklet(int argc, Scheme_Object **argv)
   }
 
   if (argc > 4)
-    parse_compile_options("compile-linklet", 4, argc, argv, &unsafe, &static_mode);
+    parse_compile_options("compile-linklet", 4, argc, argv, &unsafe, &static_mode, &serializable);
 
   e = (Scheme_Object *)compile_and_or_optimize_linklet(e, NULL, name, &import_keys, get_import,
-                                                       unsafe, static_mode);
+                                                       unsafe, static_mode, serializable);
 
   if (import_keys) {
     a[0] = e;
@@ -449,7 +449,7 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
 {
   Scheme_Object *name, *import_keys, *get_import, *a[2];
   Scheme_Linklet *linklet;
-  int unsafe = 0, static_mode = 0;
+  int unsafe = 0, static_mode = 0, serializable = 1;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_linklet_type))
     scheme_wrong_contract("recompile-linklet", "linklet?", 0, argc, argv);
@@ -475,10 +475,10 @@ static Scheme_Object *recompile_linklet(int argc, Scheme_Object **argv)
   }
 
   if (argc > 4)
-    parse_compile_options("recompile-linklet", 4, argc, argv, &unsafe, &static_mode);
+    parse_compile_options("recompile-linklet", 4, argc, argv, &unsafe, &static_mode, &serializable);
   
   linklet = compile_and_or_optimize_linklet(NULL, linklet, name, &import_keys, get_import,
-                                            unsafe, static_mode);
+                                            unsafe, static_mode, serializable);
 
   if (import_keys) {
     a[0] = (Scheme_Object *)linklet;
@@ -1136,7 +1136,7 @@ static Scheme_Hash_Tree *update_source_names(Scheme_Hash_Tree *source_names,
 static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Scheme_Linklet *linklet,
                                                        Scheme_Object *name,
                                                        Scheme_Object **_import_keys, Scheme_Object *get_import,
-                                                       int unsafe_mode, int static_mode)
+                                                       int unsafe_mode, int static_mode, int serializable)
 {
   Scheme_Config *config;
   int enforce_const, set_undef, can_inline;
@@ -1181,12 +1181,15 @@ static Scheme_Linklet *compile_and_or_optimize_linklet(Scheme_Object *form, Sche
 
   scheme_performance_record_end("compile", &perf_state);
 
+  if (serializable)
+    linklet->serializable = 1;
+
   return linklet;
 }
 
 Scheme_Linklet *scheme_compile_and_optimize_linklet(Scheme_Object *form, Scheme_Object *name)
 {
-  return compile_and_or_optimize_linklet(form, NULL, name, NULL, NULL, 0, 1);
+  return compile_and_or_optimize_linklet(form, NULL, name, NULL, NULL, 0, 1, 0);
 }
 
 /*========================================================================*/

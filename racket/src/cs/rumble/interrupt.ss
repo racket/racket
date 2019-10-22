@@ -1,4 +1,16 @@
 
+;; Like `with-interrupts-disabled`, but with no winders
+;; and ways returning a single value. Avoiding winders
+;; is important in "foreign.ss" so htat callbacks do
+;; not return to a world with Scheme-level winders, which
+;; will not interact correctly with engines.
+(define-syntax-rule (with-interrupts-disabled* e0 e ...)
+  (begin
+    (disable-interrupts)
+    (let ([v (begin e0 e ...)])
+      (enable-interrupts)
+      v)))
+
 ;; Enabling uninterrupted mode defers a timer callback
 ;; until leaving uninterrupted mode. This is the same
 ;; as disabling and enabling interrupts at the Chez

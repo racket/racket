@@ -1,0 +1,52 @@
+Racket is distributed under the GNU Lesser General Public License
+(LGPL) version 3.  This implies that you may link Racket into
+proprietary applications, provided you follow the rules stated in the
+LGPL.  You can also modify Racket; if you distribute a modified
+version, you must distribute it under the terms of the LGPL, which in
+particular states that you must release the source code for the
+modified software.
+
+See the file LICENSE-LGPL.txt for the full text of the license.
+
+There may also be other licenses for code withing the Racket
+distribution with which you must comply. Some of them are listed
+below.
+
+* libscheme. Code from libscheme can be found in
+  racket/src/racket. See the file LICENSE-libscheme.txt.
+
+* GNU Lightning. Code from GNU Lightning can be found in
+  racket/src/racket/src. GNU Lightning is distributed under the GNU
+  Lesser General Public License version 3.
+
+* GMP. Code from GMP can be found in racket/src. The
+  version of GMP used is distributed under the GNU Lesser General
+  Public License version 2.1.
+
+* The Boehm Collector. Code for this package can be found in
+  racket/gc. See the file racket/gc/README.QUICK
+  for license information.
+
+* zlib. Code translated from earlier versions of zlib can be found in
+  racket/racket/collects/file/{gzip,gunzip}.rkt. Zlib is distributed
+  under a liberal license, see http://zlib.net/.
+
+* libffi. Code from libffi can be found in foreign/libffi. See
+  foreign/libffi/LICENSE.
+
+* libunwind. Code from libunwind can be found in racket/src/unwind.
+
+* random.c. Code from random.c from FreeBSD 2.2 found in random.inc.
+
+* install. Code from install can be found in lt/install-sh and is
+  distributed under the MIT license.
+
+* psyntax. Code from psyntax can be found in
+  pkgs/racket-benchmarks/tests/racket/benchmarks/common/psyntax.sch
+
+* MemoryModule. Code from MemoryModule can be found in
+  start/MemoryModule.c. MemoryModule is distributed under the MPL
+  v2.0.
+
+* mbed TLS. Code from mbed TLS can be found in rktio/rktio_sha2.c.
+  mbed TLS is licensed under the Apache v2.0 License.

@@ -23,7 +23,8 @@
   (make-parameter (environment-variables #f)
                   (lambda (v)
                     (check who environment-variables? v)
-                    v)))
+                    v)
+                  'current-environment-variables))
 
 (define/who (make-environment-variables . args)
   (let loop ([args args] [ht #hash()])

@@ -42,23 +42,25 @@
     [(proc args)
      (if (#%procedure? proc)
          (#2%apply proc args)
-         (#2%apply (extract-procedure proc (length args)) args))]
+         (#2%apply (extract-procedure proc (and (#%list? args) (length args))) args))]
     [(proc)
      (raise-arity-error 'apply (|#%app| arity-at-least 2) proc)]
     [(proc . argss)
      (if (#%procedure? proc)
          (#2%apply #2%apply proc argss)
-         (let ([len (let loop ([argss argss])
+         (let ([len (let loop ([argss argss] [accum 0])
                       (cond
-                       [(null? (cdr argss)) (length (car argss))]
-                       [else (fx+ 1 (loop (cdr argss)))]))])
+                       [(null? (cdr argss)) (let ([l (car argss)])
+                                              (and (#%list? l)
+                                                   (+ accum (length l))))]
+                       [else (loop (cdr argss) (fx+ 1 accum))]))])
            (#2%apply #2%apply (extract-procedure proc len) argss)))]))
 
 (define-syntax (|#%app| stx)
   (syntax-case stx ()
     [(_ rator rand ...)
      (with-syntax ([n-args (length #'(rand ...))])
-       #'((extract-procedure rator n-args) rand ...))]))
+       #'(#3%$app (extract-procedure rator n-args) rand ...))]))
 
 (define |#%call-with-values|
   (|#%name|
@@ -87,7 +89,8 @@
 (define (do-extract-procedure f orig-f n-args success-k fail-k)
   (cond
    [(#%procedure? f)
-    (if (chez:procedure-arity-includes? f n-args)
+    (if (or (not n-args)
+            (chez:procedure-arity-includes? f n-args))
         (if success-k
             (success-k f)
             f)
@@ -100,7 +103,7 @@
        [(fixnum? v)
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
-           [(and a (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
+           [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
             (wrong-arity-wrapper orig-f)]
            [else
             (do-extract-procedure (unsafe-struct-ref f v) orig-f n-args success-k wrong-arity-wrapper)]))]
@@ -116,13 +119,13 @@
        [else
         (let ([a (struct-property-ref prop:procedure-arity rtd #f)])
           (cond
-           [(and a (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
+           [(and a n-args (not (bitwise-bit-set? (unsafe-struct*-ref f a) n-args)))
             (wrong-arity-wrapper orig-f)]
            [else
             (do-extract-procedure
              v
              orig-f
-             (fx+ n-args 1)
+             (and n-args (fx+ n-args 1))
              (lambda (v)
                (cond
                 [(not v) (case-lambda)]
@@ -311,6 +314,7 @@
 ;;                                      <symbol-or-#f> or name of <proc>
 ;;  - (vector <symbol-or-#f> <proc> 'method) => is a method
 ;;  - (box <symbol>) => JIT function generated, name is <symbol>, not a method
+;;  - <parameter-data> => parameter
 
 ;; ----------------------------------------
 
@@ -501,6 +505,7 @@
      [(#%box? name) (#%unbox name)]
      [(#%vector? name) (or (#%vector-ref name 0)
                            (object-name (#%vector-ref name 1)))]
+     [(parameter-data? name) (parameter-data-name name)]
      [else name])))
 
 ;; ----------------------------------------
@@ -866,13 +871,6 @@
 ;; ----------------------------------------
 
 (define (set-primitive-applicables!)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor parameter)
-                        0)
-  (struct-property-set! prop:procedure
-                        (record-type-descriptor derived-parameter)
-                        0)
-
   (struct-property-set! prop:procedure
                         (record-type-descriptor position-based-accessor)
                         (lambda (pba s p)

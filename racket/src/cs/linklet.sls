@@ -171,6 +171,7 @@
   (define jit-demand-on? (getenv "PLT_LINKLET_SHOW_JIT_DEMAND"))
   (define known-on? (getenv "PLT_LINKLET_SHOW_KNOWN"))
   (define cp0-on? (getenv "PLT_LINKLET_SHOW_CP0"))
+  (define assembly-on? (getenv "PLT_LINKLET_SHOW_ASSEMBLY"))
   (define show-on? (or gensym-on?
                        pre-jit-on?
                        pre-lift-on?
@@ -179,6 +180,7 @@
                        jit-demand-on?
                        known-on?
                        cp0-on?
+                       assembly-on?
                        (getenv "PLT_LINKLET_SHOW")))
   (define show
     (case-lambda
@@ -206,8 +208,19 @@
   ;; `compile`, `interpret`, etc. have `dynamic-wind`-based state
   ;; that need to be managed correctly when swapping Racket
   ;; engines/threads.
-  (define (compile* e)
-    (call-with-system-wind (lambda () (compile e))))
+  (define compile*
+    (case-lambda
+     [(e safe?)
+      (call-with-system-wind (lambda ()
+                               (parameterize ([optimize-level (if safe?
+                                                                  (optimize-level)
+                                                                  3)])
+                                 (if assembly-on?
+                                     (parameterize ([#%$assembly-output (#%current-output-port)])
+                                       (printf ";; assembly ---------------------\n")
+                                       (compile e))
+                                     (compile e)))))]
+     [(e) (compile* e #t)]))
   (define (interpret* e)
     (call-with-system-wind (lambda () (interpret e))))
   (define (fasl-write* s o)
@@ -218,7 +231,7 @@
   (define (eval/foreign e mode)
     (performance-region
      mode
-     (compile* e)))
+     (compile* e #f)))
 
   (define primitives (make-hasheq)) ; hash of sym -> known
   (define primitive-tables '())     ; list of (cons sym hash)
@@ -230,6 +243,7 @@
      (lambda (table)
        (hash-for-each (cdr table) (lambda (k v) (hash-set! primitives k v))))
      tables)
+    (unsafe-hash-seal! primitives)
     ;; prropagate table to the rumble layer
     (install-primitives-table! primitives))
   
@@ -434,7 +448,7 @@
 
   (define-record-type linklet
     (fields (mutable code) ; the procedure or interpretable form
-            paths          ; list of paths; if non-empty, `code` expects them as arguments
+            paths          ; list of paths and other fasled; if non-empty, `code` expects them as arguments
             format         ; 'compile or 'interpret (where the latter may have compiled internal parts)
             (mutable preparation) ; 'faslable, 'faslable-strict, 'faslable-unsafe, 'callable, 'lazy, or (cons 'cross <machine>)
             importss-abi   ; ABI for each import, in parallel to `importss`
@@ -563,7 +577,7 @@
                                                                       (add-code-hash a)
                                                                       a)
                                                                   arity-mask
-                                                                  name)))]
+                                                                  (extract-inferred-name expr name))))]
                                           [else
                                            ;; Compile an individual `lambda`:
                                            (lambda (expr arity-mask name)
@@ -576,7 +590,7 @@
                                                                compile*)
                                                            (show lambda-on? "lambda" (correlated->annotation expr)))])
                                                 (if serializable?
-                                                    (make-wrapped-code code arity-mask name)
+                                                    (make-wrapped-code code arity-mask (extract-inferred-name expr name))
                                                     code))))])))]))
        (define-values (paths impl-lam/paths)
          (if serializable?
@@ -1105,13 +1119,13 @@
   (include "linklet/cross-compile.ss")
   
   (define compile-enforce-module-constants
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'compile-enforce-module-constants))
 
   (define compile-context-preservation-enabled
-    (make-parameter #f (lambda (v) (and v #t))))
+    (make-parameter #f (lambda (v) (and v #t)) 'compile-context-preservation-enabled))
 
   (define compile-allow-set!-undefined
-    (make-parameter #f (lambda (v) (and v #t))))
+    (make-parameter #f (lambda (v) (and v #t)) 'compile-allow-set!-undefined))
 
   (define current-compile-target-machine
     (make-parameter (machine-type) (lambda (v)
@@ -1121,7 +1135,8 @@
                                        (raise-argument-error 'current-compile-target-machine
                                                              "(or/c #f (and/c symbol? compile-target-machine?))"
                                                              v))
-                                     v)))
+                                     v)
+				     'current-compile-target-machine))
 
   (define (compile-target-machine? v)
     (unless (symbol? v)
@@ -1131,10 +1146,10 @@
              #t)))
 
   (define eval-jit-enabled
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'eval-jit-enabled))
   
   (define load-on-demand-enabled
-    (make-parameter #t (lambda (v) (and v #t))))
+    (make-parameter #t (lambda (v) (and v #t)) 'load-on-demand-enabled))
 
   ;; --------------------------------------------------
 

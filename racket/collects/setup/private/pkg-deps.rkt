@@ -365,7 +365,9 @@
     (when (file-exists? (build-path dir zo-f))
       (define base (let ([m (regexp-match #rx#"^(.*)_[^_]+[.]zo$"
                                           (path-element->bytes zo-f))])
-                     (and m (bytes->string/utf-8 (cadr m)))))
+                     (or (and m (bytes->string/utf-8 (cadr m)))
+                         ;; In case the original file name had no suffix:
+                         "unknown")))
       (define in-mod `(lib ,(string-join 
                              (append (map path-element->string coll-path) (list base))
                              "/")))

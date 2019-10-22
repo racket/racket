@@ -14,9 +14,9 @@
 */
 
 #define MZSCHEME_VERSION_X 7
-#define MZSCHEME_VERSION_Y 4
+#define MZSCHEME_VERSION_Y 5
 #define MZSCHEME_VERSION_Z 0
-#define MZSCHEME_VERSION_W 4
+#define MZSCHEME_VERSION_W 3
 
 /* A level of indirection makes `#` work as needed: */
 #define AS_a_STR_HELPER(x) #x

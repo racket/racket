@@ -1176,7 +1176,7 @@
               [name
                (options-select-value chunks '#:name #:default #'#f)])
          (list (create-ehpat head
-                             (make rep:bounds #'min #'max
+                             (make rep:bounds minN maxN
                                    name too-few-msg too-many-msg)
                              #'p)
                #'p)))]))

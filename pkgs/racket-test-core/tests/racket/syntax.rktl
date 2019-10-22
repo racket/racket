@@ -2245,5 +2245,16 @@
    (λ args (void))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `compile` works on non-serializable
+
+(let ([c (compile (let ([c #f])
+                    (lambda (v)
+                      (begin0 c (set! c v)))))])
+  (test #t values (compiled-expression? c))
+  (test #t procedure? (eval c))
+  (err/rt-test (write c (open-output-bytes))
+               exn:fail?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

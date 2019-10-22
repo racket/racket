@@ -23,7 +23,8 @@
   (make-parameter (make-plumber)
                   (lambda (v)
                     (check who plumber? v)
-                    v)))
+                    v)
+                  'current-plumber))
 
 (struct plumber-flush-handle (plumber))
 

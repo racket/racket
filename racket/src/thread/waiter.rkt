@@ -13,7 +13,8 @@
 (define-values (prop:waiter waiter? waiter-ref)
   (make-struct-type-property 'waiter))
 
-(struct waiter-methods (suspend resume))
+(struct waiter-methods (suspend resume)
+  #:authentic)
 
 (define (make-waiter-methods #:suspend! suspend
                              #:resume! resume)

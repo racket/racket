@@ -149,6 +149,7 @@
      #:mred? (gui)
      #:variant (variant)
      #:verbose? (very-verbose)
+     #:expand-namespace (make-base-namespace)
      #:modules (cons `(,main-prefix (file ,source-file) (main configure-runtime))
                      (append
                       (exe-embedded-modules)

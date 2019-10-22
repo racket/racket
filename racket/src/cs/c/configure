@@ -1425,6 +1425,7 @@ Optional Features:
   --enable-sdk=<path>     use Mac OS 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS 10.5 SDK directory
   --enable-sdk6=<path>    use Mac OS 10.6 SDK directory
+  --enable-sdk9=<path>    use Mac OS 10.9 SDK directory
   --enable-ios=<path>     use iOS SDK directory
   --enable-sysroot=<path> use sysroot directory (e.g., for Android)
   --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS
@@ -2573,6 +2574,11 @@ if test "${enable_natipkg+set}" = set; then :
   enableval=$enable_natipkg;
 fi
 
+
+# Check whether --enable-sdk was given.
+if test "${enable_sdk+set}" = set; then :
+  enableval=$enable_sdk;
+fi
 
 # Check whether --enable-sdk was given.
 if test "${enable_sdk+set}" = set; then :
@@ -4207,6 +4213,14 @@ case "$host_os" in
     if test "${enable_sdk6}" != "" ; then
       PREFLAGS="$PREFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
       LDFLAGS="$LDFLAGS -isysroot ${enable_sdk6} -mmacosx-version-min=10.6"
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
+      SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
+    fi
+
+    if test "${enable_sdk9}" != "" ; then
+      PREFLAGS="$PREFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
+      LDFLAGS="$LDFLAGS -isysroot ${enable_sdk9} -mmacosx-version-min=10.9"
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CFLAGS="'"'"${CFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPFLAGS="'"'"${PREFLAGS}"'"'
       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'

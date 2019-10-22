@@ -15,6 +15,13 @@
 ;; return the list of path values. If `convert?`, then
 ;; change the schemified linklet to expect the paths
 ;; as arguments.
+;;
+;; In addition to paths, this extraction deals with values
+;; that have been packages as `to-fasl`, either because they
+;; are large values that are best handled in fasl form or
+;; because they are not serializable (and we want to delay
+;; complaining in case no serialization is needed).
+
 (define (extract-paths-from-schemified-linklet linklet-e convert?)
   (match linklet-e
     [`(lambda . ,_)
@@ -53,7 +60,7 @@
   (lambda (orig-p)
     (cond
       [(to-fasl? orig-p)
-       (box (s-exp->fasl (force-unfasl orig-p)))]
+       (box (s-exp->fasl (force-unfasl orig-p) #:handle-fail cannot-fasl))]
       [else
        (define p (if (path-for-srcloc? orig-p)
                      (path-for-srcloc-path orig-p)
@@ -97,3 +104,8 @@
     [else
      ;; already forced (or never fasled)
      v]))
+
+(define (cannot-fasl v)
+  (error 'write
+         "cannot marshal value that is embedded in compiled code\n  value: ~v"
+         v))

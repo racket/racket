@@ -54,7 +54,15 @@ the default port read handler (see @racket[port-read-handler]).
 output port to be physically written. Only @tech{file-stream ports},
 TCP ports, and custom ports (see @secref["customport"]) use
 buffers; when called on a port without a buffer, @racket[flush-output]
-has no effect.}
+has no effect.
+
+If flushing a @tech{file-stream port} or @tech{TCP port} encounters an
+error when writing, then all buffered bytes in the port are discarded.
+Consequently, a further attempt to flush or close the port will not
+fail.
+
+@history[#:changed "7.4.0.10" @elem{Consistently, discard buffered bytes on error,
+                                    including in a TCP output port.}]}
 
 @defproc*[([(file-stream-buffer-mode [port port?]) (or/c 'none 'line 'block #f)]
            [(file-stream-buffer-mode [port port?] [mode (or/c 'none 'line 'block)]) void?])]{

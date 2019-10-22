@@ -4,7 +4,7 @@
 ;; Allocation of place registers to built-in subsystems, where the
 ;; first index is reserved for Rumble:
 
-(meta chez:define thread-register-start 1)
+(meta chez:define thread-register-start 3)
 (meta chez:define thread-register-count 31)
 
 (meta chez:define io-register-start (+ thread-register-start thread-register-count))
