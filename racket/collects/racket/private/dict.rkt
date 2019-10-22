@@ -2,7 +2,6 @@
 
 (require racket/private/generic ; to avoid circular dependencies
          racket/private/generic-methods
-         racket/set
          racket/vector
          (only-in racket/private/hash paired-fold)
          (for-syntax racket/base))
@@ -185,20 +184,9 @@
 (define (vector-empty? vec)
   (zero? (vector-length vec)))
 
-(define (assoc-has-key? d key)
+(define (assoc-fold-unique f init d #:who [who 'assoc-fold-unique])
   (unless (assoc? d)
-    (raise-argument-error 'dict-has-key? "dict?" d))
-  (pair? (assoc key d)))
-
-(define (assoc-map d proc)
-  (for/list ([x (in-list d)])
-    (unless (pair? x)
-      (raise-argument-error 'dict-map "dict?" d))
-    (proc (car x) (cdr x))))
-
-(define (assoc-fold-unique f init d)
-  (unless (assoc? d)
-    (raise-argument-error 'assoc-fold-unique "dict?" d))
+    (raise-argument-error who "dict?" d))
   (let loop ([xd d]
              [acc init]
              [seen (make-immutable-hash)])
@@ -210,10 +198,16 @@
              (loop (cdr xd) acc seen)
              (loop (cdr xd) (f a acc) (hash-set seen (car a) #t))))])))
 
-(define (assoc-count d)
+(define (assoc-has-key? d key)
   (unless (assoc? d)
-    (raise-argument-error 'dict-count "dict?" d))
-  (assoc-fold-unique (lambda (a acc) (+ acc 1)) 0 d))
+    (raise-argument-error 'dict-has-key? "dict?" d))
+  (pair? (assoc key d)))
+
+(define (assoc-map d proc)
+  (for/list ([x (in-list d)])
+    (unless (pair? x)
+      (raise-argument-error 'dict-map "dict?" d))
+    (proc (car x) (cdr x))))
 
 (define (assoc-for-each d proc)
   (for ([x (in-list d)])
@@ -221,14 +215,17 @@
       (raise-argument-error 'dict-for-each "dict?" d))
     (proc (car x) (cdr x))))
 
+(define (assoc-count d)
+  (assoc-fold-unique (lambda (a acc) (+ acc 1)) 0 d #:who dict-count))
+
 (define (assoc-keys d)
-  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc)) null d)))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (car a) acc) #:who 'dict-keys) null d)))
 
 (define (assoc-values d)
-  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc)) null d)))
+  (reverse (assoc-fold-unique (lambda (a acc) (cons (cdr a) acc) #:who 'dict-values) null d)))
 
 (define (assoc->list d)
-  (reverse (assoc-fold-unique cons null d)))
+  (reverse (assoc-fold-unique cons null d #:who 'dict->list)))
 
 (define (fallback-copy d)
   (unless (dict-implements? d 'dict-clear dict-set!)
