@@ -48,6 +48,9 @@
         tag1)
        10)
 
+(check (call-with-composable-continuation (lambda (k) 5))
+       5)
+
 (check (let ([saved #f])
          (let ([a (call-with-continuation-prompt
                    (lambda ()
