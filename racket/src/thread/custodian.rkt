@@ -158,13 +158,14 @@
   (when cref
     (atomically
      (define c (custodian-reference->custodian cref))
-     (unless (custodian-shut-down? c)
-       (hash-remove! (custodian-children c) obj))
-     (host:disable-interrupts)
-     (define gc-roots (custodian-gc-roots c))
-     (when gc-roots
-       (hash-remove! gc-roots obj))
-     (host:enable-interrupts))
+     (when c
+       (unless (custodian-shut-down? c)
+         (hash-remove! (custodian-children c) obj))
+       (host:disable-interrupts)
+       (define gc-roots (custodian-gc-roots c))
+       (when gc-roots
+         (hash-remove! gc-roots obj))
+       (host:enable-interrupts)))
     (void)))
 
 ;; Called by scheduler (so atomic) when `c` is unreachable
