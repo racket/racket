@@ -534,47 +534,6 @@ each element in the sequence.
   @racket[path<?], and the content of a subdirectory is reported
   before subsequent paths within the directory.
 
-@examples[
-    (code:comment @#,t{Given a directory tree:})
-    (code:comment @#,t{})
-    (code:comment @#,t{ /example})
-    (code:comment @#,t{ ├── a})
-    (code:comment @#,t{ │   ├── alpha})
-    (code:comment @#,t{ │   └── apple})
-    (code:comment @#,t{ ├── b})
-    (code:comment @#,t{ │   └── beta})
-    (code:comment @#,t{ └── c})
-    (code:comment @#,t{})
-    (eval:alts
-      (parameterize ([current-directory "/example"])
-        (for ([p (in-directory)])
-          (printf "~a\n" p)))
-      (for ([p (in-list '("a"
-                          "a/alpha"
-                          "a/apple"
-                          "b"
-                          "b/beta"
-                          "c"))])
-        (printf "~a\n" p)))
-    (eval:alts
-      (for ([p (in-directory "/example")])
-        (printf "~a\n" p))
-      (for ([p (in-list '("/example/a"
-                          "/example/a/alpha"
-                          "/example/a/apple"
-                          "/example/b"
-                          "/example/b/beta"
-                          "/example/c"))])
-        (printf "~a\n" p)))
-    (eval:alts
-      (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" path))])
-        (for ([p (in-directory "/example" f)])
-          (printf "~a\n" p)))
-      (for ([p (in-list '("/example/a"
-                          "/example/b"
-                          "/example/b/beta"
-                          "/example/c"))])
-        (printf "~a\n" p)))]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
          #:changed "6.6.0.4" @elem{Added guarantee of sorted results.}]}
