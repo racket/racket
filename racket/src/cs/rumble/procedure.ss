@@ -95,6 +95,12 @@
             (success-k f)
             f)
         (wrong-arity-wrapper orig-f))]
+   [(continuation? f)
+    (let ([p (lambda args
+               (apply-continuation f args))])
+      (if success-k
+          (success-k p)
+          p))]
    [(record? f)
     (let* ([rtd (record-rtd f)]
            [v (struct-property-ref prop:procedure rtd none)])

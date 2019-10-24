@@ -183,7 +183,7 @@
       (eq-hashtable-set! avail-cache tag (if avail? 'yes 'no))))
   avail?)
 
-(define/who (maybe-future-barricade tag)
+(define (maybe-future-barricade tag)
   (when (current-future)
     (let ([fp (strip-impersonator (current-future-prompt))]
           [tag (strip-impersonator tag)])
@@ -516,44 +516,59 @@
      tag
      values)))
 
-;; Applying a continuation calls this internal function:
 (define (apply-continuation c args)
-  (start-uninterrupted 'continue)
   (cond
    [(composable-continuation? c)
-    ;; To compose the metacontinuation, first make sure the current
-    ;; continuation is reified in `(current-metacontinuation)`:
-    (call-in-empty-metacontinuation-frame-for-compose
-     (lambda ()
-       ;; The current metacontinuation frame has an
-       ;; empty continuation, so we can "replace" that
-       ;; with the composable one:
-       (cond
-        [(and (null? (full-continuation-mc c))
-              (null? (full-continuation-winders c))
-              (eq? (current-mark-splice) (full-continuation-mark-splice c))
-              (let ([marks (continuation-next-attachments (full-continuation-k c))])
-                (or (null? marks)
-                    (and (null? (cdr marks))
-                         (eq? (car marks) 'empty)))))
-         ;; Shortcut for no winds and no change to break status:
-         (end-uninterrupted 'cc)
-         (#%apply (full-continuation-k c) args)]
-        [(not (composable-continuation-wind? c))
-         (apply-immediate-continuation/no-wind c args)]
-        [else
-         (apply-immediate-continuation c (reverse (full-continuation-mc c)) args)])))]
+    (apply-composable-continuation c args)]
    [(non-composable-continuation? c)
     (apply-non-composable-continuation c args)]
    [(escape-continuation? c)
-    (let ([tag (escape-continuation-tag c)])
-      (unless (continuation-prompt-available? tag)
-        (end-uninterrupted 'escape-fail)
-        (raise-continuation-error '|continuation application|
-                                  "attempt to jump into an escape continuation"))
-      (do-abort-current-continuation '|continuation application| tag args #t))]))
+    (apply-escape-continuation c args)]
+   [else
+    (raise-argument-error 'apply-continuation "continuation?" c)]))
 
+;; Applying a composable continuation calls this internal function:
+(define (apply-composable-continuation c args)
+  (start-uninterrupted 'continue)
+  ;; To compose the metacontinuation, first make sure the current
+  ;; continuation is reified in `(current-metacontinuation)`:
+  (call-in-empty-metacontinuation-frame-for-compose
+   (lambda ()
+     ;; The current metacontinuation frame has an
+     ;; empty continuation, so we can "replace" that
+     ;; with the composable one:
+     (cond
+      [(and (null? (full-continuation-mc c))
+            (null? (full-continuation-winders c))
+            (eq? (current-mark-splice) (full-continuation-mark-splice c))
+            (let ([marks (continuation-next-attachments (full-continuation-k c))])
+              (or (null? marks)
+                  (and (null? (cdr marks))
+                       (eq? (car marks) 'empty)))))
+       ;; Shortcut for no winds and no change to break status:
+       (end-uninterrupted 'cc)
+       (#%apply (full-continuation-k c) args)]
+      [(not (composable-continuation-wind? c))
+       (apply-immediate-continuation/no-wind c args)]
+      [else
+       (apply-immediate-continuation c (reverse (full-continuation-mc c)) args)]))))
+
+;; Applying an escape continuation calls this internal function:
+(define (apply-escape-continuation c args)
+  (start-uninterrupted 'continue)
+  (let ([tag (escape-continuation-tag c)])
+    (unless (continuation-prompt-available? tag)
+      (end-uninterrupted 'escape-fail)
+      (raise-continuation-error '|continuation application|
+                                "attempt to jump into an escape continuation"))
+    (do-abort-current-continuation '|continuation application| tag args #t)))
+
+;; Applying a non-composable continuation calls this internal function:
 (define (apply-non-composable-continuation c args)
+  (start-uninterrupted 'continue)
+  (apply-non-composable-continuation* c args))
+
+(define (apply-non-composable-continuation* c args)
   (assert-in-uninterrupted)
   (let ([mc (current-metacontinuation)]
         [c-mc (full-continuation-mc c)]
@@ -598,7 +613,7 @@
              ;; If a winder changes the metacontinuation, then
              ;; start again:
              (lambda ()
-               (apply-non-composable-continuation c args)))])))])))
+               (apply-non-composable-continuation* c args)))])))])))
 
 ;; Apply a continuation within the current metacontinuation frame:
 (define (apply-immediate-continuation c rmc args)
@@ -627,7 +642,7 @@
      ;; non-composable continuation:
      (and (non-composable-continuation? c)
           (lambda ()
-            (apply-non-composable-continuation c args))))))
+            (apply-non-composable-continuation* c args))))))
 
 ;; Like `apply-immediate-continuation`, but don't run winders
 (define (apply-immediate-continuation/no-wind c args)
@@ -711,14 +726,17 @@
                             "attempt to cross a continuation barrier"))
 
 (define (set-continuation-applicables!)
-  (let ([add (lambda (rtd)
-               (struct-property-set! prop:procedure
-                                     rtd
-                                     (lambda (c . args)
-                                       (apply-continuation c args))))])
-    (add (record-type-descriptor composable-continuation))
-    (add (record-type-descriptor non-composable-continuation))
-    (add (record-type-descriptor escape-continuation))))
+  ;; These procedure registrations may be short-circuited by a special
+  ;; case that dispatches directly to `apply-continuation`
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor composable-continuation)
+                        (lambda (c . args) (apply-composable-continuation c args)))
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor non-composable-continuation)
+                        (lambda (c . args) (apply-non-composable-continuation c args)))
+  (struct-property-set! prop:procedure
+                        (record-type-descriptor escape-continuation)
+                        (lambda (c . args) (apply-escape-continuation c args))))
 
 ;; ----------------------------------------
 ;; Metacontinuation operations for continutions
@@ -789,7 +807,7 @@
          ;; for a non-composable continuation:
          (and (non-composable-continuation? dest-c)
               (lambda ()
-                (apply-non-composable-continuation dest-c dest-args)))))])))
+                (apply-non-composable-continuation* dest-c dest-args)))))])))
 
 (define (metacontinuation-frame-clear-cache mf)
   (metacontinuation-frame-update-mark-splice mf
