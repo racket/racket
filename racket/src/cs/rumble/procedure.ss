@@ -163,7 +163,7 @@
 (define/who procedure-arity-includes?
   (case-lambda
    [(f n incomplete-ok?)
-    (let ([mask (get-procedure-arity-mask who f incomplete-ok?)])
+    (let ([mask (get-procedure-arity-mask who f incomplete-ok? #f)])
       (check who exact-nonnegative-integer? n)
       (bitwise-bit-set? mask n))]
    [(f n) (procedure-arity-includes? f n #f)]))
@@ -171,18 +171,24 @@
 (define (chez:procedure-arity-includes? proc n)
   (bitwise-bit-set? (#%procedure-arity-mask proc) n))
 
+;; assumes that `n` is an exact nonnegative integer
+(define (unsafe-procedure-and-arity-includes? p n)
+  (if (#%procedure? p)
+      (chez:procedure-arity-includes? p n)
+      (bitwise-bit-set? (get-procedure-arity-mask #f p #f 0) n)))
+
 (define (procedure-arity orig-f)
-  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t)))
+  (mask->arity (get-procedure-arity-mask 'procedure-arity orig-f #t #f)))
 
 (define/who (procedure-arity-mask orig-f)
-  (get-procedure-arity-mask who orig-f #t))
+  (get-procedure-arity-mask who orig-f #t #f))
 
-(define (get-procedure-arity-mask who orig-f incomplete-ok?)
+(define (get-procedure-arity-mask who orig-f incomplete-ok? fail-v)
   (cond
    [(#%procedure? orig-f)
     (#%procedure-arity-mask orig-f)]
    [else
-    (let proc-arity-mask ([f orig-f] [shift 0])
+    (let proc-arity-mask ([f orig-f] [shift 0] [fail-v fail-v])
       (cond
        [(#%procedure? f)
         (bitwise-arithmetic-shift-right (#%procedure-arity-mask f) shift)]
@@ -200,14 +206,14 @@
                 (let ([v (struct-property-ref prop:procedure rtd #f)])
                   (cond
                    [(fixnum? v)
-                    (proc-arity-mask (unsafe-struct-ref f v) shift)]
+                    (proc-arity-mask (unsafe-struct-ref f v) shift 0)]
                    [(eq? v 'unsafe)
-                    (proc-arity-mask (impersonator-next f) shift)]
+                    (proc-arity-mask (impersonator-next f) shift 0)]
                    [else
-                    (proc-arity-mask v (add1 shift))]))]))]))]
-       [(eq? f orig-f)
-        (raise-argument-error who "procedure?" orig-f)]
-       [else 0]))]))
+                    (proc-arity-mask v (add1 shift) 0)]))]))]))]
+       [else
+        (or fail-v
+            (raise-argument-error who "procedure?" orig-f))]))]))
 
 (define (procedure-incomplete-arity? f)
   (cond

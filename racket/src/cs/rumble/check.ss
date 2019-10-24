@@ -45,9 +45,9 @@
        (and (integer? n)
             (exact? n)
             (not (negative? n))))
-     #'(lambda (p)
-         (and (procedure? p)
-              (procedure-arity-includes? p n)))]))
+     (with-syntax ([n-mask (bitwise-arithmetic-shift-left 1 (syntax->datum #'m))])
+       #'(lambda (p)
+           (unsafe-procedure-and-arity-includes? p n)))]))
 
 (define (check-space who what d-start d-len s-len)
   (unless (fx<= (fx+ d-start s-len) d-len)
