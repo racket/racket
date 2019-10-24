@@ -24,9 +24,18 @@ programs.
 @section{And More}
 
 @link["../index.html"]{Racket Documentation} lists documentation for
-many other installed libraries. Run @exec{raco docs} to find
-documentation for libraries that are installed on your system and
-specific to your user account.
+other libraries, including libraries that are installed as packages.
+Run @exec{raco docs} to find documentation for libraries that are
+installed on your system and specific to your user account.
 
-@link["http://planet.plt-racket.org/"]{@|PLaneT|} offers even more
-downloadable packages contributed by Racketeers.
+@link["http://pkgs.racket-lang.org/"]{PLT Package Catalog} at
+@url{https://pkgs.racket-lang.org} offers even more downloadable
+packages contributed by Racketeers. The
+@link["https://docs.racket-lang.org"]{online Racket documentation}
+includes documentation for packages in that catalog, updated daily.
+For more information about packages, see see @other-manual['(lib
+"pkg/scribblings/pkg.scrbl")].
+
+@link["http://planet.plt-racket.org/"]{@|PLaneT|} serves packages that
+were developed using an older package system. Racket packages should
+use the newer system, instead.
