@@ -534,6 +534,28 @@ each element in the sequence.
   @racket[path<?], and the content of a subdirectory is reported
   before subsequent paths within the directory.
 
+  @examples[
+    (eval:alts (current-directory (collection-path "info"))
+               (void))
+    (eval:alts (for/list ([f (in-directory)])
+                  f)
+               (map string->path '("main.rkt"
+                                   "compiled"
+                                   "compiled/main_rkt.dep"
+                                   "compiled/main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory "compiled")])
+                 f)
+               (map string->path '("main_rkt.dep"
+                                   "main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory "compiled")])
+                 f)
+               (map string->path '("compiled/main_rkt.dep"
+                                   "compiled/main_rkt.zo")))
+    (eval:alts (for/list ([f (in-directory #f (lambda (p)
+                                                (not (regexp-match? #rx"compiled" p))))])
+                  f)
+               (map string->path '("main.rkt" "compiled")))
+  ]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
          #:changed "6.6.0.4" @elem{Added guarantee of sorted results.}]}
