@@ -1,17 +1,41 @@
-Racket is distributed under the GNU Lesser General Public License
-(LGPL) version 3.  This implies that you may link Racket into
-proprietary applications, provided you follow the rules stated in the
-LGPL.  You can also modify Racket; if you distribute a modified
-version, you must distribute it under the terms of the LGPL, which in
-particular states that you must release the source code for the
-modified software.
+Racket is distributed under the MIT license and the Apache version 2.0
+license, at your option. However, Racket relies on some components
+distributed under other licenses. In short:
 
-See the file racket/src/LICENSE-LGPL.txt for the full text of the
-license.
+  * The traditional Racket executable includes code distributed under
+    the GNU Lesser General Public License, version 3. This is the
+    executable built from code in racket/src/racket.
 
-There may also be other licenses for code withing the Racket
-distribution with which you must comply. Some of them are listed
-below.
+  * The Racket-on-Chez executable includes code distributed under the
+    Apache version 2.0 license, in particular Chez Scheme.
+
+These distinctions apply to the `racket` executable, not to Racket
+source code and documentation in this repository.
+
+See the file racket/src/LICENSE-LGPL.txt for the full text of the GNU
+Lesser General Public License.
+
+See the file racket/src/LICENSE-APACHE.txt for the full text of the
+Apache version 2.0 license.
+
+See the file racket/src/LICENSE-MIT.txt for the full text of the
+MIT license.
+
+Additionally, the default mode of building Racket will install other
+packages, which are distributed under their own license. In the
+default mode, all of those packages are distributed under the licenses
+listed above.
+
+There may also be other licenses for code within this repository with
+which you must comply. Some of them are listed below.
+
+The following are used in all Racket executables:
+
+* mbed TLS. Code from mbed TLS can be found in
+  racket/src/rktio/rktio_sha2.c. mbed TLS is licensed under the Apache
+  v2.0 License.
+
+The following are used only in the traditional Racket executable:
 
 * libscheme. Code from libscheme can be found in racket/src/racket.
   See the file racket/src/LICENSE-libscheme.txt.
@@ -44,17 +68,19 @@ below.
 * install. Code from install can be found in racket/src/lt/install-sh
   and is distributed under the MIT license.
 
+* MemoryModule. Code from MemoryModule can be found in
+  racket/src/start/MemoryModule.c. MemoryModule is distributed under
+  the MPL v2.0.
+
+The following are used only in benchmarks, and are not part of the
+standard Racket distribution:
+
 * psyntax. Code from psyntax can be found in
   pkgs/racket-benchmarks/tests/racket/benchmarks/common/psyntax.sch
+  and is distributed under the Apache v2.0 License.
 
 * SCM. Code from SCM can be found in
   pkgs/racket-benchmarks/tests/racket/benchmarks/shootout/pidigits1.rkt
   SCM is available under the LGPL.
 
-* MemoryModule. Code from MemoryModule can be found in
-  racket/src/start/MemoryModule.c. MemoryModule is distributed under
-  the MPL v2.0.
 
-* mbed TLS. Code from mbed TLS can be found in
-  racket/src/rktio/rktio_sha2.c. mbed TLS is licensed under the Apache
-  v2.0 License.
