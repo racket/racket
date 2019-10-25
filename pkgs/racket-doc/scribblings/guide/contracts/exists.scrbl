@@ -56,4 +56,3 @@ To ensure that the queue representation is abstract, we can use @racket[#:∃] i
 Now, if clients of the data structure try to use @racket[car] and @racket[cdr], they
 receive an error, rather than mucking about with the internals of the queues.
 
-See also @ctc-link["exists-gotcha"].
