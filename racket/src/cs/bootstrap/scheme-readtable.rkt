@@ -37,7 +37,7 @@
      (read/recursive new-in #f #f #t)]))
 
 (define (hash-percent c in src line col pos)
-  (read-syntax/recursive src in))
+  `($primitive ,(read/recursive in)))
 
 (define (hash-bang c in src line col pos)
   (define sym (read/recursive in))

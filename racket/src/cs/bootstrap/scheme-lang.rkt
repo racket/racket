@@ -5,6 +5,7 @@
          racket/vector
          racket/splicing
          racket/pretty
+         racket/dict
          "config.rkt"
          (for-syntax "config.rkt")
          (for-syntax "constant.rkt")
@@ -150,6 +151,7 @@
                      [s:error $oops]
                      [error $undefined-violation]
                      [error errorf]
+                     [error warningf]
                      [make-bytes make-bytevector]
                      [bytes bytevector]
                      [bytes-length bytevector-length]
@@ -220,16 +222,16 @@
          $ht-minlen
          $ht-veclen
          (rename-out [hash? hashtable?]
-                     [hash-ref/pair hashtable-ref]
-                     [hash-ref/pair eq-hashtable-ref]
+                     [hash-ref/pair/dict hashtable-ref]
+                     [hash-ref/pair/dict eq-hashtable-ref]
                      [hash-ref-cell eq-hashtable-cell]
-                     [hash-set!/pair hashtable-set!]
+                     [hash-set!/pair/dict hashtable-set!]
                      [hash-remove! eq-hashtable-delete!]
                      [equal-hash-code string-hash]
-                     [hash-set!/pair symbol-hashtable-set!]
+                     [hash-set!/pair/dict symbol-hashtable-set!]
                      [hash-has-key? symbol-hashtable-contains?]
                      [hash-has-key? eq-hashtable-contains?]
-                     [hash-ref/pair symbol-hashtable-ref]
+                     [hash-ref/pair/dict symbol-hashtable-ref]
                      [hash-ref-cell symbol-hashtable-cell])
          bignum?
          ratnum?
@@ -881,14 +883,25 @@
           (eq? eql? =))
      (make-hash)]
     [else
-     (error 'make-hashtable
-            "??? ~s ~s" hash eql?)]))
+     (make-custom-hash eql? hash (lambda (a) 1))]))
 
 (define (make-weak-eq-hashtable)
   (make-weak-hasheq))
 
+(define (hash-ref/pair/dict ht key def-v)
+  (if (hash? ht)
+      (hash-ref/pair ht key def-v)
+      (dict-ref ht key def-v)))
+
+(define (hash-set!/pair/dict ht key v)
+  (if (hash? ht)
+      (hash-set!/pair ht key v)
+      (dict-set! ht key v)))
+
 (define (hashtable-keys ht)
-  (list->vector (hash-keys ht)))
+  (list->vector (if (hash? ht)
+                    (hash-keys ht)
+                    (dict-keys ht))))
 
 (define (hashtable-entries ht)
   (define ps (hash-values ht))
