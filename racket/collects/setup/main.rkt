@@ -250,7 +250,7 @@
 					   (if skip-zo/reason
                                                (if print-loading-sources?
                                                    (lambda (path modname)
-                                                     ;; (log-message (current-logger) 'info 'compiler/cm (format "loading ~a" path))
+                                                     (log-message (current-logger) 'info 'compiler/cm (format "loading ~a" path))
                                                      (orig-load path modname))
                                                    orig-load)
 					       (lambda (path modname)
