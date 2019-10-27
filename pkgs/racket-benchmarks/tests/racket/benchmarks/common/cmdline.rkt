@@ -1,4 +1,3 @@
-
 (module cmdline mzscheme
   (require mzlib/process
            mzlib/cmdline
@@ -33,12 +32,20 @@
     (define default-benchmarks benchmarks)
     (define default-implementations (remq* non-default-implementations implementations))
 
+    (define executables (make-hash-table 'equal))
+    (define names (make-hash-table))
+
     ;; Extract command-line arguments --------------------
 
     (define args
       (command-line
        "auto"
        (current-command-line-arguments)
+       (multi
+        [("++exe") name path "Set executable for <name> to <path>"
+                   (hash-table-put! executables name path)]
+        [("++name") name show-name "Log <name> as <show-name>"
+                    (hash-table-put! names (string->symbol name) (string->symbol show-name))])
        (once-each
         [("--show") "show implementations and benchmarks"
          (printf "Implementations:\n")
@@ -111,7 +118,9 @@
                 benchmarks)
             (or run-implementations
                 default-implementations)
-            num-iterations))
+            num-iterations
+            executables
+            names))
 
   (define (rprintf . args)
     (apply printf args)

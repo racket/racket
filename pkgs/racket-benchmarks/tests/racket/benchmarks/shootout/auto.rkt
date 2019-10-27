@@ -195,7 +195,9 @@ exec racket -qu "$0" ${1+"$@"}
 
   (define-values (actual-benchmarks-to-run 
                   actual-implementations-to-run 
-                  num-iterations)
+                  num-iterations
+                  executables
+                  names)
     (process-command-line benchmarks
                           '()
                           (map impl-name impls) '() ; no obsolete implementations here
