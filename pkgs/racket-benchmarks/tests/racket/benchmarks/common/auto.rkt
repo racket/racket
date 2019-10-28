@@ -432,7 +432,7 @@ exec racket -qu "$0" ${1+"$@"}
                 void
                 mk-racket
                 (lambda (bm)
-                  (system* (or (hash-ref executables "racket") (find-exe)) "-u" (compiled-path bm)))
+                  (system* (or (hash-ref executables "racket" #f) (find-exe)) "-u" (compiled-path bm)))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
