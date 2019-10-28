@@ -34,10 +34,9 @@ joining the [development mailing list](https://lists.racket-lang.org),
 or visiting the IRC or Slack channels.
 
 By making a contribution, you are agreeing that your contribution is
-licensed under the LGPLv3, Apache 2.0, and MIT licenses. Those
+licensed under the Apache 2.0 and MIT licenses. Those
 licenses are available in this repository in the files
-[LICENSE-LGPL.txt](racket/src/LICENSE-LGPL.txt),
-[LICENSE-APACHE.txt](racket/src/LICENSE-APACHE.txt), and
+[LICENSE-APACHE.txt](racket/src/LICENSE-APACHE.txt) and
 [LICENSE-MIT.txt](racket/src/LICENSE-MIT.txt).
 
 License
